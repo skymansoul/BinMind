@@ -1,0 +1,22 @@
+{
+    "registers": {
+        "rax": "0x0000000000000000",
+        "rbx": "0x0000000000000000",
+        "rcx": "0x0000000000000000",
+        "rdx": "0x0000000000000000",
+        "rsi": "0x0000000000000000",
+        "rdi": "0x0000000000000000",
+        "rbp": "0x4141414141414141",
+        "rsp": "0x00007fffffffdbe8",
+        "rip": "0x4141414141414141",
+        "eflags": "0x0000000000010202"
+    },
+    "stack_trace": [
+        "#0  0x4141414141414141 in ?? ()",
+        "#1  0x00007ffff7c29d90 in __libc_start_call_main ()",
+        "#2  0x00007ffff7c29e40 in __libc_start_main_impl ()"
+    ],
+    "fault_instruction": "0x4141414141414141:    Cannot access memory at address 0x4141414141414141",
+    "output": "Segmentation fault (core dumped)",
+    "signal": "SIGSEGV"
+}
