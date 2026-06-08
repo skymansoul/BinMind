@@ -372,6 +372,133 @@ class ReportGenerator:
         
         return '\n'.join(output)
     
+    def format_dynamic_taint_section(
+        self,
+        dynamic_taint_result: Dict[str, Any]
+    ) -> str:
+        """
+        格式化动态污点分析部分
+
+        Args:
+            dynamic_taint_result: 动态污点分析结果字典
+
+        Returns:
+            格式化后的 Markdown 字符串
+        """
+        output = []
+        output.append("## 动态污点分析\n")
+        
+        if not dynamic_taint_result:
+            output.append("动态污点分析未启用。\n")
+            return '\n'.join(output)
+        
+        engine = dynamic_taint_result.get('engine', 'unknown')
+        success = dynamic_taint_result.get('success', False)
+        
+        output.append(f"### 分析概览")
+        output.append(f"- **分析引擎**: {engine}")
+        output.append(f"- **分析状态**: {'✅ 成功' if success else '❌ 失败'}")
+        
+        if not success:
+            error = dynamic_taint_result.get('error', '未知错误')
+            output.append(f"- **错误信息**: {error}\n")
+            return '\n'.join(output)
+        
+        taint_marks = dynamic_taint_result.get('taint_marks', [])
+        taint_flows = dynamic_taint_result.get('taint_flows', [])
+        vulnerabilities = dynamic_taint_result.get('vulnerabilities', [])
+        exec_trace = dynamic_taint_result.get('exec_trace', [])
+        
+        output.append(f"- **污点标记数**: {len(taint_marks)}")
+        output.append(f"- **污点传播路径**: {len(taint_flows)}")
+        output.append(f"- **发现漏洞**: {len(vulnerabilities)}\n")
+        
+        if taint_marks:
+            output.append("### 污点标记")
+            output.append("| 序号 | 污点源 | 地址 | 大小 |")
+            output.append("|------|--------|------|------|")
+            for i, mark in enumerate(taint_marks[:10], 1):
+                source = mark.get('source', 'unknown')
+                address = mark.get('address', 'N/A')
+                size = mark.get('size', 'N/A')
+                output.append(f"| {i} | {source} | {address} | {size} |")
+            if len(taint_marks) > 10:
+                output.append(f"| ... | ... | ... | ... |")
+            output.append("")
+        
+        if taint_flows:
+            output.append("### 污点传播路径")
+            for i, flow in enumerate(taint_flows, 1):
+                output.append(f"#### 路径 {i}")
+                
+                if isinstance(flow, dict):
+                    sink = flow.get('sink', 'unknown')
+                    sink_type = flow.get('sink_type', 'unknown')
+                    tainted_args = flow.get('tainted_args', [])
+                    address = flow.get('address', 'N/A')
+                    
+                    output.append(f"- **目标汇点**: {sink} ({sink_type})")
+                    output.append(f"- **汇点地址**: {address}")
+                    
+                    if tainted_args:
+                        output.append(f"- **被污染参数**:")
+                        for arg in tainted_args:
+                            pos = arg.get('position', '?')
+                            value = arg.get('value', '?')
+                            source = arg.get('source', 'unknown')
+                            output.append(f"  - 参数 {pos}: {value} (来源: {source})")
+                else:
+                    output.append(f"- **详情**: {str(flow)[:200]}")
+                output.append("")
+        
+        if vulnerabilities:
+            output.append("### 动态检测到的漏洞")
+            for i, vuln in enumerate(vulnerabilities, 1):
+                if isinstance(vuln, dict):
+                    vuln_type = vuln.get('type', 'Unknown')
+                    func_name = vuln.get('function_name', 'Unknown')
+                    severity = vuln.get('severity', 'Unknown')
+                    description = vuln.get('description', 'N/A')
+                    tainted_vars = vuln.get('tainted_variables', [])
+                    
+                    output.append(f"#### 漏洞 {i}: {vuln_type}")
+                    output.append(f"- **函数**: {func_name}")
+                    output.append(f"- **严重程度**: {severity}")
+                    output.append(f"- **描述**: {description}")
+                    
+                    if tainted_vars:
+                        output.append(f"- **污染变量**: {', '.join(str(v) for v in tainted_vars)}")
+                    
+                    evidence = vuln.get('evidence', [])
+                    if evidence:
+                        output.append(f"- **证据**:")
+                        for ev in evidence[:3]:
+                            ev_str = str(ev)[:100]
+                            output.append(f"  - {ev_str}")
+                else:
+                    output.append(f"#### 漏洞 {i}")
+                    output.append(f"- **详情**: {str(vuln)[:200]}")
+                output.append("")
+        
+        compatible = dynamic_taint_result.get('compatible')
+        if compatible:
+            output.append("### 兼容格式数据")
+            output.append("```json")
+            import json
+            output.append(json.dumps(compatible, indent=2, ensure_ascii=False)[:1000])
+            output.append("```\n")
+        
+        if exec_trace:
+            output.append("### 执行追踪")
+            output.append("```")
+            for trace in exec_trace[:10]:
+                output.append(str(trace))
+            if len(exec_trace) > 10:
+                output.append(f"... (还有 {len(exec_trace) - 10} 条)")
+            output.append("```\n")
+        
+        return '\n'.join(output)
+    
     def generate_markdown_report(self, output_path: str = None):
         """
         生成 Markdown 格式报告（基于步骤）
@@ -427,6 +554,7 @@ class ReportGenerator:
         exploit_result: Dict[str, Any] = None,
         similar_vulns: List[Dict[str, Any]] = None,
         symbolic_result: Dict[str, Any] = None,
+        dynamic_taint_result: Dict[str, Any] = None,
         output_path: str = None
     ) -> str:
         """
@@ -451,6 +579,9 @@ class ReportGenerator:
         
         if symbolic_result:
             content_parts.append(self.format_symbolic_execution_section(symbolic_result))
+        
+        if dynamic_taint_result:
+            content_parts.append(self.format_dynamic_taint_section(dynamic_taint_result))
         
         if crash_analysis:
             content_parts.append(self.format_crash_analysis_section(crash_analysis))
@@ -494,6 +625,7 @@ class ReportGenerator:
         decomp_results: List[Dict[str, Any]] = None,
         crash_analysis: Dict[str, Any] = None,
         exploit_result: Dict[str, Any] = None,
+        dynamic_taint_result: Dict[str, Any] = None,
         output_path: str = None
     ):
         """
@@ -508,6 +640,7 @@ class ReportGenerator:
             decomp_results: 反编译分析结果
             crash_analysis: 崩溃分析
             exploit_result: 利用脚本结果
+            dynamic_taint_result: 动态污点分析结果
             output_path: 输出路径
             
         Returns:
@@ -535,6 +668,7 @@ class ReportGenerator:
             },
             'binary_info': binary_info,
             'decomp_analysis': decomp_results,
+            'dynamic_taint': dynamic_taint_result,
             'crash_analysis': crash_analysis,
             'exploit_result': exploit_result
         }
@@ -679,6 +813,7 @@ class ReportGenerator:
         exploit_result: Dict[str, Any] = None,
         similar_vulns: List[Dict[str, Any]] = None,
         symbolic_result: Dict[str, Any] = None,
+        dynamic_taint_result: Dict[str, Any] = None,
         output_path: str = None
     ) -> str:
         """
@@ -692,6 +827,7 @@ class ReportGenerator:
             exploit_result: 利用脚本结果
             similar_vulns: 相似漏洞
             symbolic_result: 符号执行结果
+            dynamic_taint_result: 动态污点分析结果
             output_path: 输出路径
             
         Returns:
@@ -823,6 +959,88 @@ class ReportGenerator:
                     content_parts.append(f'<td>{vuln.get("function_name", "N/A")}</td>')
                     content_parts.append(f'</tr>')
                 content_parts.append('</table>')
+            content_parts.append('</div>')
+        
+        if dynamic_taint_result:
+            content_parts.append('<div class="card">')
+            content_parts.append('<h2>🔬 动态污点分析</h2>')
+            
+            engine = dynamic_taint_result.get('engine', 'unknown')
+            success = dynamic_taint_result.get('success', False)
+            status_class = 'success' if success else 'failed'
+            
+            content_parts.append(f'<div class="steps">')
+            content_parts.append(f'<span class="step {status_class}">引擎: {engine.upper()}</span>')
+            content_parts.append(f'<span class="step {status_class}">状态: {"✅ 成功" if success else "❌ 失败"}</span>')
+            content_parts.append(f'</div>')
+            
+            if not success:
+                error = dynamic_taint_result.get('error', '未知错误')
+                content_parts.append(f'<p style="color: #ef4444;"><strong>错误:</strong> {error}</p>')
+            else:
+                taint_marks = dynamic_taint_result.get('taint_marks', [])
+                taint_flows = dynamic_taint_result.get('taint_flows', [])
+                vulnerabilities = dynamic_taint_result.get('vulnerabilities', [])
+                
+                content_parts.append('<div class="stats">')
+                content_parts.append(f'<div class="stat-card"><div class="number">{len(taint_marks)}</div><div class="label">污点标记</div></div>')
+                content_parts.append(f'<div class="stat-card"><div class="number">{len(taint_flows)}</div><div class="label">污点路径</div></div>')
+                content_parts.append(f'<div class="stat-card"><div class="number">{len(vulnerabilities)}</div><div class="label">动态漏洞</div></div>')
+                content_parts.append('</div>')
+                
+                if taint_flows:
+                    content_parts.append('<h3>🛤️ 污点传播路径</h3>')
+                    for i, flow in enumerate(taint_flows[:5], 1):
+                        if isinstance(flow, dict):
+                            sink = flow.get('sink', 'unknown')
+                            sink_type = flow.get('sink_type', 'unknown')
+                            tainted_args = flow.get('tainted_args', [])
+                            
+                            content_parts.append(f'<div class="vulnerability" style="border-left-color: #8b5cf6;">')
+                            content_parts.append(f'<div class="vuln-header">')
+                            content_parts.append(f'<span class="vuln-type">路径 {i}: {sink}</span>')
+                            content_parts.append(f'<span class="risk-badge risk-medium">{sink_type}</span>')
+                            content_parts.append(f'</div>')
+                            
+                            if tainted_args:
+                                content_parts.append('<p><strong>被污染参数:</strong></p>')
+                                content_parts.append('<ul>')
+                                for arg in tainted_args:
+                                    pos = arg.get('position', '?')
+                                    value = arg.get('value', '?')
+                                    source = arg.get('source', 'unknown')
+                                    content_parts.append(f'<li>参数 {pos}: <code>{value}</code> (来源: {source})</li>')
+                                content_parts.append('</ul>')
+                            
+                            content_parts.append(f'</div>')
+                    
+                    if len(taint_flows) > 5:
+                        content_parts.append(f'<p>... 还有 {len(taint_flows) - 5} 条路径</p>')
+                
+                if vulnerabilities:
+                    content_parts.append('<h3>⚠️ 动态检测到的漏洞</h3>')
+                    for i, vuln in enumerate(vulnerabilities, 1):
+                        if isinstance(vuln, dict):
+                            vuln_type = vuln.get('type', 'Unknown')
+                            severity = vuln.get('severity', 'Unknown')
+                            func_name = vuln.get('function_name', 'Unknown')
+                            description = vuln.get('description', 'N/A')
+                            badge_class = self._get_risk_badge_class(severity)
+                            
+                            content_parts.append(f'<div class="vulnerability">')
+                            content_parts.append(f'<div class="vuln-header">')
+                            content_parts.append(f'<span class="vuln-type">漏洞 {i}: {vuln_type}</span>')
+                            content_parts.append(f'<span class="risk-badge {badge_class}">{severity}</span>')
+                            content_parts.append(f'</div>')
+                            content_parts.append(f'<p><strong>函数:</strong> {func_name}</p>')
+                            content_parts.append(f'<p><strong>描述:</strong> {description}</p>')
+                            
+                            tainted_vars = vuln.get('tainted_variables', [])
+                            if tainted_vars:
+                                content_parts.append(f'<p><strong>污染变量:</strong> {", ".join(str(v) for v in tainted_vars)}</p>')
+                            
+                            content_parts.append(f'</div>')
+            
             content_parts.append('</div>')
         
         if crash_analysis:

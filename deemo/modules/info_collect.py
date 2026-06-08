@@ -16,6 +16,84 @@ DANGEROUS_FUNCTIONS = [
     'memcpy', 'memmove', 'memset'
 ]
 
+KERNEL_DANGEROUS_FUNCTIONS = [
+    'copy_from_user', 'copy_to_user',
+    'kmalloc', 'kzalloc', 'kfree', 'vmalloc', 'vfree',
+    'ioremap', 'ioremap_nocache', 'request_mem_region', 'release_mem_region',
+    'ioremap', 'iounmap',
+    'request_region', 'release_region',
+    'kstrtol', 'kstrtoul', 'kstrtoint',
+    'get_user', 'put_user',
+    '__get_user', '__put_user',
+    'access_ok',
+    'strncpy_from_user', 'strnlen_user',
+    'copy_in_user',
+    'smp_mb', 'smp_rmb', 'smp_wmb',
+    'spin_lock', 'spin_unlock',
+    'mutex_lock', 'mutex_unlock',
+    'down', 'up',
+    'printk',
+    'alloc_netdev', 'free_netdev',
+    'skb_copy', 'skb_clone',
+    'submit_bio', 'generic_make_request',
+    'blk_rq_map_kern',
+    'dma_alloc_coherent', 'dma_free_coherent',
+    'vmemmap',
+    'kallsyms_lookup_name',
+    'module_layout',
+    'init_module', 'cleanup_module',
+    'sprintf', 'vsprintf',
+    'sscanf', 'vsscanf'
+]
+
+KERNEL_DRIVER_DANGEROUS_FUNCTIONS = [
+    'MmCopyVirtualMemory',
+    'ZwMapViewOfSection', 'ZwUnmapViewOfSection',
+    'MmMapIoSpace', 'MmUnmapIoSpace',
+    'MmAllocateContiguousMemory', 'MmFreeContiguousMemory',
+    'ExAllocatePool', 'ExAllocatePoolWithTag',
+    'ExFreePool', 'ExFreePoolWithTag',
+    'IoCreateDevice', 'IoDeleteDevice',
+    'IoCreateSymbolicLink', 'IoDeleteSymbolicLink',
+    'IoGetCurrentIrpStackLocation',
+    'IofCallDriver', 'IoCompleteRequest',
+    'KeBugCheck', 'KeBugCheckEx',
+    'KeInitializeSpinLock', 'KeAcquireSpinLock', 'KeReleaseSpinLock',
+    'KfRaiseIrql', 'KfLowerIrql',
+    'ObReferenceObjectByHandle', 'ObDereferenceObject',
+    'SeAccessCheck',
+    'PsGetCurrentProcess', 'PsGetCurrentThread',
+    'PsLookupProcessByProcessId',
+    'RtlCopyMemory', 'RtlMoveMemory', 'RtlFillMemory',
+    'RtlCompareMemory',
+    'RtlUnicodeStringToAnsiString',
+    'RtlInitUnicodeString',
+    'NtOpenProcess', 'NtOpenThread',
+    'NtReadVirtualMemory', 'NtWriteVirtualMemory',
+    'NtAllocateVirtualMemory', 'NtFreeVirtualMemory',
+    'NtCreateThreadEx',
+    'NtQueryInformationProcess',
+    'ZwQueryInformationProcess',
+    'ZwSetInformationThread',
+    'ZwTerminateProcess',
+    'IoGetDeviceObjectPointer',
+    'IoGetCurrentProcess',
+    'IoIs32bitProcess',
+    'MmGetSystemRoutineAddress',
+    'MmGetPhysicalAddress',
+    'MmGetVirtualForPhysical',
+    'HalGetInterruptVector',
+    'KeInitializeDpc',
+    'KeInsertQueueDpc',
+    'IoAllocateIrp', 'IoFreeIrp',
+    'IoBuildAsynchronousFsdRequest',
+    'IoBuildSynchronousFsdRequest',
+    'PoSetPowerState',
+    'PoCallDriver',
+    'WdfDeviceCreate', 'WdfDriverCreate',
+    'WdfObjectReference', 'WdfObjectDereference'
+]
+
 
 def validate_binary_path(binary_path: str) -> str:
     """
@@ -83,7 +161,7 @@ def detect_binary_format(binary_path: str) -> str:
         binary_path: 文件路径
         
     Returns:
-        'ELF', 'PE', 'MACH-O', 或 'UNKNOWN'
+        'ELF', 'PE', 'MACH-O', 'KO' (Linux内核模块), 'SYS' (Windows驱动), 或 'UNKNOWN'
     """
     try:
         with open(binary_path, 'rb') as f:
@@ -93,8 +171,14 @@ def detect_binary_format(binary_path: str) -> str:
             return 'UNKNOWN'
             
         if header[:4] == b'\x7fELF':
+            base_name = os.path.basename(binary_path).lower()
+            if base_name.endswith('.ko') or _is_linux_kernel_module(binary_path):
+                return 'KO'
             return 'ELF'
         elif header[:2] == b'MZ':
+            base_name = os.path.basename(binary_path).lower()
+            if base_name.endswith('.sys') or _is_windows_driver(binary_path):
+                return 'SYS'
             return 'PE'
         elif header[:4] in [b'\xca\xfe\xba\xbe', b'\xfe\xed\xfa\xce', 
                             b'\xcf\xfa\xed\xfe', b'\xce\xfa\xed\xfe']:
@@ -104,6 +188,100 @@ def detect_binary_format(binary_path: str) -> str:
     except Exception as e:
         logger.error(f"检测文件格式失败: {e}")
         return 'UNKNOWN'
+
+
+def _is_linux_kernel_module(binary_path: str) -> bool:
+    """
+    检查 ELF 文件是否为 Linux 内核模块
+    
+    判断依据:
+    1. 文件名以 .ko 结尾
+    2. 包含内核模块特有的符号 (init_module, cleanup_module, module_layout)
+    3. 包含 .modinfo 段
+    """
+    try:
+        try:
+            from pwn import ELF
+            elf = ELF(binary_path, checksec=False)
+            
+            kernel_symbols = ['init_module', 'cleanup_module', 'module_layout', 
+                            '__this_module', 'pcpu_hot']
+            for sym in kernel_symbols:
+                if sym in elf.symbols:
+                    logger.info(f"检测到内核模块符号: {sym}")
+                    elf.close()
+                    return True
+            
+            elf.close()
+        except Exception:
+            pass
+        
+        try:
+            import subprocess
+            from config import Config
+            
+            result = subprocess.run(
+                ['readelf', '-S', binary_path],
+                capture_output=True,
+                text=True,
+                timeout=Config.SUBPROCESS_TIMEOUT
+            )
+            if result.returncode == 0 and '.modinfo' in result.stdout:
+                logger.info("检测到 .modinfo 段，确认为内核模块")
+                return True
+        except Exception:
+            pass
+        
+        return False
+    except Exception as e:
+        logger.debug(f"内核模块检测失败: {e}")
+        return False
+
+
+def _is_windows_driver(binary_path: str) -> bool:
+    """
+    检查 PE 文件是否为 Windows 驱动
+    
+    判断依据:
+    1. 文件名以 .sys 结尾
+    2. PE 头中的子系统为 NATIVE (IMAGE_SUBSYSTEM_NATIVE = 1)
+    3. 包含驱动特有的导出函数 (DriverEntry, Unload, AddDevice)
+    """
+    try:
+        try:
+            import pefile
+            pe = pefile.PE(binary_path)
+            
+            if hasattr(pe, 'OPTIONAL_HEADER'):
+                subsystem = pe.OPTIONAL_HEADER.Subsystem
+                if subsystem == 1:
+                    logger.info("检测到 SUBSYSTEM=NATIVE，确认为 Windows 驱动")
+                    pe.close()
+                    return True
+            
+            if hasattr(pe, 'DIRECTORY_ENTRY_EXPORT'):
+                driver_exports = ['DriverEntry', 'DriverUnload', 'AddDevice', 
+                                'EvtDriverDeviceAdd', 'EvtDriverUnload']
+                for exp in pe.DIRECTORY_ENTRY_EXPORT.symbols:
+                    if exp.name:
+                        try:
+                            name = exp.name.decode('utf-8', errors='ignore')
+                            for driver_sym in driver_exports:
+                                if driver_sym.lower() in name.lower():
+                                    logger.info(f"检测到驱动导出函数: {name}")
+                                    pe.close()
+                                    return True
+                        except Exception:
+                            pass
+            
+            pe.close()
+        except Exception:
+            pass
+        
+        return False
+    except Exception as e:
+        logger.debug(f"Windows 驱动检测失败: {e}")
+        return False
 
 
 def validate_file(binary_path: str) -> Tuple[bool, str]:
@@ -747,12 +925,13 @@ def get_functions_generic(binary_path: str) -> List[Dict[str, Any]]:
     return functions
 
 
-def get_binary_info(binary_path: str) -> Dict[str, Any]:
+def get_binary_info(binary_path: str, force_kernel: bool = False) -> Dict[str, Any]:
     """
     获取完整的二进制文件信息，自动检测格式
     
     Args:
         binary_path: 二进制文件路径
+        force_kernel: 是否强制使用内核模块分析模式
         
     Returns:
         包含二进制信息的字典
@@ -773,9 +952,21 @@ def get_binary_info(binary_path: str) -> Dict[str, Any]:
     binary_format = detect_binary_format(validated_path)
     logger.info(f"检测到文件格式: {binary_format}")
     
+    if force_kernel:
+        logger.info("[Kernel] 强制使用内核模块分析模式")
+        if binary_format == 'SYS':
+            return get_windows_driver_info(validated_path)
+        elif binary_format in ['ELF', 'KO', 'UNKNOWN']:
+            return get_kernel_module_info(validated_path)
+    
     if binary_format == 'UNKNOWN':
         logger.error(f"不支持的文件格式")
         return {}
+    
+    if binary_format == 'KO':
+        return get_kernel_module_info(validated_path)
+    elif binary_format == 'SYS':
+        return get_windows_driver_info(validated_path)
     
     binary_obj = None
     try:
@@ -856,6 +1047,622 @@ def get_binary_info(binary_path: str) -> Dict[str, Any]:
                 binary_obj.close()
         except Exception:
             pass
+
+
+def get_kernel_module_info(binary_path: str) -> Dict[str, Any]:
+    """
+    收集 Linux 内核模块 (.ko) 的详细信息
+    
+    Args:
+        binary_path: 内核模块文件路径
+        
+    Returns:
+        包含内核模块信息的字典
+    """
+    try:
+        logger.info(f"正在收集 Linux 内核模块信息: {binary_path}")
+        
+        base_info = {
+            'binary_path': binary_path,
+            'format': 'KO',
+            'is_kernel_module': True,
+            'module_name': os.path.basename(binary_path).replace('.ko', ''),
+            'kernel_info': {}
+        }
+        
+        modinfo = _extract_modinfo(binary_path)
+        if modinfo:
+            base_info['kernel_info']['modinfo'] = modinfo
+            base_info['module_name'] = modinfo.get('name', base_info['module_name'])
+        
+        try:
+            from pwn import ELF
+            elf = ELF(binary_path, checksec=False)
+            
+            base_info['arch'] = getattr(elf, 'arch', 'unknown')
+            base_info['bits'] = getattr(elf, 'bits', 64)
+            base_info['endian'] = getattr(elf, 'endian', 'unknown')
+            base_info['symbols'] = get_symbols(elf)
+            base_info['functions'] = get_functions(elf)
+            
+            entry_points = _find_kernel_entry_points(elf)
+            base_info['kernel_info']['entry_points'] = entry_points
+            
+            module_params = _extract_module_parameters(binary_path, elf)
+            base_info['kernel_info']['parameters'] = module_params
+            
+            exported_symbols = _find_exported_symbols(elf)
+            base_info['kernel_info']['exported_symbols'] = exported_symbols
+            
+            ioctl_handlers = _find_ioctl_handlers(elf)
+            base_info['kernel_info']['ioctl_handlers'] = ioctl_handlers
+            
+            dangerous_found = _find_kernel_dangerous_functions(elf)
+            base_info['kernel_info']['dangerous_functions'] = dangerous_found
+            
+            base_info['imports'] = {
+                'all_imports': {},
+                'dangerous_functions': dangerous_found
+            }
+            
+            elf.close()
+        except Exception as e:
+            logger.warning(f"使用 ELF 解析内核模块失败: {e}")
+            base_info['arch'] = 'unknown'
+            base_info['bits'] = 64
+            base_info['endian'] = 'unknown'
+            base_info['symbols'] = {}
+            base_info['functions'] = []
+            base_info['imports'] = {'all_imports': {}, 'dangerous_functions': []}
+        
+        base_info['key_strings'] = get_key_strings_generic(binary_path)
+        base_info['checksec'] = {'format': 'KO', 'note': '内核模块不适用常规用户态保护机制'}
+        
+        logger.info(f"Linux 内核模块信息收集完成: {base_info['module_name']}")
+        return base_info
+        
+    except Exception as e:
+        logger.error(f"收集内核模块信息失败: {e}")
+        return {'error': str(e), 'format': 'KO'}
+
+
+def get_windows_driver_info(binary_path: str) -> Dict[str, Any]:
+    """
+    收集 Windows 驱动程序 (.sys) 的详细信息
+    
+    Args:
+        binary_path: 驱动文件路径
+        
+    Returns:
+        包含驱动信息的字典
+    """
+    try:
+        logger.info(f"正在收集 Windows 驱动信息: {binary_path}")
+        
+        base_info = {
+            'binary_path': binary_path,
+            'format': 'SYS',
+            'is_windows_driver': True,
+            'driver_name': os.path.basename(binary_path).replace('.sys', ''),
+            'driver_info': {}
+        }
+        
+        try:
+            import pefile
+            pe = pefile.PE(binary_path)
+            
+            base_info['arch'] = _detect_pe_arch(pe)
+            base_info['bits'] = _detect_pe_bits(pe)
+            base_info['endian'] = 'little'
+            base_info['checksec'] = get_checksec_pe(pe, binary_path)
+            base_info['symbols'] = get_symbols_pe(pe)
+            base_info['functions'] = get_functions_pe(pe, binary_path)
+            
+            driver_entry = _find_driver_entry_points(pe)
+            base_info['driver_info']['entry_points'] = driver_entry
+            
+            irp_handlers = _find_irp_handlers(pe)
+            base_info['driver_info']['irp_handlers'] = irp_handlers
+            
+            ioctl_codes = _extract_ioctl_codes(binary_path)
+            base_info['driver_info']['ioctl_codes'] = ioctl_codes
+            
+            device_operations = _extract_device_operations(pe)
+            base_info['driver_info']['device_operations'] = device_operations
+            
+            dangerous_found = _find_driver_dangerous_functions(pe)
+            base_info['driver_info']['dangerous_functions'] = dangerous_found
+            
+            imports_info = get_imported_functions_pe(pe)
+            imports_info['dangerous_functions'].extend(dangerous_found)
+            imports_info['dangerous_functions'] = list(set(imports_info['dangerous_functions']))
+            base_info['imports'] = imports_info
+            
+            driver_type = _detect_driver_type(pe)
+            base_info['driver_info']['driver_type'] = driver_type
+            
+            pe.close()
+        except Exception as e:
+            logger.warning(f"使用 pefile 解析驱动失败: {e}")
+            base_info['arch'] = 'unknown'
+            base_info['bits'] = 64
+            base_info['endian'] = 'little'
+            base_info['checksec'] = {'format': 'SYS'}
+            base_info['symbols'] = {}
+            base_info['functions'] = []
+            base_info['imports'] = {'all_imports': {}, 'dangerous_functions': []}
+        
+        base_info['key_strings'] = get_key_strings_generic(binary_path)
+        
+        logger.info(f"Windows 驱动信息收集完成: {base_info['driver_name']}")
+        return base_info
+        
+    except Exception as e:
+        logger.error(f"收集 Windows 驱动信息失败: {e}")
+        return {'error': str(e), 'format': 'SYS'}
+
+
+def _extract_modinfo(binary_path: str) -> Dict[str, str]:
+    """
+    提取内核模块的 .modinfo 段信息
+    
+    Returns:
+        包含 modinfo 键值对的字典
+    """
+    modinfo = {}
+    
+    try:
+        try:
+            import subprocess
+            from config import Config
+            
+            result = subprocess.run(
+                ['modinfo', binary_path],
+                capture_output=True,
+                text=True,
+                timeout=Config.SUBPROCESS_TIMEOUT
+            )
+            
+            if result.returncode == 0:
+                for line in result.stdout.strip().split('\n'):
+                    if ':' in line:
+                        key, value = line.split(':', 1)
+                        modinfo[key.strip().lower()] = value.strip()
+                
+                logger.info(f"从 modinfo 获取到 {len(modinfo)} 个属性")
+                return modinfo
+        except Exception:
+            pass
+        
+        try:
+            from pwn import ELF
+            elf = ELF(binary_path, checksec=False)
+            
+            modinfo_data = None
+            for section in elf.iter_sections():
+                if section.name == '.modinfo':
+                    modinfo_data = section.data()
+                    break
+            
+            if modinfo_data:
+                import re
+                modinfo_str = modinfo_data.decode('utf-8', errors='ignore')
+                
+                patterns = [
+                    r'name=([^\x00]+)',
+                    r'description=([^\x00]+)',
+                    r'author=([^\x00]+)',
+                    r'version=([^\x00]+)',
+                    r'license=([^\x00]+)',
+                    r'parm=([^\x00]+)',
+                    r'depends=([^\x00]+)',
+                ]
+                
+                for pattern in patterns:
+                    matches = re.findall(pattern, modinfo_str)
+                    if matches:
+                        key = pattern.split('=')[0].strip('r()')
+                        modinfo[key] = matches[0]
+                
+                elf.close()
+        except Exception:
+            pass
+        
+        return modinfo
+    except Exception as e:
+        logger.debug(f"提取 modinfo 失败: {e}")
+        return modinfo
+
+
+def _find_kernel_entry_points(elf: object) -> Dict[str, Any]:
+    """
+    查找内核模块的入口点 (module_init, module_exit)
+    """
+    entry_points = {
+        'init_module': None,
+        'cleanup_module': None,
+        'module_init': None,
+        'module_exit': None
+    }
+    
+    try:
+        symbols = getattr(elf, 'symbols', {})
+        
+        for sym_name, addr in symbols.items():
+            if sym_name == 'init_module':
+                entry_points['init_module'] = addr
+            elif sym_name == 'cleanup_module':
+                entry_points['cleanup_module'] = addr
+            elif 'module_init' in sym_name.lower():
+                entry_points['module_init'] = addr
+            elif 'module_exit' in sym_name.lower():
+                entry_points['module_exit'] = addr
+        
+        functions = getattr(elf, 'functions', {})
+        for func_name in functions:
+            if func_name == 'init_module':
+                entry_points['init_module'] = getattr(functions[func_name], 'address', 0)
+            elif func_name == 'cleanup_module':
+                entry_points['cleanup_module'] = getattr(functions[func_name], 'address', 0)
+        
+        logger.info(f"找到内核入口点: {entry_points}")
+        return entry_points
+    except Exception as e:
+        logger.debug(f"查找内核入口点失败: {e}")
+        return entry_points
+
+
+def _extract_module_parameters(binary_path: str, elf: object) -> List[Dict[str, Any]]:
+    """
+    提取内核模块参数
+    """
+    params = []
+    
+    try:
+        import subprocess
+        from config import Config
+        
+        result = subprocess.run(
+            ['modinfo', '-p', binary_path],
+            capture_output=True,
+            text=True,
+            timeout=Config.SUBPROCESS_TIMEOUT
+        )
+        
+        if result.returncode == 0:
+            for line in result.stdout.strip().split('\n'):
+                if line.strip():
+                    parts = line.split(':', 1)
+                    if len(parts) == 2:
+                        params.append({
+                            'name': parts[0].strip(),
+                            'type': parts[1].strip()
+                        })
+        else:
+            symbols = getattr(elf, 'symbols', {})
+            for sym_name in symbols:
+                if '__param_' in sym_name:
+                    param_name = sym_name.replace('__param_', '')
+                    params.append({
+                        'name': param_name,
+                        'address': symbols[sym_name],
+                        'type': 'unknown'
+                    })
+        
+        logger.info(f"找到 {len(params)} 个模块参数")
+        return params
+    except Exception as e:
+        logger.debug(f"提取模块参数失败: {e}")
+        return params
+
+
+def _find_exported_symbols(elf: object) -> List[str]:
+    """
+    查找内核模块导出的符号
+    """
+    exported = []
+    
+    try:
+        symbols = getattr(elf, 'symbols', {})
+        for sym_name in symbols:
+            if sym_name.startswith('__ksymtab_') or '__ksymtab' in sym_name:
+                exported_name = sym_name.replace('__ksymtab_', '')
+                if exported_name and exported_name not in exported:
+                    exported.append(exported_name)
+        
+        functions = getattr(elf, 'functions', {})
+        for func_name in functions:
+            if '_exported' in func_name.lower():
+                exported.append(func_name)
+        
+        logger.info(f"找到 {len(exported)} 个导出符号")
+        return exported
+    except Exception as e:
+        logger.debug(f"查找导出符号失败: {e}")
+        return exported
+
+
+def _find_ioctl_handlers(elf: object) -> List[Dict[str, Any]]:
+    """
+    查找可能的 ioctl 处理函数
+    """
+    handlers = []
+    
+    try:
+        ioctl_patterns = ['ioctl', 'unlocked_ioctl', 'compat_ioctl']
+        symbols = getattr(elf, 'symbols', {})
+        functions = getattr(elf, 'functions', {})
+        
+        all_funcs = list(functions.keys()) if functions else list(symbols.keys())
+        
+        for func_name in all_funcs:
+            for pattern in ioctl_patterns:
+                if pattern in func_name.lower():
+                    addr = None
+                    if func_name in symbols:
+                        addr = symbols[func_name]
+                    elif func_name in functions:
+                        addr = getattr(functions[func_name], 'address', 0)
+                    
+                    handlers.append({
+                        'name': func_name,
+                        'address': addr,
+                        'type': pattern
+                    })
+                    break
+        
+        logger.info(f"找到 {len(handlers)} 个 ioctl 处理函数")
+        return handlers
+    except Exception as e:
+        logger.debug(f"查找 ioctl 处理函数失败: {e}")
+        return handlers
+
+
+def _find_kernel_dangerous_functions(elf: object) -> List[str]:
+    """
+    在内核模块中查找危险函数
+    """
+    found = []
+    
+    try:
+        all_symbols = set()
+        
+        symbols = getattr(elf, 'symbols', {})
+        all_symbols.update(symbols.keys())
+        
+        plt = getattr(elf, 'plt', {})
+        all_symbols.update(plt.keys())
+        
+        for func in KERNEL_DANGEROUS_FUNCTIONS:
+            for sym in all_symbols:
+                if func in sym:
+                    found.append(func)
+                    break
+        
+        return list(set(found))
+    except Exception as e:
+        logger.debug(f"查找内核危险函数失败: {e}")
+        return found
+
+
+def _find_driver_entry_points(pe: object) -> Dict[str, Any]:
+    """
+    查找 Windows 驱动的入口点
+    """
+    entry_points = {
+        'DriverEntry': None,
+        'DriverUnload': None,
+        'AddDevice': None,
+        'EvtDriverDeviceAdd': None
+    }
+    
+    try:
+        if hasattr(pe, 'DIRECTORY_ENTRY_EXPORT'):
+            for exp in pe.DIRECTORY_ENTRY_EXPORT.symbols:
+                if exp.name:
+                    try:
+                        name = exp.name.decode('utf-8', errors='ignore')
+                        addr = exp.address
+                        
+                        if 'DriverEntry' in name:
+                            entry_points['DriverEntry'] = addr
+                        elif 'DriverUnload' in name:
+                            entry_points['DriverUnload'] = addr
+                        elif 'AddDevice' in name:
+                            entry_points['AddDevice'] = addr
+                        elif 'EvtDriverDeviceAdd' in name:
+                            entry_points['EvtDriverDeviceAdd'] = addr
+                    except Exception:
+                        pass
+        
+        logger.info(f"找到驱动入口点: {entry_points}")
+        return entry_points
+    except Exception as e:
+        logger.debug(f"查找驱动入口点失败: {e}")
+        return entry_points
+
+
+def _find_irp_handlers(pe: object) -> List[Dict[str, Any]]:
+    """
+    查找 IRP 处理函数
+    """
+    handlers = []
+    
+    try:
+        irp_patterns = ['IRP_MJ', 'Dispatch', 'Irp', 'IoCompletion']
+        
+        if hasattr(pe, 'DIRECTORY_ENTRY_EXPORT'):
+            for exp in pe.DIRECTORY_ENTRY_EXPORT.symbols:
+                if exp.name:
+                    try:
+                        name = exp.name.decode('utf-8', errors='ignore')
+                        for pattern in irp_patterns:
+                            if pattern in name:
+                                handlers.append({
+                                    'name': name,
+                                    'address': exp.address,
+                                    'type': 'IRP Handler'
+                                })
+                                break
+                    except Exception:
+                        pass
+        
+        logger.info(f"找到 {len(handlers)} 个 IRP 处理函数")
+        return handlers
+    except Exception as e:
+        logger.debug(f"查找 IRP 处理函数失败: {e}")
+        return handlers
+
+
+def _extract_ioctl_codes(binary_path: str) -> List[Dict[str, Any]]:
+    """
+    从驱动中提取可能的 IOCTL 控制码
+    """
+    ioctl_codes = []
+    
+    try:
+        with open(binary_path, 'rb') as f:
+            content = f.read()
+        
+        import re
+        
+        ioctl_patterns = [
+            rb'CTL_CODE\s*\(\s*0x[0-9a-fA-F]+\s*,\s*0x[0-9a-fA-F]+',
+            rb'IOCTL_\w+',
+            rb'0x[0-9a-fA-F]{8}',
+        ]
+        
+        for pattern in ioctl_patterns:
+            matches = re.finditer(pattern, content)
+            for match in matches:
+                try:
+                    code_str = match.group().decode('utf-8', errors='ignore')
+                    ioctl_codes.append({
+                        'code': code_str,
+                        'offset': match.start(),
+                        'type': 'potential_ioctl'
+                    })
+                except Exception:
+                    pass
+        
+        ioctl_codes = ioctl_codes[:50]
+        logger.info(f"找到 {len(ioctl_codes)} 个潜在 IOCTL 码")
+        return ioctl_codes
+    except Exception as e:
+        logger.debug(f"提取 IOCTL 码失败: {e}")
+        return ioctl_codes
+
+
+def _extract_device_operations(pe: object) -> Dict[str, Any]:
+    """
+    提取设备操作相关信息
+    """
+    operations = {
+        'create_close': [],
+        'read_write': [],
+        'ioctl': [],
+        'power': [],
+        'pn': []
+    }
+    
+    try:
+        if hasattr(pe, 'DIRECTORY_ENTRY_EXPORT'):
+            for exp in pe.DIRECTORY_ENTRY_EXPORT.symbols:
+                if exp.name:
+                    try:
+                        name = exp.name.decode('utf-8', errors='ignore')
+                        
+                        if any(k in name for k in ['Create', 'Close', 'Open']):
+                            operations['create_close'].append(name)
+                        elif any(k in name for k in ['Read', 'Write']):
+                            operations['read_write'].append(name)
+                        elif 'ioctl' in name.lower():
+                            operations['ioctl'].append(name)
+                        elif any(k in name for k in ['Power', 'D0', 'D3']):
+                            operations['power'].append(name)
+                        elif any(k in name for k in ['PnP', 'AddDevice', 'StartDevice']):
+                            operations['pn'].append(name)
+                    except Exception:
+                        pass
+        
+        return operations
+    except Exception as e:
+        logger.debug(f"提取设备操作失败: {e}")
+        return operations
+
+
+def _find_driver_dangerous_functions(pe: object) -> List[str]:
+    """
+    在 Windows 驱动中查找危险函数
+    """
+    found = []
+    
+    try:
+        all_names = set()
+        
+        if hasattr(pe, 'DIRECTORY_ENTRY_IMPORT'):
+            for entry in pe.DIRECTORY_ENTRY_IMPORT:
+                for imp in entry.imports:
+                    if imp.name:
+                        try:
+                            name = imp.name.decode('utf-8', errors='ignore')
+                            all_names.add(name)
+                        except Exception:
+                            pass
+        
+        if hasattr(pe, 'DIRECTORY_ENTRY_EXPORT'):
+            for exp in pe.DIRECTORY_ENTRY_EXPORT.symbols:
+                if exp.name:
+                    try:
+                        name = exp.name.decode('utf-8', errors='ignore')
+                        all_names.add(name)
+                    except Exception:
+                        pass
+        
+        for func in KERNEL_DRIVER_DANGEROUS_FUNCTIONS:
+            for name in all_names:
+                if func.lower() in name.lower():
+                    found.append(func)
+                    break
+        
+        return list(set(found))
+    except Exception as e:
+        logger.debug(f"查找驱动危险函数失败: {e}")
+        return found
+
+
+def _detect_driver_type(pe: object) -> str:
+    """
+    检测 Windows 驱动类型
+    """
+    try:
+        if hasattr(pe, 'DIRECTORY_ENTRY_IMPORT'):
+            for entry in pe.DIRECTORY_ENTRY_IMPORT:
+                dll_name = getattr(entry, 'dll', b'').decode('utf-8', errors='ignore').lower()
+                
+                if 'wdf' in dll_name or 'wudf' in dll_name:
+                    return 'KMDF/WDF'
+                elif 'ntoskrnl' in dll_name:
+                    return 'Native WDM'
+                elif 'hal' in dll_name:
+                    return 'HAL Extension'
+        
+        if hasattr(pe, 'DIRECTORY_ENTRY_EXPORT'):
+            for exp in pe.DIRECTORY_ENTRY_EXPORT.symbols:
+                if exp.name:
+                    try:
+                        name = exp.name.decode('utf-8', errors='ignore').lower()
+                        if 'evt' in name:
+                            return 'WDF'
+                        elif 'driverentry' in name:
+                            return 'WDM'
+                    except Exception:
+                        pass
+        
+        return 'Unknown'
+    except Exception as e:
+        logger.debug(f"检测驱动类型失败: {e}")
+        return 'Unknown'
 
 
 def _detect_pe_arch(pe_obj: object) -> str:

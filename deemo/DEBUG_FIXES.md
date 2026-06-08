@@ -2459,10 +2459,46 @@ python main.py ./your_binary.elf --db-type postgres
 
 # 启动 Web API 服务器
 python main.py --api-server
+
+# 内核模块分析 (v1.4.0)
+python main.py ./driver.ko --kernel
+
+# 启用静态数据流分析
+python main.py ./your_binary.elf --enable-static
+```
+
+### 5. 分布式任务队列 (v1.4.0)
+```powershell
+# 启动 Celery Worker
+celery -A modules.worker worker --loglevel=info
+
+# 启动 Redis (Windows 使用 Docker)
+docker run -p 6379:6379 redis:alpine
+```
+
+### 6. 模糊测试 (v1.4.0)
+```powershell
+# AFL++ 模糊测试
+afl-fuzz -i in_dir -o out_dir -- ./target_binary @@
+
+# LibFuzzer
+clang -fsanitize=fuzzer,address harness.c -o fuzzer
+./fuzzer
+```
+
+### 7. 动态污点追踪 (v1.4.0)
+```powershell
+# Frida 注入到运行中进程
+python -c "from modules.dynamic_taint import DynamicTaintTracker; tracker = DynamicTaintTracker('/path/to/binary', backend='frida')"
+
+# 确保 Frida 服务端运行在目标设备
+frida-server -D &
 ```
 
 ---
 
-*文档更新时间: 2026-06-03*
-*项目版本: v1.3.1*
-*修复记录总数: 50 项*
+*文档更新时间: 2026-06-08*
+*项目版本: v1.4.0*
+*修复记录总数: 58 项*
+*新增模块: 4 个 (dynamic_taint.py, worker.py, fuzz_integration.py, 内核分析)*
+*新增测试: 4 个模块, 64 个测试用例*

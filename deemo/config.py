@@ -97,8 +97,29 @@ def mask_sensitive_data(text: str) -> str:
         r'(password\s*[=:]\s*["\']?)([^"\'\s]{4,})',
     ]
     
+    redis_patterns = [
+        r'(redis://[^:]+:)([^@]+)(@)',
+        r'(redis://[^:]+:)([^@\s]+)',
+        r'(redis:\/\/[^:]+:)([^@\s]+)',
+        r'([\'" ]REDIS_PASSWORD[\'" ]?[:=]\s*["\']?)([^"\'\s]+)',
+        r'(broker_url\s*=\s*["\']?redis://[^:]+:)([^@]+)(@)',
+    ]
+    
     for pattern in token_patterns:
         masked = re.sub(pattern, replace_partial, masked, flags=re.IGNORECASE)
+    
+    def replace_redis_password(match):
+        groups = match.groups()
+        if len(groups) == 3:
+            prefix, password, suffix = groups
+            return prefix + '***MASKED***' + suffix
+        elif len(groups) == 2:
+            prefix, password = groups
+            return prefix + '***MASKED***'
+        return match.group(0)
+    
+    for pattern in redis_patterns:
+        masked = re.sub(pattern, replace_redis_password, masked, flags=re.IGNORECASE)
     
     env_patterns = [
         r'([A-Z0-9_]+_API_KEY)\s*[=:]\s*["\']?([^"\'\s]{8,})["\']?',
@@ -205,6 +226,24 @@ class Config:
     FUZZER_MAX_RUNTIME = int(os.environ.get('FUZZER_MAX_RUNTIME', '3600'))
     FUZZER_MAX_CPU = int(os.environ.get('FUZZER_MAX_CPU', '1'))
     FUZZER_MEMORY_LIMIT = int(os.environ.get('FUZZER_MEMORY_LIMIT', '2048'))
+    
+    VULDB_API_KEY = os.environ.get('VULDB_API_KEY', '')
+    GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN', '')
+    
+    EXTERNAL_API_RETRY_MAX = int(os.environ.get('EXTERNAL_API_RETRY_MAX', '3'))
+    EXTERNAL_API_RETRY_DELAY = int(os.environ.get('EXTERNAL_API_RETRY_DELAY', '2'))
+    EXTERNAL_API_BACKOFF_FACTOR = int(os.environ.get('EXTERNAL_API_BACKOFF_FACTOR', '2'))
+    
+    DISTRIBUTED_ENABLED = os.environ.get('DISTRIBUTED_ENABLED', 'false').lower() == 'true'
+    REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
+    REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD', '')
+    CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', '')
+    CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', '')
+    CELERY_TASK_QUEUE = os.environ.get('CELERY_TASK_QUEUE', 'deemo_analysis')
+    CELERY_MAX_RETRIES = int(os.environ.get('CELERY_MAX_RETRIES', '3'))
+    CELERY_RETRY_BACKOFF = int(os.environ.get('CELERY_RETRY_BACKOFF', '60'))
+    WORKER_HEARTBEAT_INTERVAL = int(os.environ.get('WORKER_HEARTBEAT_INTERVAL', '30'))
+    WORKER_TIMEOUT = int(os.environ.get('WORKER_TIMEOUT', '120'))
 
 
 def check_openai_api_key() -> bool:
@@ -596,3 +635,113 @@ def test_api_connection(client) -> bool:
     except Exception as e:
         logger.error(f"AI API 连接测试失败: {e}")
         return False
+
+
+def get_celery_broker_url() -> str:
+    """
+    获取 Celery Broker URL，支持密码脱敏
+    
+    Returns:
+        完整的 Celery Broker URL
+    """
+    if Config.CELERY_BROKER_URL:
+        return Config.CELERY_BROKER_URL
+    
+    redis_url = Config.REDIS_URL
+    if Config.REDIS_PASSWORD:
+        try:
+            from urllib.parse import urlparse, urlunparse
+            parsed = urlparse(redis_url)
+            new_netloc = f"{parsed.username or 'default'}:{Config.REDIS_PASSWORD}@{parsed.hostname}"
+            if parsed.port:
+                new_netloc += f":{parsed.port}"
+            redis_url = urlunparse((
+                parsed.scheme, new_netloc, parsed.path,
+                parsed.params, parsed.query, parsed.fragment
+            ))
+        except Exception as e:
+            logger.warning(f"构建带密码的 Redis URL 失败: {e}")
+    
+    return redis_url
+
+
+def get_celery_result_backend() -> str:
+    """
+    获取 Celery Result Backend URL
+    
+    Returns:
+        完整的 Result Backend URL
+    """
+    if Config.CELERY_RESULT_BACKEND:
+        return Config.CELERY_RESULT_BACKEND
+    return get_celery_broker_url()
+
+
+def mask_redis_url(url: Optional[str]) -> str:
+    """
+    脱敏 Redis URL，隐藏密码部分
+    
+    Args:
+        url: 原始 Redis URL
+        
+    Returns:
+        脱敏后的 URL
+    """
+    if not url:
+        return ''
+    
+    try:
+        from urllib.parse import urlparse, urlunparse
+        parsed = urlparse(url)
+        
+        if parsed.username and parsed.password:
+            new_netloc = f"{parsed.username}:***MASKED***@{parsed.hostname}"
+            if parsed.port:
+                new_netloc += f":{parsed.port}"
+            return urlunparse((
+                parsed.scheme, new_netloc, parsed.path,
+                parsed.params, parsed.query, parsed.fragment
+            ))
+        elif parsed.password:
+            new_netloc = f"default:***MASKED***@{parsed.hostname}"
+            if parsed.port:
+                new_netloc += f":{parsed.port}"
+            return urlunparse((
+                parsed.scheme, new_netloc, parsed.path,
+                parsed.params, parsed.query, parsed.fragment
+            ))
+    except Exception:
+        pass
+    
+    return url
+
+
+def get_task_cache_key(binary_path: str, options: Dict[str, Any] = None) -> str:
+    """
+    生成任务缓存键，用于避免重复分析相同的二进制
+    
+    Args:
+        binary_path: 二进制文件路径
+        options: 额外的分析选项
+        
+    Returns:
+        缓存键哈希值
+    """
+    import hashlib
+    
+    cache_components = [
+        'deemo_task_v1',
+        binary_path or '',
+    ]
+    
+    if options:
+        sorted_options = sorted(options.items(), key=lambda x: x[0])
+        for key, value in sorted_options:
+            if isinstance(value, (str, int, float, bool)):
+                cache_components.append(f"{key}={value}")
+            elif isinstance(value, list):
+                cache_components.append(f"{key}={','.join(str(v) for v in sorted(value))}")
+    
+    cache_str = '|'.join(cache_components)
+    hash_value = hashlib.sha256(cache_str.encode('utf-8')).hexdigest()
+    return f"deemo:cache:task:{hash_value}"

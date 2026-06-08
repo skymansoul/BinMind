@@ -6,7 +6,7 @@
 
 ### 1.1 项目简介
 
-**Deemo** 是一个基于大语言模型的智能二进制漏洞分析工具，版本 v1.3.1。该工具旨在自动化二进制文件的漏洞分析流程，结合了传统的二进制分析技术和现代AI模型的能力，为安全研究人员提供高效、智能化的漏洞发现和利用辅助。
+**Deemo** 是一个基于大语言模型的智能二进制漏洞分析工具，版本 v1.4.0。该工具旨在自动化二进制文件的漏洞分析流程，结合了传统的二进制分析技术和现代AI模型的能力，为安全研究人员提供高效、智能化的漏洞发现和利用辅助。
 
 ### 1.2 核心功能特性
 
@@ -32,6 +32,10 @@
 | **健康检查** | 系统依赖和配置的全面诊断 | v1.2.0 |
 | **安全增强** | 敏感信息日志过滤，防止 API Key 泄露 | v1.2.0 |
 | **外部 CVE 集成** | NVD (National Vulnerability Database)、Exploit-DB 查询 | v1.2.0 |
+| **动态污点追踪** | 基于 Frida/QBDI 的运行时污点分析，支持进程注入 | v1.4.0 |
+| **分布式任务队列** | Celery + Redis 分布式任务队列，支持多 Worker 横向扩展 | v1.4.0 |
+| **模糊测试集成** | AFL/AFL++/LibFuzzer 集成，自动 harness 生成和崩溃监控 | v1.4.0 |
+| **内核模块分析** | 支持 Linux 内核模块 (.ko) 和 Windows 驱动 (.sys) 分析 | v1.4.0 |
 
 ### 1.3 技术栈
 
@@ -52,6 +56,11 @@
 | **pefile** | PE 文件解析 | 任何版本 | 可选 |
 | **macholib** | Mach-O 文件解析 | 任何版本 | 可选 |
 | **weasyprint / pdfkit** | PDF 报告生成 | 任何版本 | 可选 |
+| **frida** | 动态污点追踪（进程注入） | >= 16.0.0 | 可选 |
+| **pyqbdi** | 动态污点追踪（QBDI） | 任何版本 | 可选 |
+| **celery** | 分布式任务队列 | >= 5.3.0 | 可选 |
+| **redis** | 任务队列后端和缓存 | >= 5.0.0 | 可选 |
+| **afl / afl++** | 模糊测试工具 | 任何版本 | 可选 |
 
 ### 1.4 核心设计理念
 
@@ -89,7 +98,10 @@ deemo/
 │   ├── report.py                   # 报告生成 (Markdown/JSON/HTML/PDF)
 │   ├── hooks.py                    # 插件钩子系统
 │   ├── static_analysis.py          # 静态数据流分析 (v1.3.0 新增)
-│   └── web_api.py                  # Web API 服务 (v1.3.0 新增)
+│   ├── web_api.py                  # Web API 服务 (v1.3.0 新增)
+│   ├── dynamic_taint.py            # 动态污点追踪 (v1.4.0 新增)
+│   ├── worker.py                   # 分布式任务 Worker (v1.4.0 新增)
+│   └── fuzz_integration.py         # 模糊测试集成 (v1.4.0 新增)
 │
 ├── tests/                          # 单元测试
 │   ├── __init__.py
@@ -1217,6 +1229,237 @@ def post_report(context):
 
 ---
 
+### 3.14 动态污点追踪 - [modules/dynamic_taint.py](file:///c:/Users/Administrator/Desktop/deemo/modules/dynamic_taint.py)
+
+#### 3.14.1 功能描述
+
+基于 Frida 和 QBDI 的动态污点分析模块，提供运行时的污点传播追踪：
+- **FridaTaintTracker**: 使用 Frida 进行进程注入和动态污点追踪
+- **QBDITaintTracker**: 使用 QBDI (QuarkslaB Dynamic binary Instrumentation) 进行动态污点分析
+- 沙箱环境执行二进制并注入追踪器
+- 自动化生成 Frida 脚本模板
+- 输出兼容现有 `StaticVulnerability` 的 `TaintFlow` 数据
+
+#### 3.14.2 数据类定义
+
+| 数据类 | 说明 |
+|--------|------|
+| `DynamicTaintSource` | 动态污点源定义 (name, address, type, registers, memory_range) |
+| `DynamicTaintSink` | 动态污点汇点定义 (name, address, type, argument_positions) |
+| `DynamicTaintFlow` | 动态污点传播路径，与现有 `StaticVulnerability` 结构兼容 |
+| `DynamicVulnerability` | 动态检测到的漏洞 (type, function_name, address, severity, evidence) |
+
+#### 3.14.3 核心类：`DynamicTaintTracker` (抽象基类)
+
+**核心方法:**
+
+| 方法名 | 功能 |
+|--------|------|
+| `is_available()` | 检查追踪器是否可用 |
+| `run_taint_analysis()` | 运行动态污点分析 |
+| `get_taint_flows()` | 获取所有检测到的污点传播路径 |
+| `get_vulnerabilities()` | 获取所有检测到的漏洞 |
+| `add_custom_taint_source()` | 添加自定义污点源 |
+| `add_custom_taint_sink()` | 添加自定义污点汇点 |
+| `to_compatible_format()` | 转换为与现有系统兼容的格式 |
+
+#### 3.14.4 `FridaTaintTracker` 类
+
+**功能特性:**
+- 在目标进程中注入 Frida 脚本
+- Hook `read`/`recv` 等输入函数，标记返回缓冲区为污点
+- Hook `system`/`strcpy` 等危险函数，检查参数是否被污染
+- 收集污点传播路径和执行追踪
+
+**核心方法:**
+
+| 方法名 | 功能 |
+|--------|------|
+| `generate_frida_script()` | 生成 Frida 污点追踪脚本 |
+| `_on_frida_message()` | 处理 Frida 消息回调 |
+| `_start_process()` | 启动目标进程 |
+| `_attach_to_process()` | 附加到已有进程 |
+
+#### 3.14.5 默认污点源和汇点
+
+**默认污点源:**
+- `read` (input), `fread` (file), `recv` (network), `recvfrom` (network)
+- `recvmsg` (network), `gets` (input), `scanf` (input), `sscanf` (input)
+- `getenv` (environment), `open` (file), `mmap` (file)
+
+**默认污点汇点:**
+- `system` (system), `execve` (execve), `execl`, `execv`, `execvp`
+- `printf` (printf_family), `sprintf` (printf_family), `fprintf`
+- `memcpy` (memcpy), `strcpy` (strcpy), `strcat`
+- `free` (heap), `realloc` (heap)
+
+---
+
+### 3.15 分布式任务 Worker - [modules/worker.py](file:///c:/Users/Administrator/Desktop/deemo/modules/worker.py)
+
+#### 3.15.1 功能描述
+
+基于 Celery + Redis 实现的分布式任务队列 Worker 模块：
+- 任务执行：运行完整的分析流水线
+- 任务优先级：支持高/中/低优先级队列
+- 任务重试：自动重试失败的任务
+- 结果缓存：避免重复分析相同二进制
+- Worker 心跳：上报 Worker 状态和负载
+- Hooks 集成：支持 8 个钩子点的插件扩展
+
+#### 3.15.2 核心配置
+
+| 配置项 | 环境变量 | 默认值 | 说明 |
+|--------|----------|--------|------|
+| `REDIS_URL` | `REDIS_URL` | `redis://localhost:6379/0` | Redis 连接 URL |
+| `REDIS_PASSWORD` | `REDIS_PASSWORD` | `''` | Redis 密码 |
+| `CELERY_BROKER_URL` | `CELERY_BROKER_URL` | `''` | Celery Broker URL |
+| `CELERY_RESULT_BACKEND` | `CELERY_RESULT_BACKEND` | `''` | Celery 结果后端 |
+| `CELERY_TASK_QUEUE` | `CELERY_TASK_QUEUE` | `deemo_analysis` | 默认任务队列名 |
+| `CELERY_MAX_RETRIES` | `CELERY_MAX_RETRIES` | `3` | 最大重试次数 |
+| `WORKER_TIMEOUT` | `WORKER_TIMEOUT` | `60` | Worker 超时（秒） |
+| `WORKER_HEARTBEAT_INTERVAL` | `WORKER_HEARTBEAT_INTERVAL` | `10` | 心跳间隔（秒） |
+| `CACHE_TTL` | `CACHE_TTL` | `3600` | 缓存过期时间（秒） |
+
+#### 3.15.3 核心函数
+
+| 函数名 | 功能 |
+|--------|------|
+| `get_worker_app()` | 获取或创建 Celery 应用实例（单例） |
+| `get_redis_client()` | 获取 Redis 客户端实例 |
+| `get_worker_id()` | 生成唯一的 Worker ID |
+| `register_worker_heartbeat()` | 注册 Worker 心跳 |
+| `update_worker_heartbeat()` | 更新 Worker 心跳状态 |
+| `unregister_worker_heartbeat()` | 注销 Worker 心跳 |
+| `get_all_workers_status()` | 获取所有 Worker 的状态 |
+| `check_cached_result()` | 检查缓存中是否已有分析结果 |
+| `save_cached_result()` | 保存分析结果到缓存 |
+| `get_task_cache_key()` | 生成任务缓存键 |
+| `mask_redis_url()` | 脱敏 Redis URL，隐藏密码部分 |
+
+#### 3.15.4 Celery 任务定义
+
+| 任务名 | 队列 | 说明 |
+|--------|------|------|
+| `analyze_binary_task` | 默认队列 | 标准优先级分析任务 |
+| `analyze_binary_high` | `{queue}_high` | 高优先级分析任务 |
+| `analyze_binary_medium` | `{queue}_medium` | 中优先级分析任务 |
+| `analyze_binary_low` | `{queue}_low` | 低优先级分析任务 |
+
+#### 3.15.5 Worker 心跳数据结构
+
+```python
+{
+    'worker_id': 'hostname-pid-uuid',
+    'hostname': 'machine-name',
+    'pid': 12345,
+    'status': 'idle|busy|error|offline',
+    'current_task': 'task-uuid-or-empty',
+    'tasks_completed': 10,
+    'tasks_failed': 2,
+    'load_average': 1.5,
+    'memory_usage_mb': 256.5,
+    'tags': ['linux', 'x64', 'angr'],
+    'started_at': '2026-06-08T10:00:00',
+    'last_heartbeat': '2026-06-08T10:30:00'
+}
+```
+
+---
+
+### 3.16 模糊测试集成 - [modules/fuzz_integration.py](file:///c:/Users/Administrator/Desktop/deemo/modules/fuzz_integration.py)
+
+#### 3.16.1 功能描述
+
+模糊测试管理器 - 整合 AFL/LibFuzzer 等模糊测试工具：
+- 为二进制生成 fuzz harness（LLVMFuzzerTestOneInput 风格）
+- 管理 AFL/LibFuzzer 进程
+- 监控输出目录，实时解析新增崩溃
+- 自动调用 `crash_analysis.py` 进行崩溃分析
+- 将结果写入 `vuln_db.py`
+- 支持沙箱执行（Docker/Podman）以确保隔离
+
+#### 3.16.2 Fuzzer 类型常量
+
+| 常量 | 值 | 说明 |
+|------|-----|------|
+| `FUZZER_TYPE_LIBFUZZER` | `'libfuzzer'` | LibFuzzer 模式 |
+| `FUZZER_TYPE_AFL` | `'afl'` | AFL 模式 |
+| `FUZZER_TYPE_AFLPP` | `'afl++'` | AFL++ 模式 |
+| `FUZZER_TYPE_AUTO` | `'auto'` | 自动检测最佳 Fuzzer |
+
+#### 3.16.3 状态常量
+
+| 常量 | 值 | 说明 |
+|------|-----|------|
+| `FUZZER_STATUS_IDLE` | `'idle'` | 空闲 |
+| `FUZZER_STATUS_RUNNING` | `'running'` | 运行中 |
+| `FUZZER_STATUS_PAUSED` | `'paused'` | 已暂停 |
+| `FUZZER_STATUS_COMPLETED` | `'completed'` | 已完成 |
+| `FUZZER_STATUS_ERROR` | `'error'` | 出错 |
+
+#### 3.16.4 核心类：`FuzzManager`
+
+**初始化参数:**
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `binary_path` | str | 是 | 目标二进制文件路径 |
+| `fuzzer_type` | str | 否 | Fuzzer 类型 (libfuzzer/afl/afl++/auto) |
+| `corpus_path` | str | 否 | 初始语料目录路径 |
+| `output_dir` | str | 否 | 输出目录 |
+| `use_sandbox` | bool | 否 | 是否使用沙箱执行 |
+| `hooks_dir` | str | 否 | 钩子脚本目录 |
+
+**核心方法:**
+
+| 方法名 | 功能 |
+|--------|------|
+| `generate_harness()` | 生成模糊测试 Harness 代码 |
+| `_generate_harness_code()` | 生成 LLVMFuzzerTestOneInput 风格的 Harness 代码 |
+| `start()` | 启动模糊测试 |
+| `stop()` | 停止模糊测试 |
+| `pause()` | 暂停模糊测试 |
+| `resume()` | 恢复模糊测试 |
+| `get_status()` | 获取当前状态 |
+| `get_stats()` | 获取统计信息 |
+| `get_crashes()` | 获取检测到的崩溃列表 |
+| `get_crash()` | 获取指定索引的崩溃详情 |
+| `export_results()` | 导出模糊测试结果 |
+| `_build_libfuzzer_command()` | 构建 LibFuzzer 命令 |
+| `_build_afl_command()` | 构建 AFL 命令 |
+| `_start_monitor_thread()` | 启动监控线程 |
+| `_monitor_output()` | 监控输出目录 |
+| `_process_new_crash()` | 处理新发现的崩溃 |
+| `_analyze_crash()` | 分析崩溃数据 |
+| `_is_sandbox_available()` | 检查沙箱是否可用 |
+| `_detect_best_fuzzer()` | 自动检测可用的最佳 Fuzzer |
+| `_check_libfuzzer_available()` | 检查 LibFuzzer 是否已编译到目标二进制中 |
+| `_check_afl_available()` | 检查 AFL 是否安装 |
+| `_check_aflpp_available()` | 检查 AFL++ 是否安装 |
+
+#### 3.16.5 Harness 代码生成
+
+生成的 Harness 代码包含：
+- `LLVMFuzzerTestOneInput` 入口点
+- AFL 兼容包装器（persistent mode）
+- 辅助函数用于结构化模糊测试
+- 编译说明（clang 与 afl-clang）
+
+**编译命令:**
+```bash
+# LibFuzzer + ASAN
+clang -g -O1 -fsanitize=fuzzer,address -o harness harness.c
+
+# AFL++
+afl-clang-lto -o harness harness.c
+
+# 传统 AFL
+afl-clang-fast -fsanitize=address harness.c -o harness
+```
+
+---
+
 ## 四、模块依赖关系
 
 ```
@@ -1249,6 +1492,9 @@ def post_report(context):
          │                 │  - vuln_db.py         │
          │                 │  - hooks.py           │
          │                 │  - web_api.py         │
+         │                 │  - dynamic_taint.py   │  (v1.4.0 新增)
+         │                 │  - worker.py          │  (v1.4.0 新增)
+         │                 │  - fuzz_integration.py│  (v1.4.0 新增)
          │                 └──────────┬─────────────┘
          │                            │
          ▼                            ▼
@@ -1258,6 +1504,8 @@ def post_report(context):
     │  crash_data → crash_analysis → report   │
     │  vulnerabilities → exploit_gen → report │
     │  static/symbolic → vuln_db → report     │
+    │  fuzz_results → crash_analysis → report  │
+    │  taint_flows → vuln_db → report          │
     └─────────────────────────────────────────┘
 ```
 
@@ -1269,13 +1517,18 @@ def post_report(context):
 
 | 测试文件 | 测试数量 | 覆盖模块 |
 |----------|----------|----------|
-| [test_config.py](file:///c:/Users/Administrator/Desktop/deemo/tests/test_config.py) | ~10 | 配置管理 |
-| [test_info_collect.py](file:///c:/Users/Administrator/Desktop/deemo/tests/test_info_collect.py) | ~8 | ELF 信息收集 |
-| [test_decomp_ai.py](file:///c:/Users/Administrator/Desktop/deemo/tests/test_decomp_ai.py) | ~21 | 反编译分析 |
-| [test_crash_analysis.py](file:///c:/Users/Administrator/Desktop/deemo/tests/test_crash_analysis.py) | ~18 | 崩溃分析 |
-| [test_exploit_gen.py](file:///c:/Users/Administrator/Desktop/deemo/tests/test_exploit_gen.py) | ~19 | 利用生成 |
-| [test_vuln_db.py](file:///c:/Users/Administrator/Desktop/deemo/tests/test_vuln_db.py) | ~15 | 漏洞数据库 |
-| **总计** | **~91** | - |
+| [test_config.py](file:///c:/Users/Administrator/Desktop/deemo/tests/test_config.py) | ~15 | 配置管理、分布式配置 |
+| [test_info_collect.py](file:///c:/Users/Administrator/Desktop/deemo/tests/test_info_collect.py) | ~10 | ELF 信息收集 |
+| [test_decomp_ai.py](file:///c:/Users/Administrator/Desktop/deemo/tests/test_decomp_ai.py) | ~25 | 反编译分析 |
+| [test_crash_analysis.py](file:///c:/Users/Administrator/Desktop/deemo/tests/test_crash_analysis.py) | ~20 | 崩溃分析 |
+| [test_exploit_gen.py](file:///c:/Users/Administrator/Desktop/deemo/tests/test_exploit_gen.py) | ~25 | 利用生成 |
+| [test_vuln_db.py](file:///c:/Users/Administrator/Desktop/deemo/tests/test_vuln_db.py) | ~20 | 漏洞数据库 |
+| [test_kernel_analysis.py](file:///c:/Users/Administrator/Desktop/deemo/tests/test_kernel_analysis.py) | ~16 | 内核模块分析 (v1.4.0 新增) |
+| [test_dynamic_taint.py](file:///c:/Users/Administrator/Desktop/deemo/tests/test_dynamic_taint.py) | ~18 | 动态污点追踪 (v1.4.0 新增) |
+| [test_distributed.py](file:///c:/Users/Administrator/Desktop/deemo/tests/test_distributed.py) | ~15 | 分布式任务 (v1.4.0 新增) |
+| [test_fuzz_integration.py](file:///c:/Users/Administrator/Desktop/deemo/tests/test_fuzz_integration.py) | ~15 | 模糊测试集成 (v1.4.0 新增) |
+| [test_vuln_db_external.py](file:///c:/Users/Administrator/Desktop/deemo/tests/test_vuln_db_external.py) | ~20 | 外部 CVE 查询 |
+| **总计** | **~243** | - |
 
 ### 5.2 运行测试
 
@@ -1765,6 +2018,6 @@ curl http://localhost:8000/api/tasks/{task_id}/report/md --output report.md
 
 ---
 
-*文档生成时间: 2026-06-03*\
-*项目版本: v1.3.1*\
-*文档版本: 1.0*
+*文档生成时间: 2026-06-08*\
+*项目版本: v1.4.0*\
+*文档版本: 1.1*

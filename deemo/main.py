@@ -740,7 +740,8 @@ def run_pipeline(
     fuzzer_type: str = None,
     expert_mode: bool = False,
     export_corpus_dir: str = None,
-    no_rop: bool = False
+    no_rop: bool = False,
+    force_kernel: bool = False
 ) -> Dict[str, Any]:
     """
     运行完整的分析流水线
@@ -765,6 +766,7 @@ def run_pipeline(
         fuzzer_type: Fuzzer 类型 (libfuzzer, afl, afl++)
         expert_mode: 专家模式，生成高级利用链
         export_corpus_dir: 语料导出目录
+        force_kernel: 强制使用内核模块分析模式
     """
     logger = logging.getLogger(__name__)
     
@@ -801,7 +803,7 @@ def run_pipeline(
         'binary_format': binary_format
     })
     
-    binary_info = get_binary_info(validated_path)
+    binary_info = get_binary_info(validated_path, force_kernel=force_kernel)
     
     if not binary_info:
         logger.error("无法收集二进制文件信息")
@@ -1330,6 +1332,12 @@ def parse_arguments():
         '--no-rop',
         action='store_true',
         help='跳过 ROP gadget 分析（适用于 PE、Mach-O 等非 ELF 格式文件）'
+    )
+    
+    parser.add_argument(
+        '--kernel',
+        action='store_true',
+        help='手动指定内核模块分析模式（Linux内核模块.ko或Windows驱动.sys）'
     )
     
     parser.add_argument(
@@ -1959,7 +1967,8 @@ def main():
         fuzzer_type=args.fuzzer if args.fuzzer != 'none' else None,
         expert_mode=args.expert,
         export_corpus_dir=args.export_corpus,
-        no_rop=args.no_rop
+        no_rop=args.no_rop,
+        force_kernel=args.kernel
     )
     
     if 'error' in result:
