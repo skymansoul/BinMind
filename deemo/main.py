@@ -740,8 +740,7 @@ def run_pipeline(
     fuzzer_type: str = None,
     expert_mode: bool = False,
     export_corpus_dir: str = None,
-    no_rop: bool = False,
-    force_kernel: bool = False
+    no_rop: bool = False
 ) -> Dict[str, Any]:
     """
     运行完整的分析流水线
@@ -766,7 +765,6 @@ def run_pipeline(
         fuzzer_type: Fuzzer 类型 (libfuzzer, afl, afl++)
         expert_mode: 专家模式，生成高级利用链
         export_corpus_dir: 语料导出目录
-        force_kernel: 强制使用内核模块分析模式
     """
     logger = logging.getLogger(__name__)
     
@@ -803,7 +801,7 @@ def run_pipeline(
         'binary_format': binary_format
     })
     
-    binary_info = get_binary_info(validated_path, force_kernel=force_kernel)
+    binary_info = get_binary_info(validated_path)
     
     if not binary_info:
         logger.error("无法收集二进制文件信息")
@@ -1114,23 +1112,31 @@ def parse_arguments():
 支持的文件格式: ELF (Linux), PE (Windows), Mach-O (macOS)
 支持的 AI 提供商: OpenAI, Azure OpenAI, Ollama, llama.cpp, Custom API
 
-环境变量配置示例:
+AI 服务配置:
+  请直接编辑 config.py 中的 Config 类，不再通过环境变量配置。
+  
   OpenAI:
-    export OPENAI_API_KEY=sk-xxxx
-    export OPENAI_MODEL=gpt-4
+    AI_PROVIDER = AI_PROVIDER_OPENAI
+    OPENAI_API_KEY = 'sk-xxxx'
+    OPENAI_MODEL = 'gpt-4'
   
   Azure OpenAI:
-    export AI_PROVIDER=azure
-    export AZURE_OPENAI_API_KEY=xxx
-    export AZURE_OPENAI_ENDPOINT=https://xxx.openai.azure.com/
-    export AZURE_OPENAI_DEPLOYMENT=xxx
+    AI_PROVIDER = AI_PROVIDER_AZURE
+    AZURE_API_KEY = 'xxx'
+    AZURE_ENDPOINT = 'https://xxx.openai.azure.com/'
+    AZURE_DEPLOYMENT = 'xxx'
   
   Ollama:
-    export AI_PROVIDER=ollama
-    export OLLAMA_HOST=http://localhost:11434
-    export OLLAMA_MODEL=llama2
+    AI_PROVIDER = AI_PROVIDER_OLLAMA
+    OLLAMA_HOST = 'http://localhost:11434'
+    OLLAMA_MODEL = 'llama2'
         
   '''
+    )
+    parser.add_argument(
+        '-help',
+        action='help',
+        help='显示帮助信息并退出'
     )
     
     parser.add_argument(
@@ -1332,12 +1338,6 @@ def parse_arguments():
         '--no-rop',
         action='store_true',
         help='跳过 ROP gadget 分析（适用于 PE、Mach-O 等非 ELF 格式文件）'
-    )
-    
-    parser.add_argument(
-        '--kernel',
-        action='store_true',
-        help='手动指定内核模块分析模式（Linux内核模块.ko或Windows驱动.sys）'
     )
     
     parser.add_argument(
@@ -1649,7 +1649,7 @@ def run_health_check(binary_path: str = None):
         logger.info("\n💡 建议:")
         logger.info("  - 运行 `pip install -r requirements.txt` 安装缺失的 Python 依赖")
         logger.info("  - 安装 radare2: `sudo apt install radare2` 或从官网下载")
-        logger.info("  - 配置 AI API Key: `export OPENAI_API_KEY=your_key`")
+        logger.info("  - 配置 AI API Key: 编辑 config.py 中的 Config.OPENAI_API_KEY")
     
     return status
 
@@ -1967,8 +1967,7 @@ def main():
         fuzzer_type=args.fuzzer if args.fuzzer != 'none' else None,
         expert_mode=args.expert,
         export_corpus_dir=args.export_corpus,
-        no_rop=args.no_rop,
-        force_kernel=args.kernel
+        no_rop=args.no_rop
     )
     
     if 'error' in result:

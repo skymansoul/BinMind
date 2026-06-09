@@ -3,7 +3,6 @@ import os
 import json
 import logging
 import hashlib
-import re
 from typing import Dict, List, Optional, Any, Tuple
 from datetime import datetime
 
@@ -94,27 +93,13 @@ class VulnerabilityDatabase:
 
     CREATE TABLE IF NOT EXISTS external_cve_cache (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        cve_id TEXT,
-        vuln_id TEXT,
+        cve_id TEXT UNIQUE,
         binary_hash TEXT,
         binary_name TEXT,
-        source TEXT,
-        package_name TEXT,
-        severity TEXT,
-        cvss_score REAL,
-        title TEXT,
         cve_data TEXT,
-        cache_key TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        expires_at TIMESTAMP,
-        UNIQUE(cache_key, source)
+        source TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
-
-    CREATE INDEX IF NOT EXISTS idx_ext_cache_key ON external_cve_cache(cache_key, source);
-    CREATE INDEX IF NOT EXISTS idx_ext_cve_id ON external_cve_cache(cve_id);
-    CREATE INDEX IF NOT EXISTS idx_ext_vuln_id ON external_cve_cache(vuln_id);
-    CREATE INDEX IF NOT EXISTS idx_ext_source ON external_cve_cache(source);
-    CREATE INDEX IF NOT EXISTS idx_ext_binary ON external_cve_cache(binary_hash);
 
     CREATE INDEX IF NOT EXISTS idx_cve_id ON external_cve_cache(cve_id);
     CREATE INDEX IF NOT EXISTS idx_cve_binary ON external_cve_cache(binary_hash);
@@ -163,27 +148,16 @@ class VulnerabilityDatabase:
 
     CREATE TABLE IF NOT EXISTS external_cve_cache (
         id SERIAL PRIMARY KEY,
-        cve_id TEXT,
-        vuln_id TEXT,
+        cve_id TEXT UNIQUE,
         binary_hash TEXT,
         binary_name TEXT,
-        source TEXT,
-        package_name TEXT,
-        severity TEXT,
-        cvss_score REAL,
-        title TEXT,
         cve_data TEXT,
-        cache_key TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        expires_at TIMESTAMP,
-        UNIQUE(cache_key, source)
+        source TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
-    CREATE INDEX IF NOT EXISTS idx_ext_cache_key ON external_cve_cache(cache_key, source);
-    CREATE INDEX IF NOT EXISTS idx_ext_cve_id ON external_cve_cache(cve_id);
-    CREATE INDEX IF NOT EXISTS idx_ext_vuln_id ON external_cve_cache(vuln_id);
-    CREATE INDEX IF NOT EXISTS idx_ext_source ON external_cve_cache(source);
-    CREATE INDEX IF NOT EXISTS idx_ext_binary ON external_cve_cache(binary_hash);
+    CREATE INDEX IF NOT EXISTS idx_cve_id ON external_cve_cache(cve_id);
+    CREATE INDEX IF NOT EXISTS idx_cve_binary ON external_cve_cache(binary_hash);
     """
     
     def __init__(self, db_path: str = None):
@@ -280,174 +254,6 @@ class VulnerabilityDatabase:
             logger.info(f"使用 SQLite 数据库: {self.db_path}")
             self._ensure_db_directory()
             self._init_db()
-    
-    def _make_api_request(
-        self,
-        url: str,
-        method: str = 'GET',
-        headers: Dict[str, str] = None,
-        params: Dict[str, Any] = None,
-        data: Any = None,
-        timeout: int = 30,
-        max_retries: int = None,
-        rate_limit: bool = True
-    ) -> Optional[Any]:
-        """
-        带有速率限制和指数退避重试的 HTTP 请求辅助方法
-        
-        Args:
-            url: 请求 URL
-            method: HTTP 方法 (GET/POST)
-            headers: 请求头
-            params: URL 参数
-            data: POST 数据
-            timeout: 超时时间（秒）
-            max_retries: 最大重试次数
-            rate_limit: 是否启用速率限制
-            
-        Returns:
-            解析后的 JSON 数据，失败返回 None
-        """
-        import time
-        import urllib.request
-        import urllib.parse
-        import urllib.error
-        
-        if max_retries is None:
-            max_retries = Config.EXTERNAL_API_RETRY_MAX
-        
-        base_delay = Config.EXTERNAL_API_RETRY_DELAY
-        backoff_factor = Config.EXTERNAL_API_BACKOFF_FACTOR
-        
-        if headers is None:
-            headers = {}
-        
-        if 'User-Agent' not in headers:
-            headers['User-Agent'] = 'deemo-vuln-scanner/1.0'
-        
-        last_exception = None
-        
-        for attempt in range(max_retries):
-            try:
-                if rate_limit and hasattr(self, '_last_api_call_time'):
-                    elapsed = time.time() - self._last_api_call_time
-                    min_interval = Config.EXTERNAL_API_RATE_PERIOD / Config.EXTERNAL_API_RATE_LIMIT
-                    if elapsed < min_interval:
-                        time.sleep(min_interval - elapsed)
-                
-                self._last_api_call_time = time.time()
-                
-                if params:
-                    query_string = urllib.parse.urlencode(params)
-                    separator = '&' if '?' in url else '?'
-                    url = f"{url}{separator}{query_string}"
-                
-                request_kwargs = {
-                    'headers': headers,
-                    'timeout': timeout
-                }
-                
-                if method == 'POST' and data:
-                    request = urllib.request.Request(
-                        url,
-                        data=json.dumps(data).encode('utf-8') if isinstance(data, (dict, list)) else data,
-                        headers=headers
-                    )
-                else:
-                    request = urllib.request.Request(url, headers=headers)
-                
-                with urllib.request.urlopen(request, timeout=timeout) as response:
-                    content = response.read().decode('utf-8')
-                    try:
-                        return json.loads(content)
-                    except json.JSONDecodeError:
-                        return content
-                        
-            except urllib.error.HTTPError as e:
-                last_exception = e
-                if e.code == 429:
-                    retry_after = int(e.headers.get('Retry-After', '0'))
-                    wait_time = retry_after or (base_delay * (backoff_factor ** attempt))
-                    logger.warning(f"[VulnDB] 受到速率限制，等待 {wait_time} 秒后重试 ({attempt + 1}/{max_retries})")
-                    time.sleep(wait_time)
-                    continue
-                elif e.code == 404:
-                    logger.info(f"[VulnDB] 资源未找到: {url}")
-                    return None
-                elif e.code >= 400 and e.code < 500:
-                    logger.warning(f"[VulnDB] HTTP 客户端错误 {e.code}: {url}")
-                    return None
-                else:
-                    logger.warning(f"[VulnDB] HTTP 错误 {e.code}: {url}, 尝试 {attempt + 1}/{max_retries}")
-                    if attempt < max_retries - 1:
-                        time.sleep(base_delay * (backoff_factor ** attempt))
-                        continue
-                    
-            except urllib.error.URLError as e:
-                last_exception = e
-                logger.warning(f"[VulnDB] URL 错误: {e}, 尝试 {attempt + 1}/{max_retries}")
-                if attempt < max_retries - 1:
-                    time.sleep(base_delay * (backoff_factor ** attempt))
-                    continue
-                    
-            except Exception as e:
-                last_exception = e
-                logger.warning(f"[VulnDB] 请求异常: {e}, 尝试 {attempt + 1}/{max_retries}")
-                if attempt < max_retries - 1:
-                    time.sleep(base_delay * (backoff_factor ** attempt))
-                    continue
-        
-        logger.error(f"[VulnDB] API 请求多次失败: {url}, 最后错误: {last_exception}")
-        return None
-    
-    def _validate_external_query_params(
-        self,
-        cve_id: str = None,
-        package_name: str = None,
-        binary_name: str = None
-    ) -> Dict[str, Any]:
-        """
-        验证外部漏洞查询参数，防止注入攻击
-        
-        Args:
-            cve_id: CVE ID
-            package_name: 包名
-            binary_name: 二进制文件名
-            
-        Returns:
-            包含验证结果的字典
-        """
-        result = {
-            'valid': True,
-            'sanitized': {},
-            'errors': []
-        }
-        
-        if cve_id:
-            cve_pattern = r'^CVE-\d{4}-\d{4,}$'
-            if not re.match(cve_pattern, cve_id):
-                result['errors'].append(f"无效的 CVE ID 格式: {cve_id}")
-            else:
-                result['sanitized']['cve_id'] = cve_id
-        
-        if package_name:
-            sanitized = re.sub(r'[^a-zA-Z0-9_\-\.]', '', package_name)
-            if sanitized != package_name:
-                logger.warning(f"[VulnDB] 包名包含非法字符，已清理: {package_name} -> {sanitized}")
-            result['sanitized']['package_name'] = sanitized
-        
-        if binary_name:
-            sanitized = re.sub(r'[^a-zA-Z0-9_\-\.\/\\]', '', binary_name)
-            if '..' in sanitized or sanitized.startswith('/') or sanitized.startswith('\\'):
-                result['errors'].append(f"不安全的二进制文件路径: {binary_name}")
-            elif sanitized != binary_name:
-                logger.warning(f"[VulnDB] 二进制文件名包含非法字符，已清理")
-            result['sanitized']['binary_name'] = sanitized
-        
-        if result['errors']:
-            result['valid'] = False
-        
-        return result
     
     def _hash_pseudocode(self, pseudocode: str) -> str:
         """
@@ -1753,15 +1559,10 @@ class VulnerabilityDatabase:
         query_embedding: List[float] = None,
         limit: int = 10,
         min_score: int = 10,
-        min_similarity: float = 0.7,
-        include_external: bool = False,
-        external_source: str = 'all',
-        package_name: str = None,
-        cve_id: str = None,
-        binary_name: str = None
+        min_similarity: float = 0.7
     ) -> Dict[str, Any]:
         """
-        增强版相似漏洞搜索：结合哈希、危险函数评分、语义向量和外部数据源
+        增强版相似漏洞搜索：结合哈希、危险函数评分和语义向量
         
         Args:
             pseudocode: 伪代码
@@ -1772,11 +1573,6 @@ class VulnerabilityDatabase:
             limit: 返回结果数量
             min_score: 最小危险函数评分
             min_similarity: 最小语义相似度
-            include_external: 是否查询外部漏洞数据源
-            external_source: 外部数据源选择 ('all', 'nvd', 'exploit_db', 'osv', 'ghadvisory', 'vuldb')
-            package_name: 包名（用于外部查询）
-            cve_id: CVE ID（用于外部查询）
-            binary_name: 二进制文件名（用于外部查询）
             
         Returns:
             包含各类搜索结果的字典
@@ -1785,14 +1581,7 @@ class VulnerabilityDatabase:
             'exact_hash_matches': [],
             'fuzzy_dangerous_matches': [],
             'semantic_matches': [],
-            'local_combined': [],
-            'external_data': {},
-            'combined_results': [],
-            'stats': {
-                'local_matches': 0,
-                'external_matches': 0,
-                'total': 0
-            }
+            'combined_results': []
         }
         
         if pseudocode:
@@ -1816,104 +1605,43 @@ class VulnerabilityDatabase:
                 min_similarity=min_similarity
             )
         
-        local_combined = {}
+        combined = {}
         
         for item in results['exact_hash_matches']:
             vid = item.get('id')
             if vid:
-                local_combined[vid] = {**item, 'match_type': 'exact_hash', 'final_score': 100}
+                combined[vid] = {**item, 'match_type': 'exact_hash', 'final_score': 100}
         
         for item in results['fuzzy_dangerous_matches']:
             vid = item.get('id')
             if vid:
                 score = item.get('match_score', 0)
-                if vid in local_combined:
-                    local_combined[vid]['final_score'] += score * 0.5
-                    local_combined[vid]['match_type'] += '+dangerous'
+                if vid in combined:
+                    combined[vid]['final_score'] += score * 0.5
+                    combined[vid]['match_type'] += '+dangerous'
                 else:
-                    local_combined[vid] = {**item, 'match_type': 'dangerous', 'final_score': score}
+                    combined[vid] = {**item, 'match_type': 'dangerous', 'final_score': score}
         
         for item in results['semantic_matches']:
             vid = item.get('id')
             if vid:
                 sim = item.get('similarity', 0) * 100
-                if vid in local_combined:
-                    local_combined[vid]['final_score'] += sim * 0.7
-                    local_combined[vid]['match_type'] += '+semantic'
+                if vid in combined:
+                    combined[vid]['final_score'] += sim * 0.7
+                    combined[vid]['match_type'] += '+semantic'
                 else:
-                    local_combined[vid] = {**item, 'match_type': 'semantic', 'final_score': sim}
+                    combined[vid] = {**item, 'match_type': 'semantic', 'final_score': sim}
         
-        results['local_combined'] = sorted(
-            local_combined.values(),
+        results['combined_results'] = sorted(
+            combined.values(),
             key=lambda x: x.get('final_score', 0),
             reverse=True
-        )
-        
-        results['stats']['local_matches'] = len(results['local_combined'])
-        
-        if include_external:
-            logger.info(f"[VulnDB] 融合外部漏洞数据源: {external_source}")
-            
-            external_results = self.query_all_external(
-                package_name=package_name,
-                cve_id=cve_id,
-                binary_name=binary_name,
-                source=external_source,
-                use_cache=True,
-                deduplicate=True
-            )
-            
-            results['external_data'] = external_results
-            results['stats']['external_matches'] = external_results.get('stats', {}).get('unique', 0)
-            
-            all_combined = []
-            
-            for local_item in results['local_combined']:
-                all_combined.append({
-                    **local_item,
-                    '_source_type': 'local',
-                    'final_score': local_item.get('final_score', 0)
-                })
-            
-            for ext_item in external_results.get('combined', []):
-                severity = ext_item.get('severity', 'Unknown')
-                severity_scores = {
-                    'Critical': 95,
-                    'High': 80,
-                    'Medium': 60,
-                    'Low': 30,
-                    'Unknown': 10
-                }
-                base_score = severity_scores.get(severity, 10)
-                
-                cvss_score = ext_item.get('cvss_score', 0) or 0
-                try:
-                    cvss_score = float(cvss_score)
-                except (ValueError, TypeError):
-                    cvss_score = 0
-                
-                combined_score = base_score + cvss_score
-                
-                all_combined.append({
-                    **ext_item,
-                    '_source_type': 'external',
-                    'final_score': combined_score
-                })
-            
-            all_combined.sort(key=lambda x: x.get('final_score', 0), reverse=True)
-            results['combined_results'] = all_combined[:limit]
-            
-        else:
-            results['combined_results'] = results['local_combined'][:limit]
-        
-        results['stats']['total'] = len(results['combined_results'])
+        )[:limit]
         
         logger.info(
             f"增强搜索完成: 精确匹配={len(results['exact_hash_matches'])}, "
             f"模糊匹配={len(results['fuzzy_dangerous_matches'])}, "
             f"语义匹配={len(results['semantic_matches'])}, "
-            f"本地结果={results['stats']['local_matches']}, "
-            f"外部结果={results['stats']['external_matches']}, "
             f"综合结果={len(results['combined_results'])}"
         )
         
@@ -2097,500 +1825,6 @@ class VulnerabilityDatabase:
             'raw_data': vuln_data
         }
     
-    def query_vuldb(
-        self,
-        search_term: str = None,
-        vuldb_id: int = None,
-        cve_id: str = None,
-        use_cache: bool = True,
-        timeout: int = 30
-    ) -> List[Dict[str, Any]]:
-        """
-        查询 VulDB 漏洞数据库
-        
-        VulDB 是一个专业的漏洞数据库，需要 VULDB_API_KEY 环境变量。
-        
-        Args:
-            search_term: 搜索关键词（如漏洞名称、软件名）
-            vuldb_id: VulDB 漏洞 ID（精确查询）
-            cve_id: CVE ID
-            use_cache: 是否使用本地缓存
-            timeout: 请求超时时间（秒）
-            
-        Returns:
-            VulDB 漏洞记录列表
-        """
-        from config import mask_api_key
-        
-        api_key = Config.VULDB_API_KEY
-        
-        if not api_key:
-            logger.warning("[VulnDB] VULDB_API_KEY 未设置，无法查询 VulDB")
-            return []
-        
-        logger.info(f"[VulnDB] 查询 VulDB: search={search_term}, vuldb_id={vuldb_id}, cve={cve_id}")
-        logger.info(f"[VulnDB] 使用 API Key: {mask_api_key(api_key)}")
-        
-        results = []
-        
-        validation = self._validate_external_query_params(cve_id=cve_id)
-        if not validation['valid']:
-            logger.error(f"[VulnDB] 参数验证失败: {validation['errors']}")
-            return []
-        
-        sanitized = validation['sanitized']
-        cve_id = sanitized.get('cve_id')
-        
-        cache_key = None
-        if use_cache and self.connection:
-            cache_key_parts = ['vuldb']
-            if search_term:
-                cache_key_parts.append(f"search:{search_term}")
-            if vuldb_id:
-                cache_key_parts.append(f"id:{vuldb_id}")
-            if cve_id:
-                cache_key_parts.append(f"cve:{cve_id}")
-            
-            cache_key = hashlib.md5("|".join(cache_key_parts).encode()).hexdigest()
-            cached = self._get_external_cache('vuldb', cache_key)
-            if cached:
-                logger.info(f"[VulnDB] 缓存命中: {len(cached)} 条记录")
-                return cached
-        
-        try:
-            base_url = "https://vuldb.com/?api"
-            headers = {
-                'Content-Type': 'application/json',
-                'User-Agent': 'deemo-vuln-scanner/1.0'
-            }
-            
-            query_data = {
-                'apikey': api_key,
-                'detail': 1
-            }
-            
-            if vuldb_id:
-                query_data['id'] = vuldb_id
-            elif cve_id:
-                query_data['search'] = cve_id
-            elif search_term:
-                query_data['search'] = search_term
-            
-            logger.debug(f"[VulnDB] 查询参数: search_term={search_term}, vuldb_id={vuldb_id}")
-            
-            data = self._make_api_request(
-                url=base_url,
-                method='POST',
-                headers=headers,
-                data=query_data,
-                timeout=timeout
-            )
-            
-            if data:
-                if isinstance(data, dict):
-                    result = data.get('result', {})
-                    entries = result.get('entry', [])
-                    
-                    if isinstance(entries, dict):
-                        entries = [entries]
-                    
-                    for entry in entries:
-                        processed = self._process_vuldb_entry(entry)
-                        if processed:
-                            results.append(processed)
-                
-                logger.info(f"[VulnDB] 查询完成: {len(results)} 条记录")
-                
-                if use_cache and self.connection and cache_key and results:
-                    self._save_external_cache('vuldb', cache_key, results)
-            
-        except Exception as e:
-            logger.warning(f"[VulnDB] 查询失败: {e}")
-        
-        return results
-    
-    def _process_vuldb_entry(self, entry: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """
-        处理 VulDB 漏洞条目，标准化格式
-        
-        Args:
-            entry: VulDB 原始数据条目
-            
-        Returns:
-            标准化后的漏洞记录
-        """
-        if not entry:
-            return None
-        
-        source = entry.get('source', {})
-        
-        vuldb_id = source.get('id', '')
-        cve_id = ''
-        
-        cve = source.get('cve', {})
-        if isinstance(cve, dict):
-            cve_id = cve.get('id', '')
-        
-        risk = source.get('risk', {})
-        severity_str = risk.get('name', 'Unknown') if isinstance(risk, dict) else str(risk)
-        
-        severity_mapping = {
-            'critical': 'Critical',
-            'high': 'High',
-            'medium': 'Medium',
-            'low': 'Low',
-            'none': 'Low'
-        }
-        severity = severity_mapping.get(severity_str.lower(), 'Unknown')
-        
-        cvss_score = None
-        cvss = source.get('cvss', {})
-        if isinstance(cvss, dict):
-            cvss_score = cvss.get('score')
-            try:
-                cvss_score = float(cvss_score) if cvss_score else None
-            except (ValueError, TypeError):
-                cvss_score = None
-        
-        vuln_title = source.get('title', f'VulDB-{vuldb_id}')
-        description = source.get('advisory', '') if isinstance(source.get('advisory'), str) else ''
-        
-        affected = source.get('affected', {})
-        software = ''
-        if isinstance(affected, dict):
-            vendor = affected.get('vendor', {})
-            if isinstance(vendor, dict):
-                software_parts = [vendor.get('name', '')]
-                product = vendor.get('product', {})
-                if isinstance(product, dict):
-                    software_parts.append(product.get('name', ''))
-                    version = product.get('version', {})
-                    if isinstance(version, dict):
-                        software_parts.append(version.get('value', ''))
-                software = '/'.join(filter(None, software_parts))
-        
-        references = []
-        if isinstance(source, dict):
-            for key in ['url', 'reference']:
-                url = source.get(key)
-                if url and isinstance(url, str) and url.startswith('http'):
-                    references.append({'type': 'reference', 'url': url})
-        
-        return {
-            'vuln_id': str(vuldb_id) if vuldb_id else cve_id,
-            'source': 'VulDB',
-            'vuldb_id': vuldb_id,
-            'cve_ids': [cve_id] if cve_id else [],
-            'title': vuln_title,
-            'description': description[:2000] if description else '',
-            'severity': severity,
-            'cvss_score': cvss_score,
-            'published': source.get('advisory', {}).get('date', '') if isinstance(source.get('advisory'), dict) else '',
-            'updated': source.get('advisory', {}).get('revision', '') if isinstance(source.get('advisory'), dict) else '',
-            'software': software,
-            'references': references,
-            'raw_data': entry
-        }
-    
-    def query_github_advisory(
-        self,
-        package_name: str = None,
-        ecosystem: str = None,
-        ghsa_id: str = None,
-        cve_id: str = None,
-        use_cache: bool = True,
-        timeout: int = 30,
-        with_gh_token: bool = True
-    ) -> List[Dict[str, Any]]:
-        """
-        查询 GitHub Advisory Database（使用 GraphQL API，支持认证）
-        
-        相比 query_gh_advisory，此方法：
-        - 支持使用 GITHUB_TOKEN 提高请求速率限制
-        - 使用 GraphQL API 获取更详细的信息
-        - 自动重试和速率限制处理
-        
-        Args:
-            package_name: 包名
-            ecosystem: 生态系统（npm, pypi, maven, nuget, go, rust）
-            ghsa_id: GHSA 漏洞 ID（如 'GHSA-xxxx-xxxx-xxxx'）
-            cve_id: CVE ID
-            use_cache: 是否使用本地缓存
-            timeout: 请求超时时间（秒）
-            with_gh_token: 是否尝试使用 GITHUB_TOKEN 认证
-            
-        Returns:
-            GitHub Advisory 漏洞记录列表
-        """
-        from config import mask_api_key
-        
-        gh_token = Config.GITHUB_TOKEN if with_gh_token else ''
-        
-        validation = self._validate_external_query_params(cve_id=cve_id)
-        if not validation['valid']:
-            logger.error(f"[GitHub Advisory] 参数验证失败: {validation['errors']}")
-            return []
-        
-        sanitized = validation['sanitized']
-        cve_id = sanitized.get('cve_id')
-        
-        logger.info(f"[GitHub Advisory] 查询: package={package_name}, ghsa={ghsa_id}, cve={cve_id}")
-        if gh_token:
-            logger.info(f"[GitHub Advisory] 使用认证 Token: {mask_api_key(gh_token)}")
-        else:
-            logger.info("[GitHub Advisory] 未使用认证（请求速率限制较低）")
-        
-        results = []
-        
-        cache_key = None
-        if use_cache and self.connection:
-            cache_key_parts = ['gh_advisory']
-            if package_name:
-                cache_key_parts.append(f"pkg:{package_name}")
-            if ecosystem:
-                cache_key_parts.append(f"eco:{ecosystem}")
-            if ghsa_id:
-                cache_key_parts.append(f"ghsa:{ghsa_id}")
-            if cve_id:
-                cache_key_parts.append(f"cve:{cve_id}")
-            
-            cache_key = hashlib.md5("|".join(cache_key_parts).encode()).hexdigest()
-            cached = self._get_external_cache('gh_advisory', cache_key)
-            if cached:
-                logger.info(f"[GitHub Advisory] 缓存命中: {len(cached)} 条记录")
-                return cached
-        
-        try:
-            headers = {
-                'Accept': 'application/vnd.github+json',
-                'User-Agent': 'deemo-vuln-scanner/1.0',
-                'X-GitHub-Api-Version': '2022-11-28'
-            }
-            
-            if gh_token:
-                headers['Authorization'] = f"Bearer {gh_token}"
-            
-            base_url = "https://api.github.com/graphql"
-            
-            graphql_query = self._build_github_advisory_query(
-                ghsa_id=ghsa_id,
-                cve_id=cve_id,
-                package_name=package_name,
-                ecosystem=ecosystem
-            )
-            
-            data = self._make_api_request(
-                url=base_url,
-                method='POST',
-                headers=headers,
-                data={'query': graphql_query},
-                timeout=timeout
-            )
-            
-            if data:
-                errors = data.get('errors')
-                if errors:
-                    logger.warning(f"[GitHub Advisory] GraphQL 错误: {errors}")
-                else:
-                    advisories = self._extract_github_advisories_from_graphql(data)
-                    
-                    for advisory in advisories:
-                        processed = self._process_github_advisory_graphql(advisory)
-                        if processed:
-                            results.append(processed)
-                
-                logger.info(f"[GitHub Advisory] 查询完成: {len(results)} 条记录")
-                
-                if use_cache and self.connection and cache_key and results:
-                    self._save_external_cache('gh_advisory', cache_key, results)
-            
-        except Exception as e:
-            logger.warning(f"[GitHub Advisory] 查询失败: {e}")
-            logger.info("[GitHub Advisory] 回退到 REST API...")
-            results = self.query_gh_advisory(
-                package_name=package_name,
-                ecosystem=ecosystem,
-                ghsa_id=ghsa_id,
-                cve_id=cve_id,
-                use_cache=False,
-                timeout=timeout
-            )
-        
-        return results
-    
-    def _build_github_advisory_query(
-        self,
-        ghsa_id: str = None,
-        cve_id: str = None,
-        package_name: str = None,
-        ecosystem: str = None
-    ) -> str:
-        """
-        构建 GitHub Advisory GraphQL 查询
-        """
-        if ghsa_id:
-            return '''
-            query {
-                securityAdvisory(ghsaId: "%s") {
-                    ghsaId
-                    summary
-                    description
-                    severity
-                    cvss { score vectorString }
-                    cwes(first: 10) { nodes { cweId description } }
-                    identifiers { type value }
-                    publishedAt
-                    updatedAt
-                    references(first: 10) { url type }
-                    vulnerabilities(first: 20) {
-                        nodes {
-                            package { name ecosystem }
-                            vulnerableVersionRange
-                            patchedVersions
-                            firstPatchedVersion { identifier }
-                        }
-                    }
-                }
-            }
-            ''' % ghsa_id
-        else:
-            filters = []
-            if cve_id:
-                filters.append(f'identifier: "{cve_id}"')
-            if package_name:
-                filters.append(f'package: "{package_name}"')
-            if ecosystem:
-                eco_map = {
-                    'npm': 'NPM',
-                    'pypi': 'PIP',
-                    'maven': 'MAVEN',
-                    'nuget': 'NUGET',
-                    'go': 'GO',
-                    'rust': 'RUST'
-                }
-                eco_value = eco_map.get(ecosystem.lower(), ecosystem.upper())
-                filters.append(f'ecosystem: {eco_value}')
-            
-            filter_str = ', '.join(filters) if filters else ''
-            
-            return '''
-            query {
-                securityAdvisories(%s first: 20, orderBy: {field: PUBLISHED_AT, direction: DESC}) {
-                    nodes {
-                        ghsaId
-                        summary
-                        description
-                        severity
-                        cvss { score vectorString }
-                        cwes(first: 10) { nodes { cweId description } }
-                        identifiers { type value }
-                        publishedAt
-                        updatedAt
-                        references(first: 10) { url type }
-                        vulnerabilities(first: 10) {
-                            nodes {
-                                package { name ecosystem }
-                                vulnerableVersionRange
-                                patchedVersions
-                                firstPatchedVersion { identifier }
-                            }
-                        }
-                    }
-                }
-            }
-            ''' % filter_str
-    
-    def _extract_github_advisories_from_graphql(self, data: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """
-        从 GraphQL 响应中提取漏洞数据
-        """
-        if not data:
-            return []
-        
-        result = data.get('data', {})
-        
-        if 'securityAdvisory' in result:
-            advisory = result['securityAdvisory']
-            return [advisory] if advisory else []
-        
-        if 'securityAdvisories' in result:
-            advisories = result['securityAdvisories'].get('nodes', [])
-            return advisories if isinstance(advisories, list) else []
-        
-        return []
-    
-    def _process_github_advisory_graphql(self, advisory: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """
-        处理 GitHub GraphQL Advisory 数据，标准化格式
-        """
-        if not advisory:
-            return None
-        
-        ghsa_id = advisory.get('ghsaId', '')
-        
-        cve_ids = []
-        identifiers = advisory.get('identifiers', [])
-        for ident in identifiers:
-            if isinstance(ident, dict) and ident.get('type') == 'CVE':
-                cve_ids.append(ident.get('value', ''))
-        
-        cvss = advisory.get('cvss', {})
-        cvss_score = cvss.get('score') if isinstance(cvss, dict) else None
-        if cvss_score is not None:
-            try:
-                cvss_score = float(cvss_score)
-            except (ValueError, TypeError):
-                cvss_score = None
-        
-        cwes = []
-        cwes_data = advisory.get('cwes', {})
-        if isinstance(cwes_data, dict):
-            nodes = cwes_data.get('nodes', [])
-            if isinstance(nodes, list):
-                cwes = [{'cweId': c.get('cweId'), 'description': c.get('description')} for c in nodes if c]
-        
-        references = []
-        refs = advisory.get('references', {})
-        if isinstance(refs, dict):
-            ref_nodes = refs.get('nodes', [])
-            if isinstance(ref_nodes, list):
-                references = [{'type': r.get('type'), 'url': r.get('url')} for r in ref_nodes if r]
-        
-        vulnerabilities = []
-        vulns = advisory.get('vulnerabilities', {})
-        if isinstance(vulns, dict):
-            vuln_nodes = vulns.get('nodes', [])
-            if isinstance(vuln_nodes, list):
-                for v in vuln_nodes:
-                    if not v:
-                        continue
-                    pkg = v.get('package', {}) or {}
-                    vulnerabilities.append({
-                        'package': pkg.get('name', ''),
-                        'ecosystem': pkg.get('ecosystem', ''),
-                        'vulnerable_version_range': v.get('vulnerableVersionRange', ''),
-                        'patched_versions': v.get('patchedVersions', ''),
-                        'first_patched_version': v.get('firstPatchedVersion', {}).get('identifier', '') if v.get('firstPatchedVersion') else ''
-                    })
-        
-        return {
-            'vuln_id': ghsa_id,
-            'source': 'GitHub Advisory',
-            'title': advisory.get('summary', ghsa_id),
-            'description': advisory.get('description', '')[:2000],
-            'severity': advisory.get('severity', 'Unknown'),
-            'cvss_score': cvss_score,
-            'cvss_vector': cvss.get('vectorString') if isinstance(cvss, dict) else '',
-            'published': advisory.get('publishedAt', ''),
-            'updated': advisory.get('updatedAt', ''),
-            'cve_ids': cve_ids,
-            'ghsa_id': ghsa_id,
-            'references': references,
-            'vulnerabilities': vulnerabilities,
-            'cwes': cwes,
-            'raw_data': advisory
-        }
-    
     def query_gh_advisory(
         self,
         package_name: str = None,
@@ -2749,14 +1983,11 @@ class VulnerabilityDatabase:
             'raw_data': advisory
         }
     
-    VALID_SOURCES = ['all', 'nvd', 'exploit_db', 'osv', 'ghadvisory', 'gh_advisory', 'github_advisory', 'vuldb']
-    
     def query_all_external(
         self,
         package_name: str = None,
         cve_id: str = None,
         binary_name: str = None,
-        source: str = 'all',
         use_cache: bool = True,
         deduplicate: bool = True
     ) -> Dict[str, Any]:
@@ -2768,37 +1999,29 @@ class VulnerabilityDatabase:
         - Exploit-DB (现有)
         - OSV (新增)
         - GitHub Advisory (新增)
-        - VulDB (新增，需 API Key)
         
         Args:
             package_name: 包名
             cve_id: CVE ID
             binary_name: 二进制文件名
-            source: 数据源选择 ('all', 'nvd', 'exploit_db', 'osv', 'ghadvisory', 'vuldb')
             use_cache: 是否使用缓存
             deduplicate: 是否去重
             
         Returns:
             包含各数据源结果和合并结果的字典
         """
-        if source and source not in self.VALID_SOURCES:
-            logger.warning(f"[VulnDB] 无效的数据源: {source}，使用 'all'")
-            source = 'all'
-        
-        logger.info(f"[VulnDB] 综合外部漏洞查询: pkg={package_name}, cve={cve_id}, source={source}")
+        logger.info(f"[VulnDB] 综合外部漏洞查询: pkg={package_name}, cve={cve_id}")
         
         results = {
             'nvd': [],
             'exploit_db': [],
             'osv': [],
             'github_advisory': [],
-            'vuldb': [],
             'combined': [],
             'stats': {
                 'total': 0,
                 'unique': 0,
-                'by_source': {},
-                'requested_source': source
+                'by_source': {}
             }
         }
         
@@ -2810,7 +2033,7 @@ class VulnerabilityDatabase:
         
         main_term = search_terms[0] if search_terms else None
         
-        if source in ['all', 'nvd'] and main_term:
+        if main_term:
             try:
                 results['nvd'] = self.query_external_cve_database(
                     binary_name=main_term,
@@ -2819,7 +2042,7 @@ class VulnerabilityDatabase:
             except Exception as e:
                 logger.debug(f"[VulnDB] NVD 查询失败: {e}")
         
-        if source in ['all', 'exploit_db'] and main_term:
+        if main_term:
             try:
                 results['exploit_db'] = self.query_exploit_db(
                     search_term=main_term,
@@ -2828,7 +2051,7 @@ class VulnerabilityDatabase:
             except Exception as e:
                 logger.debug(f"[VulnDB] Exploit-DB 查询失败: {e}")
         
-        if source in ['all', 'osv'] and (package_name or cve_id):
+        if package_name or cve_id:
             try:
                 osv_params = {}
                 if package_name:
@@ -2842,7 +2065,7 @@ class VulnerabilityDatabase:
             except Exception as e:
                 logger.debug(f"[VulnDB] OSV 查询失败: {e}")
         
-        if source in ['all', 'ghadvisory', 'gh_advisory', 'github_advisory'] and (package_name or cve_id):
+        if package_name or cve_id:
             try:
                 gh_params = {}
                 if package_name:
@@ -2850,29 +2073,12 @@ class VulnerabilityDatabase:
                 if cve_id and cve_id.startswith('CVE-'):
                     gh_params['cve_id'] = cve_id
                 if gh_params:
-                    results['github_advisory'] = self.query_github_advisory(
+                    results['github_advisory'] = self.query_gh_advisory(
                         **gh_params,
                         use_cache=use_cache
                     )
             except Exception as e:
                 logger.debug(f"[VulnDB] GitHub Advisory 查询失败: {e}")
-        
-        if source in ['all', 'vuldb']:
-            try:
-                vuldb_params = {}
-                if package_name:
-                    vuldb_params['search_term'] = package_name
-                elif binary_name:
-                    vuldb_params['search_term'] = binary_name
-                elif cve_id:
-                    vuldb_params['cve_id'] = cve_id
-                if vuldb_params:
-                    results['vuldb'] = self.query_vuldb(
-                        **vuldb_params,
-                        use_cache=use_cache
-                    )
-            except Exception as e:
-                logger.debug(f"[VulnDB] VulDB 查询失败: {e}")
         
         all_records = []
         
@@ -2904,20 +2110,12 @@ class VulnerabilityDatabase:
                 '_id': item.get('vuln_id', '')
             })
         
-        for item in results['vuldb']:
-            all_records.append({
-                **item,
-                '_source': 'vuldb',
-                '_id': item.get('vuln_id', '')
-            })
-        
         results['stats']['total'] = len(all_records)
         results['stats']['by_source'] = {
             'nvd': len(results['nvd']),
             'exploit_db': len(results['exploit_db']),
             'osv': len(results['osv']),
-            'github_advisory': len(results['github_advisory']),
-            'vuldb': len(results['vuldb'])
+            'github_advisory': len(results['github_advisory'])
         }
         
         if deduplicate:
@@ -2982,64 +2180,26 @@ class VulnerabilityDatabase:
         cache_key: str
     ) -> Optional[List[Dict[str, Any]]]:
         """
-        从外部缓存表获取缓存数据（带过期检查）
-        
-        Args:
-            source: 数据源名称
-            cache_key: 缓存键
-            
-        Returns:
-            缓存的数据列表，过期或不存在返回 None
+        从外部缓存表获取缓存数据
         """
         if not self.connection:
             return None
         
         try:
             cursor = self.connection.cursor()
-            
-            if self.db_type == 'sqlite':
-                query = """
-                    SELECT cve_data, expires_at, 
-                           julianday(CURRENT_TIMESTAMP) - julianday(created_at) as age_days
-                    FROM external_cve_cache 
-                    WHERE cache_key = ? AND source = ?
+            cursor.execute(
                 """
-            else:
-                query = """
-                    SELECT cve_data, expires_at, 
-                           EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - created_at)) / 86400.0 as age_days
-                    FROM external_cve_cache 
-                    WHERE cache_key = ? AND source = ?
-                """
+                SELECT cve_data FROM external_cve_cache 
+                WHERE cve_id = ? AND source = ?
+                """,
+                (cache_key, source)
+            )
             
-            cursor.execute(query, (cache_key, source))
             row = cursor.fetchone()
-            
             if row:
                 try:
-                    expires_at = row['expires_at']
-                    cve_data = row['cve_data']
-                    age_days = row['age_days'] if 'age_days' in row.keys() else 0
-                    
-                    cache_ttl_days = Config.CACHE_TTL / 86400 if hasattr(Config, 'CACHE_TTL') else 1
-                    
-                    if expires_at:
-                        if self.db_type == 'sqlite':
-                            from datetime import datetime
-                            try:
-                                expire_time = datetime.fromisoformat(str(expires_at))
-                                if datetime.now() > expire_time:
-                                    logger.debug(f"[VulnDB] 缓存已过期: {cache_key}")
-                                    return None
-                            except:
-                                pass
-                    elif age_days > cache_ttl_days:
-                        logger.debug(f"[VulnDB] 缓存已过期（{age_days:.1f} 天）: {cache_key}")
-                        return None
-                    
-                    return json.loads(cve_data)
-                except Exception as e:
-                    logger.debug(f"[VulnDB] 解析缓存数据失败: {e}")
+                    return json.loads(row['cve_data'])
+                except:
                     return None
         except Exception as e:
             logger.debug(f"[VulnDB] 读取缓存失败: {e}")
@@ -3050,100 +2210,28 @@ class VulnerabilityDatabase:
         self,
         source: str,
         cache_key: str,
-        data: List[Dict[str, Any]],
-        ttl_seconds: int = None
+        data: List[Dict[str, Any]]
     ) -> bool:
         """
-        保存数据到外部缓存表（支持新字段）
-        
-        Args:
-            source: 数据源名称
-            cache_key: 缓存键
-            data: 要缓存的数据列表
-            ttl_seconds: 缓存过期时间（秒），默认使用配置
-            
-        Returns:
-            是否保存成功
+        保存数据到外部缓存表
         """
         if not self.connection:
             return False
         
         try:
-            from datetime import datetime, timedelta
-            
-            if ttl_seconds is None:
-                ttl_seconds = Config.CACHE_TTL
-            
-            expires_at = None
-            if ttl_seconds > 0:
-                expires_at = (datetime.now() + timedelta(seconds=ttl_seconds)).isoformat()
-            
-            first_item = data[0] if data and isinstance(data, list) else {}
-            cve_id = first_item.get('cve_id', '') or first_item.get('cve_ids', [''])[0] if first_item.get('cve_ids') else ''
-            if isinstance(cve_id, list):
-                cve_id = cve_id[0] if cve_id else ''
-            
-            vuln_id = first_item.get('vuln_id', '')
-            severity = first_item.get('severity', '')
-            cvss_score = first_item.get('cvss_score', None)
-            title = first_item.get('title', '')
-            package_name = first_item.get('software', '') or first_item.get('package', '')
-            
             cursor = self.connection.cursor()
-            
-            if self.db_type == 'sqlite':
-                cursor.execute(
-                    """
-                    INSERT OR REPLACE INTO external_cve_cache 
-                    (cache_key, source, cve_id, vuln_id, package_name, severity, cvss_score, 
-                     title, cve_data, created_at, expires_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?)
-                    """,
-                    (
-                        cache_key,
-                        source,
-                        cve_id,
-                        vuln_id,
-                        package_name,
-                        severity,
-                        cvss_score,
-                        title[:500] if title else '',
-                        json.dumps(data, ensure_ascii=False),
-                        expires_at
-                    )
+            cursor.execute(
+                """
+                INSERT OR REPLACE INTO external_cve_cache 
+                (cve_id, cve_data, source)
+                VALUES (?, ?, ?)
+                """,
+                (
+                    cache_key,
+                    json.dumps(data, ensure_ascii=False),
+                    source
                 )
-            else:
-                cursor.execute(
-                    """
-                    INSERT INTO external_cve_cache 
-                    (cache_key, source, cve_id, vuln_id, package_name, severity, cvss_score, 
-                     title, cve_data, created_at, expires_at)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP, %s)
-                    ON CONFLICT (cache_key, source) DO UPDATE SET
-                        cve_id = EXCLUDED.cve_id,
-                        vuln_id = EXCLUDED.vuln_id,
-                        package_name = EXCLUDED.package_name,
-                        severity = EXCLUDED.severity,
-                        cvss_score = EXCLUDED.cvss_score,
-                        title = EXCLUDED.title,
-                        cve_data = EXCLUDED.cve_data,
-                        created_at = CURRENT_TIMESTAMP,
-                        expires_at = EXCLUDED.expires_at
-                    """,
-                    (
-                        cache_key,
-                        source,
-                        cve_id,
-                        vuln_id,
-                        package_name,
-                        severity,
-                        cvss_score,
-                        title[:500] if title else '',
-                        json.dumps(data, ensure_ascii=False),
-                        expires_at
-                    )
-                )
-            
+            )
             self.connection.commit()
             return True
         except Exception as e:
