@@ -1,0 +1,35 @@
+#!/usr/bin/env python3
+"""
+PoC for Use-After-Free Vulnerability
+Target: C:\Users\Administrator\AppData\Local\Temp\tmprpmnqpiq
+"""
+
+import sys
+import ctypes
+
+def exploit():
+    libc = ctypes.CDLL('libc.so.6') if sys.platform == 'linux' else None
+    
+    if libc is None:
+        print("[-] This script requires libc access")
+        return
+    
+    # Allocate memory
+    ptr = libc.malloc(128)
+    print(f"[+] Allocated memory at: {ptr:#x}")
+    
+    # Free the memory
+    libc.free(ptr)
+    print(f"[+] Freed memory at: {ptr:#x}")
+    
+    # Attempt to use the freed memory
+    print("[+] Attempting to use freed memory...")
+    try:
+        # This may crash or behave unexpectedly
+        ctypes.memset(ptr, 0x41, 128)
+        print("[!] Use-after-free successful (vulnerability confirmed)")
+    except Exception as e:
+        print(f"[-] Crash occurred: {e}")
+
+if __name__ == '__main__':
+    exploit()

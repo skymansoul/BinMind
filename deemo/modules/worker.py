@@ -519,6 +519,8 @@ def execute_analysis_pipeline(
         fuzzer_type = options.get('fuzzer_type')
         expert_mode = options.get('expert_mode', False)
         no_rop = options.get('no_rop', False)
+        allocator_type = options.get('allocator_type', 'auto')
+        libc_version = options.get('libc_version')
         
         result = run_pipeline(
             binary_path=binary_path,
@@ -539,7 +541,9 @@ def execute_analysis_pipeline(
             hooks_dir=hooks_dir,
             fuzzer_type=fuzzer_type,
             expert_mode=expert_mode,
-            no_rop=no_rop
+            no_rop=no_rop,
+            allocator_type=allocator_type,
+            libc_version=libc_version
         )
         
         if 'error' in result:

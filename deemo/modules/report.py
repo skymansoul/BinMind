@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 from datetime import datetime
 from typing import Dict, Any, List, Optional, Tuple
 
@@ -7,6 +8,8 @@ from prompts import REPORT_SUMMARY_TEMPLATE
 from modules.info_collect import format_info_for_report
 
 logger = logging.getLogger(__name__)
+
+ANSI_ESCAPE_PATTERN = re.compile(r'\x1b\[[0-9;]*[a-zA-Z]')
 
 
 class ReportGenerator:
@@ -35,15 +38,26 @@ class ReportGenerator:
     def _ensure_output_dir(self):
         """
         确保输出目录存在
-
-
-        
         """
         try:
             if not os.path.exists(self.output_dir):
                 os.makedirs(self.output_dir)
         except Exception as e:
             logger.error(f"创建输出目录失败: {e}")
+    
+    def _clean_ansi_escape(self, text: str) -> str:
+        """
+        移除文本中的 ANSI 转义序列（颜色、光标控制等）
+        
+        Args:
+            text: 可能包含 ANSI 转义序列的文本
+            
+        Returns:
+            清理后的纯文本
+        """
+        if not text:
+            return text
+        return ANSI_ESCAPE_PATTERN.sub('', text)
     
     def add_step(self, name: str, data=None, result=None):
         """
@@ -80,16 +94,14 @@ class ReportGenerator:
     ) -> str:
         """
         格式化反编译分析部分
-
-
-        
         """
         output = []
         output.append(f"## 函数分析: {function_name}\n")
         
         output.append("### 反编译代码")
         output.append("```c")
-        output.append(pseudocode[:5000] if len(pseudocode) > 5000 else pseudocode)
+        clean_pseudocode = self._clean_ansi_escape(pseudocode)
+        output.append(clean_pseudocode[:5000] if len(clean_pseudocode) > 5000 else clean_pseudocode)
         output.append("```\n")
         
         vulnerabilities = analysis_result.get('vulnerabilities', [])
@@ -215,12 +227,176 @@ class ReportGenerator:
         
         return '\n'.join(output)
     
+    def format_patch_suggestions_section(
+        self,
+        patch_suggestions: List[Dict[str, Any]]
+    ) -> str:
+        """
+        格式化补丁建议部分
+        """
+        output = []
+        output.append("## 补丁建议\n")
+        
+        if not patch_suggestions:
+            output.append("未生成补丁建议。\n")
+            return '\n'.join(output)
+        
+        output.append(f"### AI 生成的修复建议 ({len(patch_suggestions)} 个)\n")
+        output.append("> **注意**: 以下补丁建议由 AI 生成，仅供参考。修复前请进行代码审查和测试验证。\n\n")
+        
+        for i, suggestion in enumerate(patch_suggestions, 1):
+            output.append(f"#### 建议 {i}: {suggestion.get('vuln_type', 'Unknown')}")
+            output.append(f"- **目标函数**: {suggestion.get('target_function', 'N/A')}")
+            output.append(f"- **漏洞位置**: 偏移 0x{suggestion.get('target_offset', 0):x}")
+            output.append(f"- **置信度**: {suggestion.get('confidence', 0.0) * 100:.1f}%")
+            output.append(f"- **建议类型**: {suggestion.get('suggestion_type', 'general')}\n")
+            
+            if suggestion.get('description'):
+                output.append("**修复说明:**")
+                output.append(suggestion['description'])
+                output.append("")
+            
+            if suggestion.get('patch_diff'):
+                output.append("**建议补丁 (unified diff):**")
+                output.append("```diff")
+                output.append(suggestion['patch_diff'])
+                output.append("```")
+            
+            output.append("")
+        
+        return '\n'.join(output)
+    
+    def format_threat_intel_section(
+        self,
+        threat_intel_results: List[Dict[str, Any]]
+    ) -> str:
+        """
+        格式化威胁情报部分
+        """
+        output = []
+        output.append("## 威胁情报关联\n")
+        
+        if not threat_intel_results:
+            output.append("未查询威胁情报。\n")
+            return '\n'.join(output)
+        
+        for result in threat_intel_results:
+            provider = result.get('provider', 'unknown').upper()
+            output.append(f"### {provider} 查询结果")
+            output.append(f"- **查询类型**: {result.get('query_type', 'N/A')}")
+            output.append(f"- **查询值**: {result.get('query_value', 'N/A')}")
+            output.append(f"- **是否恶意**: {'是' if result.get('is_malicious') else '否'}")
+            output.append(f"- **在野利用**: {'是' if result.get('in_wild') else '否'}")
+            output.append(f"- **置信度**: {result.get('confidence', 0.0) * 100:.1f}%\n")
+            
+            malware_families = result.get('malware_families', [])
+            if malware_families:
+                if isinstance(malware_families, str):
+                    import json
+                    try:
+                        malware_families = json.loads(malware_families)
+                    except:
+                        malware_families = []
+                output.append("**关联恶意软件家族:**")
+                for family in malware_families:
+                    output.append(f"- {family}")
+                output.append("")
+            
+            apt_groups = result.get('apt_groups', [])
+            if apt_groups:
+                if isinstance(apt_groups, str):
+                    import json
+                    try:
+                        apt_groups = json.loads(apt_groups)
+                    except:
+                        apt_groups = []
+                output.append("**关联APT组织:**")
+                for group in apt_groups:
+                    output.append(f"- {group}")
+                output.append("")
+            
+            iocs = result.get('iocs', [])
+            if iocs:
+                if isinstance(iocs, str):
+                    import json
+                    try:
+                        iocs = json.loads(iocs)
+                    except:
+                        iocs = []
+                output.append(f"**关联IOC ({len(iocs)}个):**")
+                for ioc in iocs[:5]:
+                    output.append(f"- {ioc.get('type')}: {ioc.get('value')}")
+                if len(iocs) > 5:
+                    output.append(f"- ... 还有 {len(iocs) - 5} 个")
+                output.append("")
+            
+            if result.get('summary'):
+                output.append(f"**摘要:** {result['summary']}")
+            
+            output.append("")
+            output.append("---")
+            output.append("")
+        
+        return '\n'.join(output)
+    
+    def format_exploit_verification_section(
+        self,
+        verification_result: Dict[str, Any]
+    ) -> str:
+        """
+        格式化漏洞利用验证部分
+        """
+        output = []
+        output.append("## 利用验证\n")
+        
+        if not verification_result:
+            output.append("未进行利用验证。\n")
+            return '\n'.join(output)
+        
+        success_count = verification_result.get('success_count', 0)
+        total_runs = verification_result.get('total_runs', 0)
+        reliability = verification_result.get('reliability_score', 0.0)
+        
+        output.append(f"### 验证结果")
+        output.append(f"- **成功次数**: {success_count}/{total_runs}")
+        output.append(f"- **可靠性评分**: {reliability:.1f}%")
+        output.append(f"- **利用成熟度**: {verification_result.get('exploit_code_maturity', 'U')}")
+        
+        cvss_info = verification_result.get('cvss_exploitability_score', {})
+        if cvss_info:
+            output.append(f"- **CVSS 可利用性**: {cvss_info.get('base_score', 0.0)}")
+            output.append(f"- **向量**: {cvss_info.get('vector_string', '')}")
+            output.append(f"- **成熟度说明**: {cvss_info.get('maturity_description', '')}")
+        
+        avg_time = verification_result.get('avg_execution_time', 0.0)
+        output.append(f"- **平均执行时间**: {avg_time:.2f} 秒\n")
+        
+        detailed = verification_result.get('detailed_results', [])
+        if detailed:
+            output.append("### 详细运行记录")
+            for i, run in enumerate(detailed, 1):
+                status = "成功" if run.get('success') else "失败"
+                output.append(f"#### 运行 {i}: {status}")
+                output.append(f"- Run ID: {run.get('run_id', 'N/A')}")
+                output.append(f"- 退出码: {run.get('exit_code', 'N/A')}")
+                output.append(f"- 执行时间: {run.get('execution_time', 0.0):.2f} 秒")
+                if run.get('error_message'):
+                    output.append(f"- 错误信息: {run['error_message']}")
+                if run.get('got_shell'):
+                    output.append(f"- 获取Shell: 是")
+                output.append("")
+        
+        return '\n'.join(output)
+    
     def generate_executive_summary(
         self,
         binary_info: Dict[str, Any],
         decomp_results: List[Dict[str, Any]],
         crash_analysis: Dict[str, Any],
-        exploit_result: Dict[str, Any]
+        exploit_result: Dict[str, Any],
+        patch_suggestions: List[Dict[str, Any]] = None,
+        threat_intel_results: List[Dict[str, Any]] = None,
+        verification_result: Dict[str, Any] = None
     ) -> str:
         """
         生成执行摘要
@@ -372,6 +548,87 @@ class ReportGenerator:
         
         return '\n'.join(output)
     
+    def format_dynamic_taint_section(
+        self,
+        dynamic_taint_result: Dict[str, Any]
+    ) -> str:
+        """
+        格式化动态污点分析部分
+        """
+        output = []
+        output.append("## 动态污点追踪分析\n")
+        
+        if not dynamic_taint_result:
+            output.append("动态污点追踪未启用或不可用。\n")
+            return '\n'.join(output)
+        
+        if not dynamic_taint_result.get('success'):
+            output.append(f"动态污点分析失败: {dynamic_taint_result.get('error', '未知错误')}\n")
+            return '\n'.join(output)
+        
+        engine = dynamic_taint_result.get('engine', 'unknown')
+        output.append(f"### 分析引擎")
+        output.append(f"- **引擎类型**: {engine}\n")
+        
+        taint_marks = dynamic_taint_result.get('taint_marks', [])
+        if taint_marks:
+            output.append("### 污点标记")
+            output.append(f"- **标记数量**: {len(taint_marks)}")
+            for mark in taint_marks[:5]:
+                output.append(f"  - {mark.get('source', 'unknown')} @ {mark.get('address', 'N/A')} (大小: {mark.get('size', 0)} 字节)")
+            if len(taint_marks) > 5:
+                output.append(f"  - ... 还有 {len(taint_marks) - 5} 个标记")
+            output.append("")
+        
+        taint_flows = dynamic_taint_result.get('taint_flows', [])
+        if taint_flows:
+            output.append("### 污点传播路径")
+            output.append(f"- **发现路径**: {len(taint_flows)} 条")
+            for i, flow in enumerate(taint_flows[:5], 1):
+                sink = flow.get('sink', 'unknown')
+                sink_type = flow.get('sink_type', 'unknown')
+                tainted_args = flow.get('tainted_args', [])
+                output.append(f"\n#### 路径 {i}")
+                output.append(f"- **目标函数**: {sink}")
+                output.append(f"- **函数类型**: {sink_type}")
+                if tainted_args:
+                    output.append("- **被污染参数**:")
+                    for arg in tainted_args:
+                        output.append(f"  * 参数 {arg.get('position', 'N/A')}: {arg.get('value', 'N/A')} (来源: {arg.get('source', 'unknown')})")
+            if len(taint_flows) > 5:
+                output.append(f"\n- ... 还有 {len(taint_flows) - 5} 条路径")
+            output.append("")
+        
+        vulnerabilities = dynamic_taint_result.get('vulnerabilities', [])
+        if vulnerabilities:
+            output.append("### 检测到的漏洞")
+            output.append(f"- **漏洞数量**: {len(vulnerabilities)}")
+            for i, vuln in enumerate(vulnerabilities[:5], 1):
+                severity = vuln.get('severity', 'Unknown')
+                vuln_type = vuln.get('type', 'Unknown')
+                function_name = vuln.get('function_name', 'Unknown')
+                output.append(f"\n#### 漏洞 {i}: {vuln_type}")
+                output.append(f"- **严重程度**: {severity}")
+                output.append(f"- **受影响函数**: {function_name}")
+                output.append(f"- **描述**: {vuln.get('description', 'N/A')}")
+                if vuln.get('evidence'):
+                    output.append(f"- **证据**: {vuln['evidence'][0][:100] if vuln['evidence'] else 'N/A'}...")
+            if len(vulnerabilities) > 5:
+                output.append(f"\n- ... 还有 {len(vulnerabilities) - 5} 个漏洞")
+            output.append("")
+        
+        exec_trace = dynamic_taint_result.get('exec_trace', [])
+        if exec_trace:
+            output.append("### 执行追踪")
+            output.append("```")
+            for line in exec_trace[:20]:
+                output.append(line)
+            if len(exec_trace) > 20:
+                output.append(f"... (还有 {len(exec_trace) - 20} 行)")
+            output.append("```\n")
+        
+        return '\n'.join(output)
+    
     def generate_markdown_report(self, output_path: str = None):
         """
         生成 Markdown 格式报告（基于步骤）
@@ -427,6 +684,7 @@ class ReportGenerator:
         exploit_result: Dict[str, Any] = None,
         similar_vulns: List[Dict[str, Any]] = None,
         symbolic_result: Dict[str, Any] = None,
+        dynamic_taint_result: Dict[str, Any] = None,
         output_path: str = None
     ) -> str:
         """
@@ -451,6 +709,9 @@ class ReportGenerator:
         
         if symbolic_result:
             content_parts.append(self.format_symbolic_execution_section(symbolic_result))
+        
+        if dynamic_taint_result:
+            content_parts.append(self.format_dynamic_taint_section(dynamic_taint_result))
         
         if crash_analysis:
             content_parts.append(self.format_crash_analysis_section(crash_analysis))

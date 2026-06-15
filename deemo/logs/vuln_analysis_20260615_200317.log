@@ -1,0 +1,315 @@
+2026-06-15 20:03:17,156 - main - INFO - 日志文件: ./logs\vuln_analysis_20260615_200317.log
+2026-06-15 20:03:17,158 - main - INFO - 敏感信息日志过滤器已启用
+2026-06-15 20:03:17,158 - main - INFO - 启动测试套件...
+2026-06-15 20:03:17,190 - modules.instrumentation - INFO - Frida 未安装，插桩功能将受限
+2026-06-15 20:03:17,194 - modules.yara_manager - WARNING - yara-python 未安装，YARA 扫描功能不可用。安装命令: pip install yara-python
+2026-06-15 20:03:17,199 - modules.binary_signing - WARNING - ssdeep 未安装，模糊哈希功能不可用。安装命令: pip install ssdeep
+2026-06-15 20:03:17,199 - modules.binary_signing - WARNING - tlsh 未安装，TLSH 模糊哈希功能不可用。安装命令: pip install py-tlsh
+2026-06-15 20:03:17,200 - modules.binary_signing - WARNING - numpy 未安装，向量计算功能受限
+2026-06-15 20:03:17,212 - modules.wasm_analyzer - INFO - WasmBinaryAnalyzer 初始化，WABT 可用: True
+2026-06-15 20:03:17,214 - modules.wasm_analyzer - INFO - WasmBinaryAnalyzer 初始化，WABT 可用: False
+2026-06-15 20:03:17,216 - modules.wasm_analyzer - INFO - WasmBinaryAnalyzer 初始化，WABT 可用: False
+2026-06-15 20:03:17,217 - modules.wasm_analyzer - INFO - WasmBinaryAnalyzer 初始化，WABT 可用: False
+2026-06-15 20:03:17,218 - modules.wasm_analyzer - INFO - WasmBinaryAnalyzer 初始化，WABT 可用: False
+2026-06-15 20:03:17,219 - modules.wasm_analyzer - INFO - WasmBinaryAnalyzer 初始化，WABT 可用: False
+2026-06-15 20:03:17,220 - modules.wasm_analyzer - INFO - WasmBinaryAnalyzer 初始化，WABT 可用: False
+2026-06-15 20:03:17,222 - modules.wasm_analyzer - INFO - WasmBinaryAnalyzer 初始化，WABT 可用: False
+2026-06-15 20:03:17,223 - modules.wasm_analyzer - INFO - WasmBinaryAnalyzer 初始化，WABT 可用: False
+2026-06-15 20:03:17,224 - modules.wasm_analyzer - INFO - WasmBinaryAnalyzer 初始化，WABT 可用: False
+2026-06-15 20:03:17,225 - modules.wasm_analyzer - INFO - WasmBinaryAnalyzer 初始化，WABT 可用: False
+2026-06-15 20:03:17,226 - modules.wasm_analyzer - INFO - WasmBinaryAnalyzer 初始化，WABT 可用: False
+2026-06-15 20:03:17,228 - modules.wasm_analyzer - INFO - WasmBinaryAnalyzer 初始化，WABT 可用: False
+2026-06-15 20:03:17,229 - modules.wasm_analyzer - INFO - WasmBinaryAnalyzer 初始化，WABT 可用: False
+2026-06-15 20:03:17,230 - modules.wasm_analyzer - INFO - WasmBinaryAnalyzer 初始化，WABT 可用: False
+2026-06-15 20:03:17,231 - modules.wasm_analyzer - INFO - WasmBinaryAnalyzer 初始化，WABT 可用: False
+2026-06-15 20:03:17,232 - modules.wasm_analyzer - INFO - WASM 文件解析完成: C:\Users\Administrator\Desktop\deemo\tests\data\test_minimal.wasm
+2026-06-15 20:03:17,233 - modules.wasm_analyzer - INFO - WasmBinaryAnalyzer 初始化，WABT 可用: False
+2026-06-15 20:03:17,234 - modules.instrumentation - INFO - 附加到进程: PID 12345
+2026-06-15 20:03:17,234 - modules.instrumentation - INFO - 已附加到进程 PID: 12345
+2026-06-15 20:03:17,235 - modules.instrumentation - INFO - 已分离进程
+2026-06-15 20:03:17,235 - modules.instrumentation - INFO - 创建插桩日志目录: C:\Users\Administrator\Desktop\deemo\tests\..\logs\instrumentation\test_subdir
+2026-06-15 20:03:17,237 - modules.instrumentation - ERROR - 未知的模板类型: unknown_template
+2026-06-15 20:03:17,238 - modules.instrumentation - ERROR - 脚本文件不存在: /nonexistent/path/script.js
+2026-06-15 20:03:17,238 - modules.instrumentation - INFO - 已加载自定义脚本: C:\Users\Administrator\Desktop\deemo\tests\..\logs\instrumentation\test_script.js
+2026-06-15 20:03:17,240 - modules.instrumentation - INFO - 插桩日志已保存: ./logs/instrumentation\instrumentation_20260615_200317.log
+2026-06-15 20:03:17,240 - modules.instrumentation - INFO - 启动进程: /bin/ls 
+2026-06-15 20:03:17,241 - modules.instrumentation - INFO - 进程已启动，PID: 12345
+2026-06-15 20:03:17,241 - modules.instrumentation - INFO - 启动进程: /bin/ls 
+2026-06-15 20:03:17,241 - modules.instrumentation - ERROR - 启动进程失败: Spawn failed
+2026-06-15 20:03:17,242 - modules.cwe_mapper - INFO - CWE 映射数据已加载: C:\Users\Administrator\Desktop\deemo\data\cwe_mapping.json
+2026-06-15 20:03:17,242 - modules.cwe_mapper - INFO - 已添加自定义 CWE 映射: custom_vuln -> CWE-999
+2026-06-15 20:03:17,242 - modules.cwe_mapper - INFO - CWE 映射数据已加载: C:\Users\Administrator\Desktop\deemo\data\cwe_mapping.json
+2026-06-15 20:03:17,242 - modules.cwe_mapper - INFO - CWE 映射数据已加载: C:\Users\Administrator\Desktop\deemo\data\cwe_mapping.json
+2026-06-15 20:03:17,243 - modules.cwe_mapper - INFO - CWE 映射数据已加载: C:\Users\Administrator\Desktop\deemo\data\cwe_mapping.json
+2026-06-15 20:03:17,244 - modules.cwe_mapper - INFO - CWE 映射数据已加载: C:\Users\Administrator\Desktop\deemo\data\cwe_mapping.json
+2026-06-15 20:03:17,244 - modules.cwe_mapper - INFO - CWE 映射数据已加载: C:\Users\Administrator\Desktop\deemo\data\cwe_mapping.json
+2026-06-15 20:03:17,244 - modules.cwe_mapper - INFO - CWE 映射数据已加载: C:\Users\Administrator\Desktop\deemo\data\cwe_mapping.json
+2026-06-15 20:03:17,245 - modules.cwe_mapper - INFO - CWE 映射数据已加载: C:\Users\Administrator\Desktop\deemo\data\cwe_mapping.json
+2026-06-15 20:03:17,245 - modules.cwe_mapper - INFO - CWE 映射数据已加载: C:\Users\Administrator\Desktop\deemo\data\cwe_mapping.json
+2026-06-15 20:03:17,246 - modules.cwe_mapper - INFO - CWE 映射数据已加载: C:\Users\Administrator\Desktop\deemo\data\cwe_mapping.json
+2026-06-15 20:03:17,246 - modules.cwe_mapper - INFO - CWE 映射数据已加载: C:\Users\Administrator\Desktop\deemo\data\cwe_mapping.json
+2026-06-15 20:03:17,246 - modules.cwe_mapper - INFO - CWE 映射数据已加载: C:\Users\Administrator\Desktop\deemo\data\cwe_mapping.json
+2026-06-15 20:03:17,247 - modules.cwe_mapper - INFO - CWE 映射数据已加载: C:\Users\Administrator\Desktop\deemo\data\cwe_mapping.json
+2026-06-15 20:03:17,247 - modules.cwe_mapper - INFO - CWE 映射数据已加载: C:\Users\Administrator\Desktop\deemo\data\cwe_mapping.json
+2026-06-15 20:03:17,248 - modules.cwe_mapper - INFO - CWE 映射数据已加载: C:\Users\Administrator\Desktop\deemo\data\cwe_mapping.json
+2026-06-15 20:03:17,248 - modules.cwe_mapper - INFO - CWE 映射数据已加载: C:\Users\Administrator\Desktop\deemo\data\cwe_mapping.json
+2026-06-15 20:03:17,248 - modules.cwe_mapper - INFO - CWE 映射数据已加载: C:\Users\Administrator\Desktop\deemo\data\cwe_mapping.json
+2026-06-15 20:03:17,249 - modules.cwe_mapper - INFO - CWE 映射数据已加载: C:\Users\Administrator\Desktop\deemo\data\cwe_mapping.json
+2026-06-15 20:03:17,249 - modules.cwe_mapper - INFO - CWE 映射数据已加载: C:\Users\Administrator\Desktop\deemo\data\cwe_mapping.json
+2026-06-15 20:03:17,250 - modules.cwe_mapper - INFO - CWE 映射数据已加载: C:\Users\Administrator\Desktop\deemo\data\cwe_mapping.json
+2026-06-15 20:03:17,250 - modules.cwe_mapper - INFO - CWE 映射数据已加载: C:\Users\Administrator\Desktop\deemo\data\cwe_mapping.json
+2026-06-15 20:03:17,250 - modules.cwe_mapper - INFO - CWE 映射数据已加载: C:\Users\Administrator\Desktop\deemo\data\cwe_mapping.json
+2026-06-15 20:03:17,251 - modules.cwe_mapper - INFO - CWE 映射数据已加载: C:\Users\Administrator\Desktop\deemo\data\cwe_mapping.json
+2026-06-15 20:03:17,251 - modules.cwe_mapper - INFO - CWE 映射数据已加载: C:\Users\Administrator\Desktop\deemo\tests\..\data\test_custom_mapping.json
+2026-06-15 20:03:17,252 - modules.cwe_mapper - INFO - CWE 映射数据已加载: C:\Users\Administrator\Desktop\deemo\data\cwe_mapping.json
+2026-06-15 20:03:17,253 - modules.cwe_mapper - INFO - CWE 映射已保存: C:\Users\Administrator\Desktop\deemo\tests\..\data\test_cwe_mapping.json
+2026-06-15 20:03:17,253 - modules.cwe_mapper - INFO - CWE 映射数据已加载: C:\Users\Administrator\Desktop\deemo\data\cwe_mapping.json
+2026-06-15 20:03:17,255 - modules.yara_manager - INFO - YARA 规则生成器初始化完成，输出目录: C:\Users\Administrator\AppData\Local\Temp\tmpudb2dsd0
+2026-06-15 20:03:17,255 - modules.yara_manager - INFO - 提取到 1 个候选字符串
+2026-06-15 20:03:17,255 - modules.yara_manager - INFO - 生成 YARA 规则: auto_test_20260615_200317
+2026-06-15 20:03:17,255 - modules.yara_manager - INFO - 提取到 1 个候选字符串
+2026-06-15 20:03:17,256 - modules.yara_manager - INFO - 提取到 0 个字节模式
+2026-06-15 20:03:17,256 - modules.yara_manager - WARNING - yara-python 未安装，无法加载规则
+2026-06-15 20:03:17,256 - modules.yara_manager - INFO - YARA 扫描器初始化完成，规则目录: C:\Users\Administrator\AppData\Local\Temp\tmprlhbygoz
+2026-06-15 20:03:17,256 - modules.yara_manager - WARNING - YARA 扫描不可用
+2026-06-15 20:03:17,258 - modules.yara_manager - INFO - YARA 规则生成器初始化完成，输出目录: C:\Users\Administrator\AppData\Local\Temp\tmpzho_qvti
+2026-06-15 20:03:17,258 - modules.yara_manager - INFO - YARA 规则生成器初始化完成，输出目录: C:\Users\Administrator\AppData\Local\Temp\tmpf6w8t2jl
+2026-06-15 20:03:17,259 - modules.yara_manager - INFO - YARA 规则生成器初始化完成，输出目录: C:\Users\Administrator\AppData\Local\Temp\tmp8rs0q2k0
+2026-06-15 20:03:17,259 - modules.yara_manager - INFO - 提取到 4 个候选字符串
+2026-06-15 20:03:17,259 - modules.yara_manager - INFO - YARA 规则生成器初始化完成，输出目录: C:\Users\Administrator\AppData\Local\Temp\tmpche9duux
+2026-06-15 20:03:17,260 - modules.yara_manager - INFO - 提取到 1 个候选字符串
+2026-06-15 20:03:17,260 - modules.yara_manager - INFO - 生成 YARA 规则: test_rule
+2026-06-15 20:03:17,260 - modules.yara_manager - INFO - YARA 规则生成器初始化完成，输出目录: C:\Users\Administrator\AppData\Local\Temp\tmpwi4tf76d
+2026-06-15 20:03:17,260 - modules.yara_manager - INFO - 提取到 1 个候选字符串
+2026-06-15 20:03:17,260 - modules.yara_manager - INFO - 提取到 0 个字节模式
+2026-06-15 20:03:17,260 - modules.yara_manager - INFO - 生成 YARA 规则: auto_test_binary_20260615_200317
+2026-06-15 20:03:17,261 - modules.yara_manager - INFO - 提取到 1 个候选字符串
+2026-06-15 20:03:17,261 - modules.yara_manager - INFO - 提取到 0 个字节模式
+2026-06-15 20:03:17,261 - modules.yara_manager - INFO - YARA 规则已保存: C:\Users\Administrator\AppData\Local\Temp\tmpwi4tf76d\auto_test_binary_20260615_200317.yar
+2026-06-15 20:03:17,262 - modules.yara_manager - INFO - YARA 规则生成器初始化完成，输出目录: C:\Users\Administrator\AppData\Local\Temp\tmppmm9_vg_
+2026-06-15 20:03:17,262 - modules.yara_manager - INFO - YARA 规则生成器初始化完成，输出目录: C:\Users\Administrator\AppData\Local\Temp\tmpxymnk542
+2026-06-15 20:03:17,263 - modules.yara_manager - INFO - YARA 规则生成器初始化完成，输出目录: C:\Users\Administrator\AppData\Local\Temp\tmpcsas9wuw
+2026-06-15 20:03:17,263 - modules.yara_manager - INFO - YARA 规则已保存: C:\Users\Administrator\AppData\Local\Temp\tmpcsas9wuw\test_rule.yar
+2026-06-15 20:03:17,264 - modules.yara_manager - WARNING - yara-python 未安装，无法加载规则
+2026-06-15 20:03:17,264 - modules.yara_manager - INFO - YARA 扫描器初始化完成，规则目录: C:\Users\Administrator\AppData\Local\Temp\tmpemi2mq7b
+2026-06-15 20:03:17,264 - modules.yara_manager - WARNING - yara-python 未安装，无法加载规则
+2026-06-15 20:03:17,265 - modules.yara_manager - INFO - YARA 扫描器初始化完成，规则目录: C:\Users\Administrator\AppData\Local\Temp\tmpcavs630b
+2026-06-15 20:03:17,265 - modules.yara_manager - WARNING - yara-python 未安装，无法加载规则
+2026-06-15 20:03:17,265 - modules.yara_manager - INFO - YARA 扫描器初始化完成，规则目录: C:\Users\Administrator\AppData\Local\Temp\tmpff33dehx
+2026-06-15 20:03:17,265 - modules.yara_manager - WARNING - YARA 扫描不可用
+2026-06-15 20:03:17,266 - modules.sbom_exporter - INFO - SBOM 导出器初始化完成，输出目录: C:\Users\Administrator\AppData\Local\Temp\tmpq9n0q3g_
+2026-06-15 20:03:17,266 - modules.sbom_exporter - INFO - SBOM 文档构建完成，包含 1 个组件
+2026-06-15 20:03:17,267 - modules.sbom_exporter - INFO - SPDX JSON 已导出: C:\Users\Administrator\AppData\Local\Temp\tmpq9n0q3g_\test_spdx_20260615_200317.json
+2026-06-15 20:03:17,267 - modules.sbom_exporter - INFO - CycloneDX JSON 已导出: C:\Users\Administrator\AppData\Local\Temp\tmpq9n0q3g_\test_cyclonedx_20260615_200317.json
+2026-06-15 20:03:17,267 - modules.sbom_exporter - INFO - SBOM 导出完成，格式: both
+2026-06-15 20:03:17,268 - modules.sbom_exporter - INFO - SBOM 导出器初始化完成，输出目录: C:\Users\Administrator\AppData\Local\Temp\tmpe4vnz6fg
+2026-06-15 20:03:17,269 - modules.sbom_exporter - INFO - SBOM 导出器初始化完成，输出目录: C:\Users\Administrator\AppData\Local\Temp\tmp4g4nmv1f
+2026-06-15 20:03:17,269 - modules.sbom_exporter - INFO - SBOM 文档构建完成，包含 2 个组件
+2026-06-15 20:03:17,269 - modules.sbom_exporter - INFO - SBOM 导出器初始化完成，输出目录: C:\Users\Administrator\AppData\Local\Temp\tmpniikryq1
+2026-06-15 20:03:17,270 - modules.sbom_exporter - INFO - SBOM 导出器初始化完成，输出目录: C:\Users\Administrator\AppData\Local\Temp\tmpp0o9zwz0
+2026-06-15 20:03:17,271 - modules.sbom_exporter - INFO - SBOM 导出器初始化完成，输出目录: C:\Users\Administrator\AppData\Local\Temp\tmp6basvid6
+2026-06-15 20:03:17,271 - modules.sbom_exporter - INFO - CycloneDX JSON 已导出: C:\Users\Administrator\AppData\Local\Temp\tmp6basvid6\test_cyclonedx.json
+2026-06-15 20:03:17,272 - modules.sbom_exporter - INFO - SBOM 导出器初始化完成，输出目录: C:\Users\Administrator\AppData\Local\Temp\tmp4mlxdr4b
+2026-06-15 20:03:17,272 - modules.sbom_exporter - INFO - SBOM 文档构建完成，包含 1 个组件
+2026-06-15 20:03:17,273 - modules.sbom_exporter - INFO - SPDX JSON 已导出: C:\Users\Administrator\AppData\Local\Temp\tmp4mlxdr4b\test_binary_spdx_20260615_200317.json
+2026-06-15 20:03:17,273 - modules.sbom_exporter - INFO - CycloneDX JSON 已导出: C:\Users\Administrator\AppData\Local\Temp\tmp4mlxdr4b\test_binary_cyclonedx_20260615_200317.json
+2026-06-15 20:03:17,274 - modules.sbom_exporter - INFO - SBOM 导出完成，格式: both
+2026-06-15 20:03:17,274 - modules.sbom_exporter - INFO - SBOM 导出器初始化完成，输出目录: C:\Users\Administrator\AppData\Local\Temp\tmpbgkm5yd_
+2026-06-15 20:03:17,275 - modules.sbom_exporter - INFO - SBOM 文档构建完成，包含 1 个组件
+2026-06-15 20:03:17,275 - modules.sbom_exporter - INFO - SPDX JSON 已导出: C:\Users\Administrator\AppData\Local\Temp\tmpbgkm5yd_\test_binary_spdx_20260615_200317.json
+2026-06-15 20:03:17,275 - modules.sbom_exporter - INFO - SBOM 导出完成，格式: spdx
+2026-06-15 20:03:17,276 - modules.sbom_exporter - INFO - SBOM 导出器初始化完成，输出目录: C:\Users\Administrator\AppData\Local\Temp\tmpgfi0btn6
+2026-06-15 20:03:17,276 - modules.sbom_exporter - INFO - SPDX JSON 已导出: C:\Users\Administrator\AppData\Local\Temp\tmpgfi0btn6\test_spdx.json
+2026-06-15 20:03:17,278 - modules.sbom_exporter - INFO - SBOM 导出器初始化完成，输出目录: C:\Users\Administrator\AppData\Local\Temp\tmp52yjz6cy
+2026-06-15 20:03:17,279 - modules.sbom_exporter - INFO - SBOM 导出器初始化完成，输出目录: C:\Users\Administrator\AppData\Local\Temp\tmpabtdb_51
+2026-06-15 20:03:17,280 - modules.sbom_exporter - INFO - SBOM 导出器初始化完成，输出目录: C:\Users\Administrator\AppData\Local\Temp\tmp11kd0y0r
+2026-06-15 20:03:17,280 - modules.sbom_exporter - INFO - SBOM 导出器初始化完成，输出目录: C:\Users\Administrator\AppData\Local\Temp\tmpkq1g0ogh
+2026-06-15 20:03:17,282 - modules.sbom_exporter - INFO - SBOM 导出器初始化完成，输出目录: C:\Users\Administrator\AppData\Local\Temp\tmpru89m4dv
+2026-06-15 20:03:17,282 - modules.sbom_exporter - INFO - SBOM 导出器初始化完成，输出目录: C:\Users\Administrator\AppData\Local\Temp\tmpvq4dxx0h
+2026-06-15 20:03:17,283 - modules.sbom_exporter - INFO - SBOM 导出器初始化完成，输出目录: C:\Users\Administrator\AppData\Local\Temp\tmp0epg786w
+2026-06-15 20:03:17,284 - modules.sbom_exporter - INFO - SBOM 导出器初始化完成，输出目录: C:\Users\Administrator\AppData\Local\Temp\tmpess0eu7i
+2026-06-15 20:03:17,284 - modules.sbom_exporter - INFO - SBOM 导出器初始化完成，输出目录: C:\Users\Administrator\AppData\Local\Temp\tmp3xjq9p1a
+2026-06-15 20:03:17,285 - modules.sbom_exporter - INFO - SBOM 导出器初始化完成，输出目录: C:\Users\Administrator\AppData\Local\Temp\tmpd2y1jap7
+2026-06-15 20:03:17,347 - modules.binary_signing - INFO - 签名数据库初始化成功: C:\Users\Administrator\AppData\Local\Temp\tmplqfv8_ql\test_signatures.db
+2026-06-15 20:03:17,347 - modules.binary_signing - INFO - 二进制签名生成器初始化完成，数据库: C:\Users\Administrator\AppData\Local\Temp\tmplqfv8_ql\test_signatures.db
+2026-06-15 20:03:17,412 - modules.binary_signing - INFO - 签名数据库初始化成功: C:\Users\Administrator\AppData\Local\Temp\tmp5ihe1tco\test_signatures.db
+2026-06-15 20:03:17,412 - modules.binary_signing - INFO - 二进制签名生成器初始化完成，数据库: C:\Users\Administrator\AppData\Local\Temp\tmp5ihe1tco\test_signatures.db
+2026-06-15 20:03:17,470 - modules.binary_signing - INFO - 签名数据库初始化成功: C:\Users\Administrator\AppData\Local\Temp\tmpm0fjpj__\test_signatures.db
+2026-06-15 20:03:17,470 - modules.binary_signing - INFO - 二进制签名生成器初始化完成，数据库: C:\Users\Administrator\AppData\Local\Temp\tmpm0fjpj__\test_signatures.db
+2026-06-15 20:03:17,532 - modules.binary_signing - INFO - 签名数据库初始化成功: C:\Users\Administrator\AppData\Local\Temp\tmpuah652cr\test_signatures.db
+2026-06-15 20:03:17,532 - modules.binary_signing - INFO - 二进制签名生成器初始化完成，数据库: C:\Users\Administrator\AppData\Local\Temp\tmpuah652cr\test_signatures.db
+2026-06-15 20:03:17,595 - modules.binary_signing - INFO - 签名数据库初始化成功: C:\Users\Administrator\AppData\Local\Temp\tmpgvitm5wd\test_signatures.db
+2026-06-15 20:03:17,595 - modules.binary_signing - INFO - 二进制签名生成器初始化完成，数据库: C:\Users\Administrator\AppData\Local\Temp\tmpgvitm5wd\test_signatures.db
+2026-06-15 20:03:17,655 - modules.binary_signing - INFO - 签名数据库初始化成功: C:\Users\Administrator\AppData\Local\Temp\tmp_rgbmfko\test_signatures.db
+2026-06-15 20:03:17,655 - modules.binary_signing - INFO - 二进制签名生成器初始化完成，数据库: C:\Users\Administrator\AppData\Local\Temp\tmp_rgbmfko\test_signatures.db
+2026-06-15 20:03:17,715 - modules.binary_signing - INFO - 签名数据库初始化成功: C:\Users\Administrator\AppData\Local\Temp\tmpem2baxmg\test_signatures.db
+2026-06-15 20:03:17,715 - modules.binary_signing - INFO - 二进制签名生成器初始化完成，数据库: C:\Users\Administrator\AppData\Local\Temp\tmpem2baxmg\test_signatures.db
+2026-06-15 20:03:17,715 - modules.binary_signing - INFO - 生成二进制签名: test_binary, SHA256: b9408ffd9d6a37bc...
+2026-06-15 20:03:17,775 - modules.binary_signing - INFO - 签名数据库初始化成功: C:\Users\Administrator\AppData\Local\Temp\tmpzl3war22\test_signatures.db
+2026-06-15 20:03:17,775 - modules.binary_signing - INFO - 二进制签名生成器初始化完成，数据库: C:\Users\Administrator\AppData\Local\Temp\tmpzl3war22\test_signatures.db
+2026-06-15 20:03:17,782 - modules.binary_signing - INFO - 签名已保存到数据库，ID: 1
+2026-06-15 20:03:17,848 - modules.binary_signing - INFO - 签名数据库初始化成功: C:\Users\Administrator\AppData\Local\Temp\tmpbtqd0pve\test_signatures.db
+2026-06-15 20:03:17,848 - modules.binary_signing - INFO - 二进制签名生成器初始化完成，数据库: C:\Users\Administrator\AppData\Local\Temp\tmpbtqd0pve\test_signatures.db
+2026-06-15 20:03:17,908 - modules.binary_signing - INFO - 签名数据库初始化成功: C:\Users\Administrator\AppData\Local\Temp\tmpq0dsyxev\test_signatures.db
+2026-06-15 20:03:17,908 - modules.binary_signing - INFO - 二进制签名生成器初始化完成，数据库: C:\Users\Administrator\AppData\Local\Temp\tmpq0dsyxev\test_signatures.db
+2026-06-15 20:03:17,921 - modules.binary_signing - INFO - 签名已保存到数据库，ID: 1
+2026-06-15 20:03:17,922 - modules.binary_signing - INFO - 签名数据库初始化成功: C:\Users\Administrator\Desktop\deemo\modules\..\data\signatures.db
+2026-06-15 20:03:17,923 - modules.binary_signing - INFO - 二进制签名生成器初始化完成，数据库: C:\Users\Administrator\Desktop\deemo\modules\..\data\signatures.db
+2026-06-15 20:03:17,923 - modules.binary_signing - INFO - 生成二进制签名: test, SHA256: cd00e292c5970d3c...
+2026-06-15 20:03:17,924 - modules.binary_signing - INFO - 同源搜索器初始化完成，数据库: C:\Users\Administrator\Desktop\deemo\modules\..\data\signatures.db
+2026-06-15 20:03:17,924 - modules.binary_signing - INFO - 综合同源搜索完成，找到 0 个匹配
+2026-06-15 20:03:17,983 - modules.binary_signing - INFO - 签名数据库初始化成功: C:\Users\Administrator\AppData\Local\Temp\tmpybvy81m4\test_signatures.db
+2026-06-15 20:03:17,983 - modules.binary_signing - INFO - 二进制签名生成器初始化完成，数据库: C:\Users\Administrator\AppData\Local\Temp\tmpybvy81m4\test_signatures.db
+2026-06-15 20:03:17,984 - modules.binary_signing - INFO - 同源搜索器初始化完成，数据库: C:\Users\Administrator\AppData\Local\Temp\tmpybvy81m4\test_signatures.db
+2026-06-15 20:03:18,051 - modules.binary_signing - INFO - 签名数据库初始化成功: C:\Users\Administrator\AppData\Local\Temp\tmpjmte0phc\test_signatures.db
+2026-06-15 20:03:18,051 - modules.binary_signing - INFO - 二进制签名生成器初始化完成，数据库: C:\Users\Administrator\AppData\Local\Temp\tmpjmte0phc\test_signatures.db
+2026-06-15 20:03:18,052 - modules.binary_signing - INFO - 同源搜索器初始化完成，数据库: C:\Users\Administrator\AppData\Local\Temp\tmpjmte0phc\test_signatures.db
+2026-06-15 20:03:18,110 - modules.binary_signing - INFO - 签名数据库初始化成功: C:\Users\Administrator\AppData\Local\Temp\tmp6zi4xzwo\test_signatures.db
+2026-06-15 20:03:18,110 - modules.binary_signing - INFO - 二进制签名生成器初始化完成，数据库: C:\Users\Administrator\AppData\Local\Temp\tmp6zi4xzwo\test_signatures.db
+2026-06-15 20:03:18,110 - modules.binary_signing - INFO - 同源搜索器初始化完成，数据库: C:\Users\Administrator\AppData\Local\Temp\tmp6zi4xzwo\test_signatures.db
+2026-06-15 20:03:18,177 - modules.binary_signing - INFO - 签名数据库初始化成功: C:\Users\Administrator\AppData\Local\Temp\tmpgagemb_8\test_signatures.db
+2026-06-15 20:03:18,177 - modules.binary_signing - INFO - 二进制签名生成器初始化完成，数据库: C:\Users\Administrator\AppData\Local\Temp\tmpgagemb_8\test_signatures.db
+2026-06-15 20:03:18,177 - modules.binary_signing - INFO - 同源搜索器初始化完成，数据库: C:\Users\Administrator\AppData\Local\Temp\tmpgagemb_8\test_signatures.db
+2026-06-15 20:03:18,238 - modules.binary_signing - INFO - 签名数据库初始化成功: C:\Users\Administrator\AppData\Local\Temp\tmpz7eiurjq\test_signatures.db
+2026-06-15 20:03:18,238 - modules.binary_signing - INFO - 二进制签名生成器初始化完成，数据库: C:\Users\Administrator\AppData\Local\Temp\tmpz7eiurjq\test_signatures.db
+2026-06-15 20:03:18,238 - modules.binary_signing - INFO - 同源搜索器初始化完成，数据库: C:\Users\Administrator\AppData\Local\Temp\tmpz7eiurjq\test_signatures.db
+2026-06-15 20:03:18,300 - modules.binary_signing - INFO - 签名数据库初始化成功: C:\Users\Administrator\AppData\Local\Temp\tmppb_e8eic\test_signatures.db
+2026-06-15 20:03:18,300 - modules.binary_signing - INFO - 二进制签名生成器初始化完成，数据库: C:\Users\Administrator\AppData\Local\Temp\tmppb_e8eic\test_signatures.db
+2026-06-15 20:03:18,300 - modules.binary_signing - INFO - 同源搜索器初始化完成，数据库: C:\Users\Administrator\AppData\Local\Temp\tmppb_e8eic\test_signatures.db
+2026-06-15 20:03:18,362 - modules.binary_signing - INFO - 签名数据库初始化成功: C:\Users\Administrator\AppData\Local\Temp\tmpsco971gz\test_signatures.db
+2026-06-15 20:03:18,362 - modules.binary_signing - INFO - 二进制签名生成器初始化完成，数据库: C:\Users\Administrator\AppData\Local\Temp\tmpsco971gz\test_signatures.db
+2026-06-15 20:03:18,362 - modules.binary_signing - INFO - 同源搜索器初始化完成，数据库: C:\Users\Administrator\AppData\Local\Temp\tmpsco971gz\test_signatures.db
+2026-06-15 20:03:18,429 - modules.binary_signing - INFO - 签名数据库初始化成功: C:\Users\Administrator\AppData\Local\Temp\tmppmzkhxqb\test_signatures.db
+2026-06-15 20:03:18,430 - modules.binary_signing - INFO - 二进制签名生成器初始化完成，数据库: C:\Users\Administrator\AppData\Local\Temp\tmppmzkhxqb\test_signatures.db
+2026-06-15 20:03:18,431 - modules.binary_signing - INFO - 同源搜索器初始化完成，数据库: C:\Users\Administrator\AppData\Local\Temp\tmppmzkhxqb\test_signatures.db
+2026-06-15 20:03:18,491 - modules.binary_signing - INFO - 签名数据库初始化成功: C:\Users\Administrator\AppData\Local\Temp\tmpzu7omvo7\test_signatures.db
+2026-06-15 20:03:18,491 - modules.binary_signing - INFO - 二进制签名生成器初始化完成，数据库: C:\Users\Administrator\AppData\Local\Temp\tmpzu7omvo7\test_signatures.db
+2026-06-15 20:03:18,491 - modules.binary_signing - INFO - 同源搜索器初始化完成，数据库: C:\Users\Administrator\AppData\Local\Temp\tmpzu7omvo7\test_signatures.db
+2026-06-15 20:03:18,494 - modules.firmware_analyzer - WARNING - binwalk 不可用，将使用纯 Python 解析
+2026-06-15 20:03:18,495 - modules.firmware_analyzer - WARNING - jefferson 不可用，将使用纯 Python 解析
+2026-06-15 20:03:18,495 - modules.firmware_analyzer - INFO - FirmwareExtractor 初始化完成: firmware=C:\Users\Administrator\AppData\Local\Temp\tmp1oj67t_l\test.elf, binwalk=disabled, jefferson=disabled
+2026-06-15 20:03:18,497 - modules.firmware_analyzer - WARNING - binwalk 不可用，将使用纯 Python 解析
+2026-06-15 20:03:18,498 - modules.firmware_analyzer - WARNING - jefferson 不可用，将使用纯 Python 解析
+2026-06-15 20:03:18,498 - modules.firmware_analyzer - INFO - FirmwareExtractor 初始化完成: firmware=C:\Users\Administrator\AppData\Local\Temp\tmp7z87481m\passwd, binwalk=disabled, jefferson=disabled
+2026-06-15 20:03:18,500 - modules.firmware_analyzer - WARNING - binwalk 不可用，将使用纯 Python 解析
+2026-06-15 20:03:18,501 - modules.firmware_analyzer - WARNING - jefferson 不可用，将使用纯 Python 解析
+2026-06-15 20:03:18,501 - modules.firmware_analyzer - INFO - FirmwareExtractor 初始化完成: firmware=C:\Users\Administrator\AppData\Local\Temp\tmp9gb9sbep\test.sh, binwalk=disabled, jefferson=disabled
+2026-06-15 20:03:18,503 - modules.firmware_analyzer - WARNING - jefferson 不可用，将使用纯 Python 解析
+2026-06-15 20:03:18,503 - modules.firmware_analyzer - INFO - FirmwareExtractor 初始化完成: firmware=C:\Users\Administrator\AppData\Local\Temp\tmpdot0my7t\test.bin, binwalk=disabled, jefferson=disabled
+2026-06-15 20:03:18,504 - modules.firmware_analyzer - INFO - 开始提取固件到: ./data\firmware_extracted\b2a48c59
+2026-06-15 20:03:18,504 - modules.firmware_analyzer - INFO - 检测到固件格式: ['generic_by_extension']
+2026-06-15 20:03:18,504 - modules.firmware_analyzer - INFO - 尝试提取整个文件作为原始二进制
+2026-06-15 20:03:18,505 - modules.firmware_analyzer - INFO - 固件提取完成，共提取 1 个文件
+2026-06-15 20:03:18,505 - modules.firmware_analyzer - INFO - 已清理临时目录: ./data\firmware_extracted\b2a48c59
+2026-06-15 20:03:18,507 - modules.firmware_analyzer - WARNING - jefferson 不可用，将使用纯 Python 解析
+2026-06-15 20:03:18,507 - modules.firmware_analyzer - INFO - FirmwareExtractor 初始化完成: firmware=C:\Users\Administrator\AppData\Local\Temp\tmpxvdc3vm5\test.gz, binwalk=disabled, jefferson=disabled
+2026-06-15 20:03:18,508 - modules.firmware_analyzer - INFO - 开始提取固件到: ./data\firmware_extracted\01999988
+2026-06-15 20:03:18,508 - modules.firmware_analyzer - INFO - 检测到固件格式: ['GZIP_by_extension']
+2026-06-15 20:03:18,509 - modules.firmware_analyzer - INFO - 尝试提取整个文件作为原始二进制
+2026-06-15 20:03:18,509 - modules.firmware_analyzer - INFO - 固件提取完成，共提取 1 个文件
+2026-06-15 20:03:18,511 - modules.firmware_analyzer - WARNING - jefferson 不可用，将使用纯 Python 解析
+2026-06-15 20:03:18,512 - modules.firmware_analyzer - INFO - FirmwareExtractor 初始化完成: firmware=C:\Users\Administrator\AppData\Local\Temp\tmpgal6viyl\test.gz, binwalk=disabled, jefferson=disabled
+2026-06-15 20:03:18,512 - modules.firmware_analyzer - INFO - 开始提取固件到: ./data\firmware_extracted\19f036a1
+2026-06-15 20:03:18,512 - modules.firmware_analyzer - INFO - 检测到固件格式: ['GZIP_by_extension']
+2026-06-15 20:03:18,512 - modules.firmware_analyzer - INFO - 尝试提取整个文件作为原始二进制
+2026-06-15 20:03:18,513 - modules.firmware_analyzer - INFO - 固件提取完成，共提取 1 个文件
+2026-06-15 20:03:18,519 - modules.firmware_analyzer - WARNING - jefferson 不可用，将使用纯 Python 解析
+2026-06-15 20:03:18,519 - modules.firmware_analyzer - INFO - FirmwareExtractor 初始化完成: firmware=C:\Users\Administrator\AppData\Local\Temp\tmp47afitnh\test.xz, binwalk=disabled, jefferson=disabled
+2026-06-15 20:03:18,520 - modules.firmware_analyzer - INFO - 开始提取固件到: ./data\firmware_extracted\ed2a66f1
+2026-06-15 20:03:18,520 - modules.firmware_analyzer - INFO - 检测到固件格式: ['XZ', 'XZ_by_extension']
+2026-06-15 20:03:18,521 - modules.firmware_analyzer - INFO - 提取 XZ 数据到: ./data\firmware_extracted\ed2a66f1\extracted_0.xz.bin
+2026-06-15 20:03:18,521 - modules.firmware_analyzer - INFO - 提取 XZ 数据到: ./data\firmware_extracted\ed2a66f1\extracted_0.xz.bin
+2026-06-15 20:03:18,521 - modules.firmware_analyzer - INFO - 固件提取完成，共提取 1 个文件
+2026-06-15 20:03:18,523 - modules.firmware_analyzer - WARNING - jefferson 不可用，将使用纯 Python 解析
+2026-06-15 20:03:18,523 - modules.firmware_analyzer - INFO - FirmwareExtractor 初始化完成: firmware=C:\Users\Administrator\AppData\Local\Temp\tmpmyg_t66t\test.bin, binwalk=disabled, jefferson=disabled
+2026-06-15 20:03:18,524 - modules.firmware_analyzer - INFO - 开始提取固件到: ./data\firmware_extracted\31a32636
+2026-06-15 20:03:18,524 - modules.firmware_analyzer - INFO - 检测到固件格式: ['generic_by_extension']
+2026-06-15 20:03:18,524 - modules.firmware_analyzer - INFO - 尝试提取整个文件作为原始二进制
+2026-06-15 20:03:18,525 - modules.firmware_analyzer - INFO - 固件提取完成，共提取 1 个文件
+2026-06-15 20:03:18,527 - modules.firmware_analyzer - WARNING - jefferson 不可用，将使用纯 Python 解析
+2026-06-15 20:03:18,527 - modules.firmware_analyzer - INFO - FirmwareExtractor 初始化完成: firmware=C:\Users\Administrator\AppData\Local\Temp\tmp_jun8_pp\test.gz, binwalk=disabled, jefferson=disabled
+2026-06-15 20:03:18,528 - modules.firmware_analyzer - INFO - 开始提取固件到: ./data\firmware_extracted\5b9b7fa4
+2026-06-15 20:03:18,528 - modules.firmware_analyzer - INFO - 检测到固件格式: ['GZIP_by_extension']
+2026-06-15 20:03:18,528 - modules.firmware_analyzer - INFO - 尝试提取整个文件作为原始二进制
+2026-06-15 20:03:18,529 - modules.firmware_analyzer - INFO - 固件提取完成，共提取 1 个文件
+2026-06-15 20:03:18,531 - modules.firmware_analyzer - WARNING - binwalk 不可用，将使用纯 Python 解析
+2026-06-15 20:03:18,532 - modules.firmware_analyzer - WARNING - jefferson 不可用，将使用纯 Python 解析
+2026-06-15 20:03:18,532 - modules.firmware_analyzer - INFO - FirmwareExtractor 初始化完成: firmware=C:\Users\Administrator\AppData\Local\Temp\tmp04nb4z2u\test.bin, binwalk=disabled, jefferson=disabled
+2026-06-15 20:03:18,534 - modules.firmware_analyzer - WARNING - binwalk 不可用，将使用纯 Python 解析
+2026-06-15 20:03:18,535 - modules.firmware_analyzer - WARNING - jefferson 不可用，将使用纯 Python 解析
+2026-06-15 20:03:18,535 - modules.firmware_analyzer - INFO - FirmwareExtractor 初始化完成: firmware=C:\Users\Administrator\AppData\Local\Temp\tmp7tt4mrqh\test.bin, binwalk=disabled, jefferson=disabled
+2026-06-15 20:03:18,536 - modules.firmware_analyzer - WARNING - 检测到危险路径模式: '../../etc/passwd'
+2026-06-15 20:03:18,539 - modules.firmware_analyzer - WARNING - binwalk 不可用，将使用纯 Python 解析
+2026-06-15 20:03:18,540 - modules.firmware_analyzer - WARNING - jefferson 不可用，将使用纯 Python 解析
+2026-06-15 20:03:18,540 - modules.firmware_analyzer - INFO - FirmwareExtractor 初始化完成: firmware=C:\Users\Administrator\AppData\Local\Temp\tmpte5ws_5k\test.bin, binwalk=disabled, jefferson=disabled
+2026-06-15 20:03:18,542 - modules.firmware_analyzer - WARNING - binwalk 不可用，将使用纯 Python 解析
+2026-06-15 20:03:18,543 - modules.firmware_analyzer - WARNING - jefferson 不可用，将使用纯 Python 解析
+2026-06-15 20:03:18,543 - modules.firmware_analyzer - INFO - FirmwareExtractor 初始化完成: firmware=C:\Users\Administrator\AppData\Local\Temp\tmpct2uxjb0\firmware.squashfs, binwalk=disabled, jefferson=disabled
+2026-06-15 20:03:18,544 - modules.firmware_analyzer - INFO - 检测到固件格式: ['SquashFS_by_extension']
+2026-06-15 20:03:18,546 - modules.firmware_analyzer - WARNING - binwalk 不可用，将使用纯 Python 解析
+2026-06-15 20:03:18,547 - modules.firmware_analyzer - WARNING - jefferson 不可用，将使用纯 Python 解析
+2026-06-15 20:03:18,547 - modules.firmware_analyzer - INFO - FirmwareExtractor 初始化完成: firmware=C:\Users\Administrator\AppData\Local\Temp\tmpvd6din2p\test.bz2, binwalk=disabled, jefferson=disabled
+2026-06-15 20:03:18,548 - modules.firmware_analyzer - INFO - 检测到固件格式: ['BZIP2', 'BZIP2_by_extension']
+2026-06-15 20:03:18,550 - modules.firmware_analyzer - WARNING - binwalk 不可用，将使用纯 Python 解析
+2026-06-15 20:03:18,551 - modules.firmware_analyzer - WARNING - jefferson 不可用，将使用纯 Python 解析
+2026-06-15 20:03:18,551 - modules.firmware_analyzer - INFO - FirmwareExtractor 初始化完成: firmware=C:\Users\Administrator\AppData\Local\Temp\tmpneir4ig6\test.bin, binwalk=disabled, jefferson=disabled
+2026-06-15 20:03:18,551 - modules.firmware_analyzer - INFO - 检测到固件格式: ['GZIP', 'generic_by_extension']
+2026-06-15 20:03:18,553 - modules.firmware_analyzer - WARNING - binwalk 不可用，将使用纯 Python 解析
+2026-06-15 20:03:18,554 - modules.firmware_analyzer - WARNING - jefferson 不可用，将使用纯 Python 解析
+2026-06-15 20:03:18,555 - modules.firmware_analyzer - INFO - FirmwareExtractor 初始化完成: firmware=C:\Users\Administrator\AppData\Local\Temp\tmp9tvlsj1h\test.uimg, binwalk=disabled, jefferson=disabled
+2026-06-15 20:03:18,555 - modules.firmware_analyzer - INFO - 检测到固件格式: ['uImage']
+2026-06-15 20:03:18,560 - modules.firmware_analyzer - WARNING - binwalk 不可用，将使用纯 Python 解析
+2026-06-15 20:03:18,561 - modules.firmware_analyzer - WARNING - jefferson 不可用，将使用纯 Python 解析
+2026-06-15 20:03:18,562 - modules.firmware_analyzer - INFO - FirmwareExtractor 初始化完成: firmware=C:\Users\Administrator\AppData\Local\Temp\tmpmdcbm4x0\test.xz, binwalk=disabled, jefferson=disabled
+2026-06-15 20:03:18,562 - modules.firmware_analyzer - INFO - 检测到固件格式: ['XZ', 'XZ_by_extension']
+2026-06-15 20:03:18,564 - modules.protocol_reversing - INFO - ProtocolFormatInferrer 初始化完成: binary=C:\Users\Administrator\AppData\Local\Temp\tmp404xw61i\test.bin
+2026-06-15 20:03:18,564 - modules.protocol_reversing - WARNING - scapy 未安装，尝试手动解析 PCAP
+2026-06-15 20:03:18,565 - modules.protocol_reversing - INFO - 从 PCAP 文件加载 0 个数据包样本
+2026-06-15 20:03:18,566 - modules.protocol_reversing - INFO - ProtocolFormatInferrer 初始化完成: binary=C:\Users\Administrator\AppData\Local\Temp\tmpvjpo20yn\test.bin
+2026-06-15 20:03:18,566 - modules.protocol_reversing - INFO - ProtocolFormatInferrer 初始化完成: binary=C:\Users\Administrator\AppData\Local\Temp\tmpukljfzfq\test.bin
+2026-06-15 20:03:18,567 - modules.protocol_reversing - INFO - ProtocolFormatInferrer 初始化完成: binary=C:\Users\Administrator\AppData\Local\Temp\tmp7jl8t6uy\test.bin
+2026-06-15 20:03:18,568 - modules.protocol_reversing - INFO - 开始协议格式推断
+2026-06-15 20:03:18,573 - modules.protocol_reversing - INFO - 协议推断完成，发现 1 个消息类型
+2026-06-15 20:03:18,574 - modules.protocol_reversing - INFO - ProtocolFormatInferrer 初始化完成: binary=C:\Users\Administrator\AppData\Local\Temp\tmpwmmh295n\test.bin
+2026-06-15 20:03:18,574 - modules.protocol_reversing - INFO - 开始协议格式推断
+2026-06-15 20:03:18,579 - modules.protocol_reversing - INFO - 协议推断完成，发现 1 个消息类型
+2026-06-15 20:03:18,580 - modules.protocol_reversing - INFO - ProtocolFormatInferrer 初始化完成: binary=C:\Users\Administrator\AppData\Local\Temp\tmpbn83g9al\test.bin
+2026-06-15 20:03:18,582 - modules.protocol_reversing - INFO - ProtocolFuzzGenerator 初始化完成: 0 个消息类型
+2026-06-15 20:03:18,582 - modules.protocol_reversing - INFO - ProtocolFuzzGenerator 初始化完成: 0 个消息类型
+2026-06-15 20:03:18,582 - modules.protocol_reversing - INFO - ProtocolFuzzGenerator 初始化完成: 1 个消息类型
+2026-06-15 20:03:18,582 - modules.protocol_reversing - INFO - ProtocolFuzzGenerator 初始化完成: 1 个消息类型
+2026-06-15 20:03:18,582 - modules.protocol_reversing - INFO - ProtocolFuzzGenerator 初始化完成: 1 个消息类型
+2026-06-15 20:03:18,583 - modules.protocol_reversing - INFO - ProtocolFuzzGenerator 初始化完成: 1 个消息类型
+2026-06-15 20:03:18,583 - modules.protocol_reversing - INFO - ProtocolFuzzGenerator 初始化完成: 1 个消息类型
+2026-06-15 20:03:18,583 - modules.protocol_reversing - INFO - ProtocolFuzzGenerator 初始化完成: 1 个消息类型
+2026-06-15 20:03:18,583 - modules.protocol_reversing - INFO - ProtocolFuzzGenerator 初始化完成: 0 个消息类型
+2026-06-15 20:03:18,584 - modules.protocol_reversing - INFO - ProtocolFuzzGenerator 初始化完成: 0 个消息类型
+2026-06-15 20:03:18,584 - modules.vuln_ml - INFO - VulnSeverityPredictor 初始化完成: model_path=./data\models\severity_model.pkl
+2026-06-15 20:03:18,585 - modules.vuln_ml - INFO - VulnSeverityPredictor 初始化完成: model_path=./data\models\severity_model.pkl
+2026-06-15 20:03:18,585 - modules.vuln_ml - INFO - VulnSeverityPredictor 初始化完成: model_path=./data\models\severity_model.pkl
+2026-06-15 20:03:18,585 - modules.vuln_ml - INFO - VulnSeverityPredictor 初始化完成: model_path=./data\models\severity_model.pkl
+2026-06-15 20:03:18,585 - modules.vuln_ml - INFO - VulnSeverityPredictor 初始化完成: model_path=./data\models\severity_model.pkl
+2026-06-15 20:03:18,586 - modules.vuln_ml - INFO - VulnSeverityPredictor 初始化完成: model_path=./data\models\severity_model.pkl
+2026-06-15 20:03:18,586 - modules.vuln_ml - ERROR - 缺少依赖: No module named 'sklearn'
+2026-06-15 20:03:18,586 - modules.vuln_ml - INFO - VulnSeverityPredictor 初始化完成: model_path=C:\Users\Administrator\AppData\Local\Temp\tmptqsxo701\test_model.pkl
+2026-06-15 20:03:18,587 - modules.vuln_ml - WARNING - 模型文件不存在: C:\Users\Administrator\AppData\Local\Temp\tmptqsxo701\test_model.pkl
+2026-06-15 20:03:18,587 - modules.vuln_ml - INFO - 将使用默认规则进行预测
+2026-06-15 20:03:18,588 - modules.vuln_ml - ERROR - 缺少依赖: No module named 'sklearn'
+2026-06-15 20:03:18,588 - modules.vuln_ml - INFO - VulnSeverityPredictor 初始化完成: model_path=C:\Users\Administrator\AppData\Local\Temp\tmp94z4ezp_\test_model.pkl
+2026-06-15 20:03:18,589 - modules.vuln_ml - WARNING - 模型文件不存在: C:\Users\Administrator\AppData\Local\Temp\tmp94z4ezp_\test_model.pkl
+2026-06-15 20:03:18,590 - modules.vuln_ml - INFO - 将使用默认规则进行预测
+2026-06-15 20:03:18,592 - modules.vuln_ml - ERROR - 缺少依赖: No module named 'sklearn'
+2026-06-15 20:03:18,592 - modules.vuln_ml - INFO - VulnSeverityPredictor 初始化完成: model_path=./data\models\severity_model.pkl
+2026-06-15 20:03:18,593 - modules.vuln_ml - INFO - VulnSeverityPredictor 初始化完成: model_path=./data\models\severity_model.pkl
+2026-06-15 20:03:18,593 - modules.vuln_ml - INFO - VulnSeverityPredictor 初始化完成: model_path=./data\models\severity_model.pkl
+2026-06-15 20:03:18,593 - modules.vuln_ml - INFO - VulnSeverityPredictor 初始化完成: model_path=./data\models\severity_model.pkl
+2026-06-15 20:03:18,593 - modules.vuln_ml - INFO - VulnSeverityPredictor 初始化完成: model_path=./data\models\severity_model.pkl
+2026-06-15 20:03:18,593 - modules.vuln_ml - INFO - VulnSeverityPredictor 初始化完成: model_path=./data\models\severity_model.pkl
+2026-06-15 20:03:18,594 - modules.vuln_ml - INFO - VulnSeverityPredictor 初始化完成: model_path=./data\models\severity_model.pkl
+2026-06-15 20:03:18,594 - modules.vuln_ml - WARNING - 模型文件不存在: ./data\models\severity_model.pkl
+2026-06-15 20:03:18,594 - modules.vuln_ml - INFO - 将使用默认规则进行预测
+2026-06-15 20:03:18,595 - modules.vuln_ml - INFO - VulnSeverityPredictor 初始化完成: model_path=C:\Users\Administrator\AppData\Local\Temp\tmp7fpov9l1\custom_model.pkl
+2026-06-15 20:03:18,595 - modules.vuln_ml - INFO - VulnSeverityPredictor 初始化完成: model_path=./data\models\severity_model.pkl
+2026-06-15 20:03:18,595 - modules.vuln_ml - INFO - VulnSeverityPredictor 初始化完成: model_path=./data\models\severity_model.pkl
+2026-06-15 20:03:18,595 - modules.vuln_ml - INFO - VulnSeverityPredictor 初始化完成: model_path=./data\models\severity_model.pkl
+2026-06-15 20:03:18,602 - main - INFO - 测试完成 - 通过: 196, 失败: 10, 错误: 11

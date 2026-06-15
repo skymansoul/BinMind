@@ -1,0 +1,2 @@
+[console_scripts]
+binmind = main:main

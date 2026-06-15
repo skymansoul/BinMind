@@ -1,0 +1,606 @@
+{
+    "version": "1.0.0",
+    "last_updated": "2025-01-01",
+    "description": "MITRE ATT&CK 企业版映射数据，用于漏洞到ATT&CK技术的自动映射",
+    "techniques": {
+        "T1190": {
+            "technique_id": "T1190",
+            "technique_name": "Exploit Public-Facing Application",
+            "description": "攻击者利用面向公众的应用程序中的漏洞获取初始访问权限",
+            "tactics": ["Initial Access"],
+            "url": "https://attack.mitre.org/techniques/T1190",
+            "applicable_vulnerabilities": [
+                "remote_code_execution",
+                "server_side_injection",
+                "sql_injection",
+                "command_injection",
+                "deserialization"
+            ]
+        },
+        "T1203": {
+            "technique_id": "T1203",
+            "technique_name": "Exploitation for Client Execution",
+            "description": "攻击者利用客户端应用程序中的漏洞执行代码",
+            "tactics": ["Execution"],
+            "url": "https://attack.mitre.org/techniques/T1203",
+            "applicable_vulnerabilities": [
+                "client_side_vulnerability",
+                "browser_vulnerability",
+                "document_parser_vulnerability",
+                "media_player_vulnerability"
+            ]
+        },
+        "T1068": {
+            "technique_id": "T1068",
+            "technique_name": "Exploitation for Privilege Escalation",
+            "description": "攻击者利用漏洞提升权限级别",
+            "tactics": ["Privilege Escalation"],
+            "url": "https://attack.mitre.org/techniques/T1068",
+            "applicable_vulnerabilities": [
+                "privilege_escalation",
+                "kernel_vulnerability",
+                "driver_vulnerability",
+                "sudo_vulnerability",
+                "setuid_vulnerability"
+            ]
+        },
+        "T1210": {
+            "technique_id": "T1210",
+            "technique_name": "Exploitation of Remote Services",
+            "description": "攻击者利用远程服务中的漏洞在内部网络中横向移动",
+            "tactics": ["Lateral Movement"],
+            "url": "https://attack.mitre.org/techniques/T1210",
+            "applicable_vulnerabilities": [
+                "remote_service_vulnerability",
+                "smb_vulnerability",
+                "rdp_vulnerability",
+                "ssh_vulnerability",
+                "network_service_vulnerability"
+            ]
+        },
+        "T1055": {
+            "technique_id": "T1055",
+            "technique_name": "Process Injection",
+            "description": "攻击者将代码注入到另一个进程的地址空间中以逃避检测并提升权限",
+            "tactics": ["Privilege Escalation", "Defense Evasion"],
+            "url": "https://attack.mitre.org/techniques/T1055",
+            "subtechniques": {
+                "T1055.001": "DLL Injection",
+                "T1055.002": "Portable Executable Injection",
+                "T1055.003": "Thread Execution Hijacking",
+                "T1055.004": "Asynchronous Procedure Call",
+                "T1055.005": "Thread Local Storage",
+                "T1055.008": "Ptrace System Calls",
+                "T1055.009": "Proc Memory",
+                "T1055.011": "Extra Window Memory Injection",
+                "T1055.012": "Process Hollowing",
+                "T1055.013": "Process Doppelganging",
+                "T1055.014": "VDSO Hijacking"
+            },
+            "applicable_vulnerabilities": [
+                "memory_corruption",
+                "buffer_overflow",
+                "heap_overflow",
+                "use_after_free",
+                "arbitrary_write"
+            ]
+        },
+        "T1592": {
+            "technique_id": "T1592",
+            "technique_name": "Gather Victim Host Information",
+            "description": "攻击者收集受害者主机信息以用于攻击",
+            "tactics": ["Reconnaissance"],
+            "url": "https://attack.mitre.org/techniques/T1592",
+            "subtechniques": {
+                "T1592.001": "Hardware",
+                "T1592.002": "Software",
+                "T1592.003": "Firmware",
+                "T1592.004": "Client Configurations"
+            },
+            "applicable_vulnerabilities": [
+                "information_disclosure",
+                "memory_leak",
+                "credential_disclosure",
+                "configuration_disclosure"
+            ]
+        },
+        "T1566": {
+            "technique_id": "T1566",
+            "technique_name": "Phishing",
+            "description": "攻击者通过钓鱼获取初始访问权限",
+            "tactics": ["Initial Access"],
+            "url": "https://attack.mitre.org/techniques/T1566",
+            "subtechniques": {
+                "T1566.001": "Spearphishing Attachment",
+                "T1566.002": "Spearphishing Link"
+            },
+            "applicable_vulnerabilities": [
+                "document_vulnerability",
+                "email_client_vulnerability",
+                "malicious_file_vulnerability"
+            ]
+        },
+        "T1078": {
+            "technique_id": "T1078",
+            "technique_name": "Valid Accounts",
+            "description": "攻击者使用有效凭证进行认证",
+            "tactics": ["Initial Access", "Persistence", "Privilege Escalation", "Defense Evasion"],
+            "url": "https://attack.mitre.org/techniques/T1078",
+            "subtechniques": {
+                "T1078.001": "Default Accounts",
+                "T1078.002": "Domain Accounts",
+                "T1078.003": "Local Accounts",
+                "T1078.004": "Cloud Accounts"
+            },
+            "applicable_vulnerabilities": [
+                "credential_stuffing",
+                "default_credential",
+                "weak_authentication",
+                "authentication_bypass"
+            ]
+        },
+        "T1134": {
+            "technique_id": "T1134",
+            "technique_name": "Access Token Manipulation",
+            "description": "攻击者操纵访问令牌以提升权限或逃避检测",
+            "tactics": ["Defense Evasion", "Privilege Escalation"],
+            "url": "https://attack.mitre.org/techniques/T1134",
+            "subtechniques": {
+                "T1134.001": "Token Impersonation/Theft",
+                "T1134.002": "Create Process with Token",
+                "T1134.003": "Make and Impersonate Token",
+                "T1134.004": "Parent PID Spoofing",
+                "T1134.005": "SID-History Injection"
+            },
+            "applicable_vulnerabilities": [
+                "token_manipulation",
+                "privilege_escalation",
+                "impersonation_vulnerability"
+            ]
+        },
+        "T1548": {
+            "technique_id": "T1548",
+            "technique_name": "Abuse Elevation Control Mechanism",
+            "description": "攻击者滥用提升权限的控制机制",
+            "tactics": ["Privilege Escalation", "Defense Evasion"],
+            "url": "https://attack.mitre.org/techniques/T1548",
+            "subtechniques": {
+                "T1548.001": "Setuid and Setgid",
+                "T1548.002": "Bypass User Account Control",
+                "T1548.003": "Sudo and Sudo Caching",
+                "T1548.004": "Elevated Execution with Prompt"
+            },
+            "applicable_vulnerabilities": [
+                "sudo_vulnerability",
+                "uac_bypass",
+                "setuid_vulnerability",
+                "privilege_escalation"
+            ]
+        },
+        "T1110": {
+            "technique_id": "T1110",
+            "technique_name": "Brute Force",
+            "description": "攻击者通过暴力破解获取凭证",
+            "tactics": ["Credential Access"],
+            "url": "https://attack.mitre.org/techniques/T1110",
+            "subtechniques": {
+                "T1110.001": "Password Guessing",
+                "T1110.002": "Password Cracking",
+                "T1110.003": "Password Spraying",
+                "T1110.004": "Credential Stuffing"
+            },
+            "applicable_vulnerabilities": [
+                "weak_password_policy",
+                "authentication_bypass",
+                "rate_limiting_bypass"
+            ]
+        },
+        "T1021": {
+            "technique_id": "T1021",
+            "technique_name": "Remote Services",
+            "description": "攻击者利用远程服务进行横向移动",
+            "tactics": ["Lateral Movement"],
+            "url": "https://attack.mitre.org/techniques/T1021",
+            "subtechniques": {
+                "T1021.001": "Remote Desktop Protocol",
+                "T1021.002": "SMB/Windows Admin Shares",
+                "T1021.003": "Distributed Component Object Model",
+                "T1021.004": "SSH",
+                "T1021.005": "VNC",
+                "T1021.006": "Windows Remote Management"
+            },
+            "applicable_vulnerabilities": [
+                "remote_service_vulnerability",
+                "rdp_vulnerability",
+                "smb_vulnerability",
+                "ssh_vulnerability"
+            ]
+        },
+        "T1059": {
+            "technique_id": "T1059",
+            "technique_name": "Command and Scripting Interpreter",
+            "description": "攻击者利用命令和脚本解释器执行恶意代码",
+            "tactics": ["Execution"],
+            "url": "https://attack.mitre.org/techniques/T1059",
+            "subtechniques": {
+                "T1059.001": "PowerShell",
+                "T1059.002": "AppleScript",
+                "T1059.003": "Windows Command Shell",
+                "T1059.004": "Unix Shell",
+                "T1059.005": "Visual Basic",
+                "T1059.006": "Python",
+                "T1059.007": "JavaScript/JScript"
+            },
+            "applicable_vulnerabilities": [
+                "command_injection",
+                "code_injection",
+                "script_execution"
+            ]
+        },
+        "T1552": {
+            "technique_id": "T1552",
+            "technique_name": "Unsecured Credentials",
+            "description": "攻击者从不安全的位置获取凭证",
+            "tactics": ["Credential Access"],
+            "url": "https://attack.mitre.org/techniques/T1552",
+            "subtechniques": {
+                "T1552.001": "Credentials In Files",
+                "T1552.002": "Credentials in Registry",
+                "T1552.003": "Bash History",
+                "T1552.004": "Private Keys",
+                "T1552.005": "Cloud Instance Metadata API",
+                "T1552.006": "Group Policy Preferences"
+            },
+            "applicable_vulnerabilities": [
+                "credential_disclosure",
+                "information_disclosure",
+                "hardcoded_credentials"
+            ]
+        },
+        "T1499": {
+            "technique_id": "T1499",
+            "technique_name": "Endpoint Denial of Service",
+            "description": "攻击者通过消耗资源来拒绝服务",
+            "tactics": ["Impact"],
+            "url": "https://attack.mitre.org/techniques/T1499",
+            "subtechniques": {
+                "T1499.001": "OS Exhaustion Flood",
+                "T1499.002": "Service Exhaustion Flood",
+                "T1499.003": "Application Exhaustion Flood",
+                "T1499.004": "Application or System Exploitation"
+            },
+            "applicable_vulnerabilities": [
+                "denial_of_service",
+                "resource_exhaustion",
+                "null_pointer_dereference",
+                "infinite_loop"
+            ]
+        },
+        "T1565": {
+            "technique_id": "T1565",
+            "technique_name": "Data Manipulation",
+            "description": "攻击者操纵数据以影响业务流程",
+            "tactics": ["Impact"],
+            "url": "https://attack.mitre.org/techniques/T1565",
+            "subtechniques": {
+                "T1565.001": "Stored Data Manipulation",
+                "T1565.002": "Transmitted Data Manipulation",
+                "T1565.003": "Runtime Data Manipulation"
+            },
+            "applicable_vulnerabilities": [
+                "data_corruption",
+                "memory_corruption",
+                "race_condition"
+            ]
+        },
+        "T1036": {
+            "technique_id": "T1036",
+            "technique_name": "Masquerading",
+            "description": "攻击者伪装合法软件或文件",
+            "tactics": ["Defense Evasion"],
+            "url": "https://attack.mitre.org/techniques/T1036",
+            "subtechniques": {
+                "T1036.001": "Invalid Code Signature",
+                "T1036.002": "Right to Left Override",
+                "T1036.003": "Rename System Utilities",
+                "T1036.004": "Masquerade Task or Service",
+                "T1036.005": "Match Legitimate Name or Location",
+                "T1036.006": "Space After Filename",
+                "T1036.007": "Double File Extension"
+            },
+            "applicable_vulnerabilities": [
+                "signature_bypass",
+                "file_type_confusion",
+                "path_traversal"
+            ]
+        },
+        "T1087": {
+            "technique_id": "T1087",
+            "technique_name": "Account Discovery",
+            "description": "攻击者发现系统上的账户信息",
+            "tactics": ["Discovery"],
+            "url": "https://attack.mitre.org/techniques/T1087",
+            "subtechniques": {
+                "T1087.001": "Local Account",
+                "T1087.002": "Domain Account",
+                "T1087.003": "Email Account",
+                "T1087.004": "Cloud Account"
+            },
+            "applicable_vulnerabilities": [
+                "information_disclosure",
+                "enumeration_vulnerability"
+            ]
+        }
+    },
+    "vulnerability_type_mapping": {
+        "buffer_overflow": {
+            "primary_technique": "T1055",
+            "secondary_techniques": ["T1068", "T1190"],
+            "reasoning": "缓冲区溢出通常允许攻击者注入代码到进程空间，可用于权限提升或远程代码执行"
+        },
+        "heap_overflow": {
+            "primary_technique": "T1055",
+            "secondary_techniques": ["T1068", "T1190"],
+            "reasoning": "堆溢出可导致任意代码执行，常用于进程注入和权限提升"
+        },
+        "stack_overflow": {
+            "primary_technique": "T1055",
+            "secondary_techniques": ["T1068", "T1190"],
+            "reasoning": "栈溢出允许覆盖返回地址，可导致代码执行和权限提升"
+        },
+        "use_after_free": {
+            "primary_technique": "T1055",
+            "secondary_techniques": ["T1068"],
+            "reasoning": "释放后重用漏洞可被利用执行任意代码，常用于浏览器和文档处理软件"
+        },
+        "remote_code_execution": {
+            "primary_technique": "T1190",
+            "secondary_techniques": ["T1059", "T1210"],
+            "reasoning": "远程代码执行漏洞允许攻击者通过网络在目标系统上执行代码"
+        },
+        "privilege_escalation": {
+            "primary_technique": "T1068",
+            "secondary_techniques": ["T1548", "T1134"],
+            "reasoning": "权限提升漏洞允许攻击者获取更高权限"
+        },
+        "kernel_vulnerability": {
+            "primary_technique": "T1068",
+            "secondary_techniques": ["T1055"],
+            "reasoning": "内核漏洞通常用于权限提升，可获取系统级权限"
+        },
+        "command_injection": {
+            "primary_technique": "T1059",
+            "secondary_techniques": ["T1190"],
+            "reasoning": "命令注入漏洞允许攻击者执行系统命令"
+        },
+        "sql_injection": {
+            "primary_technique": "T1190",
+            "secondary_techniques": ["T1552"],
+            "reasoning": "SQL注入可导致数据库信息泄露和潜在代码执行"
+        },
+        "information_disclosure": {
+            "primary_technique": "T1592",
+            "secondary_techniques": ["T1087", "T1552"],
+            "reasoning": "信息泄露漏洞可暴露敏感信息用于后续攻击"
+        },
+        "denial_of_service": {
+            "primary_technique": "T1499",
+            "secondary_techniques": [],
+            "reasoning": "拒绝服务漏洞可导致服务不可用"
+        },
+        "authentication_bypass": {
+            "primary_technique": "T1078",
+            "secondary_techniques": ["T1110"],
+            "reasoning": "认证绕过允许攻击者无需有效凭证访问系统"
+        },
+        "deserialization": {
+            "primary_technique": "T1190",
+            "secondary_techniques": ["T1059"],
+            "reasoning": "反序列化漏洞可导致远程代码执行"
+        },
+        "xss": {
+            "primary_technique": "T1190",
+            "secondary_techniques": ["T1566"],
+            "reasoning": "跨站脚本漏洞可用于钓鱼和初始访问"
+        },
+        "ssrf": {
+            "primary_technique": "T1190",
+            "secondary_techniques": ["T1021"],
+            "reasoning": "服务端请求伪造可被用于内部网络探测"
+        },
+        "path_traversal": {
+            "primary_technique": "T1087",
+            "secondary_techniques": ["T1592", "T1552"],
+            "reasoning": "路径遍历可导致敏感文件泄露"
+        },
+        "race_condition": {
+            "primary_technique": "T1068",
+            "secondary_techniques": ["T1565"],
+            "reasoning": "竞态条件可导致权限提升或数据损坏"
+        },
+        "integer_overflow": {
+            "primary_technique": "T1055",
+            "secondary_techniques": ["T1068"],
+            "reasoning": "整数溢出可导致内存损坏和代码执行"
+        },
+        "null_pointer_dereference": {
+            "primary_technique": "T1499",
+            "secondary_techniques": [],
+            "reasoning": "空指针解引用通常导致拒绝服务"
+        },
+        "format_string": {
+            "primary_technique": "T1055",
+            "secondary_techniques": ["T1592"],
+            "reasoning": "格式化字符串漏洞可导致信息泄露和代码执行"
+        },
+        "type_confusion": {
+            "primary_technique": "T1055",
+            "secondary_techniques": ["T1068"],
+            "reasoning": "类型混淆可导致任意代码执行"
+        },
+        "out_of_bounds_read": {
+            "primary_technique": "T1592",
+            "secondary_techniques": ["T1087"],
+            "reasoning": "越界读取可导致信息泄露"
+        },
+        "out_of_bounds_write": {
+            "primary_technique": "T1055",
+            "secondary_techniques": ["T1068", "T1565"],
+            "reasoning": "越界写入可导致内存损坏和代码执行"
+        },
+        "double_free": {
+            "primary_technique": "T1055",
+            "secondary_techniques": ["T1068"],
+            "reasoning": "双重释放可导致任意代码执行"
+        },
+        "arbitrary_read": {
+            "primary_technique": "T1592",
+            "secondary_techniques": ["T1552"],
+            "reasoning": "任意读取可导致敏感信息泄露"
+        },
+        "arbitrary_write": {
+            "primary_technique": "T1055",
+            "secondary_techniques": ["T1068", "T1565"],
+            "reasoning": "任意写入可导致代码执行和数据篡改"
+        },
+        "code_injection": {
+            "primary_technique": "T1059",
+            "secondary_techniques": ["T1055", "T1190"],
+            "reasoning": "代码注入漏洞允许攻击者执行恶意代码"
+        },
+        "file_upload": {
+            "primary_technique": "T1190",
+            "secondary_techniques": ["T1036"],
+            "reasoning": "文件上传漏洞可被用于上传恶意文件"
+        },
+        "xml_injection": {
+            "primary_technique": "T1190",
+            "secondary_techniques": ["T1592"],
+            "reasoning": "XML注入可导致信息泄露和代码执行"
+        },
+        "ldap_injection": {
+            "primary_technique": "T1190",
+            "secondary_techniques": ["T1087"],
+            "reasoning": "LDAP注入可导致目录信息泄露"
+        },
+        "template_injection": {
+            "primary_technique": "T1190",
+            "secondary_techniques": ["T1059"],
+            "reasoning": "模板注入可导致远程代码执行"
+        },
+        "default_credential": {
+            "primary_technique": "T1078",
+            "secondary_techniques": ["T1110"],
+            "reasoning": "默认凭证可被用于未授权访问"
+        },
+        "hardcoded_credentials": {
+            "primary_technique": "T1552",
+            "secondary_techniques": ["T1078"],
+            "reasoning": "硬编码凭证可被攻击者发现并利用"
+        },
+        "memory_leak": {
+            "primary_technique": "T1592",
+            "secondary_techniques": ["T1499"],
+            "reasoning": "内存泄露可导致信息泄露和资源耗尽"
+        },
+        "cryptographic_weakness": {
+            "primary_technique": "T1110",
+            "secondary_techniques": ["T1552"],
+            "reasoning": "加密弱点可被用于破解凭证或绕过保护"
+        },
+        "session_fixation": {
+            "primary_technique": "T1078",
+            "secondary_techniques": [],
+            "reasoning": "会话固定可被用于劫持用户会话"
+        },
+        "open_redirect": {
+            "primary_technique": "T1566",
+            "secondary_techniques": [],
+            "reasoning": "开放重定向可被用于钓鱼攻击"
+        }
+    },
+    "target_type_adjustments": {
+        "web_server": {
+            "priority_techniques": ["T1190", "T1059"],
+            "reasoning": "Web服务器漏洞通常用于初始访问和远程代码执行"
+        },
+        "database_server": {
+            "priority_techniques": ["T1190", "T1552"],
+            "reasoning": "数据库服务器漏洞可导致数据泄露和凭证获取"
+        },
+        "client_application": {
+            "priority_techniques": ["T1203", "T1566"],
+            "reasoning": "客户端应用漏洞通常通过钓鱼或恶意文件触发"
+        },
+        "kernel_driver": {
+            "priority_techniques": ["T1068", "T1055"],
+            "reasoning": "内核驱动漏洞通常用于权限提升"
+        },
+        "network_device": {
+            "priority_techniques": ["T1190", "T1210", "T1021"],
+            "reasoning": "网络设备漏洞可用于初始访问和横向移动"
+        },
+        "embedded_device": {
+            "priority_techniques": ["T1190", "T1499"],
+            "reasoning": "嵌入式设备漏洞可导致远程控制或拒绝服务"
+        },
+        "firmware": {
+            "priority_techniques": ["T1592", "T1548"],
+            "reasoning": "固件漏洞可导致持久化和权限提升"
+        },
+        "mobile_app": {
+            "priority_techniques": ["T1203", "T1552"],
+            "reasoning": "移动应用漏洞可导致数据泄露和恶意代码执行"
+        },
+        "iot_device": {
+            "priority_techniques": ["T1190", "T1499"],
+            "reasoning": "IoT设备漏洞可导致远程控制和拒绝服务"
+        },
+        "container": {
+            "priority_techniques": ["T1055", "T1068"],
+            "reasoning": "容器漏洞可导致逃逸和权限提升"
+        }
+    },
+    "impact_type_mapping": {
+        "remote_code_execution": {
+            "primary_technique": "T1190",
+            "secondary_techniques": ["T1059", "T1055"],
+            "reasoning": "远程代码执行是最严重的漏洞影响"
+        },
+        "privilege_escalation": {
+            "primary_technique": "T1068",
+            "secondary_techniques": ["T1134", "T1548"],
+            "reasoning": "权限提升允许攻击者获取更高权限"
+        },
+        "information_disclosure": {
+            "primary_technique": "T1592",
+            "secondary_techniques": ["T1552", "T1087"],
+            "reasoning": "信息泄露可暴露敏感数据"
+        },
+        "denial_of_service": {
+            "primary_technique": "T1499",
+            "secondary_techniques": [],
+            "reasoning": "拒绝服务影响系统可用性"
+        },
+        "credential_access": {
+            "primary_technique": "T1552",
+            "secondary_techniques": ["T1110"],
+            "reasoning": "凭证访问可导致账户被接管"
+        },
+        "lateral_movement": {
+            "primary_technique": "T1210",
+            "secondary_techniques": ["T1021"],
+            "reasoning": "横向移动允许攻击者在网络中移动"
+        },
+        "persistence": {
+            "primary_technique": "T1055",
+            "secondary_techniques": ["T1078"],
+            "reasoning": "持久化允许攻击者维持访问"
+        },
+        "defense_evasion": {
+            "primary_technique": "T1036",
+            "secondary_techniques": ["T1055"],
+            "reasoning": "防御逃避允许攻击者隐藏活动"
+        }
+    }
+}

@@ -400,7 +400,7 @@ class StaticDataFlowAnalyzer:
             
             cmd = [
                 'r2', '-q', '-e', 'io.color=false', '-c',
-                f'aaa; s sym.{safe_func}; pdf; afl~{safe_func}; q',
+                f'aaa; pdf @ sym.{safe_func}; afl~{safe_func}; q',
                 self.binary_path
             ]
             

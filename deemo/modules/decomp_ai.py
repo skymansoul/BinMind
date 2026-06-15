@@ -484,7 +484,7 @@ class DecompilerAI:
         safe_func_name = sanitize_function_name(function_name)
         
         try:
-            r2_commands = ['aaa', f's sym.{safe_func_name}', 'pdd', 'q']
+            r2_commands = ['aaa', f'pdd @ sym.{safe_func_name}', 'q']
             cmd = [
                 'r2',
                 '-q',
@@ -536,7 +536,7 @@ class DecompilerAI:
                 '-q',
                 '-e', 'io.color=false',
                 '-c',
-                f'aaa; af @ sym.{safe_func_name}; pdf @ sym.{safe_func_name}; q',
+                f'aaa; pdf @ sym.{safe_func_name}; q',
                 self.binary_path
             ]
             

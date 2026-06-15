@@ -1465,3 +1465,311 @@ Notes:
         
         with open(readme_path, 'w', encoding='utf-8') as f:
             f.write(readme_content)
+
+
+class HybridSymbolicExecutor:
+    """
+    混合符号执行分析器 - 结合 angr 和 Unicorn Engine
+    
+    该分析器将符号执行（angr）与动态模拟（Unicorn Engine）相结合，
+    以处理自修改代码、加密字符串和重度混淆的二进制文件。
+    """
+    
+    def __init__(self, binary_path: str, target_arch: str = None):
+        """
+        初始化混合符号执行器
+        
+        Args:
+            binary_path: 二进制文件路径
+            target_arch: 目标架构（可选）
+        """
+        self.binary_path = binary_path
+        self.target_arch = target_arch
+        self.symbolic_executor = SymbolicExecutor(binary_path, target_arch)
+        self.unicorn_available = False
+        self.unicorn_analyzer = None
+        
+        self._init_unicorn()
+    
+    def _init_unicorn(self):
+        """
+        初始化 Unicorn Engine
+        """
+        try:
+            from modules.unicorn_hybrid import UnicornHybridAnalyzer, UnicornArch
+            
+            arch_map = {
+                'x86_64': UnicornArch.X86_64,
+                'amd64': UnicornArch.X86_64,
+                'x86': UnicornArch.X86,
+                'i386': UnicornArch.X86,
+                'arm64': UnicornArch.ARM64,
+                'aarch64': UnicornArch.ARM64,
+                'arm': UnicornArch.ARM,
+            }
+            
+            arch_info = self.symbolic_executor.get_arch_info()
+            arch_name = arch_info.get('arch', 'unknown').lower()
+            
+            unicorn_arch = arch_map.get(arch_name, UnicornArch.X86_64)
+            self.unicorn_analyzer = UnicornHybridAnalyzer(str(self.binary_path), unicorn_arch)
+            self.unicorn_available = True
+            logger.info("[Hybrid] Unicorn Engine 初始化成功")
+        except ImportError:
+            logger.warning("[Hybrid] Unicorn Engine 未安装，混合分析功能不可用")
+            logger.warning("[Hybrid] 安装命令: pip install unicorn")
+        except Exception as e:
+            logger.error(f"[Hybrid] 初始化 Unicorn Engine 失败: {e}")
+    
+    def is_available(self) -> bool:
+        """
+        检查混合分析是否可用
+        """
+        return self.symbolic_executor.is_available() or self.unicorn_available
+    
+    def run_hybrid_analysis(
+        self,
+        function_name: str = 'main',
+        max_symbolic_steps: int = 50000,
+        max_unicorn_instructions: int = 50000
+    ) -> Dict[str, Any]:
+        """
+        执行混合分析
+        
+        Args:
+            function_name: 目标函数名
+            max_symbolic_steps: 符号执行最大步数
+            max_unicorn_instructions: Unicorn 模拟最大指令数
+            
+        Returns:
+            混合分析结果
+        """
+        results = {
+            'success': False,
+            'symbolic_analysis': None,
+            'unicorn_analysis': None,
+            'hybrid_results': None,
+            'error': None
+        }
+        
+        try:
+            logger.info("[Hybrid] 开始混合符号执行分析")
+            
+            symbolic_info = {}
+            if self.symbolic_executor.is_available():
+                logger.info("[Hybrid] 执行符号分析")
+                try:
+                    symbolic_info = self.symbolic_executor.comprehensive_analysis(function_name)
+                    results['symbolic_analysis'] = symbolic_info
+                except Exception as e:
+                    logger.warning(f"[Hybrid] 符号分析部分失败: {e}")
+                    results['error'] = f"符号分析失败: {e}"
+            
+            unicorn_results = {}
+            if self.unicorn_available:
+                logger.info("[Hybrid] 执行 Unicorn 动态分析")
+                try:
+                    unicorn_results = self._run_unicorn_analysis(symbolic_info, max_unicorn_instructions)
+                    results['unicorn_analysis'] = unicorn_results
+                except Exception as e:
+                    logger.warning(f"[Hybrid] Unicorn 分析部分失败: {e}")
+                    if not results['error']:
+                        results['error'] = f"Unicorn 分析失败: {e}"
+            
+            results['hybrid_results'] = self._combine_results(symbolic_info, unicorn_results)
+            results['success'] = True
+            
+            logger.info("[Hybrid] 混合分析完成")
+            
+        except Exception as e:
+            logger.error(f"[Hybrid] 混合分析失败: {e}")
+            results['error'] = str(e)
+        
+        return results
+    
+    def _run_unicorn_analysis(self, symbolic_info: Dict[str, Any], max_instructions: int) -> Dict[str, Any]:
+        """
+        运行 Unicorn 分析
+        
+        Args:
+            symbolic_info: 符号分析结果（用于指导 Unicorn 分析）
+            max_instructions: 最大指令数
+            
+        Returns:
+            Unicorn 分析结果
+        """
+        try:
+            if not self.unicorn_analyzer:
+                return {}
+            
+            info_for_unicorn = {}
+            
+            if symbolic_info:
+                dangerous_funcs = symbolic_info.get('dangerous_functions', [])
+                if dangerous_funcs:
+                    info_for_unicorn['complex_functions'] = []
+                    for func_name in dangerous_funcs[:5]:
+                        func_addr = self.symbolic_executor._find_function_address(func_name)
+                        if func_addr:
+                            info_for_unicorn['complex_functions'].append(func_addr)
+                
+                basic_analysis = symbolic_info.get('basic_analysis', {})
+                crash_path = basic_analysis.get('crash_path', {})
+                if crash_path.get('found'):
+                    info_for_unicorn['entry_point'] = self.symbolic_executor.project.entry if self.symbolic_executor.project else 0
+            
+            result = self.unicorn_analyzer.hybrid_analysis(info_for_unicorn)
+            
+            return {
+                'hidden_strings': result.hidden_strings,
+                'dynamic_jump_targets': list(result.dynamic_jump_targets),
+                'simplified_constraints': result.simplified_constraints,
+                'decrypted_data': result.decrypted_data,
+                'deobfuscated_cfg': result.deobfuscated_cfg,
+                'execution_log': result.execution_log[:100]
+            }
+        except Exception as e:
+            logger.error(f"[Hybrid] Unicorn 分析执行失败: {e}")
+            return {}
+    
+    def _combine_results(self, symbolic_info: Dict[str, Any], unicorn_results: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        合并符号分析和 Unicorn 分析结果
+        
+        Args:
+            symbolic_info: 符号分析结果
+            unicorn_results: Unicorn 分析结果
+            
+        Returns:
+            合并后的结果
+        """
+        combined = {
+            'enhanced_strings': [],
+            'resolved_jump_targets': [],
+            'deobfuscation_info': {},
+            'recommendations': []
+        }
+        
+        symbolic_strings = []
+        if symbolic_info:
+            basic = symbolic_info.get('basic_analysis', {})
+            crash_input = basic.get('crashing_input', {})
+            if crash_input.get('success'):
+                combined['recommendations'].append("符号执行发现可触发崩溃的输入")
+        
+        unicorn_strings = unicorn_results.get('hidden_strings', [])
+        combined['enhanced_strings'] = unicorn_strings
+        
+        if unicorn_strings:
+            combined['recommendations'].append(f"Unicorn 提取了 {len(unicorn_strings)} 个隐藏字符串")
+        
+        jump_targets = unicorn_results.get('dynamic_jump_targets', [])
+        combined['resolved_jump_targets'] = jump_targets
+        
+        if jump_targets:
+            combined['recommendations'].append(f"Unicorn 解析了 {len(jump_targets)} 个动态跳转目标")
+        
+        cfg = unicorn_results.get('deobfuscated_cfg')
+        if cfg:
+            combined['deobfuscation_info']['cfg_nodes'] = len(cfg)
+            combined['deobfuscation_info']['is_deobfuscated'] = True
+            combined['recommendations'].append("成功生成去混淆后的控制流图")
+        
+        decrypted_data = unicorn_results.get('decrypted_data', [])
+        if decrypted_data:
+            combined['deobfuscation_info']['decrypted_chunks'] = len(decrypted_data)
+            combined['recommendations'].append(f"解密了 {len(decrypted_data)} 个数据块")
+        
+        return combined
+    
+    def decrypt_encrypted_strings(self, function_name: str = None) -> List[Tuple[int, str]]:
+        """
+        使用 Unicorn 解密加密字符串
+        
+        Args:
+            function_name: 解密函数名（可选）
+            
+        Returns:
+            解密后的字符串列表 [(地址, 字符串), ...]
+        """
+        if not self.unicorn_available:
+            return []
+        
+        try:
+            logger.info(f"[Hybrid] 尝试解密加密字符串")
+            
+            if function_name:
+                func_addr = self.symbolic_executor._find_function_address(function_name)
+                if func_addr:
+                    logger.info(f"[Hybrid] 使用解密函数: {function_name} @ {hex(func_addr)}")
+                else:
+                    logger.warning(f"[Hybrid] 未找到解密函数: {function_name}")
+                    return []
+            
+            unicorn_results = self._run_unicorn_analysis({}, 100000)
+            hidden_strings = unicorn_results.get('hidden_strings', [])
+            
+            decrypted = []
+            for addr, string in hidden_strings:
+                if len(string) >= 4:
+                    decrypted.append((addr, string))
+            
+            logger.info(f"[Hybrid] 解密完成，发现 {len(decrypted)} 个字符串")
+            return decrypted
+        
+        except Exception as e:
+            logger.error(f"[Hybrid] 解密字符串失败: {e}")
+            return []
+    
+    def deobfuscate_control_flow(self, function_name: str = 'main') -> Dict[str, Any]:
+        """
+        使用 Unicorn 去混淆控制流
+        
+        Args:
+            function_name: 目标函数名
+            
+        Returns:
+            去混淆后的控制流信息
+        """
+        if not self.unicorn_available:
+            return {'success': False, 'error': 'Unicorn 不可用'}
+        
+        try:
+            logger.info(f"[Hybrid] 去混淆函数: {function_name}")
+            
+            func_addr = self.symbolic_executor._find_function_address(function_name)
+            if not func_addr:
+                return {'success': False, 'error': f'未找到函数 {function_name}'}
+            
+            result = self.unicorn_analyzer.trace_control_flow(func_addr, max_instructions=50000)
+            
+            return {
+                'success': True,
+                'function_name': function_name,
+                'function_address': hex(func_addr),
+                'basic_blocks': list(result.keys()),
+                'edge_count': sum(len(edges) for edges in result.values()),
+                'cfg': result
+            }
+        
+        except Exception as e:
+            logger.error(f"[Hybrid] 去混淆失败: {e}")
+            return {'success': False, 'error': str(e)}
+    
+    def generate_report(self) -> str:
+        """
+        生成混合分析报告
+        
+        Returns:
+            报告字符串（Markdown 格式）
+        """
+        report = "## 混合符号执行分析报告\n\n"
+        
+        report += "### 分析引擎状态\n"
+        report += f"- Symbolic (angr): {'可用' if self.symbolic_executor.is_available() else '不可用'}\n"
+        report += f"- Dynamic (Unicorn): {'可用' if self.unicorn_available else '不可用'}\n\n"
+        
+        if self.unicorn_analyzer:
+            report += self.unicorn_analyzer.generate_report()
+        
+        return report
