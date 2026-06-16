@@ -26,6 +26,71 @@ JAVA_CLASS_MAGIC = 0xCAFEBABE
 CLR_PE_SIGNATURE = 0x5A4D  # MZ header
 CLR_DIRECTORY_ENTRY = 14  # PE CLR Data Directory entry index
 
+# Java 危险方法模式（模块级别）
+JAVA_DANGEROUS_METHODS = {
+    'ObjectInputStream.readObject': {'description': '反序列化漏洞 - ObjectInputStream 可导致远程代码执行', 'severity': 'Critical'},
+    'ObjectInputStream.readUnshared': {'description': '反序列化漏洞 - readUnshared', 'severity': 'High'},
+    'XMLDecoder.readObject': {'description': '反序列化漏洞 - XMLDecoder 高危', 'severity': 'Critical'},
+    'Yaml.load': {'description': '反序列化漏洞 - YAML 解析', 'severity': 'High'},
+    'SnakeYaml.load': {'description': '反序列化漏洞 - SnakeYAML', 'severity': 'High'},
+    'JSON.parseObject': {'description': '反序列化漏洞 - FastJSON', 'severity': 'High'},
+    'Class.forName': {'description': '动态加载 - 加载任意类', 'severity': 'Medium'},
+    'ClassLoader.loadClass': {'description': '动态加载 - 类加载器', 'severity': 'Medium'},
+    'Method.invoke': {'description': '动态调用 - 反射调用方法', 'severity': 'Medium'},
+    'Constructor.newInstance': {'description': '动态创建 - 反射创建实例', 'severity': 'Medium'},
+    'getMethod': {'description': '反射获取 - 获取方法', 'severity': 'Low'},
+    'Runtime.exec': {'description': '命令执行 - 执行系统命令', 'severity': 'Critical'},
+    'ProcessBuilder.start': {'description': '命令执行 - 进程构建器', 'severity': 'Critical'},
+    'FileInputStream': {'description': '文件操作 - 文件输入流', 'severity': 'Low'},
+    'FileOutputStream': {'description': '文件操作 - 文件输出流', 'severity': 'Low'},
+    'FileReader': {'description': '文件操作 - 文件读取', 'severity': 'Low'},
+    'FileWriter': {'description': '文件操作 - 文件写入', 'severity': 'Low'},
+    'Files.readAllBytes': {'description': '文件操作 - 读取文件', 'severity': 'Low'},
+    'Files.write': {'description': '文件操作 - 写入文件', 'severity': 'Low'},
+    'URL.openStream': {'description': '网络请求 - 打开 URL', 'severity': 'Medium'},
+    'URLConnection': {'description': '网络连接 - URL 连接', 'severity': 'Medium'},
+    'Socket': {'description': '网络套接字 - Socket', 'severity': 'Medium'},
+    'HttpURLConnection': {'description': 'HTTP 连接 - HTTP 请求', 'severity': 'Medium'},
+    'MessageDigest.getInstance("MD5")': {'description': '弱加密 - MD5', 'severity': 'Low'},
+    'MessageDigest.getInstance("SHA1")': {'description': '弱加密 - SHA1', 'severity': 'Low'},
+    'Cipher.getInstance("DES")': {'description': '弱加密 - DES', 'severity': 'Low'},
+    'Statement.executeQuery': {'description': 'SQL 执行 - 可能存在注入', 'severity': 'High'},
+    'Statement.executeUpdate': {'description': 'SQL 执行 - 更新操作', 'severity': 'High'},
+    'PreparedStatement': {'description': 'SQL 预编译 - 相对安全但需检查', 'severity': 'Low'},
+    'Connection.createStatement': {'description': 'SQL 连接 - 创建语句', 'severity': 'Medium'},
+    'InitialContext.lookup': {'description': 'JNDI 注入 - 远程查找', 'severity': 'Critical'},
+    'Context.lookup': {'description': 'JNDI 注入 - 上下文查找', 'severity': 'Critical'},
+    'Thread.start': {'description': '线程启动 - 多线程风险', 'severity': 'Low'},
+    'System.loadLibrary': {'description': '本地库加载 - 加载 JNI', 'severity': 'Medium'},
+    'System.load': {'description': '本地库加载 - 加载库文件', 'severity': 'Medium'},
+}
+
+# .NET 危险方法模式（模块级别）
+DOTNET_DANGEROUS_METHODS = {
+    'BinaryFormatter.Deserialize': {'description': '反序列化漏洞 - BinaryFormatter 可导致远程代码执行', 'severity': 'Critical'},
+    'XmlSerializer.Deserialize': {'description': '反序列化漏洞 - XmlSerializer', 'severity': 'High'},
+    'DataContractSerializer.ReadObject': {'description': '反序列化漏洞 - DataContractSerializer', 'severity': 'High'},
+    'JavaScriptSerializer.Deserialize': {'description': '反序列化漏洞 - JavaScriptSerializer', 'severity': 'High'},
+    'Type.GetType': {'description': '动态加载 - 获取类型', 'severity': 'Medium'},
+    'Assembly.Load': {'description': '动态加载 - 加载程序集', 'severity': 'Medium'},
+    'Activator.CreateInstance': {'description': '动态创建 - 反射创建实例', 'severity': 'Medium'},
+    'MethodInfo.Invoke': {'description': '动态调用 - 反射调用方法', 'severity': 'Medium'},
+    'Process.Start': {'description': '命令执行 - 执行系统命令', 'severity': 'Critical'},
+    'File.OpenRead': {'description': '文件操作 - 文件读取', 'severity': 'Low'},
+    'File.OpenWrite': {'description': '文件操作 - 文件写入', 'severity': 'Low'},
+    'File.ReadAllText': {'description': '文件操作 - 读取文本', 'severity': 'Low'},
+    'File.WriteAllText': {'description': '文件操作 - 写入文本', 'severity': 'Low'},
+    'WebClient.DownloadString': {'description': '网络请求 - 下载字符串', 'severity': 'Medium'},
+    'WebClient.DownloadFile': {'description': '网络请求 - 下载文件', 'severity': 'Medium'},
+    'HttpClient.GetString': {'description': 'HTTP 请求 - 获取字符串', 'severity': 'Medium'},
+    'HttpWebRequest.Create': {'description': 'HTTP 请求 - 创建请求', 'severity': 'Medium'},
+    'MD5.Create': {'description': '弱加密 - MD5', 'severity': 'Low'},
+    'SHA1.Create': {'description': '弱加密 - SHA1', 'severity': 'Low'},
+    'SqlCommand.ExecuteReader': {'description': 'SQL 执行 - 可能存在注入', 'severity': 'High'},
+    'SqlCommand.ExecuteNonQuery': {'description': 'SQL 执行 - 更新操作', 'severity': 'High'},
+    'SqlConnection.Open': {'description': 'SQL 连接 - 数据库连接', 'severity': 'Low'},
+}
+
 
 class ManagedCodeType(Enum):
     """托管代码类型枚举"""

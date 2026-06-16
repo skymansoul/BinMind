@@ -13,8 +13,7 @@ from pathlib import Path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from modules.pyinstaller_unpacker import (
-    PyInstallerUnpacker, PycFile, UnpackResult,
-    PackerType, PythonVersion, PYTHON_MAGIC_NUMBERS
+    PyInstallerUnpacker, PycFile, UnpackResult, PYTHON_MAGIC_NUMBERS
 )
 
 

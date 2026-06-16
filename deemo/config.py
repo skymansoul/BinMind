@@ -1,6 +1,13 @@
 import os
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, Optional
+
+# 日志框架配置
+try:
+    from loguru import logger as loguru_logger
+    LOGURU_AVAILABLE = True
+except ImportError:
+    LOGURU_AVAILABLE = False
 
 class Config:
     """配置类"""
@@ -12,10 +19,39 @@ class Config:
     LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
     LOG_FILE = os.path.join(BASE_DIR, 'logs', 'binary_analyzer.log')
     
+    # 目录配置
+    LOGS_DIR = os.path.join(BASE_DIR, 'logs')
+    REPORTS_DIR = os.path.join(BASE_DIR, 'reports')
+    EXPLOITS_DIR = os.path.join(BASE_DIR, 'exploits')
+    DB_DIR = os.path.join(BASE_DIR, 'db')
+    DB_PATH = os.path.join(DB_DIR, 'vulnerabilities.db')
+    CACHE_DIR = os.path.join(BASE_DIR, 'cache')
+    CORPUS_DIR = os.path.join(BASE_DIR, 'corpus')
+    
+    # 超时配置
+    SUBPROCESS_TIMEOUT = 300
+    RADARE2_TIMEOUT = 300
+    GHIDRA_TIMEOUT = 1800
+    IDA_TIMEOUT = 1800
+    ANGR_TIMEOUT = 300
+    MAX_ITERATIONS = 5
+    
+    # 反编译器配置
+    DEFAULT_DECOMPILER = os.environ.get('DEFAULT_DECOMPILER', 'auto')
+    ENABLE_SYMBOLIC_EXECUTION = True
+    
+    # llama.cpp 配置
+    LLAMACPP_HOST = 'http://localhost:8080'
+    
     # 数据目录
     DATA_DIR = os.path.join(BASE_DIR, 'data')
     TEMP_DIR = os.path.join(BASE_DIR, 'temp')
     RESULTS_DIR = os.path.join(BASE_DIR, 'results')
+    LOGS_DIR = os.path.join(BASE_DIR, 'logs')
+    REPORTS_DIR = os.path.join(BASE_DIR, 'reports')
+    EXPLOITS_DIR = os.path.join(BASE_DIR, 'exploits')
+    DB_DIR = os.path.join(BASE_DIR, 'db')
+    DB_PATH = os.path.join(DB_DIR, 'vulnerabilities.db')
     
     # 数据库配置
     DATABASE_PATH = os.path.join(DATA_DIR, 'vulnerabilities.db')
@@ -26,6 +62,12 @@ class Config:
     QEMU_PATH = os.environ.get('QEMU_PATH', 'qemu-system-x86_64')
     GCC_PATH = os.environ.get('GCC_PATH', 'gcc')
     R2_PATH = os.environ.get('R2_PATH', 'r2')
+    
+    # 通用配置
+    MAX_ITERATIONS = 5
+    DEFAULT_DECOMPILER = os.environ.get('DEFAULT_DECOMPILER', 'auto')
+    SUBPROCESS_TIMEOUT = 300
+    RADARE2_TIMEOUT = 60
     
     # QEMU配置
     QEMU_MEMORY = '512M'
@@ -371,6 +413,91 @@ class Config:
         'output_dir': os.path.join(RESULTS_DIR, 'steganography')
     }
 
+    # ==================== 抗量子密码算法检测配置 ====================
+    PQC_DETECTOR = {
+        'enabled': True,
+        'detect_classical': True,
+        'detect_pqc': True,
+        'generate_migration_warnings': True,
+        'min_confidence': 0.7,
+        'output_dir': os.path.join(RESULTS_DIR, 'pqc')
+    }
+
+    # ==================== 格密码时间侧信道检测配置 ====================
+    LATTICE_SIDE_CHANNEL = {
+        'enabled': True,
+        'detect_conditional_branches': True,
+        'detect_memory_access': True,
+        'detect_lookup_tables': True,
+        'detect_ntt_operations': True,
+        'risk_threshold': 0.5,
+        'output_dir': os.path.join(RESULTS_DIR, 'lattice_side_channel')
+    }
+
+    # ==================== RISC-V扩展分析配置 ====================
+    RISCV_EXT_ANALYZER = {
+        'enabled': True,
+        'analyze_vector': True,
+        'analyze_crypto': True,
+        'detect_vector_loops': True,
+        'detect_unsafe_instructions': True,
+        'output_dir': os.path.join(RESULTS_DIR, 'riscv_ext')
+    }
+
+    # ==================== CHERI能力架构分析配置 ====================
+    CHERI_ANALYZER = {
+        'enabled': True,
+        'check_permissions': True,
+        'check_sealing': True,
+        'check_capability_leaks': True,
+        'check_delegation': True,
+        'output_dir': os.path.join(RESULTS_DIR, 'cheri')
+    }
+
+    # ==================== AI 服务配置 ====================
+    # AI提供商 (openai, azure, ollama, llamacpp, custom)
+    AI_PROVIDER = os.environ.get('AI_PROVIDER', 'openai')
+    
+    # OpenAI 配置
+    OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
+    OPENAI_MODEL = os.environ.get('OPENAI_MODEL', 'gpt-4')
+    OPENAI_BASE_URL = os.environ.get('OPENAI_BASE_URL', '')
+    
+    # Azure OpenAI 配置
+    AZURE_API_KEY = os.environ.get('AZURE_API_KEY', '')
+    AZURE_ENDPOINT = os.environ.get('AZURE_ENDPOINT', '')
+    AZURE_DEPLOYMENT_NAME = os.environ.get('AZURE_DEPLOYMENT_NAME', '')
+    
+    # Ollama 配置
+    OLLAMA_MODEL = os.environ.get('OLLAMA_MODEL', 'llama2')
+    OLLAMA_HOST = os.environ.get('OLLAMA_HOST', 'http://localhost:11434')
+    
+    # llama.cpp 配置
+    LLAMACPP_MODEL_PATH = os.environ.get('LLAMACPP_MODEL_PATH', '')
+    LLAMACPP_N_THREADS = int(os.environ.get('LLAMACPP_N_THREADS', '4'))
+    
+    # 自定义 API 配置
+    CUSTOM_API_URL = os.environ.get('CUSTOM_API_URL', '')
+    CUSTOM_API_KEY = os.environ.get('CUSTOM_API_KEY', '')
+    
+    # AI 请求配置
+    AI_TIMEOUT = int(os.environ.get('AI_TIMEOUT', '60'))
+    AI_MAX_TOKENS = int(os.environ.get('AI_MAX_TOKENS', '4096'))
+    AI_TEMPERATURE = float(os.environ.get('AI_TEMPERATURE', '0.7'))
+    
+    # ==================== 威胁情报配置 ====================
+    # MISP配置
+    MISP_URL = os.environ.get('MISP_URL', '')
+    MISP_API_KEY = os.environ.get('MISP_API_KEY', '')
+    MISP_VERIFY_SSL = os.environ.get('MISP_VERIFY_SSL', 'true').lower() == 'true'
+    
+    # OTX配置
+    OTX_API_KEY = os.environ.get('OTX_API_KEY', '')
+    
+    # 威胁情报通用配置
+    THREAT_INTEL_TIMEOUT = int(os.environ.get('THREAT_INTEL_TIMEOUT', '30'))
+    THREAT_INTEL_ENABLED = os.environ.get('THREAT_INTEL_ENABLED', 'false').lower() == 'true'
+    
     # ==================== 漏洞利用策略配置 ====================
     EXPLOIT_STRATEGY_OUTPUT_DIR = os.environ.get('EXPLOIT_STRATEGY_OUTPUT_DIR', os.path.join(DATA_DIR, 'exploit_strategies'))
     EXPLOIT_STRATEGY_ENABLED = os.environ.get('EXPLOIT_STRATEGY_ENABLED', 'true').lower() == 'true'
@@ -505,7 +632,18 @@ def call_ai_with_retry(func, max_retries=3, delay=1):
 
 def get_current_ai_model():
     """获取当前配置的AI模型"""
-    return os.environ.get('AI_MODEL', 'gpt-4')
+    provider = os.environ.get('AI_PROVIDER', 'openai')
+    
+    if provider == 'ollama':
+        return os.environ.get('OLLAMA_MODEL', 'llama2')
+    elif provider == 'azure':
+        return os.environ.get('AZURE_OPENAI_DEPLOYMENT', os.environ.get('OPENAI_MODEL', 'gpt-4'))
+    elif provider == 'llamacpp':
+        return os.environ.get('LLAMACPP_MODEL', 'llama-2-7b-chat')
+    elif provider == 'custom':
+        return os.environ.get('CUSTOM_MODEL', 'custom')
+    else:
+        return os.environ.get('OPENAI_MODEL', 'gpt-4')
 
 def mask_sensitive_data(data):
     """
@@ -585,13 +723,104 @@ def check_openai_api_key():
 
 def validate_crash_data(crash_data):
     """验证崩溃数据"""
-    required_fields = ['crash_address', 'crash_type', 'registers']
     if not isinstance(crash_data, dict):
-        return False
-    for field in required_fields:
-        if field not in crash_data:
+        return False, "崩溃数据必须是字典类型"
+    
+    if 'registers' in crash_data or 'stack_trace' in crash_data:
+        return True, None
+    
+    return False, "崩溃数据缺少必要字段（registers 或 stack_trace）"
+
+def get_crash_data_example():
+    """获取崩溃数据示例"""
+    return {
+        'registers': {
+            'rax': '0x00000000deadbeef',
+            'rbx': '0x0000000000000000',
+            'rcx': '0x0000000000000041',
+            'rdx': '0x00007ffff7a0d000',
+            'rsp': '0x00007ffff7a0cff0',
+            'rbp': '0x00007ffff7a0d000',
+            'rsi': '0x00007ffff7a0d000',
+            'rdi': '0x0000000000000000',
+            'rip': '0x00007ffff7a0d000',
+            'eflags': '0x0000000000010206'
+        },
+        'stack_trace': [
+            '#0  0x00007ffff7a0d000 in vulnerable_function ()',
+            '#1  0x00007ffff7a0d050 in main ()',
+            '#2  0x00007ffff7a0d100 in __libc_start_main ()'
+        ],
+        'output': '*** buffer overflow detected ***: ./vulnerable terminated\n',
+        'signal': 'SIGSEGV',
+        'crash_address': '0x00007ffff7a0d000',
+        'crash_type': 'buffer_overflow',
+        'exploitability': 'high'
+    }
+
+def test_api_connection() -> bool:
+    """测试AI API连接"""
+    provider = Config.AI_PROVIDER.lower()
+    
+    if provider == 'openai':
+        if not Config.OPENAI_API_KEY:
             return False
-    return True
+        try:
+            from openai import OpenAI
+            client = OpenAI(api_key=Config.OPENAI_API_KEY)
+            if Config.OPENAI_BASE_URL:
+                client.base_url = Config.OPENAI_BASE_URL
+            client.models.list()
+            return True
+        except Exception:
+            return False
+    
+    elif provider == 'azure':
+        if not Config.AZURE_API_KEY or not Config.AZURE_ENDPOINT:
+            return False
+        try:
+            from openai import AzureOpenAI
+            client = AzureOpenAI(
+                api_key=Config.AZURE_API_KEY,
+                azure_endpoint=Config.AZURE_ENDPOINT,
+                azure_deployment=Config.AZURE_DEPLOYMENT_NAME
+            )
+            client.models.list()
+            return True
+        except Exception:
+            return False
+    
+    elif provider == 'ollama':
+        try:
+            import requests
+            response = requests.get(f"{Config.OLLAMA_HOST}/api/tags", timeout=5)
+            return response.status_code == 200
+        except Exception:
+            return False
+    
+    elif provider == 'llamacpp':
+        if not Config.LLAMACPP_MODEL_PATH or not os.path.exists(Config.LLAMACPP_MODEL_PATH):
+            return False
+        return True
+    
+    elif provider == 'custom':
+        if not Config.CUSTOM_API_URL:
+            return False
+        try:
+            import requests
+            response = requests.get(Config.CUSTOM_API_URL, timeout=5)
+            return response.status_code == 200
+        except Exception:
+            return False
+    
+    return False
+
+# AI 提供商常量
+AI_PROVIDER_OPENAI = 'openai'
+AI_PROVIDER_AZURE = 'azure'
+AI_PROVIDER_OLLAMA = 'ollama'
+AI_PROVIDER_LLAMACPP = 'llamacpp'
+AI_PROVIDER_CUSTOM = 'custom'
 
 # 初始化目录
 Config.init_dirs()

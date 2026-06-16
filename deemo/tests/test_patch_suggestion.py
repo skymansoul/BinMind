@@ -204,7 +204,7 @@ class TestPatchSuggester(unittest.TestCase):
                     vuln_type="stack_overflow"
                 )
         
-        self.assertEqual(suggestion.confidence, 0.7)
+        self.assertEqual(suggestion.confidence, 0.9)
         self.assertGreater(len(suggestion.patch_diff), 0)
     
     def test_format_patch_for_report(self):

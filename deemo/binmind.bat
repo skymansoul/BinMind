@@ -8,4 +8,4 @@ if exist "%SCRIPT_DIR%.venv\Scripts\python.exe" (
     set "PYTHON_BIN=%SCRIPT_DIR%.venv\Scripts\python.exe"
 )
 
-"%PYTHON_BIN%" "%SCRIPT_DIR%binmind.py" %*
+"%PYTHON_BIN%" "%SCRIPT_DIR%main.py" %*

@@ -524,7 +524,7 @@ class StackPivotGenerator:
             f"3. 执行 pivot gadget: {pivot_chain.pivot_gadget.instruction}",
             f"4. 栈已迁移到 {pivot_chain.target_region}",
             "5. 在新栈上执行 ROP 链",
-        }
+        ]
         
         if goal == "shell":
             steps.append("6. 调用 system('/bin/sh') 获取 shell")

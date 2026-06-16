@@ -1,390 +1,163 @@
-#!/usr/bin/env python3
-"""
-增量分析缓存模块测试
-"""
+"""Tests for incremental analysis cache module"""
+
 import os
-import sys
-import unittest
-import tempfile
-import shutil
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
+import pytest
 from modules.incremental_analysis import (
-    IncrementalAnalysisCache, IncrementalAnalysisResult,
-    FunctionCacheEntry, BinaryCacheEntry, CacheStatus, CacheInvalidationReason
+    CacheStrategy,
+    CacheInvalidationPolicy,
+    CacheEntry,
+    CacheStatistics,
+    IncrementalUpdate,
+    IncrementalAnalysisCache,
+    IncrementalAnalyzer
 )
 
 
-class TestIncrementalAnalysisCache(unittest.TestCase):
-    """增量分析缓存管理器测试类"""
+class TestCacheStrategyEnum:
+    def test_cache_strategy_values(self):
+        assert CacheStrategy.LRU.value == "lru"
+        assert CacheStrategy.LFU.value == "lfu"
+        assert CacheStrategy.FIFO.value == "fifo"
 
-    def setUp(self):
-        """测试前准备"""
-        self.temp_dir = tempfile.mkdtemp()
-        self.cache = IncrementalAnalysisCache(cache_dir=self.temp_dir)
 
-    def tearDown(self):
-        """测试后清理"""
-        self.cache.close()
-        if os.path.exists(self.temp_dir):
-            shutil.rmtree(self.temp_dir)
+class TestCacheInvalidationPolicyEnum:
+    def test_invalidation_policy_values(self):
+        assert CacheInvalidationPolicy.TIMEOUT.value == "timeout"
+        assert CacheInvalidationPolicy.SIZE_LIMIT.value == "size_limit"
+        assert CacheInvalidationPolicy.MANUAL.value == "manual"
+        assert CacheInvalidationPolicy.CONTENT_CHANGE.value == "content_change"
 
-    def test_cache_status_enum(self):
-        """测试缓存状态枚举"""
-        self.assertEqual(CacheStatus.VALID.value, 'valid')
-        self.assertEqual(CacheStatus.INVALIDATED.value, 'invalidated')
-        self.assertEqual(CacheStatus.EXPIRED.value, 'expired')
-        self.assertEqual(CacheStatus.NOT_FOUND.value, 'not_found')
 
-    def test_cache_invalidation_reason_enum(self):
-        """测试缓存失效原因枚举"""
-        self.assertEqual(CacheInvalidationReason.ANALYSIS_OPTIONS_CHANGED.value, 'analysis_options_changed')
-        self.assertEqual(CacheInvalidationReason.BINARY_MODIFIED.value, 'binary_modified')
-        self.assertEqual(CacheInvalidationReason.CACHE_EXPIRED.value, 'cache_expired')
+class TestCacheEntryDataclass:
+    def test_cache_entry_creation(self):
+        entry = CacheEntry(key="test_key", data={"value": 42}, timestamp=1234567890.0)
+        assert entry.key == "test_key"
+        assert entry.data == {"value": 42}
+        assert entry.timestamp == 1234567890.0
+        assert entry.access_count == 0
+        assert entry.hash == ""
+        assert entry.metadata == {}
 
-    def test_compute_binary_hash(self):
-        """测试计算二进制哈希"""
-        test_file = os.path.join(self.temp_dir, 'test.bin')
-        with open(test_file, 'wb') as f:
-            f.write(b'Hello World')
-        
-        hash1 = self.cache.compute_binary_hash(test_file)
-        hash2 = self.cache.compute_binary_hash(test_file)
-        
-        self.assertEqual(hash1, hash2)
-        self.assertEqual(len(hash1), 64)  # SHA256
 
-    def test_compute_semantic_hash(self):
-        """测试计算语义哈希"""
-        code1 = 'int main() { return 0; }'
-        code2 = 'int main() { return 0; }'
-        code3 = 'int main() { return 1; }'
-        
-        hash1 = self.cache.compute_semantic_hash(code1)
-        hash2 = self.cache.compute_semantic_hash(code2)
-        hash3 = self.cache.compute_semantic_hash(code3)
-        
-        self.assertEqual(hash1, hash2)
-        self.assertNotEqual(hash1, hash3)
+class TestCacheStatisticsDataclass:
+    def test_cache_statistics_creation(self):
+        stats = CacheStatistics(hits=10, misses=5, evictions=2)
+        assert stats.hits == 10
+        assert stats.misses == 5
+        assert stats.evictions == 2
+        assert stats.entries == 0
+        assert stats.total_size == 0
 
-    def test_function_cache_entry_dataclass(self):
-        """测试 FunctionCacheEntry 数据类"""
-        entry = FunctionCacheEntry(
-            function_name='main',
-            function_address=0x401000,
-            semantic_hash='abc123',
-            analysis_result={'vulns': []},
-            analysis_timestamp='2024-01-01',
-            binary_hash='hash123',
-            analysis_options={'level': 'full'},
-            status=CacheStatus.VALID
+
+class TestIncrementalUpdateDataclass:
+    def test_incremental_update_creation(self):
+        update = IncrementalUpdate(
+            new_functions=["func1"],
+            removed_functions=["func2"],
+            changed_functions=["func3"]
         )
-        
-        self.assertEqual(entry.function_name, 'main')
-        self.assertEqual(entry.function_address, 0x401000)
-        self.assertEqual(entry.status, CacheStatus.VALID)
+        assert update.new_functions == ["func1"]
+        assert update.removed_functions == ["func2"]
+        assert update.changed_functions == ["func3"]
 
-    def test_function_cache_entry_to_dict(self):
-        """测试 FunctionCacheEntry 转换为字典"""
-        entry = FunctionCacheEntry(
-            function_name='func',
-            function_address=0x402000,
-            semantic_hash='hash',
-            analysis_result={},
-            analysis_timestamp='2024-01-01',
-            binary_hash='bin_hash',
-            analysis_options={}
-        )
-        
-        result = entry.to_dict()
-        
-        self.assertIn('function_name', result)
-        self.assertIn('function_address', result)
-        self.assertIn('semantic_hash', result)
 
-    def test_binary_cache_entry_dataclass(self):
-        """测试 BinaryCacheEntry 数据类"""
-        entry = BinaryCacheEntry(
-            binary_path='/test/bin',
-            binary_hash='hash123',
-            functions=[0x401000, 0x401100],
-            cache_timestamp='2024-01-01',
-            version='1.0'
+class TestIncrementalAnalysisCache:
+    def setup_method(self):
+        self.cache = IncrementalAnalysisCache(
+            cache_dir=".test_cache",
+            max_entries=10,
+            max_size_mb=1
         )
-        
-        self.assertEqual(entry.binary_path, '/test/bin')
-        self.assertEqual(len(entry.functions), 2)
 
-    def test_binary_cache_entry_to_dict(self):
-        """测试 BinaryCacheEntry 转换为字典"""
-        entry = BinaryCacheEntry(
-            binary_path='/test/bin',
-            binary_hash='hash',
-            functions=[0x401000],
-            cache_timestamp='2024-01-01'
-        )
-        
-        result = entry.to_dict()
-        
-        self.assertIn('binary_path', result)
-        self.assertIn('functions', result)
+    def teardown_method(self):
+        import shutil
+        if os.path.exists(".test_cache"):
+            shutil.rmtree(".test_cache")
 
-    def test_get_binary_cache(self):
-        """测试获取二进制缓存"""
-        test_file = os.path.join(self.temp_dir, 'test.bin')
-        with open(test_file, 'wb') as f:
-            f.write(b'content')
-        
-        # 先保存缓存
-        entry = BinaryCacheEntry(
-            binary_path=test_file,
-            binary_hash=self.cache.compute_binary_hash(test_file),
-            functions=[0x401000],
-            cache_timestamp='2024-01-01'
-        )
-        self.cache.save_binary_cache(entry)
-        
-        # 再获取缓存
-        retrieved = self.cache.get_binary_cache(test_file)
-        
-        self.assertIsNotNone(retrieved)
-        self.assertEqual(retrieved.binary_path, test_file)
+    def test_cache_set_and_get(self):
+        self.cache.set("test_key", {"data": "test_data"}, "hash123")
+        result = self.cache.get("test_key", "hash123")
+        assert result == {"data": "test_data"}
 
-    def test_save_and_get_function_cache(self):
-        """测试保存和获取函数缓存"""
-        entry = FunctionCacheEntry(
-            function_name='test_func',
-            function_address=0x401000,
-            semantic_hash='abc',
-            analysis_result={'vulns': []},
-            analysis_timestamp='2024-01-01',
-            binary_hash='bin_hash',
-            analysis_options={}
-        )
-        
-        self.cache.save_function_cache(entry)
-        retrieved = self.cache.get_function_cache(0x401000)
-        
-        self.assertIsNotNone(retrieved)
-        self.assertEqual(retrieved.function_name, 'test_func')
+    def test_cache_hash_mismatch(self):
+        self.cache.set("test_key", {"data": "test_data"}, "hash123")
+        result = self.cache.get("test_key", "hash456")
+        assert result is None
 
-    def test_is_cache_valid(self):
-        """测试检查缓存有效性"""
-        test_file = os.path.join(self.temp_dir, 'test.bin')
-        with open(test_file, 'wb') as f:
-            f.write(b'content')
-        
-        # 保存缓存
-        entry = BinaryCacheEntry(
-            binary_path=test_file,
-            binary_hash=self.cache.compute_binary_hash(test_file),
-            functions=[0x401000],
-            cache_timestamp='2024-01-01'
-        )
-        self.cache.save_binary_cache(entry)
-        
-        # 检查有效性
-        current_hash = self.cache.compute_binary_hash(test_file)
-        valid = self.cache.is_cache_valid(test_file, current_hash)
-        
-        self.assertTrue(valid)
+    def test_cache_miss(self):
+        result = self.cache.get("nonexistent_key")
+        assert result is None
 
-    def test_is_cache_invalid_when_modified(self):
-        """测试文件修改后缓存失效"""
-        test_file = os.path.join(self.temp_dir, 'test.bin')
-        with open(test_file, 'wb') as f:
-            f.write(b'content')
+    def test_cache_statistics(self):
+        self.cache.set("key1", "data1", "hash1")
+        self.cache.get("key1", "hash1")
+        self.cache.get("key1", "hash1")
+        self.cache.get("nonexistent", "hash")
         
-        # 保存缓存
-        original_hash = self.cache.compute_binary_hash(test_file)
-        entry = BinaryCacheEntry(
-            binary_path=test_file,
-            binary_hash=original_hash,
-            functions=[0x401000],
-            cache_timestamp='2024-01-01'
-        )
-        self.cache.save_binary_cache(entry)
-        
-        # 修改文件
-        with open(test_file, 'wb') as f:
-            f.write(b'modified')
-        
-        # 检查有效性
-        new_hash = self.cache.compute_binary_hash(test_file)
-        valid = self.cache.is_cache_valid(test_file, new_hash)
-        
-        self.assertFalse(valid)
+        stats = self.cache.get_statistics()
+        assert stats.hits == 2
+        assert stats.misses == 1
 
-    def test_analyze_incrementally(self):
-        """测试增量分析"""
-        test_file = os.path.join(self.temp_dir, 'test.bin')
-        with open(test_file, 'wb') as f:
-            f.write(b'content')
-        
-        functions = [
-            {"address": 0x401000, "name": "func1", "pseudocode": "int func1() { return 0; }"},
-            {"address": 0x401100, "name": "func2", "pseudocode": "int func2() { return 1; }"},
-        ]
-        
-        def mock_analysis(func):
-            return {"name": func["name"], "analyzed": True}
-        
-        result = self.cache.analyze_incrementally(
-            test_file,
-            functions,
-            {"level": "full"},
-            mock_analysis
-        )
-        
-        self.assertIsInstance(result, IncrementalAnalysisResult)
-        self.assertEqual(result.total_functions, 2)
-        self.assertEqual(result.new_functions, 2)
+    def test_cache_invalidation(self):
+        self.cache.set("key1", "data1", "hash1")
+        self.cache.invalidate("key1")
+        result = self.cache.get("key1", "hash1")
+        assert result is None
 
-    def test_incremental_analysis_cache_hit(self):
-        """测试增量分析缓存命中"""
-        test_file = os.path.join(self.temp_dir, 'test.bin')
-        with open(test_file, 'wb') as f:
-            f.write(b'content')
+    def test_cache_eviction(self):
+        for i in range(15):
+            self.cache.set(f"key{i}", f"data{i}", f"hash{i}")
         
-        functions = [
-            {"address": 0x401000, "name": "func1", "pseudocode": "int func1() { return 0; }"},
-        ]
-        
-        def mock_analysis(func):
-            return {"name": func["name"], "analyzed": True}
-        
-        # 第一次分析
-        result1 = self.cache.analyze_incrementally(
-            test_file,
-            functions,
-            {"level": "full"},
-            mock_analysis
-        )
-        
-        # 第二次分析（相同代码）
-        result2 = self.cache.analyze_incrementally(
-            test_file,
-            functions,
-            {"level": "full"},
-            mock_analysis
-        )
-        
-        self.assertEqual(result1.new_functions, 1)
-        self.assertEqual(result2.cached_functions, 1)
-        self.assertEqual(result2.skipped_functions, 1)
+        stats = self.cache.get_statistics()
+        assert stats.evictions > 0
+
+
+class TestIncrementalAnalyzer:
+    def setup_method(self):
+        self.analyzer = IncrementalAnalyzer()
+        self.test_binary = "test_binary.bin"
+        with open(self.test_binary, "wb") as f:
+            f.write(b"\x00\x01\x02\x03")
+
+    def teardown_method(self):
+        if os.path.exists(self.test_binary):
+            os.remove(self.test_binary)
+
+    def test_analyzer_initialization(self):
+        assert self.analyzer is not None
+
+    def test_get_metadata(self):
+        metadata = self.analyzer.get_metadata()
+        assert metadata.name == "IncrementalAnalyzer"
+        assert metadata.version == "1.0.0"
+
+    def test_analyze_first_run(self):
+        result = self.analyzer.analyze(binary_path=self.test_binary)
+        assert result["success"] is True
+        assert result["from_cache"] is False
+
+    def test_analyze_from_cache(self):
+        self.analyzer.analyze(binary_path=self.test_binary)
+        result = self.analyzer.analyze(binary_path=self.test_binary)
+        assert result["success"] is True
+        assert result["from_cache"] is True
+
+    def test_analyze_with_previous(self):
+        previous = {"functions": ["func1", "func2"]}
+        result = self.analyzer.analyze(binary_path=self.test_binary, previous_analysis=previous)
+        assert result["success"] is True
+        assert "incremental_update" in result["result"]
+
+    def test_analyze_missing_binary(self):
+        result = self.analyzer.analyze(binary_path="nonexistent.bin")
+        assert result["success"] is False
 
     def test_get_cache_statistics(self):
-        """测试获取缓存统计"""
-        stats = self.cache.get_cache_statistics()
-        
-        self.assertIn('function_cache_count', stats)
-        self.assertIn('binary_cache_count', stats)
-        self.assertIsInstance(stats['function_cache_count'], int)
+        stats = self.analyzer.get_cache_statistics()
+        assert isinstance(stats, CacheStatistics)
 
     def test_invalidate_cache(self):
-        """测试失效缓存"""
-        test_file = os.path.join(self.temp_dir, 'test.bin')
-        with open(test_file, 'wb') as f:
-            f.write(b'content')
-        
-        # 保存缓存
-        entry = BinaryCacheEntry(
-            binary_path=test_file,
-            binary_hash=self.cache.compute_binary_hash(test_file),
-            functions=[0x401000],
-            cache_timestamp='2024-01-01'
-        )
-        self.cache.save_binary_cache(entry)
-        
-        # 失效缓存
-        self.cache.invalidate_cache(test_file, CacheInvalidationReason.MANUAL_INVALIDATION)
-        
-        # 检查缓存是否被删除
-        retrieved = self.cache.get_binary_cache(test_file)
-        self.assertIsNone(retrieved)
-
-    def test_generate_report(self):
-        """测试生成报告"""
-        result = IncrementalAnalysisResult(
-            binary_path='/test/bin',
-            total_functions=10,
-            cached_functions=5,
-            new_functions=3,
-            modified_functions=2,
-            skipped_functions=5,
-            analysis_duration=1.5,
-            cache_hits=5,
-            cache_misses=5,
-            timestamp='2024-01-01'
-        )
-        
-        report = self.cache.generate_report(result)
-        
-        self.assertIn('增量分析报告', report)
-        self.assertIn('10', report)
-
-    def test_save_result(self):
-        """测试保存结果"""
-        result = IncrementalAnalysisResult(
-            binary_path='/test/bin',
-            total_functions=1,
-            cached_functions=0,
-            new_functions=1,
-            modified_functions=0,
-            skipped_functions=0,
-            analysis_duration=0.5,
-            cache_hits=0,
-            cache_misses=1,
-            timestamp='2024-01-01'
-        )
-        
-        saved_path = self.cache.save_result(result, 'test_incremental')
-        
-        self.assertTrue(os.path.exists(saved_path))
-
-
-class TestIncrementalAnalysisResult(unittest.TestCase):
-    """IncrementalAnalysisResult 数据类测试"""
-
-    def test_incremental_analysis_result_dataclass(self):
-        """测试增量分析结果"""
-        result = IncrementalAnalysisResult(
-            binary_path='/test/bin',
-            total_functions=10,
-            cached_functions=5,
-            new_functions=3,
-            modified_functions=2,
-            skipped_functions=5,
-            analysis_duration=1.0,
-            cache_hits=5,
-            cache_misses=5,
-            timestamp='2024-01-01'
-        )
-        
-        self.assertEqual(result.total_functions, 10)
-        self.assertEqual(result.cache_hits, 5)
-
-    def test_incremental_analysis_result_to_dict(self):
-        """测试转换为字典"""
-        result = IncrementalAnalysisResult(
-            binary_path='/test/bin',
-            total_functions=1,
-            cached_functions=0,
-            new_functions=1,
-            modified_functions=0,
-            skipped_functions=0,
-            analysis_duration=0.5,
-            cache_hits=0,
-            cache_misses=1
-        )
-        
-        data = result.to_dict()
-        
-        self.assertIn('binary_path', data)
-        self.assertIn('total_functions', data)
-        self.assertIn('cache_hits', data)
-
-
-if __name__ == '__main__':
-    unittest.main()
+        self.analyzer.analyze(binary_path=self.test_binary)
+        self.analyzer.invalidate_cache()
+        stats = self.analyzer.get_cache_statistics()
+        assert stats.entries == 0

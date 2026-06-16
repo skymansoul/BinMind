@@ -167,7 +167,8 @@ class FirmwareExtractor:
                 timeout=10
             )
             if result.returncode == 0:
-                logger.info(f"binwalk 已安装: {result.stdout.strip().split('\n')[0]}")
+                binwalk_version = result.stdout.strip().split('\n')[0]
+                logger.info(f"binwalk 已安装: {binwalk_version}")
                 return True
         except (FileNotFoundError, subprocess.TimeoutExpired):
             pass

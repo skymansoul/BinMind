@@ -21,6 +21,16 @@ from enum import Enum
 logger = logging.getLogger(__name__)
 
 
+class ExploitabilityDifficulty(Enum):
+    """漏洞利用难度枚举"""
+    TRIVIAL = "trivial"
+    EASY = "easy"
+    MEDIUM = "medium"
+    HARD = "hard"
+    VERY_HARD = "very_hard"
+    EXPLOITATION_IMPOSSIBLE = "exploitation_impossible"
+
+
 class HardwareFeature(Enum):
     """硬件安全特性枚举"""
     ARM_PAC = "arm_pac"

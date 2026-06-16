@@ -22,7 +22,7 @@ import logging
 import tempfile
 import shutil
 import subprocess
-from typing import Dict, Any, List, Optional, Tuple, Set
+from typing import Dict, Any, List, Optional, Tuple, Set, BinaryIO
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -441,7 +441,7 @@ class ContainerImageScanner:
     
     def _extract_layer_tar(
         self,
-        layer_tar_file,
+        layer_tar_file: BinaryIO,
         layer_dir: str,
         layer: LayerInfo
     ) -> None:

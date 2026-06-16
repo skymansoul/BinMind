@@ -328,8 +328,10 @@ class CodeSigningChecker:
         """
         sha256 = hashlib.sha256()
         with open(file_path, 'rb') as f:
-            while chunk := f.read(8192):
+            chunk = f.read(8192)
+            while chunk:
                 sha256.update(chunk)
+                chunk = f.read(8192)
         return sha256.hexdigest()
     
     def _check_with_signify(self, file_path: str, file_hash: str) -> SignatureResult:

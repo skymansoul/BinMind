@@ -37,6 +37,7 @@ setup(
         'python-multipart>=0.0.6',
         'rich>=13.0.0',
         'pydantic>=2.0.0',
+        'loguru>=0.7.0',
     ],
     extras_require={
         'dev': [

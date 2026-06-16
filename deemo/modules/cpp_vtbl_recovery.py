@@ -1,568 +1,302 @@
-"""
-C++虚函数表与类继承关系重构模块
-
-从二进制中恢复C++对象的虚函数表布局、类继承层次结构，以及RTTI信息。
-"""
-
-import os
-import json
-import logging
-from datetime import datetime
-from enum import Enum
+from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import Optional, List, Dict, Any, Union, Set, Tuple
-from pathlib import Path
+from enum import Enum
+from typing import Dict, List, Optional, Set, Tuple
+import struct
+import logging
 
-try:
-    from config import Config
-except ImportError:
-    class Config:
-        CPP_VTBL_OUTPUT_DIR = "data/cpp_vtbl"
-        LOG_LEVEL = "INFO"
-
-
-logging.basicConfig(level=getattr(logging, Config.LOG_LEVEL, "INFO"))
 logger = logging.getLogger(__name__)
 
 
-class VtblAnalysisStatus(Enum):
-    """虚表分析状态"""
-    SUCCESS = "success"
-    PARTIAL = "partial"
-    FAILED = "failed"
+class VTableType(Enum):
+    """虚函数表类型枚举"""
+    STATIC = "static"
+    DYNAMIC = "dynamic"
+    WEAK = "weak"
+    OVERRIDE = "override"
+
+
+class ClassAccessType(Enum):
+    """类访问类型枚举"""
+    PUBLIC = "public"
+    PROTECTED = "protected"
+    PRIVATE = "private"
 
 
 @dataclass
-class VtblEntry:
+class VTableEntry:
     """虚函数表条目"""
-    vtable_addr: int
-    entry_index: int
-    function_addr: int
+    address: int
     function_name: Optional[str] = None
-    is_overridden: bool = False
-    class_name: Optional[str] = None
-    
-    def to_dict(self) -> Dict[str, Any]:
-        """转换为字典"""
-        return {
-            "vtable_addr": hex(self.vtable_addr),
-            "entry_index": self.entry_index,
-            "function_addr": hex(self.function_addr),
-            "function_name": self.function_name,
-            "is_overridden": self.is_overridden,
-            "class_name": self.class_name
-        }
+    function_address: Optional[int] = None
+    offset: int = 0
 
 
 @dataclass
-class VtableInfo:
-    """虚函数表信息"""
-    vtable_addr: int
-    entries: List[VtblEntry]
-    class_name: Optional[str] = None
-    is_primary: bool = True
-    referenced_classes: List[str] = field(default_factory=list)
-    
-    def to_dict(self) -> Dict[str, Any]:
-        """转换为字典"""
-        return {
-            "vtable_addr": hex(self.vtable_addr),
-            "class_name": self.class_name,
-            "is_primary": self.is_primary,
-            "entries": [e.to_dict() for e in self.entries],
-            "referenced_classes": self.referenced_classes
-        }
+class VTable:
+    """虚函数表"""
+    address: int
+    entries: List[VTableEntry] = field(default_factory=list)
+    vtable_type: VTableType = VTableType.STATIC
+    associated_class: Optional[str] = None
 
 
 @dataclass
 class ClassInfo:
     """类信息"""
-    name: Optional[str]
-    vtable_addr: int
-    vtable: VtableInfo
-    parent_classes: List[str] = field(default_factory=list)
+    name: str
+    vtable_address: Optional[int] = None
+    vtable: Optional[VTable] = None
+    parent_classes: List[Tuple[str, ClassAccessType]] = field(default_factory=list)
     child_classes: List[str] = field(default_factory=list)
-    size: Optional[int] = None
-    constructor_addr: Optional[int] = None
-    destructor_addr: Optional[int] = None
-    has_virtual_methods: bool = True
-    potential_vtable_hijack: bool = False
-    vtable_ptr_offset: int = 0
-    
-    def to_dict(self) -> Dict[str, Any]:
-        """转换为字典"""
-        return {
-            "name": self.name,
-            "vtable_addr": hex(self.vtable_addr),
-            "size": self.size,
-            "constructor_addr": hex(self.constructor_addr) if self.constructor_addr else None,
-            "destructor_addr": hex(self.destructor_addr) if self.destructor_addr else None,
-            "parent_classes": self.parent_classes,
-            "child_classes": self.child_classes,
-            "has_virtual_methods": self.has_virtual_methods,
-            "potential_vtable_hijack": self.potential_vtable_hijack,
-            "vtable_ptr_offset": self.vtable_ptr_offset,
-            "vtable": self.vtable.to_dict()
-        }
+    methods: List[str] = field(default_factory=list)
+    size: int = 0
+    is_abstract: bool = False
 
 
 @dataclass
-class RttiInfo:
-    """RTTI信息"""
-    type_info_addr: int
-    class_name: str
-    base_classes: List[Dict[str, Any]] = field(default_factory=list)
-    source_vtable: Optional[int] = None
-    
-    def to_dict(self) -> Dict[str, Any]:
-        """转换为字典"""
-        return {
-            "type_info_addr": hex(self.type_info_addr),
-            "class_name": self.class_name,
-            "base_classes": self.base_classes,
-            "source_vtable": hex(self.source_vtable) if self.source_vtable else None
-        }
+class VTableRecoveryResult:
+    """虚函数表恢复结果"""
+    vtables: Dict[int, VTable] = field(default_factory=dict)
+    classes: Dict[str, ClassInfo] = field(default_factory=dict)
+    class_hierarchy: Dict[str, List[str]] = field(default_factory=dict)
+    recovered_methods: int = 0
+    recovered_classes: int = 0
 
 
-@dataclass
-class VtblRecoveryResult:
-    """虚表恢复结果"""
-    binary_path: str
-    status: VtblAnalysisStatus
-    vtables: List[VtableInfo] = field(default_factory=list)
-    classes: List[ClassInfo] = field(default_factory=list)
-    rtti_info: List[RttiInfo] = field(default_factory=list)
-    inheritance_graph: Dict[str, List[str]] = field(default_factory=dict)
-    potential_hijack_classes: List[str] = field(default_factory=list)
-    timestamp: str = ""
-    errors: List[str] = field(default_factory=list)
+class VTableScanner:
+    """虚函数表扫描器"""
     
-    def to_dict(self) -> Dict[str, Any]:
-        """转换为字典"""
-        return {
-            "binary_path": self.binary_path,
-            "status": self.status.value,
-            "vtables": [v.to_dict() for v in self.vtables],
-            "classes": [c.to_dict() for c in self.classes],
-            "rtti_info": [r.to_dict() for r in self.rtti_info],
-            "inheritance_graph": self.inheritance_graph,
-            "potential_hijack_classes": self.potential_hijack_classes,
-            "timestamp": self.timestamp,
-            "errors": self.errors
-        }
-
-
-class CppVtblRecovery:
-    """
-    C++虚函数表恢复器
-    
-    从二进制中恢复C++虚函数表布局和类继承关系。
-    """
-    
-    # 虚表指针初始化模式（不同编译器）
-    VTBL_INIT_PATTERNS = {
-        "gcc": [
-            r"\x48\xC7\x45[\x00-\xFF]\x00\x00\x00\x00",  # mov qword ptr [rbp+X], 0x0 (虚表指针)
-            r"\xC7\x45[\x00-\xFF]\x00\x00\x00\x00",      # mov dword ptr [ebp+X], 0x0 (32位)
-        ],
-        "msvc": [
-            r"\xB8\x00\x00\x00\x00",                      # mov eax, vtable
-            r"\x48\xB8\x00\x00\x00\x00\x00\x00\x00\x00",  # mov rax, vtable
-        ]
-    }
-    
-    # RTTI type_info 签名
-    RTTI_TYPEINFO_SIGNATURE = b'\x00\x00\x00\x00'  # 简化表示
-    
-    # 虚函数调用模式
-    VIRTUAL_CALL_PATTERNS = {
-        "x86_64": [
-            r"\xFF\x15[\x00-\xFF]{2}\x00\x00",           # call qword ptr [rip+X]
-            r"\xFF\x25[\x00-\xFF]{2}\x00\x00",           # jmp qword ptr [rip+X]
-        ],
-        "x86": [
-            r"\xFF\x15[\x00-\xFF]{4}",                    # call dword ptr [X]
-            r"\xFF\x25[\x00-\xFF]{4}",                    # jmp dword ptr [X]
-        ]
-    }
-    
-    def __init__(self, output_dir: Optional[str] = None):
+    def __init__(self, binary_data: bytes, base_address: int = 0):
         """
-        初始化虚表恢复器
+        初始化扫描器
         
         Args:
-            output_dir: 输出目录
+            binary_data: 二进制数据
+            base_address: 基地址
         """
-        self.output_dir = Path(output_dir or Config.CPP_VTBL_OUTPUT_DIR)
-        self.output_dir.mkdir(parents=True, exist_ok=True)
-        logger.info(f"C++虚表恢复器初始化，输出目录: {self.output_dir}")
-        
-        # 缓存
-        self._vtables: Dict[int, VtableInfo] = {}
-        self._classes: Dict[int, ClassInfo] = {}
-        self._rtti_info: Dict[int, RttiInfo] = {}
+        self.binary_data = binary_data
+        self.base_address = base_address
+        self.pointer_size = 8 if len(binary_data) > 0 else 4
+        self.possible_vtables: Set[int] = set()
     
-    def recover_vtbls(self, binary_path: str, architecture: str = "x86_64") -> VtblRecoveryResult:
+    def _read_pointer(self, offset: int) -> Optional[int]:
+        """读取指针值"""
+        if offset + self.pointer_size > len(self.binary_data):
+            return None
+        
+        if self.pointer_size == 8:
+            return struct.unpack('<Q', self.binary_data[offset:offset+8])[0]
+        else:
+            return struct.unpack('<I', self.binary_data[offset:offset+4])[0]
+    
+    def _is_executable_section(self, offset: int) -> bool:
+        """检查偏移是否在可执行区域"""
+        return True
+    
+    def scan_for_vtables(self) -> List[int]:
+        """扫描虚函数表"""
+        logger.info("开始扫描虚函数表...")
+        
+        vtable_candidates = []
+        offset = 0
+        
+        while offset < len(self.binary_data) - self.pointer_size:
+            ptr = self._read_pointer(offset)
+            
+            if ptr is None:
+                break
+            
+            if self._looks_like_vtable(offset, ptr):
+                vtable_candidates.append(self.base_address + offset)
+                self.possible_vtables.add(self.base_address + offset)
+            
+            offset += self.pointer_size
+        
+        logger.info(f"发现 {len(vtable_candidates)} 个潜在的虚函数表")
+        return vtable_candidates
+    
+    def _looks_like_vtable(self, offset: int, first_ptr: int) -> bool:
+        """判断是否看起来像虚函数表"""
+        if first_ptr == 0:
+            return False
+        
+        entry_count = 0
+        max_entries = 100
+        current_offset = offset + self.pointer_size
+        
+        while entry_count < max_entries:
+            ptr = self._read_pointer(current_offset)
+            
+            if ptr is None:
+                break
+            
+            if ptr == 0:
+                break
+            
+            entry_count += 1
+            current_offset += self.pointer_size
+        
+        return entry_count >= 1 and entry_count <= max_entries
+
+
+class ClassHierarchyAnalyzer:
+    """类层次结构分析器"""
+    
+    def __init__(self):
+        self.classes: Dict[str, ClassInfo] = {}
+        self.class_hierarchy: Dict[str, List[str]] = {}
+    
+    def build_hierarchy(self, vtables: List[VTable]) -> Dict[str, List[str]]:
+        """构建类层次结构"""
+        logger.info("开始构建类层次结构...")
+        
+        for vtable in vtables:
+            class_name = self._infer_class_name(vtable)
+            if class_name not in self.classes:
+                self.classes[class_name] = ClassInfo(
+                    name=class_name,
+                    vtable_address=vtable.address,
+                    vtable=vtable
+                )
+        
+        self._detect_inheritance(vtables)
+        logger.info(f"构建了 {len(self.class_hierarchy)} 个类继承关系")
+        return self.class_hierarchy
+    
+    def _infer_class_name(self, vtable: VTable) -> str:
+        """推断类名"""
+        if vtable.associated_class:
+            return vtable.associated_class
+        
+        return f"Class_{hex(vtable.address)[2:]}"
+    
+    def _detect_inheritance(self, vtables: List[VTable]):
+        """检测继承关系"""
+        for i, vtable1 in enumerate(vtables):
+            for j, vtable2 in enumerate(vtables):
+                if i == j:
+                    continue
+                
+                similarity = self._compare_vtables(vtable1, vtable2)
+                if similarity > 0.7:
+                    class1 = self._infer_class_name(vtable1)
+                    class2 = self._infer_class_name(vtable2)
+                    
+                    if class1 not in self.class_hierarchy:
+                        self.class_hierarchy[class1] = []
+                    if class2 not in self.class_hierarchy[class1]:
+                        self.class_hierarchy[class1].append(class2)
+    
+    def _compare_vtables(self, v1: VTable, v2: VTable) -> float:
+        """比较两个虚函数表的相似度"""
+        entries1 = {e.function_address for e in v1.entries if e.function_address}
+        entries2 = {e.function_address for e in v2.entries if e.function_address}
+        
+        if not entries1 and not entries2:
+            return 0.0
+        
+        intersection = entries1 & entries2
+        union = entries1 | entries2
+        
+        return len(intersection) / len(union) if union else 0.0
+
+
+class VTableRecoveryEngine:
+    """
+    C++虚函数表恢复引擎
+    
+    从二进制文件中自动识别和恢复C++虚函数表结构，包括：
+    - 虚函数表定位
+    - 类层次结构重建
+    - 虚函数调用关系分析
+    """
+    
+    def __init__(self):
+        """初始化恢复引擎"""
+        self.scanner = None
+        self.analyzer = ClassHierarchyAnalyzer()
+    
+    def analyze(self, binary_data: bytes, base_address: int = 0) -> VTableRecoveryResult:
         """
-        恢复二进制中的虚函数表
+        分析二进制文件，恢复虚函数表
         
         Args:
-            binary_path: 二进制文件路径
-            architecture: 目标架构
+            binary_data: 二进制数据
+            base_address: 基地址
             
         Returns:
-            VtblRecoveryResult对象
+            虚函数表恢复结果
         """
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        result = VtblRecoveryResult(
-            binary_path=binary_path,
-            status=VtblAnalysisStatus.SUCCESS,
-            timestamp=timestamp
+        logger.info("开始分析二进制文件中的虚函数表...")
+        
+        self.scanner = VTableScanner(binary_data, base_address)
+        vtable_addresses = self.scanner.scan_for_vtables()
+        
+        vtables = self._parse_vtables(vtable_addresses)
+        self.analyzer.build_hierarchy(list(vtables.values()))
+        
+        result = VTableRecoveryResult(
+            vtables=vtables,
+            classes=self.analyzer.classes,
+            class_hierarchy=self.analyzer.class_hierarchy,
+            recovered_methods=sum(len(v.entries) for v in vtables.values()),
+            recovered_classes=len(self.analyzer.classes)
         )
         
-        try:
-            # 读取二进制内容
-            with open(binary_path, 'rb') as f:
-                binary_content = f.read()
-            
-            # 查找虚表指针初始化
-            vtable_ptrs = self._find_vtable_initializations(binary_content, architecture)
-            logger.info(f"发现 {len(vtable_ptrs)} 个虚表指针初始化")
-            
-            # 解析虚表内容
-            for vtable_addr in vtable_ptrs:
-                vtable = self._parse_vtable(binary_content, vtable_addr, architecture)
-                if vtable:
-                    result.vtables.append(vtable)
-                    self._vtables[vtable_addr] = vtable
-            
-            # 查找RTTI信息
-            rtti_info_list = self._find_rtti_info(binary_content, architecture)
-            result.rtti_info.extend(rtti_info_list)
-            for rtti in rtti_info_list:
-                self._rtti_info[rtti.type_info_addr] = rtti
-            
-            # 构建类继承关系
-            self._build_inheritance_graph(result)
-            
-            # 识别潜在的虚函数劫持风险
-            self._identify_hijack_risk(result)
-            
-            # 生成类信息
-            self._generate_class_info(result)
-            
-            logger.info(f"虚表恢复完成: {len(result.vtables)} 个虚表, {len(result.classes)} 个类")
-            
-        except Exception as e:
-            logger.error(f"虚表恢复失败: {e}")
-            result.status = VtblAnalysisStatus.FAILED
-            result.errors.append(str(e))
-        
+        logger.info(f"虚函数表恢复完成: {len(vtables)} 个虚函数表, {result.recovered_methods} 个方法")
         return result
     
-    def _find_vtable_initializations(self, binary: bytes, architecture: str) -> List[int]:
-        """
-        查找虚表指针初始化指令
+    def _parse_vtables(self, addresses: List[int]) -> Dict[int, VTable]:
+        """解析虚函数表"""
+        vtables = {}
         
-        Args:
-            binary: 二进制内容
-            architecture: 架构
-            
-        Returns:
-            虚表地址列表
-        """
-        vtable_addrs = set()
+        for addr in addresses:
+            vtable = self._parse_single_vtable(addr)
+            if vtable:
+                vtables[addr] = vtable
         
-        # 搜索虚表初始化模式
-        patterns = self.VIRTUAL_CALL_PATTERNS.get(architecture, [])
-        for pattern in patterns:
-            # 简化实现：查找包含跳转/调用到外部地址的指令
-            pass
-        
-        # 模拟发现一些虚表地址（实际实现会更复杂）
-        # 这里使用启发式方法：查找包含连续函数指针的区域
-        vtable_addrs.add(0x100000)
-        vtable_addrs.add(0x100080)
-        vtable_addrs.add(0x100100)
-        
-        return list(vtable_addrs)
+        return vtables
     
-    def _parse_vtable(self, binary: bytes, vtable_addr: int, architecture: str) -> Optional[VtableInfo]:
-        """
-        解析虚函数表内容
+    def _parse_single_vtable(self, address: int) -> Optional[VTable]:
+        """解析单个虚函数表"""
+        if not self.scanner:
+            return None
         
-        Args:
-            binary: 二进制内容
-            vtable_addr: 虚表地址
-            architecture: 架构
-            
-        Returns:
-            VtableInfo对象
-        """
+        offset = address - self.scanner.base_address
         entries = []
-        entry_size = 8 if architecture == "x86_64" else 4
-        max_entries = 50  # 最大虚函数数量
         
-        # 模拟解析虚表条目
-        # 实际实现需要解析内存中的函数指针
-        for i in range(max_entries):
-            # 模拟函数地址
-            func_addr = vtable_addr + entry_size * (i + 1)  # +1 跳过前导字节
-            if func_addr >= len(binary):
+        if offset < 0 or offset >= len(self.scanner.binary_data):
+            return None
+        
+        entry_offset = offset
+        entry_index = 0
+        
+        while entry_index < 200:
+            func_addr = self.scanner._read_pointer(entry_offset)
+            
+            if func_addr is None or func_addr == 0:
                 break
             
-            # 检查是否为有效函数指针（简化检查）
-            if i < 10:  # 模拟10个虚函数
-                entry = VtblEntry(
-                    vtable_addr=vtable_addr,
-                    entry_index=i,
-                    function_addr=func_addr,
-                    function_name=self._demangle_function_name(f"_ZN{class_id}C{i}Ev".format(class_id=hex(vtable_addr)[-3:])),
-                    is_overridden=i % 3 == 0  # 每3个函数中有1个是覆盖的
-                )
-                entries.append(entry)
-            else:
-                break
+            entries.append(VTableEntry(
+                address=entry_offset + self.scanner.base_address,
+                function_address=func_addr,
+                offset=entry_index
+            ))
+            
+            entry_offset += self.scanner.pointer_size
+            entry_index += 1
         
         if not entries:
             return None
         
-        return VtableInfo(
-            vtable_addr=vtable_addr,
+        return VTable(
+            address=address,
             entries=entries,
-            class_name=self._guess_class_name(vtable_addr),
-            is_primary=True
+            vtable_type=VTableType.STATIC
         )
     
-    def _demangle_function_name(self, mangled_name: str) -> str:
-        """
-        反混淆C++函数名（简化实现）
-        
-        Args:
-            mangled_name: 混淆的函数名
-            
-        Returns:
-            反混淆后的函数名
-        """
-        # 简化实现：移除前缀
-        if mangled_name.startswith("_ZN"):
-            # 查找类名部分
-            parts = mangled_name[3:]
-            # 查找数字长度指示
-            num_end = parts.find('E')
-            if num_end > 0:
-                class_len = int(parts[0])
-                class_name = parts[1:1+class_len]
-                return f"{class_name}::func"
-        return mangled_name
-    
-    def _guess_class_name(self, vtable_addr: int) -> str:
-        """
-        根据虚表地址猜测类名
-        
-        Args:
-            vtable_addr: 虚表地址
-            
-        Returns:
-            猜测的类名
-        """
-        # 简化实现：基于地址生成名称
-        return f"Class_{hex(vtable_addr)[-4:]}"
-    
-    def _find_rtti_info(self, binary: bytes, architecture: str) -> List[RttiInfo]:
-        """
-        查找RTTI信息
-        
-        Args:
-            binary: 二进制内容
-            architecture: 架构
-            
-        Returns:
-            RTTI信息列表
-        """
-        rtti_list = []
-        
-        # 简化实现：模拟发现RTTI信息
-        rtti_list.append(RttiInfo(
-            type_info_addr=0x200000,
-            class_name="BaseClass",
-            base_classes=[],
-            source_vtable=0x100000
-        ))
-        
-        rtti_list.append(RttiInfo(
-            type_info_addr=0x200080,
-            class_name="DerivedClass",
-            base_classes=[{
-                "name": "BaseClass",
-                "offset": 0
-            }],
-            source_vtable=0x100080
-        ))
-        
-        rtti_list.append(RttiInfo(
-            type_info_addr=0x200100,
-            class_name="ConcreteClass",
-            base_classes=[{
-                "name": "DerivedClass",
-                "offset": 0
-            }],
-            source_vtable=0x100100
-        ))
-        
-        return rtti_list
-    
-    def _build_inheritance_graph(self, result: VtblRecoveryResult) -> None:
-        """
-        构建类继承关系图
-        
-        Args:
-            result: 恢复结果
-        """
-        graph = {}
-        
-        # 基于RTTI信息构建继承图
-        for rtti in result.rtti_info:
-            class_name = rtti.class_name
-            parents = [base["name"] for base in rtti.base_classes]
-            
-            graph[class_name] = parents
-            
-            # 更新类信息中的父类和子类关系
-            for vtable in result.vtables:
-                if vtable.class_name == class_name:
-                    for parent_name in parents:
-                        # 查找父类
-                        for parent_vtable in result.vtables:
-                            if parent_vtable.class_name == parent_name:
-                                # 更新继承关系
-                                break
-        
-        result.inheritance_graph = graph
-    
-    def _identify_hijack_risk(self, result: VtblRecoveryResult) -> None:
-        """
-        识别潜在的虚函数劫持风险
-        
-        Args:
-            result: 恢复结果
-        """
-        hijack_classes = []
-        
-        # 简化实现：标记所有有虚函数的类为潜在风险
-        for vtable in result.vtables:
-            if vtable.class_name:
-                hijack_classes.append(vtable.class_name)
-        
-        result.potential_hijack_classes = hijack_classes
-    
-    def _generate_class_info(self, result: VtblRecoveryResult) -> None:
-        """
-        生成类信息
-        
-        Args:
-            result: 恢复结果
-        """
-        classes = []
-        
-        for vtable in result.vtables:
-            class_info = ClassInfo(
-                name=vtable.class_name,
-                vtable_addr=vtable.vtable_addr,
-                vtable=vtable,
-                parent_classes=result.inheritance_graph.get(vtable.class_name, []),
-                child_classes=self._find_child_classes(vtable.class_name, result),
-                size=self._estimate_class_size(vtable),
-                constructor_addr=vtable.vtable_addr - 0x100,  # 假设构造函数在附近
-                destructor_addr=vtable.vtable_addr - 0x80,   # 假设析构函数在附近
-                has_virtual_methods=True,
-                potential_vtable_hijack=vtable.class_name in result.potential_hijack_classes
-            )
-            classes.append(class_info)
-            self._classes[vtable.vtable_addr] = class_info
-        
-        result.classes = classes
-    
-    def _find_child_classes(self, class_name: str, result: VtblRecoveryResult) -> List[str]:
-        """
-        查找子类
-        
-        Args:
-            class_name: 父类名称
-            result: 恢复结果
-            
-        Returns:
-            子类名称列表
-        """
-        children = []
-        for child_name, parents in result.inheritance_graph.items():
-            if class_name in parents:
-                children.append(child_name)
-        return children
-    
-    def _estimate_class_size(self, vtable: VtableInfo) -> Optional[int]:
-        """
-        估算类大小
-        
-        Args:
-            vtable: 虚表信息
-            
-        Returns:
-            估算的类大小
-        """
-        # 简化实现：基于虚函数数量估算
-        return len(vtable.entries) * 8 + 16  # 虚表指针 + 虚函数指针
-    
-    def generate_uml_diagram(self, result: VtblRecoveryResult) -> str:
-        """
-        生成UML类图（DOT格式）
-        
-        Args:
-            result: 恢复结果
-            
-        Returns:
-            DOT格式的类图
-        """
-        lines = [
-            "digraph ClassHierarchy {",
-            "    rankdir=BT;",
-            "    node [shape=record];",
-            ""
-        ]
-        
-        # 添加类节点
-        for class_info in result.classes:
-            class_name = class_info.name or f"0x{class_info.vtable_addr:x}"
-            
-            # 构建虚函数列表
-            vfuncs = []
-            for entry in class_info.vtable.entries[:5]:  # 最多显示5个
-                func_name = entry.function_name or f"func{entry.entry_index}"
-                marker = "*" if entry.is_overridden else ""
-                vfuncs.append(f"{{{{virtual}}}} {marker}{func_name}()")
-            
-            vfunc_str = "\\l".join(vfuncs)
-            if len(class_info.vtable.entries) > 5:
-                vfunc_str += f"\\l... (+{len(class_info.vtable.entries) - 5} more)"
-            
-            lines.append(f'    "{class_name}" [label="{{{class_name}|{vfunc_str}}}"];')
-        
-        # 添加继承关系
-        for child_name, parents in result.inheritance_graph.items():
-            for parent_name in parents:
-                lines.append(f'    "{parent_name}" -> "{child_name}" [arrowhead="empty"];')
-        
-        # 标记潜在劫持风险的类
-        if result.potential_hijack_classes:
-            lines.append("")
-            for class_name in result.potential_hijack_classes:
-                lines.append(f'    "{class_name}" [color="red", style="filled", fillcolor="pink"];')
-        
-        lines.append("}")
-        
-        return "\n".join(lines)
-    
-    def generate_report(self, result: VtblRecoveryResult) -> str:
+    def generate_report(self, result: VTableRecoveryResult) -> str:
         """
         生成分析报告
         
@@ -570,168 +304,54 @@ class CppVtblRecovery:
             result: 恢复结果
             
         Returns:
-            Markdown格式报告
+            报告字符串
         """
-        report_lines = [
-            "# C++虚函数表分析报告",
-            "",
-            f"**分析时间**: {result.timestamp}",
-            f"**目标文件**: {result.binary_path}",
-            f"**分析状态**: {result.status.value}",
-            "",
-            "## 概览",
-            "",
-            f"- 发现 **{len(result.vtables)}** 个虚函数表",
-            f"- 识别 **{len(result.classes)}** 个类",
-            f"- 发现 **{len(result.rtti_info)}** 处RTTI信息",
-            f"- 潜在劫持风险类: **{len(result.potential_hijack_classes)}** 个",
-            "",
-        ]
+        report = ["=" * 60]
+        report.append("C++ 虚函数表恢复报告")
+        report.append("=" * 60)
+        report.append("")
+        report.append(f"恢复的虚函数表数量: {len(result.vtables)}")
+        report.append(f"恢复的类数量: {result.recovered_classes}")
+        report.append(f"恢复的方法数量: {result.recovered_methods}")
+        report.append("")
+        report.append("类层次结构:")
+        report.append("-" * 40)
         
-        # 虚函数表列表
-        if result.vtables:
-            report_lines.extend([
-                "## 虚函数表列表",
-                "",
-                "| 虚表地址 | 类名 | 虚函数数量 |",
-                "|----------|------|------------|",
-            ])
-            
-            for vtable in result.vtables:
-                class_name = vtable.class_name or "Unknown"
-                report_lines.append(f"| `{hex(vtable.vtable_addr)}` | {class_name} | {len(vtable.entries)} |")
-            
-            report_lines.append("")
+        for class_name, children in result.class_hierarchy.items():
+            report.append(f"{class_name}")
+            for child in children:
+                report.append(f"  └─ {child}")
         
-        # 类继承关系
-        if result.classes:
-            report_lines.extend([
-                "## 类继承关系",
-                "",
-            ])
-            
-            for class_info in result.classes:
-                class_name = class_info.name or f"0x{class_info.vtable_addr:x}"
-                report_lines.append(f"### {class_name}")
-                report_lines.append("")
-                
-                if class_info.parent_classes:
-                    report_lines.append(f"**父类**: {', '.join(class_info.parent_classes)}")
-                if class_info.child_classes:
-                    report_lines.append(f"**子类**: {', '.join(class_info.child_classes)}")
-                if class_info.size:
-                    report_lines.append(f"**估计大小**: {class_info.size} bytes")
-                if class_info.constructor_addr:
-                    report_lines.append(f"**构造函数**: `{hex(class_info.constructor_addr)}`")
-                if class_info.destructor_addr:
-                    report_lines.append(f"**析构函数**: `{hex(class_info.destructor_addr)}`")
-                if class_info.potential_vtable_hijack:
-                    report_lines.append(f"**⚠️ 警告**: 存在虚函数劫持风险")
-                
-                # 虚函数列表
-                report_lines.append("")
-                report_lines.append("**虚函数**:")
-                for entry in class_info.vtable.entries[:5]:
-                    func_name = entry.function_name or f"0x{entry.function_addr:x}"
-                    marker = " (覆盖)" if entry.is_overridden else ""
-                    report_lines.append(f"- `{func_name}`{marker}")
-                if len(class_info.vtable.entries) > 5:
-                    report_lines.append(f"- ... 还有 {len(class_info.vtable.entries) - 5} 个虚函数")
-                
-                report_lines.append("")
+        report.append("")
+        report.append("虚函数表详情:")
+        report.append("-" * 40)
         
-        # RTTI信息
-        if result.rtti_info:
-            report_lines.extend([
-                "## RTTI信息",
-                "",
-                "| TypeInfo地址 | 类名 | 基类数量 |",
-                "|--------------|------|----------|",
-            ])
+        for addr, vtable in result.vtables.items():
+            report.append(f"VTable: {hex(addr)}")
+            report.append(f"  类型: {vtable.vtable_type.value}")
+            report.append(f"  关联类: {vtable.associated_class or '未知'}")
+            report.append(f"  方法数量: {len(vtable.entries)}")
             
-            for rtti in result.rtti_info:
-                report_lines.append(f"| `{hex(rtti.type_info_addr)}` | {rtti.class_name} | {len(rtti.base_classes)} |")
+            for entry in vtable.entries[:5]:
+                func_addr = hex(entry.function_address) if entry.function_address else "未知"
+                report.append(f"    [{entry.offset}] {func_addr}")
             
-            report_lines.append("")
+            if len(vtable.entries) > 5:
+                report.append(f"    ... (还有 {len(vtable.entries) - 5} 个)")
         
-        # 潜在风险
-        if result.potential_hijack_classes:
-            report_lines.extend([
-                "## ⚠️ 安全警告",
-                "",
-                "以下类存在虚函数劫持风险（虚表指针可能被覆盖）:",
-                "",
-            ])
-            
-            for class_name in result.potential_hijack_classes:
-                report_lines.append(f"- **{class_name}**")
-            
-            report_lines.extend([
-                "",
-                "建议对这些类的对象进行边界检查，防止栈溢出或堆溢出覆盖虚表指针。",
-                "",
-            ])
-        
-        # 错误信息
-        if result.errors:
-            report_lines.extend([
-                "## 错误信息",
-                "",
-            ])
-            for error in result.errors:
-                report_lines.append(f"- {error}")
-            report_lines.append("")
-        
-        return "\n".join(report_lines)
+        return "\n".join(report)
     
-    def save_result(self, result: VtblRecoveryResult, filename: Optional[str] = None) -> str:
+    def save_result(self, result: VTableRecoveryResult, filename: str):
         """
-        保存分析结果
+        保存结果到文件
         
         Args:
             result: 恢复结果
-            filename: 文件名
-            
-        Returns:
-            保存的文件路径
+            filename: 输出文件名
         """
-        if filename is None:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"vtbl_{timestamp}"
+        report = self.generate_report(result)
         
-        # 保存JSON结果
-        json_path = self.output_dir / f"{filename}.json"
-        with open(json_path, 'w', encoding='utf-8') as f:
-            json.dump(result.to_dict(), f, indent=2, ensure_ascii=False)
+        with open(filename, 'w', encoding='utf-8') as f:
+            f.write(report)
         
-        # 保存报告
-        report_path = self.output_dir / f"{filename}.md"
-        with open(report_path, 'w', encoding='utf-8') as f:
-            f.write(self.generate_report(result))
-        
-        # 保存DOT图
-        dot_path = self.output_dir / f"{filename}.dot"
-        with open(dot_path, 'w', encoding='utf-8') as f:
-            f.write(self.generate_uml_diagram(result))
-        
-        logger.info(f"虚表分析结果已保存: {json_path}")
-        return str(json_path)
-
-
-if __name__ == "__main__":
-    # 示例用法
-    import sys
-    
-    recoverer = CppVtblRecovery()
-    
-    if len(sys.argv) > 1:
-        binary_path = sys.argv[1]
-        result = recoverer.recover_vtbls(binary_path)
-        recoverer.save_result(result)
-        
-        print(f"分析完成!")
-        print(f"发现 {len(result.vtables)} 个虚表")
-        print(f"识别 {len(result.classes)} 个类")
-        print(f"潜在劫持风险: {len(result.potential_hijack_classes)} 个")
-    else:
-        print("用法: python cpp_vtbl_recovery.py <二进制文件路径>")
+        logger.info(f"结果已保存到 {filename}")

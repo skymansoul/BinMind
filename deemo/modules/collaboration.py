@@ -3,9 +3,10 @@ import json
 import logging
 import hashlib
 from datetime import datetime
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Dict, Any, List, Optional, Tuple, Union
 from dataclasses import dataclass
 from enum import Enum
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +72,45 @@ class VulnerabilityStatus:
     comment: Optional[str] = None
 
 
+@dataclass
+class GitRepository:
+    """Git仓库配置"""
+    repo_id: str
+    project_id: str
+    repo_path: str
+    remote_url: Optional[str] = None
+    initialized_at: str = ""
+    last_commit_hash: Optional[str] = None
+
+
+@dataclass
+class BinaryVersion:
+    """二进制版本信息"""
+    version_id: str
+    project_id: str
+    binary_hash: str
+    commit_hash: str
+    commit_message: str
+    author: str
+    timestamp: str
+    analysis_summary: Optional[Dict[str, Any]] = None
+    tags: Optional[List[str]] = None
+
+
+@dataclass
+class VersionDiff:
+    """版本差异信息"""
+    project_id: str
+    from_version_id: str
+    to_version_id: str
+    from_commit: str
+    to_commit: str
+    changed_functions: List[str]
+    new_vulnerabilities: List[str]
+    fixed_vulnerabilities: List[str]
+    severity_changes: List[Dict[str, Any]]
+
+
 class CollaborationManager:
     """
     多用户协作与审计追踪模块
@@ -80,15 +120,17 @@ class CollaborationManager:
     2. 项目协作（多人加入、权限控制）
     3. 审计追踪（操作日志记录）
     4. 注释与漏洞状态管理
+    5. Git-based 二进制版本管理
     """
     
-    def __init__(self, user_db_path: str = None, audit_log_path: str = None):
+    def __init__(self, user_db_path: str = None, audit_log_path: str = None, repo_base_path: str = None):
         """
         初始化协作管理器
         
         Args:
             user_db_path: 用户数据库文件路径
             audit_log_path: 审计日志文件路径
+            repo_base_path: Git仓库基础路径
         """
         self.user_db_path = user_db_path or os.path.join(
             os.path.dirname(__file__), '..', 'data', 'users.json'
@@ -96,16 +138,24 @@ class CollaborationManager:
         self.audit_log_path = audit_log_path or os.path.join(
             os.path.dirname(__file__), '..', 'data', 'audit.log'
         )
+        self.repo_base_path = repo_base_path or os.path.join(
+            os.path.dirname(__file__), '..', 'data', 'repos'
+        )
         
         os.makedirs(os.path.dirname(self.user_db_path), exist_ok=True)
         os.makedirs(os.path.dirname(self.audit_log_path), exist_ok=True)
+        os.makedirs(self.repo_base_path, exist_ok=True)
         
         self._users: Dict[str, User] = {}
         self._project_members: Dict[str, List[ProjectMember]] = {}
         self._comments: Dict[str, List[Comment]] = {}
         self._vuln_status: Dict[str, VulnerabilityStatus] = {}
         
+        self._git_repos: Dict[str, GitRepository] = {}
+        self._binary_versions: Dict[str, List[BinaryVersion]] = {}
+        
         self._load_users()
+        self._load_git_repos()
         logger.info(f"CollaborationManager 初始化完成，已加载 {len(self._users)} 个用户")
     
     def _load_users(self):
@@ -625,6 +675,586 @@ class CollaborationManager:
             'updated_at': vuln_status.updated_at,
             'comment': vuln_status.comment
         }
+    
+    # ==================== Git 版本管理方法 ====================
+    
+    def _load_git_repos(self):
+        """加载Git仓库配置"""
+        repos_file = os.path.join(self.repo_base_path, 'repos.json')
+        if os.path.exists(repos_file):
+            try:
+                with open(repos_file, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    for repo_id, repo_data in data.items():
+                        self._git_repos[repo_id] = GitRepository(
+                            repo_id=repo_id,
+                            project_id=repo_data['project_id'],
+                            repo_path=repo_data['repo_path'],
+                            remote_url=repo_data.get('remote_url'),
+                            initialized_at=repo_data.get('initialized_at', ''),
+                            last_commit_hash=repo_data.get('last_commit_hash')
+                        )
+            except Exception as e:
+                logger.error(f"加载Git仓库配置失败: {e}")
+    
+    def _save_git_repos(self):
+        """保存Git仓库配置"""
+        repos_file = os.path.join(self.repo_base_path, 'repos.json')
+        try:
+            data = {}
+            for repo_id, repo in self._git_repos.items():
+                data[repo_id] = {
+                    'repo_id': repo.repo_id,
+                    'project_id': repo.project_id,
+                    'repo_path': repo.repo_path,
+                    'remote_url': repo.remote_url,
+                    'initialized_at': repo.initialized_at,
+                    'last_commit_hash': repo.last_commit_hash
+                }
+            
+            with open(repos_file, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=2)
+        except Exception as e:
+            logger.error(f"保存Git仓库配置失败: {e}")
+    
+    def _load_binary_versions(self):
+        """加载二进制版本信息"""
+        versions_file = os.path.join(self.repo_base_path, 'versions.json')
+        if os.path.exists(versions_file):
+            try:
+                with open(versions_file, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    for project_id, versions in data.items():
+                        self._binary_versions[project_id] = []
+                        for version_data in versions:
+                            self._binary_versions[project_id].append(BinaryVersion(
+                                version_id=version_data['version_id'],
+                                project_id=version_data['project_id'],
+                                binary_hash=version_data['binary_hash'],
+                                commit_hash=version_data['commit_hash'],
+                                commit_message=version_data['commit_message'],
+                                author=version_data['author'],
+                                timestamp=version_data['timestamp'],
+                                analysis_summary=version_data.get('analysis_summary'),
+                                tags=version_data.get('tags')
+                            ))
+            except Exception as e:
+                logger.error(f"加载二进制版本信息失败: {e}")
+    
+    def _save_binary_versions(self):
+        """保存二进制版本信息"""
+        versions_file = os.path.join(self.repo_base_path, 'versions.json')
+        try:
+            data = {}
+            for project_id, versions in self._binary_versions.items():
+                data[project_id] = []
+                for version in versions:
+                    data[project_id].append({
+                        'version_id': version.version_id,
+                        'project_id': version.project_id,
+                        'binary_hash': version.binary_hash,
+                        'commit_hash': version.commit_hash,
+                        'commit_message': version.commit_message,
+                        'author': version.author,
+                        'timestamp': version.timestamp,
+                        'analysis_summary': version.analysis_summary,
+                        'tags': version.tags
+                    })
+            
+            with open(versions_file, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=2)
+        except Exception as e:
+            logger.error(f"保存二进制版本信息失败: {e}")
+    
+    def init_binary_repo(self, project_id: str, user_id: str, remote_url: str = None) -> Tuple[bool, str]:
+        """
+        初始化项目的二进制文件Git仓库
+        
+        Args:
+            project_id: 项目ID
+            user_id: 用户ID
+            remote_url: 远程仓库URL（可选）
+            
+        Returns:
+            (success, message/repo_id)
+        """
+        try:
+            import git
+        except ImportError:
+            logger.error("gitpython 未安装，请先安装: pip install gitpython")
+            return False, "gitpython 未安装"
+        
+        user = self._users.get(user_id)
+        if not user:
+            return False, "用户不存在"
+        
+        repo_id = hashlib.md5(f"{project_id}{user_id}{datetime.now()}".encode('utf-8')).hexdigest()[:16]
+        repo_path = os.path.join(self.repo_base_path, project_id, repo_id)
+        
+        if os.path.exists(repo_path):
+            return False, "仓库已存在"
+        
+        os.makedirs(repo_path, exist_ok=True)
+        
+        try:
+            repo = git.Repo.init(repo_path)
+            
+            gitignore_content = """*.log
+*.tmp
+*.pyc
+__pycache__/
+results/
+*.so
+*.dll
+*.dylib
+*.exe
+"""
+            with open(os.path.join(repo_path, '.gitignore'), 'w') as f:
+                f.write(gitignore_content)
+            
+            repo.index.add(['.gitignore'])
+            repo.index.commit('Initial commit: binary analysis repository')
+            
+            if remote_url:
+                repo.create_remote('origin', remote_url)
+            
+            git_repo = GitRepository(
+                repo_id=repo_id,
+                project_id=project_id,
+                repo_path=repo_path,
+                remote_url=remote_url,
+                initialized_at=datetime.now().isoformat(),
+                last_commit_hash=repo.head.commit.hexsha
+            )
+            
+            self._git_repos[repo_id] = git_repo
+            self._save_git_repos()
+            
+            self._log_audit(user_id, user.username, 'REPO_INIT', project_id, 'project', {
+                'repo_id': repo_id,
+                'repo_path': repo_path,
+                'remote_url': remote_url
+            })
+            
+            logger.info(f"项目 {project_id} 二进制仓库初始化成功: {repo_path}")
+            return True, repo_id
+        
+        except Exception as e:
+            logger.error(f"初始化二进制仓库失败: {e}")
+            return False, str(e)
+    
+    def commit_binary_version(self, project_id: str, user_id: str, binary_path: str, 
+                            commit_message: str, analysis_summary: Dict[str, Any] = None,
+                            tags: List[str] = None) -> Tuple[bool, str]:
+        """
+        提交二进制文件新版本到Git仓库
+        
+        Args:
+            project_id: 项目ID
+            user_id: 用户ID
+            binary_path: 二进制文件路径
+            commit_message: 提交消息
+            analysis_summary: 分析摘要（可选）
+            tags: 版本标签（可选）
+            
+        Returns:
+            (success, message/version_id)
+        """
+        try:
+            import git
+        except ImportError:
+            logger.error("gitpython 未安装")
+            return False, "gitpython 未安装"
+        
+        user = self._users.get(user_id)
+        if not user:
+            return False, "用户不存在"
+        
+        if not os.path.exists(binary_path):
+            return False, "二进制文件不存在"
+        
+        repo = None
+        repo_id = None
+        for rid, r in self._git_repos.items():
+            if r.project_id == project_id:
+                repo_id = rid
+                if os.path.exists(r.repo_path):
+                    repo = git.Repo(r.repo_path)
+                break
+        
+        if not repo:
+            return False, "项目仓库未初始化"
+        
+        try:
+            binary_name = os.path.basename(binary_path)
+            dest_path = os.path.join(repo.working_dir, binary_name)
+            import shutil
+            shutil.copy2(binary_path, dest_path)
+            
+            with open(binary_path, 'rb') as f:
+                binary_hash = hashlib.sha256(f.read()).hexdigest()
+            
+            repo.index.add([binary_name])
+            commit = repo.index.commit(commit_message)
+            
+            self._git_repos[repo_id].last_commit_hash = commit.hexsha
+            self._save_git_repos()
+            
+            version_id = hashlib.md5(f"{project_id}{binary_hash}{datetime.now()}".encode('utf-8')).hexdigest()[:16]
+            
+            binary_version = BinaryVersion(
+                version_id=version_id,
+                project_id=project_id,
+                binary_hash=binary_hash,
+                commit_hash=commit.hexsha,
+                commit_message=commit_message,
+                author=user.username,
+                timestamp=datetime.now().isoformat(),
+                analysis_summary=analysis_summary,
+                tags=tags
+            )
+            
+            if project_id not in self._binary_versions:
+                self._binary_versions[project_id] = []
+            self._binary_versions[project_id].append(binary_version)
+            self._save_binary_versions()
+            
+            self._log_audit(user_id, user.username, 'VERSION_COMMIT', project_id, 'project', {
+                'version_id': version_id,
+                'binary_name': binary_name,
+                'binary_hash': binary_hash,
+                'commit_hash': commit.hexsha
+            })
+            
+            logger.info(f"二进制版本提交成功: {version_id}")
+            return True, version_id
+        
+        except Exception as e:
+            logger.error(f"提交二进制版本失败: {e}")
+            return False, str(e)
+    
+    def get_project_versions(self, project_id: str) -> List[Dict[str, Any]]:
+        """
+        获取项目的所有二进制版本
+        
+        Args:
+            project_id: 项目ID
+            
+        Returns:
+            版本列表
+        """
+        versions = self._binary_versions.get(project_id, [])
+        result = []
+        for version in versions:
+            result.append({
+                'version_id': version.version_id,
+                'binary_hash': version.binary_hash,
+                'commit_hash': version.commit_hash,
+                'commit_message': version.commit_message,
+                'author': version.author,
+                'timestamp': version.timestamp,
+                'analysis_summary': version.analysis_summary,
+                'tags': version.tags
+            })
+        return sorted(result, key=lambda x: x['timestamp'], reverse=True)
+    
+    def get_version_by_id(self, project_id: str, version_id: str) -> Optional[Dict[str, Any]]:
+        """
+        根据版本ID获取版本信息
+        
+        Args:
+            project_id: 项目ID
+            version_id: 版本ID
+            
+        Returns:
+            版本信息，如果不存在返回None
+        """
+        versions = self._binary_versions.get(project_id, [])
+        for version in versions:
+            if version.version_id == version_id:
+                return {
+                    'version_id': version.version_id,
+                    'binary_hash': version.binary_hash,
+                    'commit_hash': version.commit_hash,
+                    'commit_message': version.commit_message,
+                    'author': version.author,
+                    'timestamp': version.timestamp,
+                    'analysis_summary': version.analysis_summary,
+                    'tags': version.tags
+                }
+        return None
+    
+    def compare_versions(self, project_id: str, from_version_id: str, to_version_id: str) -> Optional[VersionDiff]:
+        """
+        比较两个版本之间的差异
+        
+        Args:
+            project_id: 项目ID
+            from_version_id: 起始版本ID
+            to_version_id: 目标版本ID
+            
+        Returns:
+            版本差异信息，如果版本不存在返回None
+        """
+        try:
+            import git
+        except ImportError:
+            logger.error("gitpython 未安装")
+            return None
+        
+        versions = self._binary_versions.get(project_id, [])
+        from_version = None
+        to_version = None
+        
+        for v in versions:
+            if v.version_id == from_version_id:
+                from_version = v
+            if v.version_id == to_version_id:
+                to_version = v
+        
+        if not from_version or not to_version:
+            return None
+        
+        repo = None
+        for rid, r in self._git_repos.items():
+            if r.project_id == project_id and os.path.exists(r.repo_path):
+                repo = git.Repo(r.repo_path)
+                break
+        
+        if not repo:
+            return None
+        
+        try:
+            diff = repo.git.diff(f"{from_version.commit_hash}..{to_version.commit_hash}", '--name-only')
+            changed_files = [f for f in diff.split('\n') if f.strip()]
+            
+            changed_functions = []
+            for f in changed_files:
+                if f.endswith(('.so', '.dll', '.dylib', '.exe')):
+                    changed_functions.append(f)
+            
+            new_vulns = []
+            fixed_vulns = []
+            severity_changes = []
+            
+            if from_version.analysis_summary and to_version.analysis_summary:
+                from_vulns = set(from_version.analysis_summary.get('vulnerabilities', []))
+                to_vulns = set(to_version.analysis_summary.get('vulnerabilities', []))
+                
+                new_vulns = list(to_vulns - from_vulns)
+                fixed_vulns = list(from_vulns - to_vulns)
+                
+                from_severity = from_version.analysis_summary.get('severity_counts', {})
+                to_severity = to_version.analysis_summary.get('severity_counts', {})
+                
+                for sev in ['critical', 'high', 'medium', 'low']:
+                    diff_count = to_severity.get(sev, 0) - from_severity.get(sev, 0)
+                    if diff_count != 0:
+                        severity_changes.append({
+                            'severity': sev,
+                            'change': diff_count,
+                            'from': from_severity.get(sev, 0),
+                            'to': to_severity.get(sev, 0)
+                        })
+            
+            return VersionDiff(
+                project_id=project_id,
+                from_version_id=from_version_id,
+                to_version_id=to_version_id,
+                from_commit=from_version.commit_hash,
+                to_commit=to_version.commit_hash,
+                changed_functions=changed_functions,
+                new_vulnerabilities=new_vulns,
+                fixed_vulnerabilities=fixed_vulns,
+                severity_changes=severity_changes
+            )
+        
+        except Exception as e:
+            logger.error(f"比较版本差异失败: {e}")
+            return None
+    
+    def checkout_version(self, project_id: str, version_id: str, output_path: str) -> Tuple[bool, str]:
+        """
+        检出指定版本的二进制文件
+        
+        Args:
+            project_id: 项目ID
+            version_id: 版本ID
+            output_path: 输出路径
+            
+        Returns:
+            (success, message/output_file_path)
+        """
+        try:
+            import git
+        except ImportError:
+            logger.error("gitpython 未安装")
+            return False, "gitpython 未安装"
+        
+        versions = self._binary_versions.get(project_id, [])
+        version = None
+        
+        for v in versions:
+            if v.version_id == version_id:
+                version = v
+                break
+        
+        if not version:
+            return False, "版本不存在"
+        
+        repo = None
+        for rid, r in self._git_repos.items():
+            if r.project_id == project_id and os.path.exists(r.repo_path):
+                repo = git.Repo(r.repo_path)
+                break
+        
+        if not repo:
+            return False, "仓库不存在"
+        
+        try:
+            repo.git.checkout(version.commit_hash)
+            
+            binary_files = [f for f in os.listdir(repo.working_dir) 
+                          if not f.startswith('.') and os.path.isfile(os.path.join(repo.working_dir, f))]
+            
+            if not binary_files:
+                return False, "未找到二进制文件"
+            
+            binary_name = binary_files[0]
+            source_path = os.path.join(repo.working_dir, binary_name)
+            dest_path = os.path.join(output_path, binary_name)
+            
+            import shutil
+            os.makedirs(output_path, exist_ok=True)
+            shutil.copy2(source_path, dest_path)
+            
+            repo.git.checkout('main')
+            
+            logger.info(f"版本 {version_id} 检出成功: {dest_path}")
+            return True, dest_path
+        
+        except Exception as e:
+            logger.error(f"检出版本失败: {e}")
+            return False, str(e)
+    
+    def pull_from_remote(self, project_id: str, user_id: str) -> Tuple[bool, str]:
+        """
+        从远程仓库拉取最新版本
+        
+        Args:
+            project_id: 项目ID
+            user_id: 用户ID
+            
+        Returns:
+            (success, message)
+        """
+        try:
+            import git
+        except ImportError:
+            logger.error("gitpython 未安装")
+            return False, "gitpython 未安装"
+        
+        user = self._users.get(user_id)
+        if not user:
+            return False, "用户不存在"
+        
+        repo = None
+        repo_id = None
+        for rid, r in self._git_repos.items():
+            if r.project_id == project_id and r.remote_url and os.path.exists(r.repo_path):
+                repo = git.Repo(r.repo_path)
+                repo_id = rid
+                break
+        
+        if not repo:
+            return False, "远程仓库未配置"
+        
+        try:
+            origin = repo.remote('origin')
+            origin.pull()
+            
+            self._git_repos[repo_id].last_commit_hash = repo.head.commit.hexsha
+            self._save_git_repos()
+            
+            self._log_audit(user_id, user.username, 'REPO_PULL', project_id, 'project', {
+                'commit_hash': repo.head.commit.hexsha
+            })
+            
+            logger.info(f"项目 {project_id} 从远程拉取成功")
+            return True, f"拉取成功，最新提交: {repo.head.commit.hexsha}"
+        
+        except Exception as e:
+            logger.error(f"从远程拉取失败: {e}")
+            return False, str(e)
+    
+    def push_to_remote(self, project_id: str, user_id: str) -> Tuple[bool, str]:
+        """
+        推送本地提交到远程仓库
+        
+        Args:
+            project_id: 项目ID
+            user_id: 用户ID
+            
+        Returns:
+            (success, message)
+        """
+        try:
+            import git
+        except ImportError:
+            logger.error("gitpython 未安装")
+            return False, "gitpython 未安装"
+        
+        user = self._users.get(user_id)
+        if not user:
+            return False, "用户不存在"
+        
+        repo = None
+        repo_id = None
+        for rid, r in self._git_repos.items():
+            if r.project_id == project_id and r.remote_url and os.path.exists(r.repo_path):
+                repo = git.Repo(r.repo_path)
+                repo_id = rid
+                break
+        
+        if not repo:
+            return False, "远程仓库未配置"
+        
+        try:
+            origin = repo.remote('origin')
+            origin.push()
+            
+            self._log_audit(user_id, user.username, 'REPO_PUSH', project_id, 'project', {
+                'commit_hash': repo.head.commit.hexsha
+            })
+            
+            logger.info(f"项目 {project_id} 推送到远程成功")
+            return True, f"推送成功"
+        
+        except Exception as e:
+            logger.error(f"推送到远程失败: {e}")
+            return False, str(e)
+    
+    def get_repo_info(self, project_id: str) -> Optional[Dict[str, Any]]:
+        """
+        获取项目仓库信息
+        
+        Args:
+            project_id: 项目ID
+            
+        Returns:
+            仓库信息，如果不存在返回None
+        """
+        for repo in self._git_repos.values():
+            if repo.project_id == project_id:
+                return {
+                    'repo_id': repo.repo_id,
+                    'project_id': repo.project_id,
+                    'repo_path': repo.repo_path,
+                    'remote_url': repo.remote_url,
+                    'initialized_at': repo.initialized_at,
+                    'last_commit_hash': repo.last_commit_hash
+                }
+        return None
 
 
 def get_collaboration_manager() -> CollaborationManager:

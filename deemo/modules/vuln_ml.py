@@ -6,6 +6,13 @@ from typing import Dict, List, Optional, Tuple, Any
 
 from config import Config
 
+try:
+    import numpy as np
+    NUMPY_AVAILABLE = True
+except ImportError:
+    NUMPY_AVAILABLE = False
+    np = None
+
 logger = logging.getLogger(__name__)
 
 SEVERITY_LEVELS = ['Low', 'Medium', 'High', 'Critical']
@@ -451,7 +458,7 @@ def train_default_model(output_path: str = None):
         return False
 
 
-def _generate_synthetic_training_data() -> Tuple[np.ndarray, np.ndarray]:
+def _generate_synthetic_training_data() -> "Tuple[np.ndarray, np.ndarray]":
     """生成合成训练数据"""
     import numpy as np
     

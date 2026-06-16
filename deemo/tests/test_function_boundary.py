@@ -1,238 +1,174 @@
-#!/usr/bin/env python3
-"""
-ML函数边界检测模块测试
-"""
-import os
-import sys
-import unittest
-import tempfile
-import shutil
+"""Tests for ML function boundary detection module"""
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
+import pytest
 from modules.function_boundary import (
-    MLFunctionBoundaryDetector, BoundaryDetectionResult, BoundaryCandidate,
-    FunctionBoundary, BoundaryType, ConfidenceLevel
+    BoundaryDetectionMethod,
+    FunctionType,
+    ConfidenceLevel,
+    FunctionBoundary,
+    BoundaryDetectionResult,
+    MLFeatureVector,
+    MLModelInterface,
+    HeuristicAnalyzer,
+    FunctionBoundaryDetector
 )
 
 
-class TestMLFunctionBoundaryDetector(unittest.TestCase):
-    """ML函数边界检测器测试类"""
+class TestBoundaryDetectionMethodEnum:
+    def test_boundary_detection_method_values(self):
+        assert BoundaryDetectionMethod.ML_MODEL.value == "ml_model"
+        assert BoundaryDetectionMethod.HEURISTIC.value == "heuristic"
+        assert BoundaryDetectionMethod.HYBRID.value == "hybrid"
 
-    def setUp(self):
-        """测试前准备"""
-        self.temp_dir = tempfile.mkdtemp()
-        self.detector = MLFunctionBoundaryDetector(output_dir=self.temp_dir)
 
-    def tearDown(self):
-        """测试后清理"""
-        if os.path.exists(self.temp_dir):
-            shutil.rmtree(self.temp_dir)
+class TestFunctionTypeEnum:
+    def test_function_type_values(self):
+        assert FunctionType.NORMAL.value == "normal"
+        assert FunctionType.THUNK.value == "thunk"
+        assert FunctionType.INTERRUPT_HANDLER.value == "interrupt_handler"
+        assert FunctionType.STUB.value == "stub"
+        assert FunctionType.INLINE.value == "inline"
 
-    def test_boundary_type_enum(self):
-        """测试边界类型枚举"""
-        self.assertEqual(BoundaryType.FUNCTION_START.value, 'function_start')
-        self.assertEqual(BoundaryType.FUNCTION_END.value, 'function_end')
-        self.assertEqual(BoundaryType.INSTRUCTION.value, 'instruction')
-        self.assertEqual(BoundaryType.DATA.value, 'data')
 
-    def test_confidence_level_enum(self):
-        """测试置信度等级枚举"""
-        self.assertEqual(ConfidenceLevel.HIGH.value, 'high')
-        self.assertEqual(ConfidenceLevel.MEDIUM.value, 'medium')
-        self.assertEqual(ConfidenceLevel.LOW.value, 'low')
+class TestConfidenceLevelEnum:
+    def test_confidence_level_values(self):
+        assert ConfidenceLevel.HIGH.value == "high"
+        assert ConfidenceLevel.MEDIUM.value == "medium"
+        assert ConfidenceLevel.LOW.value == "low"
 
-    def test_boundary_candidate_dataclass(self):
-        """测试 BoundaryCandidate 数据类"""
-        candidate = BoundaryCandidate(
-            address=0x401000,
-            boundary_type=BoundaryType.FUNCTION_START,
-            confidence=0.95,
-            context='context'
-        )
-        
-        self.assertEqual(candidate.address, 0x401000)
-        self.assertEqual(candidate.boundary_type, BoundaryType.FUNCTION_START)
-        self.assertEqual(candidate.confidence, 0.95)
 
-    def test_boundary_candidate_confidence_level(self):
-        """测试置信度等级属性"""
-        high = BoundaryCandidate(address=0x1, boundary_type=BoundaryType.FUNCTION_START, confidence=0.95)
-        medium = BoundaryCandidate(address=0x1, boundary_type=BoundaryType.FUNCTION_START, confidence=0.8)
-        low = BoundaryCandidate(address=0x1, boundary_type=BoundaryType.FUNCTION_START, confidence=0.5)
-        
-        self.assertEqual(high.confidence_level, ConfidenceLevel.HIGH)
-        self.assertEqual(medium.confidence_level, ConfidenceLevel.MEDIUM)
-        self.assertEqual(low.confidence_level, ConfidenceLevel.LOW)
-
-    def test_boundary_candidate_to_dict(self):
-        """测试 BoundaryCandidate 转换为字典"""
-        candidate = BoundaryCandidate(
-            address=0x401000,
-            boundary_type=BoundaryType.FUNCTION_START,
-            confidence=0.9
-        )
-        
-        result = candidate.to_dict()
-        
-        self.assertIn('address', result)
-        self.assertIn('boundary_type', result)
-        self.assertIn('confidence_level', result)
-        self.assertEqual(result['confidence_level'], 'high')
-
-    def test_function_boundary_dataclass(self):
-        """测试 FunctionBoundary 数据类"""
+class TestFunctionBoundaryDataclass:
+    def test_function_boundary_creation(self):
         boundary = FunctionBoundary(
-            start_address=0x401000,
-            end_address=0x401050,
-            name='main',
-            confidence=0.95,
-            instructions_count=10
+            start_address=0x1000,
+            end_address=0x1100,
+            function_type=FunctionType.NORMAL,
+            confidence=ConfidenceLevel.HIGH
         )
-        
-        self.assertEqual(boundary.start_address, 0x401000)
-        self.assertEqual(boundary.end_address, 0x401050)
-        self.assertEqual(boundary.confidence, 0.95)
+        assert boundary.start_address == 0x1000
+        assert boundary.end_address == 0x1100
+        assert boundary.function_type == FunctionType.NORMAL
+        assert boundary.confidence == ConfidenceLevel.HIGH
 
-    def test_function_boundary_to_dict(self):
-        """测试 FunctionBoundary 转换为字典"""
-        boundary = FunctionBoundary(
-            start_address=0x401000,
-            name='test_func',
-            confidence=0.75
-        )
-        
-        result = boundary.to_dict()
-        
-        self.assertIn('start_address', result)
-        self.assertIn('name', result)
-        self.assertEqual(result['name'], 'test_func')
 
-    def test_detect_boundaries(self):
-        """测试检测函数边界"""
-        # 创建模拟二进制文件（包含一些函数序言模式）
-        test_file = os.path.join(self.temp_dir, 'test.bin')
-        with open(test_file, 'wb') as f:
-            # 添加函数序言模式
-            f.write(b'\x55\x48\x89\xe5')  # push rbp; mov rbp, rsp
-            f.write(b'\x90' * 20)  # nop填充
-            f.write(b'\xc3')  # ret
-            f.write(b'\x55\x48\x89\xe5')  # 另一个函数
-            f.write(b'\x90' * 30)
-            f.write(b'\xc3')
-        
-        result = self.detector.detect_boundaries(test_file)
-        
-        self.assertIsInstance(result, BoundaryDetectionResult)
-        self.assertGreaterEqual(len(result.boundaries), 1)
-
-    def test_detect_boundaries_empty_file(self):
-        """测试检测空文件"""
-        test_file = os.path.join(self.temp_dir, 'empty.bin')
-        with open(test_file, 'wb') as f:
-            f.write(b'')
-        
-        result = self.detector.detect_boundaries(test_file)
-        
-        self.assertEqual(len(result.boundaries), 0)
-
-    def test_merge_with_existing(self):
-        """测试与现有函数列表合并"""
-        detected = [
-            FunctionBoundary(start_address=0x401000, confidence=0.9),
-            FunctionBoundary(start_address=0x401100, confidence=0.8)
+class TestBoundaryDetectionResultDataclass:
+    def test_boundary_detection_result_creation(self):
+        boundaries = [
+            FunctionBoundary(
+                start_address=0x1000,
+                end_address=0x1100,
+                function_type=FunctionType.NORMAL,
+                confidence=ConfidenceLevel.HIGH
+            )
         ]
-        
-        existing = [
-            {"start_address": "0x401000", "name": "main", "end_address": "0x401050"},
-            {"start_address": "0x401200", "name": "func2"}
-        ]
-        
-        merged = self.detector.merge_with_existing(detected, existing)
-        
-        self.assertEqual(len(merged), 3)
-        
-        # 检查合并后的函数
-        main_func = next((b for b in merged if b.start_address == 0x401000), None)
-        self.assertIsNotNone(main_func)
-        self.assertEqual(main_func.name, 'main')
-        self.assertEqual(main_func.confidence, 0.9)
-
-    def test_generate_report(self):
-        """测试生成报告"""
-        test_file = os.path.join(self.temp_dir, 'test.bin')
-        with open(test_file, 'wb') as f:
-            f.write(b'\x55\x48\x89\xe5\x90\x90\xc3')
-        
-        result = self.detector.detect_boundaries(test_file)
-        report = self.detector.generate_report(result)
-        
-        self.assertIn('函数边界检测报告', report)
-        self.assertIn('test.bin', report)
-
-    def test_save_result(self):
-        """测试保存结果"""
-        test_file = os.path.join(self.temp_dir, 'test.bin')
-        with open(test_file, 'wb') as f:
-            f.write(b'\x55\x48\x89\xe5\xc3')
-        
-        result = self.detector.detect_boundaries(test_file)
-        saved_path = self.detector.save_result(result, 'test_boundary')
-        
-        self.assertTrue(os.path.exists(saved_path))
-        self.assertTrue(saved_path.endswith('.json'))
-
-
-class TestBoundaryDetectionResult(unittest.TestCase):
-    """BoundaryDetectionResult 数据类测试"""
-
-    def test_boundary_detection_result_dataclass(self):
-        """测试边界检测结果"""
-        candidate = BoundaryCandidate(
-            address=0x401000,
-            boundary_type=BoundaryType.FUNCTION_START,
-            confidence=0.9
-        )
-        
-        boundary = FunctionBoundary(
-            start_address=0x401000,
-            confidence=0.9
-        )
-        
         result = BoundaryDetectionResult(
-            binary_path='/test/bin',
-            boundaries=[boundary],
-            candidates=[candidate],
-            total_functions_detected=1,
-            high_confidence_count=1,
-            medium_confidence_count=0,
-            low_confidence_count=0,
-            timestamp='2024-01-01'
+            boundaries=boundaries,
+            method=BoundaryDetectionMethod.HYBRID,
+            total_functions=1,
+            confidence_summary={"high": 1, "medium": 0, "low": 0},
+            runtime_ms=10.5
         )
-        
-        self.assertEqual(len(result.boundaries), 1)
-        self.assertEqual(len(result.candidates), 1)
-        self.assertEqual(result.high_confidence_count, 1)
+        assert len(result.boundaries) == 1
+        assert result.method == BoundaryDetectionMethod.HYBRID
+        assert result.total_functions == 1
 
-    def test_boundary_detection_result_to_dict(self):
-        """测试转换为字典"""
-        result = BoundaryDetectionResult(
-            binary_path='/test/bin',
-            boundaries=[],
-            candidates=[],
-            total_functions_detected=0,
-            high_confidence_count=0,
-            medium_confidence_count=0,
-            low_confidence_count=0,
-            timestamp='2024-01-01'
+
+class TestMLFeatureVectorDataclass:
+    def test_ml_feature_vector_creation(self):
+        features = MLFeatureVector(
+            bytes_before=b"\x55\x48",
+            bytes_after=b"\x89\xe5",
+            instruction_pattern="push rbp",
+            section_info="code",
+            entropy=0.85,
+            opcode_frequency={"0x55": 1, "0x48": 1},
+            function_call_density=0.2
         )
-        
-        data = result.to_dict()
-        
-        self.assertIn('binary_path', data)
-        self.assertIn('boundaries', data)
-        self.assertIn('candidates', data)
+        assert features.entropy == 0.85
+        assert features.section_info == "code"
 
 
-if __name__ == '__main__':
-    unittest.main()
+class TestMLModelInterface:
+    def test_model_interface_initialization(self):
+        model = MLModelInterface()
+        assert model.model_path is None
+        assert model._model is None
+
+    def test_model_prediction(self):
+        model = MLModelInterface()
+        features = MLFeatureVector(
+            bytes_before=b"",
+            bytes_after=b"\x55",
+            instruction_pattern="",
+            section_info="",
+            entropy=0.9,
+            opcode_frequency={},
+            function_call_density=0.5
+        )
+        prediction, confidence = model.predict(features)
+        assert prediction in [0, 1]
+        assert 0 <= confidence <= 1
+
+
+class TestHeuristicAnalyzer:
+    def test_heuristic_analyzer_initialization(self):
+        analyzer = HeuristicAnalyzer()
+        assert 'function_start' in analyzer.opcode_patterns
+
+    def test_detect_boundary(self):
+        analyzer = HeuristicAnalyzer()
+        data = b"\x55\x00\x00\x00\x00"
+        assert analyzer.detect_boundary(data, 0) is True
+        assert analyzer.detect_boundary(data, 1) is False
+
+    def test_find_candidate_boundaries(self):
+        analyzer = HeuristicAnalyzer()
+        data = b"\x55\x00" * 100
+        boundaries = analyzer.find_candidate_boundaries(data)
+        assert len(boundaries) > 0
+
+
+class TestFunctionBoundaryDetector:
+    def setup_method(self):
+        self.detector = FunctionBoundaryDetector()
+
+    def test_detector_initialization(self):
+        assert self.detector.method == BoundaryDetectionMethod.HYBRID
+
+    def test_get_metadata(self):
+        metadata = self.detector.get_metadata()
+        assert metadata.name == "FunctionBoundaryDetector"
+        assert metadata.version == "1.0.0"
+
+    def test_analyze_with_binary_data(self):
+        binary_data = b"\x55\x48\x89\xe5\xc3" * 10
+        result = self.detector.analyze(binary_data=binary_data)
+        assert result["success"] is True
+        assert "result" in result
+
+    def test_analyze_missing_binary_data(self):
+        result = self.detector.analyze()
+        assert result["success"] is False
+        assert "error" in result
+
+    def test_analyze_with_ml_method(self):
+        detector = FunctionBoundaryDetector(method=BoundaryDetectionMethod.ML_MODEL)
+        binary_data = b"\x55\x48\x89\xe5\xc3" * 10
+        result = detector.analyze(binary_data=binary_data)
+        assert result["success"] is True
+
+    def test_analyze_with_heuristic_method(self):
+        detector = FunctionBoundaryDetector(method=BoundaryDetectionMethod.HEURISTIC)
+        binary_data = b"\x55\x48\x89\xe5\xc3" * 10
+        result = detector.analyze(binary_data=binary_data)
+        assert result["success"] is True
+
+    def test_analyze_with_hybrid_method(self):
+        detector = FunctionBoundaryDetector(method=BoundaryDetectionMethod.HYBRID)
+        binary_data = b"\x55\x48\x89\xe5\xc3" * 10
+        result = detector.analyze(binary_data=binary_data)
+        assert result["success"] is True
+
+    def test_set_method(self):
+        self.detector.set_method(BoundaryDetectionMethod.HEURISTIC)
+        assert self.detector.method == BoundaryDetectionMethod.HEURISTIC

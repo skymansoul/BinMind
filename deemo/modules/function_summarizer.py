@@ -525,7 +525,7 @@ class FunctionSummarizer:
         calls = []
         
         # 获取直接调用
-        for callee_addr, call sites in func.callee_addresses.items():
+        for callee_addr, call_sites in func.callee_addresses.items():
             try:
                 callee = self._project.kb.functions.get_by_addr(callee_addr)
                 callee_name = callee.name

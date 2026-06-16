@@ -12,6 +12,14 @@ except ImportError:
     HAS_NETWORKX = False
     logger.warning("networkx 未安装，将使用内置算法")
 
+try:
+    from .plugin_manager import BaseAnalyzer, AnalyzerMetadata, AnalyzerType
+except ImportError:
+    logger.warning("无法导入 BaseAnalyzer，将无法集成到插件系统")
+    BaseAnalyzer = None
+    AnalyzerMetadata = None
+    AnalyzerType = None
+
 
 class LockType(Enum):
     """锁类型枚举"""
@@ -383,3 +391,91 @@ class DeadlockDetector:
                     self.functions_with_locks.add(f"string_ref:{s[:20]}")
         
         return self.detect_deadlocks()
+
+
+if BaseAnalyzer is not None:
+    class DeadlockDetectorAnalyzer(BaseAnalyzer):
+        """
+        死锁检测器分析器 - 集成到插件系统的包装类
+        
+        该分析器基于静态分析提取的同步原语和调用图，构建资源分配图，
+        使用死锁检测算法发现潜在的死锁场景，并输出详细的调用链和锁顺序。
+        """
+        
+        def __init__(self):
+            """初始化分析器"""
+            self.detector = DeadlockDetector()
+        
+        def analyze(self, **kwargs) -> Dict[str, Any]:
+            """
+            执行死锁检测分析
+            
+            Args:
+                **kwargs: 分析参数
+                    - binary_info: 二进制信息字典（包含反编译结果、字符串等）
+                    - decompilation_results: 反编译结果列表
+                    - operations: 锁操作列表（可选，直接提供锁操作）
+            
+            Returns:
+                分析结果字典
+            """
+            binary_info = kwargs.get("binary_info", {})
+            decompilation_results = kwargs.get("decompilation_results", [])
+            
+            logger.info("开始死锁检测分析")
+            
+            try:
+                # 添加锁操作
+                if decompilation_results:
+                    self.detector.add_operations_from_decompilation(decompilation_results)
+                
+                # 从二进制信息分析
+                result = self.detector.analyze_from_binary_info(binary_info)
+                
+                return {
+                    "success": True,
+                    "result": result.to_dict(),
+                    "summary": self._generate_summary(result)
+                }
+            
+            except Exception as e:
+                logger.error(f"死锁检测分析失败: {e}")
+                return {"success": False, "error": str(e)}
+        
+        def _generate_summary(self, result: DeadlockAnalysisResult) -> str:
+            """生成分析摘要"""
+            if result.potential_deadlocks == 0:
+                return f"死锁检测完成，未发现潜在死锁。共分析 {result.total_locks} 个锁，{result.total_functions} 个函数。"
+            else:
+                return f"死锁检测完成，发现 {result.potential_deadlocks} 个潜在死锁。共分析 {result.total_locks} 个锁，{result.total_functions} 个函数。"
+        
+        @classmethod
+        def get_metadata(cls) -> AnalyzerMetadata:
+            """获取分析器元数据"""
+            return AnalyzerMetadata(
+                name="DeadlockDetector",
+                type=AnalyzerType.STATIC_ANALYZER,
+                version="1.0.0",
+                description="多线程死锁自动化检测器，基于锁顺序图检测潜在死锁环路",
+                author="BinaryAnalysisPlatform",
+                dependencies=["networkx"],
+                supported_platforms=["x86", "x86_64", "arm", "arm64"]
+            )
+        
+        def validate_input(self, **kwargs) -> Tuple[bool, Optional[str]]:
+            """验证输入参数"""
+            binary_info = kwargs.get("binary_info")
+            decompilation_results = kwargs.get("decompilation_results")
+            
+            # 检查是否提供了任何输入
+            has_binary_info = binary_info is not None
+            has_decompilation = decompilation_results is not None
+            
+            if not has_binary_info and not has_decompilation:
+                return False, "必须提供 binary_info 或 decompilation_results"
+            
+            return True, None
+        
+        def cleanup(self) -> None:
+            """清理资源"""
+            self.detector = None

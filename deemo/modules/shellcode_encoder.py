@@ -51,8 +51,8 @@ class BadCharInfo:
     坏字符信息
     """
     char: int                      # 字节值 (0-255)
-    name: str                      # 名称（如 'NULL', 'CR'）
-    hex_repr: str                  # 十六进制表示
+    name: str = ""                 # 名称（如 'NULL', 'CR'）
+    hex_repr: str = ""             # 十六进制表示
     
     def __post_init__(self):
         if isinstance(self.char, str):
@@ -296,7 +296,12 @@ class ShellcodeEncoder:
         
         if best_result is None:
             # 使用随机 key
-            key = random.choice([k for k in range(1, 256) if k not in self.bad_chars])
+            available_keys = [k for k in range(1, 256) if k not in self.bad_chars]
+            if available_keys:
+                key = random.choice(available_keys)
+            else:
+                # 如果没有可用的 key，使用默认 key 1
+                key = 1
             best_key = key
             best_result = bytes([b ^ key for b in shellcode])
         
@@ -778,8 +783,10 @@ class ShellcodeEncoder:
         
         # 如果包含坏字符，尝试重新编码
         if result.contains_bad_chars:
+            bad_chars_hex = [f"{b:02x}" for b in bad_found[:5]]
+            bad_chars_display = ['\\x' + c for c in bad_chars_hex]
             self.logger.warning(
-                f"编码结果包含坏字符: {[f'\\x{b:02x}' for b in bad_found[:5]]}"
+                f"编码结果包含坏字符: {bad_chars_display}"
             )
         
         return result
@@ -944,7 +951,9 @@ if __name__ == '__main__':
     print(f"  描述: {result.description}")
     
     if result.contains_bad_chars:
-        print(f"  发现的坏字符: {[f'\\x{b:02x}' for b in result.bad_chars_found]}")
+        bad_chars_hex = [f"{b:02x}" for b in result.bad_chars_found]
+        bad_chars_display = ['\\x' + c for c in bad_chars_hex]
+        print(f"  发现的坏字符: {bad_chars_display}")
     
     print(f"\n编码后 shellcode: {result.encoded_shellcode.hex()}")
     

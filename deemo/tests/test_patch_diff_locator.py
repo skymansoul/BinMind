@@ -159,7 +159,7 @@ class TestPatchDiffLocator(unittest.TestCase):
     def test_analyze_nonexistent_files(self):
         """测试分析不存在文件"""
         result = self.locator.analyze('/nonexistent/original', '/nonexistent/patched')
-        self.assertIn('error', result)
+        self.assertIsNotNone(result.error)
     
     def test_generate_diff_report(self):
         """测试生成差异报告"""
@@ -262,7 +262,7 @@ class TestInputValidation(unittest.TestCase):
         locator = PatchDiffLocator()
         
         result = locator.analyze('../../../etc/passwd', '/tmp/patched')
-        self.assertIn('error', result)
+        self.assertIsNotNone(result.error)
     
     def test_same_file_analysis(self):
         """测试分析相同文件"""

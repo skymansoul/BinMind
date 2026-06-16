@@ -213,17 +213,17 @@ class ROPGadgetGrader:
             r'call \[r[a-z0-9]+\]',
             r'call qword ptr \[r[a-z0-9]+\]',
         ],
-        GadgetCategory.RET: [
-            r'ret',
-            r'ret [0x[0-9a-fA-F]+]',
+        GadgetCategory.NOP: [
+            r'nop; ret',
+            r'nop nop; ret',
         ],
         GadgetCategory.JUMP: [
             r'jmp r[a-z0-9]+',
             r'jmp \[r[a-z0-9]+\]',
         ],
-        GadgetCategory.NOP: [
-            r'nop; ret',
-            r'nop nop; ret',
+        GadgetCategory.RET: [
+            r'ret',
+            r'ret [0x[0-9a-fA-F]+]',
         ],
     }
     

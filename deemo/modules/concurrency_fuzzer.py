@@ -69,6 +69,63 @@ class ConcurrencyFuzzResult:
     summary: str = ''
 
 
+# 同步函数列表
+SYNC_FUNCTIONS = [
+    'pthread_mutex_lock',
+    'pthread_mutex_unlock',
+    'pthread_rwlock_rdlock',
+    'pthread_rwlock_wrlock',
+    'pthread_rwlock_unlock',
+    'pthread_cond_wait',
+    'pthread_cond_signal',
+    'pthread_cond_broadcast',
+    'pthread_barrier_wait',
+    'sem_wait',
+    'sem_post',
+    'pthread_join',
+    'pthread_spin_lock',
+    'pthread_spin_unlock',
+]
+
+# 竞争检测模式
+RACE_PATTERNS = {
+    # 数据竞争
+    'data_race': [
+        r'race detected',
+        r'data race',
+        r'concurrent access',
+        r'unsynchronized access',
+        r'potential race',
+        r'TSAN:.*race',
+        r'ThreadSanitizer:.*data race',
+    ],
+    
+    # 死锁
+    'deadlock': [
+        r'deadlock detected',
+        r'lock order violation',
+        r'potential deadlock',
+        r'cycle in lock graph',
+        r'TSAN:.*deadlock',
+        r'ThreadSanitizer:.*lock-order-violation',
+    ],
+    
+    # 原子性违反
+    'atomicity_violation': [
+        r'atomicity violation',
+        r'non-atomic',
+        r'missing synchronization',
+    ],
+    
+    # 顺序违反
+    'order_violation': [
+        r'order violation',
+        r'execution order',
+        r'wrong order',
+    ],
+}
+
+
 class ConcurrencyFuzzer:
     """
     并发模糊测试器
@@ -76,61 +133,9 @@ class ConcurrencyFuzzer:
     通过控制线程调度探索并发问题。
     """
     
-    # 同步函数列表
-    SYNC_FUNCTIONS = [
-        'pthread_mutex_lock',
-        'pthread_mutex_unlock',
-        'pthread_rwlock_rdlock',
-        'pthread_rwlock_wrlock',
-        'pthread_rwlock_unlock',
-        'pthread_cond_wait',
-        'pthread_cond_signal',
-        'pthread_cond_broadcast',
-        'pthread_barrier_wait',
-        'sem_wait',
-        'sem_post',
-        'pthread_join',
-        'pthread_spin_lock',
-        'pthread_spin_unlock',
-    ]
-    
-    # 竞争检测模式
-    RACE_PATTERNS = {
-        # 数据竞争
-        'data_race': [
-            r'race detected',
-            r'data race',
-            r'concurrent access',
-            r'unsynchronized access',
-            r'potential race',
-            r'TSAN:.*race',
-            r'ThreadSanitizer:.*data race',
-        ],
-        
-        # 死锁
-        'deadlock': [
-            r'deadlock detected',
-            r'lock order violation',
-            r'potential deadlock',
-            r'cycle in lock graph',
-            r'TSAN:.*deadlock',
-            r'ThreadSanitizer:.*lock-order-violation',
-        ],
-        
-        # 原子性违反
-        'atomicity_violation': [
-            r'atomicity violation',
-            r'non-atomic',
-            r'missing synchronization',
-        ],
-        
-        # 顺序违反
-        'order_violation': [
-            r'order violation',
-            r'execution order',
-            r'wrong order',
-        ],
-    }
+    # 使用模块级别的定义
+    SYNC_FUNCTIONS = SYNC_FUNCTIONS
+    RACE_PATTERNS = RACE_PATTERNS
     
     def __init__(
         self,
@@ -888,3 +893,25 @@ def run_concurrency_fuzz(
         fuzzer.load_concurrency_analysis(analysis_file)
     
     return fuzzer.analyze()
+
+
+# 别名函数，保持向后兼容
+def fuzz_concurrency(
+    binary_path: str,
+    iterations: int = 100,
+    output_dir: str = None,
+    analysis_file: str = None
+) -> ConcurrencyFuzzResult:
+    """
+    运行并发模糊测试的便捷函数（别名）
+    
+    Args:
+        binary_path: 二进制路径
+        iterations: 迭代次数
+        output_dir: 输出目录
+        analysis_file: 并发分析文件
+        
+    Returns:
+        ConcurrencyFuzzResult 测试结果
+    """
+    return run_concurrency_fuzz(binary_path, iterations, output_dir, analysis_file)

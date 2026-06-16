@@ -124,12 +124,6 @@ class HeapFengShuiStrategist:
         Returns:
             堆风水策略对象
         """
-        strategy = FengShuiStrategy()
-        strategy.notes.append(f"漏洞类型: {vuln_type.value}")
-        strategy.notes.append(f"目标结构体大小: {target_struct_size} bytes")
-        strategy.notes.append(f"分配器: {self.config.allocator.value}")
-        strategy.notes.append(f"libc版本: {self.config.libc_version}")
-        
         if vuln_type == VulnerabilityType.USE_AFTER_FREE:
             strategy = self._generate_uaf_strategy(target_struct_size, additional_constraints)
         elif vuln_type == VulnerabilityType.HEAP_OVERFLOW:
@@ -138,6 +132,12 @@ class HeapFengShuiStrategist:
             strategy = self._generate_double_free_strategy(target_struct_size, additional_constraints)
         else:
             strategy = self._generate_generic_strategy(target_struct_size, additional_constraints)
+        
+        # 添加元信息到notes（在策略生成之后添加，避免被覆盖）
+        strategy.notes.insert(0, f"漏洞类型: {vuln_type.value}")
+        strategy.notes.insert(1, f"目标结构体大小: {target_struct_size} bytes")
+        strategy.notes.insert(2, f"分配器: {self.config.allocator.value}")
+        strategy.notes.insert(3, f"libc版本: {self.config.libc_version}")
             
         strategy.success_probability = self._calculate_success_probability(strategy)
         strategy.target_layout = self._describe_target_layout(target_struct_size)

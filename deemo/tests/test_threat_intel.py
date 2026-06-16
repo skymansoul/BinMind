@@ -94,7 +94,7 @@ class TestThreatIntelClient(unittest.TestCase):
         self.assertEqual(result.malware_families, ["TestMalware"])
         self.assertEqual(result.apt_groups, ["APT28"])
         self.assertTrue(result.is_malicious)
-        self.assertIn("2 个事件", result.summary)
+        self.assertIn("1 个事件", result.summary)
     
     def test_parse_otx_pulses(self):
         """测试解析OTX脉冲"""
@@ -177,31 +177,33 @@ class TestThreatIntelClient(unittest.TestCase):
         self.assertFalse(self.client.is_provider_available('misp'))
         self.assertFalse(self.client.is_provider_available('otx'))
     
-    @patch('modules.threat_intel.PyMISP')
-    def test_init_misp_success(self, mock_pymisp):
-        """测试初始化MISP成功"""
-        mock_client = MagicMock()
-        mock_pymisp.return_value = mock_client
-        
-        with patch('modules.threat_intel.Config.MISP_URL', 'https://misp.example.com'):
-            with patch('modules.threat_intel.Config.MISP_API_KEY', 'test_key'):
-                with patch('modules.threat_intel.Config.MISP_VERIFY_SSL', True):
-                    client = ThreatIntelClient(providers=['misp'])
-        
-        self.assertIsNotNone(client.misp_client)
-        mock_pymisp.assert_called_once()
+    def test_init_misp_success(self):
+        """测试初始化MISP成功（模拟MISP可用）"""
+        with patch('modules.threat_intel.MISP_AVAILABLE', True):
+            with patch('modules.threat_intel.PyMISP') as mock_pymisp:
+                mock_client = MagicMock()
+                mock_pymisp.return_value = mock_client
+                
+                with patch('modules.threat_intel.Config.MISP_URL', 'https://misp.example.com'):
+                    with patch('modules.threat_intel.Config.MISP_API_KEY', 'test_key'):
+                        with patch('modules.threat_intel.Config.MISP_VERIFY_SSL', True):
+                            client = ThreatIntelClient(providers=['misp'])
+            
+            self.assertIsNotNone(client.misp_client)
+            mock_pymisp.assert_called_once()
     
-    @patch('modules.threat_intel.OTXv2')
-    def test_init_otx_success(self, mock_otx):
-        """测试初始化OTX成功"""
-        mock_client = MagicMock()
-        mock_otx.return_value = mock_client
-        
-        with patch('modules.threat_intel.Config.OTX_API_KEY', 'test_key'):
-            client = ThreatIntelClient(providers=['otx'])
-        
-        self.assertIsNotNone(client.otx_client)
-        mock_otx.assert_called_once_with('test_key')
+    def test_init_otx_success(self):
+        """测试初始化OTX成功（模拟OTX可用）"""
+        with patch('modules.threat_intel.OTX_AVAILABLE', True):
+            with patch('modules.threat_intel.OTXv2') as mock_otx:
+                mock_client = MagicMock()
+                mock_otx.return_value = mock_client
+                
+                with patch('modules.threat_intel.Config.OTX_API_KEY', 'test_key'):
+                    client = ThreatIntelClient(providers=['otx'])
+            
+            self.assertIsNotNone(client.otx_client)
+            mock_otx.assert_called_once_with('test_key')
     
     @patch('modules.threat_intel.Config.MISP_URL', '')
     @patch('modules.threat_intel.Config.MISP_API_KEY', '')

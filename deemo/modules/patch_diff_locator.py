@@ -21,6 +21,190 @@ from config import Config, ensure_directories, get_current_ai_model, call_ai_wit
 logger = logging.getLogger(__name__)
 
 
+# 安全补丁特征模式
+SECURITY_PATCH_PATTERNS = {
+    # 空指针检查 - 放在前面，因为更具体
+    'null_check': {
+        'keywords': [
+            'NULL', 'null', 'assert', 'test', 'cmp'
+        ],
+        'patterns': [
+            r'if\s*\(\s*\w+\s*!=\s*NULL\s*\)',
+            r'if\s*\(\s*\w+\s*==\s*NULL\s*\)',
+            r'if\s*\(\s*\w+\s*!=\s*null\s*\)',
+            r'if\s*\(\s*\w+\s*==\s*null\s*\)',
+            r'test\s+.*,\s*null',
+            r'cmp\s+.*,\s*0\s*;\s*null',
+            r'assert\s*\(\s*\w+\s*\)',
+            r'NULL\s+pointer\s+check',
+            r'null\s+pointer\s+check',
+        ]
+    },
+    
+    # 输入验证 - 放在前面，因为更具体
+    'input_validation': {
+        'keywords': [
+            'validate', 'sanitize', 'escape', 'filter', 'check', 'reject', 
+            'is_valid', 'is_safe'
+        ],
+        'patterns': [
+            r'validate_input\s*\(',
+            r'sanitize\s*\(',
+            r'escape\s*\(',
+            r'filter\s*\(',
+            r'is_valid\s*\(',
+            r'is_safe\s*\(',
+        ]
+    },
+    
+    # 边界检查添加
+    'boundary_check': {
+        'keywords': [
+            'cmp', 'test', 'check', 'validate', 'length', 'index', 'size', 
+            'max', 'assert', 'CHECK', 'VALIDATE', 'if', '<', '>', '==', '!=',
+            'strlen', 'sizeof', 'strncpy', 'snprintf', 'memcpy'
+        ],
+        'patterns': [
+            r'cmp\s+.*,\s*.*\s*;\s*check',
+            r'test\s+.*,\s*.*\s*;\s*validate',
+            r'strlen\s*\([^)]+\)\s*[<>=!]+\s*\d+',
+            r'sizeof\s*\(',
+            r'length\s*[<>=!]+\s*\d+',
+            r'size\s*[<>=!]+\s*\d+',
+            r'index\s*[<>=!]+\s*len',
+            r'assert\s*\(',
+            r'CHECK\s*\(',
+            r'VALIDATE\s*\(',
+            r'length\s+check',
+            r'boundary\s+check',
+        ]
+    },
+    
+    # 内存安全
+    'memory_safety': {
+        'keywords': [
+            'memcpy', 'memmove', 'strncpy', 'snprintf', 'malloc', 'free', 
+            'realloc', 'alloca', '__builtin_object_size', '__stack_chk_fail', 'fortify'
+        ],
+        'patterns': [
+            r'memcpy\s*\([^,]+,\s*[^,]+,\s*[^)]+\)',
+            r'memmove\s*\(',
+            r'strncpy\s*\(',
+            r'snprintf\s*\(',
+            r'malloc\s*\([^)]+\)',
+            r'free\s*\(',
+            r'realloc\s*\(',
+            r'alloca\s*\(',
+            r'__builtin_object_size',
+            r'__stack_chk_fail',
+            r'fortify',
+        ]
+    },
+    
+    # 整数溢出检查
+    'integer_overflow': {
+        'keywords': [
+            'overflow', 'wrap', 'INT_MAX', 'SIZE_MAX', '__builtin_add_overflow', 
+            '__builtin_mul_overflow', 'add', 'sub', 'mul', 'limit', 'max', 'min'
+        ],
+        'patterns': [
+            r'overflow\s*check',
+            r'wrap\s*around',
+            r'add\s*>\s*max',
+            r'sub\s*<\s*min',
+            r'mul\s*>\s*limit',
+            r'__builtin_add_overflow',
+            r'__builtin_mul_overflow',
+            r'INT_MAX',
+            r'SIZE_MAX',
+        ]
+    },
+    
+    # 权限检查
+    'permission_check': {
+        'keywords': [
+            'permission', 'auth', 'authorize', 'check_privilege', 'is_admin', 
+            'has_permission', 'access', 'control'
+        ],
+        'patterns': [
+            r'permission\s*check',
+            r'auth\s*\(',
+            r'authorize\s*\(',
+            r'check_privilege',
+            r'is_admin',
+            r'has_permission',
+            r'access\s*control',
+        ]
+    },
+    
+    # 加密/安全
+    'crypto_security': {
+        'keywords': [
+            'encrypt', 'decrypt', 'hash', 'sign', 'verify', 'random', 
+            'secure', 'constant_time'
+        ],
+        'patterns': [
+            r'encrypt\s*\(',
+            r'decrypt\s*\(',
+            r'hash\s*\(',
+            r'sign\s*\(',
+            r'verify\s*\(',
+            r'random\s*\(',
+            r'secure\s*\(',
+            r'constant_time',
+        ]
+    },
+    
+    # 错误处理
+    'error_handling': {
+        'keywords': [
+            'return', 'error', 'goto', 'catch', 'try', 'exception', 'fail', 'abort'
+        ],
+        'patterns': [
+            r'return\s*-1',
+            r'return\s*error',
+            r'goto\s*error',
+            r'catch\s*\(',
+            r'try\s*\{',
+            r'exception',
+            r'fail\s*\(',
+            r'abort\s*\(',
+        ]
+    },
+    
+    # 锁/同步
+    'lock_sync': {
+        'keywords': [
+            'lock', 'unlock', 'mutex', 'semaphore', 'spinlock', 'atomic', 
+            'barrier', 'sync'
+        ],
+        'patterns': [
+            r'lock\s*\(',
+            r'unlock\s*\(',
+            r'mutex\s*\(',
+            r'semaphore',
+            r'spinlock',
+            r'atomic',
+            r'barrier',
+            r'sync\s*\(',
+        ]
+    },
+}
+
+# 漏洞类型映射
+VULNERABILITY_TYPE_MAP = {
+    'boundary_check': 'buffer_overflow',
+    'input_validation': 'input_validation',
+    'memory_safety': 'memory_safety',
+    'integer_overflow': 'integer_overflow',
+    'null_check': 'null_pointer_dereference',
+    'permission_check': 'permission_check',
+    'crypto_security': 'crypto_security',
+    'error_handling': 'error_handling',
+    'lock_sync': 'concurrency_issue',
+}
+
+
 class DiffType(Enum):
     """差异类型枚举"""
     ADDED = 'added'
@@ -28,6 +212,9 @@ class DiffType(Enum):
     MODIFIED = 'modified'
     MOVED = 'moved'
     UNKNOWN = 'unknown'
+    ASSEMBLY = 'assembly'
+    PSEUDO_CODE = 'pseudo_code'
+    BINARY = 'binary'
 
 
 @dataclass
@@ -59,6 +246,9 @@ class PatchAnalysisResult:
     potential_vulnerabilities: List[Dict[str, Any]] = field(default_factory=lambda: [])
     summary: str = ''
     diff_report: str = ''
+    vulnerability_summary: Dict[str, int] = field(default_factory=lambda: dict)
+    overall_risk: str = ''
+    error: Optional[str] = None
 
 
 class PatchDiffLocator:
@@ -68,135 +258,13 @@ class PatchDiffLocator:
     分析补丁前后二进制文件的差异，定位安全补丁和潜在漏洞。
     """
     
-    # 安全补丁特征模式
-    SECURITY_PATCH_PATTERNS = {
-        # 边界检查添加
-        'boundary_check': [
-            r'cmp\s+.*,\s*.*\s*;\s*check',
-            r'test\s+.*,\s*.*\s*;\s*validate',
-            r'if\s*\(\s*\w+\s*[<>=!]+\s*\w+\s*\)',
-            r'length\s*>\s*size',
-            r'index\s*[<>=!]+\s*len',
-            r'size\s*[<>=!]+\s*max',
-            r'assert\s*\(',
-            r'CHECK\s*\(',
-            r'VALIDATE\s*\(',
-        ],
-        
-        # 输入验证
-        'input_validation': [
-            r'validate\s*\(',
-            r'sanitize\s*\(',
-            r'escape\s*\(',
-            r'filter\s*\(',
-            r'check\s*\(',
-            r'reject\s*\(',
-            r'is_valid\s*\(',
-            r'is_safe\s*\(',
-        ],
-        
-        # 内存安全
-        'memory_safety': [
-            r'memcpy\s*\([^,]+,\s*[^,]+,\s*[^)]+\)',
-            r'memmove\s*\(',
-            r'strncpy\s*\(',
-            r'snprintf\s*\(',
-            r'malloc\s*\([^)]+\)',
-            r'free\s*\(',
-            r'realloc\s*\(',
-            r'alloca\s*\(',
-            r'__builtin_object_size',
-            r'__stack_chk_fail',
-            r'fortify',
-        ],
-        
-        # 整数溢出检查
-        'integer_overflow': [
-            r'overflow\s*check',
-            r'wrap\s*around',
-            r'add\s*>\s*max',
-            r'sub\s*<\s*min',
-            r'mul\s*>\s*limit',
-            r'__builtin_add_overflow',
-            r'__builtin_mul_overflow',
-            r'INT_MAX',
-            r'SIZE_MAX',
-        ],
-        
-        # 空指针检查
-        'null_check': [
-            r'if\s*\(\s*\w+\s*!=\s*NULL\s*\)',
-            r'if\s*\(\s*\w+\s*==\s*NULL\s*\)',
-            r'test\s+.*,\s*null',
-            r'cmp\s+.*,\s*0\s*;\s*null',
-            r'assert\s*\(\s*\w+\s*\)',
-        ],
-        
-        # 权限检查
-        'permission_check': [
-            r'permission\s*check',
-            r'auth\s*\(',
-            r'authorize\s*\(',
-            r'check_privilege',
-            r'is_admin',
-            r'has_permission',
-            r'access\s*control',
-        ],
-        
-        # 加密/安全
-        'crypto_security': [
-            r'encrypt\s*\(',
-            r'decrypt\s*\(',
-            r'hash\s*\(',
-            r'sign\s*\(',
-            r'verify\s*\(',
-            r'random\s*\(',
-            r'secure\s*\(',
-            r'constant_time',
-        ],
-        
-        # 错误处理
-        'error_handling': [
-            r'return\s*-1',
-            r'return\s*error',
-            r'goto\s*error',
-            r'catch\s*\(',
-            r'try\s*\{',
-            r'exception',
-            r'fail\s*\(',
-            r'abort\s*\(',
-        ],
-        
-        # 锁/同步
-        'lock_sync': [
-            r'lock\s*\(',
-            r'unlock\s*\(',
-            r'mutex\s*\(',
-            r'semaphore',
-            r'spinlock',
-            r'atomic',
-            r'barrier',
-            r'sync\s*\(',
-        ],
-    }
-    
-    # 漏洞类型映射
-    VULNERABILITY_TYPE_MAP = {
-        'boundary_check': '缓冲区溢出',
-        'input_validation': '输入验证不足',
-        'memory_safety': '内存安全问题',
-        'integer_overflow': '整数溢出',
-        'null_check': '空指针引用',
-        'permission_check': '权限检查缺失',
-        'crypto_security': '加密安全问题',
-        'error_handling': '错误处理不当',
-        'lock_sync': '并发安全问题',
-    }
+    SECURITY_PATCH_PATTERNS = SECURITY_PATCH_PATTERNS
+    VULNERABILITY_TYPE_MAP = VULNERABILITY_TYPE_MAP
     
     def __init__(
         self,
-        original_binary: str,
-        patched_binary: str,
+        original_binary: str = None,
+        patched_binary: str = None,
         output_dir: str = None,
         use_ai: bool = True
     ):
@@ -211,55 +279,126 @@ class PatchDiffLocator:
         """
         self.original_binary = original_binary
         self.patched_binary = patched_binary
-        self.output_dir = output_dir or os.path.join(Config.REPORTS_DIR, 'patch_diff')
+        
+        # 处理 Config.REPORTS_DIR 可能不存在的情况
+        try:
+            default_output_dir = os.path.join(Config.REPORTS_DIR, 'patch_diff')
+        except AttributeError:
+            default_output_dir = os.path.join(os.path.expanduser('~'), '.binmind', 'patch_diff')
+        
+        self.output_dir = output_dir or default_output_dir
         self.use_ai = use_ai
         
-        ensure_directories(self.output_dir)
+        try:
+            ensure_directories(self.output_dir)
+        except Exception:
+            # 如果 ensure_directories 失败，使用临时目录
+            import tempfile
+            self.output_dir = tempfile.mkdtemp()
         
         self.original_functions: Dict[str, Dict[str, Any]] = {}
         self.patched_functions: Dict[str, Dict[str, Any]] = {}
         self.function_diffs: List[FunctionDiff] = []
         self.security_patches: List[FunctionDiff] = []
     
-    def analyze(self) -> PatchAnalysisResult:
+    def analyze(self, original_binary: str = None, patched_binary: str = None) -> PatchAnalysisResult:
         """
         执行补丁差异分析
         
+        Args:
+            original_binary: 原始二进制文件路径（可选，优先使用构造时的值）
+            patched_binary: 补丁后二进制文件路径（可选，优先使用构造时的值）
+            
         Returns:
             PatchAnalysisResult 分析结果
         """
+        # 使用参数或构造时的值
+        if original_binary is not None:
+            self.original_binary = original_binary
+        if patched_binary is not None:
+            self.patched_binary = patched_binary
+            
         logger.info(f"[PatchDiff] 分析补丁差异: {self.original_binary} -> {self.patched_binary}")
         
-        # 提取函数信息
-        self._extract_functions()
+        error = None
         
-        # 比对函数
-        self._compare_functions()
+        # 验证输入
+        if not self.original_binary or not self.patched_binary:
+            error = "原始文件或补丁文件路径为空"
+            return PatchAnalysisResult(
+                original_binary=self.original_binary or '',
+                patched_binary=self.patched_binary or '',
+                error=error
+            )
         
-        # 识别安全补丁
-        self._identify_security_patches()
+        # 检查路径遍历攻击
+        import os
+        original_path = os.path.abspath(self.original_binary)
+        patched_path = os.path.abspath(self.patched_binary)
         
-        # 分析潜在漏洞
-        vulnerabilities = self._analyze_potential_vulnerabilities()
+        if '..' in self.original_binary or '..' in self.patched_binary:
+            error = "检测到路径遍历攻击"
+            return PatchAnalysisResult(
+                original_binary=self.original_binary,
+                patched_binary=self.patched_binary,
+                error=error
+            )
         
-        # 生成差异报告
-        diff_report = self._generate_diff_report()
+        # 检查文件是否存在
+        if not os.path.exists(self.original_binary):
+            error = f"原始文件不存在: {self.original_binary}"
         
-        # 生成摘要
-        summary = self._generate_summary()
+        if not os.path.exists(self.patched_binary):
+            if error:
+                error += f", 补丁文件不存在: {self.patched_binary}"
+            else:
+                error = f"补丁文件不存在: {self.patched_binary}"
         
-        # 保存结果
-        self._save_results()
+        if error:
+            return PatchAnalysisResult(
+                original_binary=self.original_binary,
+                patched_binary=self.patched_binary,
+                error=error
+            )
         
-        return PatchAnalysisResult(
-            original_binary=self.original_binary,
-            patched_binary=self.patched_binary,
-            function_diffs=self.function_diffs,
-            security_patches=self.security_patches,
-            potential_vulnerabilities=vulnerabilities,
-            summary=summary,
-            diff_report=diff_report
-        )
+        try:
+            # 提取函数信息
+            self._extract_functions()
+            
+            # 比对函数
+            self._compare_functions()
+            
+            # 识别安全补丁
+            self._identify_security_patches()
+            
+            # 分析潜在漏洞
+            vulnerabilities = self._analyze_potential_vulnerabilities()
+            
+            # 生成差异报告
+            diff_report = self._generate_diff_report()
+            
+            # 生成摘要
+            summary = self._generate_summary()
+            
+            # 保存结果
+            self._save_results()
+            
+            return PatchAnalysisResult(
+                original_binary=self.original_binary,
+                patched_binary=self.patched_binary,
+                function_diffs=self.function_diffs,
+                security_patches=self.security_patches,
+                potential_vulnerabilities=vulnerabilities,
+                summary=summary,
+                diff_report=diff_report
+            )
+        except Exception as e:
+            logger.error(f"[PatchDiff] 分析失败: {e}")
+            return PatchAnalysisResult(
+                original_binary=self.original_binary,
+                patched_binary=self.patched_binary,
+                error=str(e)
+            )
     
     def _extract_functions(self) -> None:
         """
@@ -493,6 +632,117 @@ class PatchDiffLocator:
                     
                     logger.info(f"[PatchDiff] 发现安全补丁: {diff.function_name} ({diff.vulnerability_type})")
     
+    def _detect_security_patch(self, original: str, patched: str) -> tuple:
+        """
+        检测安全补丁
+        
+        Args:
+            original: 原始代码
+            patched: 补丁后代码
+            
+        Returns:
+            (is_security, vulnerability_type)
+        """
+        is_security = False
+        vuln_type = 'unknown'
+        
+        original_lines = original.split('\n')
+        patched_lines = patched.split('\n')
+        
+        changes = self._find_code_changes(original_lines, patched_lines)
+        
+        for change in changes:
+            if change.startswith('添加:'):
+                added_code = change[3:].strip()
+                
+                for patch_type, pattern_info in self.SECURITY_PATCH_PATTERNS.items():
+                    for pattern in pattern_info.get('patterns', []):
+                        if re.search(pattern, added_code, re.IGNORECASE):
+                            is_security = True
+                            vuln_type = self.VULNERABILITY_TYPE_MAP.get(patch_type, 'unknown')
+                            return (is_security, vuln_type)
+        
+        return (is_security, vuln_type)
+    
+    def _extract_diff_changes(self, original_lines: List[str], patched_lines: List[str]) -> List[str]:
+        """
+        提取差异变更
+        
+        Args:
+            original_lines: 原始代码行列表
+            patched_lines: 补丁后代码行列表
+            
+        Returns:
+            变更列表
+        """
+        return self._find_code_changes(original_lines, patched_lines)
+    
+    def _match_functions(self, original_funcs: List[Dict], patched_funcs: List[Dict]) -> List[Dict]:
+        """
+        匹配函数
+        
+        Args:
+            original_funcs: 原始函数列表
+            patched_funcs: 补丁后函数列表
+            
+        Returns:
+            匹配结果列表
+        """
+        matches = []
+        orig_names = {f['name']: f for f in original_funcs}
+        
+        for func in patched_funcs:
+            if func['name'] in orig_names:
+                matches.append({
+                    'name': func['name'],
+                    'original_address': orig_names[func['name']]['address'],
+                    'patched_address': func['address']
+                })
+        
+        return matches
+    
+    def _identify_vulnerability_type(self, changes: List[str]) -> str:
+        """
+        识别漏洞类型
+        
+        Args:
+            changes: 变更列表
+            
+        Returns:
+            漏洞类型
+        """
+        for change in changes:
+            # 处理以 '添加:' 开头的变化（来自 _find_code_changes）
+            if change.startswith('添加:'):
+                added_code = change[3:].strip()
+            else:
+                # 直接使用变化内容
+                added_code = change.strip()
+                
+            for patch_type, pattern_info in self.SECURITY_PATCH_PATTERNS.items():
+                for pattern in pattern_info.get('patterns', []):
+                    if re.search(pattern, added_code, re.IGNORECASE):
+                        return self.VULNERABILITY_TYPE_MAP.get(patch_type, 'unknown')
+        
+        return 'unknown'
+    
+    def _assess_overall_risk(self, diffs: List[FunctionDiff]) -> str:
+        """
+        评估整体风险
+        
+        Args:
+            diffs: 函数差异列表
+            
+        Returns:
+            风险等级
+        """
+        security_count = sum(1 for d in diffs if d.is_security_patch)
+        
+        if security_count >= 1:
+            return 'high'
+        else:
+            return 'low'
+    
     def _detect_security_patch_type(self, diff: FunctionDiff) -> Optional[str]:
         """
         检测安全补丁类型
@@ -508,15 +758,15 @@ class PatchDiffLocator:
             if change.startswith('添加:'):
                 added_code = change[3:].strip()
                 
-                for patch_type, patterns in self.SECURITY_PATCH_PATTERNS.items():
-                    for pattern in patterns:
+                for patch_type, pattern_info in self.SECURITY_PATCH_PATTERNS.items():
+                    for pattern in pattern_info.get('patterns', []):
                         if re.search(pattern, added_code, re.IGNORECASE):
                             return patch_type
         
         # 检查补丁后的汇编代码
         for asm_line in diff.patched_assembly:
-            for patch_type, patterns in self.SECURITY_PATCH_PATTERNS.items():
-                for pattern in patterns:
+            for patch_type, pattern_info in self.SECURITY_PATCH_PATTERNS.items():
+                for pattern in pattern_info.get('patterns', []):
                     if re.search(pattern, asm_line, re.IGNORECASE):
                         # 检查是否在原始代码中不存在
                         found_in_orig = False
@@ -570,15 +820,15 @@ class PatchDiffLocator:
             严重程度
         """
         severity_map = {
-            '缓冲区溢出': 'critical',
-            '整数溢出': 'high',
-            '空指针引用': 'medium',
-            '内存安全问题': 'high',
-            '输入验证不足': 'medium',
-            '权限检查缺失': 'high',
-            '加密安全问题': 'medium',
-            '错误处理不当': 'low',
-            '并发安全问题': 'high',
+            'buffer_overflow': 'critical',
+            'integer_overflow': 'high',
+            'null_pointer_dereference': 'medium',
+            'memory_safety': 'high',
+            'input_validation': 'medium',
+            'permission_check': 'high',
+            'crypto_security': 'medium',
+            'error_handling': 'low',
+            'concurrency_issue': 'high',
         }
         
         return severity_map.get(vuln_type, 'medium')
@@ -594,15 +844,15 @@ class PatchDiffLocator:
             修复建议
         """
         recommendations = {
-            '缓冲区溢出': '使用安全的字符串函数（strncpy, snprintf），添加边界检查',
-            '整数溢出': '使用安全的整数运算函数，添加溢出检查',
-            '空指针引用': '在使用指针前添加空指针检查',
-            '内存安全问题': '使用内存安全函数，正确管理内存生命周期',
-            '输入验证不足': '对所有输入进行严格验证和过滤',
-            '权限检查缺失': '添加适当的权限验证和访问控制',
-            '加密安全问题': '使用现代加密算法，避免硬编码密钥',
-            '错误处理不当': '完善错误处理逻辑，避免资源泄漏',
-            '并发安全问题': '使用适当的同步机制，避免数据竞争',
+            'buffer_overflow': '使用安全的字符串函数（strncpy, snprintf），添加边界检查',
+            'integer_overflow': '使用安全的整数运算函数，添加溢出检查',
+            'null_pointer_dereference': '在使用指针前添加空指针检查',
+            'memory_safety': '使用内存安全函数，正确管理内存生命周期',
+            'input_validation': '对所有输入进行严格验证和过滤',
+            'permission_check': '添加适当的权限验证和访问控制',
+            'crypto_security': '使用现代加密算法，避免硬编码密钥',
+            'error_handling': '完善错误处理逻辑，避免资源泄漏',
+            'concurrency_issue': '使用适当的同步机制，避免数据竞争',
         }
         
         return recommendations.get(vuln_type, '根据补丁内容进行相应修复')
@@ -660,33 +910,48 @@ class PatchDiffLocator:
         
         return vulnerabilities
     
-    def _generate_diff_report(self) -> str:
+    def _generate_diff_report(self, result=None) -> str:
         """
         生成差异报告
         
+        Args:
+            result: 可选的分析结果（用于测试）
+            
         Returns:
             差异报告字符串
         """
+        # 使用传入的结果或当前实例的结果
+        if result is not None:
+            diffs = result.function_diffs if hasattr(result, 'function_diffs') else []
+            security_patches = result.security_patches if hasattr(result, 'security_patches') else []
+            original_binary = result.original_binary if hasattr(result, 'original_binary') else 'unknown'
+            patched_binary = result.patched_binary if hasattr(result, 'patched_binary') else 'unknown'
+        else:
+            diffs = self.function_diffs
+            security_patches = self.security_patches
+            original_binary = self.original_binary or 'unknown'
+            patched_binary = self.patched_binary or 'unknown'
+        
         lines = [
             f'补丁差异分析报告',
-            f'原始文件: {os.path.basename(self.original_binary)}',
-            f'补丁文件: {os.path.basename(self.patched_binary)}',
+            f'原始文件: {os.path.basename(original_binary) if original_binary != "unknown" else "unknown"}',
+            f'补丁文件: {os.path.basename(patched_binary) if patched_binary != "unknown" else "unknown"}',
             f'分析时间: {self._get_timestamp()}',
             '',
             '=' * 50,
             '',
             '函数差异统计:',
-            f'  - 新增函数: {sum(1 for d in self.function_diffs if d.diff_type == DiffType.ADDED)}',
-            f'  - 移除函数: {sum(1 for d in self.function_diffs if d.diff_type == DiffType.REMOVED)}',
-            f'  - 修改函数: {sum(1 for d in self.function_diffs if d.diff_type == DiffType.MODIFIED)}',
+            f'  - 新增函数: {sum(1 for d in diffs if d.diff_type == DiffType.ADDED)}',
+            f'  - 移除函数: {sum(1 for d in diffs if d.diff_type == DiffType.REMOVED)}',
+            f'  - 修改函数: {sum(1 for d in diffs if d.diff_type == DiffType.MODIFIED)}',
             '',
             '=' * 50,
             '',
             '安全补丁分析:',
         ]
         
-        if self.security_patches:
-            for patch in self.security_patches:
+        if security_patches:
+            for patch in security_patches:
                 lines.extend([
                     '',
                     f'函数: {patch.function_name}',
@@ -707,7 +972,7 @@ class PatchDiffLocator:
             '详细函数差异:',
         ])
         
-        for diff in self.function_diffs[:20]:
+        for diff in diffs[:20]:
             lines.extend([
                 '',
                 f'函数: {diff.function_name} ({diff.diff_type.value})',
@@ -829,11 +1094,11 @@ class PatchDiffLocator:
             
             # 识别安全相关变化
             for change in changes:
-                for patch_type, patterns in self.SECURITY_PATCH_PATTERNS.items():
-                    for pattern in patterns:
+                for patch_type, pattern_info in self.SECURITY_PATCH_PATTERNS.items():
+                    for pattern in pattern_info.get('patterns', []):
                         if re.search(pattern, change.get('content', ''), re.IGNORECASE):
                             change['security_type'] = patch_type
-                            change['vulnerability_type'] = self.VULNERABILITY_TYPE_MAP.get(patch_type, '未知')
+                            change['vulnerability_type'] = self.VULNERABILITY_TYPE_MAP.get(patch_type, 'unknown')
                             result['security_changes'].append(change)
                             break
             
@@ -997,3 +1262,54 @@ def analyze_patch_diff(
     """
     locator = PatchDiffLocator(original_binary, patched_binary, output_dir, use_ai)
     return locator.analyze()
+
+
+def locate_patch_diff(
+    original_binary: str,
+    patched_binary: str,
+    output_dir: str = None,
+    use_ai: bool = True
+) -> Dict[str, Any]:
+    """
+    定位补丁差异的便捷函数（兼容旧版本接口）
+    
+    Args:
+        original_binary: 原始二进制路径
+        patched_binary: 补丁二进制路径
+        output_dir: 输出目录
+        use_ai: 是否使用 AI
+        
+    Returns:
+        分析结果字典
+    """
+    try:
+        locator = PatchDiffLocator(original_binary, patched_binary, output_dir, use_ai)
+        result = locator.analyze()
+        return {
+            'success': True,
+            'original_binary': result.original_binary,
+            'patched_binary': result.patched_binary,
+            'function_diff_count': len(result.function_diffs),
+            'security_patch_count': len(result.security_patches),
+            'summary': result.summary,
+            'diff_report': result.diff_report,
+            'function_diffs': [
+                {
+                    'function_name': d.function_name,
+                    'diff_type': d.diff_type.value,
+                    'is_security_patch': d.is_security_patch,
+                    'vulnerability_type': d.vulnerability_type
+                }
+                for d in result.function_diffs
+            ],
+            'security_patches': [
+                {
+                    'function_name': p.function_name,
+                    'vulnerability_type': p.vulnerability_type
+                }
+                for p in result.security_patches
+            ]
+        }
+    except Exception as e:
+        logger.error(f"补丁差异定位失败: {e}")
+        return {'success': False, 'error': str(e)}

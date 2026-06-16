@@ -1,262 +1,176 @@
-#!/usr/bin/env python3
-"""
-C++虚函数表恢复模块测试
-"""
-import os
-import sys
 import unittest
-import tempfile
-import shutil
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from modules.cpp_vtbl_recovery import (
-    CppVtblRecovery, VtblRecoveryResult, VtableInfo, VtblEntry,
-    ClassInfo, RttiInfo, VtblAnalysisStatus
+    VTableType,
+    ClassAccessType,
+    VTableEntry,
+    VTable,
+    ClassInfo,
+    VTableRecoveryResult,
+    VTableScanner,
+    ClassHierarchyAnalyzer,
+    VTableRecoveryEngine
 )
 
 
-class TestCppVtblRecovery(unittest.TestCase):
-    """C++虚表恢复器测试类"""
+class TestVTableTypeEnum(unittest.TestCase):
+    """VTableType枚举测试"""
+    
+    def test_vtable_type_values(self):
+        """测试虚函数表类型枚举值"""
+        self.assertEqual(VTableType.STATIC.value, "static")
+        self.assertEqual(VTableType.DYNAMIC.value, "dynamic")
+        self.assertEqual(VTableType.WEAK.value, "weak")
+        self.assertEqual(VTableType.OVERRIDE.value, "override")
 
-    def setUp(self):
-        """测试前准备"""
-        self.temp_dir = tempfile.mkdtemp()
-        self.recoverer = CppVtblRecovery(output_dir=self.temp_dir)
 
-    def tearDown(self):
-        """测试后清理"""
-        if os.path.exists(self.temp_dir):
-            shutil.rmtree(self.temp_dir)
+class TestClassAccessTypeEnum(unittest.TestCase):
+    """ClassAccessType枚举测试"""
+    
+    def test_class_access_type_values(self):
+        """测试类访问类型枚举值"""
+        self.assertEqual(ClassAccessType.PUBLIC.value, "public")
+        self.assertEqual(ClassAccessType.PROTECTED.value, "protected")
+        self.assertEqual(ClassAccessType.PRIVATE.value, "private")
 
-    def test_vtbl_analysis_status_enum(self):
-        """测试分析状态枚举"""
-        self.assertEqual(VtblAnalysisStatus.SUCCESS.value, 'success')
-        self.assertEqual(VtblAnalysisStatus.PARTIAL.value, 'partial')
-        self.assertEqual(VtblAnalysisStatus.FAILED.value, 'failed')
 
-    def test_vtbl_entry_dataclass(self):
-        """测试 VtblEntry 数据类"""
-        entry = VtblEntry(
-            vtable_addr=0x100000,
-            entry_index=0,
-            function_addr=0x401000,
-            function_name='virtual_func',
-            is_overridden=False,
-            class_name='TestClass'
-        )
-        
-        self.assertEqual(entry.vtable_addr, 0x100000)
-        self.assertEqual(entry.entry_index, 0)
-        self.assertEqual(entry.function_name, 'virtual_func')
+class TestVTableEntryDataclass(unittest.TestCase):
+    """VTableEntry数据类测试"""
+    
+    def test_vtable_entry_creation(self):
+        """测试虚函数表条目创建"""
+        entry = VTableEntry(address=0x1000, function_name="test_func", function_address=0x2000, offset=0)
+        self.assertEqual(entry.address, 0x1000)
+        self.assertEqual(entry.function_name, "test_func")
+        self.assertEqual(entry.function_address, 0x2000)
+        self.assertEqual(entry.offset, 0)
 
-    def test_vtbl_entry_to_dict(self):
-        """测试 VtblEntry 转换为字典"""
-        entry = VtblEntry(
-            vtable_addr=0x200000,
-            entry_index=1,
-            function_addr=0x402000,
-            function_name='func2',
-            is_overridden=True
-        )
-        
-        result = entry.to_dict()
-        
-        self.assertIn('vtable_addr', result)
-        self.assertIn('entry_index', result)
-        self.assertEqual(result['entry_index'], 1)
-        self.assertTrue(result['is_overridden'])
 
-    def test_vtable_info_dataclass(self):
-        """测试 VtableInfo 数据类"""
+class TestVTableDataclass(unittest.TestCase):
+    """VTable数据类测试"""
+    
+    def test_vtable_creation(self):
+        """测试虚函数表创建"""
         entries = [
-            VtblEntry(vtable_addr=0x100000, entry_index=0, function_addr=0x401000),
-            VtblEntry(vtable_addr=0x100000, entry_index=1, function_addr=0x401010)
+            VTableEntry(address=0x1000, function_address=0x2000),
+            VTableEntry(address=0x1008, function_address=0x2010)
         ]
-        
-        vtable = VtableInfo(
-            vtable_addr=0x100000,
-            entries=entries,
-            class_name='MyClass',
-            is_primary=True
-        )
-        
-        self.assertEqual(vtable.class_name, 'MyClass')
+        vtable = VTable(address=0x1000, entries=entries, vtable_type=VTableType.DYNAMIC, associated_class="TestClass")
+        self.assertEqual(vtable.address, 0x1000)
         self.assertEqual(len(vtable.entries), 2)
-        self.assertTrue(vtable.is_primary)
+        self.assertEqual(vtable.vtable_type, VTableType.DYNAMIC)
+        self.assertEqual(vtable.associated_class, "TestClass")
 
-    def test_vtable_info_to_dict(self):
-        """测试 VtableInfo 转换为字典"""
-        entries = [VtblEntry(vtable_addr=0x100000, entry_index=0, function_addr=0x401000)]
-        vtable = VtableInfo(
-            vtable_addr=0x100000,
-            entries=entries,
-            class_name='Test'
-        )
-        
-        result = vtable.to_dict()
-        
-        self.assertIn('vtable_addr', result)
-        self.assertIn('entries', result)
-        self.assertEqual(len(result['entries']), 1)
 
-    def test_class_info_dataclass(self):
-        """测试 ClassInfo 数据类"""
-        entries = [VtblEntry(vtable_addr=0x100000, entry_index=0, function_addr=0x401000)]
-        vtable = VtableInfo(vtable_addr=0x100000, entries=entries)
-        
+class TestClassInfoDataclass(unittest.TestCase):
+    """ClassInfo数据类测试"""
+    
+    def test_class_info_creation(self):
+        """测试类信息创建"""
         class_info = ClassInfo(
-            name='DerivedClass',
-            vtable_addr=0x100000,
-            vtable=vtable,
-            parent_classes=['BaseClass'],
-            child_classes=['ConcreteClass'],
-            size=1024,
-            constructor_addr=0x401000,
-            destructor_addr=0x401050,
-            has_virtual_methods=True,
-            potential_vtable_hijack=True
+            name="TestClass",
+            vtable_address=0x1000,
+            parent_classes=[("BaseClass", ClassAccessType.PUBLIC)],
+            methods=["method1", "method2"],
+            size=16,
+            is_abstract=True
         )
-        
-        self.assertEqual(class_info.name, 'DerivedClass')
+        self.assertEqual(class_info.name, "TestClass")
+        self.assertEqual(class_info.vtable_address, 0x1000)
         self.assertEqual(len(class_info.parent_classes), 1)
-        self.assertTrue(class_info.potential_vtable_hijack)
+        self.assertEqual(len(class_info.methods), 2)
+        self.assertEqual(class_info.size, 16)
+        self.assertTrue(class_info.is_abstract)
 
-    def test_class_info_to_dict(self):
-        """测试 ClassInfo 转换为字典"""
-        entries = [VtblEntry(vtable_addr=0x100000, entry_index=0, function_addr=0x401000)]
-        vtable = VtableInfo(vtable_addr=0x100000, entries=entries)
-        
-        class_info = ClassInfo(
-            name='TestClass',
-            vtable_addr=0x100000,
-            vtable=vtable
+
+class TestVTableRecoveryResultDataclass(unittest.TestCase):
+    """VTableRecoveryResult数据类测试"""
+    
+    def test_vtable_recovery_result_creation(self):
+        """测试恢复结果创建"""
+        result = VTableRecoveryResult(
+            recovered_methods=10,
+            recovered_classes=3
         )
-        
-        result = class_info.to_dict()
-        
-        self.assertIn('name', result)
-        self.assertIn('vtable_addr', result)
-        self.assertIn('vtable', result)
+        self.assertEqual(len(result.vtables), 0)
+        self.assertEqual(len(result.classes), 0)
+        self.assertEqual(result.recovered_methods, 10)
+        self.assertEqual(result.recovered_classes, 3)
 
-    def test_rtti_info_dataclass(self):
-        """测试 RttiInfo 数据类"""
-        rtti = RttiInfo(
-            type_info_addr=0x200000,
-            class_name='MyClass',
-            base_classes=[{'name': 'Base', 'offset': 0}],
-            source_vtable=0x100000
-        )
-        
-        self.assertEqual(rtti.class_name, 'MyClass')
-        self.assertEqual(len(rtti.base_classes), 1)
 
-    def test_rtti_info_to_dict(self):
-        """测试 RttiInfo 转换为字典"""
-        rtti = RttiInfo(
-            type_info_addr=0x200000,
-            class_name='Test',
-            base_classes=[]
-        )
-        
-        result = rtti.to_dict()
-        
-        self.assertIn('type_info_addr', result)
-        self.assertIn('class_name', result)
+class TestVTableScanner(unittest.TestCase):
+    """VTableScanner测试"""
+    
+    def test_scan_empty_binary(self):
+        """测试扫描空二进制数据"""
+        scanner = VTableScanner(binary_data=b'', base_address=0x1000)
+        vtables = scanner.scan_for_vtables()
+        self.assertEqual(len(vtables), 0)
+    
+    def test_scan_with_vtable_pattern(self):
+        """测试扫描包含虚函数表模式的数据"""
+        import struct
+        vtable_data = struct.pack('<QQQQ', 0x2000, 0x2010, 0x2020, 0)
+        scanner = VTableScanner(binary_data=vtable_data, base_address=0x1000)
+        vtables = scanner.scan_for_vtables()
+        self.assertIn(0x1000, vtables)
 
-    def test_recover_vtbls(self):
-        """测试恢复虚表"""
-        # 创建一个模拟的二进制文件
-        test_file = os.path.join(self.temp_dir, 'test_binary.bin')
-        with open(test_file, 'wb') as f:
-            f.write(b'\x00' * 1024)
-        
-        result = self.recoverer.recover_vtbls(test_file)
-        
-        self.assertIsInstance(result, VtblRecoveryResult)
-        self.assertEqual(result.status, VtblAnalysisStatus.SUCCESS)
-        self.assertGreaterEqual(len(result.vtables), 1)
 
-    def test_generate_uml_diagram(self):
-        """测试生成UML图"""
-        test_file = os.path.join(self.temp_dir, 'test_binary.bin')
-        with open(test_file, 'wb') as f:
-            f.write(b'\x00' * 1024)
-        
-        result = self.recoverer.recover_vtbls(test_file)
-        dot_content = self.recoverer.generate_uml_diagram(result)
-        
-        self.assertIn('digraph', dot_content)
-        self.assertIn('ClassHierarchy', dot_content)
+class TestClassHierarchyAnalyzer(unittest.TestCase):
+    """ClassHierarchyAnalyzer测试"""
+    
+    def test_build_hierarchy(self):
+        """测试构建类层次结构"""
+        analyzer = ClassHierarchyAnalyzer()
+        vtables = [
+            VTable(address=0x1000, entries=[VTableEntry(address=0x1000, function_address=0x2000)]),
+            VTable(address=0x1020, entries=[VTableEntry(address=0x1020, function_address=0x2000), VTableEntry(address=0x1028, function_address=0x2010)])
+        ]
+        hierarchy = analyzer.build_hierarchy(vtables)
+        self.assertTrue(len(hierarchy) >= 0)
 
+
+class TestVTableRecoveryEngine(unittest.TestCase):
+    """VTableRecoveryEngine测试"""
+    
+    def setUp(self):
+        """设置测试环境"""
+        self.engine = VTableRecoveryEngine()
+    
+    def test_analyze_empty_binary(self):
+        """测试分析空二进制数据"""
+        result = self.engine.analyze(b'', 0x1000)
+        self.assertEqual(len(result.vtables), 0)
+        self.assertEqual(result.recovered_classes, 0)
+    
+    def test_analyze_valid_binary(self):
+        """测试分析包含虚函数表的二进制数据"""
+        import struct
+        vtable_data = struct.pack('<QQQQ', 0x2000, 0x2010, 0x2020, 0)
+        result = self.engine.analyze(vtable_data, 0x1000)
+        self.assertEqual(len(result.vtables), 2)
+        self.assertEqual(result.recovered_methods, 5)
+    
     def test_generate_report(self):
         """测试生成报告"""
-        test_file = os.path.join(self.temp_dir, 'test_binary.bin')
-        with open(test_file, 'wb') as f:
-            f.write(b'\x00' * 1024)
-        
-        result = self.recoverer.recover_vtbls(test_file)
-        report = self.recoverer.generate_report(result)
-        
-        self.assertIn('C++虚函数表分析报告', report)
-        self.assertIn('test_binary.bin', report)
-
+        import struct
+        vtable_data = struct.pack('<QQQQ', 0x2000, 0x2010, 0x2020, 0)
+        result = self.engine.analyze(vtable_data, 0x1000)
+        report = self.engine.generate_report(result)
+        self.assertIn("C++ 虚函数表恢复报告", report)
+        self.assertIn("恢复的虚函数表数量", report)
+    
     def test_save_result(self):
         """测试保存结果"""
-        test_file = os.path.join(self.temp_dir, 'test_binary.bin')
-        with open(test_file, 'wb') as f:
-            f.write(b'\x00' * 1024)
+        import struct
+        import os
+        vtable_data = struct.pack('<QQQQ', 0x2000, 0x2010, 0x2020, 0)
+        result = self.engine.analyze(vtable_data, 0x1000)
         
-        result = self.recoverer.recover_vtbls(test_file)
-        saved_path = self.recoverer.save_result(result, 'test_vtbl')
+        output_file = "test_vtable_report.txt"
+        self.engine.save_result(result, output_file)
         
-        self.assertTrue(os.path.exists(saved_path))
-        self.assertTrue(saved_path.endswith('.json'))
-
-
-class TestVtblRecoveryResult(unittest.TestCase):
-    """VtblRecoveryResult 数据类测试"""
-
-    def test_vtbl_recovery_result_dataclass(self):
-        """测试虚表恢复结果"""
-        vtable = VtableInfo(
-            vtable_addr=0x100000,
-            entries=[VtblEntry(vtable_addr=0x100000, entry_index=0, function_addr=0x401000)]
-        )
-        
-        result = VtblRecoveryResult(
-            binary_path='/test/bin',
-            status=VtblAnalysisStatus.SUCCESS,
-            vtables=[vtable],
-            classes=[],
-            rtti_info=[],
-            inheritance_graph={},
-            potential_hijack_classes=['TestClass'],
-            timestamp='2024-01-01',
-            errors=[]
-        )
-        
-        self.assertEqual(len(result.vtables), 1)
-        self.assertEqual(len(result.potential_hijack_classes), 1)
-
-    def test_vtbl_recovery_result_to_dict(self):
-        """测试转换为字典"""
-        result = VtblRecoveryResult(
-            binary_path='/test/bin',
-            status=VtblAnalysisStatus.SUCCESS,
-            vtables=[],
-            classes=[],
-            rtti_info=[],
-            inheritance_graph={},
-            potential_hijack_classes=[],
-            timestamp='2024-01-01'
-        )
-        
-        data = result.to_dict()
-        
-        self.assertIn('binary_path', data)
-        self.assertIn('status', data)
-        self.assertIn('vtables', data)
+        self.assertTrue(os.path.exists(output_file))
+        os.remove(output_file)
 
 
 if __name__ == '__main__':

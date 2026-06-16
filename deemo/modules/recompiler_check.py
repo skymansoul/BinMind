@@ -96,7 +96,8 @@ class RecompilerVerifier:
                 timeout=10
             )
             if result.returncode == 0:
-                logger.info(f"编译器版本: {result.stdout.strip().split('\\n')[0]}")
+                lines = result.stdout.strip().split('\n')
+                logger.info(f"编译器版本: {lines[0] if lines else ''}")
                 return True
         except Exception as e:
             logger.error(f"检查编译器失败: {e}")
