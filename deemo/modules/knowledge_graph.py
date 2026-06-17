@@ -465,21 +465,114 @@ class VulnKnowledgeGraph:
         self._save_graph()
         logger.info(f"知识图谱构建完成，实体数: {len(self.entities)}, 关系数: {len(self.relations)}")
     
+    def export_d3_json(self, output_path: str = None) -> Optional[str]:
+        """
+        导出 D3.js 兼容的知识图谱数据格式
+
+        生成符合 D3.js v7 forceSimulation 期望的 nodes/links 结构，
+        供前端 KnowledgeGraph.vue 直接消费和可视化。
+
+        Args:
+            output_path: 输出文件路径，为空时自动生成
+
+        Returns:
+            导出文件路径
+        """
+        if not output_path:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_path = os.path.join(self.storage_path, f'graph_d3_{timestamp}.json')
+
+        try:
+            # 颜色映射：按实体类型分配可视化颜色
+            color_map = {
+                'Binary': '#1f78b4',
+                'Function': '#33a02c',
+                'Vulnerability': '#e31a1c',
+                'CVE': '#ff7f00',
+                'CWE': '#6a3d9a',
+                'Exploit': '#b15928',
+                'IOC': '#fb9a99',
+                'ThreatActor': '#cab2d6',
+                'Malware': '#fdbf6f',
+                'Library': '#a6cee3',
+            }
+
+            # 类型到半径的映射（节点大小）
+            size_map = {
+                'Binary': 18,
+                'Function': 12,
+                'Vulnerability': 16,
+                'CVE': 14,
+                'CWE': 10,
+                'Exploit': 12,
+                'IOC': 8,
+                'ThreatActor': 14,
+                'Malware': 16,
+                'Library': 10,
+            }
+
+            # 构建 D3 nodes（包含可视化所需属性）
+            d3_nodes = []
+            for eid, entity in self.entities.items():
+                entity_dict = entity.to_dict()
+                d3_nodes.append({
+                    'id': eid,
+                    'name': entity_dict.get('name', eid),
+                    'type': entity_dict.get('entity_type', 'Unknown'),
+                    'properties': entity_dict.get('properties', {}),
+                    'color': color_map.get(entity_dict.get('entity_type', ''), '#999999'),
+                    'size': size_map.get(entity_dict.get('entity_type', ''), 10),
+                    'group': entity_dict.get('entity_type', 'Unknown')
+                })
+
+            # 构建 D3 links（使用节点 id 引用，兼容 forceSimulation）
+            d3_links = []
+            for rel in self.relations:
+                d3_links.append({
+                    'source': rel.source_id,
+                    'target': rel.target_id,
+                    'type': rel.relation_type,
+                    'properties': rel.properties or {}
+                })
+
+            # 组装最终 JSON
+            d3_data = {
+                'metadata': {
+                    'export_time': datetime.now().isoformat(),
+                    'version': '1.0',
+                    'format': 'd3-force-graph',
+                    'node_count': len(d3_nodes),
+                    'link_count': len(d3_links)
+                },
+                'nodes': d3_nodes,
+                'links': d3_links
+            }
+
+            with open(output_path, 'w', encoding='utf-8') as f:
+                json.dump(d3_data, f, ensure_ascii=False, indent=2)
+
+            logger.info(f"D3.js 图谱数据已导出: {output_path}")
+            return output_path
+
+        except Exception as e:
+            logger.error(f"导出 D3.js 图谱失败: {e}")
+            return None
+
     def export_graph(self, format: str = 'json', output_path: str = None) -> Optional[str]:
         """
         导出图谱数据
-        
+
         Args:
             format: 导出格式 (json, pickle, gexf)
             output_path: 输出路径
-        
+
         Returns:
             导出文件路径
         """
         if not output_path:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             output_path = os.path.join(self.storage_path, f'graph_{timestamp}.{format}')
-        
+
         try:
             if format == 'json':
                 data = {
@@ -491,26 +584,26 @@ class VulnKnowledgeGraph:
                     'entities': [e.to_dict() for e in self.entities.values()],
                     'relations': [r.to_dict() for r in self.relations]
                 }
-                
+
                 with open(output_path, 'w', encoding='utf-8') as f:
                     json.dump(data, f, ensure_ascii=False, indent=2)
-            
+
             elif format == 'pickle':
                 data = {
                     'entities': self.entities,
                     'relations': self.relations
                 }
-                
+
                 with open(output_path, 'wb') as f:
                     pickle.dump(data, f)
-            
+
             elif format == 'gexf' and NETWORKX_AVAILABLE:
                 if self.graph:
                     nx.write_gexf(self.graph, output_path)
-            
+
             logger.info(f"图谱已导出: {output_path}")
             return output_path
-        
+
         except Exception as e:
             logger.error(f"导出图谱失败: {e}")
             return None

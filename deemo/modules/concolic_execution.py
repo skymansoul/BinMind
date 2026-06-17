@@ -57,6 +57,23 @@ class ConcolicSeed:
     timestamp: float = 0.0
     is_symbolic: bool = False
     constraints: List[str] = field(default_factory=list)
+    taint_label: Optional[str] = None
+    path_condition: Optional[str] = None
+
+
+@dataclass
+class TaintGuidedConstraint:
+    """
+    污点引导约束数据结构
+    
+    基于污点信息生成的符号约束
+    """
+    source_addr: int
+    sink_addr: int
+    operation: str
+    constraint: str
+    confidence: float = 0.0
+    tainted_bytes: int = 0
 
 
 @dataclass
@@ -133,6 +150,12 @@ class ConcolicExecutor:
             'final': 0.0,
             'increase': 0.0
         }
+        
+        # 污点引导相关
+        self.taint_guided_constraints: List[TaintGuidedConstraint] = []
+        self.explored_paths: Set[str] = set()
+        self.concolic_iteration: int = 0
+        self.max_concolic_iterations: int = 10
         
         self._init_submodules()
     
@@ -381,6 +404,26 @@ class ConcolicExecutor:
                 result.paths.extend(symbolic_result.get('paths', []))
                 result.vulnerabilities.extend(symbolic_result.get('vulnerabilities', []))
             
+            # 污点引导符号执行（核心concolic循环）
+            if self.mode == ConcolicMode.HYBRID and self.dynamic_tracker and self.symbolic_executor:
+                logger.info("[Concolic] 启动污点引导符号执行循环")
+                concolic_paths = self._concolic_loop(
+                    args=args,
+                    timeout=min(timeout // 3, 40)
+                )
+                result.paths.extend(concolic_paths)
+                
+                # 从concolic循环中提取漏洞
+                for path in concolic_paths:
+                    if path.concrete_input:
+                        vuln_info = {
+                            'type': 'potential_vulnerability',
+                            'address': hex(path.instructions[0]) if path.instructions else '0x0',
+                            'input': path.concrete_input.hex()[:32] + '...' if len(path.concrete_input) > 32 else path.concrete_input.hex(),
+                            'discovered_by': 'taint_guided_concolic'
+                        }
+                        result.vulnerabilities.append(vuln_info)
+            
             # 如果是混合模式，再次运行动态分析验证符号路径
             if self.mode == ConcolicMode.HYBRID:
                 self._validate_symbolic_paths()
@@ -494,6 +537,192 @@ class ConcolicExecutor:
             logger.error(f"[Concolic] 符号执行失败: {e}")
         
         return results
+    
+    def _collect_taint_guided_constraints(self, taint_result: Dict[str, Any]) -> List[TaintGuidedConstraint]:
+        """
+        从动态污点分析结果中收集污点引导约束
+        
+        Args:
+            taint_result: 污点分析结果
+            
+        Returns:
+            TaintGuidedConstraint列表
+        """
+        constraints = []
+        
+        for flow in taint_result.get('taint_flows', []):
+            source_addr = int(flow.get('source_address', '0x0'), 16)
+            
+            for sink in flow.get('sinks', []):
+                sink_addr = int(sink.get('address', '0x0'), 16)
+                operation = sink.get('operation', 'unknown')
+                tainted_bytes = sink.get('tainted_bytes', 0)
+                
+                constraint = TaintGuidedConstraint(
+                    source_addr=source_addr,
+                    sink_addr=sink_addr,
+                    operation=operation,
+                    constraint=self._generate_constraint_from_flow(flow),
+                    confidence=min(1.0, tainted_bytes / 8),
+                    tainted_bytes=tainted_bytes
+                )
+                constraints.append(constraint)
+        
+        return constraints
+    
+    def _generate_constraint_from_flow(self, flow: Dict[str, Any]) -> str:
+        """
+        从污点流生成符号约束
+        
+        Args:
+            flow: 污点流信息
+            
+        Returns:
+            符号约束字符串
+        """
+        source = flow.get('source', 'unknown')
+        sink = flow.get('sink', 'unknown')
+        operation = flow.get('operation', 'read')
+        
+        if operation == 'strcmp' or operation == 'strncmp':
+            return f"(input != {flow.get('compared_value', '0')})"
+        elif operation == 'memcmp':
+            return f"(memcmp_result != 0)"
+        elif operation == 'strcpy' or operation == 'strncpy':
+            return f"(input_length > {flow.get('max_length', 0)})"
+        elif operation == 'printf':
+            return f"(contains_format_specifier(input))"
+        
+        return f"tainted_{source}_reaches_{sink}"
+    
+    def _run_taint_guided_symbolic_execution(self, constraints: List[TaintGuidedConstraint]) -> Dict[str, Any]:
+        """
+        使用污点约束引导符号执行
+        
+        Args:
+            constraints: 污点引导约束列表
+            
+        Returns:
+            符号执行结果
+        """
+        if not self.symbolic_executor or not self.symbolic_executor.is_available():
+            return {'paths': [], 'vulnerabilities': []}
+        
+        logger.info(f"[Concolic] 使用 {len(constraints)} 个污点约束引导符号执行")
+        
+        results = {
+            'paths': [],
+            'vulnerabilities': []
+        }
+        
+        for constraint in constraints:
+            if constraint.confidence < 0.3:
+                continue
+                
+            try:
+                guided_result = self.symbolic_executor.run_guided_analysis(
+                    constraint=constraint.constraint,
+                    source_addr=constraint.source_addr,
+                    sink_addr=constraint.sink_addr,
+                    max_depth=200
+                )
+                
+                if guided_result.get('path_found'):
+                    path = ConcolicPath(
+                        path_id=self._generate_path_id(),
+                        constraints=[constraint.constraint],
+                        is_feasible=True,
+                        concrete_input=guided_result.get('concrete_input'),
+                        discovered_from='taint_guided',
+                        coverage_increase=0.2
+                    )
+                    results['paths'].append(path)
+                    
+                    if guided_result.get('vulnerability'):
+                        results['vulnerabilities'].append({
+                            'type': guided_result['vulnerability'].get('type', 'unknown'),
+                            'address': guided_result['vulnerability'].get('address', '0x0'),
+                            'constraint': constraint.constraint,
+                            'discovered_by': 'taint_guided'
+                        })
+                        
+            except Exception as e:
+                logger.debug(f"[Concolic] 污点引导符号执行失败: {e}")
+        
+        return results
+    
+    def _concolic_loop(self, args: List[str] = None, timeout: int = 60) -> List[ConcolicPath]:
+        """
+        Concolic循环：动态执行→符号执行→路径生成→验证
+        
+        Args:
+            args: 命令行参数
+            timeout: 超时时间
+            
+        Returns:
+            发现的路径列表
+        """
+        new_paths = []
+        start_time = time.time()
+        
+        while self.concolic_iteration < self.max_concolic_iterations:
+            if time.time() - start_time > timeout:
+                logger.info("[Concolic] Concolic循环超时")
+                break
+                
+            self.concolic_iteration += 1
+            logger.info(f"[Concolic] 第 {self.concolic_iteration}/{self.max_concolic_iterations} 次迭代")
+            
+            # 动态执行获取污点信息
+            if self.dynamic_tracker:
+                dynamic_result = self.dynamic_tracker.run_taint_analysis(
+                    args=args,
+                    timeout=min(timeout // 2, 30)
+                )
+                
+                if dynamic_result.get('success'):
+                    # 收集污点约束
+                    self.taint_guided_constraints = self._collect_taint_guided_constraints(dynamic_result)
+                    
+                    # 污点引导符号执行
+                    guided_result = self._run_taint_guided_symbolic_execution(
+                        self.taint_guided_constraints
+                    )
+                    
+                    for path in guided_result.get('paths', []):
+                        path_key = f"{path.discovered_from}_{hash(path.concrete_input) if path.concrete_input else path.path_id}"
+                        if path_key not in self.explored_paths:
+                            self.explored_paths.add(path_key)
+                            new_paths.append(path)
+                            
+                            # 验证路径
+                            if path.concrete_input:
+                                self._validate_single_path(path)
+            
+            if len(new_paths) >= 50:
+                break
+        
+        return new_paths
+    
+    def _validate_single_path(self, path: ConcolicPath) -> None:
+        """
+        验证单条路径的可行性
+        
+        Args:
+            path: 要验证的路径
+        """
+        if not self.dynamic_tracker or not path.concrete_input:
+            return
+            
+        try:
+            result = self.dynamic_tracker.run_taint_analysis(
+                input_data=path.concrete_input,
+                timeout=15
+            )
+            path.is_feasible = result.get('success', False)
+        except Exception as e:
+            logger.debug(f"[Concolic] 路径验证失败: {e}")
+            path.is_feasible = False
     
     def _validate_symbolic_paths(self) -> None:
         """

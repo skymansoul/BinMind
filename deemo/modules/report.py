@@ -11,6 +11,13 @@ logger = logging.getLogger(__name__)
 
 ANSI_ESCAPE_PATTERN = re.compile(r'\x1b\[[0-9;]*[a-zA-Z]')
 
+try:
+    from jinja2 import Environment, FileSystemLoader, BaseLoader
+    JINJA2_AVAILABLE = True
+except ImportError:
+    JINJA2_AVAILABLE = False
+    logger.warning("Jinja2 未安装，将使用内置模板引擎")
+
 
 class ReportGenerator:
     """
@@ -23,17 +30,44 @@ class ReportGenerator:
     
     """
     
-    def __init__(self, output_dir: str = './reports'):
+    def __init__(self, output_dir: str = './reports', template_dir: str = None):
         """
         初始化报告生成器
         
         Args:
             output_dir: 输出目录
+            template_dir: Jinja2模板目录
         """
         self.output_dir = output_dir
+        self.template_dir = template_dir or os.path.join(os.path.dirname(__file__), 'templates')
         self.analysis_steps = []
         self.steps = []
+        self.jinja_env = None
         self._ensure_output_dir()
+        self._init_jinja2()
+    
+    def _init_jinja2(self):
+        """
+        初始化Jinja2模板引擎
+        """
+        if not JINJA2_AVAILABLE:
+            return
+        
+        try:
+            if os.path.exists(self.template_dir):
+                self.jinja_env = Environment(
+                    loader=FileSystemLoader(self.template_dir),
+                    autoescape=True,
+                    trim_blocks=True,
+                    lstrip_blocks=True
+                )
+                logger.info(f"Jinja2模板引擎初始化成功，模板目录: {self.template_dir}")
+            else:
+                self.jinja_env = Environment(loader=BaseLoader())
+                logger.info("Jinja2模板引擎初始化成功（使用内存模板）")
+        except Exception as e:
+            logger.error(f"Jinja2初始化失败: {e}")
+            self.jinja_env = None
     
     def _ensure_output_dir(self):
         """
@@ -58,6 +92,137 @@ class ReportGenerator:
         if not text:
             return text
         return ANSI_ESCAPE_PATTERN.sub('', text)
+    
+    def render_template(self, template_content: str, context: Dict[str, Any]) -> str:
+        """
+        使用Jinja2渲染模板
+        
+        Args:
+            template_content: 模板内容
+            context: 模板上下文数据
+            
+        Returns:
+            渲染后的字符串
+        """
+        if not self.jinja_env:
+            logger.warning("Jinja2不可用，使用字符串格式化回退")
+            try:
+                return template_content.format(**context)
+            except Exception as e:
+                logger.error(f"字符串格式化失败: {e}")
+                return template_content
+        
+        try:
+            template = self.jinja_env.from_string(template_content)
+            return template.render(context)
+        except Exception as e:
+            logger.error(f"Jinja2模板渲染失败: {e}")
+            return template_content
+    
+    def _generate_dot_graph(self, nodes: List[Dict[str, Any]], edges: List[Tuple[str, str]], graph_name: str = "graph") -> str:
+        """
+        生成Graphviz DOT格式图
+        
+        Args:
+            nodes: 节点列表，每个节点包含name, label, color属性
+            edges: 边列表，(from_node, to_node)
+            graph_name: 图名称
+            
+        Returns:
+            DOT格式字符串
+        """
+        lines = []
+        lines.append(f"digraph {graph_name} {{")
+        lines.append("    rankdir=TB;")
+        lines.append("    node [shape=box, style=filled, fontname=Arial];")
+        lines.append("    edge [fontname=Arial];")
+        
+        for node in nodes:
+            name = node.get('name', 'unknown')
+            label = node.get('label', name)
+            color = node.get('color', '#e0e7ff')
+            lines.append(f'    "{name}" [label="{label}", fillcolor="{color}"];')
+        
+        for from_node, to_node in edges:
+            lines.append(f'    "{from_node}" -> "{to_node}";')
+        
+        lines.append("}")
+        return '\n'.join(lines)
+    
+    def _generate_cfg_html(self, function_name: str, basic_blocks: List[str], edges: List[Tuple[int, int]]) -> str:
+        """
+        生成控制流图HTML可视化
+        
+        Args:
+            function_name: 函数名
+            basic_blocks: 基本块列表
+            edges: 边列表
+            
+        Returns:
+            HTML字符串
+        """
+        nodes = []
+        for i, block in enumerate(basic_blocks):
+            nodes.append({
+                'name': f'bb_{i}',
+                'label': f'BB{i}\\n{block[:30]}...' if len(block) > 30 else f'BB{i}\\n{block}',
+                'color': '#dcfce7' if i == 0 else '#fef3c7' if i == len(basic_blocks)-1 else '#e0e7ff'
+            })
+        
+        dot_content = self._generate_dot_graph(nodes, [(f'bb_{e[0]}', f'bb_{e[1]}') for e in edges], 'CFG')
+        
+        return f"""
+<div class="card">
+    <h3>🔄 {function_name} 控制流图</h3>
+    <div style="text-align:center;margin-top:15px;">
+        <div class="graph-container" style="display:inline-block;padding:10px;">
+            <pre style="background:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;font-size:12px;max-width:600px;overflow-x:auto;">{dot_content}</pre>
+        </div>
+    </div>
+    <p style="font-size:12px;color:#64748b;margin-top:10px;">提示: 将上述内容保存为 .dot 文件，使用 Graphviz 渲染为图像</p>
+</div>
+"""
+    
+    def _generate_data_flow_graph(self, sources: List[str], sinks: List[str], flows: List[Tuple[str, str]]) -> str:
+        """
+        生成数据流图HTML可视化
+        
+        Args:
+            sources: 数据源列表
+            sinks: 数据汇列表
+            flows: 数据流列表
+            
+        Returns:
+            HTML字符串
+        """
+        nodes = []
+        for src in sources:
+            nodes.append({
+                'name': src,
+                'label': f'SOURCE\\n{src}',
+                'color': '#fef2f2'
+            })
+        
+        for sink in sinks:
+            nodes.append({
+                'name': sink,
+                'label': f'SINK\\n{sink}',
+                'color': '#dcfce7'
+            })
+        
+        dot_content = self._generate_dot_graph(nodes, flows, 'DataFlow')
+        
+        return f"""
+<div class="card">
+    <h3>🌊 数据流图</h3>
+    <div style="text-align:center;margin-top:15px;">
+        <div class="graph-container" style="display:inline-block;padding:10px;">
+            <pre style="background:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;font-size:12px;max-width:600px;overflow-x:auto;">{dot_content}</pre>
+        </div>
+    </div>
+    <p style="font-size:12px;color:#64748b;margin-top:10px;">提示: 将上述内容保存为 .dot 文件，使用 Graphviz 渲染为图像</p>
+</div>
+"""
     
     def add_step(self, name: str, data=None, result=None):
         """

@@ -26,6 +26,11 @@ from modules.symbolic_exe import SymbolicExecutor, ANGR_AVAILABLE
 from modules.vuln_db import VulnerabilityDatabase
 from modules.hooks import get_hook_manager
 from modules.dynamic_taint import run_dynamic_taint_analysis, FRIDA_AVAILABLE, QBDI_AVAILABLE
+from modules.jit_analyzer import JITAnalyzer, analyze_jit_security, JITEngineType
+from modules.syscall_table_recovery import SyscallTableRecovery, recover_syscall_table, analyze_syscall_sequence
+from modules.ai_function_namer import AIFunctionNamer, predict_function_names, FunctionSignature
+from modules.crypto_traffic_decrypt import CryptoTrafficAnalyzer, extract_keys, decrypt_traffic
+from modules.binary_format_fuzzer import generate_format_fuzzer, generate_test_corpus, FormatFuzzerGenerator
 
 
 def setup_logging(log_level: str = 'INFO') -> None:

@@ -7,6 +7,8 @@
 3. 识别恶意操作子图
 4. 分析模型结构和数据流
 5. 检测对抗性扰动和投毒攻击
+6. 从二进制逆向重构ML模型结构与参数
+7. 提取权重常量，数据流分析重建网络，输出ONNX
 
 安全考虑：
 - 仅用于授权的 AI 安全研究
@@ -894,3 +896,327 @@ class NNModelScanner(BaseAnalyzer, ABC):
                 "confidence_threshold": {"type": "float", "default": 0.6}
             }
         )
+
+
+class ModelReconstructor:
+    """
+    从二进制逆向重构ML模型结构与参数
+    
+    核心功能：
+    1. 从二进制文件中提取权重常量
+    2. 数据流分析重建神经网络结构
+    3. 输出ONNX格式模型
+    4. 支持多种模型格式的逆向
+    """
+    
+    def __init__(self):
+        self.extracted_weights = {}
+        self.reconstructed_layers = []
+        self.input_shape = None
+        self.output_shape = None
+    
+    def extract_constants_from_binary(self, binary_data: bytes) -> Dict[str, List[float]]:
+        """
+        从二进制数据中提取常量（可能是模型权重）
+        
+        Args:
+            binary_data: 二进制数据
+        
+        Returns:
+            提取的常量表 {name: values}
+        """
+        constants = {}
+        constant_patterns = []
+        
+        constant_patterns.extend(self._find_float_constants(binary_data))
+        constant_patterns.extend(self._find_double_constants(binary_data))
+        constant_patterns.extend(self._find_int_constants(binary_data))
+        
+        for i, pattern in enumerate(constant_patterns):
+            name = f"weight_{i}"
+            constants[name] = pattern['values']
+        
+        self.extracted_weights = constants
+        return constants
+    
+    def _find_float_constants(self, data: bytes) -> List[Dict[str, Any]]:
+        patterns = []
+        i = 0
+        
+        while i < len(data) - 3:
+            try:
+                val = struct.unpack('<f', data[i:i+4])[0]
+                if self._is_plausible_weight(val):
+                    seq = []
+                    j = i
+                    while j < len(data) - 3 and len(seq) < 1024:
+                        try:
+                            v = struct.unpack('<f', data[j:j+4])[0]
+                            if self._is_plausible_weight(v):
+                                seq.append(v)
+                                j += 4
+                            else:
+                                break
+                        except:
+                            break
+                    
+                    if len(seq) >= 4:
+                        patterns.append({
+                            'offset': i,
+                            'type': 'float32',
+                            'values': seq
+                        })
+                        i = j
+                        continue
+            except:
+                pass
+            
+            i += 1
+        
+        return patterns
+    
+    def _find_double_constants(self, data: bytes) -> List[Dict[str, Any]]:
+        patterns = []
+        i = 0
+        
+        while i < len(data) - 7:
+            try:
+                val = struct.unpack('<d', data[i:i+8])[0]
+                if self._is_plausible_weight(val):
+                    seq = []
+                    j = i
+                    while j < len(data) - 7 and len(seq) < 512:
+                        try:
+                            v = struct.unpack('<d', data[j:j+8])[0]
+                            if self._is_plausible_weight(v):
+                                seq.append(v)
+                                j += 8
+                            else:
+                                break
+                        except:
+                            break
+                    
+                    if len(seq) >= 4:
+                        patterns.append({
+                            'offset': i,
+                            'type': 'float64',
+                            'values': seq
+                        })
+                        i = j
+                        continue
+            except:
+                pass
+            
+            i += 1
+        
+        return patterns
+    
+    def _find_int_constants(self, data: bytes) -> List[Dict[str, Any]]:
+        patterns = []
+        
+        for i in range(len(data) - 3):
+            try:
+                val = struct.unpack('<I', data[i:i+4])[0]
+                if 1 <= val <= 4096:
+                    patterns.append({
+                        'offset': i,
+                        'type': 'uint32',
+                        'values': [val]
+                    })
+            except:
+                pass
+        
+        return patterns
+    
+    def _is_plausible_weight(self, val: float) -> bool:
+        if abs(val) > 1e6:
+            return False
+        if abs(val) < 1e-10 and val != 0:
+            return False
+        return True
+    
+    def reconstruct_network(self, constants: Dict[str, List[float]]) -> List[Dict[str, Any]]:
+        layers = []
+        sorted_weights = sorted(constants.items(), key=lambda x: len(x[1]), reverse=True)
+        
+        input_size = self._infer_input_size(sorted_weights)
+        self.input_shape = [1, input_size]
+        
+        current_size = input_size
+        
+        for name, values in sorted_weights:
+            if len(values) < 16:
+                continue
+            
+            layer_info = self._infer_layer(current_size, len(values))
+            
+            if layer_info:
+                layer_info['weights'] = values[:layer_info['weight_count']]
+                layers.append(layer_info)
+                current_size = layer_info['output_size']
+        
+        self.output_shape = [1, current_size]
+        self.reconstructed_layers = layers
+        
+        return layers
+    
+    def _infer_input_size(self, weights) -> int:
+        if not weights:
+            return 784
+        
+        first_weight = weights[0][1]
+        possible_sizes = [784, 28*28, 32*32*3, 224*224*3]
+        
+        for size in possible_sizes:
+            if len(first_weight) % size == 0:
+                return size
+        
+        return 784
+    
+    def _infer_layer(self, input_size: int, weight_count: int) -> Optional[Dict[str, Any]]:
+        for kernel_size in [3, 5, 7]:
+            for output_channels in [16, 32, 64, 128, 256]:
+                expected_weights = input_size * kernel_size * kernel_size * output_channels
+                if abs(expected_weights - weight_count) < 100:
+                    return {
+                        'type': 'conv2d',
+                        'input_size': input_size,
+                        'output_size': output_channels,
+                        'kernel_size': kernel_size,
+                        'weight_count': expected_weights
+                    }
+        
+        if weight_count % input_size == 0:
+            output_size = weight_count // input_size
+            if 10 <= output_size <= 4096:
+                return {
+                    'type': 'linear',
+                    'input_size': input_size,
+                    'output_size': output_size,
+                    'weight_count': weight_count
+                }
+        
+        return None
+    
+    def generate_onnx(self, output_path: str) -> bool:
+        try:
+            import onnx
+            from onnx import helper, TensorProto
+            
+            nodes = []
+            initializers = []
+            inputs = [helper.make_tensor_value_info('input', TensorProto.FLOAT, [None, self.input_shape[1]])]
+            outputs = [helper.make_tensor_value_info('output', TensorProto.FLOAT, [None, self.output_shape[1]])]
+            
+            prev_output = 'input'
+            layer_idx = 0
+            
+            for layer in self.reconstructed_layers:
+                layer_name = f"layer_{layer_idx}"
+                weights_name = f"{layer_name}_weights"
+                bias_name = f"{layer_name}_bias"
+                
+                if layer['type'] == 'linear':
+                    weights = helper.make_tensor(
+                        weights_name,
+                        TensorProto.FLOAT,
+                        [layer['output_size'], layer['input_size']],
+                        layer['weights']
+                    )
+                    initializers.append(weights)
+                    
+                    bias = helper.make_tensor(
+                        bias_name,
+                        TensorProto.FLOAT,
+                        [layer['output_size']],
+                        [0.0] * layer['output_size']
+                    )
+                    initializers.append(bias)
+                    
+                    node = helper.make_node(
+                        'Gemm',
+                        inputs=[prev_output, weights_name, bias_name],
+                        outputs=[layer_name],
+                        name=layer_name,
+                        transB=1
+                    )
+                    nodes.append(node)
+                
+                elif layer['type'] == 'conv2d':
+                    weights = helper.make_tensor(
+                        weights_name,
+                        TensorProto.FLOAT,
+                        [layer['output_size'], 1, layer['kernel_size'], layer['kernel_size']],
+                        layer['weights'][:layer['output_size'] * layer['kernel_size'] * layer['kernel_size']]
+                    )
+                    initializers.append(weights)
+                    
+                    bias = helper.make_tensor(
+                        bias_name,
+                        TensorProto.FLOAT,
+                        [layer['output_size']],
+                        [0.0] * layer['output_size']
+                    )
+                    initializers.append(bias)
+                    
+                    node = helper.make_node(
+                        'Conv',
+                        inputs=[prev_output, weights_name, bias_name],
+                        outputs=[layer_name],
+                        name=layer_name,
+                        kernel_shape=[layer['kernel_size'], layer['kernel_size']],
+                        strides=[1, 1],
+                        pads=[1, 1, 1, 1]
+                    )
+                    nodes.append(node)
+                
+                prev_output = layer_name
+                layer_idx += 1
+            
+            relu_node = helper.make_node(
+                'Relu',
+                inputs=[prev_output],
+                outputs=['output'],
+                name='relu_final'
+            )
+            nodes.append(relu_node)
+            
+            graph = helper.make_graph(
+                nodes,
+                'reconstructed_model',
+                inputs,
+                outputs,
+                initializers
+            )
+            
+            model = helper.make_model(graph, opset_imports=[helper.make_opsetid('', 13)])
+            onnx.save(model, output_path)
+            
+            logger.info(f"ONNX模型已生成: {output_path}")
+            return True
+        
+        except ImportError:
+            logger.error("ONNX库未安装")
+            return False
+        except Exception as e:
+            logger.error(f"生成ONNX失败: {e}")
+            return False
+    
+    def analyze_and_reconstruct(self, binary_data: bytes, output_path: str = None) -> Dict[str, Any]:
+        constants = self.extract_constants_from_binary(binary_data)
+        layers = self.reconstruct_network(constants)
+        
+        onnx_generated = False
+        if output_path:
+            onnx_generated = self.generate_onnx(output_path)
+        
+        return {
+            'success': True,
+            'extracted_constants_count': len(constants),
+            'total_weights_count': sum(len(v) for v in constants.values()),
+            'reconstructed_layers': layers,
+            'input_shape': self.input_shape,
+            'output_shape': self.output_shape,
+            'onnx_generated': onnx_generated,
+            'onnx_path': output_path
+        }

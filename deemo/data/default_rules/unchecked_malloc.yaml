@@ -1,0 +1,26 @@
+# 默认漏洞规则示例：内存分配失败处理
+id: unchecked-malloc
+name: malloc 后未检查返回值
+severity: medium
+description: |
+  检测到 malloc/calloc/realloc 调用后未检查返回值是否为 NULL，
+  直接使用可能导致空指针解引用。
+cwe: CWE-690
+tags:
+  - null-pointer
+  - memory
+conditions:
+  - field: function_calls
+    operator: regex_match
+    value: "malloc|calloc|realloc"
+  - field: pseudocode
+    operator: regex_match
+    value: "if\\s*\\(\\s*!?\\s*(ptr|buf|p)\\s*\\)|NULL\\s*=="
+    regex: true
+    negate: true
+actions:
+  - type: report
+    parameters:
+      message: "malloc 之后未检查 NULL，存在空指针解引用风险"
+      suggestion: "malloc 后立即 if (ptr == NULL) { 处理错误 }"
+      cwe: CWE-690

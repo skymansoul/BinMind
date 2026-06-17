@@ -6,9 +6,6 @@ import argparse
 def main():
     parser = argparse.ArgumentParser(description='运行测试套件')
     parser.add_argument('--verbose', '-v', action='store_true', help='详细输出')
-    parser.add_argument('--quiet', '-q', action='store_true', help='静默模式，仅输出测试结果摘要')
-    parser.add_argument('--pattern', '-p', help='运行匹配指定模式的测试文件')
-    parser.add_argument('test_module', nargs='?', help='运行单个测试模块')
     parser.add_argument('--all', action='store_true', help='运行所有测试')
     
     # 新增的六个功能测试参数（安全评估、隐私保护、硬件安全）
@@ -391,52 +388,29 @@ def main():
             if getattr(args, key, False):
                 selected_tests.append(test_file)
     
-    # 处理位置参数：运行单个测试模块
-    if args.test_module:
-        test_module_path = os.path.join(os.path.dirname(__file__), args.test_module)
-        if os.path.exists(test_module_path):
-            selected_tests = [args.test_module]
-        elif os.path.exists(test_module_path + '.py'):
-            selected_tests = [args.test_module + '.py']
-        else:
-            print(f"错误：测试模块不存在: {args.test_module}")
-            return {'passed': 0, 'failed': 0, 'errors': 1}
-    
-    # 处理模式匹配
-    if args.pattern and not args.test_module:
-        pattern = args.pattern
-        matched_tests = [f for f in test_files if pattern in f]
-        if matched_tests:
-            selected_tests = matched_tests
-        else:
-            print(f"警告：未找到匹配模式 '{pattern}' 的测试文件")
-    
     if not selected_tests:
         selected_tests = test_files[:6]
     
     suite = unittest.TestSuite()
     
-    if not args.quiet:
-        for test_file in selected_tests:
-            test_path = os.path.join(os.path.dirname(__file__), test_file)
-            if os.path.exists(test_path):
-                try:
-                    loader = unittest.TestLoader()
-                    tests = loader.discover(os.path.dirname(__file__), pattern=test_file)
-                    suite.addTests(tests)
-                    print(f"加载测试文件: {test_file}")
-                except Exception as e:
-                    print(f"加载测试文件失败 {test_file}: {e}")
-            else:
-                print(f"测试文件不存在: {test_file}")
+    for test_file in selected_tests:
+        test_path = os.path.join(os.path.dirname(__file__), test_file)
+        if os.path.exists(test_path):
+            try:
+                loader = unittest.TestLoader()
+                tests = loader.discover(os.path.dirname(__file__), pattern=test_file)
+                suite.addTests(tests)
+                print(f"加载测试文件: {test_file}")
+            except Exception as e:
+                print(f"加载测试文件失败 {test_file}: {e}")
+        else:
+            print(f"测试文件不存在: {test_file}")
     
-    if not args.quiet:
-        print("\n" + "="*50)
-        print("开始运行测试...")
-        print("="*50 + "\n")
+    print("\n" + "="*50)
+    print("开始运行测试...")
+    print("="*50 + "\n")
     
-    verbosity = 2 if args.verbose else (0 if args.quiet else 1)
-    runner = unittest.TextTestRunner(verbosity=verbosity)
+    runner = unittest.TextTestRunner(verbosity=2 if args.verbose else 1)
     result = runner.run(suite)
     
     print("\n" + "="*50)

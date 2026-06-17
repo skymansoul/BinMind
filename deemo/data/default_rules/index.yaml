@@ -1,0 +1,13 @@
+# 默认漏洞规则索引
+# 该文件用于列出所有默认规则
+rules:
+  - unsafe_string_functions.yaml
+  - dangerous_command_exec.yaml
+  - unchecked_malloc.yaml
+  - hardcoded_credentials.yaml
+  - unsafe_deserialization.yaml
+  - format_string.yaml
+  - integer_overflow.yaml
+  - weak_crypto.yaml
+  - toctou_race.yaml
+  - uaf_pattern.yaml

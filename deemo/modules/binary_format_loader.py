@@ -537,6 +537,189 @@ class MachOParser(BinaryFormatParser):
         return [Architecture.X86, Architecture.X86_64]
 
 
+class COFFParser(BinaryFormatParser):
+    """COFF (Common Object File Format) 格式解析器"""
+    
+    COFF_MAGIC = 0x014C
+    
+    def detect(self, data: bytes) -> bool:
+        if len(data) < 2:
+            return False
+        magic = int.from_bytes(data[:2], 'little')
+        return magic == self.COFF_MAGIC
+    
+    def parse(self, file_path: str) -> BinaryInfo:
+        with open(file_path, 'rb') as f:
+            data = f.read()
+        
+        info = BinaryInfo(
+            file_path=file_path,
+            format=BinaryFormat.COFF,
+            architecture=self._parse_architecture(data),
+            endianness=Endianness.LITTLE_ENDIAN,
+            bits=self._parse_bits(data),
+            entry_point=self._parse_entry_point(data),
+            base_address=0,
+            sections=self._parse_sections(data),
+            symbols=[],
+            imports=[],
+            exports=[],
+            headers=self._parse_headers(data),
+            metadata={}
+        )
+        
+        return info
+    
+    def _parse_architecture(self, data: bytes) -> Architecture:
+        try:
+            # COFF header: machine type at offset 4 (2 bytes)
+            if len(data) >= 6:
+                machine = int.from_bytes(data[4:6], 'little')
+                if machine == 0x014C:  # IMAGE_FILE_MACHINE_I386
+                    return Architecture.X86
+                elif machine == 0x8664:  # IMAGE_FILE_MACHINE_AMD64
+                    return Architecture.X86_64
+                elif machine == 0x01C0:  # IMAGE_FILE_MACHINE_ARM
+                    return Architecture.ARM
+                elif machine == 0xAA64:  # IMAGE_FILE_MACHINE_ARM64
+                    return Architecture.ARM64
+        except Exception:
+            pass
+        return Architecture.UNKNOWN
+    
+    def _parse_bits(self, data: bytes) -> int:
+        arch = self._parse_architecture(data)
+        if arch in [Architecture.X86_64, Architecture.ARM64]:
+            return 64
+        return 32
+    
+    def _parse_entry_point(self, data: bytes) -> int:
+        return 0  # COFF doesn't have entry point in header
+    
+    def _parse_sections(self, data: bytes) -> List[Dict[str, Any]]:
+        sections = []
+        try:
+            if len(data) < 24:
+                return sections
+            
+            num_sections = int.from_bytes(data[2:4], 'little')
+            optional_header_size = int.from_bytes(data[20:22], 'little')
+            section_table_offset = 24 + optional_header_size
+            
+            for i in range(min(num_sections, 20)):
+                offset = section_table_offset + i * 40
+                if offset + 40 <= len(data):
+                    name = data[offset:offset+8].decode('ascii', errors='ignore').strip('\x00')
+                    sections.append({
+                        'index': i,
+                        'name': name,
+                        'offset': offset
+                    })
+        except Exception:
+            pass
+        return sections
+    
+    def _parse_headers(self, data: bytes) -> Dict[str, Any]:
+        headers = {}
+        try:
+            if len(data) >= 24:
+                headers['machine'] = int.from_bytes(data[4:6], 'little')
+                headers['number_of_sections'] = int.from_bytes(data[2:4], 'little')
+                headers['time_date_stamp'] = int.from_bytes(data[8:12], 'little')
+                headers['pointer_to_symbol_table'] = int.from_bytes(data[12:16], 'little')
+                headers['number_of_symbols'] = int.from_bytes(data[16:20], 'little')
+        except Exception:
+            pass
+        return headers
+    
+    def get_format(self) -> BinaryFormat:
+        return BinaryFormat.COFF
+    
+    def get_supported_architectures(self) -> List[Architecture]:
+        return [Architecture.X86, Architecture.X86_64, Architecture.ARM, Architecture.ARM64]
+
+
+class OMFParser(BinaryFormatParser):
+    """OMF (Object Module Format) 格式解析器"""
+    
+    OMF_MAGIC = b'\x80'
+    
+    def detect(self, data: bytes) -> bool:
+        # OMF files start with 0x80 byte
+        if len(data) < 1:
+            return False
+        return data[0] == 0x80
+    
+    def parse(self, file_path: str) -> BinaryInfo:
+        with open(file_path, 'rb') as f:
+            data = f.read()
+        
+        info = BinaryInfo(
+            file_path=file_path,
+            format=BinaryFormat.OMF,
+            architecture=self._parse_architecture(data),
+            endianness=Endianness.LITTLE_ENDIAN,
+            bits=16,  # OMF is typically 16-bit
+            entry_point=self._parse_entry_point(data),
+            base_address=0,
+            sections=self._parse_sections(data),
+            symbols=[],
+            imports=[],
+            exports=[],
+            headers=self._parse_headers(data),
+            metadata={}
+        )
+        
+        return info
+    
+    def _parse_architecture(self, data: bytes) -> Architecture:
+        # OMF is primarily used for 16-bit x86
+        return Architecture.X86
+    
+    def _parse_entry_point(self, data: bytes) -> int:
+        # Entry point in OMF is stored in FIXUPP records
+        return 0
+    
+    def _parse_sections(self, data: bytes) -> List[Dict[str, Any]]:
+        sections = []
+        try:
+            offset = 1  # Skip magic byte
+            while offset < len(data):
+                if offset + 3 > len(data):
+                    break
+                
+                rec_type = data[offset]
+                rec_len = int.from_bytes(data[offset+1:offset+3], 'little')
+                
+                if rec_type == 0x06:  # COMENT record (section info)
+                    sections.append({
+                        'index': len(sections),
+                        'type': 'comment',
+                        'offset': offset
+                    })
+                elif rec_type == 0x08:  # MODEND record
+                    break
+                
+                offset += 3 + rec_len
+        except Exception:
+            pass
+        return sections
+    
+    def _parse_headers(self, data: bytes) -> Dict[str, Any]:
+        headers = {}
+        try:
+            headers['magic'] = hex(data[0]) if len(data) > 0 else ''
+        except Exception:
+            pass
+        return headers
+    
+    def get_format(self) -> BinaryFormat:
+        return BinaryFormat.OMF
+    
+    def get_supported_architectures(self) -> List[Architecture]:
+        return [Architecture.X86]
+
+
 class RawBinaryParser(BinaryFormatParser):
     """原始二进制/Flat格式解析器"""
     
@@ -611,6 +794,8 @@ class BinaryFormatLoader(BaseAnalyzer):
             ELFParser(),
             PEParser(),
             MachOParser(),
+            COFFParser(),
+            OMFParser(),
             RawBinaryParser()
         ]
         

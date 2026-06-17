@@ -130,20 +130,113 @@ class PTXParser:
     ST_GLOBAL = re.compile(r'\bst\.global\.[bcsui]\d*')
     LD_SHARED = re.compile(r'\bld\.shared\.[bcsui]\d*')
     ST_SHARED = re.compile(r'\bst\.shared\.[bcsui]\d*')
+    LD_CONST = re.compile(r'\bld\.const\.[bcsui]\d*')
+    LD_LOCAL = re.compile(r'\bld\.local\.[bcsui]\d*')
+    ST_LOCAL = re.compile(r'\bst\.local\.[bcsui]\d*')
     ATOMIC_GLOBAL = re.compile(r'\batom\.[\w\.]+')
     SYNC_THREADS = re.compile(r'\bsync\.threads?')
     BARRIER = re.compile(r'\bbar\.')
+    VOTE = re.compile(r'\bvote\.[\w\.]+')
+    SHFL = re.compile(r'\bshfl\.[\w\.]+')
+    WARP_SPECIAL = re.compile(r'\b(?:ballot|match|any|all)\.')
+    BRANCH = re.compile(r'\b(bra|br|call)\b')
     
     def __init__(self, ptx_content: str):
         self.content = ptx_content
         self.lines = ptx_content.split('\n')
+        self.functions = []
+        self.kernels = []
+        self.constants = {}
+        self.shared_memory_declarations = []
+        self._parse()
     
+    def _parse(self):
+        """解析PTX文件结构"""
+        current_func = None
+        
+        for line_num, line in enumerate(self.lines, 1):
+            line = line.strip()
+            
+            if not line or line.startswith('//'):
+                continue
+            
+            # 解析版本信息
+            version_match = re.match(r'\.version\s+(\d+\.\d+)', line)
+            if version_match:
+                self.ptx_version = version_match.group(1)
+                continue
+            
+            # 解析目标架构
+            target_match = re.match(r'\.target\s+(\w+)', line)
+            if target_match:
+                self.target_arch = target_match.group(1)
+                continue
+            
+            # 解析内核定义
+            kernel_match = re.match(r'\.entry\s+(\w+)', line)
+            if kernel_match:
+                current_func = {
+                    'name': kernel_match.group(1),
+                    'type': 'kernel',
+                    'start_line': line_num,
+                    'end_line': line_num,
+                    'params': [],
+                    'memory_accesses': [],
+                    'sync_points': [],
+                    'shared_memory_size': 0
+                }
+                self.kernels.append(current_func)
+                continue
+            
+            # 解析函数定义
+            func_match = re.match(r'\.func\s+(?:\(\))?\s*(\w+)', line)
+            if func_match:
+                current_func = {
+                    'name': func_match.group(1),
+                    'type': 'function',
+                    'start_line': line_num,
+                    'end_line': line_num,
+                    'params': [],
+                    'memory_accesses': [],
+                    'sync_points': []
+                }
+                self.functions.append(current_func)
+                continue
+            
+            # 解析共享内存声明
+            shared_match = re.match(r'\.shared\s+(\w+)\s+(\w+)\[(\d+)\]', line)
+            if shared_match:
+                decl = {
+                    'type': shared_match.group(1),
+                    'name': shared_match.group(2),
+                    'size': int(shared_match.group(3)),
+                    'line_number': line_num
+                }
+                self.shared_memory_declarations.append(decl)
+                if current_func:
+                    current_func['shared_memory_size'] += int(shared_match.group(3))
+                continue
+            
+            # 解析常量
+            const_match = re.match(r'\.const\s+(\w+)\s+(\w+)\s*=\s*(.+)', line)
+            if const_match:
+                self.constants[const_match.group(2)] = {
+                    'type': const_match.group(1),
+                    'value': const_match.group(3),
+                    'line_number': line_num
+                }
+                continue
+            
+            # 更新函数结束位置
+            if current_func:
+                current_func['end_line'] = line_num
+
     def parse_memory_accesses(self) -> List[MemoryAccess]:
         """解析所有内存访问指令"""
         accesses = []
         for line_num, line in enumerate(self.lines, 1):
             line = line.strip()
-            
+
             # 解析全局内存加载
             match = self.LD_GLOBAL.search(line)
             if match:
@@ -155,7 +248,7 @@ class PTXParser:
                     is_bounds_checked=self._has_bounds_check(line),
                     line_number=line_num
                 ))
-            
+
             # 解析全局内存存储
             match_st = self.ST_GLOBAL.search(line)
             if match_st:
@@ -167,40 +260,71 @@ class PTXParser:
                     is_bounds_checked=self._has_bounds_check(line),
                     line_number=line_num
                 ))
-            
+
             # 解析共享内存访问
-            elif self.LD_SHARED.search(line) or self.ST_SHARED.search(line):
+            elif self.LD_SHARED.search(line):
                 accesses.append(MemoryAccess(
                     address_expr=line,
-                    access_type="read/write",
+                    access_type="read",
                     offset=0,
-                    size=4,  # 默认
-                    is_bounds_checked=True,  # 共享内存通常更安全
+                    size=self._extract_size(line),
+                    is_bounds_checked=True,
                     line_number=line_num
                 ))
-        
+            elif self.ST_SHARED.search(line):
+                accesses.append(MemoryAccess(
+                    address_expr=line,
+                    access_type="write",
+                    offset=0,
+                    size=self._extract_size(line),
+                    is_bounds_checked=True,
+                    line_number=line_num
+                ))
+            
+            # 解析常量内存访问
+            elif self.LD_CONST.search(line):
+                accesses.append(MemoryAccess(
+                    address_expr=line,
+                    access_type="read",
+                    offset=0,
+                    size=self._extract_size(line),
+                    is_bounds_checked=True,
+                    line_number=line_num
+                ))
+            
+            # 解析局部内存访问
+            elif self.LD_LOCAL.search(line):
+                accesses.append(MemoryAccess(
+                    address_expr=line,
+                    access_type="read",
+                    offset=0,
+                    size=self._extract_size(line),
+                    is_bounds_checked=True,
+                    line_number=line_num
+                ))
+            elif self.ST_LOCAL.search(line):
+                accesses.append(MemoryAccess(
+                    address_expr=line,
+                    access_type="write",
+                    offset=0,
+                    size=self._extract_size(line),
+                    is_bounds_checked=True,
+                    line_number=line_num
+                ))
+
         return accesses
-    
+
     def _extract_size(self, line: str) -> int:
-        """提取访问大小
-
-        Args:
-            line: PTX 指令行
-
-        Returns:
-            访问大小（字节数）
-        """
-        # 匹配 .f32, .f64, .b32, .b64 等格式
+        """提取访问大小"""
         size_match = re.search(r'\.f?(\d+)', line)
         if size_match:
             return int(size_match.group(1)) // 8
-        return 4  # 默认 4 字节
-    
+        return 4
+
     def _has_bounds_check(self, line: str) -> bool:
         """检查是否有边界检查"""
-        # 简化实现：检查是否包含边界检查指令
-        return 'cmp' in line.lower() or 'setp' in line.lower()
-    
+        return any(pattern in line.lower() for pattern in ['cmp', 'setp', 'min.', 'max.', 'and', 'slt', 'sgt'])
+
     def parse_sync_points(self) -> List[ThreadSynchronization]:
         """解析同步点"""
         syncs = []
@@ -216,7 +340,70 @@ class PTXParser:
                     sync_type="barrier",
                     location=line_num
                 ))
+            elif self.VOTE.search(line):
+                syncs.append(ThreadSynchronization(
+                    sync_type="vote",
+                    location=line_num
+                ))
         return syncs
+    
+    def get_kernels(self) -> List[Dict[str, Any]]:
+        """获取内核列表"""
+        return self.kernels
+    
+    def get_constants(self) -> Dict[str, Any]:
+        """获取常量列表"""
+        return self.constants
+    
+    def get_shared_memory_declarations(self) -> List[Dict[str, Any]]:
+        """获取共享内存声明"""
+        return self.shared_memory_declarations
+    
+    def detect_shared_memory_conflicts(self) -> List[Dict[str, Any]]:
+        """检测共享内存冲突"""
+        conflicts = []
+        for kernel in self.kernels:
+            for i in range(len(self.lines) - 1):
+                line1 = self.lines[i]
+                line2 = self.lines[i + 1]
+                if (self.ST_SHARED.search(line1) and self.LD_SHARED.search(line2)) or \
+                   (self.LD_SHARED.search(line1) and self.ST_SHARED.search(line2)):
+                    conflicts.append({
+                        'kernel': kernel.get('name', 'unknown'),
+                        'line_start': i + 1,
+                        'line_end': i + 2,
+                        'type': 'potential_data_race',
+                        'description': "Potential shared memory race condition"
+                    })
+        return conflicts
+    
+    def detect_out_of_bounds(self) -> List[Dict[str, Any]]:
+        """检测潜在的越界访问"""
+        issues = []
+        for line_num, line in enumerate(self.lines, 1):
+            if self.LD_GLOBAL.search(line) or self.ST_GLOBAL.search(line):
+                if not self._has_bounds_check(line):
+                    if any(pattern in line for pattern in ['tid', 'ctaid', 'blockIdx', 'threadIdx']):
+                        issues.append({
+                            'line_number': line_num,
+                            'type': 'potential_oob',
+                            'instruction': line.strip(),
+                            'description': "Potential out-of-bounds access without bounds checking"
+                        })
+        return issues
+    
+    def detect_warp_divergence(self) -> List[Dict[str, Any]]:
+        """检测warp分歧问题"""
+        issues = []
+        for line_num, line in enumerate(self.lines, 1):
+            if self.BRANCH.search(line):
+                issues.append({
+                    'line_number': line_num,
+                    'type': 'potential_warp_divergence',
+                    'instruction': line.strip(),
+                    'description': "Branch instruction may cause warp divergence"
+                })
+        return issues
 
 
 class SASSAnalyzer:

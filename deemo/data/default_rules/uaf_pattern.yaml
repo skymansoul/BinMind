@@ -1,0 +1,21 @@
+# 默认漏洞规则：使用已释放内存 (UAF)
+id: uaf-pattern
+name: Use-After-Free 模式
+severity: high
+description: |
+  检测到 free()/delete 后继续使用指针的模式。
+cwe: CWE-416
+tags:
+  - uaf
+  - memory
+conditions:
+  - field: pseudocode
+    operator: regex_match
+    value: "(?:free|delete)\\s*\\(?\\s*\\w+\\s*\\)?\\s*[\\s\\S]{0,200}?\\1\\b"
+    regex: true
+actions:
+  - type: report
+    parameters:
+      message: "检测到 free 后仍使用同一指针，可能存在 UAF"
+      suggestion: "释放后立即置空 (ptr = NULL)，并在使用前检查"
+      cwe: CWE-416

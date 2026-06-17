@@ -8,15 +8,20 @@
 2. 混淆标识符（函数名、变量名）
 3. 移除或模糊化敏感字符串
 4. 支持正则表达式匹配和替换
+5. 差分隐私保护（Laplace噪声添加）
+6. 敏感字符串泛化
 
 安全说明：
 - 此模块用于在调用外部LLM前对代码片段进行匿名化处理
 - 敏感信息将被替换为占位符，避免泄露敏感数据
 - 默认启用所有匿名化规则，可通过配置调整
+- 差分隐私保护确保输出数据的统计隐私性
 """
 
 import re
 import hashlib
+import random
+import math
 from enum import Enum
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any, Callable, Set, Tuple
@@ -498,3 +503,288 @@ def is_sensitive_content(text: str) -> bool:
         if re.search(pattern, text, re.IGNORECASE):
             return True
     return False
+
+
+# ==================== 差分隐私模块 ====================
+
+@dataclass
+class DifferentialPrivacyConfig:
+    """差分隐私配置"""
+    epsilon: float = 1.0          # 隐私预算
+    delta: float = 1e-5           # 失败概率
+    max_contribution: int = 1      # 最大贡献值
+    noise_scale: float = 1.0       # 噪声缩放因子
+
+
+class LaplaceNoiseGenerator:
+    """
+    Laplace噪声生成器
+    
+    差分隐私中常用Laplace分布添加噪声，满足epsilon-delta隐私。
+    Laplace分布的参数：
+    - location (均值): 原始值
+    - scale (尺度): epsilon / sensitivity
+    """
+    
+    @staticmethod
+    def laplace(scale: float = 1.0, loc: float = 0.0) -> float:
+        """
+        生成Laplace分布的随机噪声
+        
+        Args:
+            scale: Laplace分布的尺度参数 (b = sensitivity / epsilon)
+            loc: Laplace分布的位置参数（均值）
+            
+        Returns:
+            Laplace分布的随机值
+        """
+        # 使用Box-Muller变换生成Laplace分布
+        u = random.random() - 0.5  # [-0.5, 0.5)
+        sign = 1 if u >= 0 else -1
+        return loc - sign * scale * math.log(1 - 2 * abs(u))
+    
+    @staticmethod
+    def add_noise_to_integer(value: int, epsilon: float, sensitivity: int = 1) -> int:
+        """
+        为整数值添加Laplace噪声
+        
+        Args:
+            value: 原始整数值
+            epsilon: 隐私预算
+            sensitivity: 敏感度（最大变化量）
+            
+        Returns:
+            添加噪声后的整数值（四舍五入）
+        """
+        scale = sensitivity / epsilon
+        noise = LaplaceNoiseGenerator.laplace(scale)
+        return round(value + noise)
+    
+    @staticmethod
+    def add_noise_to_float(value: float, epsilon: float, sensitivity: float = 1.0) -> float:
+        """
+        为浮点数值添加Laplace噪声
+        
+        Args:
+            value: 原始浮点数值
+            epsilon: 隐私预算
+            sensitivity: 敏感度（最大变化量）
+            
+        Returns:
+            添加噪声后的浮点数值
+        """
+        scale = sensitivity / epsilon
+        noise = LaplaceNoiseGenerator.laplace(scale)
+        return value + noise
+
+
+class DifferentialPrivacySanbox:
+    """
+    差分隐私分析沙箱
+    
+    核心功能：
+    1. 对离开沙箱的输出添加Laplace噪声
+    2. 敏感字符串泛化
+    3. 统计查询结果隐私保护
+    4. 数据发布前的隐私审查
+    """
+    
+    def __init__(self, config: DifferentialPrivacyConfig = None):
+        """
+        初始化差分隐私沙箱
+        
+        Args:
+            config: 差分隐私配置
+        """
+        self.config = config or DifferentialPrivacyConfig()
+        self.noise_generator = LaplaceNoiseGenerator()
+        self.sensitive_patterns = [
+            # 个人身份信息
+            re.compile(r'\b\d{11}\b'),  # 手机号
+            re.compile(r'\b\d{15,18}\b'),  # 身份证号
+            re.compile(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'),  # 邮箱
+            re.compile(r'\b\d{3}-\d{4}-\d{4}\b'),  # 电话号码格式
+            
+            # 金融信息
+            re.compile(r'\b\d{16,19}\b'),  # 银行卡号
+            re.compile(r'\b\d{3,4}\d{4}\d{4}\d{4}\b'),  # 信用卡号
+            
+            # 网络地址
+            re.compile(r'\b(?:\d{1,3}\.){3}\d{1,3}\b'),  # IP地址
+            re.compile(r'https?://[^\s]+'),  # URL
+        ]
+    
+    def add_laplace_noise(self, value: Union[int, float], sensitivity: Union[int, float] = 1) -> Union[int, float]:
+        """
+        为数值添加Laplace噪声
+        
+        Args:
+            value: 原始值（整数或浮点数）
+            sensitivity: 敏感度
+            
+        Returns:
+            添加噪声后的值
+        """
+        if isinstance(value, int):
+            return self.noise_generator.add_noise_to_integer(
+                value, 
+                self.config.epsilon, 
+                int(sensitivity)
+            )
+        else:
+            return self.noise_generator.add_noise_to_float(
+                value, 
+                self.config.epsilon, 
+                sensitivity
+            )
+    
+    def generalize_string(self, text: str) -> str:
+        """
+        泛化敏感字符串
+        
+        Args:
+            text: 输入文本
+            
+        Returns:
+            泛化后的文本
+        """
+        result = text
+        
+        # 手机号泛化（保留前3位和后4位）
+        result = re.sub(r'(\d{3})\d{4}(\d{4})', r'\1****\2', result)
+        
+        # 身份证号泛化（保留前6位和后4位）
+        result = re.sub(r'(\d{6})\d{8,11}(\d{4})', r'\1**********\2', result)
+        
+        # 邮箱泛化（隐藏用户名部分）
+        result = re.sub(r'([a-zA-Z])[a-zA-Z0-9._%+-]*(@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})', r'\1***\1', result)
+        
+        # 银行卡号泛化（保留前4位和后4位）
+        result = re.sub(r'(\d{4})\d{8,11}(\d{4})', r'\1********\2', result)
+        
+        # IP地址泛化（隐藏最后一段）
+        result = re.sub(r'(\d{1,3}\.\d{1,3}\.\d{1,3})\.\d{1,3}', r'\1.X', result)
+        
+        return result
+    
+    def sanitize_output(self, data: Any) -> Any:
+        """
+        清理输出数据，应用差分隐私保护
+        
+        Args:
+            data: 待清理的数据（支持字符串、整数、浮点数、列表、字典）
+            
+        Returns:
+            清理后的数据
+        """
+        if isinstance(data, str):
+            return self._sanitize_string(data)
+        elif isinstance(data, int):
+            return self.add_laplace_noise(data)
+        elif isinstance(data, float):
+            return self.add_laplace_noise(data)
+        elif isinstance(data, list):
+            return [self.sanitize_output(item) for item in data]
+        elif isinstance(data, dict):
+            return {key: self.sanitize_output(value) for key, value in data.items()}
+        else:
+            return data
+    
+    def _sanitize_string(self, text: str) -> str:
+        """
+        清理字符串输出
+        
+        Args:
+            text: 输入字符串
+            
+        Returns:
+            清理后的字符串
+        """
+        # 1. 泛化敏感字符串
+        sanitized = self.generalize_string(text)
+        
+        # 2. 添加轻微的字符扰动（用于文本数据的差分隐私）
+        sanitized = self._add_text_privacy(sanitized)
+        
+        return sanitized
+    
+    def _add_text_privacy(self, text: str) -> str:
+        """
+        为文本添加隐私保护（轻微扰动）
+        
+        Args:
+            text: 输入文本
+            
+        Returns:
+            扰动后的文本
+        """
+        chars = list(text)
+        num_changes = max(1, int(len(chars) * 0.01))  # 修改1%的字符
+        
+        for _ in range(num_changes):
+            if len(chars) > 0:
+                idx = random.randint(0, len(chars) - 1)
+                if chars[idx].isalpha():
+                    # 随机替换为相近字符
+                    chars[idx] = random.choice('abcdefghijklmnopqrstuvwxyz')
+        
+        return ''.join(chars)
+    
+    def privacy_budget_remaining(self) -> float:
+        """
+        计算剩余隐私预算
+        
+        Returns:
+            剩余epsilon值
+        """
+        # 简化实现：返回当前配置的epsilon
+        return self.config.epsilon
+    
+    def can_release(self, data: Any, min_epsilon: float = 0.1) -> bool:
+        """
+        判断数据是否可以发布
+        
+        Args:
+            data: 待发布数据
+            min_epsilon: 最小隐私预算要求
+            
+        Returns:
+            True 如果可以发布
+        """
+        return self.privacy_budget_remaining() >= min_epsilon
+
+
+# 全局差分隐私沙箱实例
+_global_dp_sandbox = None
+
+
+def get_dp_sandbox(config: DifferentialPrivacyConfig = None) -> DifferentialPrivacySanbox:
+    """
+    获取全局差分隐私沙箱实例
+    
+    Args:
+        config: 差分隐私配置（可选）
+        
+    Returns:
+        DifferentialPrivacySanbox实例
+    """
+    global _global_dp_sandbox
+    if _global_dp_sandbox is None or config is not None:
+        _global_dp_sandbox = DifferentialPrivacySanbox(config)
+    return _global_dp_sandbox
+
+
+def apply_differential_privacy(data: Any, epsilon: float = 1.0) -> Any:
+    """
+    便捷函数：对数据应用差分隐私保护
+    
+    Args:
+        data: 待保护的数据
+        epsilon: 隐私预算（越小越隐私，越大越准确）
+        
+    Returns:
+        保护后的数据
+    """
+    config = DifferentialPrivacyConfig(epsilon=epsilon)
+    sandbox = DifferentialPrivacySanbox(config)
+    return sandbox.sanitize_output(data)

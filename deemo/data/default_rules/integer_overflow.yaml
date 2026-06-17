@@ -1,0 +1,21 @@
+# 默认漏洞规则：整数溢出
+id: integer-overflow-risk
+name: 整数运算缺少溢出检查
+severity: medium
+description: |
+  检测到乘法/加法运算结果未做溢出检查便用于内存分配或索引。
+cwe: CWE-190
+tags:
+  - integer-overflow
+  - arithmetic
+conditions:
+  - field: pseudocode
+    operator: regex_match
+    value: "(?:\\b\\w+\\s*[*+]\\s*\\w+).*?\\b(malloc|calloc|new|alloc)\\b"
+    regex: true
+actions:
+  - type: report
+    parameters:
+      message: "整数运算结果直接用于内存分配，存在整数溢出风险"
+      suggestion: "使用 __builtin_mul_overflow / safe_i32_mul 等安全算术"
+      cwe: CWE-190
