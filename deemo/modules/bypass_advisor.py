@@ -105,7 +105,7 @@ class BypassAdvisor:
     def _build_strategy_database(self) -> Dict[ProtectionType, BypassStrategy]:
         """构建绕过策略数据库"""
         return {
-            ProtectionType.ASLR: BypassStrategy(
+            ProtectionType.ASLR: BypassStrategy()
                 protection=ProtectionType.ASLR,
                 methods=[BypassMethod.INFO_LEAK, BypassMethod.RETURN_TO_LIBC, BypassMethod.GOT_OVERWRITE],
                 difficulty=BypassDifficulty.MODERATE,
@@ -114,7 +114,7 @@ class BypassAdvisor:
                 recommended_tools=["ROPgadget", "pwntools", "one_gadget"],
                 references=["https://en.wikipedia.org/wiki/Address_space_layout_randomization"]
             ),
-            ProtectionType.DEP: BypassStrategy(
+            ProtectionType.DEP: BypassStrategy()
                 protection=ProtectionType.DEP,
                 methods=[BypassMethod.ROP_CHAIN, BypassMethod.JOP_CHAIN, BypassMethod.RETURN_TO_LIBC, BypassMethod.SROP],
                 difficulty=BypassDifficulty.EASY,
@@ -123,7 +123,7 @@ class BypassAdvisor:
                 recommended_tools=["ROPgadget", "ropper", "pwntools"],
                 references=["https://en.wikipedia.org/wiki/Data_Execution_Prevention"]
             ),
-            ProtectionType.CFI: BypassStrategy(
+            ProtectionType.CFI: BypassStrategy()
                 protection=ProtectionType.CFI,
                 methods=[BypassMethod.VTABLE_HIJACK, BypassMethod.TLS_POISONING, BypassMethod.ROPLESS],
                 difficulty=BypassDifficulty.HARD,
@@ -132,7 +132,7 @@ class BypassAdvisor:
                 recommended_tools=["CFIExplorer", "angr", "Ghidra"],
                 references=["https://clang.llvm.org/docs/ControlFlowIntegrity.html"]
             ),
-            ProtectionType.STACK_CANARY: BypassStrategy(
+            ProtectionType.STACK_CANARY: BypassStrategy()
                 protection=ProtectionType.STACK_CANARY,
                 methods=[BypassMethod.INFO_LEAK, BypassMethod.FORCED_UNWIND, BypassMethod.HEAP_OVERFLOW],
                 difficulty=BypassDifficulty.MODERATE,
@@ -141,7 +141,7 @@ class BypassAdvisor:
                 recommended_tools=["pwntools", "radare2"],
                 references=["https://en.wikipedia.org/wiki/Stack_canary"]
             ),
-            ProtectionType.PIE: BypassStrategy(
+            ProtectionType.PIE: BypassStrategy()
                 protection=ProtectionType.PIE,
                 methods=[BypassMethod.INFO_LEAK, BypassMethod.GOT_OVERWRITE, BypassMethod.PLT_HIJACK],
                 difficulty=BypassDifficulty.MODERATE,
@@ -150,7 +150,7 @@ class BypassAdvisor:
                 recommended_tools=["pwntools", "ROPgadget"],
                 references=["https://en.wikipedia.org/wiki/Position-independent_executable"]
             ),
-            ProtectionType.NX: BypassStrategy(
+            ProtectionType.NX: BypassStrategy()
                 protection=ProtectionType.NX,
                 methods=[BypassMethod.ROP_CHAIN, BypassMethod.RETURN_TO_LIBC, BypassMethod.SROP],
                 difficulty=BypassDifficulty.EASY,
@@ -159,7 +159,7 @@ class BypassAdvisor:
                 recommended_tools=["ROPgadget", "ropper"],
                 references=["https://en.wikipedia.org/wiki/NX_bit"]
             ),
-            ProtectionType.SMEP: BypassStrategy(
+            ProtectionType.SMEP: BypassStrategy()
                 protection=ProtectionType.SMEP,
                 methods=[BypassMethod.RETURN_TO_USER, BypassMethod.DIRECT_SYSCALL, BypassMethod.ORW],
                 difficulty=BypassDifficulty.HARD,
@@ -168,7 +168,7 @@ class BypassAdvisor:
                 recommended_tools=["pwntools", "kallsyms"],
                 references=["https://en.wikipedia.org/wiki/Supervisor_Mode_Execution_Prevention"]
             ),
-            ProtectionType.SMAP: BypassStrategy(
+            ProtectionType.SMAP: BypassStrategy()
                 protection=ProtectionType.SMAP,
                 methods=[BypassMethod.RETURN_TO_USER, BypassMethod.DIRECT_SYSCALL],
                 difficulty=BypassDifficulty.HARD,
@@ -177,7 +177,7 @@ class BypassAdvisor:
                 recommended_tools=["pwntools", "kallsyms"],
                 references=["https://en.wikipedia.org/wiki/Supervisor_Mode_Access_Prevention"]
             ),
-            ProtectionType.PAC: BypassStrategy(
+            ProtectionType.PAC: BypassStrategy()
                 protection=ProtectionType.PAC,
                 methods=[BypassMethod.INFO_LEAK, BypassMethod.VTABLE_HIJACK],
                 difficulty=BypassDifficulty.HARD,
@@ -186,7 +186,7 @@ class BypassAdvisor:
                 recommended_tools=["angr", "Ghidra"],
                 references=["https://developer.apple.com/documentation/security/preventing_exploits_using_pointer_authentication"]
             ),
-            ProtectionType.RELRO: BypassStrategy(
+            ProtectionType.RELRO: BypassStrategy()
                 protection=ProtectionType.RELRO,
                 methods=[BypassMethod.GOT_OVERWRITE, BypassMethod.PLT_HIJACK],
                 difficulty=BypassDifficulty.EASY,
@@ -195,7 +195,7 @@ class BypassAdvisor:
                 recommended_tools=["pwntools", "readelf"],
                 references=["https://wiki.debian.org/Hardening"]
             ),
-            ProtectionType.SEH: BypassStrategy(
+            ProtectionType.SEH: BypassStrategy()
                 protection=ProtectionType.SEH,
                 methods=[BypassMethod.EXCEPTION_CHAIN, BypassMethod.SIGNAL_HANDLER],
                 difficulty=BypassDifficulty.MODERATE,
@@ -204,7 +204,7 @@ class BypassAdvisor:
                 recommended_tools=["pwntools", "mona.py"],
                 references=["https://en.wikipedia.org/wiki/Structured_Exception_Handling"]
             ),
-            ProtectionType.SAFESEH: BypassStrategy(
+            ProtectionType.SAFESEH: BypassStrategy()
                 protection=ProtectionType.SAFESEH,
                 methods=[BypassMethod.SIGNAL_HANDLER, BypassMethod.FORCED_UNWIND],
                 difficulty=BypassDifficulty.HARD,
@@ -213,7 +213,7 @@ class BypassAdvisor:
                 recommended_tools=["mona.py", "pwntools"],
                 references=["https://docs.microsoft.com/en-us/windows/win32/debug/exception-handling"]
             ),
-            ProtectionType.GS: BypassStrategy(
+            ProtectionType.GS: BypassStrategy()
                 protection=ProtectionType.GS,
                 methods=[BypassMethod.INFO_LEAK, BypassMethod.FORCED_UNWIND],
                 difficulty=BypassDifficulty.MODERATE,
@@ -222,7 +222,7 @@ class BypassAdvisor:
                 recommended_tools=["pwntools", "windbg"],
                 references=["https://docs.microsoft.com/en-us/cpp/build/reference/gs-buffer-security-check"]
             ),
-            ProtectionType.RETGUARD: BypassStrategy(
+            ProtectionType.RETGUARD: BypassStrategy()
                 protection=ProtectionType.RETGUARD,
                 methods=[BypassMethod.INFO_LEAK, BypassMethod.VTABLE_HIJACK],
                 difficulty=BypassDifficulty.HARD,
@@ -230,7 +230,7 @@ class BypassAdvisor:
                 limitations=["编译器级保护"],
                 recommended_tools=["angr", "Ghidra"],
                 references=["https://llvm.org/docs/RetGuard.html"]
-            )
+            
         }
     
     def analyze_protections(self, binary_data: bytes, target_os: str, target_arch: str) -> BypassAnalysisResult:
@@ -252,7 +252,7 @@ class BypassAdvisor:
         combined_strategy = self._combine_strategies(strategies)
         overall_difficulty = self._calculate_overall_difficulty(strategies)
         
-        result = BypassAnalysisResult(
+        result = BypassAnalysisResult()
             target_os=target_os,
             target_arch=target_arch,
             protections=protections,
@@ -260,7 +260,7 @@ class BypassAdvisor:
             combined_strategy=combined_strategy,
             overall_difficulty=overall_difficulty,
             confidence=0.85
-        )
+        
         
         logger.info(f"保护机制分析完成: {len(protections)} 种保护机制")
         return result
@@ -270,28 +270,36 @@ class BypassAdvisor:
         protections = []
         
         if b".note.ABI-tag" in binary_data:
-            protections.append(ProtectionInfo(protection_type=ProtectionType.ABI))
+            protections.append(ProtectionInfo(protection_type=ProtectionType.ABI
+
         
         if b"_GLOBAL_OFFSET_TABLE_" in binary_data:
-            protections.append(ProtectionInfo(protection_type=ProtectionType.RELRO, is_enabled=True))
+            protections.append(ProtectionInfo(protection_type=ProtectionType.RELRO, is_enabled=True
+
         
         if b"__stack_chk_fail" in binary_data:
-            protections.append(ProtectionInfo(protection_type=ProtectionType.STACK_CANARY, is_enabled=True))
+            protections.append(ProtectionInfo(protection_type=ProtectionType.STACK_CANARY, is_enabled=True
+
         
         if b"__RELRO" in binary_data:
-            protections.append(ProtectionInfo(protection_type=ProtectionType.RELRO, is_enabled=True))
+            protections.append(ProtectionInfo(protection_type=ProtectionType.RELRO, is_enabled=True
+
         
         if b"__PIE__" in binary_data:
-            protections.append(ProtectionInfo(protection_type=ProtectionType.PIE, is_enabled=True))
+            protections.append(ProtectionInfo(protection_type=ProtectionType.PIE, is_enabled=True
+
         
         if b"__cfi" in binary_data.lower():
-            protections.append(ProtectionInfo(protection_type=ProtectionType.CFI, is_enabled=True))
+            protections.append(ProtectionInfo(protection_type=ProtectionType.CFI, is_enabled=True
+
         
         if b"__safeseh" in binary_data:
-            protections.append(ProtectionInfo(protection_type=ProtectionType.SAFESEH, is_enabled=True))
+            protections.append(ProtectionInfo(protection_type=ProtectionType.SAFESEH, is_enabled=True
+
         
         if b"__GSHandlerCheck" in binary_data:
-            protections.append(ProtectionInfo(protection_type=ProtectionType.GS, is_enabled=True))
+            protections.append(ProtectionInfo(protection_type=ProtectionType.GS, is_enabled=True
+
         
         return protections
     
@@ -311,7 +319,8 @@ class BypassAdvisor:
         
         for prot, strategy in strategies.items():
             if strategy.methods:
-                combined.append((prot, strategy.methods[0]))
+                combined.append((prot, strategy.methods[0]
+
         
         return combined
     
@@ -393,4 +402,4 @@ class BypassAdvisor:
         with open(filename, 'w', encoding='utf-8') as f:
             f.write(report)
         
-        logger.info(f"结果已保存到 {filename}")
+        logger.info(f"结果已保存到 {filename}"))))))

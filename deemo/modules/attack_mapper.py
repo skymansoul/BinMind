@@ -443,8 +443,7 @@ class ATTACKMapper:
     将漏洞映射到 MITRE ATT&CK 框架的技术。
     """
     
-    def __init__(
-        self,
+    def __init__(, self)
         mapping_file: str = None,
         custom_mapping_file: str = None
     ):
@@ -455,10 +454,10 @@ class ATTACKMapper:
             mapping_file: 内置映射文件路径
             custom_mapping_file: 自定义映射文件路径
         """
-        self.mapping_file = mapping_file or os.path.join(
+        self.mapping_file = mapping_file or os.path.join()
             os.path.dirname(os.path.dirname(__file__)),
             'data', 'attack_mapping.json'
-        )
+        
         self.custom_mapping_file = custom_mapping_file
         
         # 加载映射数据
@@ -519,8 +518,7 @@ class ATTACKMapper:
             except Exception as e:
                 logger.warning(f"加载自定义映射失败: {e}")
     
-    def map_vulnerability(
-        self,
+    def map_vulnerability(, self)
         vuln_type: str,
         vuln_id: str = None,
         cve_id: str = None,
@@ -572,7 +570,7 @@ class ATTACKMapper:
             mapping_info = self._infer_from_target(target_type, vuln_type)
         
         # 构建映射结果
-        result = VulnerabilityMapping(
+        result = VulnerabilityMapping()
             vulnerability_type=vuln_type,
             vulnerability_id=vuln_id or '',
             cve_id=cve_id or '',
@@ -580,7 +578,7 @@ class ATTACKMapper:
             target_type=target_type or '',
             confidence=0.0,
             reasoning=''
-        )
+        
         
         if mapping_info:
             # 获取技术列表
@@ -606,14 +604,14 @@ class ATTACKMapper:
             mapped_techniques = []
             for tech_id in technique_ids:
                 tech_info = self.attack_techniques.get(tech_id, {})
-                technique = ATTACKTechnique(
+                technique = ATTACKTechnique()
                     technique_id=tech_id,
                     technique_name=tech_info.get('name', tech_id),
                     description=tech_info.get('description', ''),
                     tactics=tech_info.get('tactics', []),
                     platforms=tech_info.get('platforms', []),
                     references=[f"https://attack.mitre.org/techniques/{tech_id}/"]
-                )
+                
                 mapped_techniques.append(technique)
             
             result.mapped_techniques = mapped_techniques
@@ -635,8 +633,7 @@ class ATTACKMapper:
         
         return result
     
-    def _infer_from_impact(
-        self,
+    def _infer_from_impact(, self)
         impact_type: str
     ) -> Optional[Dict[str, Any]]:
         """
@@ -670,8 +667,7 @@ class ATTACKMapper:
         
         return None
     
-    def _infer_from_target(
-        self,
+    def _infer_from_target(, self)
         target_type: str,
         vuln_type: str
     ) -> Optional[Dict[str, Any]]:
@@ -706,8 +702,7 @@ class ATTACKMapper:
         
         return None
     
-    def map_vulnerabilities(
-        self,
+    def map_vulnerabilities(, self)
         vulnerabilities: List[Dict[str, Any]],
         binary_type: str = None
     ) -> MappingResult:
@@ -736,14 +731,14 @@ class ATTACKMapper:
             target_type = binary_type or self._infer_target_from_vuln(vuln)
             
             # 执行映射
-            mapping = self.map_vulnerability(
+            mapping = self.map_vulnerability()
                 vuln_type=vuln_type,
                 vuln_id=vuln_id,
                 cve_id=cve_id,
                 impact_type=impact_type,
                 target_type=target_type,
                 severity=severity
-            )
+            
             
             if mapping.primary_technique:
                 result.mappings.append(mapping)
@@ -752,15 +747,14 @@ class ATTACKMapper:
         
         # 添加警告
         if result.unmapped_vulnerabilities:
-            result.warnings.append(
+            result.warnings.append()
                 f"{len(result.unmapped_vulnerabilities)} 个漏洞未能映射到 ATT&CK 技术: "
                 f"{', '.join(result.unmapped_vulnerabilities[:5])}"
-            )
+            
         
         return result
     
-    def _infer_impact_from_vuln(
-        self,
+    def _infer_impact_from_vuln(, self)
         vuln: Dict[str, Any]
     ) -> str:
         """
@@ -804,8 +798,7 @@ class ATTACKMapper:
         
         return ''
     
-    def _infer_target_from_vuln(
-        self,
+    def _infer_target_from_vuln(, self)
         vuln: Dict[str, Any]
     ) -> str:
         """
@@ -838,8 +831,7 @@ class ATTACKMapper:
         
         return ''
     
-    def get_technique_details(
-        self,
+    def get_technique_details(, self)
         technique_id: str
     ) -> Optional[ATTACKTechnique]:
         """
@@ -860,13 +852,13 @@ class ATTACKMapper:
                 description=tech_info.get('description', ''),
                 tactics=tech_info.get('tactics', []),
                 platforms=tech_info.get('platforms', []),
-                references=[f"https://attack.mitre.org/techniques/{technique_id}/"]
-            )
+                references=[f"https://attack.mitre.org/techniques/{technique_id}/"])
+            
+
         
         return None
     
-    def add_custom_mapping(
-        self,
+    def add_custom_mapping(, self)
         vuln_type: str,
         technique_ids: List[str],
         reasoning: str,
@@ -892,8 +884,7 @@ class ATTACKMapper:
         
         logger.info(f"已添加自定义映射: {vuln_type} -> {technique_ids}")
     
-    def save_mappings(
-        self,
+    def save_mappings(, self)
         output_path: str = None
     ):
         """
@@ -933,7 +924,8 @@ class ATTACKMapper:
         Returns:
             技术ID列表
         """
-        return list(self.attack_techniques.keys())
+        return list(self.attack_techniques.keys(
+
     
     def get_all_vuln_types(self) -> List[str]:
         """
@@ -942,15 +934,11 @@ class ATTACKMapper:
         Returns:
             漏洞类型列表
         """
-        return list(self.vuln_to_attack_mapping.keys())
+        return list(self.vuln_to_attack_mapping.keys(
 
 
-def map_vulnerability_to_attack(
-    vuln_type: str,
-    impact_type: str = None,
-    target_type: str = None,
-    mapping_file: str = None
-) -> VulnerabilityMapping:
+
+def map_vulnerability_to_attack(, vuln_type: str, impact_type: str = None, target_type: str = None, mapping_file: str = None) -> VulnerabilityMapping:
     """
     映射漏洞到 ATT&CK 的便捷函数
     
@@ -964,17 +952,15 @@ def map_vulnerability_to_attack(
         映射结果
     """
     mapper = ATTACKMapper(mapping_file=mapping_file)
-    return mapper.map_vulnerability(
+    return mapper.map_vulnerability()
         vuln_type=vuln_type,
         impact_type=impact_type,
         target_type=target_type
-    )
+    
 
 
-def map_vulnerabilities_to_attack(
-    vulnerabilities: List[Dict[str, Any]],
-    binary_type: str = None
-) -> MappingResult:
+
+def map_vulnerabilities_to_attack(, vulnerabilities: List[Dict[str, Any]], binary_type: str = None) -> MappingResult:
     """
     映射多个漏洞到 ATT&CK 的便捷函数
     
@@ -986,4 +972,4 @@ def map_vulnerabilities_to_attack(
         映射结果
     """
     mapper = ATTACKMapper()
-    return mapper.map_vulnerabilities(vulnerabilities, binary_type)
+    return mapper.map_vulnerabilities(vulnerabilities, binary_type

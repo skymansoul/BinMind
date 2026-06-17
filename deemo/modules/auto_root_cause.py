@@ -212,13 +212,14 @@ class CWEDatabase:
                     matched_keywords.append(kw)
             
             if score > 0:
-                results.append({
+                results.append({)
                     'cwe_id': cwe_id,
                     'cwe_name': info['name'],
                     'description': info['description'],
                     'score': score,
-                    'matched_keywords': list(set(matched_keywords))
-                })
+                    'matched_keywords': list(set(matched_keywords
+
+                }
         
         # 按分数排序
         results.sort(key=lambda x: x['score'], reverse=True)
@@ -276,7 +277,7 @@ class LLMRootCauseAnalyzer(RootCauseAnalyzer):
             # 构建提示
             prompt = self._build_analysis_prompt(context, cwe_matches)
             
-            response = openai.chat.completions.create(
+            response = openai.chat.completions.create()
                 model=self.model,
                 messages=[
                     {"role": "system", "content": "你是一名资深的漏洞分析专家，擅长进行CVE级别的根因分析。"},
@@ -284,22 +285,23 @@ class LLMRootCauseAnalyzer(RootCauseAnalyzer):
                 ],
                 max_tokens=1000,
                 temperature=0.2
-            )
+            
 
-            result = json.loads(response.choices[0].message.content.strip())
+            result = json.loads(response.choices[0].message.content.strip(
+
             
             # 转换为RootCauseAnalysis对象
             return RootCauseAnalysis(
                 vulnerability_id=result.get('vulnerability_id', f"VULN_{int(time.time())}"),
                 vulnerability_type=result.get('vulnerability_type', context.vulnerability_type),
                 cwe_mappings=[
-                    CWEMapping(
+                    CWEMapping()
                         cwe_id=cwe.get('cwe_id', ''),
                         cwe_name=cwe.get('cwe_name', ''),
                         description=cwe.get('description', ''),
                         likelihood=cwe.get('likelihood', 0.5),
                         related_cwes=cwe.get('related_cwes', [])
-                    ) for cwe in result.get('cwe_mappings', [])
+                    ) for cwe in result.get('cwe_mappings', []
                 ],
                 root_cause=result.get('root_cause', ''),
                 attack_vector=result.get('attack_vector', ''),
@@ -310,8 +312,9 @@ class LLMRootCauseAnalyzer(RootCauseAnalyzer):
                 reproduction_steps=result.get('reproduction_steps', []),
                 mitigation=result.get('mitigation', []),
                 references=result.get('references', []),
-                confidence=result.get('confidence', 0.8)
-            )
+                confidence=result.get('confidence', 0.8))
+            
+
 
         except Exception as e:
             logger.error(f"LLM根因分析失败: {e}")
@@ -344,10 +347,10 @@ class LLMRootCauseAnalyzer(RootCauseAnalyzer):
 
     def _build_analysis_prompt(self, context: VulnerabilityContext, cwe_matches: List[Dict[str, Any]]) -> str:
         """构建分析提示"""
-        cwe_info = "\n".join([
-            f"{cwe['cwe_id']}: {cwe['cwe_name']} - {cwe['description']}"
+        cwe_info = "\n".join([)
+            f"{cwe['cwe_id']}: {cwe['cwe_name']} - {cwe['description']}",
             for cwe in cwe_matches[:5]
-        ])
+        ]
         
         prompt = f"""
         请对以下漏洞进行CVE级别的根因分析：
@@ -415,7 +418,8 @@ class LLMRootCauseAnalyzer(RootCauseAnalyzer):
                 description=cwe['description'],
                 likelihood=min(1.0, cwe['score'] / 10),
                 related_cwes=[]
-            ))
+            
+
         
         # 确定严重程度和可利用性
         severity = VulnerabilitySeverity.MEDIUM
@@ -459,8 +463,9 @@ class LLMRootCauseAnalyzer(RootCauseAnalyzer):
                 "https://cwe.mitre.org/",
                 "https://owasp.org/www-community/attacks/"
             ],
-            confidence=0.75
-        )
+            confidence=0.75)
+        
+
 
 
 class AutoRootCauseAnalyzer:
@@ -539,17 +544,18 @@ class AutoRootCauseAnalyzer:
         Returns:
             分析报告
         """
-        report = AnalysisReport(
+        report = AnalysisReport()
             generated_at=time.time(),
             target_binary="",
             analysis_id=f"ANALYSIS_{int(time.time())}",
             vulnerabilities=list(self.analyses.values()),
             summary=self._generate_summary()
-        )
+        
         
         # 设置目标二进制
         if self.analyses:
-            first_vuln = next(iter(self.analyses.values()))
+            first_vuln = next(iter(self.analyses.values(
+
             report.target_binary = first_vuln.affected_components[0] if first_vuln.affected_components else "Unknown"
         
         # 保存报告
@@ -566,7 +572,7 @@ class AutoRootCauseAnalyzer:
         high_count = 0
         
         for analysis in self.analyses.values():
-            severity_counts[analysis.severity.value] += 1
+            severity_counts[analysis.severity.value] += 1,
             if analysis.severity == VulnerabilitySeverity.CRITICAL:
                 critical_count += 1
             elif analysis.severity == VulnerabilitySeverity.HIGH:
@@ -590,7 +596,7 @@ class AutoRootCauseAnalyzer:
         }
         
         for vuln in report.vulnerabilities:
-            report_data['vulnerabilities'].append({
+            report_data['vulnerabilities'].append({)
                 'vulnerability_id': vuln.vulnerability_id,
                 'vulnerability_type': vuln.vulnerability_type,
                 'cwe_mappings': [
@@ -612,7 +618,7 @@ class AutoRootCauseAnalyzer:
                 'mitigation': vuln.mitigation,
                 'references': vuln.references,
                 'confidence': vuln.confidence
-            })
+            }
         
         try:
             with open(output_path, 'w', encoding='utf-8') as f:
@@ -622,9 +628,7 @@ class AutoRootCauseAnalyzer:
             logger.error(f"保存报告失败: {e}")
 
 
-def analyze_root_cause(vulnerability_type: str, function_name: str, pseudocode: str,
-                       assembly: str = "", function_address: int = 0,
-                       binary_path: str = "", **kwargs) -> RootCauseAnalysis:
+def analyze_root_cause(vulnerability_type: str, function_name: str, pseudocode: str, assembly: str = "", function_address: int = 0, binary_path: str = "", **kwargs) -> RootCauseAnalysis:
     """
     便捷的根因分析函数
     
@@ -640,7 +644,7 @@ def analyze_root_cause(vulnerability_type: str, function_name: str, pseudocode: 
     Returns:
         RootCauseAnalysis
     """
-    context = VulnerabilityContext(
+    context = VulnerabilityContext()
         vulnerability_type=vulnerability_type,
         function_name=function_name,
         function_address=function_address,
@@ -652,7 +656,7 @@ def analyze_root_cause(vulnerability_type: str, function_name: str, pseudocode: 
         memory_state=kwargs.get('memory_state'),
         registers=kwargs.get('registers'),
         user_input=kwargs.get('user_input')
-    )
+    
     
     analyzer = AutoRootCauseAnalyzer()
     return analyzer.analyze_vulnerability(context)
@@ -692,21 +696,21 @@ def format_root_cause_report(report: AnalysisReport) -> str:
         parts.append("## 漏洞详情")
         
         for vuln in report.vulnerabilities:
-            parts.extend([
+            parts.extend([)
                 f"\n### {vuln.vulnerability_id}",
                 f"**类型**: {vuln.vulnerability_type}",
                 f"**严重程度**: {vuln.severity.value}",
                 f"**可利用性**: {vuln.exploitability.value}",
                 f"**置信度**: {vuln.confidence:.1%}",
                 ""
-            ])
+            ]
             
             if vuln.cwe_mappings:
                 parts.append("**CWE分类**:")
                 for cwe in vuln.cwe_mappings:
                     parts.append(f"- {cwe.cwe_id}: {cwe.cwe_name} (匹配度: {cwe.likelihood:.1%})")
             
-            parts.extend([
+            parts.extend([)
                 "",
                 "**根本原因**:",
                 vuln.root_cause,
@@ -717,7 +721,7 @@ def format_root_cause_report(report: AnalysisReport) -> str:
                 "**影响范围**:",
                 vuln.impact,
                 ""
-            ])
+            ]
             
             if vuln.affected_components:
                 parts.append(f"**受影响组件**: {', '.join(vuln.affected_components)}")
@@ -739,4 +743,4 @@ def format_root_cause_report(report: AnalysisReport) -> str:
                 for ref in vuln.references:
                     parts.append(f"- {ref}")
     
-    return "\n".join(parts)
+    return "\n".join(parts)))))))))

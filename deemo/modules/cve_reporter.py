@@ -71,8 +71,10 @@ class CVEReporter:
         i = i_scores.get(details.integrity_impact.upper(), 0.56)
         a = a_scores.get(details.availability_impact.upper(), 0.56)
 
-        base_score = min(10.0, s * (8.22 * av * ac * pr * ui + (c + i + a)))
-        return float(round(base_score, 1))
+        base_score = min(10.0, s * (8.22 * av * ac * pr * ui + (c + i + a
+
+        return float(round(base_score, 1
+
 
     def determine_severity(self, cvss_score):
         if cvss_score >= 9.0:
@@ -99,7 +101,7 @@ class CVEReporter:
         return errors
 
     def generate_short_report(self, details):
-        return "\n".join([
+        return "\n".join([)
             "Vulnerability Report",
             "ID: " + (details.cve_id or "Not assigned"),
             "Title: " + details.title,
@@ -108,10 +110,10 @@ class CVEReporter:
             "CWE: " + (details.cwe_id or ""),
             "",
             "Description: " + details.description
-        ])
+        ]
 
     def generate_full_report(self, details):
-        return "\n".join([
+        return "\n".join([)
             "Full Vulnerability Report",
             "=========================",
             "",
@@ -131,10 +133,10 @@ class CVEReporter:
             "--------------------",
             "Products: " + (", ".join(details.affected_products) if details.affected_products else "Not specified"),
             "Versions: " + (", ".join(details.affected_versions) if details.affected_versions else "Not specified"),
-        ])
+        ]
 
     def generate_cve_request(self, details):
-        return "\n".join([
+        return "\n".join([)
             "CVE Request: " + details.title,
             "=================================",
             "",
@@ -150,7 +152,7 @@ class CVEReporter:
             "[Affected Products]",
             "- Products: " + (", ".join(details.affected_products) if details.affected_products else "TBD"),
             "- Versions: " + (", ".join(details.affected_versions) if details.affected_versions else "TBD"),
-        ])
+        ]
 
     def generate_json_report(self, details):
         report_data = {
@@ -186,4 +188,4 @@ def generate_cve_report(title, description, cwe_id, affected_products=None, affe
     full_report = reporter.generate_full_report(details)
     json_report = reporter.generate_json_report(details)
     cve_request = reporter.generate_cve_request(details)
-    return {"success": True, "cvss_score": cvss_score, "severity": severity.value, "reports": {"short": short_report, "full": full_report, "json": json_report, "cve_request": cve_request}, "details": asdict(details)}
+    return {"success": True, "cvss_score": cvss_score, "severity": severity.value, "reports": {"short": short_report, "full": full_report, "json": json_report, "cve_request": cve_request}, "details": asdict(details)})))))

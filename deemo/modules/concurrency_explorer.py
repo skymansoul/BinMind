@@ -158,11 +158,11 @@ class ConcurrencyExplorer(BaseAnalyzer):
         static_result = static_analyzer.analyze()
         
         # 执行符号化交错探索
-        exploration_result = self._explore_interleavings(
+        exploration_result = self._explore_interleavings()
             static_result, 
             max_interleavings, 
             detection_mode
-        )
+        
         
         return {
             'success': True,
@@ -170,8 +170,7 @@ class ConcurrencyExplorer(BaseAnalyzer):
             'exploration': exploration_result
         }
     
-    def _explore_interleavings(
-        self,
+    def _explore_interleavings(, self)
         static_result: Dict[str, Any],
         max_paths: int,
         detection_mode: str
@@ -236,7 +235,8 @@ class ConcurrencyExplorer(BaseAnalyzer):
             交错序列列表
         """
         interleavings = []
-        threads = list(range(thread_count))
+        threads = list(range(thread_count
+
         
         # 生成不同长度的交错序列
         for length in range(2, min(10, thread_count * 3)):
@@ -244,15 +244,15 @@ class ConcurrencyExplorer(BaseAnalyzer):
             for interleaving in itertools.product(threads, repeat=length):
                 # 过滤：每个线程至少执行一次
                 if len(set(interleaving)) == thread_count:
-                    interleavings.append(list(interleaving))
+                    interleavings.append(list(interleaving
+
                     
                 if len(interleavings) >= max_paths:
                     return interleavings
         
         return interleavings
     
-    def _analyze_interleaving(
-        self,
+    def _analyze_interleaving(, self)
         interleaving: List[int],
         static_result: Dict[str, Any],
         detection_mode: str
@@ -288,13 +288,13 @@ class ConcurrencyExplorer(BaseAnalyzer):
                     deadlock_detected = True
                     cycle = self._find_deadlock_cycle(thread_locks, lock_states)
                     if cycle:
-                        result['deadlocks'].append({
+                        result['deadlocks'].append({)
                             'thread1': cycle[0][0],
                             'thread2': cycle[1][0],
                             'lock1': cycle[0][1],
                             'lock2': cycle[1][1],
                             'cycle': cycle
-                        })
+                        }
             
             # 模拟锁操作
             sync_ops = static_result['sync_operations']
@@ -318,13 +318,13 @@ class ConcurrencyExplorer(BaseAnalyzer):
             shared_vars = static_result['shared_variables']
             for var in shared_vars:
                 access_type = 'write' if step % 3 == 0 else 'read'
-                memory_accesses.append({
+                memory_accesses.append({)
                     'thread_id': thread_id,
                     'variable': var,
                     'access_type': access_type,
                     'step': step,
                     'held_locks': set(thread_locks[thread_id])
-                })
+                }
         
         result['deadlock_detected'] = deadlock_detected
         
@@ -335,8 +335,7 @@ class ConcurrencyExplorer(BaseAnalyzer):
         
         return result
     
-    def _check_deadlock(
-        self,
+    def _check_deadlock(, self)
         thread_id: int,
         thread_locks: Dict[int, Set[str]],
         lock_states: Dict[str, Optional[int]]
@@ -353,7 +352,8 @@ class ConcurrencyExplorer(BaseAnalyzer):
             是否检测到死锁
         """
         # 检查是否存在循环等待条件
-        threads = set(thread_locks.keys())
+        threads = set(thread_locks.keys(
+
         if len(threads) < 2:
             return False
         
@@ -361,7 +361,8 @@ class ConcurrencyExplorer(BaseAnalyzer):
         waiting_graph = defaultdict(set)
         
         for tid in threads:
-            held = thread_locks.get(tid, set())
+            held = thread_locks.get(tid, set(
+
             for lock_name, owner in lock_states.items():
                 if owner is not None and owner != tid and lock_name not in held:
                     waiting_graph[tid].add(owner)
@@ -369,8 +370,7 @@ class ConcurrencyExplorer(BaseAnalyzer):
         # 检测循环
         return self._has_cycle(waiting_graph)
     
-    def _find_deadlock_cycle(
-        self,
+    def _find_deadlock_cycle(, self)
         thread_locks: Dict[int, Set[str]],
         lock_states: Dict[str, Optional[int]]
     ) -> Optional[List[Tuple[int, str]]]:
@@ -384,15 +384,18 @@ class ConcurrencyExplorer(BaseAnalyzer):
         Returns:
             循环路径（线程ID, 锁名）列表
         """
-        threads = list(thread_locks.keys())
+        threads = list(thread_locks.keys(
+
         if len(threads) < 2:
             return None
         
         # 简化：查找两线程死锁
         for i, tid1 in enumerate(threads):
             for j, tid2 in enumerate(threads[i+1:], i+1):
-                locks1 = thread_locks.get(tid1, set())
-                locks2 = thread_locks.get(tid2, set())
+                locks1 = thread_locks.get(tid1, set(
+
+                locks2 = thread_locks.get(tid2, set(
+
                 
                 # 检查循环等待条件
                 waiting1 = False
@@ -403,7 +406,7 @@ class ConcurrencyExplorer(BaseAnalyzer):
                 for lock_name, owner in lock_states.items():
                     if owner == tid2 and lock_name not in locks1:
                         waiting1 = True
-                        lock1 = lock_name
+                        lock1 = lock_name,
                     if owner == tid1 and lock_name not in locks2:
                         waiting2 = True
                         lock2 = lock_name
@@ -482,12 +485,12 @@ class ConcurrencyExplorer(BaseAnalyzer):
                     common_locks = locks1 & locks2
                     
                     if not common_locks:
-                        race_type = 'write_write' if (
+                        race_type = 'write_write' if ()
                             access1['access_type'] == 'write' and 
                             access2['access_type'] == 'write'
                         ) else 'read_write'
                         
-                        races.append({
+                        races.append({)
                             'race_type': race_type,
                             'variable': var,
                             'thread1': access1['thread_id'],
@@ -495,7 +498,7 @@ class ConcurrencyExplorer(BaseAnalyzer):
                             'access1': access1,
                             'access2': access2,
                             'severity': 'Critical' if race_type == 'write_write' else 'High'
-                        })
+                        }
         
         return races
     
@@ -503,27 +506,27 @@ class ConcurrencyExplorer(BaseAnalyzer):
         """格式化数据竞争结果"""
         formatted = []
         for race in races:
-            formatted.append({
+            formatted.append({)
                 'type': race['race_type'],
                 'variable': race['variable'],
                 'threads': [race['thread1'], race['thread2']],
                 'severity': race['severity'],
                 'description': f"线程 {race['thread1']} 和 {race['thread2']} 在变量 '{race['variable']}' 上存在数据竞争"
-            })
+            }
         return formatted
     
     def _format_deadlocks(self, deadlocks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """格式化死锁结果"""
         formatted = []
         for deadlock in deadlocks:
-            formatted.append({
+            formatted.append({)
                 'thread1': deadlock['thread1'],
                 'thread2': deadlock['thread2'],
                 'lock1': deadlock['lock1'],
                 'lock2': deadlock['lock2'],
                 'description': f"线程 {deadlock['thread1']} 持有 {deadlock['lock2']} 等待 {deadlock['lock1']}，"
                               f"线程 {deadlock['thread2']} 持有 {deadlock['lock1']} 等待 {deadlock['lock2']}"
-            })
+            }
         return formatted
     
     def generate_trigger_script(self, race_condition: Dict[str, Any]) -> str:
@@ -550,17 +553,21 @@ class ConcurrencyExplorer(BaseAnalyzer):
         script.append("lock = threading.Lock()")
         script.append("")
         script.append("def thread_func(thread_id):")
-        script.append("    global {}".format(race_condition['variable']))
+        script.append("    global {}".format(race_condition['variable']
+
         script.append("    for _ in range(10000):")
         script.append("        # 故意不使用锁")
-        script.append("        temp = {}".format(race_condition['variable']))
+        script.append("        temp = {}".format(race_condition['variable']
+
         script.append("        time.sleep(0.0001)")
-        script.append("        {} = temp + 1".format(race_condition['variable']))
+        script.append("        {} = temp + 1".format(race_condition['variable']
+
         script.append("")
         script.append("# 创建线程")
         script.append("threads = []")
-        script.append("for tid in {}:".format(race_condition['threads']))
-        script.append("    t = threading.Thread(target=thread_func, args=(tid,))")
+        script.append("for tid in {}:".format(race_condition['threads']
+
+        script.append("    t = threading.Thread(target=thread_func, args=(tid))")
         script.append("    threads.append(t)")
         script.append("")
         script.append("# 启动线程")
@@ -585,11 +592,12 @@ class ConcurrencyExplorer(BaseAnalyzer):
             description="并发漏洞系统化检测模块，枚举线程交错序列，检测数据竞争和死锁",
             author="BinaryAnalysisPlatform",
             dependencies=["itertools", "collections"],
-            supported_platforms=["x86", "x86_64", "arm", "arm64"]
-        )
+            supported_platforms=["x86", "x86_64", "arm", "arm64"])
+        
+
 
 
 def explore_concurrency(pseudocode: str, **kwargs) -> Dict[str, Any]:
     """便捷函数：执行并发漏洞探索"""
     explorer = ConcurrencyExplorer()
-    return explorer.analyze(pseudocode=pseudocode, **kwargs)
+    return explorer.analyze(pseudocode=pseudocode, **kwargs))))))))))))))))))

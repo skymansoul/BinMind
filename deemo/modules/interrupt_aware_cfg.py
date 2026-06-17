@@ -154,7 +154,7 @@ class ARMVectorTableParser(VectorTableParser):
         ]
         
         for vector_num, int_type, name in vector_info:
-            offset = vector_num * 4
+            offset = vector_num * 4,
             if offset + 4 <= len(binary_data):
                 address = int.from_bytes(binary_data[offset:offset+4], 'little')
                 if address != 0:
@@ -164,7 +164,8 @@ class ARMVectorTableParser(VectorTableParser):
                         address=address,
                         name=name,
                         status=ISRStatus.ENABLED
-                    ))
+                    
+
         
         # 解析向量表之后的ISR向量
         offset = 0x1C  # 第七个向量之后
@@ -181,7 +182,8 @@ class ARMVectorTableParser(VectorTableParser):
                 address=address,
                 name=f"IRQ_{vector_num}",
                 status=ISRStatus.ENABLED
-            ))
+            
+
             
             offset += 4
             vector_num += 1
@@ -198,7 +200,7 @@ class X86VectorTableParser(VectorTableParser):
         
         # x86 IDT通常包含256个中断向量
         for i in range(256):
-            offset = i * 8  # 每个IDT条目8字节
+            offset = i * 8  # 每个IDT条目8字节,
             if offset + 8 <= len(binary_data):
                 # 低2字节是偏移低16位，高2字节是段选择子，最后2字节是偏移高16位
                 offset_low = int.from_bytes(binary_data[offset:offset+2], 'little')
@@ -214,7 +216,8 @@ class X86VectorTableParser(VectorTableParser):
                         address=address,
                         name=f"INT_{i}",
                         status=ISRStatus.ENABLED
-                    ))
+                    
+
         
         return isrs
 
@@ -247,20 +250,21 @@ class ISRCFGBuilder:
                 nodes=[],
                 edges=[],
                 entry_points=[isr_info.address],
-                exit_points=[]
-            )
+                exit_points=[])
+            
+
         
         # 创建节点
         for instr in instructions:
             addr = instr.get('address', 0)
-            self.nodes[addr] = ControlFlowNode(
+            self.nodes[addr] = ControlFlowNode()
                 address=addr,
                 instruction_count=1,
                 is_call=instr.get('mnemonic') in ['bl', 'call'],
                 is_return=instr.get('mnemonic') in ['bx', 'ret', 'pop'],
                 is_interrupt_entry=(addr == isr_info.address),
                 is_interrupt_exit=instr.get('mnemonic') in ['bx', 'ret']
-            )
+            
         
         # 创建边
         for i, instr in enumerate(instructions[:-1]):
@@ -280,7 +284,8 @@ class ISRCFGBuilder:
                     from_address=to_addr,
                     to_address=from_addr + instr.get('size', 4),
                     edge_type="direct"
-                ))
+                
+
             elif mnemonic in ['bne', 'beq', 'jne', 'je', 'jcc']:
                 edge_type = "conditional"
                 # 添加条件分支的两条边
@@ -288,13 +293,15 @@ class ISRCFGBuilder:
                     from_address=from_addr,
                     to_address=to_addr,
                     edge_type="direct"  # fallthrough
-                ))
+                
+
             
             self.edges.append(ControlFlowEdge(
                 from_address=from_addr,
                 to_address=to_addr,
                 edge_type=edge_type
-            ))
+            
+
         
         entry_points = [isr_info.address]
         exit_points = [n.address for n in self.nodes.values() if n.is_return]
@@ -304,8 +311,9 @@ class ISRCFGBuilder:
             nodes=list(self.nodes.values()),
             edges=self.edges,
             entry_points=entry_points,
-            exit_points=exit_points
-        )
+            exit_points=exit_points)
+        
+
 
 
 class InterruptAwareCFG:
@@ -405,15 +413,15 @@ class InterruptAwareCFG:
             count = 0
             
             for insn in md.disasm(data[offset:], start_address):
-                instructions.append({
+                instructions.append({)
                     'address': insn.address,
                     'mnemonic': insn.mnemonic,
                     'op_str': insn.op_str,
                     'bytes': bytes(insn.bytes),
                     'size': insn.size
-                })
+                }
                 
-                count += 1
+                count += 1,
                 if count >= max_instructions:
                     break
                 
@@ -460,12 +468,12 @@ class InterruptAwareCFG:
                     size=4,
                     accessors=accessors,
                     is_protected=False
-                ))
+                
+
         
         return shared_resources
     
-    def detect_concurrency_issues(self, isr_cfgs: List[ISRControlFlowGraph], 
-                                  shared_resources: List[SharedResource]) -> List[ConcurrencyIssue]:
+    def detect_concurrency_issues(self, isr_cfgs: List[ISRControlFlowGraph], shared_resources: List[SharedResource]) -> List[ConcurrencyIssue]:
         """
         检测并发问题
         
@@ -488,14 +496,15 @@ class InterruptAwareCFG:
                     resources=[resource],
                     severity="high",
                     location=resource.address
-                ))
+                
+
         
         # 检测中断嵌套问题
         for cfg in isr_cfgs:
-            nesting_depth = 0
+            nesting_depth = 0,
             for node in cfg.nodes:
                 if node.is_interrupt_entry:
-                    nesting_depth += 1
+                    nesting_depth += 1,
                     if nesting_depth > 1:
                         issues.append(ConcurrencyIssue(
                             issue_type=ConcurrencyIssueType.NESTING_VIOLATION,
@@ -504,7 +513,8 @@ class InterruptAwareCFG:
                             resources=[],
                             severity="medium",
                             location=node.address
-                        ))
+                        
+
         
         # 检测优先级反转（简化：高优先级ISR等待低优先级ISR释放资源）
         for resource in shared_resources:
@@ -513,7 +523,8 @@ class InterruptAwareCFG:
                 for isr_name in resource.accessors:
                     isr = next((cfg.isr_info for cfg in isr_cfgs if cfg.isr_info.name == isr_name), None)
                     if isr:
-                        priorities.append((isr_name, isr.priority))
+                        priorities.append((isr_name, isr.priority
+
                 
                 if priorities:
                     priorities.sort(key=lambda x: x[1])
@@ -524,7 +535,8 @@ class InterruptAwareCFG:
                             isr_names=[p[0] for p in priorities],
                             resources=[resource],
                             severity="high"
-                        ))
+                        
+
         
         return issues
     
@@ -546,8 +558,9 @@ class InterruptAwareCFG:
                 isr_cfgs=[],
                 shared_resources=[],
                 concurrency_issues=[],
-                errors=[f"文件不存在: {binary_path}"]
-            )
+                errors=[f"文件不存在: {binary_path}"])
+            
+
         
         try:
             # 解析向量表
@@ -560,8 +573,9 @@ class InterruptAwareCFG:
                     isr_cfgs=[],
                     shared_resources=[],
                     concurrency_issues=[],
-                    errors=["未找到ISR"]
-                )
+                    errors=["未找到ISR"])
+                
+
             
             # 构建ISR控制流图
             isr_cfgs = self.build_isr_cfgs(binary_path, isrs)
@@ -577,8 +591,9 @@ class InterruptAwareCFG:
                 isrs=isrs,
                 isr_cfgs=isr_cfgs,
                 shared_resources=shared_resources,
-                concurrency_issues=concurrency_issues
-            )
+                concurrency_issues=concurrency_issues)
+            
+
         
         except Exception as e:
             logger.error(f"分析失败: {e}")
@@ -588,8 +603,9 @@ class InterruptAwareCFG:
                 isr_cfgs=[],
                 shared_resources=[],
                 concurrency_issues=[],
-                errors=[str(e)]
-            )
+                errors=[str(e)])
+            
+
     
     def generate_dot_graph(self, isr_cfgs: List[ISRControlFlowGraph], output_path: str) -> bool:
         """
@@ -613,7 +629,7 @@ class InterruptAwareCFG:
                     f.write(f"        color=blue;\n")
                     
                     for node in cfg.nodes:
-                        shape = "ellipse"
+                        shape = "ellipse",
                         if node.is_interrupt_entry:
                             shape = "doublecircle"
                         elif node.is_return:
@@ -688,4 +704,4 @@ class InterruptAwareCFG:
                     report.append(f"  位置: 0x{issue.location:x}")
                 report.append("")
         
-        return "\n".join(report)
+        return "\n".join(report))))))))))))))))))))))

@@ -142,7 +142,7 @@ class SecureBootChecker:
         Returns:
             是否加载成功
         """
-        path = firmware_path or self.firmware_path
+        path = firmware_path or self.firmware_path,
         if not path:
             logger.error("未指定固件路径")
             return False
@@ -150,7 +150,7 @@ class SecureBootChecker:
         try:
             with open(path, 'rb') as f:
                 self.firmware_data = f.read()
-            self.firmware_path = path
+            self.firmware_path = path,
             return True
         except Exception as e:
             logger.error(f"加载固件失败: {e}")
@@ -187,7 +187,8 @@ class SecureBootChecker:
             
             # 解析设备树结构
             dt_struct = self.firmware_data[offset + off_dt_struct:]
-            components.extend(self._parse_fit_node(dt_struct, offset + off_dt_struct))
+            components.extend(self._parse_fit_node(dt_struct, offset + off_dt_struct
+
         except Exception as e:
             logger.error(f"解析FIT镜像失败: {e}")
             
@@ -217,7 +218,7 @@ class SecureBootChecker:
             version, size, struct_offset, strings_offset = struct.unpack('<HHII', data[4:16])
             
             # 查找图像节点
-            pos = struct_offset
+            pos = struct_offset,
             while pos < len(data):
                 if pos + 4 > len(data):
                     break
@@ -237,7 +238,7 @@ class SecureBootChecker:
                     
                     # 获取节点名称
                     name = b''
-                    name_pos = strings_offset + name_off
+                    name_pos = strings_offset + name_off,
                     while name_pos < len(data) and data[name_pos] != 0:
                         name += bytes([data[name_pos]])
                         name_pos += 1
@@ -274,13 +275,13 @@ class SecureBootChecker:
             组件信息
         """
         try:
-            component = BootComponent(
+            component = BootComponent()
                 name=name,
                 stage=self._guess_stage_from_name(name),
                 offset=offset
-            )
             
-            pos = offset
+            
+            pos = offset,
             while pos < len(data):
                 if pos + 4 > len(data):
                     break
@@ -293,7 +294,7 @@ class SecureBootChecker:
                     prop_data = data[pos+12:pos+12+data_len]
                     
                     # 获取属性名称
-                    name_pos = 0
+                    name_pos = 0,
                     while name_pos < len(data) and data[name_pos] != 0:
                         name_pos += 1
                     
@@ -394,7 +395,7 @@ class SecureBootChecker:
             return certificates
             
         # 搜索DER编码的证书（以0x30开头）
-        cert_start = 0
+        cert_start = 0,
         while cert_start < len(self.firmware_data) - 1024:
             # 查找证书起始标记
             idx = self.firmware_data.find(b'\x30\x82', cert_start)
@@ -417,7 +418,8 @@ class SecureBootChecker:
                 # 尝试解析证书
                 if CRYPTOGRAPHY_AVAILABLE:
                     try:
-                        cert = x509.load_der_x509_certificate(cert_data, default_backend())
+                        cert = x509.load_der_x509_certificate(cert_data, default_backend(
+
                         certificates.append(cert)
                         logger.info(f"找到证书: {cert.subject}")
                     except Exception:
@@ -496,7 +498,8 @@ class SecureBootChecker:
                     stage=stage,
                     offset=offset,
                     size=0x10000  # 默认大小
-                ))
+                
+
                 
         return components
         
@@ -541,10 +544,10 @@ class SecureBootChecker:
                        BootStage.BL31, BootStage.BL32, BootStage.BL33,
                        BootStage.UBOOT, BootStage.KERNEL]
         
-        sorted_components = sorted(
+        sorted_components = sorted()
             self.boot_components,
             key=lambda c: stage_order.index(c.stage) if c.stage in stage_order else 999
-        )
+        
         
         # 构建链式信任结构
         root = None
@@ -724,4 +727,4 @@ def check_secure_boot(firmware_path: str) -> SecureBootResult:
     checker = SecureBootChecker(firmware_path)
     if checker.load_firmware():
         return checker.verify_signatures()
-    return SecureBootResult()
+    return SecureBootResult()))))))

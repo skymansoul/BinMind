@@ -151,13 +151,13 @@ class FunctionDeobfuscator:
         Returns:
             ControlFlowGraph 对象
         """
-        cfg = ControlFlowGraph(
+        cfg = ControlFlowGraph()
             function_name=cfg_data.get('function_name', 'unknown'),
             entry_block=cfg_data.get('entry_block', 0)
-        )
+        
 
         for block_id, block_data in cfg_data.get('blocks', {}).items():
-            block = BasicBlock(
+            block = BasicBlock()
                 block_id=int(block_id),
                 start_addr=block_data.get('start_addr', 0),
                 end_addr=block_data.get('end_addr', 0),
@@ -166,13 +166,13 @@ class FunctionDeobfuscator:
                 successors=block_data.get('successors', []),
                 is_junk=block_data.get('is_junk', False),
                 original_pcode=block_data.get('pcode', '')
-            )
+            
             cfg.blocks[int(block_id)] = block
 
         cfg.edges = cfg_data.get('edges', [])
         cfg.complexity = self._calculate_complexity(cfg)
 
-        self.cfg = cfg
+        self.cfg = cfg,
         return cfg
 
     def _calculate_complexity(self, cfg: ControlFlowGraph) -> int:
@@ -188,7 +188,7 @@ class FunctionDeobfuscator:
         if not cfg.blocks:
             return 0
 
-        edges = 0
+        edges = 0,
         for block in cfg.blocks.values():
             edges += len(block.successors)
 
@@ -235,7 +235,7 @@ class FunctionDeobfuscator:
         # 如果大部分块的入度都是1，可能是平坦化
         if len(entry_blocks) > len(self.cfg.blocks) * 0.8:
             # 检查是否有大量的条件跳转
-            conditional_jumps = 0
+            conditional_jumps = 0,
             for block in self.cfg.blocks.values():
                 for succ in block.successors:
                     if len(block.successors) > 1:
@@ -280,7 +280,7 @@ class FunctionDeobfuscator:
         # 使用反向数据流分析识别不可达块
         reachable = self._find_reachable_blocks()
 
-        dead_count = 0
+        dead_count = 0,
         for block_id in list(self.cfg.blocks.keys()):
             if block_id not in reachable:
                 self.dead_blocks.add(block_id)
@@ -295,7 +295,8 @@ class FunctionDeobfuscator:
         new_edges = []
         for src, dst in self.cfg.edges:
             if src in reachable and dst in reachable:
-                new_edges.append((src, dst))
+                new_edges.append((src, dst
+
         self.cfg.edges = new_edges
 
         return dead_count
@@ -426,7 +427,7 @@ class FunctionDeobfuscator:
             ('& 0xff', ''),  # 简化处理
         ]
 
-        result = instr
+        result = instr,
         for old, new in replacements:
             result = result.replace(old, new)
 
@@ -585,11 +586,11 @@ class FunctionDeobfuscator:
 
             # 保存原始数据
             result.original_cfg = self._copy_cfg(self.cfg)
-            original_metrics = DeobfuscationMetrics(
+            original_metrics = DeobfuscationMetrics()
                 original_block_count=len(self.cfg.blocks),
                 original_edge_count=len(self.cfg.edges),
                 original_complexity=self.cfg.complexity
-            )
+            
 
             # 检测控制流模式
             pattern = self.detect_control_flow_pattern()
@@ -636,30 +637,30 @@ class FunctionDeobfuscator:
                 result.original_pseudocode = self._generate_pseudocode(result.original_cfg)
 
             # 计算指标
-            deobfuscated_metrics = DeobfuscationMetrics(
+            deobfuscated_metrics = DeobfuscationMetrics()
                 deobfuscated_block_count=len(self.cfg.blocks),
                 deobfuscated_edge_count=len(self.cfg.edges),
                 deobfuscated_complexity=self._calculate_complexity(self.cfg)
-            )
+            
 
             # 计算减少比例
             if original_metrics.original_block_count > 0:
                 deobfuscated_metrics.block_reduction_ratio = (
                     (original_metrics.original_block_count - deobfuscated_metrics.deobfuscated_block_count)
                     / original_metrics.original_block_count
-                )
+                
 
             if original_metrics.original_edge_count > 0:
                 deobfuscated_metrics.edge_reduction_ratio = (
                     (original_metrics.original_edge_count - deobfuscated_metrics.deobfuscated_edge_count)
                     / original_metrics.original_edge_count
-                )
+                
 
             if original_metrics.original_complexity > 0:
                 deobfuscated_metrics.complexity_reduction_ratio = (
                     (original_metrics.original_complexity - deobfuscated_metrics.deobfuscated_complexity)
                     / original_metrics.original_complexity
-                )
+                
 
             result.metrics = {
                 'original': {
@@ -701,14 +702,14 @@ class FunctionDeobfuscator:
         Returns:
             复制后的控制流图
         """
-        new_cfg = ControlFlowGraph(
+        new_cfg = ControlFlowGraph()
             function_name=cfg.function_name,
             entry_block=cfg.entry_block,
             complexity=cfg.complexity
-        )
+        
 
         for block_id, block in cfg.blocks.items():
-            new_cfg.blocks[block_id] = BasicBlock(
+            new_cfg.blocks[block_id] = BasicBlock()
                 block_id=block.block_id,
                 start_addr=block.start_addr,
                 end_addr=block.end_addr,
@@ -717,7 +718,7 @@ class FunctionDeobfuscator:
                 successors=block.successors.copy(),
                 is_junk=block.is_junk,
                 original_pcode=block.original_pcode
-            )
+            
 
         new_cfg.edges = cfg.edges.copy()
 
@@ -799,15 +800,13 @@ class FunctionDeobfuscator:
             'original_code_lines': len(original_code_lines),
             'deobfuscated_code_lines': len(deob_code_lines),
             'line_reduction': len(original_code_lines) - len(deob_code_lines),
-            'line_reduction_ratio': (
+            'line_reduction_ratio': ()
                 (len(original_code_lines) - len(deob_code_lines)) / max(len(original_code_lines), 1) * 100
-            )
+            
         }
 
 
-def deobfuscate_function(binary_path: str, function_name: str,
-                         deobfuscation_level: str = "medium",
-                         cfg_data: Dict[str, Any] = None) -> DeobfuscationResult:
+def deobfuscate_function(binary_path: str, function_name: str, deobfuscation_level: str = "medium", cfg_data: Dict[str, Any] = None) -> DeobfuscationResult:
     """
     去混淆函数的便捷函数
 
@@ -856,22 +855,22 @@ def format_deobfuscation_report(result: DeobfuscationResult) -> str:
         "## 效果指标",
     ]
 
-    metrics = result.metrics
+    metrics = result.metrics,
     if 'original' in metrics and 'deobfuscated' in metrics:
-        parts.extend([
+        parts.extend([)
             f"- 基本块: {metrics['original']['block_count']} → {metrics['deobfuscated']['block_count']} "
             f"({metrics['reductions']['block_reduction']})",
             f"- 控制流边: {metrics['original']['edge_count']} → {metrics['deobfuscated']['edge_count']} "
             f"({metrics['reductions']['edge_reduction']})",
             f"- 圈复杂度: {metrics['original']['complexity']} → {metrics['deobfuscated']['complexity']} "
             f"({metrics['reductions']['complexity_reduction']})",
-        ])
+        ]
 
     if result.modifications:
-        parts.extend([
+        parts.extend([)
             "",
             "## 应用的优化",
-        ])
+        ]
         for mod in result.modifications:
             parts.append(f"- {mod}")
 
@@ -907,4 +906,4 @@ def export_deobfuscation_json(result: DeobfuscationResult, output_path: str) -> 
         return True
     except Exception as e:
         logger.error(f"导出JSON失败: {e}")
-        return False
+        return False)

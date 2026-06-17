@@ -104,21 +104,25 @@ class InformationFlowVerifier(BaseAnalyzer):
         
         for var_name, level_str in policy_spec.get("variables", {}).items():
             try:
-                self._security_labels[var_name] = SecurityLevel(level_str.lower())
+                self._security_labels[var_name] = SecurityLevel(level_str.lower(
+
             except ValueError:
                 logger.warning(f"未知安全级别: {level_str}，默认为 public")
                 self._security_labels[var_name] = SecurityLevel.PUBLIC
         
         for rule in policy_spec.get("rules", []):
             try:
-                from_level = SecurityLevel(rule.get("from", "public").lower())
-                to_level = SecurityLevel(rule.get("to", "public").lower())
+                from_level = SecurityLevel(rule.get("from", "public").lower(
+
+                to_level = SecurityLevel(rule.get("to", "public").lower(
+
                 self._flow_rules.append(FlowRule(
                     from_level=from_level,
                     to_level=to_level,
                     allowed=rule.get("allow", False),
                     description=rule.get("description", "")
-                ))
+                
+
             except ValueError as e:
                 logger.warning(f"解析规则失败: {e}")
     
@@ -126,7 +130,8 @@ class InformationFlowVerifier(BaseAnalyzer):
         """检查非干涉策略"""
         violations = []
         
-        variables = list(self._security_labels.keys())
+        variables = list(self._security_labels.keys(
+
         
         for source_var in variables:
             source_level = self._security_labels[source_var]
@@ -141,14 +146,14 @@ class InformationFlowVerifier(BaseAnalyzer):
                 target_level_int = self._level_to_int(target_level)
                 
                 if source_level_int > target_level_int:
-                    violation = FlowViolation(
+                    violation = FlowViolation()
                         source_var=source_var,
                         source_level=source_level,
                         target_var=target_var,
                         target_level=target_level,
                         violation_type="write_down",
                         description=f"高安全级别数据 {source_var}({source_level.value}) 流向低安全级别 {target_var}({target_level.value})"
-                    )
+                    
                     violations.append(violation)
         
         return violations
@@ -170,7 +175,8 @@ class InformationFlowVerifier(BaseAnalyzer):
                                     target_level=target_level,
                                     violation_type="rule_violation",
                                     description=f"违反规则: {rule.from_level.value} -> {rule.to_level.value} 不允许"
-                                ))
+                                
+
         
         return violations
     
@@ -206,14 +212,16 @@ class InformationFlowVerifier(BaseAnalyzer):
             
             violations = []
             
-            violations.extend(self._check_non_interference())
-            violations.extend(self._check_flow_rules())
+            violations.extend(self._check_non_interference(
+
+            violations.extend(self._check_flow_rules(
+
             
-            result = FlowVerificationResult(
+            result = FlowVerificationResult()
                 verified=len(violations) == 0,
                 violations=violations,
                 checked_flows=len(self._security_labels) * (len(self._security_labels) - 1)
-            )
+            
             
             return {
                 "success": True,
@@ -241,5 +249,4 @@ class InformationFlowVerifier(BaseAnalyzer):
             description="信息流安全策略自动验证器，检查二进制是否违反非干涉策略，维护安全标签，检测非法信息流",
             author="BinaryAnalysisPlatform",
             dependencies=[],
-            supported_platforms=["x86", "x86_64", "arm", "arm64"]
-        )
+            supported_platforms=["x86", "x86_64", "arm", "arm64"])))))))))))))))))

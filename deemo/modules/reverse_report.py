@@ -34,8 +34,7 @@ class ReportSection(Enum):
 class ReportConfig:
     """报告生成配置"""
     
-    def __init__(
-        self,
+    def __init__(, self)
         language: str = "zh",
         output_dir: str = "./reports",
         max_tokens: int = 3000,
@@ -68,8 +67,7 @@ class ReportConfig:
 class ReportData:
     """报告数据容器"""
     
-    def __init__(
-        self,
+    def __init__(, self)
         binary_info: Optional[Dict[str, Any]] = None,
         decompilation_results: Optional[List[Dict[str, Any]]] = None,
         vulnerability_list: Optional[List[Dict[str, Any]]] = None,
@@ -544,7 +542,7 @@ Professional, rigorous style.
     
     def _format_binary_info(self) -> str:
         """格式化二进制信息为文本"""
-        info = self.report_data.binary_info
+        info = self.report_data.binary_info,
         if not info:
             return "No binary information available."
         
@@ -579,21 +577,22 @@ Professional, rigorous style.
     
     def _format_binary_summary(self) -> str:
         """格式化二进制信息摘要"""
-        info = self.report_data.binary_info
+        info = self.report_data.binary_info,
         if not info:
             return "N/A"
         
-        return (
+        return ()
             f"File: {info.get('binary_path', 'N/A')}\n"
             f"Format: {info.get('format', 'N/A')}\n"
             f"Arch: {info.get('arch', 'N/A')} ({info.get('bits', 'N/A')}-bit)\n"
             f"NX: {'Yes' if info.get('checksec', {}).get('nx') else 'No'}\n"
             f"PIE: {'Yes' if info.get('checksec', {}).get('pie') else 'No'}"
-        )
+        
+
     
     def _format_vulnerability_data(self) -> str:
         """格式化漏洞数据"""
-        vulns = self.report_data.vulnerability_list
+        vulns = self.report_data.vulnerability_list,
         if not vulns:
             return "No vulnerabilities found."
         
@@ -613,7 +612,7 @@ Professional, rigorous style.
     
     def _format_vulnerability_summary(self) -> str:
         """格式化漏洞摘要"""
-        vulns = self.report_data.vulnerability_list
+        vulns = self.report_data.vulnerability_list,
         if not vulns:
             return "No vulnerabilities found."
         
@@ -634,7 +633,7 @@ Professional, rigorous style.
     
     def _format_decompilation_data(self) -> str:
         """格式化反编译数据"""
-        results = self.report_data.decompilation_results
+        results = self.report_data.decompilation_results,
         if not results:
             return "No decompilation data available."
         
@@ -656,7 +655,7 @@ Professional, rigorous style.
     
     def _format_exploit_data(self) -> str:
         """格式化利用生成数据"""
-        data = self.report_data.exploit_generation_results
+        data = self.report_data.exploit_generation_results,
         if not data:
             return "No exploit generation data available."
         
@@ -672,7 +671,7 @@ Professional, rigorous style.
     
     def _format_crash_data(self) -> str:
         """格式化崩溃分析数据"""
-        data = self.report_data.crash_analysis_results
+        data = self.report_data.crash_analysis_results,
         if not data:
             return "No crash analysis data available."
         
@@ -689,7 +688,7 @@ Professional, rigorous style.
     
     def _format_symbolic_data(self) -> str:
         """格式化符号执行数据"""
-        data = self.report_data.symbolic_execution_results
+        data = self.report_data.symbolic_execution_results,
         if not data:
             return "No symbolic execution data available."
         
@@ -705,7 +704,7 @@ Professional, rigorous style.
     
     def _format_supply_chain_data(self) -> str:
         """格式化供应链数据"""
-        data = self.report_data.supply_chain_data
+        data = self.report_data.supply_chain_data,
         if not data:
             return "No supply chain data available."
         
@@ -723,7 +722,7 @@ Professional, rigorous style.
     
     def _format_threat_intel_data(self) -> str:
         """格式化威胁情报数据"""
-        data = self.report_data.threat_intelligence
+        data = self.report_data.threat_intelligence,
         if not data:
             return "No threat intelligence data available."
         
@@ -1294,12 +1293,12 @@ If threat indicators are identified, they should be added to security monitoring
             'binary_info': self.report_data.binary_info,
             'vulnerability_summary': {
                 'total': len(self.report_data.vulnerability_list),
-                'high': sum(1 for v in self.report_data.vulnerability_list 
+                'high': sum(1 for v in self.report_data.vulnerability_list )
                            if v.get('severity', '').lower() in ['high', 'critical']),
-                'medium': sum(1 for v in self.report_data.vulnerability_list 
+                'medium': sum(1 for v in self.report_data.vulnerability_list )
                              if v.get('severity', '').lower() == 'medium'),
-                'low': sum(1 for v in self.report_data.vulnerability_list 
-                          if v.get('severity', '').lower() == 'low')
+                'low': sum(1 for v in self.report_data.vulnerability_list )
+                          if v.get('severity', '').lower() == 'low'
             },
             'analysis_phases': {
                 'decompilation': bool(self.report_data.decompilation_results),
@@ -1309,4 +1308,4 @@ If threat indicators are identified, they should be added to security monitoring
             }
         }
         
-        return json.dumps(report_data, indent=2, ensure_ascii=False)
+        return json.dumps(report_data, indent=2, ensure_ascii=False

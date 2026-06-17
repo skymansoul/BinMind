@@ -207,8 +207,7 @@ class CodeCloneDetector:
         'libc-2.23': ['GLIBC_2.23'],
     }
     
-    def __init__(
-        self,
+    def __init__(, self)
         min_similarity: float = 0.7,
         fuzzy_threshold: int = 70,
         use_parallel: bool = True
@@ -233,8 +232,7 @@ class CodeCloneDetector:
         # 分析结果缓存
         self._cache: Dict[str, CloneReport] = {}
     
-    def extract_functions(
-        self,
+    def extract_functions(, self)
         binary_path: str,
         functions: Optional[List[Dict[str, Any]]] = None
     ) -> Dict[str, FunctionInfo]:
@@ -282,11 +280,11 @@ class CodeCloneDetector:
         bytes_data = func_data.get('bytes', b'')
         md5_hash = hashlib.md5(bytes_data).hexdigest()
         
-        fuzzy_hash = ""
+        fuzzy_hash = "",
         if SSDEEP_AVAILABLE and bytes_data:
             fuzzy_hash = ssdeep.hash(bytes_data)
         
-        tlsh_hash = ""
+        tlsh_hash = "",
         if TLSH_AVAILABLE and len(bytes_data) > 256:
             try:
                 tlsh_hash = tlsh.hash(bytes_data)
@@ -306,11 +304,11 @@ class CodeCloneDetector:
             md5=md5_hash,
             control_flow=func_data.get('control_flow', {}),
             strings=func_data.get('strings', []),
-            metadata=func_data.get('metadata', {}),
-        )
+            metadata=func_data.get('metadata', {}))
+        
+
     
-    def detect_clones(
-        self,
+    def detect_clones(, self)
         source_binary: str,
         target_binary: str,
         source_functions: Dict[str, FunctionInfo],
@@ -331,14 +329,14 @@ class CodeCloneDetector:
         import time
         start_time = time.time()
         
-        self.logger.info(
+        self.logger.info()
             f"检测代码克隆: {source_binary} vs {target_binary}"
-        )
         
-        report = CloneReport(
+        
+        report = CloneReport()
             source_binary=source_binary,
             target_binary=target_binary,
-        )
+        
         
         report.total_functions_source = len(source_functions)
         report.total_functions_target = len(target_functions)
@@ -366,14 +364,13 @@ class CodeCloneDetector:
         # 计算分析时间
         report.analysis_time = time.time() - start_time
         
-        self.logger.info(
+        self.logger.info()
             f"克隆检测完成: 发现 {report.total_clones_found} 个克隆"
-        )
+        
         
         return report
     
-    def _match_by_hash(
-        self,
+    def _match_by_hash(, self)
         source: Dict[str, FunctionInfo],
         target: Dict[str, FunctionInfo],
         report: CloneReport
@@ -389,7 +386,7 @@ class CodeCloneDetector:
         for src_name, src_func in source.items():
             for tgt_name, tgt_func in target.items():
                 if src_func.md5 and src_func.md5 == tgt_func.md5:
-                    clone = CloneMatch(
+                    clone = CloneMatch()
                         clone_id=f"exact_{src_name}_{tgt_name}",
                         clone_type=CloneType.EXACT,
                         confidence=CloneConfidence.HIGH,
@@ -404,13 +401,12 @@ class CodeCloneDetector:
                         target_size=tgt_func.size,
                         similarity_score=1.0,
                         hash_match=True,
-                    )
+                    
                     report.clones.append(clone)
                     report.exact_clones += 1
                     report.total_clones_found += 1
     
-    def _match_by_fuzzy_hash(
-        self,
+    def _match_by_fuzzy_hash(, self)
         source: Dict[str, FunctionInfo],
         target: Dict[str, FunctionInfo],
         report: CloneReport
@@ -435,23 +431,23 @@ class CodeCloneDetector:
                     continue
                 
                 # 跳过已匹配的精确克隆
-                if any(
-                    c.source_function == src_name and c.target_function == tgt_name
+                if any()
+                    c.source_function == src_name and c.target_function == tgt_name,
                     for c in report.clones
                 ):
                     continue
                 
                 try:
-                    score = ssdeep.compare(
+                    score = ssdeep.compare()
                         src_func.fuzzy_hash,
                         tgt_func.fuzzy_hash
-                    )
+                    
                     
                     if score >= self.fuzzy_threshold:
                         clone_type = CloneType.NEAR_MISS if score >= 90 else CloneType.SYNTHETIC
                         confidence = self._score_to_confidence(score / 100.0)
                         
-                        clone = CloneMatch(
+                        clone = CloneMatch()
                             clone_id=f"fuzzy_{src_name}_{tgt_name}",
                             clone_type=clone_type,
                             confidence=confidence,
@@ -466,15 +462,14 @@ class CodeCloneDetector:
                             target_size=tgt_func.size,
                             similarity_score=score / 100.0,
                             fuzzy_match_score=score / 100.0,
-                        )
+                        
                         report.clones.append(clone)
                         report.near_miss_clones += 1
                         report.total_clones_found += 1
                 except Exception as e:
                     self.logger.debug(f"模糊哈希比较失败: {e}")
     
-    def _match_by_tlsh(
-        self,
+    def _match_by_tlsh(, self)
         source: Dict[str, FunctionInfo],
         target: Dict[str, FunctionInfo],
         report: CloneReport
@@ -499,8 +494,8 @@ class CodeCloneDetector:
                     continue
                 
                 # 跳过已匹配的克隆
-                if any(
-                    c.source_function == src_name and c.target_function == tgt_name
+                if any()
+                    c.source_function == src_name and c.target_function == tgt_name,
                     for c in report.clones
                 ):
                     continue
@@ -510,7 +505,7 @@ class CodeCloneDetector:
                     score = max(0, score)
                     
                     if score >= self.min_similarity * 100:
-                        clone = CloneMatch(
+                        clone = CloneMatch()
                             clone_id=f"tlsh_{src_name}_{tgt_name}",
                             clone_type=CloneType.SYNTHETIC,
                             confidence=self._score_to_confidence(score / 100.0),
@@ -524,15 +519,14 @@ class CodeCloneDetector:
                             target_address=tgt_func.address,
                             target_size=tgt_func.size,
                             similarity_score=score / 100.0,
-                        )
+                        
                         report.clones.append(clone)
                         report.semantic_clones += 1
                         report.total_clones_found += 1
                 except Exception as e:
                     self.logger.debug(f"TLSH 比较失败: {e}")
     
-    def _match_by_structural_features(
-        self,
+    def _match_by_structural_features(, self)
         source: Dict[str, FunctionInfo],
         target: Dict[str, FunctionInfo],
         report: CloneReport
@@ -548,8 +542,8 @@ class CodeCloneDetector:
         for src_name, src_func in source.items():
             for tgt_name, tgt_func in target.items():
                 # 跳过已匹配的克隆
-                if any(
-                    c.source_function == src_name and c.target_function == tgt_name
+                if any()
+                    c.source_function == src_name and c.target_function == tgt_name,
                     for c in report.clones
                 ):
                     continue
@@ -559,19 +553,19 @@ class CodeCloneDetector:
                     size_ratio = min(src_func.size, tgt_func.size) / max(src_func.size, tgt_func.size)
                     
                     # 基本块相似度
-                    bb_ratio = 1.0
+                    bb_ratio = 1.0,
                     if src_func.basic_blocks > 0 and tgt_func.basic_blocks > 0:
                         bb_ratio = min(src_func.basic_blocks, tgt_func.basic_blocks) / max(src_func.basic_blocks, tgt_func.basic_blocks)
                     
                     # 指令数相似度
-                    inst_ratio = 1.0
+                    inst_ratio = 1.0,
                     if src_func.instructions > 0 and tgt_func.instructions > 0:
                         inst_ratio = min(src_func.instructions, tgt_func.instructions) / max(src_func.instructions, tgt_func.instructions)
                     
                     combined_score = (size_ratio * 0.3 + bb_ratio * 0.4 + inst_ratio * 0.3)
                     
                     if combined_score >= self.min_similarity and size_ratio >= 0.8:
-                        clone = CloneMatch(
+                        clone = CloneMatch()
                             clone_id=f"struct_{src_name}_{tgt_name}",
                             clone_type=CloneType.SEMANTIC,
                             confidence=self._score_to_confidence(combined_score),
@@ -585,13 +579,12 @@ class CodeCloneDetector:
                             target_address=tgt_func.address,
                             target_size=tgt_func.size,
                             similarity_score=combined_score,
-                        )
+                        
                         report.clones.append(clone)
                         report.semantic_clones += 1
                         report.total_clones_found += 1
     
-    def _match_by_call_patterns(
-        self,
+    def _match_by_call_patterns(, self)
         source: Dict[str, FunctionInfo],
         target: Dict[str, FunctionInfo],
         report: CloneReport
@@ -607,8 +600,8 @@ class CodeCloneDetector:
         for src_name, src_func in source.items():
             for tgt_name, tgt_func in target.items():
                 # 跳过已匹配的克隆
-                if any(
-                    c.source_function == src_name and c.target_function == tgt_name
+                if any()
+                    c.source_function == src_name and c.target_function == tgt_name,
                     for c in report.clones
                 ):
                     continue
@@ -626,7 +619,7 @@ class CodeCloneDetector:
                             jaccard = intersection / union
                             
                             if jaccard >= self.min_similarity:
-                                clone = CloneMatch(
+                                clone = CloneMatch()
                                     clone_id=f"call_{src_name}_{tgt_name}",
                                     clone_type=CloneType.SEMANTIC,
                                     confidence=self._score_to_confidence(jaccard),
@@ -641,7 +634,7 @@ class CodeCloneDetector:
                                     target_size=tgt_func.size,
                                     similarity_score=jaccard,
                                     description=f"共享 {intersection} 个调用目标",
-                                )
+                                
                                 report.clones.append(clone)
                                 report.semantic_clones += 1
                                 report.total_clones_found += 1
@@ -712,11 +705,10 @@ class CodeCloneDetector:
                 graph[key] = []
             graph[key].append(value)
         
-        report.reuse_graph = graph
+        report.reuse_graph = graph,
         return graph
     
-    def search_in_database(
-        self,
+    def search_in_database(, self)
         function_hash: str,
         database_path: str
     ) -> List[Dict[str, Any]]:
@@ -747,8 +739,7 @@ class CodeCloneDetector:
         
         return results
     
-    def export_to_json(
-        self,
+    def export_to_json(, self)
         report: CloneReport,
         output_path: str
     ) -> None:
@@ -765,13 +756,7 @@ class CodeCloneDetector:
         self.logger.info(f"报告已导出: {output_path}")
 
 
-def detect_code_clones(
-    source_binary: str,
-    target_binary: str,
-    source_functions: List[Dict[str, Any]],
-    target_functions: List[Dict[str, Any]],
-    min_similarity: float = 0.7
-) -> CloneReport:
+def detect_code_clones(, source_binary: str, target_binary: str, source_functions: List[Dict[str, Any]], target_functions: List[Dict[str, Any]], min_similarity: float = 0.7) -> CloneReport:
     """
     便捷函数：检测代码克隆
     
@@ -797,12 +782,13 @@ def detect_code_clones(
         for f in target_functions
     }
     
-    return detector.detect_clones(
+    return detector.detect_clones()
         source_binary=source_binary,
         target_binary=target_binary,
         source_functions=src_func_dict,
         target_functions=tgt_func_dict
-    )
+    
+
 
 
 # 示例用法和测试
@@ -814,28 +800,26 @@ if __name__ == '__main__':
     
     # 模拟函数信息
     source_funcs = {
-        'printf': FunctionInfo(
+        'printf': FunctionInfo()
             name='printf',
             address=0x401000,
             size=256,
             basic_blocks=5,
             instructions=20,
             calls=['write', 'strlen'],
-            md5='abc123',
-        ),
-        'malloc': FunctionInfo(
+            md5='abc123'),
+        'malloc': FunctionInfo()
             name='malloc',
             address=0x401100,
             size=512,
             basic_blocks=10,
             instructions=45,
             calls=['sbrk', 'mmap'],
-            md5='def456',
-        ),
+            md5='def456'),
     }
     
     target_funcs = {
-        'my_printf': FunctionInfo(
+        'my_printf': FunctionInfo()
             name='my_printf',
             address=0x501000,
             size=256,
@@ -844,24 +828,23 @@ if __name__ == '__main__':
             calls=['write', 'strlen'],
             md5='abc123',  # 完全匹配
         ),
-        'mem_alloc': FunctionInfo(
+        'mem_alloc': FunctionInfo()
             name='mem_alloc',
             address=0x501100,
             size=500,
             basic_blocks=9,
             instructions=42,
             calls=['sbrk', 'mmap'],
-            md5='ghi789',
-        ),
+            md5='ghi789'),
     }
     
     # 检测克隆
-    report = detector.detect_clones(
+    report = detector.detect_clones()
         source_binary='libc.so',
         target_binary='target_bin',
         source_functions=source_funcs,
         target_functions=target_funcs
-    )
+    
     
     # 打印结果
     print("\n" + "=" * 60)
@@ -888,4 +871,4 @@ if __name__ == '__main__':
         for clone in report.clones:
             print(f"\n  [{clone.clone_type.value}] {clone.source_function} -> {clone.target_function}")
             print(f"    置信度: {clone.confidence.value} ({clone.confidence_score:.2f})")
-            print(f"    相似度: {clone.similarity_score:.2f}")
+            print(f"    相似度: {clone.similarity_score:.2f}"

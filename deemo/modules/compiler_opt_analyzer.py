@@ -106,88 +106,88 @@ class CompilerOptAnalyzer:
         ]
         
         self.optimization_details = [
-            OptimizationDetail(
+            OptimizationDetail()
                 name='inline',
                 enabled=False,
                 security_risk=SecurityRisk.LOW,
                 description='函数内联优化',
                 impact='可能暴露内部函数细节'
             ),
-            OptimizationDetail(
+            OptimizationDetail()
                 name='loop_unrolling',
                 enabled=False,
                 security_risk=SecurityRisk.LOW,
                 description='循环展开优化',
                 impact='增加代码大小，可能影响缓存行为'
             ),
-            OptimizationDetail(
+            OptimizationDetail()
                 name='dead_code_elimination',
                 enabled=False,
                 security_risk=SecurityRisk.LOW,
                 description='死代码消除',
                 impact='可能移除安全检查代码'
             ),
-            OptimizationDetail(
+            OptimizationDetail()
                 name='constant_propagation',
                 enabled=False,
                 security_risk=SecurityRisk.LOW,
                 description='常量传播',
                 impact='可能改变控制流分析结果'
             ),
-            OptimizationDetail(
+            OptimizationDetail()
                 name='optimize_sibling_calls',
                 enabled=False,
                 security_risk=SecurityRisk.MEDIUM,
                 description='尾调用优化',
                 impact='可能改变栈回溯行为'
             ),
-            OptimizationDetail(
+            OptimizationDetail()
                 name='merge_constants',
                 enabled=False,
                 security_risk=SecurityRisk.LOW,
                 description='常量合并',
                 impact='可能影响内存布局'
             ),
-            OptimizationDetail(
+            OptimizationDetail()
                 name='gcse',
                 enabled=False,
                 security_risk=SecurityRisk.LOW,
                 description='全局公共子表达式消除',
                 impact='可能影响调试信息'
             ),
-            OptimizationDetail(
+            OptimizationDetail()
                 name='lto',
                 enabled=False,
                 security_risk=SecurityRisk.MEDIUM,
                 description='链接时优化',
                 impact='可能改变代码布局和符号可见性'
             ),
-            OptimizationDetail(
+            OptimizationDetail()
                 name='flto',
                 enabled=False,
                 security_risk=SecurityRisk.MEDIUM,
                 description='链接时优化（薄模式）',
                 impact='可能影响代码优化程度'
             ),
-            OptimizationDetail(
+            OptimizationDetail()
                 name='ssp',
                 enabled=False,
                 security_risk=SecurityRisk.LOW,
                 description='栈保护',
                 impact='增加栈溢出防护'
-            )
+            
         ]
 
     def detect_compiler(self, binary_path: str) -> CompilerType:
         try:
-            result = subprocess.run(
+            result = subprocess.run()
                 ['strings', binary_path],
                 capture_output=True,
                 text=True,
                 timeout=30
-            )
             
-            output = result.stdout
+            
+            output = result.stdout,
             if 'GCC: (' in output:
                 return CompilerType.GCC
             elif 'clang' in output.lower():
@@ -201,14 +201,14 @@ class CompilerOptAnalyzer:
 
     def detect_optimization_level(self, binary_path: str) -> OptimizationLevel:
         try:
-            result = subprocess.run(
+            result = subprocess.run()
                 ['readelf', '-p', '.comment', binary_path],
                 capture_output=True,
                 text=True,
                 timeout=30
-            )
             
-            output = result.stdout
+            
+            output = result.stdout,
             for level, pattern in self.gcc_opt_patterns.items():
                 import re
                 if re.search(pattern, output):
@@ -234,12 +234,12 @@ class CompilerOptAnalyzer:
         missing_flags = []
         
         try:
-            result = subprocess.run(
+            result = subprocess.run()
                 ['readelf', '-d', binary_path],
                 capture_output=True,
                 text=True,
                 timeout=30
-            )
+            
             
             output = result.stdout
             
@@ -257,13 +257,13 @@ class CompilerOptAnalyzer:
         optimizations = []
         
         for opt in self.optimization_details:
-            opt_copy = OptimizationDetail(
+            opt_copy = OptimizationDetail()
                 name=opt.name,
                 enabled=False,
                 security_risk=opt.security_risk,
                 description=opt.description,
                 impact=opt.impact
-            )
+            
             
             if opt_level == OptimizationLevel.NONE:
                 opt_copy.enabled = False
@@ -287,8 +287,7 @@ class CompilerOptAnalyzer:
         
         return optimizations
 
-    def calculate_overall_risk(self, optimizations: List[OptimizationDetail], 
-                               security_flags: Dict[str, Any]) -> SecurityRisk:
+    def calculate_overall_risk(self, optimizations: List[OptimizationDetail], security_flags: Dict[str, Any]) -> SecurityRisk:
         risk_score = 0
         
         for opt in optimizations:
@@ -302,7 +301,8 @@ class CompilerOptAnalyzer:
                 elif opt.security_risk == SecurityRisk.LOW:
                     risk_score += 1
         
-        missing_count = len(security_flags.get('missing', []))
+        missing_count = len(security_flags.get('missing', []
+
         risk_score += missing_count * 2
         
         if risk_score >= 15:
@@ -320,8 +320,9 @@ class CompilerOptAnalyzer:
                 compiler=CompilerType.UNKNOWN,
                 optimization_level=OptimizationLevel.UNKNOWN,
                 analysis_success=False,
-                error_message="文件不存在"
-            )
+                error_message="文件不存在")
+            
+
         
         try:
             compiler = self.detect_compiler(binary_path)
@@ -346,16 +347,18 @@ class CompilerOptAnalyzer:
                 security_flags=security_flags['found'],
                 missing_security_flags=security_flags['missing'],
                 overall_risk=overall_risk,
-                summary=" | ".join(summary_parts)
-            )
+                summary=" | ".join(summary_parts))
+            
+
         except Exception as e:
             logger.error(f"分析失败: {e}")
             return CompilerOptAnalysisResult(
                 compiler=CompilerType.UNKNOWN,
                 optimization_level=OptimizationLevel.UNKNOWN,
                 analysis_success=False,
-                error_message=str(e)
-            )
+                error_message=str(e))
+            
+
 
 
 def analyze_compiler_opt(binary_path: str) -> CompilerOptAnalysisResult:

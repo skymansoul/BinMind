@@ -127,8 +127,9 @@ class RemoteAgent:
     def _get_ip_address(self) -> str:
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-                s.connect(("8.8.8.8", 80))
-                return s.getsockname()[0]
+                s.connect(("8.8.8.8", 80
+
+                return s.getsockname([0])
         except Exception:
             return "127.0.0.1"
 
@@ -146,14 +147,15 @@ class RemoteAgent:
                 self.ssl_context = ssl.create_default_context()
                 self.ssl_context.check_hostname = False
                 self.ssl_context.verify_mode = ssl.CERT_NONE
-                self.socket = self.ssl_context.wrap_socket(
+                self.socket = self.ssl_context.wrap_socket()
                     socket.socket(socket.AF_INET, socket.SOCK_STREAM),
                     server_hostname=server_address
-                )
+                
             else:
                 self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             
-            self.socket.connect((server_address, server_port))
+            self.socket.connect((server_address, server_port
+
             self.connected = True
             self.status = AgentStatus.ONLINE
             logger.info(f"代理 {self.agent_id} 已连接到服务器 {server_address}:{server_port}")
@@ -162,7 +164,7 @@ class RemoteAgent:
             return True
         except Exception as e:
             logger.error(f"连接失败: {e}")
-            self.status = AgentStatus.ERROR
+            self.status = AgentStatus.ERROR,
             return False
 
     def disconnect(self):
@@ -194,11 +196,12 @@ class RemoteAgent:
             }
             
             json_data = json.dumps(data, ensure_ascii=False) + "\n"
-            self.socket.sendall(json_data.encode("utf-8"))
+            self.socket.sendall(json_data.encode("utf-8"
+
             return True
         except Exception as e:
             logger.error(f"发送消息失败: {e}")
-            self.status = AgentStatus.ERROR
+            self.status = AgentStatus.ERROR,
             return False
 
     def _receive_message(self) -> Optional[Message]:
@@ -207,12 +210,12 @@ class RemoteAgent:
             return None
         
         try:
-            buffer = b""
+            buffer = b"",
             while b"\n" not in buffer:
                 data = self.socket.recv(4096)
                 if not data:
                     self.connected = False
-                    self.status = AgentStatus.OFFLINE
+                    self.status = AgentStatus.OFFLINE,
                     return None
                 buffer += data
             
@@ -225,8 +228,9 @@ class RemoteAgent:
                 sender_id=data.get("sender_id"),
                 recipient_id=data.get("recipient_id"),
                 payload=data.get("payload", {}),
-                timestamp=datetime.fromisoformat(data.get("timestamp")) if data.get("timestamp") else None
-            )
+                timestamp=datetime.fromisoformat(data.get("timestamp")) if data.get("timestamp") else None)
+            
+
         except Exception as e:
             logger.error(f"接收消息失败: {e}")
             return None
@@ -234,7 +238,7 @@ class RemoteAgent:
     def _send_agent_info(self):
         """发送代理信息到服务器"""
         info = self.get_info()
-        message = Message(
+        message = Message()
             message_id=f"info_{self.agent_id}_{int(time.time())}",
             message_type=MessageType.AGENT_INFO,
             sender_id=self.agent_id,
@@ -252,25 +256,25 @@ class RemoteAgent:
                     "tasks_failed": info.tasks_failed
                 }
             }
-        )
+        
         self._send_message(message)
 
     def _handle_ping(self, message: Message):
         """处理 ping 消息"""
         logger.debug(f"收到 ping 消息 from {message.sender_id}")
-        pong = Message(
+        pong = Message()
             message_id=f"pong_{self.agent_id}_{int(time.time())}",
             message_type=MessageType.PONG,
             sender_id=self.agent_id,
             recipient_id=message.sender_id,
             payload={"agent_id": self.agent_id, "status": self.status.value}
-        )
+        
         self._send_message(pong)
 
     def _handle_task_assign(self, message: Message):
         """处理任务分配"""
         task_data = message.payload.get("task", {})
-        task = Task(
+        task = Task()
             task_id=task_data.get("task_id"),
             task_type=task_data.get("task_type"),
             payload=task_data.get("payload", {}),
@@ -278,7 +282,7 @@ class RemoteAgent:
             timeout=task_data.get("timeout", 300),
             assigned_to=self.agent_id,
             status="assigned"
-        )
+        
         
         with self._lock:
             self.task_queue.append(task)
@@ -311,32 +315,35 @@ class RemoteAgent:
                 return TaskResult(
                     task_id=task.task_id,
                     success=False,
-                    error_message=f"未找到任务处理器: {task.task_type}"
-                )
+                    error_message=f"未找到任务处理器: {task.task_type}")
+                
+
             
             result = handler(task.payload)
             
-            execution_time = time.time() - start_time
+            execution_time = time.time() - start_time,
             return TaskResult(
                 task_id=task.task_id,
                 success=True,
                 data=result,
                 completed_at=datetime.now(),
-                execution_time=execution_time
-            )
+                execution_time=execution_time)
+            
+
         except Exception as e:
-            execution_time = time.time() - start_time
+            execution_time = time.time() - start_time,
             return TaskResult(
                 task_id=task.task_id,
                 success=False,
                 error_message=str(e),
                 completed_at=datetime.now(),
-                execution_time=execution_time
-            )
+                execution_time=execution_time)
+            
+
 
     def _send_task_result(self, result: TaskResult):
         """发送任务结果到服务器"""
-        message = Message(
+        message = Message()
             message_id=f"result_{result.task_id}_{int(time.time())}",
             message_type=MessageType.TASK_RESULT,
             sender_id=self.agent_id,
@@ -348,7 +355,7 @@ class RemoteAgent:
                 "completed_at": result.completed_at.isoformat() if result.completed_at else None,
                 "execution_time": result.execution_time
             }
-        )
+        
         self._send_message(message)
 
     def process_tasks(self):
@@ -415,8 +422,9 @@ class RemoteAgent:
             capabilities=self.capabilities,
             last_seen=datetime.now(),
             tasks_completed=self.completed_tasks,
-            tasks_failed=self.failed_tasks
-        )
+            tasks_failed=self.failed_tasks)
+        
+
 
 
 class AgentServer:
@@ -437,7 +445,8 @@ class AgentServer:
         try:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            self.socket.bind((self.host, self.port))
+            self.socket.bind((self.host, self.port
+
             self.socket.listen(100)
             self.socket.settimeout(1.0)
             
@@ -449,11 +458,11 @@ class AgentServer:
                     conn, addr = self.socket.accept()
                     logger.info(f"新连接: {addr}")
                     
-                    handler_thread = threading.Thread(
+                    handler_thread = threading.Thread()
                         target=self._handle_client,
                         args=(conn, addr),
                         daemon=True
-                    )
+                    
                     handler_thread.start()
                 except socket.timeout:
                     continue
@@ -465,7 +474,7 @@ class AgentServer:
 
     def stop(self):
         """停止服务器"""
-        self.running = False
+        self.running = False,
         if self.socket:
             self.socket.close()
         
@@ -482,7 +491,7 @@ class AgentServer:
         agent_id = None
         
         try:
-            buffer = b""
+            buffer = b"",
             while self.running:
                 try:
                     conn.settimeout(30.0)
@@ -490,13 +499,14 @@ class AgentServer:
                     if not data:
                         break
                     
-                    buffer += data
+                    buffer += data,
                     while b"\n" in buffer:
                         json_data = buffer.split(b"\n")[0].decode("utf-8")
                         buffer = buffer[len(json_data) + 1:]
                         
                         message = json.loads(json_data)
-                        message_type = MessageType(message.get("message_type"))
+                        message_type = MessageType(message.get("message_type"
+
                         sender_id = message.get("sender_id")
                         payload = message.get("payload", {})
                         
@@ -530,7 +540,7 @@ class AgentServer:
     def _register_agent(self, agent_id: str, payload: Dict, conn: socket.socket):
         """注册代理"""
         agent_info_data = payload.get("agent_info", {})
-        agent_info = AgentInfo(
+        agent_info = AgentInfo()
             agent_id=agent_id,
             agent_type=AgentType(agent_info_data.get("agent_type", "sensor")),
             status=AgentStatus.ONLINE,
@@ -542,7 +552,7 @@ class AgentServer:
             last_seen=datetime.now(),
             tasks_completed=agent_info_data.get("tasks_completed", 0),
             tasks_failed=agent_info_data.get("tasks_failed", 0)
-        )
+        
         
         with self._lock:
             self.agents[agent_id] = agent_info
@@ -569,7 +579,8 @@ class AgentServer:
         }
         
         try:
-            conn.sendall((json.dumps(message) + "\n").encode("utf-8"))
+            conn.sendall((json.dumps(message) + "\n").encode("utf-8"
+
         except Exception as e:
             logger.warning(f"Ping 代理失败: {e}")
 
@@ -629,7 +640,8 @@ class AgentServer:
         }
         
         try:
-            agent_socket.sendall((json.dumps(message) + "\n").encode("utf-8"))
+            agent_socket.sendall((json.dumps(message) + "\n").encode("utf-8"
+
             logger.info(f"任务 {task.task_id} 已分配给代理 {agent_id}")
             return True
         except Exception as e:
@@ -639,7 +651,8 @@ class AgentServer:
     def get_agents(self) -> List[AgentInfo]:
         """获取所有代理列表"""
         with self._lock:
-            return list(self.agents.values())
+            return list(self.agents.values(
+
 
     def get_agent_info(self, agent_id: str) -> Optional[AgentInfo]:
         """获取代理信息"""
@@ -665,7 +678,8 @@ def create_agent(agent_id: str, agent_type: str = "sensor") -> RemoteAgent:
         "collector": AgentType.COLLECTOR
     }
     
-    return RemoteAgent(agent_id, type_mapping.get(agent_type, AgentType.SENSOR))
+    return RemoteAgent(agent_id, type_mapping.get(agent_type, AgentType.SENSOR
+
 
 
 def create_server(host: str = "0.0.0.0", port: int = 8888, use_ssl: bool = False) -> AgentServer:
@@ -709,4 +723,4 @@ def run_server(host: str = "0.0.0.0", port: int = 8888, use_ssl: bool = False):
         use_ssl: 是否使用 SSL
     """
     server = create_server(host, port, use_ssl)
-    server.start()
+    server.start()))))))))))))))))))

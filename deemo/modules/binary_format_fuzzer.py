@@ -128,7 +128,7 @@ class TestCase:
 
 
 # ELF 格式结构定义
-ELF_STRUCTURE = FormatStructure(
+ELF_STRUCTURE = FormatStructure()
     format_type=FileFormatType.ELF,
     magic_bytes=b'\x7fELF',
     fields=[
@@ -198,10 +198,10 @@ ELF_STRUCTURE = FormatStructure(
         {'rule': 'offset_validity', 'description': 'Offsets must not exceed file size'},
     ],
     description="ELF (Executable and Linkable Format) - Linux/Unix executable format"
-)
+
 
 # PE 格式结构定义
-PE_STRUCTURE = FormatStructure(
+PE_STRUCTURE = FormatStructure()
     format_type=FileFormatType.PE,
     magic_bytes=b'MZ',
     fields=[
@@ -284,19 +284,19 @@ PE_STRUCTURE = FormatStructure(
         {'rule': 'section_count', 'description': 'Number of sections must be reasonable'},
     ],
     description="PE (Portable Executable) - Windows executable format"
-)
+
 
 # Mach-O 格式结构定义
-MACH_O_STRUCTURE = FormatStructure(
+MACH_O_STRUCTURE = FormatStructure()
     format_type=FileFormatType.MACH_O,
     magic_bytes=b'\xfe\xed\xfa\xce',  # 还有其他魔数
     fields=[
-        FormatField('magic', 0, 4, 'uint32', 'Magic number', 
+        FormatField('magic', 0, 4, 'uint32', 'Magic number')
                     valid_values=[0xFEEDFACE, 0xFEEDFACF, 0xCEFAEDFE, 0xCFFAEDFE], is_critical=True),
-        FormatField('cputype', 4, 4, 'uint32', 'CPU type', 
+        FormatField('cputype', 4, 4, 'uint32', 'CPU type')
                     valid_values=[1, 6, 7, 12, 18, 0x01000007, 0x0100000c], is_critical=True),
         FormatField('cpusubtype', 8, 4, 'uint32', 'CPU subtype'),
-        FormatField('filetype', 12, 4, 'uint32', 'File type', 
+        FormatField('filetype', 12, 4, 'uint32', 'File type')
                     valid_values=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], is_critical=True),
         FormatField('ncmds', 16, 4, 'uint32', 'Number of load commands', constraints={'max': 65535}),
         FormatField('sizeofcmds', 20, 4, 'uint32', 'Size of load commands'),
@@ -307,7 +307,7 @@ MACH_O_STRUCTURE = FormatStructure(
         {
             'name': 'Load Command',
             'fields': [
-                FormatField('cmd', 0, 4, 'uint32', 'Command type', 
+                FormatField('cmd', 0, 4, 'uint32', 'Command type')
                             valid_values=[0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x80000022, 0x80000023, 0x80000024, 0x80000025, 0x80000026, 0x80000027, 0x80000028, 0x80000029, 0x8000002a, 0x8000002b, 0x8000002c], is_critical=True),
                 FormatField('cmdsize', 4, 4, 'uint32', 'Command size'),
             ]
@@ -334,7 +334,7 @@ MACH_O_STRUCTURE = FormatStructure(
         {'rule': 'cmd_size', 'description': 'Load command sizes must be consistent'},
     ],
     description="Mach-O - macOS/iOS executable format"
-)
+
 
 # 格式结构映射
 FORMAT_STRUCTURES = {
@@ -354,10 +354,10 @@ class FormatFuzzerGenerator:
         Args:
             config: Fuzzer 配置
         """
-        self.config = config or FuzzerConfig(
+        self.config = config or FuzzerConfig()
             fuzzer_type=FuzzerType.LIBFUZZER,
             target_format=FileFormatType.ELF
-        )
+        
     
     def generate_harness(self) -> FuzzerHarness:
         """
@@ -366,11 +366,11 @@ class FormatFuzzerGenerator:
         Returns:
             Fuzzer Harness
         """
-        harness = FuzzerHarness(
+        harness = FuzzerHarness()
             harness_code="",
             fuzzer_type=self.config.fuzzer_type,
             target_format=self.config.target_format
-        )
+        
         
         if self.config.fuzzer_type == FuzzerType.LIBFUZZER:
             harness.harness_code = self._generate_libfuzzer_harness()
@@ -415,7 +415,7 @@ int parse_{format_lower}(const uint8_t *data, size_t size) {
     }
     
     // Check magic bytes
-    if (memcmp(data, "{magic_hex}", {magic_len}) != 0) {
+    if (memcmp(data, "{magic_hex}", {magic_len}) != 0) {,
         return 0;  // Invalid magic
     }
     
@@ -437,7 +437,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 }
 
 // Optional: Custom mutation function
-extern "C" size_t LLVMFuzzerCustomMutator(
+extern "C" size_t LLVMFuzzerCustomMutator()
     uint8_t *data, size_t size, size_t max_size, unsigned int seed) {
     
     // Structure-aware mutation
@@ -461,8 +461,8 @@ extern "C" size_t LLVMFuzzerCustomMutator(
         case 0:  // Mutate header field
             {
                 size_t field_offset = {header_field_offsets}[rand() % {num_header_fields}];
-                size_t field_size = {header_field_sizes}[rand() % {num_header_fields}];
-                if (field_offset + field_size <= size) {
+                size_t field_size = {header_field_sizes}[rand() % {num_header_fields}];,
+                if (field_offset + field_size <= size) {,
                     for (size_t i = 0; i < field_size; i++) {
                         data[field_offset + i] = rand() % 256;
                     }
@@ -473,7 +473,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(
         case 1:  // Insert bytes
             {
                 size_t insert_pos = rand() % size;
-                size_t insert_len = rand() % 16 + 1;
+                size_t insert_len = rand() % 16 + 1;,
                 if (size + insert_len <= max_size) {
                     memmove(data + insert_pos + insert_len, data + insert_pos, size - insert_pos);
                     for (size_t i = 0; i < insert_len; i++) {
@@ -487,7 +487,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(
         case 2:  // Delete bytes
             {
                 size_t delete_pos = rand() % size;
-                size_t delete_len = rand() % 16 + 1;
+                size_t delete_len = rand() % 16 + 1;,
                 if (delete_pos + delete_len <= size) {
                     memmove(data + delete_pos, data + delete_pos + delete_len, size - delete_pos - delete_len);
                     size -= delete_len;
@@ -529,7 +529,7 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
         min_size = self._get_min_format_size()
         header_offsets, header_sizes = self._get_header_field_info()
         
-        return harness_code.format(
+        return harness_code.format()
             format_name=format_struct.format_type.value.upper(),
             format_lower=format_struct.format_type.value.lower(),
             min_size=min_size,
@@ -538,7 +538,8 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
             header_field_offsets="{" + ", ".join(str(f.offset) for f in format_struct.fields[:10]) + "}",
             header_field_sizes="{" + ", ".join(str(f.size) for f in format_struct.fields[:10]) + "}",
             num_header_fields=min(len(format_struct.fields), 10)
-        )
+        
+
     
     def _generate_generic_harness(self) -> str:
         """生成通用 harness"""
@@ -597,7 +598,7 @@ int main(int argc, char **argv) {
     
     if (argc > 1) {
         // Read from file
-        FILE *f = fopen(argv[1], "rb");
+        FILE *f = fopen(argv[1], "rb");,
         if (!f) return 1;
         size = fread(buffer, 1, sizeof(buffer), f);
         fclose(f);
@@ -614,21 +615,23 @@ int main(int argc, char **argv) {
 '''
         
         if format_struct:
-            return harness_code.format(
+            return harness_code.format()
                 format_name=format_struct.format_type.value.upper(),
                 format_lower=format_struct.format_type.value.lower(),
                 min_size=self._get_min_format_size(),
                 magic_hex=format_struct.magic_bytes.hex(),
                 magic_len=len(format_struct.magic_bytes)
-            )
+            
+
         
-        return harness_code.format(
+        return harness_code.format()
             format_name="BINARY",
             format_lower="binary",
             min_size=4,
             magic_hex="",
             magic_len=0
-        )
+        
+
     
     def _generate_libfuzzer_build_command(self) -> str:
         """生成 LibFuzzer 编译命令"""
@@ -734,7 +737,8 @@ afl-fuzz -i {self.config.output_dir}/seed/ \
     
     def _generate_minimal_valid_file(self, format_struct: FormatStructure) -> bytes:
         """生成最小有效文件"""
-        data = bytearray(self._get_min_format_size())
+        data = bytearray(self._get_min_format_size(
+
         
         # 写入魔数
         magic = format_struct.magic_bytes
@@ -749,10 +753,10 @@ afl-fuzz -i {self.config.output_dir}/seed/ \
         
         return bytes(data)
     
-    def _generate_variant_file(self, format_struct: FormatStructure, 
-                                variant_index: int) -> bytes:
+    def _generate_variant_file(self, format_struct: FormatStructure, variant_index: int) -> bytes:
         """生成变体文件"""
-        base_data = bytearray(self._generate_minimal_valid_file(format_struct))
+        base_data = bytearray(self._generate_minimal_valid_file(format_struct
+
         
         # 根据变体索引应用不同的修改
         if variant_index == 0:
@@ -763,7 +767,8 @@ afl-fuzz -i {self.config.output_dir}/seed/ \
             pass
         elif variant_index == 2:
             # 添加额外数据
-            base_data.extend(bytes(256))
+            base_data.extend(bytes(256
+
         elif variant_index == 3:
             # 修改字段值
             pass
@@ -773,8 +778,7 @@ afl-fuzz -i {self.config.output_dir}/seed/ \
         
         return bytes(base_data)
     
-    def _write_field_value(self, data: bytearray, field: FormatField, 
-                            value: Any) -> None:
+    def _write_field_value(self, data: bytearray, field: FormatField, value: Any) -> None:
         """写入字段值"""
         if field.type == 'uint8':
             data[field.offset] = value
@@ -795,7 +799,8 @@ afl-fuzz -i {self.config.output_dir}/seed/ \
         
         if format_struct:
             # 魔数
-            dictionary.append(format_struct.magic_bytes.hex())
+            dictionary.append(format_struct.magic_bytes.hex(
+
             
             # 有效值
             for field in format_struct.fields:
@@ -803,18 +808,21 @@ afl-fuzz -i {self.config.output_dir}/seed/ \
                     for val in field.valid_values[:5]:
                         if isinstance(val, int):
                             # 不同编码
-                            dictionary.append(hex(val))
-                            dictionary.append(str(val))
+                            dictionary.append(hex(val
+
+                            dictionary.append(str(val
+
                         elif isinstance(val, bytes):
-                            dictionary.append(val.hex())
+                            dictionary.append(val.hex(
+
             
             # 特殊值
-            dictionary.extend([
+            dictionary.extend([)
                 "0", "-1", "255", "65535", "0xffffffff",
                 "0x7fffffff", "0x80000000",
                 "AAAA", "BBBB", "CCCC",
                 "deadbeef", "cafebabe"
-            ])
+            ]
         
         return dictionary
     
@@ -840,14 +848,16 @@ afl-fuzz -i {self.config.output_dir}/seed/ \
                     data=data,
                     description=f"Random test case {i}",
                     mutation_applied="random"
-                ))
+                
+
             return test_cases
         
         # 结构感知测试用例
         base_file = self._generate_minimal_valid_file(format_struct)
         
         for i in range(count):
-            mutation_type = random.choice(list(MutationStrategy))
+            mutation_type = random.choice(list(MutationStrategy
+
             mutated_data = self._apply_mutation(base_file, format_struct, mutation_type)
             
             test_cases.append(TestCase(
@@ -855,12 +865,12 @@ afl-fuzz -i {self.config.output_dir}/seed/ \
                 description=f"Mutated test case {i}",
                 mutation_applied=mutation_type.value,
                 metadata={'base_size': len(base_file)}
-            ))
+            
+
         
         return test_cases
     
-    def _apply_mutation(self, data: bytes, format_struct: FormatStructure,
-                         strategy: MutationStrategy) -> bytes:
+    def _apply_mutation(self, data: bytes, format_struct: FormatStructure, strategy: MutationStrategy) -> bytes:
         """应用变异"""
         mutated = bytearray(data)
         
@@ -900,7 +910,8 @@ afl-fuzz -i {self.config.output_dir}/seed/ \
         
         elif strategy == MutationStrategy.BYTE_INSERT:
             # 字节插入
-            pos = random.randint(0, len(mutated))
+            pos = random.randint(0, len(mutated
+
             insert_len = random.randint(1, 16)
             insert_data = bytes([random.randint(0, 255) for _ in range(insert_len)])
             mutated = bytearray(mutated[:pos] + insert_data + mutated[pos:])
@@ -909,13 +920,15 @@ afl-fuzz -i {self.config.output_dir}/seed/ \
             # 字节删除
             if len(mutated) > 10:
                 pos = random.randint(0, len(mutated) - 1)
-                delete_len = random.randint(1, min(16, len(mutated) - pos))
+                delete_len = random.randint(1, min(16, len(mutated) - pos
+
                 mutated = bytearray(mutated[:pos] + mutated[pos + delete_len:])
         
         elif strategy == MutationStrategy.BLOCK_SWAP:
             # 块交换
             if len(mutated) > 32:
-                block_size = random.randint(4, min(32, len(mutated) // 2))
+                block_size = random.randint(4, min(32, len(mutated) // 2
+
                 pos1 = random.randint(0, len(mutated) - block_size * 2)
                 pos2 = pos1 + block_size
                 
@@ -984,9 +997,7 @@ afl-fuzz -i {self.config.output_dir}/seed/ \
         return saved_files
 
 
-def generate_format_fuzzer(format_type: str, fuzzer_type: str = 'libfuzzer',
-                           output_dir: str = './fuzzer_output',
-                           config: Dict[str, Any] = None) -> FuzzerHarness:
+def generate_format_fuzzer(format_type: str, fuzzer_type: str = 'libfuzzer', output_dir: str = './fuzzer_output', config: Dict[str, Any] = None) -> FuzzerHarness:
     """
     生成文件格式 Fuzzer 便捷函数
     
@@ -999,14 +1010,16 @@ def generate_format_fuzzer(format_type: str, fuzzer_type: str = 'libfuzzer',
     Returns:
         Fuzzer Harness
     """
-    ft = FileFormatType(format_type.lower())
-    fz = FuzzerType(fuzzer_type.lower())
+    ft = FileFormatType(format_type.lower(
+
+    fz = FuzzerType(fuzzer_type.lower(
+
     
-    fuzzer_config = FuzzerConfig(
+    fuzzer_config = FuzzerConfig()
         fuzzer_type=fz,
         target_format=ft,
         output_dir=output_dir
-    )
+    
     
     if config:
         for key, value in config.items():
@@ -1022,8 +1035,7 @@ def generate_format_fuzzer(format_type: str, fuzzer_type: str = 'libfuzzer',
     return harness
 
 
-def generate_test_corpus(format_type: str, count: int = 100,
-                         output_dir: str = './corpus') -> List[str]:
+def generate_test_corpus(format_type: str, count: int = 100, output_dir: str = './corpus') -> List[str]:
     """
     生成测试语料库
     
@@ -1035,7 +1047,8 @@ def generate_test_corpus(format_type: str, count: int = 100,
     Returns:
         生成的文件路径列表
     """
-    ft = FileFormatType(format_type.lower())
+    ft = FileFormatType(format_type.lower(
+
     
     config = FuzzerConfig(fuzzer_type=FuzzerType.LIBFUZZER, target_format=ft)
     generator = FormatFuzzerGenerator(config)
@@ -1071,4 +1084,4 @@ __all__ = [
     'MACH_O_STRUCTURE',
     'generate_format_fuzzer',
     'generate_test_corpus'
-]
+]))))))))))))))))))))))

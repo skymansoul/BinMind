@@ -248,10 +248,10 @@ class PseudocodeExplainer:
             from config import Config
             
             if hasattr(Config, 'OPENAI_API_KEY') and Config.OPENAI_API_KEY:
-                self.llm_client = OpenAI(
+                self.llm_client = OpenAI()
                     api_key=Config.OPENAI_API_KEY,
                     base_url=Config.OPENAI_BASE_URL if hasattr(Config, 'OPENAI_BASE_URL') else None
-                )
+                
                 logger.info("LLM客户端初始化成功")
             else:
                 logger.warning("未配置OpenAI API密钥，AI解释功能受限")
@@ -261,8 +261,7 @@ class PseudocodeExplainer:
         except Exception as e:
             logger.error(f"初始化LLM客户端失败: {e}")
             
-    def explain_code(
-        self,
+    def explain_code(, self)
         pseudocode: str,
         filename: str = '',
         function_name: str = '',
@@ -283,7 +282,7 @@ class PseudocodeExplainer:
             CodeExplanation: 解释结果
         """
         # 检查缓存
-        cache_key = f"{filename}:{function_name}:{hash(pseudocode)}"
+        cache_key = f"{filename}:{function_name}:{hash(pseudocode)}",
         if cache_key in self.explanation_cache:
             logger.debug(f"使用缓存的解释结果: {cache_key}")
             return self.explanation_cache[cache_key]
@@ -291,15 +290,15 @@ class PseudocodeExplainer:
         result = CodeExplanation(original_code=pseudocode)
         
         if not pseudocode or len(pseudocode.strip()) < 10:
-            result.summary = "代码太短，无法进行有效解释"
+            result.summary = "代码太短，无法进行有效解释",
             return result
             
         try:
             # 使用LLM进行解释
             if self.llm_client:
-                explanation = self._explain_with_llm(
+                explanation = self._explain_with_llm()
                     pseudocode, filename, function_name, architecture, level
-                )
+                
                 
                 if explanation:
                     result = self._parse_explanation(explanation, pseudocode)
@@ -317,8 +316,7 @@ class PseudocodeExplainer:
             
         return result
         
-    def _explain_with_llm(
-        self,
+    def _explain_with_llm(, self)
         pseudocode: str,
         filename: str,
         function_name: str,
@@ -342,12 +340,12 @@ class PseudocodeExplainer:
             from config import Config
             
             # 构建提示词
-            prompt = PSEUDOCODE_EXPLANATION_TEMPLATE.format(
+            prompt = PSEUDOCODE_EXPLANATION_TEMPLATE.format()
                 pseudocode=pseudocode,
                 filename=filename or 'unknown',
                 function_name=function_name or 'unknown',
                 architecture=architecture or 'unknown'
-            )
+            
             
             # 根据解释级别调整提示词
             if level == ExplanationLevel.BASIC:
@@ -357,7 +355,7 @@ class PseudocodeExplainer:
                 
             model = getattr(Config, 'LLM_MODEL', 'gpt-4')
             
-            response = self.llm_client.chat.completions.create(
+            response = self.llm_client.chat.completions.create()
                 model=model,
                 messages=[
                     {"role": "system", "content": "你是一名资深的逆向工程和安全分析专家。"},
@@ -365,7 +363,7 @@ class PseudocodeExplainer:
                 ],
                 temperature=0.3,
                 max_tokens=4000
-            )
+            
             
             return response.choices[0].message.content
             
@@ -373,8 +371,7 @@ class PseudocodeExplainer:
             logger.error(f"LLM调用失败: {e}")
             return None
             
-    def _parse_explanation(
-        self,
+    def _parse_explanation(, self)
         explanation: str,
         original_code: str
     ) -> CodeExplanation:
@@ -398,7 +395,7 @@ class PseudocodeExplainer:
             else:
                 # 尝试直接解析
                 json_start = explanation.find('{')
-                json_end = explanation.rfind('}') + 1
+                json_end = explanation.rfind('}') + 1,
                 if json_start != -1 and json_end > json_start:
                     json_str = explanation[json_start:json_end]
                 else:
@@ -440,14 +437,14 @@ class PseudocodeExplainer:
         result = CodeExplanation(original_code=pseudocode)
         
         # 提取函数名
-        func_pattern = r'(?:void|int|char|bool|size_t|unsigned|long)\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\('
+        func_pattern = r'(?:void|int|char|bool|size_t|unsigned|long)\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(')
         func_match = re.search(func_pattern, pseudocode)
         if func_match:
             func_name = func_match.group(1)
-            result.function_explanations.append({
+            result.function_explanations.append({)
                 'name': func_name,
                 'purpose': self._infer_function_purpose(func_name, pseudocode)
-            })
+            }
             
         # 提取变量
         var_pattern = r'(?:int|char|bool|size_t|void\s*\*|unsigned|long)\s+([a-zA-Z_][a-zA-Z0-9_]*)'
@@ -455,10 +452,10 @@ class PseudocodeExplainer:
         
         for var in variables:
             purpose = self._infer_variable_purpose(var)
-            result.variable_explanations.append({
+            result.variable_explanations.append({)
                 'name': var,
                 'purpose': purpose
-            })
+            }
             
         # 检测危险函数
         dangerous_funcs = ['strcpy', 'strcat', 'sprintf', 'gets', 'scanf', 'memcpy', 'malloc', 'free']
@@ -469,7 +466,7 @@ class PseudocodeExplainer:
                 
         # 检测循环和条件
         if 'while' in pseudocode or 'for' in pseudocode:
-            result.summary += "包含循环结构。"
+            result.summary += "包含循环结构。",
         if 'if' in pseudocode:
             result.summary += "包含条件判断。"
             
@@ -550,8 +547,7 @@ class PseudocodeExplainer:
             
         return "通用变量"
         
-    def analyze_function(
-        self,
+    def analyze_function(, self)
         pseudocode: str,
         function_name: str,
         address: str = ''
@@ -567,10 +563,10 @@ class PseudocodeExplainer:
         Returns:
             FunctionAnalysis: 函数分析结果
         """
-        analysis = FunctionAnalysis(
+        analysis = FunctionAnalysis()
             function_name=function_name,
             address=address
-        )
+        
         
         # 提取参数
         param_pattern = r'\(([^)]*)\)'
@@ -582,13 +578,13 @@ class PseudocodeExplainer:
             for param in params:
                 parts = param.split()
                 if len(parts) >= 2:
-                    analysis.parameters.append({
+                    analysis.parameters.append({)
                         'type': parts[0],
                         'name': parts[-1]
-                    })
+                    }
                     
         # 提取返回类型
-        return_pattern = r'^([a-zA-Z_][a-zA-Z0-9_]*\s*\*?)\s+[a-zA-Z_][a-zA-Z0-9_]*\s*\('
+        return_pattern = r'^([a-zA-Z_][a-zA-Z0-9_]*\s*\*?)\s+[a-zA-Z_][a-zA-Z0-9_]*\s*\(')
         return_match = re.match(return_pattern, pseudocode.strip() if pseudocode else '')
         if return_match:
             analysis.return_type = return_match.group(1).strip()
@@ -619,8 +615,7 @@ class PseudocodeExplainer:
                 
         return analysis
         
-    def batch_explain(
-        self,
+    def batch_explain(, self)
         code_blocks: List[Dict[str, str]],
         level: ExplanationLevel = ExplanationLevel.TECHNICAL
     ) -> List[CodeExplanation]:
@@ -637,19 +632,18 @@ class PseudocodeExplainer:
         results = []
         
         for block in code_blocks:
-            result = self.explain_code(
+            result = self.explain_code()
                 pseudocode=block.get('pseudocode', ''),
                 filename=block.get('filename', ''),
                 function_name=block.get('function_name', ''),
                 architecture=block.get('architecture', ''),
                 level=level
-            )
+            
             results.append(result)
             
         return results
         
-    def generate_commented_code(
-        self,
+    def generate_commented_code(, self)
         pseudocode: str,
         comments: Dict[int, str]
     ) -> str:
@@ -699,7 +693,7 @@ class PseudocodeExplainer:
             if self.llm_client:
                 prompt = SECURITY_EXPLANATION_TEMPLATE.format(pseudocode=pseudocode)
                 
-                response = self.llm_client.chat.completions.create(
+                response = self.llm_client.chat.completions.create()
                     model="gpt-4",
                     messages=[
                         {"role": "system", "content": "你是一名资深的安全研究员。"},
@@ -707,14 +701,15 @@ class PseudocodeExplainer:
                     ],
                     temperature=0.3,
                     max_tokens=2000
-                )
+                
                 
                 content = response.choices[0].message.content
                 
                 # 解析JSON
                 json_match = re.search(r'```json\s*([\s\S]*?)\s*```', content)
                 if json_match:
-                    result = json.loads(json_match.group(1))
+                    result = json.loads(json_match.group(1
+
                     
             else:
                 # 使用规则分析
@@ -752,23 +747,23 @@ class PseudocodeExplainer:
         
         for func, (vuln_type, severity, attack) in dangerous_funcs.items():
             if func in pseudocode:
-                vulnerabilities.append({
+                vulnerabilities.append({)
                     'type': vuln_type,
                     'location': f"函数调用: {func}",
                     'severity': severity,
                     'fix': f"建议使用安全替代函数"
-                })
+                }
                 attack_vectors.append(attack)
                 
         # 检测整数溢出
         if re.search(r'\+\s*\d+|\-\s*\d+|\*\s*\d+', pseudocode):
             if 'size' in pseudocode.lower() or 'len' in pseudocode.lower():
-                vulnerabilities.append({
+                vulnerabilities.append({)
                     'type': '整数溢出',
                     'location': '算术运算',
                     'severity': 'medium',
                     'fix': '添加边界检查'
-                })
+                }
                 
         # 评估整体风险
         severities = [v['severity'] for v in vulnerabilities]
@@ -846,13 +841,7 @@ class PseudocodeExplainer:
         return '\n'.join(report)
 
 
-def explain_pseudocode(
-    pseudocode: str,
-    filename: str = '',
-    function_name: str = '',
-    architecture: str = '',
-    level: ExplanationLevel = ExplanationLevel.TECHNICAL
-) -> CodeExplanation:
+def explain_pseudocode(, pseudocode: str, filename: str = '', function_name: str = '', architecture: str = '', level: ExplanationLevel = ExplanationLevel.TECHNICAL) -> CodeExplanation:
     """
     解释伪代码
     
@@ -867,4 +856,4 @@ def explain_pseudocode(
         CodeExplanation: 解释结果
     """
     explainer = PseudocodeExplainer()
-    return explainer.explain_code(pseudocode, filename, function_name, architecture, level)
+    return explainer.explain_code(pseudocode, filename, function_name, architecture, level

@@ -26,8 +26,7 @@ class MetasploitModule < Msf::Exploit::Remote
 
   include Msf::Exploit::Remote::Tcp
 
-  def initialize(info = {{}})
-    super(update_info(info,
+  def initialize(info = {{}}, super(update_info(info)
       'Name'           => '{vuln_report.get('target', 'Unknown Vulnerability')}',
       'Description'    => %q{{
         {vuln_report.get('description', 'Exploit for vulnerability')}
@@ -44,7 +43,8 @@ class MetasploitModule < Msf::Exploit::Remote
         ['Automatic', {{}}]
       ],
       'DefaultTarget'  => 0
-    ))
+    
+
   end
 
   def check
@@ -93,4 +93,4 @@ end
         return {
             'success': False,
             'error': str(e)
-        }
+        }))

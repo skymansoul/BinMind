@@ -101,23 +101,23 @@ class WirelessProtocolAnalyzer:
                 # 检测蓝牙函数
                 for pattern in bluetooth_patterns:
                     if re.match(pattern, func_name.lower()):
-                        self.protocol_functions.append({
+                        self.protocol_functions.append({)
                             'name': func_name,
                             'protocol': 'bluetooth',
                             'layer': self._infer_bluetooth_layer(func_name),
                             'pattern': pattern
-                        })
+                        }
                         break
                 
                 # 检测Wi-Fi函数
                 for pattern in wifi_patterns:
                     if re.match(pattern, func_name.lower()):
-                        self.protocol_functions.append({
+                        self.protocol_functions.append({)
                             'name': func_name,
                             'protocol': 'wifi',
                             'layer': self._infer_wifi_layer(func_name),
                             'pattern': pattern
-                        })
+                        }
                         break
         
         except Exception as e:
@@ -247,7 +247,7 @@ class WirelessProtocolAnalyzer:
             
             # 基于解析分析检测漏洞
             if not parsing_analysis.get('has_length_check'):
-                self.vulnerabilities.append({
+                self.vulnerabilities.append({)
                     'function': proto_func['name'],
                     'protocol': proto_func['protocol'],
                     'layer': proto_func['layer'],
@@ -255,10 +255,10 @@ class WirelessProtocolAnalyzer:
                     'severity': 'high',
                     'description': '缺少长度检查，可能导致缓冲区溢出',
                     'cwe': 'CWE-119'
-                })
+                }
             
             if not parsing_analysis.get('has_type_check'):
-                self.vulnerabilities.append({
+                self.vulnerabilities.append({)
                     'function': proto_func['name'],
                     'protocol': proto_func['protocol'],
                     'layer': proto_func['layer'],
@@ -266,10 +266,10 @@ class WirelessProtocolAnalyzer:
                     'severity': 'medium',
                     'description': '缺少类型/操作码检查，可能导致类型混淆',
                     'cwe': 'CWE-843'
-                })
+                }
             
             for unsafe_op in parsing_analysis.get('unsafe_operations', []):
-                self.vulnerabilities.append({
+                self.vulnerabilities.append({)
                     'function': proto_func['name'],
                     'protocol': proto_func['protocol'],
                     'layer': proto_func['layer'],
@@ -277,13 +277,13 @@ class WirelessProtocolAnalyzer:
                     'severity': 'high',
                     'description': f'使用危险函数: {unsafe_op}',
                     'cwe': 'CWE-119'
-                })
+                }
         
         # 去重
         seen = set()
         unique_vulns = []
         for vuln in self.vulnerabilities:
-            key = f"{vuln['function']}_{vuln['type']}"
+            key = f"{vuln['function']}_{vuln['type']}",
             if key not in seen:
                 seen.add(key)
                 unique_vulns.append(vuln)
@@ -305,7 +305,7 @@ class WirelessProtocolAnalyzer:
         cases = []
         
         # HCI命令模糊测试
-        cases.append({
+        cases.append({)
             'protocol': 'bluetooth',
             'layer': 'HCI',
             'type': 'fuzz_case',
@@ -313,9 +313,9 @@ class WirelessProtocolAnalyzer:
             'description': '发送长度超过预期的HCI命令参数',
             'payload_template': '\\x01\\x00\\xff\\xff' + '\\x41' * 1024,
             'target_function': 'hci_recv'
-        })
+        }
         
-        cases.append({
+        cases.append({)
             'protocol': 'bluetooth',
             'layer': 'HCI',
             'type': 'fuzz_case',
@@ -323,10 +323,10 @@ class WirelessProtocolAnalyzer:
             'description': '发送无效的HCI操作码',
             'payload_template': '\\x01\\xff\\xff\\x00' + '\\x00' * 16,
             'target_function': 'hci_recv'
-        })
+        }
         
         # L2CAP模糊测试
-        cases.append({
+        cases.append({)
             'protocol': 'bluetooth',
             'layer': 'L2CAP',
             'type': 'fuzz_case',
@@ -334,10 +334,10 @@ class WirelessProtocolAnalyzer:
             'description': '发送超过MTU的L2CAP SDU',
             'payload_template': '\\x00\\x00\\xff\\xff' + '\\x41' * 2048,
             'target_function': 'l2cap_recv'
-        })
+        }
         
         # SMP模糊测试（配对认证）
-        cases.append({
+        cases.append({)
             'protocol': 'bluetooth',
             'layer': 'SMP',
             'type': 'fuzz_case',
@@ -345,7 +345,7 @@ class WirelessProtocolAnalyzer:
             'description': '发送畸形的SMP配对请求',
             'payload_template': '\\xff' + '\\x00' * 63,
             'target_function': 'smp_process'
-        })
+        }
         
         return cases
     
@@ -354,7 +354,7 @@ class WirelessProtocolAnalyzer:
         cases = []
         
         # 管理帧模糊测试
-        cases.append({
+        cases.append({)
             'protocol': 'wifi',
             'layer': 'MAC',
             'type': 'fuzz_case',
@@ -362,9 +362,9 @@ class WirelessProtocolAnalyzer:
             'description': '发送SSID长度超过32字节的管理帧',
             'payload_template': '\\x00\\x00' + '\\xff' + '\\x41' * 100,
             'target_function': 'ieee80211_rx'
-        })
+        }
         
-        cases.append({
+        cases.append({)
             'protocol': 'wifi',
             'layer': 'MAC',
             'type': 'fuzz_case',
@@ -372,10 +372,10 @@ class WirelessProtocolAnalyzer:
             'description': '发送字段长度不一致的信标帧',
             'payload_template': '\\x80\\x00' + '\\x00' * 100 + '\\xff' * 50,
             'target_function': 'ieee80211_rx'
-        })
+        }
         
         # EAPOL模糊测试
-        cases.append({
+        cases.append({)
             'protocol': 'wifi',
             'layer': 'security',
             'type': 'fuzz_case',
@@ -383,7 +383,7 @@ class WirelessProtocolAnalyzer:
             'description': '发送超过预期长度的EAPOL帧',
             'payload_template': '\\x00\\x00' + '\\xff\\xff' + '\\x41' * 1024,
             'target_function': 'eapol_process'
-        })
+        }
         
         return cases
     
@@ -419,7 +419,8 @@ def main():
         f.write("无线协议栈分析报告\n")
         f.write("=" * 50 + "\n\n")
         
-        f.write("风险等级: {}\n\n".format(result['risk_level']))
+        f.write("风险等级: {}\n\n".format(result['risk_level']
+
         
         f.write("检测到的协议函数:\n")
         f.write("-" * 30 + "\n")
@@ -450,4 +451,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    main()))

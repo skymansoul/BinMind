@@ -118,7 +118,8 @@ class CodeVisualizer:
                         id=f"B{block_id}",
                         instructions=current_block,
                         block_type=BlockType.NORMAL
-                    ))
+                    
+
                     block_id += 1
                     current_block = []
                 
@@ -128,13 +129,15 @@ class CodeVisualizer:
                         instructions=[line],
                         block_type=BlockType.CONDITIONAL,
                         color="#FFE4E1"
-                    ))
+                    
+
                     block_id += 1
                     
                     match = re.search(r'if\s*\((.+?)\)', line)
                     if match:
                         cond = match.group(1)
-                        conditionals.append((f"B{block_id-1}", f"B{block_id}", f"B{block_id+1}"))
+                        conditionals.append((f"B{block_id-1}", f"B{block_id}", f"B{block_id+1}"
+
                 
                 elif line.startswith('for') or line.startswith('while'):
                     blocks.append(BasicBlock(
@@ -142,7 +145,8 @@ class CodeVisualizer:
                         instructions=[line],
                         block_type=BlockType.LOOP,
                         color="#E0FFE0"
-                    ))
+                    
+
                     block_id += 1
                     loops.append([f"B{block_id-1}"])
                 
@@ -153,7 +157,8 @@ class CodeVisualizer:
                         block_type=BlockType.RETURN,
                         is_exit=True,
                         color="#E6E6FA"
-                    ))
+                    
+
                     block_id += 1
             
             else:
@@ -164,23 +169,25 @@ class CodeVisualizer:
                 id=f"B{block_id}",
                 instructions=current_block,
                 block_type=BlockType.NORMAL
-            ))
+            
+
         
         for i in range(len(blocks) - 1):
-            edges.append((blocks[i].id, blocks[i+1].id))
+            edges.append((blocks[i].id, blocks[i+1].id
+
         
         if blocks:
-            blocks[0].is_entry = True
+            blocks[0].is_entry = True,
             if blocks[-1].block_type != BlockType.RETURN:
                 blocks[-1].is_exit = True
         
-        cfg = ControlFlowGraph(
+        cfg = ControlFlowGraph()
             function_name=function_name,
             blocks=blocks,
             edges=edges,
             loops=loops,
             conditionals=conditionals
-        )
+        
         
         logger.info(f"控制流图生成完成: {len(blocks)} 个基本块, {len(edges)} 条边")
         return cfg
@@ -202,7 +209,7 @@ class CodeVisualizer:
             if len(block.instructions) > 5:
                 label += "<br/>..."
             
-            style = ""
+            style = "",
             if block.color:
                 style = f" style {block.id} fill:{block.color},stroke:#333,stroke-width:2px"
             
@@ -309,8 +316,7 @@ class CodeVisualizer:
         
         return "\n".join(lines)
     
-    def visualize(self, pseudocode: str, function_name: str = "function", 
-                  output_format: OutputFormat = OutputFormat.MERMAID) -> str:
+    def visualize(self, pseudocode: str, function_name: str = "function", output_format: OutputFormat = OutputFormat.MERMAID) -> str:
         """
         生成可视化输出
         
@@ -333,9 +339,7 @@ class CodeVisualizer:
         else:
             return self.generate_mermaid(cfg)
     
-    def save_visualization(self, pseudocode: str, output_path: str, 
-                           function_name: str = "function", 
-                           output_format: OutputFormat = OutputFormat.MERMAID) -> bool:
+    def save_visualization(self, pseudocode: str, output_path: str, function_name: str = "function", output_format: OutputFormat = OutputFormat.MERMAID) -> bool:
         """
         保存可视化结果到文件
         
@@ -398,7 +402,7 @@ class CodeVisualizer:
             elif line.startswith('return '):
                 analysis['returns'] += 1
             elif '(' in line and ')' in line and ';' in line:
-                func_name = line.split('(')[0].strip()
+                func_name = line.split('(')[0].strip(
                 if func_name and not line.startswith('if') and not line.startswith('for') and not line.startswith('while'):
                     analysis['calls'] += 1
         
@@ -412,4 +416,4 @@ def get_code_visualizer() -> CodeVisualizer:
     Returns:
         CodeVisualizer实例
     """
-    return CodeVisualizer()
+    return CodeVisualizer()))))))))))))))

@@ -102,38 +102,40 @@ class BinaryContractVerifier(BaseAnalyzer):
     
     def _parse_contract(self, contract_spec: Dict[str, Any]) -> FunctionContract:
         """解析合约规范"""
-        contract = FunctionContract(
+        contract = FunctionContract()
             function_name=contract_spec.get("function_name", ""),
             function_address=contract_spec.get("function_address", 0)
-        )
+        
         
         for pre in contract_spec.get("preconditions", []):
             contract.preconditions.append(ContractClause(
                 clause_type=ContractType.PRECONDITION,
                 expression=pre.get("expression", ""),
                 description=pre.get("description", "")
-            ))
+            
+
         
         for post in contract_spec.get("postconditions", []):
             contract.postconditions.append(ContractClause(
                 clause_type=ContractType.POSTCONDITION,
                 expression=post.get("expression", ""),
                 description=post.get("description", "")
-            ))
+            
+
         
         for inv in contract_spec.get("invariants", []):
             contract.invariants.append(ContractClause(
                 clause_type=ContractType.INVARIANT,
                 expression=inv.get("expression", ""),
                 description=inv.get("description", "")
-            ))
+            
+
         
         contract.modifies = contract_spec.get("modifies", [])
         
         return contract
     
-    def _compute_weakest_precondition(self, postcondition: str, 
-                                      program_path: str) -> str:
+    def _compute_weakest_precondition(self, postcondition: str, program_path: str) -> str:
         """计算最弱前置条件"""
         wp = postcondition
         
@@ -210,7 +212,8 @@ class BinaryContractVerifier(BaseAnalyzer):
                 constraints=constraints,
                 is_feasible=True,
                 variables={"x": f"sym_var_{i}", "y": f"sym_var_{i+1}"}
-            ))
+            
+
         
         return paths
     
@@ -226,20 +229,21 @@ class BinaryContractVerifier(BaseAnalyzer):
         
         for path in symbolic_paths:
             for post in self._current_contract.postconditions:
-                wp = self._compute_weakest_precondition(post.expression, str(path.constraints))
+                wp = self._compute_weakest_precondition(post.expression, str(path.constraints
+
                 
                 conditions = [wp]
                 conditions.extend([p.expression for p in self._current_contract.preconditions])
                 
                 verified, counterexample = self._verify_with_z3(conditions)
                 
-                status = VerificationStatus.UNKNOWN
+                status = VerificationStatus.UNKNOWN,
                 if verified is True:
                     status = VerificationStatus.VERIFIED
                 elif verified is False:
                     status = VerificationStatus.VIOLATED
                 
-                result = VerificationResult(
+                result = VerificationResult()
                     status=status,
                     function_name=self._current_contract.function_name,
                     contract_type=post.clause_type,
@@ -248,7 +252,7 @@ class BinaryContractVerifier(BaseAnalyzer):
                     proof_steps=[f"WP计算: {wp}", f"路径约束: {path.constraints}"],
                     smt_queries=1,
                     execution_time=0.1
-                )
+                
                 
                 results.append(result)
         
@@ -314,5 +318,4 @@ class BinaryContractVerifier(BaseAnalyzer):
             description="关键函数微积分合约验证器，通过最弱前置条件或符号执行验证函数合约，生成验证条件并调用SMT求解器",
             author="BinaryAnalysisPlatform",
             dependencies=["z3-solver"],
-            supported_platforms=["x86", "x86_64", "arm", "arm64"]
-        )
+            supported_platforms=["x86", "x86_64", "arm", "arm64"]))))))))))

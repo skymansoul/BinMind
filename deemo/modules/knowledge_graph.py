@@ -40,8 +40,7 @@ RELATION_TYPES = [
 class KnowledgeGraphEntity:
     """知识图谱实体类"""
     
-    def __init__(
-        self,
+    def __init__(, self)
         entity_id: str,
         entity_type: str,
         name: str,
@@ -77,8 +76,7 @@ class KnowledgeGraphEntity:
 class KnowledgeGraphRelation:
     """知识图谱关系类"""
     
-    def __init__(
-        self,
+    def __init__(, self)
         source_id: str,
         target_id: str,
         relation_type: str,
@@ -128,7 +126,7 @@ class VulnKnowledgeGraph:
         self.entities: Dict[str, KnowledgeGraphEntity] = {}
         self.relations: List[KnowledgeGraphRelation] = []
         
-        self.graph = None
+        self.graph = None,
         if NETWORKX_AVAILABLE:
             self.graph = nx.DiGraph()
         
@@ -137,11 +135,10 @@ class VulnKnowledgeGraph:
     def _generate_entity_id(self, entity_type: str, name: str) -> str:
         """生成唯一的实体ID"""
         import hashlib
-        unique_str = f"{entity_type}_{name}_{datetime.now().timestamp()}"
-        return hashlib.md5(unique_str.encode()).hexdigest()[:16]
+        unique_str = f"{entity_type}_{name}_{datetime.now().timestamp()}",
+        return hashlib.md5(unique_str.encode().hexdigest([:16])
     
-    def add_entity(
-        self,
+    def add_entity(, self)
         entity_type: str,
         name: str,
         properties: Optional[Dict[str, Any]] = None,
@@ -169,28 +166,27 @@ class VulnKnowledgeGraph:
         
         entity_id = entity_id or self._generate_entity_id(entity_type, name)
         
-        entity = KnowledgeGraphEntity(
+        entity = KnowledgeGraphEntity()
             entity_id=entity_id,
             entity_type=entity_type,
             name=name,
             properties=properties
-        )
+        
         
         self.entities[entity_id] = entity
         
         if self.graph:
-            self.graph.add_node(
+            self.graph.add_node()
                 entity_id,
                 label=name,
                 type=entity_type,
                 **(properties or {})
-            )
+            
         
         logger.debug(f"添加实体: {entity_type} - {name} ({entity_id})")
         return entity_id
     
-    def add_relation(
-        self,
+    def add_relation(, self)
         source_id: str,
         target_id: str,
         relation_type: str,
@@ -214,22 +210,22 @@ class VulnKnowledgeGraph:
         if relation_type not in RELATION_TYPES:
             raise ValueError(f"无效的关系类型: {relation_type}")
         
-        relation = KnowledgeGraphRelation(
+        relation = KnowledgeGraphRelation()
             source_id=source_id,
             target_id=target_id,
             relation_type=relation_type,
             properties=properties
-        )
+        
         
         self.relations.append(relation)
         
         if self.graph:
-            self.graph.add_edge(
+            self.graph.add_edge()
                 source_id,
                 target_id,
                 label=relation_type,
                 **(properties or {})
-            )
+            
         
         logger.debug(f"添加关系: {source_id} -{relation_type}-> {target_id}")
     
@@ -239,11 +235,11 @@ class VulnKnowledgeGraph:
     
     def get_entities_by_type(self, entity_type: str) -> List[KnowledgeGraphEntity]:
         """按类型获取实体"""
-        return [e for e in self.entities.values() if e.entity_type == entity_type]
+        return [e for e in self.entities.values( if e.entity_type == entity_type])
     
     def get_entity_by_name(self, name: str) -> List[KnowledgeGraphEntity]:
         """按名称搜索实体"""
-        return [e for e in self.entities.values() if name.lower() in e.name.lower()]
+        return [e for e in self.entities.values( if name.lower( in e.name.lower(]
     
     def get_relations_by_type(self, relation_type: str) -> List[KnowledgeGraphRelation]:
         """按类型获取关系"""
@@ -295,6 +291,7 @@ class VulnKnowledgeGraph:
         return_part = match.group(2).strip()
         
         return self._execute_match(pattern_part, return_part)
+
     
     def _execute_match(self, pattern: str, return_clause: str) -> List[Dict[str, Any]]:
         """执行 MATCH 模式匹配"""
@@ -305,7 +302,7 @@ class VulnKnowledgeGraph:
         nodes = []
         edges = []
         
-        i = 0
+        i = 0,
         while i < len(tokens):
             if tokens[i].startswith('('):
                 node_str = tokens[i].strip('()')
@@ -352,7 +349,7 @@ class VulnKnowledgeGraph:
                 for field in return_fields:
                     parts = field.split('.')
                     if len(parts) == 2:
-                        alias, prop = parts
+                        alias, prop = parts,
                         for node in nodes:
                             if node['alias'] == alias:
                                 entity = source_entity if node['alias'] == nodes[0]['alias'] else target_entity
@@ -378,22 +375,22 @@ class VulnKnowledgeGraph:
                 vuln_type = vuln.get('vulnerability_type', '')
                 severity = vuln.get('severity', '')
                 
-                binary_id = self.add_entity('Binary', binary_name, {
+                binary_id = self.add_entity('Binary', binary_name, {)
                     'format': vuln.get('binary_format'),
                     'architecture': vuln.get('architecture'),
                     'bits': vuln.get('bits')
-                })
+                }
                 
-                func_id = self.add_entity('Function', function_name, {
+                func_id = self.add_entity('Function', function_name, {)
                     'binary_name': binary_name,
                     'severity': severity
-                })
+                }
                 
-                vuln_id = self.add_entity('Vulnerability', vuln_type, {
+                vuln_id = self.add_entity('Vulnerability', vuln_type, {)
                     'severity': severity,
                     'description': vuln.get('description'),
                     'function_name': function_name
-                })
+                }
                 
                 self.add_relation(binary_id, func_id, 'HAS_FUNCTION')
                 self.add_relation(binary_id, vuln_id, 'CONTAINS_VULN')
@@ -411,12 +408,12 @@ class VulnKnowledgeGraph:
             binary_info = analysis_result.get('binary_info', {})
             binary_name = binary_info.get('binary_name', 'unknown')
             
-            binary_id = self.add_entity('Binary', binary_name, {
+            binary_id = self.add_entity('Binary', binary_name, {)
                 'format': binary_info.get('binary_format'),
                 'architecture': binary_info.get('arch'),
                 'bits': binary_info.get('bits'),
                 'size': binary_info.get('size')
-            })
+            }
             
             decomp_results = analysis_result.get('decomp_results', [])
             for result in decomp_results:
@@ -424,10 +421,10 @@ class VulnKnowledgeGraph:
                 analysis = result.get('analysis', {})
                 vulns = analysis.get('vulnerabilities', [])
                 
-                func_id = self.add_entity('Function', func_name, {
+                func_id = self.add_entity('Function', func_name, {)
                     'risk_level': analysis.get('risk_level'),
                     'summary': analysis.get('summary')
-                })
+                }
                 
                 self.add_relation(binary_id, func_id, 'HAS_FUNCTION')
                 
@@ -435,11 +432,11 @@ class VulnKnowledgeGraph:
                     vuln_type = vuln.get('type', 'Unknown')
                     vuln_severity = vuln.get('severity', 'Medium')
                     
-                    vuln_id = self.add_entity('Vulnerability', vuln_type, {
+                    vuln_id = self.add_entity('Vulnerability', vuln_type, {)
                         'severity': vuln_severity,
                         'location': vuln.get('location'),
                         'description': vuln.get('description')
-                    })
+                    }
                     
                     self.add_relation(binary_id, vuln_id, 'CONTAINS_VULN')
         
@@ -515,7 +512,7 @@ class VulnKnowledgeGraph:
             d3_nodes = []
             for eid, entity in self.entities.items():
                 entity_dict = entity.to_dict()
-                d3_nodes.append({
+                d3_nodes.append({)
                     'id': eid,
                     'name': entity_dict.get('name', eid),
                     'type': entity_dict.get('entity_type', 'Unknown'),
@@ -523,17 +520,17 @@ class VulnKnowledgeGraph:
                     'color': color_map.get(entity_dict.get('entity_type', ''), '#999999'),
                     'size': size_map.get(entity_dict.get('entity_type', ''), 10),
                     'group': entity_dict.get('entity_type', 'Unknown')
-                })
+                }
 
             # 构建 D3 links（使用节点 id 引用，兼容 forceSimulation）
             d3_links = []
             for rel in self.relations:
-                d3_links.append({
+                d3_links.append({)
                     'source': rel.source_id,
                     'target': rel.target_id,
                     'type': rel.relation_type,
                     'properties': rel.properties or {}
-                })
+                }
 
             # 组装最终 JSON
             d3_data = {
@@ -708,42 +705,42 @@ class VulnKnowledgeGraph:
                     data = json.load(f)
                 
                 for entity_id, entity_dict in data.get('entities', {}).items():
-                    entity = KnowledgeGraphEntity(
+                    entity = KnowledgeGraphEntity()
                         entity_id=entity_dict['entity_id'],
                         entity_type=entity_dict['entity_type'],
                         name=entity_dict['name'],
                         properties=entity_dict.get('properties', {})
-                    )
+                    
                     entity.created_at = entity_dict.get('created_at', entity.created_at)
                     entity.updated_at = entity_dict.get('updated_at', entity.updated_at)
                     self.entities[entity_id] = entity
                 
                 for relation_dict in data.get('relations', []):
-                    relation = KnowledgeGraphRelation(
+                    relation = KnowledgeGraphRelation()
                         source_id=relation_dict['source_id'],
                         target_id=relation_dict['target_id'],
                         relation_type=relation_dict['relation_type'],
                         properties=relation_dict.get('properties', {})
-                    )
+                    
                     relation.created_at = relation_dict.get('created_at', relation.created_at)
                     self.relations.append(relation)
                 
                 if self.graph:
                     for entity_id, entity in self.entities.items():
-                        self.graph.add_node(
+                        self.graph.add_node()
                             entity_id,
                             label=entity.name,
                             type=entity.entity_type,
                             **entity.properties
-                        )
+                        
                     
                     for relation in self.relations:
-                        self.graph.add_edge(
+                        self.graph.add_edge()
                             relation.source_id,
                             relation.target_id,
                             label=relation.relation_type,
                             **relation.properties
-                        )
+                        
                 
                 logger.info(f"已加载图谱: {len(self.entities)} 实体, {len(self.relations)} 关系")
         
@@ -759,4 +756,4 @@ class VulnKnowledgeGraph:
             self.graph.clear()
         
         self._save_graph()
-        logger.info("图谱已清空")
+        logger.info("图谱已清空"

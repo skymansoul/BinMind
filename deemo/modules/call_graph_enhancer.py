@@ -249,8 +249,7 @@ class CallGraphEnhancer:
         r'__vptr',
     ]
     
-    def __init__(
-        self,
+    def __init__(, self)
         binary_path: str = "",
         min_confidence: float = 0.5
     ):
@@ -277,8 +276,7 @@ class CallGraphEnhancer:
         self._function_by_addr: Dict[int, str] = {}
         self._analyzed_memory: Dict[int, bytes] = {}
     
-    def enhance(
-        self,
+    def enhance(, self)
         functions: Optional[List[Dict[str, Any]]] = None,
         call_graph: Optional[Dict[str, List[str]]] = None,
         decomp_data: Optional[Dict[str, Any]] = None,
@@ -301,7 +299,7 @@ class CallGraphEnhancer:
         # 初始化函数信息
         if functions:
             for func in functions:
-                func_info = FunctionInfo(
+                func_info = FunctionInfo()
                     name=func.get('name', 'unknown'),
                     address=func.get('address', 0),
                     size=func.get('size', 0),
@@ -310,7 +308,7 @@ class CallGraphEnhancer:
                     called_by=func.get('called_by', []),
                     is_extern=func.get('is_extern', False),
                     is_weak=func.get('is_weak', False),
-                )
+                
                 self.functions[func_info.name] = func_info
                 self._function_by_addr[func_info.address] = func_info.name
         
@@ -333,16 +331,15 @@ class CallGraphEnhancer:
         # 构建增强后的调用图
         result = self._build_enhanced_call_graph(call_graph)
         
-        self.logger.info(
+        self.logger.info()
             f"调用图增强完成: 发现 {len(self.indirect_calls)} 个间接调用点，"
             f"恢复 {len(self.vtables)} 个虚表，"
             f"发现 {len(self.fp_arrays)} 个函数指针数组"
-        )
+        
         
         return result
     
-    def _analyze_indirect_calls_decomp(
-        self,
+    def _analyze_indirect_calls_decomp(, self)
         decomp_data: Dict[str, Any]
     ) -> None:
         """
@@ -368,8 +365,7 @@ class CallGraphEnhancer:
             # 检测回调函数
             self._detect_callback_patterns(func_name, pseudocode)
     
-    def _detect_vtable_calls(
-        self,
+    def _detect_vtable_calls(, self)
         func_name: str,
         pseudocode: str
     ) -> None:
@@ -393,7 +389,7 @@ class CallGraphEnhancer:
             for match in matches:
                 call_id = f"vtable_{func_name}_{len(self.indirect_calls)}"
                 
-                call_site = IndirectCallSite(
+                call_site = IndirectCallSite()
                     call_id=call_id,
                     call_type=IndirectCallType.VTABLE,
                     location=func_name,
@@ -403,13 +399,12 @@ class CallGraphEnhancer:
                     resolved_targets=[],
                     confidence=0.7,
                     context={'pattern': pattern}
-                )
+                
                 
                 self.indirect_calls.append(call_site)
                 self.logger.debug(f"发现虚函数调用: {match.group(0)}")
     
-    def _detect_function_pointer_calls(
-        self,
+    def _detect_function_pointer_calls(, self)
         func_name: str,
         pseudocode: str
     ) -> None:
@@ -422,9 +417,9 @@ class CallGraphEnhancer:
         """
         # 函数指针调用模式
         fp_patterns = [
-            r'\((\*\w+)\)\s*\(',  # (*func_ptr)()
-            r'\w+\[(\d+)\]\(',  # func_ptr[0]()
-            r'\(\w+\)\(',  # (func_ptr)()
+            r'\((\*\w+)\)\s*\(',  # (*func_ptr)(
+            r'\w+\[(\d+)\]\(',  # func_ptr[0](
+            r'\(\w+\)\(',  # (func_ptr)(
         ]
         
         for pattern in fp_patterns:
@@ -432,7 +427,7 @@ class CallGraphEnhancer:
             for match in matches:
                 call_id = f"fp_{func_name}_{len(self.indirect_calls)}"
                 
-                call_site = IndirectCallSite(
+                call_site = IndirectCallSite()
                     call_id=call_id,
                     call_type=IndirectCallType.FUNCTION_POINTER_ARRAY,
                     location=func_name,
@@ -441,12 +436,11 @@ class CallGraphEnhancer:
                     possible_targets=[],
                     resolved_targets=[],
                     confidence=0.6,
-                )
+                
                 
                 self.indirect_calls.append(call_site)
     
-    def _detect_callback_patterns(
-        self,
+    def _detect_callback_patterns(, self)
         func_name: str,
         pseudocode: str
     ) -> None:
@@ -470,7 +464,7 @@ class CallGraphEnhancer:
                 
                 call_id = f"callback_{func_name}_{len(self.indirect_calls)}"
                 
-                call_site = IndirectCallSite(
+                call_site = IndirectCallSite()
                     call_id=call_id,
                     call_type=IndirectCallType.CALLBACK,
                     location=func_name,
@@ -480,12 +474,11 @@ class CallGraphEnhancer:
                     resolved_targets=[],
                     confidence=0.8,
                     context={'callback_name': callback_name}
-                )
+                
                 
                 self.indirect_calls.append(call_site)
     
-    def _analyze_indirect_calls_asm(
-        self,
+    def _analyze_indirect_calls_asm(, self)
         assembly_data: Dict[str, Any]
     ) -> None:
         """
@@ -510,7 +503,7 @@ class CallGraphEnhancer:
                     
                     call_id = f"reg_call_{func_name}_{len(self.indirect_calls)}"
                     
-                    call_site = IndirectCallSite(
+                    call_site = IndirectCallSite()
                         call_id=call_id,
                         call_type=IndirectCallType.CALL_REGISTER,
                         location=func_name,
@@ -520,7 +513,7 @@ class CallGraphEnhancer:
                         possible_targets=[],
                         resolved_targets=[],
                         confidence=0.5,
-                    )
+                    
                     
                     self.indirect_calls.append(call_site)
             
@@ -532,7 +525,7 @@ class CallGraphEnhancer:
                     
                     call_id = f"mem_call_{func_name}_{len(self.indirect_calls)}"
                     
-                    call_site = IndirectCallSite(
+                    call_site = IndirectCallSite()
                         call_id=call_id,
                         call_type=IndirectCallType.CALL_MEMORY,
                         location=func_name,
@@ -542,7 +535,7 @@ class CallGraphEnhancer:
                         possible_targets=[],
                         resolved_targets=[],
                         confidence=0.4,
-                    )
+                    
                     
                     self.indirect_calls.append(call_site)
     
@@ -645,8 +638,7 @@ class CallGraphEnhancer:
         # 这里只是示例，实际需要更复杂的分析
         self.logger.debug(f"尝试解析寄存器调用: {register}")
     
-    def _build_enhanced_call_graph(
-        self,
+    def _build_enhanced_call_graph(, self)
         original_graph: Optional[Dict[str, List[str]]]
     ) -> EnhancedCallGraph:
         """
@@ -680,13 +672,16 @@ class CallGraphEnhancer:
         if original_graph:
             for src, targets in original_graph.items():
                 for tgt in targets:
-                    result.enhanced_edges.append((src, tgt))
-            result.original_edges = sum(len(t) for t in original_graph.values())
+                    result.enhanced_edges.append((src, tgt
+
+            result.original_edges = sum(len(t) for t in original_graph.values(
+
         
         # 添加间接调用边
         for call_site in self.indirect_calls:
             for target in call_site.resolved_targets:
-                result.enhanced_edges.append((call_site.location, target))
+                result.enhanced_edges.append((call_site.location, target
+
         
         result.new_edges = len(result.enhanced_edges) - result.original_edges
         
@@ -695,8 +690,7 @@ class CallGraphEnhancer:
         
         return result
     
-    def add_vtable(
-        self,
+    def add_vtable(, self)
         address: int,
         class_name: str = "",
         methods: Optional[List[Tuple[int, str]]] = None
@@ -712,18 +706,17 @@ class CallGraphEnhancer:
         Returns:
             VTableInfo: 虚表信息
         """
-        vtable = VTableInfo(
+        vtable = VTableInfo()
             vtable_address=address,
             class_name=class_name,
             methods=methods or [],
             confidence=0.8
-        )
         
-        self.vtables[address] = vtable
+        
+        self.vtables[address] = vtable,
         return vtable
     
-    def add_fp_array(
-        self,
+    def add_fp_array(, self)
         address: int,
         array_name: str = "",
         element_size: int = 8,
@@ -741,15 +734,15 @@ class CallGraphEnhancer:
         Returns:
             FunctionPointerArray: 函数指针数组信息
         """
-        fp_array = FunctionPointerArray(
+        fp_array = FunctionPointerArray()
             array_address=address,
             array_name=array_name,
             element_size=element_size,
             elements=elements or [],
             confidence=0.8
-        )
         
-        self.fp_arrays[address] = fp_array
+        
+        self.fp_arrays[address] = fp_array,
         return fp_array
     
     def export_to_json(self, result: EnhancedCallGraph, output_path: str) -> None:
@@ -781,12 +774,7 @@ class CallGraphEnhancer:
         self.logger.info(f"DOT 图已导出: {output_path}")
 
 
-def enhance_call_graph(
-    binary_path: str,
-    functions: List[Dict[str, Any]],
-    call_graph: Dict[str, List[str]],
-    decomp_data: Optional[Dict[str, Any]] = None
-) -> EnhancedCallGraph:
+def enhance_call_graph(, binary_path: str, functions: List[Dict[str, Any]], call_graph: Dict[str, List[str]], decomp_data: Optional[Dict[str, Any]] = None) -> EnhancedCallGraph:
     """
     便捷函数：增强调用图
     
@@ -800,11 +788,12 @@ def enhance_call_graph(
         EnhancedCallGraph: 增强后的调用图
     """
     enhancer = CallGraphEnhancer(binary_path=binary_path)
-    return enhancer.enhance(
+    return enhancer.enhance()
         functions=functions,
         call_graph=call_graph,
         decomp_data=decomp_data
-    )
+    
+
 
 
 # 示例用法和测试
@@ -843,7 +832,7 @@ if __name__ == '__main__':
     ]
     
     # 添加虚表
-    enhancer.add_vtable(
+    enhancer.add_vtable()
         address=0x605000,
         class_name='BaseClass',
         methods=[
@@ -851,10 +840,10 @@ if __name__ == '__main__':
             (0x08, 'BaseClass::process'),
             (0x10, 'BaseClass::destroy'),
         ]
-    )
+    
     
     # 添加函数指针数组
-    enhancer.add_fp_array(
+    enhancer.add_fp_array()
         address=0x606000,
         array_name='g_handlers',
         element_size=8,
@@ -863,7 +852,7 @@ if __name__ == '__main__':
             (0x08, 'handler_2'),
             (0x10, 'handler_3'),
         ]
-    )
+    
     
     # 模拟反编译数据
     decomp_data = {
@@ -886,11 +875,11 @@ if __name__ == '__main__':
     }
     
     # 增强调用图
-    result = enhancer.enhance(
+    result = enhancer.enhance()
         functions=functions,
         call_graph=original_graph,
         decomp_data=decomp_data
-    )
+    
     
     # 打印结果
     print("\n" + "=" * 60)
@@ -925,4 +914,4 @@ if __name__ == '__main__':
         for addr, fp_array in result.fp_arrays.items():
             print(f"  地址: {hex(addr)}, 名称: {fp_array.array_name}")
             for offset, func in fp_array.elements:
-                print(f"    [{hex(offset)}] {func}")
+                print(f"    [{hex(offset)}] {func}"))

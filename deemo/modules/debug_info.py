@@ -131,11 +131,11 @@ class DebugInfoParser:
             # 提取符号
             for symbol in pdb.STREAM_SYMBOLS:
                 if hasattr(symbol, 'name') and hasattr(symbol, 'offset'):
-                    sym = DebugSymbol(
+                    sym = DebugSymbol()
                         name=str(symbol.name),
                         address=symbol.offset,
                         symbol_type=SymbolType.FUNCTION if 'func' in str(symbol.name).lower() else SymbolType.DATA
-                    )
+                    
                     symbols.append(sym)
             
             logger.info(f"从PDB提取了 {len(symbols)} 个符号")
@@ -152,12 +152,12 @@ class DebugInfoParser:
         types = []
         
         try:
-            result = subprocess.run(
+            result = subprocess.run()
                 ['dumpbin', '/symbols', pdb_path],
                 capture_output=True,
                 text=True,
                 timeout=30
-            )
+            
             
             if result.returncode == 0:
                 for line in result.stdout.split('\n'):
@@ -171,7 +171,8 @@ class DebugInfoParser:
                                     name=name,
                                     address=address,
                                     symbol_type=SymbolType.FUNCTION
-                                ))
+                                
+
                             except ValueError:
                                 pass
         except Exception as e:
@@ -211,7 +212,8 @@ class DebugInfoParser:
                                         name=name.value.decode('utf-8'),
                                         address=addr.value,
                                         symbol_type=SymbolType.FUNCTION
-                                    ))
+                                    
+
                             
                             elif DIE.tag == 'DW_TAG_variable':
                                 name = DIE.attributes.get('DW_AT_name')
@@ -220,7 +222,8 @@ class DebugInfoParser:
                                         name=name.value.decode('utf-8'),
                                         address=0,
                                         symbol_type=SymbolType.DATA
-                                    ))
+                                    
+
                             
                             elif DIE.tag == 'DW_TAG_structure_type':
                                 name = DIE.attributes.get('DW_AT_name')
@@ -228,7 +231,8 @@ class DebugInfoParser:
                                     types.append(TypeDefinition(
                                         name=name.value.decode('utf-8'),
                                         type_kind='struct'
-                                    ))
+                                    
+
                             
                         except Exception as e:
                             continue
@@ -261,7 +265,7 @@ class DebugInfoParser:
             # 查找常见的源文件扩展名
             extensions = [b'.c\x00', b'.cpp\x00', b'.h\x00', b'.hpp\x00']
             for ext in extensions:
-                idx = 0
+                idx = 0,
                 while idx < len(data):
                     pos = data.find(ext, idx)
                     if pos == -1:
@@ -277,7 +281,8 @@ class DebugInfoParser:
                         pass
                     idx = pos + 4
             
-            files = list(set(files))
+            files = list(set(files
+
         except Exception as e:
             logger.debug(f"提取源文件失败: {e}")
         
@@ -291,8 +296,9 @@ class DebugInfoParser:
                 symbols=[],
                 types=[],
                 source_files=[],
-                has_debug_info=False
-            )
+                has_debug_info=False)
+            
+
         
         binary_type = self._detect_binary_type()
         pdb_file = pdb_path or self._find_pdb_file()
@@ -334,8 +340,9 @@ class DebugInfoParser:
             pdb_path=pdb_file or '',
             has_debug_info=len(self.symbols) > 0,
             enhanced_functions=len([s for s in self.symbols if s.symbol_type == SymbolType.FUNCTION]),
-            enhanced_variables=len([s for s in self.symbols if s.symbol_type == SymbolType.DATA])
-        )
+            enhanced_variables=len([s for s in self.symbols if s.symbol_type == SymbolType.DATA]))
+        
+
     
     def get_symbol_by_address(self, address: int) -> Optional[DebugSymbol]:
         """根据地址查找符号"""
@@ -405,4 +412,4 @@ class DebugInfoParser:
             'pdb_path': result.pdb_path,
             'enhanced_functions': result.enhanced_functions,
             'enhanced_variables': result.enhanced_variables,
-        }
+        }))))))))))

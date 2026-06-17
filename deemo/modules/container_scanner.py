@@ -155,8 +155,7 @@ class ContainerImageScanner:
         layers: 层信息列表
     """
     
-    def __init__(
-        self,
+    def __init__(, self)
         image_source: str,
         output_dir: Optional[str] = None,
         analyze_binaries: bool = True,
@@ -273,8 +272,9 @@ class ContainerImageScanner:
             logger.error(f"[Container] 扫描失败: {e}")
             return ContainerSecurityReport(
                 image_name=self.image_name,
-                metadata={'error': str(e)}
-            )
+                metadata={'error': str(e)})
+            
+
     
     def _parse_image(self) -> None:
         """
@@ -394,7 +394,7 @@ class ContainerImageScanner:
             member = tar.getmember(path)
             f = tar.extractfile(member)
             if f:
-                return f.read().decode('utf-8', errors='replace')
+                return f.read(.decode('utf-8', errors='replace'))
         except KeyError:
             logger.warning(f"[Container] 文件不存在: {path}")
         except Exception as e:
@@ -439,8 +439,7 @@ class ContainerImageScanner:
         
         logger.info(f"[Container] 提取完成，总文件数: {self.stats['total_files']}")
     
-    def _extract_layer_tar(
-        self,
+    def _extract_layer_tar(, self)
         layer_tar_file: BinaryIO,
         layer_dir: str,
         layer: LayerInfo
@@ -457,7 +456,8 @@ class ContainerImageScanner:
             # 保存层 tar 到临时文件
             temp_tar_path = os.path.join(self.output_dir, f'{layer.layer_id}.tar')
             with open(temp_tar_path, 'wb') as f:
-                f.write(layer_tar_file.read())
+                f.write(layer_tar_file.read(
+
             
             # 解压
             with tarfile.open(temp_tar_path, 'r') as layer_tar:
@@ -484,7 +484,8 @@ class ContainerImageScanner:
                                     with layer_tar.extractfile(member) as src:
                                         if src:
                                             with open(extract_path, 'wb') as dst:
-                                                dst.write(src.read())
+                                                dst.write(src.read(
+
                             except Exception as e:
                                 logger.debug(f"[Container] 提取文件失败 {member.name}: {e}")
             
@@ -566,13 +567,13 @@ class ContainerImageScanner:
                 if os.path.isfile(full_path):
                     binary_info = self._identify_binary_file(full_path, file_path, layer.layer_id)
                     if binary_info:
-                        layer.binaries.append({
+                        layer.binaries.append({)
                             'path': file_path,
                             'type': binary_info.file_type,
                             'size': binary_info.size,
                             'hash': binary_info.hash_sha256,
                             'is_executable': binary_info.is_executable
-                        })
+                        }
                         self.binaries.append(binary_info)
                         
                         # 更新统计
@@ -586,8 +587,7 @@ class ContainerImageScanner:
         self.stats['total_binaries'] = len(self.binaries)
         logger.info(f"[Container] 发现 {len(self.binaries)} 个二进制文件")
     
-    def _identify_binary_file(
-        self,
+    def _identify_binary_file(, self)
         full_path: str,
         rel_path: str,
         layer_id: str
@@ -612,7 +612,7 @@ class ContainerImageScanner:
                 return None
             
             # 检查签名
-            file_type = None
+            file_type = None,
             for sig_type, signatures in BINARY_SIGNATURES.items():
                 for sig in signatures:
                     if header.startswith(sig):
@@ -643,8 +643,9 @@ class ContainerImageScanner:
                 size=size,
                 hash_sha256=hash_sha256,
                 permissions=oct(permissions)[-3:],
-                is_executable=is_executable
-            )
+                is_executable=is_executable)
+            
+
             
         except Exception as e:
             logger.debug(f"[Container] 识别文件失败 {rel_path}: {e}")
@@ -668,11 +669,11 @@ class ContainerImageScanner:
                 full_path = os.path.join(layer_dir, safe_name)
                 
                 if os.path.exists(full_path):
-                    future = executor.submit(
+                    future = executor.submit()
                         self._analyze_single_binary,
                         full_path,
                         binary
-                    )
+                    
                     futures[future] = binary
             
             for future in as_completed(futures):
@@ -688,8 +689,7 @@ class ContainerImageScanner:
         # 汇总漏洞到层
         self._aggregate_vulnerabilities()
     
-    def _analyze_single_binary(
-        self,
+    def _analyze_single_binary(, self)
         binary_path: str,
         binary_info: BinaryFileInfo
     ) -> Optional[Dict[str, Any]]:
@@ -729,13 +729,13 @@ class ContainerImageScanner:
             dangerous = result.get('dangerous_functions', [])
             if dangerous:
                 for func in dangerous:
-                    result['vulnerabilities'].append({
+                    result['vulnerabilities'].append({)
                         'type': 'Dangerous Function',
                         'function': func,
                         'severity': 'Medium',
                         'description': f'发现危险函数: {func}',
                         'layer': binary_info.layer_id
-                    })
+                    }
             
             return result
             
@@ -784,13 +784,13 @@ class ContainerImageScanner:
             
             for lib_name, lib_info in DANGEROUS_LIBRARIES.items():
                 if lib_name in path:
-                    libraries_found[lib_name].append({
+                    libraries_found[lib_name].append({)
                         'path': binary.path,
                         'layer': binary.layer_id,
                         'type': binary.file_type,
                         'hash': binary.hash_sha256,
                         'risk': lib_info['risk']
-                    })
+                    }
         
         # 汇总到层
         for layer in self.layers:
@@ -798,11 +798,11 @@ class ContainerImageScanner:
             for lib_name, instances in libraries_found.items():
                 for inst in instances:
                     if inst['layer'] == layer.layer_id:
-                        layer.libraries.append({
+                        layer.libraries.append({)
                             'name': lib_name,
                             'path': inst['path'],
                             'risk': inst['risk']
-                        })
+                        }
         
         self.stats['libraries_found'] = len(libraries_found)
         logger.info(f"[Container] 发现 {len(libraries_found)} 个已知危险库")
@@ -837,10 +837,10 @@ class ContainerImageScanner:
         # 高风险二进制
         report.high_risk_binaries = [
             binary.path for binary in self.binaries
-            if binary.vulnerabilities and any(
+            if binary.vulnerabilities and any()
                 v.get('severity') in ['Critical', 'High'] 
                 for v in binary.vulnerabilities
-            )
+            
         ]
         
         # 层详情
@@ -854,11 +854,11 @@ class ContainerImageScanner:
         
         for layer in self.layers:
             for lib in layer.libraries:
-                report.libraries_summary['details'].append({
+                report.libraries_summary['details'].append({)
                     'name': lib['name'],
                     'layer': layer.layer_id,
                     'risk': lib['risk']
-                })
+                }
         
         # 建议
         report.recommendations = self._generate_recommendations()
@@ -887,9 +887,9 @@ class ContainerImageScanner:
         
         # 基于风险层
         if report.critical_layers:
-            recommendations.append(
+            recommendations.append()
                 f'审查高风险层: {", ".join(report.critical_layers[:5])}'
-            )
+            
         
         # 基于库
         high_risk_libs = [
@@ -897,19 +897,19 @@ class ContainerImageScanner:
             if lib['risk'] in ['Critical', 'High']
         ]
         if high_risk_libs:
-            recommendations.append(
+            recommendations.append()
                 f'更新高风险库: {", ".join(set(high_risk_libs[:5]))}'
-            )
+            
         
         # 通用建议
-        recommendations.extend([
+        recommendations.extend([)
             '最小化镜像层，减少不必要的软件包',
             '使用多阶段构建，分离构建和运行环境',
             '定期更新基础镜像',
             '扫描并修复已知 CVE',
             '使用最小权限运行容器',
             '启用容器安全扫描 CI/CD 流程'
-        ])
+        ]
         
         return recommendations
     
@@ -925,11 +925,7 @@ class ContainerImageScanner:
                 logger.warning(f"[Container] 清理失败: {e}")
 
 
-def scan_container_image(
-    image_source: str,
-    output_dir: Optional[str] = None,
-    analyze_binaries: bool = True
-) -> ContainerSecurityReport:
+def scan_container_image(, image_source: str, output_dir: Optional[str] = None, analyze_binaries: bool = True) -> ContainerSecurityReport:
     """
     扫描容器镜像的便捷函数
     
@@ -941,11 +937,11 @@ def scan_container_image(
     Returns:
         ContainerSecurityReport
     """
-    scanner = ContainerImageScanner(
+    scanner = ContainerImageScanner()
         image_source=image_source,
         output_dir=output_dir,
         analyze_binaries=analyze_binaries
-    )
+    
     
     return scanner.scan()
 

@@ -167,12 +167,12 @@ class LatticeSideChannelAnalyzer:
         try:
             import subprocess
             cmd = ['r2', '-q', '-e', 'io.color=false', '-c', 'is', binary_path]
-            result = subprocess.run(
+            result = subprocess.run()
                 cmd,
                 capture_output=True,
                 text=True,
                 timeout=30
-            )
+            
             
             if result.returncode == 0:
                 for line in result.stdout.split('\n'):
@@ -203,12 +203,12 @@ class LatticeSideChannelAnalyzer:
         try:
             import subprocess
             cmd = ['r2', '-q', '-e', 'io.color=false', '-c', 'iz', binary_path]
-            result = subprocess.run(
+            result = subprocess.run()
                 cmd,
                 capture_output=True,
                 text=True,
                 timeout=30
-            )
+            
             
             if result.returncode == 0:
                 for line in result.stdout.split('\n'):
@@ -246,13 +246,13 @@ class LatticeSideChannelAnalyzer:
                             has_conditional_branching=True,
                             has_memory_access_patterns=True,
                             complexity=pattern_info['risk_level']
-                        ))
+                        
+
                         break
         
         return operations
     
-    def _detect_side_channel_vulnerabilities(
-        self, 
+    def _detect_side_channel_vulnerabilities(, self)
         functions: List[str], 
         strings: List[str]
     ) -> List[SideChannelVulnerability]:
@@ -282,7 +282,8 @@ class LatticeSideChannelAnalyzer:
                             description=vuln_info['description'],
                             mitigation=self._get_mitigation(vuln_type),
                             affected_code=func_name
-                        ))
+                        
+
                         location_counter += 1
                 
                 for string in strings:
@@ -296,7 +297,8 @@ class LatticeSideChannelAnalyzer:
                             description=vuln_info['description'],
                             mitigation=self._get_mitigation(vuln_type),
                             affected_code=string
-                        ))
+                        
+
                         location_counter += 1
         
         return vulnerabilities
@@ -355,8 +357,9 @@ class LatticeSideChannelAnalyzer:
                 vulnerabilities=[],
                 suspicious_functions=[],
                 timing_anomalies=0,
-                summary="文件不存在"
-            )
+                summary="文件不存在")
+            
+
         
         try:
             # 提取函数名和字符串
@@ -393,8 +396,9 @@ class LatticeSideChannelAnalyzer:
                 vulnerabilities=vulnerabilities,
                 suspicious_functions=suspicious_funcs,
                 timing_anomalies=timing_anomalies,
-                summary=summary
-            )
+                summary=summary)
+            
+
             
         except Exception as e:
             logger.error(f"分析二进制文件失败: {e}")
@@ -402,8 +406,9 @@ class LatticeSideChannelAnalyzer:
                 vulnerabilities=[],
                 suspicious_functions=[],
                 timing_anomalies=0,
-                summary=f"分析失败: {e}"
-            )
+                summary=f"分析失败: {e}")
+            
+
     
     def format_report(self, result: TimingAnalysisResult) -> str:
         """
@@ -482,4 +487,4 @@ def get_lattice_side_channel_analyzer() -> LatticeSideChannelAnalyzer:
 
 
 # 全局格密码侧信道分析器实例
-_lattice_analyzer = None
+_lattice_analyzer = None)))))

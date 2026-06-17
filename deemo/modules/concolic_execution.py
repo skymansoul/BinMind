@@ -118,12 +118,10 @@ class ConcolicExecutor:
     4. 交叉验证路径可行性
     """
     
-    def __init__(
-        self,
-        binary_path: str,
-        dynamic_engine: str = 'frida',
-        mode: ConcolicMode = ConcolicMode.HYBRID
-    ):
+    def __init__(self,
+                 binary_path: str,
+                 dynamic_engine: str = 'frida',
+                 mode: ConcolicMode = ConcolicMode.HYBRID):
         """
         初始化Concolic执行器
         
@@ -169,6 +167,7 @@ class ConcolicExecutor:
                 self.binary_path,
                 engine=self.dynamic_engine
             )
+            
             logger.info(f"[Concolic] 动态污点追踪器初始化成功: {self.dynamic_engine}")
         except Exception as e:
             logger.warning(f"[Concolic] 无法初始化动态污点追踪器: {e}")
@@ -192,12 +191,10 @@ class ConcolicExecutor:
         
         return dynamic_available or symbolic_available
     
-    def run_dynamic_seeding(
-        self,
-        args: List[str] = None,
-        timeout: int = 60,
-        input_data: bytes = None
-    ) -> List[ConcolicSeed]:
+    def run_dynamic_seeding(self,
+                            args: List[str] = None,
+                            timeout: int = 60,
+                            input_data: bytes = None) -> List[ConcolicSeed]:
         """
         运行动态分析获取种子
         
@@ -245,6 +242,7 @@ class ConcolicExecutor:
                     size=size,
                     is_symbolic=False
                 )
+                
                 seeds.append(seed)
                 logger.debug(f"[Concolic] 收集种子: {source_name} @ {hex(address)}")
             
@@ -260,6 +258,7 @@ class ConcolicExecutor:
                             size=len(arg_value),
                             is_symbolic=True
                         )
+                        
                         seeds.append(seed)
             
             self.seeds.extend(seeds)
@@ -351,14 +350,12 @@ class ConcolicExecutor:
             logger.error(f"[Concolic] 种子应用失败: {e}")
             return False
     
-    def run_concolic_analysis(
-        self,
-        args: List[str] = None,
-        timeout: int = 120,
-        input_data: bytes = None,
-        max_paths: int = 100,
-        exploration_depth: int = 500
-    ) -> ConcolicResult:
+    def run_concolic_analysis(self,
+                              args: List[str] = None,
+                              timeout: int = 120,
+                              input_data: bytes = None,
+                              max_paths: int = 100,
+                              exploration_depth: int = 500) -> ConcolicResult:
         """
         执行Concolic分析
         
@@ -389,6 +386,7 @@ class ConcolicExecutor:
                     timeout=min(timeout // 2, 60),
                     input_data=input_data
                 )
+                
                 result.seeds.extend(dynamic_seeds)
                 
                 # 应用种子到符号执行器
@@ -401,6 +399,7 @@ class ConcolicExecutor:
                     max_paths=max_paths,
                     exploration_depth=exploration_depth
                 )
+                
                 result.paths.extend(symbolic_result.get('paths', []))
                 result.vulnerabilities.extend(symbolic_result.get('vulnerabilities', []))
             
@@ -411,6 +410,7 @@ class ConcolicExecutor:
                     args=args,
                     timeout=min(timeout // 3, 40)
                 )
+                
                 result.paths.extend(concolic_paths)
                 
                 # 从concolic循环中提取漏洞
@@ -446,12 +446,10 @@ class ConcolicExecutor:
         self.status = result.status
         return result
     
-    def _run_symbolic_with_seeds(
-        self,
-        args: List[str] = None,
-        max_paths: int = 100,
-        exploration_depth: int = 500
-    ) -> Dict[str, Any]:
+    def _run_symbolic_with_seeds(self,
+                                 args: List[str] = None,
+                                 max_paths: int = 100,
+                                 exploration_depth: int = 500) -> Dict[str, Any]:
         """
         使用种子运行符号执行
         
@@ -488,6 +486,7 @@ class ConcolicExecutor:
                     discovered_from='symbolic',
                     coverage_increase=0.1
                 )
+                
                 results['paths'].append(path)
             
             # 提取漏洞信息
@@ -499,6 +498,7 @@ class ConcolicExecutor:
             auto_result = self.symbolic_executor.auto_explore_dangerous_functions(
                 max_per_func=exploration_depth // 10
             )
+            
             if auto_result:
                 path = ConcolicPath(
                     path_id=self._generate_path_id(),
@@ -508,6 +508,7 @@ class ConcolicExecutor:
                     discovered_from='concolic',
                     coverage_increase=0.15
                 )
+                
                 results['paths'].append(path)
                 
                 # 添加漏洞信息
@@ -531,6 +532,7 @@ class ConcolicExecutor:
                         discovered_from='concolic',
                         coverage_increase=0.05
                     )
+                    
                     results['paths'].append(path)
             
         except Exception as e:
@@ -566,6 +568,7 @@ class ConcolicExecutor:
                     confidence=min(1.0, tainted_bytes / 8),
                     tainted_bytes=tainted_bytes
                 )
+                
                 constraints.append(constraint)
         
         return constraints
@@ -636,6 +639,7 @@ class ConcolicExecutor:
                         discovered_from='taint_guided',
                         coverage_increase=0.2
                     )
+                    
                     results['paths'].append(path)
                     
                     if guided_result.get('vulnerability'):
@@ -719,6 +723,7 @@ class ConcolicExecutor:
                 input_data=path.concrete_input,
                 timeout=15
             )
+            
             path.is_feasible = result.get('success', False)
         except Exception as e:
             logger.debug(f"[Concolic] 路径验证失败: {e}")
@@ -911,11 +916,9 @@ class ConcolicExecutor:
         return output_path
 
 
-def create_concolic_executor(
-    binary_path: str,
-    dynamic_engine: str = 'frida',
-    mode: str = 'hybrid'
-) -> Optional[ConcolicExecutor]:
+def create_concolic_executor(binary_path: str,
+                             dynamic_engine: str = 'frida',
+                             mode: str = 'hybrid') -> Optional[ConcolicExecutor]:
     """
     创建Concolic执行器的便捷函数
     
@@ -946,12 +949,10 @@ def create_concolic_executor(
     return None
 
 
-def run_concolic_analysis(
-    binary_path: str,
-    dynamic_engine: str = 'frida',
-    mode: str = 'hybrid',
-    **kwargs
-) -> Dict[str, Any]:
+def run_concolic_analysis(binary_path: str,
+                          dynamic_engine: str = 'frida',
+                          mode: str = 'hybrid',
+                          **kwargs) -> Dict[str, Any]:
     """
     便捷函数：运行Concolic分析
     

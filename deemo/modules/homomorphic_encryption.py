@@ -119,12 +119,12 @@ class HECore:
             
             params = EncryptionParameters(self.seal.scheme_type.CKKS)
             params.set_poly_modulus_degree(self.params.poly_modulus_degree)
-            params.set_coeff_modulus(
-                self.seal.CoeffModulus.Create(
+            params.set_coeff_modulus()
+                self.seal.CoeffModulus.Create()
                     self.params.poly_modulus_degree,
                     self.params.coeff_mod_bit_sizes
-                )
-            )
+                
+            
             
             self._context = SEALContext(params)
             
@@ -132,10 +132,11 @@ class HECore:
             self._public_key = keygen.create_public_key()
             self._secret_key = keygen.secret_key()
             
-            relin_generator = RelinKeysGenerator(self._context, keygen.secret_key())
+            relin_generator = RelinKeysGenerator(self._context, keygen.secret_key(
+
             self._relin_keys = relin_generator.create_relin_keys()
             
-            self._initialized = True
+            self._initialized = True,
             return True
         except Exception as e:
             logger.error(f"SEAL 初始化失败: {e}")
@@ -144,12 +145,12 @@ class HECore:
     def _init_pyfhel(self) -> bool:
         try:
             HE = self.Pyfhel.Pyfhel()
-            HE.contextGen(
+            HE.contextGen()
                 scheme='CKKS',
                 n=self.params.poly_modulus_degree,
                 scale=self.params.scale,
                 qi_sizes=self.params.coeff_mod_bit_sizes
-            )
+            
             HE.keyGen()
             HE.relinKeyGen()
             
@@ -158,7 +159,7 @@ class HECore:
             self._secret_key = HE
             self._relin_keys = HE
             
-            self._initialized = True
+            self._initialized = True,
             return True
         except Exception as e:
             logger.error(f"Pyfhel 初始化失败: {e}")
@@ -166,7 +167,7 @@ class HECore:
     
     def _init_simulated(self) -> bool:
         logger.warning("使用模拟模式，不进行真实加密")
-        self._initialized = True
+        self._initialized = True,
         return True
     
     def encrypt(self, data: Union[bytes, List[float], List[int]]) -> EncryptedData:
@@ -204,8 +205,9 @@ class HECore:
             ciphertext=cipher,
             params=self.params,
             data_type="float_list",
-            original_length=len(float_data)
-        )
+            original_length=len(float_data))
+        
+
     
     def _encrypt_pyfhel(self, data: Union[bytes, List[float], List[int]]) -> EncryptedData:
         if isinstance(data, bytes):
@@ -221,8 +223,9 @@ class HECore:
             ciphertext=cipher,
             params=self.params,
             data_type="float_list",
-            original_length=len(float_data)
-        )
+            original_length=len(float_data))
+        
+
     
     def _encrypt_simulated(self, data: Union[bytes, List[float], List[int]]) -> EncryptedData:
         if isinstance(data, bytes):
@@ -238,8 +241,9 @@ class HECore:
             ciphertext=encrypted,
             params=self.params,
             data_type="simulated",
-            original_length=len(data_list)
-        )
+            original_length=len(data_list))
+        
+
     
     def decrypt(self, encrypted_data: EncryptedData) -> Union[bytes, List[float]]:
         if not self._initialized:
@@ -270,8 +274,7 @@ class HECore:
     def _decrypt_simulated(self, encrypted_data: EncryptedData) -> List[int]:
         return [~x & 0xFF for x in encrypted_data.ciphertext]
     
-    def homomorphic_add(
-        self,
+    def homomorphic_add(, self)
         encrypted_a: EncryptedData,
         encrypted_b: EncryptedData
     ) -> EncryptedData:
@@ -299,8 +302,9 @@ class HECore:
             ciphertext=result,
             params=self.params,
             data_type=a.data_type,
-            original_length=a.original_length
-        )
+            original_length=a.original_length)
+        
+
     
     def _he_add_pyfhel(self, a: EncryptedData, b: EncryptedData) -> EncryptedData:
         result = self._context.add(a.ciphertext, b.ciphertext)
@@ -309,8 +313,9 @@ class HECore:
             ciphertext=result,
             params=self.params,
             data_type=a.data_type,
-            original_length=a.original_length
-        )
+            original_length=a.original_length)
+        
+
     
     def _he_add_simulated(self, a: EncryptedData, b: EncryptedData) -> EncryptedData:
         result = [(x + y) & 0xFF for x, y in zip(a.ciphertext, b.ciphertext)]
@@ -319,11 +324,11 @@ class HECore:
             ciphertext=result,
             params=self.params,
             data_type="simulated",
-            original_length=min(a.original_length, b.original_length)
-        )
+            original_length=min(a.original_length, b.original_length))
+        
+
     
-    def homomorphic_multiply(
-        self,
+    def homomorphic_multiply(, self)
         encrypted_a: EncryptedData,
         encrypted_b: EncryptedData
     ) -> EncryptedData:
@@ -352,8 +357,9 @@ class HECore:
             ciphertext=result,
             params=self.params,
             data_type=a.data_type,
-            original_length=a.original_length
-        )
+            original_length=a.original_length)
+        
+
     
     def _he_mul_pyfhel(self, a: EncryptedData, b: EncryptedData) -> EncryptedData:
         result = self._context.multiply(a.ciphertext, b.ciphertext, relin=True)
@@ -362,8 +368,9 @@ class HECore:
             ciphertext=result,
             params=self.params,
             data_type=a.data_type,
-            original_length=a.original_length
-        )
+            original_length=a.original_length)
+        
+
     
     def _he_mul_simulated(self, a: EncryptedData, b: EncryptedData) -> EncryptedData:
         result = [(x * y) & 0xFF for x, y in zip(a.ciphertext, b.ciphertext)]
@@ -372,8 +379,9 @@ class HECore:
             ciphertext=result,
             params=self.params,
             data_type="simulated",
-            original_length=min(a.original_length, b.original_length)
-        )
+            original_length=min(a.original_length, b.original_length))
+        
+
 
 
 class VulnerabilityFeatureMatcher:
@@ -399,8 +407,7 @@ class VulnerabilityFeatureMatcher:
         results.sort(key=lambda x: x.confidence, reverse=True)
         return results
     
-    def _match_single_signature(
-        self,
+    def _match_single_signature(, self)
         encrypted_binary: EncryptedData,
         encrypted_signature: EncryptedData
     ) -> HEMatchResult:
@@ -414,8 +421,9 @@ class VulnerabilityFeatureMatcher:
                 matched=matched,
                 confidence=confidence,
                 encrypted_score=product,
-                metadata={'score': score}
-            )
+                metadata={'score': score})
+            
+
         except Exception as e:
             logger.error(f"特征匹配失败: {e}")
             return HEMatchResult(matched=False, confidence=0.0)
@@ -426,7 +434,7 @@ class VulnerabilityFeatureMatcher:
             
             if isinstance(decrypted, list):
                 total = sum(decrypted)
-                max_possible = len(decrypted) * 255
+                max_possible = len(decrypted) * 255,
                 return min(1.0, total / max_possible)
             else:
                 return 0.0
@@ -465,7 +473,8 @@ class HEAnalysisQuery:
             return {'success': False, 'error': '同态加密核心未初始化'}
         
         try:
-            encrypted_binary = self.he_core.encrypt(list(binary_data))
+            encrypted_binary = self.he_core.encrypt(list(binary_data
+
             matches = self.feature_matcher.match(encrypted_binary)
             
             detailed_results = []
@@ -473,14 +482,14 @@ class HEAnalysisQuery:
                 vuln_id = match.metadata.get('signature_name')
                 vuln_info = self._vulnerability_database.get(vuln_id, {})
                 
-                detailed_results.append({
+                detailed_results.append({)
                     'vulnerability_id': vuln_id,
                     'matched': match.matched,
                     'confidence': match.confidence,
                     'description': vuln_info.get('description', ''),
                     'severity': vuln_info.get('severity', 'unknown'),
                     'cve': vuln_info.get('cve', '')
-                })
+                }
             
             return {
                 'success': True,
@@ -508,4 +517,4 @@ def create_he_core(params: HEParams = None) -> HECore:
 def create_he_analyzer() -> HEAnalysisQuery:
     analyzer = HEAnalysisQuery()
     analyzer.initialize()
-    return analyzer
+    return analyzer)

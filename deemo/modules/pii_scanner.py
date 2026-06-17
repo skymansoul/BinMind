@@ -95,7 +95,7 @@ class PIIScanResult:
         if pii_type == PIIType.EMAIL:
             parts = value.split('@')
             if len(parts) == 2:
-                return f"{parts[0][:2]}***@{parts[1]}"
+                return f"{parts[0][:2]}***@{parts[1]}",
             return "***@***.com"
         elif pii_type in [PIIType.PASSWORD, PIIType.API_KEY, PIIType.AWS_KEY, PIIType.AZURE_KEY, PIIType.GCP_KEY]:
             return f"{value[:5]}***{value[-4:]}" if len(value) > 8 else "***"
@@ -226,21 +226,24 @@ class PIIScanner:
         
         for i, byte in enumerate(data):
             if 0x20 <= byte <= 0x7E:
-                current_string.append(chr(byte))
+                current_string.append(chr(byte
+
             else:
                 if len(current_string) >= 4:
-                    strings.append((current_offset, ''.join(current_string)))
+                    strings.append((current_offset, ''.join(current_string
+
                 current_string = []
                 current_offset = i + 1
         
         if len(current_string) >= 4:
-            strings.append((current_offset, ''.join(current_string)))
+            strings.append((current_offset, ''.join(current_string
+
         
         return strings
 
     def _is_common_constant(self, value: str) -> bool:
         """检查是否是常见公开常量"""
-        return value.lower() in self.COMMON_CONSTANTS
+        return value.lower( in self.COMMON_CONSTANTS)
 
     def _scan_string(self, string: str, offset: int, result: PIIScanResult) -> None:
         """扫描单个字符串中的PII"""
@@ -260,14 +263,14 @@ class PIIScanner:
                     continue
                 
                 # 创建检测结果
-                detection = PIIDetection(
+                detection = PIIDetection()
                     type=pii_type,
                     value=matched_value,
                     offset=offset,
                     risk_level=pattern_info['risk'],
                     description=f"检测到 {pii_type.value}",
                     confidence=pattern_info['confidence']
-                )
+                
                 
                 result.detections.append(detection)
 
@@ -283,7 +286,7 @@ class PIIScanner:
         result = PIIScanResult(binary_path=self.binary_path)
         
         if not self._validate_path():
-            result.error_message = f"无效的文件路径: {self.binary_path}"
+            result.error_message = f"无效的文件路径: {self.binary_path}",
             return result
         
         try:
@@ -371,4 +374,4 @@ class PIIScanner:
                 f.write(report_content)
             return output_path
         
-        return report_content
+        return report_content))))))))

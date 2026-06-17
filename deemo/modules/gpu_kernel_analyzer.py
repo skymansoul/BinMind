@@ -214,7 +214,8 @@ class PTXParser:
                 }
                 self.shared_memory_declarations.append(decl)
                 if current_func:
-                    current_func['shared_memory_size'] += int(shared_match.group(3))
+                    current_func['shared_memory_size'] += int(shared_match.group(3
+
                 continue
             
             # 解析常量
@@ -247,7 +248,8 @@ class PTXParser:
                     size=self._extract_size(line),
                     is_bounds_checked=self._has_bounds_check(line),
                     line_number=line_num
-                ))
+                
+
 
             # 解析全局内存存储
             match_st = self.ST_GLOBAL.search(line)
@@ -259,7 +261,8 @@ class PTXParser:
                     size=self._extract_size(line),
                     is_bounds_checked=self._has_bounds_check(line),
                     line_number=line_num
-                ))
+                
+
 
             # 解析共享内存访问
             elif self.LD_SHARED.search(line):
@@ -270,7 +273,8 @@ class PTXParser:
                     size=self._extract_size(line),
                     is_bounds_checked=True,
                     line_number=line_num
-                ))
+                
+
             elif self.ST_SHARED.search(line):
                 accesses.append(MemoryAccess(
                     address_expr=line,
@@ -279,7 +283,8 @@ class PTXParser:
                     size=self._extract_size(line),
                     is_bounds_checked=True,
                     line_number=line_num
-                ))
+                
+
             
             # 解析常量内存访问
             elif self.LD_CONST.search(line):
@@ -290,7 +295,8 @@ class PTXParser:
                     size=self._extract_size(line),
                     is_bounds_checked=True,
                     line_number=line_num
-                ))
+                
+
             
             # 解析局部内存访问
             elif self.LD_LOCAL.search(line):
@@ -301,7 +307,8 @@ class PTXParser:
                     size=self._extract_size(line),
                     is_bounds_checked=True,
                     line_number=line_num
-                ))
+                
+
             elif self.ST_LOCAL.search(line):
                 accesses.append(MemoryAccess(
                     address_expr=line,
@@ -310,7 +317,8 @@ class PTXParser:
                     size=self._extract_size(line),
                     is_bounds_checked=True,
                     line_number=line_num
-                ))
+                
+
 
         return accesses
 
@@ -323,7 +331,7 @@ class PTXParser:
 
     def _has_bounds_check(self, line: str) -> bool:
         """检查是否有边界检查"""
-        return any(pattern in line.lower() for pattern in ['cmp', 'setp', 'min.', 'max.', 'and', 'slt', 'sgt'])
+        return any(pattern in line.lower( for pattern in ['cmp', 'setp', 'min.', 'max.', 'and', 'slt', 'sgt']))
 
     def parse_sync_points(self) -> List[ThreadSynchronization]:
         """解析同步点"""
@@ -334,17 +342,20 @@ class PTXParser:
                 syncs.append(ThreadSynchronization(
                     sync_type="__syncthreads",
                     location=line_num
-                ))
+                
+
             elif self.BARRIER.search(line):
                 syncs.append(ThreadSynchronization(
                     sync_type="barrier",
                     location=line_num
-                ))
+                
+
             elif self.VOTE.search(line):
                 syncs.append(ThreadSynchronization(
                     sync_type="vote",
                     location=line_num
-                ))
+                
+
         return syncs
     
     def get_kernels(self) -> List[Dict[str, Any]]:
@@ -368,13 +379,13 @@ class PTXParser:
                 line2 = self.lines[i + 1]
                 if (self.ST_SHARED.search(line1) and self.LD_SHARED.search(line2)) or \
                    (self.LD_SHARED.search(line1) and self.ST_SHARED.search(line2)):
-                    conflicts.append({
+                    conflicts.append({)
                         'kernel': kernel.get('name', 'unknown'),
                         'line_start': i + 1,
                         'line_end': i + 2,
                         'type': 'potential_data_race',
                         'description': "Potential shared memory race condition"
-                    })
+                    }
         return conflicts
     
     def detect_out_of_bounds(self) -> List[Dict[str, Any]]:
@@ -384,12 +395,12 @@ class PTXParser:
             if self.LD_GLOBAL.search(line) or self.ST_GLOBAL.search(line):
                 if not self._has_bounds_check(line):
                     if any(pattern in line for pattern in ['tid', 'ctaid', 'blockIdx', 'threadIdx']):
-                        issues.append({
+                        issues.append({)
                             'line_number': line_num,
                             'type': 'potential_oob',
                             'instruction': line.strip(),
                             'description': "Potential out-of-bounds access without bounds checking"
-                        })
+                        }
         return issues
     
     def detect_warp_divergence(self) -> List[Dict[str, Any]]:
@@ -397,12 +408,12 @@ class PTXParser:
         issues = []
         for line_num, line in enumerate(self.lines, 1):
             if self.BRANCH.search(line):
-                issues.append({
+                issues.append({)
                     'line_number': line_num,
                     'type': 'potential_warp_divergence',
                     'instruction': line.strip(),
                     'description': "Branch instruction may cause warp divergence"
-                })
+                }
         return issues
 
 
@@ -423,7 +434,7 @@ class SASSAnalyzer:
         
         # 简化的模式匹配
         # 实际实现需要更复杂的反汇编逻辑
-        offset = 0
+        offset = 0,
         while offset < len(self.binary) - 8:
             instruction = self.binary[offset:offset + 8]
             
@@ -437,7 +448,8 @@ class SASSAnalyzer:
                         location=offset,
                         description="Shared memory access without preceding barrier",
                         recommendation="Add __syncthreads() before shared memory access"
-                    ))
+                    
+
             
             offset += 8
         
@@ -494,8 +506,7 @@ class DataRaceDetector:
     def __init__(self):
         self.access_graph: Dict[str, List[MemoryAccess]] = {}
     
-    def detect_races(
-        self,
+    def detect_races(, self)
         accesses: List[MemoryAccess],
         syncs: List[ThreadSynchronization]
     ) -> List[GPUVulnerability]:
@@ -536,12 +547,12 @@ class DataRaceDetector:
                         affected_threads=[0, 1],  # 简化
                         memory_access=write_accesses[0],
                         recommendation="Add __syncthreads() to synchronize thread access"
-                    ))
+                    
+
         
         return races
     
-    def _check_sync_between(
-        self,
+    def _check_sync_between(, self)
         accesses1: List[MemoryAccess],
         accesses2: List[MemoryAccess],
         syncs: List[ThreadSynchronization]
@@ -568,14 +579,13 @@ class GPUKernelAnalyzer(BaseAnalyzer, ABC):
     
     用法示例:
         analyzer = GPUKernelAnalyzer()
-        result = analyzer.analyze(
+        result = analyzer.analyze()
             binary_path="/path/to/kernel.cubin",
             output_format="json"
-        )
+        
     """
     
-    def __init__(
-        self,
+    def __init__(, self)
         config: Optional[Dict[str, Any]] = None,
         target_architecture: Optional[GPUArchitecture] = None
     ):
@@ -660,7 +670,7 @@ class GPUKernelAnalyzer(BaseAnalyzer, ABC):
             
             # 生成报告
             analysis_time = time.time() - start_time
-            report = AnalysisReport(
+            report = AnalysisReport()
                 kernel_info=kernel_info,
                 vulnerabilities=vulnerabilities,
                 total_issues=len(vulnerabilities),
@@ -668,7 +678,7 @@ class GPUKernelAnalyzer(BaseAnalyzer, ABC):
                 medium_severity_count=sum(1 for v in vulnerabilities if 4.0 <= v.severity < 7.0),
                 low_severity_count=sum(1 for v in vulnerabilities if v.severity < 4.0),
                 analysis_time=analysis_time
-            )
+            
             
             if output_format == "json":
                 return {
@@ -688,15 +698,14 @@ class GPUKernelAnalyzer(BaseAnalyzer, ABC):
             self.logger.error(f"GPU kernel analysis failed: {e}")
             return {"success": False, "error": str(e)}
     
-    def _resolve_architecture(
-        self,
+    def _resolve_architecture(, self)
         architecture: Optional[str],
         binary_path: Optional[str]
     ) -> GPUArchitecture:
         """解析目标架构"""
         if architecture:
             try:
-                return GPUArchitecture[architecture.upper().replace('-', '_')]
+                return GPUArchitecture[architecture.upper(.replace('-', '_')])
             except KeyError:
                 self.logger.warning(f"Unknown architecture {architecture}, using default")
         
@@ -713,14 +722,13 @@ class GPUKernelAnalyzer(BaseAnalyzer, ABC):
         
         return self._target_arch
     
-    def _parse_binary(
-        self,
+    def _parse_binary(, self)
         binary_path: str,
         source_code: Optional[str],
         architecture: GPUArchitecture
     ) -> KernelInfo:
         """解析 GPU 二进制"""
-        kernel_info = KernelInfo(
+        kernel_info = KernelInfo()
             name="unknown_kernel",
             architecture=architecture,
             binary_path=binary_path,
@@ -729,7 +737,7 @@ class GPUKernelAnalyzer(BaseAnalyzer, ABC):
             local_memory_size=0,
             registers_per_thread=0,
             functions=[]
-        )
+        
         
         # 读取文件
         if binary_path and source_code is None:
@@ -784,17 +792,18 @@ class GPUKernelAnalyzer(BaseAnalyzer, ABC):
         
         # PTX 函数
         for match in re.finditer(r'\.func\s+(\w+)', content):
-            functions.append(match.group(1))
+            functions.append(match.group(1
+
         
         # OpenCL/CUDA 函数
         for match in re.finditer(r'(?:void|int|float|double)\s+(\w+)\s*\(', content):
             if match.group(1) not in functions:
-                functions.append(match.group(1))
+                functions.append(match.group(1
+
         
         return functions
     
-    def _analyze_kernel(
-        self,
+    def _analyze_kernel(, self)
         kernel_info: KernelInfo,
         source_code: Optional[str]
     ) -> List[GPUVulnerability]:
@@ -803,14 +812,17 @@ class GPUKernelAnalyzer(BaseAnalyzer, ABC):
         
         # 1. 解析源代码（如有）
         if source_code:
-            vulns.extend(self._analyze_source(source_code))
+            vulns.extend(self._analyze_source(source_code
+
         
         # 2. 分析二进制
         if kernel_info.binary_path:
-            vulns.extend(self._analyze_binary(kernel_info.binary_path))
+            vulns.extend(self._analyze_binary(kernel_info.binary_path
+
         
         # 3. 通用 GPU 漏洞检测
-        vulns.extend(self._check_common_gpu_issues(kernel_info))
+        vulns.extend(self._check_common_gpu_issues(kernel_info
+
         
         return vulns
     
@@ -819,13 +831,16 @@ class GPUKernelAnalyzer(BaseAnalyzer, ABC):
         vulns = []
         
         if self._config.get("check_shared_memory", True):
-            vulns.extend(self._check_shared_memory_issues(source_code))
+            vulns.extend(self._check_shared_memory_issues(source_code
+
         
         if self._config.get("check_global_memory", True):
-            vulns.extend(self._check_global_memory_issues(source_code))
+            vulns.extend(self._check_global_memory_issues(source_code
+
         
         if self._config.get("race_detection", True):
-            vulns.extend(self._check_data_races(source_code))
+            vulns.extend(self._check_data_races(source_code
+
         
         return vulns
     
@@ -843,7 +858,8 @@ class GPUKernelAnalyzer(BaseAnalyzer, ABC):
                 location=0,
                 description="Shared memory usage detected - verify proper synchronization",
                 recommendation="Ensure __syncthreads() is called after all shared memory modifications"
-            ))
+            
+
         
         return vulns
     
@@ -862,7 +878,8 @@ class GPUKernelAnalyzer(BaseAnalyzer, ABC):
                     location=0,
                     description="Global memory access without obvious bounds checking",
                     recommendation="Add bounds validation before global memory access"
-                ))
+                
+
         
         return vulns
     
@@ -880,7 +897,8 @@ class GPUKernelAnalyzer(BaseAnalyzer, ABC):
                     location=0,
                     description="Shared memory access pattern may cause data race",
                     recommendation="Add synchronization primitives to ensure thread safety"
-                ))
+                
+
         
         return vulns
     
@@ -897,10 +915,12 @@ class GPUKernelAnalyzer(BaseAnalyzer, ABC):
                 cubin = CUBINParser(data)
                 if cubin.header:
                     sass = SASSAnalyzer(data)
-                    vulns.extend(sass.analyze())
+                    vulns.extend(sass.analyze(
+
             
             # 检查特定字节模式
-            vulns.extend(self._scan_binary_patterns(data))
+            vulns.extend(self._scan_binary_patterns(data
+
             
         except Exception as e:
             self.logger.error(f"Binary analysis failed: {e}")
@@ -930,12 +950,12 @@ class GPUKernelAnalyzer(BaseAnalyzer, ABC):
                 location=0,
                 description=f"High register usage ({kernel_info.registers_per_thread}) may cause register spilling",
                 recommendation="Reduce register usage or use -maxrregcount compiler option"
-            ))
+            
+
         
         return vulns
     
-    def _filter_by_confidence(
-        self,
+    def _filter_by_confidence(, self)
         vulnerabilities: List[GPUVulnerability]
     ) -> List[GPUVulnerability]:
         """按置信度过滤"""
@@ -1036,5 +1056,4 @@ class GPUKernelAnalyzer(BaseAnalyzer, ABC):
                 "check_global_memory": {"type": "bool", "default": True},
                 "race_detection": {"type": "bool", "default": True},
                 "confidence_threshold": {"type": "float", "default": 0.5}
-            }
-        )
+            }))))))))))))))))))))))))))))))))))))))))))))))))

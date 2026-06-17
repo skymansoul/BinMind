@@ -1,11 +1,6 @@
 """
-性能与资源控制系统
-
-功能：
-1. 超时控制
-2. 内存限制
-3. 沙箱隔离
-4. 增量分析缓存增强
+资源控制与缓存模块
+功能：1. 超时控制 2. 内存限制 3. 沙箱隔离 4. 增量分析缓存增强
 """
 
 import os
@@ -17,14 +12,16 @@ import logging
 import tempfile
 import subprocess
 import multiprocessing
+import threading
+from functools import wraps
 
 # resource 模块仅在 Unix/Linux 系统上可用
-if sys.platform == 'linux':
+if sys.platform == 'linux':    
     import resource
 else:
     resource = None
 from pathlib import Path
-from typing import Dict, Any, Optional, Callable, Tuple, List
+from typing import Dict, Any, Optional, Callable, Tuple, List, Union
 from dataclasses import dataclass, field
 from enum import Enum
 from abc import ABC, abstractmethod
@@ -32,6 +29,15 @@ from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, TimeoutE
 from contextlib import contextmanager
 
 logger = logging.getLogger(__name__)
+
+
+class AnalysisType(Enum):
+    """分析类型枚举"""
+    SYMBOLIC_EXECUTION = "symbolic_execution"
+    FUZZING = "fuzzing"
+    STATIC_ANALYSIS = "static_analysis"
+    DYNAMIC_ANALYSIS = "dynamic_analysis"
+    DECOMPILATION = "decompilation"
 
 
 class SandboxType(Enum):
@@ -91,14 +97,14 @@ class ResourceMonitor:
             elif sys.platform == 'darwin':
                 import psutil
                 process = psutil.Process(self.pid)
-                return process.memory_info().rss
+                return process.memory_info(.rss
         except Exception:
             pass
         return 0
     
     def get_current_memory(self) -> int:
         """获取当前内存使用"""
-        return self._get_memory_usage()
+        return self._get_memory_usage(
     
     def get_peak_memory(self) -> int:
         """获取峰值内存使用"""
@@ -200,6 +206,7 @@ class TimeoutExecutor:
                     execution_time=execution_time,
                     memory_peak=monitor.get_peak_memory()
                 )
+
                 
         except TimeoutError:
             execution_time = time.time() - start_time
@@ -211,6 +218,7 @@ class TimeoutExecutor:
                 kill_reason="timeout",
                 execution_time=execution_time
             )
+
         except Exception as e:
             execution_time = time.time() - start_time
             return self.default_result, ExecutionResult(
@@ -219,6 +227,7 @@ class TimeoutExecutor:
                 error=str(e),
                 execution_time=execution_time
             )
+
 
 
 class MemoryLimiter:
@@ -245,7 +254,8 @@ class MemoryLimiter:
                 import signal
                 old_handler = signal.signal(signal.SIGSEGV, raise_oom)
                 
-                resource.setrlimit(resource.RLIMIT_AS, (max_bytes, max_bytes))
+                resource.setrlimit(resource.RLIMIT_AS, (max_bytes, max_bytes)
+
                 
                 yield
             except Exception as e:
@@ -253,7 +263,8 @@ class MemoryLimiter:
                 yield
             finally:
                 if sys.platform == 'linux':
-                    resource.setrlimit(resource.RLIMIT_AS, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
+                    resource.setrlimit(resource.RLIMIT_AS, (resource.RLIM_INFINITY, resource.RLIM_INFINITY)
+
                     signal.signal(signal.SIGSEGV, old_handler)
         else:
             yield
@@ -375,14 +386,17 @@ class SandboxExecutor:
             return self._execute_subprocess(
                 command, input_data, timeout, working_dir, env
             )
+
         elif self.sandbox_type == SandboxType.DOCKER:
             return self._execute_docker(
                 command, input_data, timeout, working_dir, env
             )
+
         else:
             return self._execute_direct(
                 command, input_data, timeout, working_dir, env
             )
+
     
     def _execute_subprocess(
         self,
@@ -420,6 +434,7 @@ class SandboxExecutor:
                 return_code=process.returncode,
                 execution_time=execution_time
             )
+
             
         except subprocess.TimeoutExpired:
             execution_time = time.time() - start_time
@@ -431,6 +446,7 @@ class SandboxExecutor:
                 kill_reason="timeout",
                 execution_time=execution_time
             )
+
         except Exception as e:
             execution_time = time.time() - start_time
             return ExecutionResult(
@@ -439,6 +455,7 @@ class SandboxExecutor:
                 error=str(e),
                 execution_time=execution_time
             )
+
     
     def _execute_docker(
         self,
@@ -504,6 +521,7 @@ class SandboxExecutor:
                 return_code=process.returncode,
                 execution_time=execution_time
             )
+
             
         except subprocess.TimeoutExpired:
             process.kill()
@@ -516,6 +534,7 @@ class SandboxExecutor:
                 kill_reason="timeout",
                 execution_time=execution_time
             )
+
         except Exception as e:
             execution_time = time.time() - start_time
             return ExecutionResult(
@@ -524,6 +543,7 @@ class SandboxExecutor:
                 error=str(e),
                 execution_time=execution_time
             )
+
     
     def _setup_preexec_fn(self) -> Optional[Callable]:
         """设置进程前的执行函数"""
@@ -535,20 +555,24 @@ class SandboxExecutor:
                 resource.setrlimit(resource.RLIMIT_AS, (
                     self.limits.memory_limit * 1024 * 1024,
                     self.limits.memory_limit * 1024 * 1024
-                ))
+                )
+
                 resource.setrlimit(resource.RLIMIT_CPU, (
                     self.limits.cpu_limit,
                     self.limits.cpu_limit
-                ))
+                )
+
                 resource.setrlimit(resource.RLIMIT_NPROC, (
                     self.limits.max_processes,
                     self.limits.max_processes
-                ))
+                )
+
                 if self.limits.disk_limit > 0:
                     resource.setrlimit(resource.RLIMIT_FSIZE, (
                         self.limits.disk_limit * 1024 * 1024,
                         self.limits.disk_limit * 1024 * 1024
-                    ))
+                    )
+
             except Exception as e:
                 logger.warning(f"设置资源限制失败: {e}")
         
@@ -617,7 +641,7 @@ class IncrementalAnalysisCache:
                 hasher.update(chunk)
                 chunk = f.read(8192)
         
-        return hasher.hexdigest()
+        return hasher.hexdigest(
     
     def get_from_cache(self, cache_key: str) -> Optional[Any]:
         """
@@ -668,7 +692,8 @@ class IncrementalAnalysisCache:
     def _add_to_memory_cache(self, key: str, value: Any) -> None:
         """添加到内存缓存"""
         if len(self._memory_cache) >= self._max_memory_entries:
-            oldest_key = next(iter(self._memory_cache))
+            oldest_key = next(iter(self._memory_cache)
+
             del self._memory_cache[oldest_key]
         
         self._memory_cache[key] = value
@@ -780,6 +805,7 @@ class ResourceController:
                     output="[cached]",
                     execution_time=0.0
                 )
+
         
         start_time = time.time()
         monitor = ResourceMonitor()
@@ -795,6 +821,7 @@ class ResourceController:
                         error="可用内存不足",
                         execution_time=time.time() - start_time
                     )
+
                 
                 with self.memory_limiter.limit_memory(max_bytes):
                     result, execution_result = self.timeout_executor.execute_with_result(
@@ -819,6 +846,7 @@ class ResourceController:
                 error=str(e),
                 execution_time=time.time() - start_time
             )
+
     
     def get_resource_stats(self) -> Dict[str, Any]:
         """
@@ -841,3 +869,202 @@ class ResourceController:
             "cache_entries": len(self.cache._memory_cache),
             "cache_dir": str(self.cache.cache_dir)
         }
+
+
+@dataclass
+class SymbolicExecutionLimits(ResourceLimits):
+    """符号执行专用资源限制"""
+    timeout: int = 600
+    memory_limit: int = 4096
+    max_paths: int = 10000
+    max_depth: int = 500
+    max_iterations: int = 100000
+    solver_timeout: int = 30
+
+
+@dataclass
+class FuzzingLimits(ResourceLimits):
+    """模糊测试专用资源限制"""
+    timeout: int = 3600
+    memory_limit: int = 8192
+    max_inputs: int = 1000000
+    max_crashes: int = 100
+    corpus_size: int = 1000
+    mutation_ratio: float = 0.1
+    use_dictionary: bool = True
+
+
+class ResourceLimitFactory:
+    """资源限制工厂 - 根据分析类型创建专用资源限制"""
+    
+    _limits_cache: Dict[AnalysisType, ResourceLimits] = {}
+    
+    @staticmethod
+    def create_limits(analysis_type: AnalysisType) -> ResourceLimits:
+        """根据分析类型创建资源限制"""
+        if analysis_type in ResourceLimitFactory._limits_cache:
+            return ResourceLimitFactory._limits_cache[analysis_type]
+        
+        mapping = {
+            AnalysisType.SYMBOLIC_EXECUTION: SymbolicExecutionLimits(),
+            AnalysisType.FUZZING: FuzzingLimits(),
+            AnalysisType.STATIC_ANALYSIS: ResourceLimits(timeout=120, memory_limit=1024),
+            AnalysisType.DYNAMIC_ANALYSIS: ResourceLimits(timeout=600, memory_limit=4096),
+            AnalysisType.DECOMPILATION: ResourceLimits(timeout=300, memory_limit=2048),
+        }
+        
+        limits = mapping.get(analysis_type, ResourceLimits()
+
+        ResourceLimitFactory._limits_cache[analysis_type] = limits
+        return limits
+    
+    @staticmethod
+    def customize_limits(analysis_type: AnalysisType, **kwargs) -> ResourceLimits:
+        """自定义资源限制"""
+        limits = ResourceLimitFactory.create_limits(analysis_type)
+        
+        for key, value in kwargs.items():
+            if hasattr(limits, key):
+                setattr(limits, key, value)
+        
+        return limits
+
+
+class EnhancedAnalysisCache(IncrementalAnalysisCache):
+    """增强型分析缓存 - 支持内容哈希和多级缓存"""
+    
+    def __init__(self, cache_dir: str = "data/incremental_cache"):
+        super().__init__(cache_dir)
+        self._cache_index: Dict[str, Dict[str, Any]] = {}
+        self._load_cache_index()
+    
+    def _load_cache_index(self):
+        """加载缓存索引"""
+        index_file = self.cache_dir / "index.json"
+        if index_file.exists():
+            try:
+                with open(index_file, 'r', encoding='utf-8') as f:
+                    self._cache_index = json.load(f)
+            except Exception as e:
+                logger.warning(f"加载缓存索引失败: {e}")
+    
+    def _save_cache_index(self):
+        """保存缓存索引"""
+        index_file = self.cache_dir / "index.json"
+        try:
+            with open(index_file, 'w', encoding='utf-8') as f:
+                json.dump(self._cache_index, f, indent=2)
+        except Exception as e:
+            logger.warning(f"保存缓存索引失败: {e}")
+    
+    def compute_multi_part_hash(self, *parts: Union[str, bytes]) -> str:
+        """计算多个部分的组合哈希"""
+        hasher = hashlib.sha256()
+        for part in parts:
+            if isinstance(part, str):
+                hasher.update(part.encode('utf-8')
+
+            elif isinstance(part, bytes):
+                hasher.update(part)
+            else:
+                hasher.update(str(part).encode('utf-8')
+
+        return hasher.hexdigest(
+    
+    def compute_analysis_hash(self, binary_path: str, analysis_options: Dict[str, Any]) -> str:
+        """计算分析任务的唯一哈希"""
+        binary_hash = self.compute_binary_hash(binary_path)
+        options_str = json.dumps(analysis_options, sort_keys=True)
+        return self.compute_multi_part_hash(binary_hash, options_str)
+    
+    def get_from_cache(self, cache_key: str) -> Optional[Any]:
+        """从缓存获取结果"""
+        result = super().get_from_cache(cache_key)
+        
+        if result and cache_key in self._cache_index:
+            self._cache_index[cache_key]["access_count"] += 1
+            self._cache_index[cache_key]["last_access"] = time.time()
+            self._save_cache_index()
+        
+        return result
+    
+    def save_to_cache(self, cache_key: str, result: Any, metadata: Optional[Dict[str, Any]] = None):
+        """保存结果到缓存"""
+        super().save_to_cache(cache_key, result)
+        
+        self._cache_index[cache_key] = {
+            "created": time.time(),
+            "access_count": 0,
+            "last_access": time.time(),
+            "size": len(json.dumps(result)),
+            **(metadata or {})
+        }
+        self._save_cache_index()
+    
+    def cleanup_old_cache(self, max_age_days: int = 30, max_size_mb: int = 1024):
+        """清理过期或过大的缓存"""
+        total_size = 0
+        old_entries = []
+        
+        for cache_key, info in self._cache_index.items():
+            age_days = (time.time() - info["created"]) / 86400
+            if age_days > max_age_days:
+                old_entries.append(cache_key)
+            total_size += info.get("size", 0)
+        
+        if total_size > max_size_mb * 1024 * 1024:
+            sorted_entries = sorted(
+                self._cache_index.items(),
+                key=lambda x: x[1]["access_count"]
+            )
+            entries_to_remove = int(len(sorted_entries) * 0.2)
+            old_entries.extend([k for k, _ in sorted_entries[:entries_to_remove]])
+        
+        for cache_key in set(old_entries):
+            self.invalidate_cache(cache_key)
+            if cache_key in self._cache_index:
+                del self._cache_index[cache_key]
+        
+        self._save_cache_index()
+    
+    def get_cache_stats(self) -> Dict[str, Any]:
+        """获取缓存统计信息"""
+        total_entries = len(self._cache_index)
+        total_size = sum(info.get("size", 0) for info in self._cache_index.values()
+
+        avg_access = sum(info.get("access_count", 0) for info in self._cache_index.values()) / max(total_entries, 1)
+        
+        return {
+            "total_entries": total_entries,
+            "total_size_bytes": total_size,
+            "total_size_mb": total_size / (1024 * 1024),
+            "avg_access_count": avg_access,
+            "memory_cache_size": len(self._memory_cache)
+        }
+
+
+def resource_limiter(analysis_type: AnalysisType):
+    """资源限制装饰器"""
+    def decorator(func: Callable) -> Callable:
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            limits = ResourceLimitFactory.create_limits(analysis_type)
+            controller = ResourceController(limits)
+            
+            def execute_func():
+                return func(*args, **kwargs)
+            
+            result, exec_result = controller.execute_with_limits(
+                execute_func,
+                use_memory_limit=True,
+                use_cache=False
+            )
+            
+            if not exec_result.success:
+                logger.warning(f"分析执行失败: {exec_result.error}")
+            
+            return result
+        
+        return wrapper
+    return decorator
+)

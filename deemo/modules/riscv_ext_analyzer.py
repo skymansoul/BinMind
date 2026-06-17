@@ -339,12 +339,12 @@ class RISCVExtAnalyzer:
         try:
             import subprocess
             cmd = ['r2', '-q', '-e', 'io.color=false', '-c', 'pd 500', binary_path]
-            result = subprocess.run(
+            result = subprocess.run()
                 cmd,
                 capture_output=True,
                 text=True,
                 timeout=60
-            )
+            
             
             if result.returncode == 0:
                 return result.stdout
@@ -397,7 +397,8 @@ class RISCVExtAnalyzer:
                             vtype=info['vtype'],
                             description=info['description'],
                             detected=True
-                        ))
+                        
+
                         break
         
         return detected
@@ -424,7 +425,8 @@ class RISCVExtAnalyzer:
                         description=info['description'],
                         security_risk=info['security_risk'],
                         detected=True
-                    ))
+                    
+
         
         return detected
     
@@ -450,7 +452,8 @@ class RISCVExtAnalyzer:
                     vector_width=128,
                     operation_type=pattern_info['operation_type'],
                     detected_pattern=pattern_info['description']
-                ))
+                
+
                 loop_count += 1
         
         return loops
@@ -479,7 +482,7 @@ class RISCVExtAnalyzer:
             usage['Zve'] += 1
         
         for instr in crypto_instr:
-            ext = instr.extension
+            ext = instr.extension,
             if ext in usage:
                 usage[ext] += 1
         
@@ -534,8 +537,9 @@ class RISCVExtAnalyzer:
                 vector_loops=[],
                 extension_usage={},
                 security_issues=[],
-                summary="文件不存在"
-            )
+                summary="文件不存在")
+            
+
         
         try:
             # 获取反汇编
@@ -577,8 +581,9 @@ class RISCVExtAnalyzer:
                 vector_loops=vector_loops,
                 extension_usage=ext_usage,
                 security_issues=security_issues,
-                summary=summary
-            )
+                summary=summary)
+            
+
             
         except Exception as e:
             logger.error(f"分析二进制文件失败: {e}")
@@ -588,8 +593,9 @@ class RISCVExtAnalyzer:
                 vector_loops=[],
                 extension_usage={},
                 security_issues=[],
-                summary=f"分析失败: {e}"
-            )
+                summary=f"分析失败: {e}")
+            
+
     
     def format_report(self, result: RISCVExtAnalysisResult) -> str:
         """
@@ -613,7 +619,7 @@ class RISCVExtAnalyzer:
             
             seen = set()
             for instr in result.vector_instructions:
-                key = f"{instr.opcode}_{instr.vtype}"
+                key = f"{instr.opcode}_{instr.vtype}",
                 if key not in seen:
                     seen.add(key)
                     output.append(f"| {instr.opcode} | {instr.mnemonic} | {instr.vtype} | {instr.description} |")
@@ -686,4 +692,4 @@ def get_riscv_ext_analyzer() -> RISCVExtAnalyzer:
 
 
 # 全局RISC-V扩展分析器实例
-_riscv_analyzer = None
+_riscv_analyzer = None))))))

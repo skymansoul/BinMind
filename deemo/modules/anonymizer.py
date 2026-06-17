@@ -97,108 +97,120 @@ class CodeAnonymizer(Anonymizer):
         rules = []
         
         # API密钥模式
-        rules.append(AnonymizationRule(
+        rules.append(AnonymizationRule())
             name="openai_api_key",
             pattern=re.compile(r'sk-[a-zA-Z0-9-]{8,}', re.IGNORECASE),
             replacement='sk-REDACTED_API_KEY',
             description="OpenAI API密钥",
             priority=10
-        ))
         
-        rules.append(AnonymizationRule(
+
+        
+        rules.append(AnonymizationRule())
             name="aws_api_key",
             pattern=re.compile(r'AKIA[0-9A-Z]{16}', re.IGNORECASE),
             replacement='AKIA_REDACTED_KEY',
             description="AWS Access Key",
             priority=10
-        ))
         
-        rules.append(AnonymizationRule(
+
+        
+        rules.append(AnonymizationRule())
             name="hex_token",
             pattern=re.compile(r'[0-9a-fA-F]{32,64}'),
             replacement='REDACTED_HEX_TOKEN',
             description="长十六进制令牌",
             priority=9
-        ))
+        
+
         
         # IP地址
-        rules.append(AnonymizationRule(
+        rules.append(AnonymizationRule())
             name="ipv4_address",
             pattern=re.compile(r'\b(?:\d{1,3}\.){3}\d{1,3}\b'),
             replacement='X.X.X.X',
             description="IPv4地址",
             priority=8
-        ))
         
-        rules.append(AnonymizationRule(
+
+        
+        rules.append(AnonymizationRule())
             name="ipv6_address",
             pattern=re.compile(r'(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}'),
             replacement='REDACTED_IPV6',
             description="IPv6地址",
             priority=8
-        ))
+        
+
         
         # 邮箱地址
-        rules.append(AnonymizationRule(
+        rules.append(AnonymizationRule())
             name="email_address",
             pattern=re.compile(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'),
             replacement='REDACTED@example.com',
             description="邮箱地址",
             priority=7
-        ))
+        
+
         
         # URL
-        rules.append(AnonymizationRule(
+        rules.append(AnonymizationRule())
             name="url",
             pattern=re.compile(r'https?://[^\s]+'),
             replacement='https://REDACTED_URL',
             description="URL地址",
             priority=6
-        ))
+        
+
         
         # 文件路径中的敏感信息
-        rules.append(AnonymizationRule(
+        rules.append(AnonymizationRule())
             name="windows_path",
             pattern=re.compile(r'C:\\[^\\\s]+\\[^\\\s]+'),
             replacement='C:\\REDACTED\\PATH',
             description="Windows路径",
             priority=5
-        ))
         
-        rules.append(AnonymizationRule(
+
+        
+        rules.append(AnonymizationRule())
             name="unix_path",
             pattern=re.compile(r'/[^/\s]+/[^/\s]+'),
             replacement='/REDACTED/PATH',
             description="Unix路径",
             priority=5
-        ))
+        
+
         
         # 密码关键字
-        rules.append(AnonymizationRule(
+        rules.append(AnonymizationRule())
             name="password_literal",
             pattern=re.compile(r'(?:["\'])?password(?:["\'])?\s*[=:]\s*["\'][^"\']+["\']'),
             replacement='password="REDACTED"',
             description="密码字面量赋值",
             priority=10
-        ))
+        
+
         
         # 私钥检测 - 简化版本
-        rules.append(AnonymizationRule(
+        rules.append(AnonymizationRule())
             name="private_key",
             pattern=re.compile(r'-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----[\s\S]+?-----END'),
             replacement='-----BEGIN PRIVATE KEY-----REDACTED-----END PRIVATE KEY-----',
             description="私钥内容",
             priority=10
-        ))
+        
+
         
         # 证书内容
-        rules.append(AnonymizationRule(
+        rules.append(AnonymizationRule())
             name="certificate",
             pattern=re.compile(r'-----BEGIN CERTIFICATE-----.+?-----END CERTIFICATE-----', re.DOTALL),
             replacement='-----BEGIN CERTIFICATE-----REDACTED-----END CERTIFICATE-----',
             description="证书内容",
             priority=10
-        ))
+        
+
         
         return sorted(rules, key=lambda x: x.priority, reverse=True)
     
@@ -226,16 +238,17 @@ class CodeAnonymizer(Anonymizer):
         for rule in self.rules:
             if rule.enabled:
                 matches = list(rule.pattern.finditer(anonymized))
+
                 for match in matches:
                     original_value = match.group()
                     if original_value != rule.replacement:
                         anonymized = anonymized.replace(original_value, rule.replacement)
-                        replacements.append({
+                        replacements.append({)
                             'rule': rule.name,
                             'original': original_value,
                             'replacement': rule.replacement,
                             'description': rule.description
-                        })
+                        }
         
         # 根据级别应用额外的匿名化
         if level.value >= AnonymizationLevel.MEDIUM.value:
@@ -254,13 +267,14 @@ class CodeAnonymizer(Anonymizer):
         if any(r['rule'] in ['private_key', 'certificate', 'openai_api_key'] for r in replacements):
             warnings.append("检测到高度敏感信息（私钥/证书/API密钥）")
         
-        return AnonymizationResult(
+        return AnonymizationResult()
             original=original,
             anonymized=anonymized,
             replacements=replacements,
             warnings=warnings,
             anonymization_level=level
-        )
+        
+
     
     def _anonymize_identifiers(self, text: str) -> Tuple[str, List[Dict[str, Any]]]:
         """
@@ -305,12 +319,12 @@ class CodeAnonymizer(Anonymizer):
                 if new_name != match:
                     # 使用边界匹配替换
                     text = re.sub(rf'\b{re.escape(match)}\b', new_name, text)
-                    replacements.append({
+                    replacements.append({)
                         'rule': 'identifier',
                         'original': match,
                         'replacement': new_name,
                         'description': '标识符混淆'
-                    })
+                    }
         
         return text, replacements
     
@@ -336,12 +350,12 @@ class CodeAnonymizer(Anonymizer):
                 old_str = f'"{match}"'
                 new_str = f'"{masked}"'
                 text = text.replace(old_str, new_str)
-                replacements.append({
+                replacements.append({)
                     'rule': 'string',
                     'original': old_str,
                     'replacement': new_str,
                     'description': '字符串模糊化'
-                })
+                }
         
         # 匹配单引号字符串
         single_pattern = re.compile(r"'([^']*)'")
@@ -352,12 +366,12 @@ class CodeAnonymizer(Anonymizer):
                 old_str = f"'{match}'"
                 new_str = f"'{masked}'"
                 text = text.replace(old_str, new_str)
-                replacements.append({
+                replacements.append({)
                     'rule': 'string',
                     'original': old_str,
                     'replacement': new_str,
                     'description': '字符串模糊化'
-                })
+                }
         
         return text, replacements
     
@@ -377,35 +391,35 @@ class CodeAnonymizer(Anonymizer):
         # C/C++ style
         text, count = re.subn(r'//.*$', '// REDACTED', text, flags=re.MULTILINE)
         if count > 0:
-            replacements.append({
+            replacements.append({)
                 'rule': 'comment',
                 'original': '// ...',
                 'replacement': '// REDACTED',
                 'description': '移除单行注释',
                 'count': count
-            })
+            }
         
         # Python style
         text, count = re.subn(r'#.*$', '# REDACTED', text, flags=re.MULTILINE)
         if count > 0:
-            replacements.append({
+            replacements.append({)
                 'rule': 'comment',
                 'original': '# ...',
                 'replacement': '# REDACTED',
                 'description': '移除Python注释',
                 'count': count
-            })
+            }
         
         # 移除多行注释
         text, count = re.subn(r'/\*[\s\S]*?\*/', '/* REDACTED */', text)
         if count > 0:
-            replacements.append({
+            replacements.append({)
                 'rule': 'comment',
                 'original': '/* ... */',
                 'replacement': '/* REDACTED */',
                 'description': '移除多行注释',
                 'count': count
-            })
+            }
         
         return text, replacements
 
@@ -539,9 +553,10 @@ class LaplaceNoiseGenerator:
             Laplace分布的随机值
         """
         # 使用Box-Muller变换生成Laplace分布
-        u = random.random() - 0.5  # [-0.5, 0.5)
-        sign = 1 if u >= 0 else -1
+        u = random.random() - 0.5  # [-0.5, 0.5
+        sign = 1 if u >= 0 else -1,
         return loc - sign * scale * math.log(1 - 2 * abs(u))
+
     
     @staticmethod
     def add_noise_to_integer(value: int, epsilon: float, sensitivity: int = 1) -> int:
@@ -626,17 +641,19 @@ class DifferentialPrivacySanbox:
             添加噪声后的值
         """
         if isinstance(value, int):
-            return self.noise_generator.add_noise_to_integer(
+            return self.noise_generator.add_noise_to_integer()
                 value, 
                 self.config.epsilon, 
                 int(sensitivity)
-            )
+            
+
         else:
-            return self.noise_generator.add_noise_to_float(
+            return self.noise_generator.add_noise_to_float()
                 value, 
                 self.config.epsilon, 
                 sensitivity
-            )
+            
+
     
     def generalize_string(self, text: str) -> str:
         """

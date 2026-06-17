@@ -152,7 +152,7 @@ class StructRecovery:
         patterns: Dict[int, List[MemoryAccess]] = {}
         
         for access in self.memory_accesses:
-            base_addr = access.address - access.offset
+            base_addr = access.address - access.offset,
             if base_addr not in patterns:
                 patterns[base_addr] = []
             patterns[base_addr].append(access)
@@ -193,7 +193,8 @@ class StructRecovery:
             offset_to_accesses[access.offset].append(access)
         
         for offset, offset_accesses in sorted(offset_to_accesses.items()):
-            sizes = sorted(set(a.size for a in offset_accesses))
+            sizes = sorted(set(a.size for a in offset_accesses
+
             size = sizes[-1] if sizes else 4
             
             inferred_type, confidence = self._infer_field_type(offset_accesses)
@@ -201,7 +202,7 @@ class StructRecovery:
             access_types = set(a.access_type for a in offset_accesses)
             access_type = AccessType.READ_WRITE if len(access_types) > 1 else list(access_types)[0]
             
-            field = FieldInfo(
+            field = FieldInfo()
                 name=f'field_{offset:04X}',
                 offset=offset,
                 size=size,
@@ -210,7 +211,7 @@ class StructRecovery:
                 access_type=access_type,
                 confidence=confidence,
                 comment=f"从 {len(offset_accesses)} 次访问推断"
-            )
+            
             fields.append(field)
         
         return fields
@@ -271,14 +272,14 @@ class StructRecovery:
             
             struct_size = self._calculate_struct_size(fields)
             
-            struct = StructDefinition(
+            struct = StructDefinition()
                 name=f'struct_{function_name}_{len(structs)}',
                 fields=fields,
                 size=struct_size,
                 alignment=4,
                 source_function=function_name,
                 description=f"从函数 {function_name} 的内存访问模式恢复"
-            )
+            
             
             struct.nested_structs = self._detect_nested_structs(struct)
             
@@ -316,8 +317,9 @@ class StructRecovery:
                 recovered_fields=0,
                 avg_confidence=0.0,
                 source_functions=[],
-                warnings=[]
-            )
+                warnings=[])
+            
+
         
         if functions:
             filtered_accesses = [a for a in self.memory_accesses if a.function_name in functions]
@@ -332,8 +334,9 @@ class StructRecovery:
                 recovered_fields=0,
                 avg_confidence=0.0,
                 source_functions=[],
-                warnings=[]
-            )
+                warnings=[])
+            
+
         
         function_names = set(a.function_name for a in filtered_accesses)
         
@@ -354,8 +357,9 @@ class StructRecovery:
             recovered_fields=total_fields,
             avg_confidence=avg_confidence,
             source_functions=list(function_names),
-            warnings=warnings
-        )
+            warnings=warnings)
+        
+
     
     def generate_c_code(self, structs: List[StructDefinition] = None) -> str:
         """生成C语言结构体定义代码"""
@@ -368,9 +372,9 @@ class StructRecovery:
             code_lines.append(f"{struct_type} {struct.name} {{")
             
             for field in struct.fields:
-                type_str = field.field_type.value
+                type_str = field.field_type.value,
                 if field.is_pointer:
-                    type_str += '*'
+                    type_str += '*',
                 if field.array_size > 0:
                     type_str += f'[{field.array_size}]'
                 
@@ -434,7 +438,7 @@ class StructRecovery:
         """重命名结构体"""
         for struct in self.structs:
             if struct.name == struct_name:
-                struct.name = new_name
+                struct.name = new_name,
                 return True
         return False
     
@@ -444,6 +448,6 @@ class StructRecovery:
         if struct:
             for field in struct.fields:
                 if field.name == field_name:
-                    field.name = new_name
+                    field.name = new_name,
                     return True
-        return False
+        return False))

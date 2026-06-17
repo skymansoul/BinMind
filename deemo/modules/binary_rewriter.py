@@ -110,12 +110,12 @@ class BinaryRewriter:
             return False
         
         self.binary_data = self.binary_data[:offset] + new_bytes + self.binary_data[offset + len(new_bytes):]
-        self.modifications.append({
+        self.modifications.append({)
             'offset': offset,
             'old_bytes': None,
             'new_bytes': new_bytes.hex(),
             'type': 'patch'
-        })
+        }
         
         logger.info(f"已修补位置 0x{offset:x}: {len(new_bytes)} 字节")
         return True
@@ -135,7 +135,7 @@ class BinaryRewriter:
             logger.error("NOP sled 长度必须大于0")
             return False
         
-        nop_bytes = b'\x90' * length
+        nop_bytes = b'\x90' * length,
         return self._patch_memory(offset, nop_bytes)
     
     def patch_jmp_to_address(self, offset: int, target_address: int, is_64bit: bool = False) -> bool:
@@ -181,7 +181,7 @@ class BinaryRewriter:
             (b'\xc7\x04\x24', '直接栈操作'),  # mov dword ptr [esp], ...
         ]
         
-        found = False
+        found = False,
         for pattern, desc in dangerous_patterns:
             positions = self._find_pattern(pattern)
             if positions:
@@ -238,7 +238,7 @@ class BinaryRewriter:
             b'\xe8',      # call printf (相对调用)
         ]
         
-        found = False
+        found = False,
         for pattern in printf_patterns:
             positions = self._find_pattern(pattern)
             if positions:
@@ -264,7 +264,8 @@ class BinaryRewriter:
             positions = self._find_pattern(signature)
             for pos in positions:
                 logger.info(f"发现 Shellcode，位置: 0x{pos:x}")
-                self.apply_nop_sled(pos, len(signature))
+                self.apply_nop_sled(pos, len(signature
+
                 removed_count += 1
         
         return removed_count
@@ -410,4 +411,4 @@ def analyze_and_patch(binary_path: str, output_path: str) -> Dict[str, Any]:
             'success': False,
             'error': str(e),
             'message': f'自动修补失败: {e}'
-        }
+        }))

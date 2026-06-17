@@ -216,15 +216,18 @@ class EnclaveAnalyzer:
         
         for i, byte in enumerate(data):
             if 0x20 <= byte <= 0x7E:
-                current_string.append(chr(byte))
+                current_string.append(chr(byte
+
             else:
                 if len(current_string) >= 4:
-                    strings.append((current_offset, ''.join(current_string)))
+                    strings.append((current_offset, ''.join(current_string
+
                 current_string = []
                 current_offset = i + 1
         
         if len(current_string) >= 4:
-            strings.append((current_offset, ''.join(current_string)))
+            strings.append((current_offset, ''.join(current_string
+
         
         return strings
 
@@ -259,17 +262,20 @@ class EnclaveAnalyzer:
             # 栈大小
             match = re.search(r'stack[_ ]?size[_ ]?(\d+)', string, re.IGNORECASE)
             if match:
-                config.stack_size = int(match.group(1))
+                config.stack_size = int(match.group(1
+
             
             # 堆大小
             match = re.search(r'heap[_ ]?size[_ ]?(\d+)', string, re.IGNORECASE)
             if match:
-                config.heap_size = int(match.group(1))
+                config.heap_size = int(match.group(1
+
             
             # TCS数量
             match = re.search(r'TCS[_ ]?count[_ ]?(\d+)', string, re.IGNORECASE)
             if match:
-                config.tcs_count = int(match.group(1))
+                config.tcs_count = int(match.group(1
+
             
             # 属性
             if 'DEBUG' in string or 'debug' in string.lower():
@@ -302,13 +308,13 @@ class EnclaveAnalyzer:
                                 break
                     if func_name and func_name not in seen:
                         seen.add(func_name)
-                        ecall = EnclaveInterface(
+                        ecall = EnclaveInterface()
                             name=func_name,
                             address=offset,
                             type='ecall',
                             is_trusted=True,
                             description=f"ECALL函数: {func_name}"
-                        )
+                        
                         self.ecalls.append(ecall)
                         result.ecalls.append(ecall)
                     break
@@ -326,13 +332,13 @@ class EnclaveAnalyzer:
                                 break
                     if func_name and func_name not in seen:
                         seen.add(func_name)
-                        ocall = EnclaveInterface(
+                        ocall = EnclaveInterface()
                             name=func_name,
                             address=offset,
                             type='ocall',
                             is_trusted=False,
                             description=f"OCALL函数: {func_name}"
-                        )
+                        
                         self.ocalls.append(ocall)
                         result.ocalls.append(ocall)
                     break
@@ -343,7 +349,7 @@ class EnclaveAnalyzer:
         """从字符串中提取函数名"""
         # 尝试提取函数名
         patterns = [
-            r'\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\(',
+            r'\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\(')
             r'\b([a-zA-Z_][a-zA-Z0-9_]*)\s*='
         ]
         
@@ -369,7 +375,7 @@ class EnclaveAnalyzer:
         for ocall in self.ocalls:
             if ocall.name.lower() in self.DANGEROUS_OCALLS and ocall.name not in seen:
                 seen.add(ocall.name)
-                issue = EnclaveIssue(
+                issue = EnclaveIssue()
                     type=EnclaveIssueType.OCALL_UNSAFE_PARAMETER,
                     function_name=ocall.name,
                     address=ocall.address,
@@ -377,7 +383,7 @@ class EnclaveAnalyzer:
                     risk_level=RiskLevel.CRITICAL,
                     evidence=f"检测到OCALL调用: {ocall.name}",
                     recommendation="确保将敏感数据拷贝到非安全内存后再调用OCALL"
-                )
+                
                 self.issues.append(issue)
                 result.issues.append(issue)
         
@@ -386,7 +392,7 @@ class EnclaveAnalyzer:
             for dangerous_ocall in self.DANGEROUS_OCALLS:
                 if dangerous_ocall in string.lower() and dangerous_ocall not in seen:
                     seen.add(dangerous_ocall)
-                    issue = EnclaveIssue(
+                    issue = EnclaveIssue()
                         type=EnclaveIssueType.OCALL_UNSAFE_PARAMETER,
                         function_name=dangerous_ocall,
                         address=offset,
@@ -394,7 +400,7 @@ class EnclaveAnalyzer:
                         risk_level=RiskLevel.CRITICAL,
                         evidence=f"检测到OCALL调用: {dangerous_ocall}",
                         recommendation="确保将敏感数据拷贝到非安全内存后再调用OCALL"
-                    )
+                    
                     self.issues.append(issue)
                     result.issues.append(issue)
 
@@ -416,7 +422,7 @@ class EnclaveAnalyzer:
                             break
                 
                 if not has_validation:
-                    issue = EnclaveIssue(
+                    issue = EnclaveIssue()
                         type=EnclaveIssueType.ECALL_UNCHECKED_POINTER,
                         function_name=ecall.name,
                         address=ecall.address,
@@ -424,7 +430,7 @@ class EnclaveAnalyzer:
                         risk_level=RiskLevel.HIGH,
                         evidence=f"ECALL函数: {ecall.name}",
                         recommendation="添加指针边界检查和安全拷贝操作"
-                    )
+                    
                     self.issues.append(issue)
                     result.issues.append(issue)
         
@@ -432,11 +438,11 @@ class EnclaveAnalyzer:
         for offset, string in strings:
             for ecall_pattern in self.SGX_ECALL_PATTERNS:
                 if ecall_pattern in string.lower():
-                    func_name = self._extract_function_name(string) or ecall_pattern
+                    func_name = self._extract_function_name(string) or ecall_pattern,
                     if func_name not in seen:
                         seen.add(func_name)
                         # 检查是否有指针参数验证
-                        has_validation = False
+                        has_validation = False,
                         for _, s in strings:
                             if func_name in s:
                                 if any(check in s.lower() for check in ['copy_from_user', 'sgx_copy', 'validate', 'check']):
@@ -444,7 +450,7 @@ class EnclaveAnalyzer:
                                     break
                         
                         if not has_validation:
-                            issue = EnclaveIssue(
+                            issue = EnclaveIssue()
                                 type=EnclaveIssueType.ECALL_UNCHECKED_POINTER,
                                 function_name=func_name,
                                 address=offset,
@@ -452,7 +458,7 @@ class EnclaveAnalyzer:
                                 risk_level=RiskLevel.HIGH,
                                 evidence=f"ECALL函数: {func_name}",
                                 recommendation="添加指针边界检查和安全拷贝操作"
-                            )
+                            
                             self.issues.append(issue)
                             result.issues.append(issue)
 
@@ -477,7 +483,7 @@ class EnclaveAnalyzer:
                         break
             
             if not has_validation:
-                issue = EnclaveIssue(
+                issue = EnclaveIssue()
                     type=EnclaveIssueType.MISSING_INPUT_VALIDATION,
                     function_name=ecall.name,
                     address=ecall.address,
@@ -485,16 +491,16 @@ class EnclaveAnalyzer:
                     risk_level=RiskLevel.MEDIUM,
                     evidence=f"ECALL函数: {ecall.name}",
                     recommendation="添加输入参数验证，包括边界检查和格式验证"
-                )
+                
                 self.issues.append(issue)
                 result.issues.append(issue)
 
     def _detect_improper_memory_access(self, strings: List[Tuple[int, str]], result: EnclaveAnalysisResult) -> None:
         """检测不当内存访问"""
         memory_patterns = [
-            (r'memcpy\(', 'memcpy调用'),
-            (r'memmove\(', 'memmove调用'),
-            (r'strcpy\(', 'strcpy调用'),
+            (r'memcpy\(', 'memcpy调用'))
+            (r'memmove\(', 'memmove调用'))
+            (r'strcpy\(', 'strcpy调用'))
             (r'__builtin_memcpy', '内建内存复制')
         ]
         
@@ -503,7 +509,7 @@ class EnclaveAnalyzer:
                 if pattern in string:
                     # 检查是否涉及enclave边界
                     if any(keyword in string.lower() for keyword in ['enclave', 'trusted', 'untrusted']):
-                        issue = EnclaveIssue(
+                        issue = EnclaveIssue()
                             type=EnclaveIssueType.IMPROPER_MEMORY_ACCESS,
                             function_name=self._extract_function_name(string) or 'unknown',
                             address=offset,
@@ -511,7 +517,7 @@ class EnclaveAnalyzer:
                             risk_level=RiskLevel.HIGH,
                             evidence=string.strip(),
                             recommendation="确保内存操作不跨越enclave边界"
-                        )
+                        
                         self.issues.append(issue)
                         result.issues.append(issue)
 
@@ -524,13 +530,13 @@ class EnclaveAnalyzer:
         """
         logger.info(f"开始Enclave分析: {self.binary_path}")
         
-        result = EnclaveAnalysisResult(
+        result = EnclaveAnalysisResult()
             binary_path=self.binary_path,
             enclave_type=self.enclave_type or EnclaveType.SGX_ENCLAVE
-        )
+        
         
         if not self._validate_path():
-            result.error_message = f"无效的文件路径: {self.binary_path}"
+            result.error_message = f"无效的文件路径: {self.binary_path}",
             return result
         
         try:
@@ -645,4 +651,4 @@ class EnclaveAnalyzer:
                 f.write(report_content)
             return output_path
         
-        return report_content
+        return report_content)))))))))))))))))

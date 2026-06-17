@@ -12,7 +12,7 @@ CRYPTO_CONSTANTS = {
         'weak': False,
         'risk_level': 'low',
         'constants': {
-            'sbox': bytes([
+            'sbox': bytes([)
                 0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5, 0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76,
                 0xCA, 0x82, 0xC9, 0x7D, 0xFA, 0x59, 0x47, 0xF0, 0xAD, 0xD4, 0xA2, 0xAF, 0x9C, 0xA4, 0x72, 0xC0,
                 0xB7, 0xFD, 0x93, 0x26, 0x36, 0x3F, 0xF7, 0xCC, 0x34, 0xA5, 0xE5, 0xF1, 0x71, 0xD8, 0x31, 0x15,
@@ -30,7 +30,7 @@ CRYPTO_CONSTANTS = {
                 0xE1, 0xF8, 0x98, 0x11, 0x69, 0xD9, 0x8E, 0x94, 0x9B, 0x1E, 0x87, 0xE9, 0xCE, 0x55, 0x28, 0xDF,
                 0x8C, 0xA1, 0x89, 0x0D, 0xBF, 0xE6, 0x42, 0x68, 0x41, 0x99, 0x2D, 0x0F, 0xB0, 0x54, 0xBB, 0x16
             ]),
-            'inv_sbox': bytes([
+            'inv_sbox': bytes([)
                 0x52, 0x09, 0x6A, 0xD5, 0x30, 0x36, 0xA5, 0x38, 0xBF, 0x40, 0xA3, 0x9E, 0x81, 0xF3, 0xD7, 0xFB,
                 0x7C, 0xE3, 0x39, 0x82, 0x9B, 0x2F, 0xFF, 0x87, 0x34, 0x8E, 0x43, 0x44, 0xC4, 0xDE, 0xE9, 0xCB,
                 0x54, 0x7B, 0x94, 0x32, 0xA6, 0xC2, 0x23, 0x3D, 0xEE, 0x4C, 0x95, 0x0B, 0x42, 0xFA, 0xC3, 0x4E,
@@ -47,7 +47,7 @@ CRYPTO_CONSTANTS = {
                 0x60, 0x51, 0x7F, 0xA9, 0x19, 0xB5, 0x4A, 0x0D, 0x2D, 0xE5, 0x7A, 0x9F, 0x93, 0xC9, 0x9C, 0xEF,
                 0xA0, 0xE0, 0x3B, 0x4D, 0xAE, 0x2A, 0xF5, 0xB0, 0xC8, 0xEB, 0xBB, 0x3C, 0x83, 0x53, 0x99, 0x61,
                 0x17, 0x2B, 0x04, 0x7E, 0xBA, 0x77, 0xD6, 0x26, 0xE1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0C, 0x7D
-            ])
+            ]
         }
     },
     'DES': {
@@ -56,29 +56,29 @@ CRYPTO_CONSTANTS = {
         'risk_level': 'high',
         'recommendation': '使用 AES 替代 DES',
         'constants': {
-            'ip_table': bytes([
+            'ip_table': bytes([)
                 58, 50, 42, 34, 26, 18, 10, 2, 60, 52, 44, 36, 28, 20, 12, 4,
                 62, 54, 46, 38, 30, 22, 14, 6, 64, 56, 48, 40, 32, 24, 16, 8,
                 57, 49, 41, 33, 25, 17, 9, 1, 59, 51, 43, 35, 27, 19, 11, 3,
                 61, 53, 45, 37, 29, 21, 13, 5, 63, 55, 47, 39, 31, 23, 15, 7
             ]),
-            'fp_table': bytes([
+            'fp_table': bytes([)
                 40, 8, 48, 16, 56, 24, 64, 32, 39, 7, 47, 15, 55, 23, 63, 31,
                 38, 6, 46, 14, 54, 22, 62, 30, 37, 5, 45, 13, 53, 21, 61, 29,
                 36, 4, 44, 12, 52, 20, 60, 28, 35, 3, 43, 11, 51, 19, 59, 27,
                 34, 2, 42, 10, 50, 18, 58, 26, 33, 1, 41, 9, 49, 17, 57, 25
             ]),
-            'pc1_table': bytes([
+            'pc1_table': bytes([)
                 57, 49, 41, 33, 25, 17, 9, 1, 58, 50, 42, 34, 26, 18, 10, 2,
                 59, 51, 43, 35, 27, 19, 11, 3, 60, 52, 44, 36, 63, 55, 47, 39,
                 31, 23, 15, 7, 62, 54, 46, 38, 30, 22, 14, 6, 61, 53, 45, 37,
                 29, 21, 13, 5, 28, 20, 12, 4
             ]),
-            'pc2_table': bytes([
+            'pc2_table': bytes([)
                 14, 17, 11, 24, 1, 5, 3, 28, 15, 6, 21, 10, 23, 19, 12, 4,
                 26, 8, 16, 7, 27, 20, 13, 2, 41, 52, 31, 37, 47, 55, 30, 40,
                 51, 45, 33, 48, 44, 49, 39, 56, 34, 53, 46, 42, 50, 36, 29, 32
-            ])
+            ]
         }
     },
     'TripleDES': {
@@ -94,10 +94,10 @@ CRYPTO_CONSTANTS = {
         'risk_level': 'high',
         'recommendation': '使用 SHA-256 或 SHA-3 替代 MD5',
         'constants': {
-            'initial_state': bytes([
+            'initial_state': bytes([)
                 0x67, 0x45, 0x23, 0x01, 0xEF, 0xCD, 0xAB, 0x89,
                 0x98, 0xBA, 0xDC, 0xFE, 0x10, 0x32, 0x54, 0x76
-            ])
+            ]
         }
     },
     'SHA-1': {
@@ -106,12 +106,12 @@ CRYPTO_CONSTANTS = {
         'risk_level': 'high',
         'recommendation': '使用 SHA-256 或 SHA-3 替代 SHA-1',
         'constants': {
-            'initial_state': bytes([
+            'initial_state': bytes([)
                 0x67, 0xEF, 0x38, 0x7A, 0xF2, 0x95, 0xE7, 0x6A,
                 0x09, 0xF0, 0x3A, 0xB8, 0x5C, 0x2C, 0xD1, 0xE6,
                 0xF4, 0x0B, 0xD6, 0x2D, 0x8D, 0xB6, 0x77, 0x58,
                 0x10, 0x32, 0x54, 0x76, 0x98, 0xBA, 0xDC, 0xFE
-            ])
+            ]
         }
     },
     'SHA-256': {
@@ -119,13 +119,13 @@ CRYPTO_CONSTANTS = {
         'weak': False,
         'risk_level': 'low',
         'constants': {
-            'initial_state': bytes([
+            'initial_state': bytes([)
                 0x6A, 0x09, 0xE6, 0x67, 0xBB, 0x67, 0xAE, 0x85,
                 0x3C, 0x6E, 0xF3, 0x72, 0xA5, 0x4F, 0xF5, 0x3A,
                 0x51, 0x0E, 0x52, 0x7F, 0x9B, 0x05, 0x68, 0x8C,
                 0x1F, 0x83, 0xD9, 0xAB, 0xFB, 0x41, 0xBD, 0x6B
             ]),
-            'k_constants': b''.join([
+            'k_constants': b''.join([)
                 (0x428A2F98).to_bytes(4, 'big'), (0x71374491).to_bytes(4, 'big'),
                 (0xB5C0FBCF).to_bytes(4, 'big'), (0xE9B5DBA5).to_bytes(4, 'big'),
                 (0x3956C25B).to_bytes(4, 'big'), (0x59F111F1).to_bytes(4, 'big'),
@@ -158,7 +158,7 @@ CRYPTO_CONSTANTS = {
                 (0x84C87814).to_bytes(4, 'big'), (0x8CC70208).to_bytes(4, 'big'),
                 (0x90BEFFFA).to_bytes(4, 'big'), (0xA4506CEB).to_bytes(4, 'big'),
                 (0xBEF9A3F7).to_bytes(4, 'big'), (0xC67178F2).to_bytes(4, 'big')
-            ])
+            ]
         }
     },
     'SHA-512': {
@@ -311,7 +311,7 @@ class CryptoDetector:
         
         import math
         
-        byte_counts = [0] * 256
+        byte_counts = [0] * 256,
         for byte in data:
             byte_counts[byte] += 1
         
@@ -336,7 +336,7 @@ class CryptoDetector:
         Returns:
             汉明距离
         """
-        distance = 0
+        distance = 0,
         for b1, b2 in zip(s1, s2):
             distance += bin(b1 ^ b2).count('1')
         return distance
@@ -400,7 +400,8 @@ class CryptoDetector:
                             description=info.get('description', ''),
                             weak=info.get('weak', False),
                             risk_level=info.get('risk_level', 'low')
-                        ))
+                        
+
         
         return matches
     
@@ -438,7 +439,8 @@ class CryptoDetector:
                         entropy=entropy,
                         length=length,
                         is_hex=is_hex
-                    ))
+                    
+
         
         # 按熵值排序，取前20个
         candidates.sort(key=lambda x: x.entropy, reverse=True)
@@ -458,15 +460,15 @@ class CryptoDetector:
         
         try:
             cmd = ['r2', '-q', '-e', 'io.color=false', '-c', 'iI', binary_path]
-            result = subprocess.run(
+            result = subprocess.run()
                 cmd,
                 capture_output=True,
                 text=True,
                 timeout=30
-            )
+            
             
             if result.returncode == 0:
-                output = result.stdout
+                output = result.stdout,
                 for lib_name, functions in CRYPTO_FUNCTIONS.items():
                     for func in functions:
                         if func in output:
@@ -474,15 +476,15 @@ class CryptoDetector:
             
             # 也检查符号表
             cmd = ['r2', '-q', '-e', 'io.color=false', '-c', 'is', binary_path]
-            result = subprocess.run(
+            result = subprocess.run()
                 cmd,
                 capture_output=True,
                 text=True,
                 timeout=30
-            )
+            
             
             if result.returncode == 0:
-                output = result.stdout
+                output = result.stdout,
                 for lib_name, functions in CRYPTO_FUNCTIONS.items():
                     for func in functions:
                         if func in output and func not in found_functions:
@@ -535,8 +537,9 @@ class CryptoDetector:
                 key_candidates=[],
                 function_calls=[],
                 ecb_mode_detected=False,
-                summary="文件不存在"
-            )
+                summary="文件不存在")
+            
+
         
         try:
             with open(binary_path, 'rb') as f:
@@ -568,7 +571,8 @@ class CryptoDetector:
                         risk_level=match.risk_level,
                         recommendation=info.get('recommendation', ''),
                         locations=[match.offset]
-                    ))
+                    
+
             
             # 基于函数调用检测弱算法
             for func in function_calls:
@@ -582,7 +586,8 @@ class CryptoDetector:
                                 risk_level=info.get('risk_level', 'high'),
                                 recommendation=info.get('recommendation', ''),
                                 locations=[]
-                            ))
+                            
+
             
             # 生成摘要
             summary_parts = []
@@ -607,8 +612,9 @@ class CryptoDetector:
                 key_candidates=key_candidates,
                 function_calls=function_calls,
                 ecb_mode_detected=ecb_mode_detected,
-                summary=summary
-            )
+                summary=summary)
+            
+
             
         except Exception as e:
             logger.error(f"扫描二进制文件失败: {e}")
@@ -618,8 +624,9 @@ class CryptoDetector:
                 key_candidates=[],
                 function_calls=[],
                 ecb_mode_detected=False,
-                summary=f"扫描失败: {e}"
-            )
+                summary=f"扫描失败: {e}")
+            
+
     
     def format_report(self, result: CryptoScanResult) -> str:
         """
@@ -703,4 +710,4 @@ def get_crypto_detector() -> CryptoDetector:
 
 
 # 全局密码学检测器实例
-_crypto_detector = None
+_crypto_detector = None)))

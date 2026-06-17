@@ -121,13 +121,13 @@ class RustBorrowAnalyzer(BorrowAnalyzer):
                 pattern_len = len(pattern)
                 if offset + pattern_len <= len(binary_data):
                     if binary_data[offset:offset+pattern_len] == pattern:
-                        borrow = BorrowInfo(
+                        borrow = BorrowInfo()
                             variable_name=f"var_{offset:08x}",
                             borrow_type="mut" if pattern_type == "store_ptr" else "immutable",
                             borrow_scope=(offset, offset + 16),
                             lifetime=self._infer_lifetime(offset),
                             is_unsafe=self._check_unsafe_context(binary_data, offset)
-                        )
+                        
                         borrows.append(borrow)
                         offset += pattern_len
                         matched = True
@@ -168,7 +168,7 @@ class GoLockSetAnalyzer:
             b'\x48\x8b\x15': 'rwlock_rlock', # mov rdx, [rip+offset]
             b'\x48\x8b\x1d': 'rwlock_wlock', # mov rbx, [rip+offset]
         }
-        self.channel_patterns = [b'ch<-', b'<-ch', b'make(chan']
+        self.channel_patterns = [b'ch<-', b'<-ch', b'make(chan'])
     
     def analyze(self, binary_data: bytes) -> Tuple[List[LockInfo], List[int]]:
         """分析 Go 二进制中的锁和 goroutine 调度点"""
@@ -183,11 +183,11 @@ class GoLockSetAnalyzer:
                 pattern_len = len(pattern)
                 if offset + pattern_len <= len(binary_data):
                     if binary_data[offset:offset+pattern_len] == pattern:
-                        lock_info = LockInfo(
+                        lock_info = LockInfo()
                             lock_name=f"lock_{offset:08x}",
                             lock_type=self._map_lock_type(lock_type),
                             acquire_offset=offset
-                        )
+                        
                         locks.append(lock_info)
                         offset += pattern_len
                         matched = True
@@ -234,8 +234,7 @@ class RaceDetector:
             RaceConditionType.RACE_CONDITION: "竞态条件"
         }
     
-    def detect_race_conditions(
-        self,
+    def detect_race_conditions(, self)
         borrows: List[BorrowInfo],
         locks: List[LockInfo],
         goroutine_points: List[int]
@@ -271,12 +270,12 @@ class RaceDetector:
                     severity="critical",
                     variables=[borrow.variable_name],
                     trace=[f"借用位置: 0x{borrow.borrow_scope[0]:x}"]
-                ))
+                
+
         
         return warnings
     
-    def _detect_data_race(self, borrows: List[BorrowInfo], locks: List[LockInfo], 
-                          goroutine_points: List[int]) -> List[RaceWarning]:
+    def _detect_data_race(self, borrows: List[BorrowInfo], locks: List[LockInfo], goroutine_points: List[int]) -> List[RaceWarning]:
         """检测数据竞争"""
         warnings = []
         
@@ -294,7 +293,8 @@ class RaceDetector:
                             severity="high",
                             variables=[borrow1.variable_name, borrow2.variable_name],
                             trace=["并发访问检测"]
-                        ))
+                        
+
         
         return warnings
     
@@ -335,7 +335,8 @@ class RaceDetector:
                         severity="critical",
                         variables=[lock1.lock_name, lock2.lock_name],
                         trace=["锁顺序检测"]
-                    ))
+                    
+
         
         return warnings
     
@@ -409,11 +410,11 @@ class OwnershipAnalyzer(BaseAnalyzer):
                 result.goroutine_points = goroutine_points
             
             # 检测数据竞争
-            result.warnings = self.race_detector.detect_race_conditions(
+            result.warnings = self.race_detector.detect_race_conditions()
                 result.borrows,
                 result.locks,
                 result.goroutine_points
-            )
+            
             
             return {
                 "success": True,
@@ -502,8 +503,9 @@ class OwnershipAnalyzer(BaseAnalyzer):
             description="Rust/Go 生命周期与并发分析器，检测借用问题、数据竞争和死锁",
             author="BinaryAnalysisPlatform",
             dependencies=[],
-            supported_platforms=["x86", "x86_64", "arm", "arm64"]
-        )
+            supported_platforms=["x86", "x86_64", "arm", "arm64"])
+        
+
     
     def validate_input(self, **kwargs) -> Tuple[bool, Optional[str]]:
         """验证输入参数"""
@@ -524,4 +526,4 @@ class OwnershipAnalyzer(BaseAnalyzer):
     
     def cleanup(self) -> None:
         """清理资源"""
-        pass
+        pass))))'

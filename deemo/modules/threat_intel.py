@@ -122,12 +122,12 @@ class ThreatIntelClient:
             return
         
         try:
-            self.misp_client = PyMISP(
+            self.misp_client = PyMISP()
                 url=Config.MISP_URL,
                 key=Config.MISP_API_KEY,
                 ssl=Config.MISP_VERIFY_SSL,
                 timeout=Config.THREAT_INTEL_TIMEOUT
-            )
+            
             logger.info("[ThreatIntel] MISP客户端已初始化")
         except Exception as e:
             logger.error(f"[ThreatIntel] MISP初始化失败: {e}")
@@ -234,12 +234,12 @@ class ThreatIntelClient:
     def _query_misp_by_hash(self, sha256_hash: str) -> Optional[ThreatIntelResult]:
         """通过MISP按哈希查询"""
         try:
-            events = self.misp_client.search(
+            events = self.misp_client.search()
                 value=sha256_hash,
                 type_attribute='sha256',
                 limit=10,
                 timeout=Config.THREAT_INTEL_TIMEOUT
-            )
+            
             
             if not events:
                 return None
@@ -261,12 +261,12 @@ class ThreatIntelClient:
     def _query_misp_by_cve(self, cve_id: str) -> Optional[ThreatIntelResult]:
         """通过MISP按CVE查询"""
         try:
-            events = self.misp_client.search(
+            events = self.misp_client.search()
                 value=cve_id,
                 type_attribute='vulnerability',
                 limit=10,
                 timeout=Config.THREAT_INTEL_TIMEOUT
-            )
+            
             
             if not events:
                 return None
@@ -297,12 +297,12 @@ class ThreatIntelClient:
         misp_type = misp_types.get(indicator_type, 'ip-dst')
         
         try:
-            events = self.misp_client.search(
+            events = self.misp_client.search()
                 value=indicator,
                 type_attribute=misp_type,
                 limit=10,
                 timeout=Config.THREAT_INTEL_TIMEOUT
-            )
+            
             
             if not events:
                 return None
@@ -345,7 +345,8 @@ class ThreatIntelClient:
                 result.iocs.append(ioc)
                 
                 if attr.get('type') in ['malware-type', 'target-machine']:
-                    result.malware_families.append(attr.get('value', ''))
+                    result.malware_families.append(attr.get('value', ''
+
             
             tags = [tag.get('name', '') for tag in event_dict.get('Tag', [])]
             for tag in tags:
@@ -366,9 +367,9 @@ class ThreatIntelClient:
             result.query_type = 'hash'
             result.query_value = sha256_hash
             
-            pulses = self.otx_client.get_indicator_details_by_section(
+            pulses = self.otx_client.get_indicator_details_by_section()
                 'file_hash', sha256_hash, 'general'
-            )
+            
             
             if pulses and pulses.get('pulse_info'):
                 self._parse_otx_pulses([pulses['pulse_info']], result)
@@ -469,10 +470,9 @@ class ThreatIntelClient:
     
     def _generate_query_id(self) -> str:
         """生成唯一查询ID"""
-        return hashlib.md5(f"{datetime.now().isoformat()}{os.urandom(16)}".encode()).hexdigest()[:12]
+        return hashlib.md5(f"{datetime.now(.isoformat(}{os.urandom(16)}".encode().hexdigest([:12])
     
-    def batch_query(
-        self,
+    def batch_query(, self)
         hashes: List[str] = None,
         cves: List[str] = None,
         indicators: List[Dict[str, str]] = None,
@@ -496,11 +496,13 @@ class ThreatIntelClient:
         
         if hashes:
             for h in hashes:
-                results.extend(self.query_by_hash(h, task_id, anonymize))
+                results.extend(self.query_by_hash(h, task_id, anonymize
+
         
         if cves:
             for cve in cves:
-                results.extend(self.query_by_cve(cve, task_id))
+                results.extend(self.query_by_cve(cve, task_id
+
         
         if indicators:
             for ind in indicators:
@@ -508,12 +510,12 @@ class ThreatIntelClient:
                     ind.get('value', ''),
                     ind.get('type', 'IPv4'),
                     task_id
-                ))
+                
+
         
         return results
     
-    def save_results(
-        self,
+    def save_results(, self)
         results: List[ThreatIntelResult],
         vuln_db,
         task_id: str = ""
@@ -539,16 +541,16 @@ class ThreatIntelClient:
             cursor = vuln_db.connection.cursor()
             
             for result in results:
-                cursor.execute(
+                cursor.execute()
                     """
-                    INSERT INTO threat_intel_results (
+                    INSERT INTO threat_intel_results ()
                         task_id, query_id, provider, query_type, query_value,
                         is_malicious, malware_families, apt_groups, iocs,
                         pulses, in_wild, first_seen, last_seen, summary,
                         confidence, created_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
                     """,
-                    (
+                    ()
                         task_id,
                         result.query_id,
                         result.provider,
@@ -565,8 +567,8 @@ class ThreatIntelClient:
                         result.summary,
                         result.confidence,
                         datetime.now().isoformat()
-                    )
-                )
+                    
+                
                 saved_ids.append(cursor.lastrowid)
             
             vuln_db.connection.commit()
@@ -637,4 +639,4 @@ class ThreatIntelClient:
             available.append('misp')
         if self.otx_client:
             available.append('otx')
-        return available
+        return available))))))

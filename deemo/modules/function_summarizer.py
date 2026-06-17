@@ -286,8 +286,7 @@ class FunctionSummarizer:
         'connect': {'params': ['sockfd', 'addr', 'addrlen'], 'returns': 'int', 'role': {'rdi': 'sockfd', 'rsi': 'addr', 'rdx': 'addrlen'}},
     }
     
-    def __init__(
-        self,
+    def __init__(, self)
         binary_path: str = "",
         arch: str = "amd64",
         mode: ExecutionMode = ExecutionMode.CONCRETE,
@@ -338,11 +337,10 @@ class FunctionSummarizer:
             except Exception as e:
                 self.logger.error(f"angr 项目初始化失败: {e}")
         
-        self._initialized = True
+        self._initialized = True,
         return True
     
-    def summarize(
-        self,
+    def summarize(, self)
         function_address: int,
         function_name: str = "",
         inputs: Optional[Dict[str, int]] = None,
@@ -362,31 +360,31 @@ class FunctionSummarizer:
         """
         self.analysis_count += 1
         
-        self.logger.info(
+        self.logger.info()
             f"生成函数摘要: {function_name or hex(function_address)}"
-        )
+        
         
         # 初始化
         self.initialize()
         
         # 创建摘要对象
-        summary = FunctionSummary(
+        summary = FunctionSummary()
             function_name=function_name or f"sub_{function_address:x}",
             address=function_address,
             architecture=self.arch,
             analysis_method=self.mode.value,
-        )
+        
         
         # 使用 angr 分析
         if ANGR_AVAILABLE and self._project:
             try:
-                summary = self._summarize_with_angr(
+                summary = self._summarize_with_angr()
                     function_address,
                     function_name,
                     inputs,
                     max_depth,
                     summary
-                )
+                
             except Exception as e:
                 self.logger.error(f"angr 分析失败: {e}")
         
@@ -396,8 +394,7 @@ class FunctionSummarizer:
         
         return summary
     
-    def _summarize_with_angr(
-        self,
+    def _summarize_with_angr(, self)
         function_address: int,
         function_name: str,
         inputs: Optional[Dict[str, int]],
@@ -479,7 +476,7 @@ class FunctionSummarizer:
             regs = self.X64_PARAM_REGISTERS if self.arch == 'amd64' else self.X86_PARAM_REGISTERS
             
             for i, (reg, name) in enumerate(zip(regs, param_names)):
-                role = ParameterRole.UNKNOWN
+                role = ParameterRole.UNKNOWN,
                 if reg in roles:
                     role_str = roles[reg]
                     if 'out' in role_str.lower():
@@ -492,7 +489,8 @@ class FunctionSummarizer:
                     register=reg,
                     role=role,
                     description=f"来自已知函数签名: {func.name}"
-                ))
+                
+
         else:
             # 尝试从 angr 的参数推断
             try:
@@ -501,14 +499,14 @@ class FunctionSummarizer:
                         name=f"arg{i}",
                         register=reg,
                         role=ParameterRole.UNKNOWN
-                    ))
+                    
+
             except Exception:
                 pass
         
         return params
     
-    def _analyze_calls(
-        self,
+    def _analyze_calls(, self)
         func,
         max_depth: int
     ) -> List[FunctionCall]:
@@ -536,13 +534,13 @@ class FunctionSummarizer:
                 address=callee_addr,
                 name=callee_name,
                 description=f"从 {hex(func.addr)} 调用"
-            ))
+            
+
         
         # 只返回前20个
         return calls[:20]
     
-    def _analyze_memory_access(
-        self,
+    def _analyze_memory_access(, self)
         func
     ) -> Tuple[List[MemoryAccess], List[MemoryAccess]]:
         """
@@ -562,8 +560,7 @@ class FunctionSummarizer:
         
         return reads[:50], writes[:50]
     
-    def _generate_behavior_summary(
-        self,
+    def _generate_behavior_summary(, self)
         func,
         summary: FunctionSummary
     ) -> str:
@@ -619,8 +616,7 @@ class FunctionSummarizer:
         
         return "; ".join(behaviors)
     
-    def _analyze_side_effects(
-        self,
+    def _analyze_side_effects(, self)
         func,
         summary: FunctionSummary
     ) -> List[str]:
@@ -715,8 +711,7 @@ class FunctionSummarizer:
         
         return min(confidence, 1.0)
     
-    def _summarize_static(
-        self,
+    def _summarize_static(, self)
         function_address: int,
         function_name: str,
         summary: FunctionSummary
@@ -764,8 +759,7 @@ class FunctionSummarizer:
         
         return summary
     
-    def summarize_batch(
-        self,
+    def summarize_batch(, self)
         functions: List[Tuple[int, str]]
     ) -> List[FunctionSummary]:
         """
@@ -785,8 +779,7 @@ class FunctionSummarizer:
         
         return summaries
     
-    def export_summaries(
-        self,
+    def export_summaries(, self)
         summaries: List[FunctionSummary],
         output_path: str
     ) -> None:
@@ -810,12 +803,7 @@ class FunctionSummarizer:
         self.logger.info(f"摘要已导出: {output_path}")
 
 
-def summarize_function(
-    binary_path: str,
-    function_address: int,
-    function_name: str = "",
-    arch: str = "amd64"
-) -> FunctionSummary:
+def summarize_function(, binary_path: str, function_address: int, function_name: str = "", arch: str = "amd64") -> FunctionSummary:
     """
     便捷函数：生成函数摘要
     
@@ -875,4 +863,4 @@ if __name__ == '__main__':
         if summary.called_functions:
             print(f"\n被调用函数:")
             for call in summary.called_functions[:5]:
-                print(f"  - {call.name} @ {hex(call.address)}")
+                print(f"  - {call.name} @ {hex(call.address)}"

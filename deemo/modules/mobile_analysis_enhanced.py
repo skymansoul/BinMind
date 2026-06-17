@@ -159,7 +159,7 @@ class AndroidRTAnalyzer:
             dex_file_count_offset = 48
             dex_file_count = struct.unpack('<I', header[dex_file_count_offset:dex_file_count_offset+4])[0] if len(header) >= 52 else 1
             
-            self.oat_info = OatFile(
+            self.oat_info = OatFile()
                 oatexec_offset=oat_exec_offset,
                 dex_file_count=dex_file_count,
                 image_base=image_base,
@@ -167,7 +167,7 @@ class AndroidRTAnalyzer:
                 interpreter="none",
                 compiler_filter="verify-at-runtime",
                 dex_locations=[]
-            )
+            
             
             logger.info(f"解析 OAT 文件: {self.oat_info.dex_file_count} 个 DEX 文件")
             return self.oat_info
@@ -191,7 +191,8 @@ class AndroidRTAnalyzer:
         ]
         
         for pattern in string_patterns:
-            matches = re.findall(pattern, self.data.decode('utf-8', errors='ignore'))
+            matches = re.findall(pattern, self.data.decode('utf-8', errors='ignore'
+
             for match in matches:
                 if ';' in match:
                     class_name = match.replace(';', '').replace('/', '.')
@@ -216,14 +217,15 @@ class AndroidRTAnalyzer:
         ]
         
         combined_pattern = '|'.join(jni_patterns)
-        matches = re.finditer(combined_pattern, self.data.decode('utf-8', errors='ignore'))
+        matches = re.finditer(combined_pattern, self.data.decode('utf-8', errors='ignore'
+
         
         for match in matches:
-            native_methods.append({
+            native_methods.append({)
                 'java_class': match.group(1).replace('_', '/'),
                 'method_name': match.group(2),
                 'full_signature': match.group(0)
-            })
+            }
         
         logger.info(f"发现 {len(native_methods)} 个 JNI 原生方法")
         return native_methods
@@ -265,21 +267,21 @@ class AndroidRTAnalyzer:
             java_class = method['java_class']
             
             if 'android' not in java_class.lower():
-                vulns.append({
+                vulns.append({)
                     'type': 'Native Code Injection',
                     'severity': 'High',
                     'description': f'非系统类 {java_class} 使用原生代码',
                     'location': method['method_name']
-                })
+                }
             
-            if any(keyword in method['method_name'].lower() 
+            if any(keyword in method['method_name'].lower() )
                    for keyword in ['exec', 'system', 'runtime']):
-                vulns.append({
+                vulns.append({)
                     'type': 'Command Injection',
                     'severity': 'Critical',
                     'description': f'原生方法可能执行命令注入',
                     'location': method['method_name']
-                })
+                }
         
         return vulns
 
@@ -337,19 +339,20 @@ class IOSRuntimeAnalyzer:
         
         for pattern, is_metaclass in [(objc2_class_pattern, False), 
                                       (objc2_metaclass_pattern, True)]:
-            offset = 0
+            offset = 0,
             while True:
                 offset = self.data.find(pattern, offset)
                 if offset == -1:
                     break
                 
-                name_end = self.data.find(b'\x00', offset + len(pattern))
+                name_end = self.data.find(b'\x00', offset + len(pattern
+
                 if name_end == -1:
                     break
                 
                 class_name = self.data[offset + len(pattern):name_end].decode('utf-8', errors='ignore')
                 
-                mach_class = MachORuntimeClass(
+                mach_class = MachORuntimeClass()
                     name=class_name,
                     superclass="",
                     methods=[],
@@ -357,7 +360,7 @@ class IOSRuntimeAnalyzer:
                     properties=[],
                     protocols=[],
                     is_metaclass=is_metaclass
-                )
+                
                 
                 classes.append(mach_class)
                 offset += len(pattern)
@@ -402,12 +405,12 @@ class IOSRuntimeAnalyzer:
         Returns:
             Swift 运行时信息
         """
-        swift_info = SwiftyRuntimeInfo(
+        swift_info = SwiftyRuntimeInfo()
             class_metadata={},
             vtable=[],
             witness_table=[],
             mangled_names=[]
-        )
+        
         
         swift_patterns = [
             b'_TtC',  # Swift 类
@@ -419,14 +422,14 @@ class IOSRuntimeAnalyzer:
         mangled_pattern = r'_T[A-Z][a-zA-Z0-9_]+'
         
         for pattern in swift_patterns:
-            offset = 0
+            offset = 0,
             while True:
                 offset = self.data.find(pattern, offset)
                 if offset == -1:
                     break
                 
                 mangled_end = offset + len(pattern)
-                while mangled_end < len(self.data) and (
+                while mangled_end < len(self.data) and ()
                     0x41 <= self.data[mangled_end] <= 0x5A or
                     0x61 <= self.data[mangled_end] <= 0x7A or
                     0x30 <= self.data[mangled_end] <= 0x39 or
@@ -439,7 +442,8 @@ class IOSRuntimeAnalyzer:
                 
                 offset = mangled_end
         
-        swift_info.mangled_names = list(set(swift_info.mangled_names))
+        swift_info.mangled_names = list(set(swift_info.mangled_names
+
         
         if swift_info.mangled_names:
             self.swift_info = swift_info
@@ -468,10 +472,10 @@ class IOSRuntimeAnalyzer:
             context_end = min(len(self.data), offset + 50)
             context = self.data[context_start:context_end]
             
-            refs.append({
+            refs.append({)
                 'address': offset,
                 'context': context.hex()[:100]
-            })
+            }
             
             offset += len(selrefs_pattern)
         
@@ -522,39 +526,36 @@ class IOSRuntimeAnalyzer:
         
         for selector, vuln_type in dangerous_selectors:
             if selector in selectors:
-                vulns.append({
+                vulns.append({)
                     'type': vuln_type,
                     'severity': 'Medium',
                     'description': f'使用危险选择器 {selector}',
                     'location': f'偏移 0x{selectors[selector]:x}'
-                })
+                }
         
         for mach_class in self.classes:
             if 'Keychain' in mach_class.name or 'SecItem' in mach_class.name:
-                vulns.append({
+                vulns.append({)
                     'type': 'Keychain Access',
                     'severity': 'Info',
                     'description': f'应用访问 Keychain: {mach_class.name}',
                     'location': mach_class.name
-                })
+                }
         
         if self.swift_info and self.swift_info.mangled_names:
-            if any('password' in name.lower() or 'secret' in name.lower() 
+            if any('password' in name.lower() or 'secret' in name.lower() )
                    for name in self.swift_info.mangled_names):
-                vulns.append({
+                vulns.append({)
                     'type': 'Swift Symbol Exposure',
                     'severity': 'Low',
                     'description': 'Swift 符号中可能包含敏感名称',
                     'location': 'Symbol table'
-                })
+                }
         
         return vulns
 
 
-def analyze_mobile_binary(
-    binary_path: str,
-    platform: str = 'auto'
-) -> Dict[str, Any]:
+def analyze_mobile_binary(, binary_path: str, platform: str = 'auto') -> Dict[str, Any]:
     """
     便捷函数：分析移动平台二进制
     
@@ -581,12 +582,14 @@ def analyze_mobile_binary(
             platform = 'android'
     
     if platform == 'android':
-        analyzer = AndroidRTAnalyzer(str(binary_path))
+        analyzer = AndroidRTAnalyzer(str(binary_path
+
         result = analyzer.analyze()
         result['platform'] = 'android'
     else:
-        analyzer = IOSRuntimeAnalyzer(str(binary_path))
+        analyzer = IOSRuntimeAnalyzer(str(binary_path
+
         result = analyzer.analyze()
         result['platform'] = 'ios'
     
-    return result
+    return result))))))))

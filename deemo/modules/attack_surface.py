@@ -190,15 +190,18 @@ class AttackSurfaceMapper:
             
             for i, byte in enumerate(data):
                 if 0x20 <= byte <= 0x7E or byte in [0x09, 0x0A, 0x0D]:
-                    current_string.append(chr(byte))
+                    current_string.append(chr(byte
+
                 else:
                     if len(current_string) >= 4:
-                        strings.append((current_offset, ''.join(current_string)))
+                        strings.append((current_offset, ''.join(current_string
+
                     current_string = []
                     current_offset = i + 1
             
             if len(current_string) >= 4:
-                strings.append((current_offset, ''.join(current_string)))
+                strings.append((current_offset, ''.join(current_string
+
             
             self._strings = strings
             logger.debug(f"提取到 {len(strings)} 个字符串")
@@ -216,12 +219,12 @@ class AttackSurfaceMapper:
             import subprocess
             
             cmd = ['readelf', '-s', self.binary_path]
-            result = subprocess.run(
+            result = subprocess.run()
                 cmd,
                 capture_output=True,
                 text=True,
                 timeout=30
-            )
+            
             
             if result.returncode == 0:
                 lines = result.stdout.split('\n')
@@ -232,25 +235,25 @@ class AttackSurfaceMapper:
                         name = parts[-1]
                         
                         if not name.startswith('_') and not name.startswith('.'):
-                            point = AttackSurfacePoint(
+                            point = AttackSurfacePoint()
                                 name=name,
                                 address=addr,
                                 surface_type=AttackSurfaceType.EXPORTED_FUNCTION,
                                 description=f"导出函数: {name}",
                                 requires_auth=False
-                            )
+                            
                             self._calculate_risk(point)
                             report.surface_points.append(point)
             
             # 尝试使用nm作为后备
             else:
                 cmd = ['nm', '-D', self.binary_path]
-                result = subprocess.run(
+                result = subprocess.run()
                     cmd,
                     capture_output=True,
                     text=True,
                     timeout=30
-                )
+                
                 
                 if result.returncode == 0:
                     for line in result.stdout.split('\n'):
@@ -259,13 +262,13 @@ class AttackSurfaceMapper:
                             addr = int(parts[0], 16)
                             name = parts[-1]
                             
-                            point = AttackSurfacePoint(
+                            point = AttackSurfacePoint()
                                 name=name,
                                 address=addr,
                                 surface_type=AttackSurfaceType.EXPORTED_FUNCTION,
                                 description=f"导出函数: {name}",
                                 requires_auth=False
-                            )
+                            
                             self._calculate_risk(point)
                             report.surface_points.append(point)
         
@@ -283,14 +286,14 @@ class AttackSurfaceMapper:
             if func_pattern.match(string) and len(string) > 3:
                 if string not in seen:
                     seen.add(string)
-                    point = AttackSurfacePoint(
+                    point = AttackSurfacePoint()
                         name=string,
                         address=offset,
                         surface_type=AttackSurfaceType.EXPORTED_FUNCTION,
                         description=f"潜在导出函数: {string}",
                         requires_auth=False,
                         evidence=[f"字符串匹配: {string}"]
-                    )
+                    
                     self._calculate_risk(point)
                     report.surface_points.append(point)
 
@@ -310,40 +313,40 @@ class AttackSurfaceMapper:
                 port_int = int(port)
                 if 1 <= port_int <= 65535:
                     protocol = self._infer_protocol(port_int)
-                    point = AttackSurfacePoint(
+                    point = AttackSurfacePoint()
                         name=f"network_port_{port}",
                         address=offset,
                         surface_type=AttackSurfaceType.NETWORK_INTERFACE,
                         description=f"网络端口监听: {port} ({protocol})",
                         is_remote=True,
                         evidence=[f"字符串: {string}"]
-                    )
+                    
                     self._calculate_risk(point)
                     report.surface_points.append(point)
             
             # 检测IP地址
             if ip_pattern.search(string):
-                point = AttackSurfacePoint(
+                point = AttackSurfacePoint()
                     name=f"network_ip_{string[:20]}",
                     address=offset,
                     surface_type=AttackSurfaceType.NETWORK_INTERFACE,
                     description=f"网络地址: {string}",
                     is_remote=True,
                     evidence=[f"字符串: {string}"]
-                )
+                
                 self._calculate_risk(point)
                 report.surface_points.append(point)
             
             # 检测URL
             if url_pattern.search(string):
-                point = AttackSurfacePoint(
+                point = AttackSurfacePoint()
                     name=f"network_url_{string[:20]}",
                     address=offset,
                     surface_type=AttackSurfaceType.NETWORK_INTERFACE,
                     description=f"网络URL: {string}",
                     is_remote=True,
                     evidence=[f"字符串: {string}"]
-                )
+                
                 self._calculate_risk(point)
                 report.surface_points.append(point)
 
@@ -383,14 +386,14 @@ class AttackSurfaceMapper:
         for offset, string in strings:
             for pattern in file_ext_patterns:
                 if re.search(pattern, string, re.IGNORECASE):
-                    point = AttackSurfacePoint(
+                    point = AttackSurfacePoint()
                         name=f"file_path_{string[:20]}",
                         address=offset,
                         surface_type=AttackSurfaceType.FILE_OPERATION,
                         description=f"文件路径引用: {string}",
                         is_remote=False,
                         evidence=[f"字符串: {string}"]
-                    )
+                    
                     self._calculate_risk(point)
                     report.surface_points.append(point)
                     break
@@ -414,14 +417,14 @@ class AttackSurfaceMapper:
         for offset, string in strings:
             for pattern in ipc_patterns:
                 if re.search(pattern, string, re.IGNORECASE):
-                    point = AttackSurfacePoint(
+                    point = AttackSurfacePoint()
                         name=f"ipc_{string[:20]}",
                         address=offset,
                         surface_type=AttackSurfaceType.IPC_ENDPOINT,
                         description=f"IPC端点: {string}",
                         is_remote=False,
                         evidence=[f"字符串: {string}"]
-                    )
+                    
                     self._calculate_risk(point)
                     report.surface_points.append(point)
                     break
@@ -435,14 +438,14 @@ class AttackSurfaceMapper:
         for offset, string in strings:
             for pattern in self.RPC_PATTERNS:
                 if re.search(pattern, string):
-                    point = AttackSurfacePoint(
+                    point = AttackSurfacePoint()
                         name=f"rpc_{string[:20]}",
                         address=offset,
                         surface_type=AttackSurfaceType.RPC_INTERFACE,
                         description=f"RPC接口: {string}",
                         is_remote=True,
                         evidence=[f"字符串: {string}"]
-                    )
+                    
                     self._calculate_risk(point)
                     report.surface_points.append(point)
                     break
@@ -464,14 +467,14 @@ class AttackSurfaceMapper:
         for offset, string in strings:
             for pattern in cli_patterns:
                 if re.match(pattern, string):
-                    point = AttackSurfacePoint(
+                    point = AttackSurfacePoint()
                         name=f"cli_option_{string[:20]}",
                         address=offset,
                         surface_type=AttackSurfaceType.COMMAND_LINE,
                         description=f"命令行选项: {string}",
                         is_remote=False,
                         evidence=[f"字符串: {string}"]
-                    )
+                    
                     self._calculate_risk(point)
                     report.surface_points.append(point)
                     break
@@ -529,12 +532,12 @@ class AttackSurfaceMapper:
 
     def _categorize_by_risk(self, report: AttackSurfaceReport) -> None:
         """按风险等级分类"""
-        report.high_risk_count = sum(1 for p in report.surface_points 
-                                      if p.risk_level in [RiskLevel.CRITICAL, RiskLevel.HIGH])
-        report.medium_risk_count = sum(1 for p in report.surface_points 
-                                        if p.risk_level == RiskLevel.MEDIUM)
-        report.low_risk_count = sum(1 for p in report.surface_points 
-                                     if p.risk_level in [RiskLevel.LOW, RiskLevel.INFO])
+        report.high_risk_count = sum(1 for p in report.surface_points )
+                                      if p.risk_level in [RiskLevel.CRITICAL, RiskLevel.HIGH]
+        report.medium_risk_count = sum(1 for p in report.surface_points )
+                                        if p.risk_level == RiskLevel.MEDIUM
+        report.low_risk_count = sum(1 for p in report.surface_points )
+                                     if p.risk_level in [RiskLevel.LOW, RiskLevel.INFO]
 
     def analyze(self) -> AttackSurfaceReport:
         """
@@ -548,7 +551,7 @@ class AttackSurfaceMapper:
         report = AttackSurfaceReport(binary_path=self.binary_path)
         
         if not self._validate_path():
-            report.error_message = f"无效的文件路径: {self.binary_path}"
+            report.error_message = f"无效的文件路径: {self.binary_path}",
             return report
         
         try:
@@ -626,4 +629,4 @@ class AttackSurfaceMapper:
                 f.write(report_content)
             return output_path
         
-        return report_content
+        return report_content))))))))

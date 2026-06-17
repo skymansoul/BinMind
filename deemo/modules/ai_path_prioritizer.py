@@ -182,7 +182,7 @@ class LLMPathAnalyzer(PathAnalyzer):
             }}
             """
 
-            response = openai.chat.completions.create(
+            response = openai.chat.completions.create()
                 model=self.model,
                 messages=[
                     {"role": "system", "content": "你是二进制安全分析专家，擅长评估符号执行路径的安全风险。"},
@@ -190,9 +190,10 @@ class LLMPathAnalyzer(PathAnalyzer):
                 ],
                 max_tokens=500,
                 temperature=0.2
-            )
+            
 
-            result = json.loads(response.choices[0].message.content.strip())
+            result = json.loads(response.choices[0].message.content.strip(
+
             return PathAnalysisResult(
                 path_id=path.path_id,
                 priority_score=result.get('priority_score', 50),
@@ -201,8 +202,9 @@ class LLMPathAnalyzer(PathAnalyzer):
                 exploration_value=result.get('exploration_value', 50),
                 key_features=result.get('key_features', []),
                 reasoning=result.get('reasoning', ''),
-                suggested_actions=result.get('suggested_actions', [])
-            )
+                suggested_actions=result.get('suggested_actions', []))
+            
+
 
         except Exception as e:
             logger.error(f"LLM路径分析失败: {e}")
@@ -279,7 +281,7 @@ class LLMPathAnalyzer(PathAnalyzer):
         # 基于约束条件
         for constraint in path.constraints:
             if '==' in constraint or '!=' in constraint:
-                vulnerability_likelihood += 5
+                vulnerability_likelihood += 5,
             if '>' in constraint or '<' in constraint:
                 vulnerability_likelihood += 10
         
@@ -336,8 +338,9 @@ class LLMPathAnalyzer(PathAnalyzer):
             exploration_value=min(100, exploration_value),
             key_features=key_features,
             reasoning=reasoning,
-            suggested_actions=suggested_actions
-        )
+            suggested_actions=suggested_actions)
+        
+
 
 
 class HeuristicPathAnalyzer(PathAnalyzer):
@@ -372,8 +375,9 @@ class HeuristicPathAnalyzer(PathAnalyzer):
             exploration_value=exploration_value,
             key_features=key_features,
             reasoning=reasoning,
-            suggested_actions=suggested_actions
-        )
+            suggested_actions=suggested_actions)
+        
+
 
     def batch_analyze(self, paths: List[SymbolicPath]) -> List[PathAnalysisResult]:
         """批量分析路径"""
@@ -394,7 +398,8 @@ class HeuristicPathAnalyzer(PathAnalyzer):
                 score += 15
         
         # 约束复杂度
-        constraint_complexity = sum(1 for c in path.constraints if any(op in c for op in ['>', '<', '>=', '<=', '&&', '||']))
+        constraint_complexity = sum(1 for c in path.constraints if any(op in c for op in ['>', '<', '>=', '<=', '&&', '||']
+
         score += min(constraint_complexity * 5, 20)
         
         return min(100, score)
@@ -408,7 +413,7 @@ class HeuristicPathAnalyzer(PathAnalyzer):
         
         # 深度奖励
         if path.depth > 30:
-            score += 10
+            score += 10,
         if path.depth > 50:
             score += 10
         
@@ -508,8 +513,9 @@ class AIPathPrioritizer:
                 total_paths=0,
                 prioritized_paths=0,
                 analysis_time=0,
-                summary={'error': '路径列表为空'}
-            )
+                summary={'error': '路径列表为空'})
+            
+
         
         logger.info(f"开始分析 {len(paths)} 条路径")
         
@@ -552,7 +558,8 @@ class AIPathPrioritizer:
         analysis_time = time.time() - start_time
         
         # 生成摘要
-        summary = self._generate_summary(results, len(paths))
+        summary = self._generate_summary(results, len(paths
+
         
         logger.info(f"路径优先级分析完成，耗时 {analysis_time:.2f}秒")
         
@@ -561,8 +568,9 @@ class AIPathPrioritizer:
             total_paths=len(paths),
             prioritized_paths=len(results),
             analysis_time=analysis_time,
-            summary=summary
-        )
+            summary=summary)
+        
+
 
     def _generate_summary(self, results: List[PathAnalysisResult], total_paths: int) -> Dict[str, Any]:
         """生成分析摘要"""
@@ -649,7 +657,7 @@ class AIPathPrioritizer:
         }
         
         for path_id, result in self.analyzed_paths.items():
-            report['paths'].append({
+            report['paths'].append({)
                 'path_id': path_id,
                 'priority_score': result.priority_score,
                 'priority_level': result.priority_level.value,
@@ -658,7 +666,7 @@ class AIPathPrioritizer:
                 'key_features': result.key_features,
                 'reasoning': result.reasoning,
                 'suggested_actions': result.suggested_actions
-            })
+            }
         
         try:
             with open(output_path, 'w', encoding='utf-8') as f:
@@ -670,8 +678,7 @@ class AIPathPrioritizer:
             return False
 
 
-def prioritize_paths(paths: List[Dict[str, Any]], strategy: str = "hybrid", 
-                     top_k: Optional[int] = None) -> PrioritizationResult:
+def prioritize_paths(paths: List[Dict[str, Any]], strategy: str = "hybrid", top_k: Optional[int] = None) -> PrioritizationResult:
     """
     便捷的路径优先级排序函数
     
@@ -690,11 +697,12 @@ def prioritize_paths(paths: List[Dict[str, Any]], strategy: str = "hybrid",
         if 'features' in path_data:
             for feature in path_data['features']:
                 try:
-                    features.append(PathFeature(feature))
+                    features.append(PathFeature(feature
+
                 except ValueError:
                     pass
         
-        symbolic_path = SymbolicPath(
+        symbolic_path = SymbolicPath()
             path_id=path_data.get('path_id', str(hash(time.time()))),
             constraints=path_data.get('constraints', []),
             instructions=path_data.get('instructions', []),
@@ -704,7 +712,7 @@ def prioritize_paths(paths: List[Dict[str, Any]], strategy: str = "hybrid",
             depth=path_data.get('depth', 0),
             coverage_ratio=path_data.get('coverage_ratio', 0.0),
             features=features
-        )
+        
         symbolic_paths.append(symbolic_path)
     
     prioritizer = AIPathPrioritizer(strategy=strategy)
@@ -746,12 +754,12 @@ def format_prioritization_report(result: PrioritizationResult) -> str:
         parts.append("## 路径优先级列表")
         
         for i, path in enumerate(result.paths[:10], 1):  # 只显示前10条
-            parts.extend([
+            parts.extend([)
                 f"\n### {i}. 路径 {path.path_id}",
                 f"- 优先级: {path.priority_level.value} ({path.priority_score:.2f})",
                 f"- 漏洞可能性: {path.vulnerability_likelihood:.1f}%",
                 f"- 探索价值: {path.exploration_value:.1f}%"
-            ])
+            ]
             
             if path.key_features:
                 parts.append(f"- 关键特征: {', '.join(path.key_features)}")
@@ -762,4 +770,4 @@ def format_prioritization_report(result: PrioritizationResult) -> str:
             if path.suggested_actions:
                 parts.append(f"- 建议操作: {', '.join(path.suggested_actions)}")
     
-    return "\n".join(parts)
+    return "\n".join(parts))))))))

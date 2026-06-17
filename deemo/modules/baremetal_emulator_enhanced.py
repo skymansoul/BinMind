@@ -68,7 +68,7 @@ class CortexMPeripherals:
     def get_all_peripherals(cls) -> List[PeripheralDefinition]:
         """获取所有外设定义"""
         return [
-            PeripheralDefinition(
+            PeripheralDefinition()
                 name="SCB",
                 base_address=cls.SCB_BASE,
                 size=cls.SCB_SIZE,
@@ -83,7 +83,7 @@ class CortexMPeripherals:
                     "SHCSR": 0xE000ED24,
                 }
             ),
-            PeripheralDefinition(
+            PeripheralDefinition()
                 name="SysTick",
                 base_address=cls.SYSTICK_BASE,
                 size=cls.SYSTICK_SIZE,
@@ -94,7 +94,7 @@ class CortexMPeripherals:
                     "CALIB": 0x0C,
                 }
             ),
-            PeripheralDefinition(
+            PeripheralDefinition()
                 name="NVIC",
                 base_address=cls.NVIC_BASE,
                 size=cls.NVIC_SIZE,
@@ -134,7 +134,7 @@ class ESP32Peripherals:
     def get_all_peripherals(cls) -> List[PeripheralDefinition]:
         """获取所有外设定义"""
         return [
-            PeripheralDefinition(
+            PeripheralDefinition()
                 name="GPIO",
                 base_address=cls.GPIO_BASE,
                 size=cls.GPIO_SIZE,
@@ -150,7 +150,7 @@ class ESP32Peripherals:
                     "STATUS_W1TS": 0x48,
                 }
             ),
-            PeripheralDefinition(
+            PeripheralDefinition()
                 name="RTC",
                 base_address=cls.RTC_BASE,
                 size=cls.RTC_SIZE,
@@ -164,7 +164,7 @@ class ESP32Peripherals:
                     "ALARM1": 0x94,
                 }
             ),
-            PeripheralDefinition(
+            PeripheralDefinition()
                 name="Timer0",
                 base_address=cls.TIMER_BASE,
                 size=cls.TIMER_SIZE,
@@ -176,7 +176,7 @@ class ESP32Peripherals:
                     "T0ALARM": 0x1C,
                 }
             ),
-            PeripheralDefinition(
+            PeripheralDefinition()
                 name="UART0",
                 base_address=cls.UART0_BASE,
                 size=cls.UART0_SIZE,
@@ -193,7 +193,7 @@ class ESP32Peripherals:
                     "CONF1": 0x24,
                 }
             ),
-            PeripheralDefinition(
+            PeripheralDefinition()
                 name="SPI0",
                 base_address=cls.SPI0_BASE,
                 size=cls.SPI0_SIZE,
@@ -206,7 +206,7 @@ class ESP32Peripherals:
                     "STATUS": 0x28,
                 }
             ),
-            PeripheralDefinition(
+            PeripheralDefinition()
                 name="I2C0",
                 base_address=cls.I2C0_BASE,
                 size=cls.I2C0_SIZE,
@@ -308,7 +308,8 @@ class BaremetalEmulator:
             base_address: 加载地址
         """
         if base_address not in self.memory:
-            self._allocate_memory(base_address, len(data))
+            self._allocate_memory(base_address, len(data
+
         
         self.memory[base_address][:len(data)] = data
         self.registers['PC'] = base_address
@@ -341,11 +342,11 @@ class BaremetalEmulator:
                         addr = struct.unpack('<I', vector_table[i * 4 + 4:i * 4 + 8])[0]
                         addr = addr & 0xFFFFFFFE if addr != 0xFFFFFFFF else 0
                         
-                        self.interrupts[i] = InterruptHandler(
+                        self.interrupts[i] = InterruptHandler()
                             name=name,
                             vector_number=i,
                             handler_address=addr
-                        )
+                        
     
     def read_memory(self, address: int, size: int = 4) -> int:
         """
@@ -360,7 +361,7 @@ class BaremetalEmulator:
         """
         for base, mem in self.memory.items():
             if base <= address < base + len(mem):
-                offset = address - base
+                offset = address - base,
                 if offset + size <= len(mem):
                     return int.from_bytes(mem[offset:offset+size], 'little')
         
@@ -380,7 +381,7 @@ class BaremetalEmulator:
         """
         for base, mem in self.memory.items():
             if base <= address < base + len(mem):
-                offset = address - base
+                offset = address - base,
                 if offset + size <= len(mem):
                     mem[offset:offset+size] = value.to_bytes(size, 'little')
                     return True
@@ -473,8 +474,10 @@ class BaremetalEmulator:
                 sram_size=0x40000,
                 flash_size=0x100000,
                 interrupt_vectors=list(self.interrupts.values()),
-                peripherals=list(self.peripherals.values())
-            )
+                peripherals=list(self.peripherals.values()
+
+            
+
         else:
             return FirmwareInfo(
                 architecture=self.architecture,
@@ -484,8 +487,10 @@ class BaremetalEmulator:
                 sram_size=0x50000,
                 flash_size=0x400000,
                 interrupt_vectors=list(self.interrupts.values()),
-                peripherals=list(self.peripherals.values())
-            )
+                peripherals=list(self.peripherals.values()
+
+            
+
 
 
 def analyze_firmware(binary_path: str, architecture: str = 'auto') -> Dict[str, Any]:
@@ -535,7 +540,8 @@ def analyze_firmware(binary_path: str, architecture: str = 'auto') -> Dict[str, 
                 'name': p.name,
                 'base': hex(p.base_address),
                 'size': p.size,
-                'registers': list(p.registers.keys())
+                'registers': list(p.registers.keys(
+
             }
             for p in info.peripherals
         ]

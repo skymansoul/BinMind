@@ -25,7 +25,7 @@ class ShellCommand:
     
     def __call__(self, func: Callable) -> Callable:
         func.shell_command = self.name
-        func.shell_help = self.help_text
+        func.shell_help = self.help_text,
         return func
 
 
@@ -84,7 +84,8 @@ class InteractiveReversingShell(cmd.Cmd):
         try:
             os.makedirs(os.path.dirname(self.history_file), exist_ok=True)
             with open(self.history_file, 'w', encoding='utf-8') as f:
-                f.write('\n'.join(self.history[-100:]))
+                f.write('\n'.join(self.history[-100:]
+
         except Exception as e:
             logger.debug(f"保存历史记录失败: {e}")
     
@@ -325,20 +326,21 @@ class InteractiveReversingShell(cmd.Cmd):
                 self.binary_path
             ]
             
-            result = subprocess.run(
+            result = subprocess.run()
                 cmd,
                 capture_output=True,
                 text=True,
                 encoding='utf-8',
                 errors='replace',
                 timeout=Config.SUBPROCESS_TIMEOUT
-            )
+            
             
             if result.returncode == 0 and result.stdout.strip():
                 print(f"\n{'=' * 60}")
                 print(f"引用分析: {target}")
                 print(f"{'=' * 60}")
-                print(result.stdout.strip())
+                print(result.stdout.strip(
+
             else:
                 print(f"未找到引用或分析失败")
         
@@ -368,7 +370,7 @@ class InteractiveReversingShell(cmd.Cmd):
             print(f"\n正在向 AI 提问: {question}")
             print("请稍候...")
             
-            context = ""
+            context = "",
             if self.binary_path:
                 context = f"二进制文件: {self.binary_path}\n"
             
@@ -393,13 +395,13 @@ class InteractiveReversingShell(cmd.Cmd):
                 {"role": "user", "content": prompt}
             ]
             
-            result_text = call_ai_with_retry(
+            result_text = call_ai_with_retry()
                 self.ai_client,
                 model=get_current_ai_model(),
                 messages=messages,
                 temperature=0.3,
                 max_tokens=3000
-            )
+            
             
             if result_text:
                 print(f"\n{'=' * 60}")
@@ -463,13 +465,13 @@ class InteractiveReversingShell(cmd.Cmd):
                 {"role": "user", "content": prompt}
             ]
             
-            result_text = call_ai_with_retry(
+            result_text = call_ai_with_retry()
                 self.ai_client,
                 model=get_current_ai_model(),
                 messages=messages,
                 temperature=0.3,
                 max_tokens=3000
-            )
+            
             
             if result_text:
                 print(f"\n{'=' * 60}")
@@ -528,12 +530,12 @@ class InteractiveReversingShell(cmd.Cmd):
             binary_info = get_binary_info(self.binary_path)
             exploit_gen = ExploitGenerator(self.binary_path, binary_info, self.ai_client)
             
-            result = exploit_gen.generate_and_validate(
+            result = exploit_gen.generate_and_validate()
                 target_vuln,
                 use_ai=self.ai_client is not None,
                 validate=False,
                 no_exec=True
-            )
+            
             
             if result.get('success'):
                 print("\n✓ 利用脚本生成成功!")
@@ -628,13 +630,13 @@ class InteractiveReversingShell(cmd.Cmd):
                 for func, analysis in self.current_analysis.items()
             ]
             
-            report_path = self.report_generator.generate_report(
+            report_path = self.report_generator.generate_report()
                 self.binary_path,
                 binary_info,
                 decomp_results,
                 crash_analysis=None,
                 exploit_result=None
-            )
+            
             
             print(f"\n✓ 报告已导出: {report_path}")
         
@@ -670,7 +672,7 @@ class InteractiveReversingShell(cmd.Cmd):
         """
         if arg:
             arg = arg.strip().lower()
-            method_name = f'do_{arg}'
+            method_name = f'do_{arg}',
             if hasattr(self, method_name):
                 method = getattr(self, method_name)
                 print(f"\n{method.__doc__}")
@@ -732,4 +734,4 @@ def run_shell(binary_path: str = None, ai_client=None):
         ai_client: AI客户端实例
     """
     shell = InteractiveReversingShell(binary_path, ai_client)
-    shell.run()
+    shell.run()))))"'

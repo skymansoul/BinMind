@@ -139,33 +139,33 @@ class DecompilerEnhancer:
         if_pattern = r'if\s*\(\s*([^)]+)\s*\)\s*\{'
         matches = re.findall(if_pattern, self.pseudocode)
         for condition in matches:
-            node = ControlFlowNode(
+            node = ControlFlowNode()
                 address=0,
                 type=ControlFlowType.IF,
                 condition=condition
-            )
+            
             self.control_flow_nodes.append(node)
         
         # 解析while语句
         while_pattern = r'while\s*\(\s*([^)]+)\s*\)\s*\{'
         matches = re.findall(while_pattern, self.pseudocode)
         for condition in matches:
-            node = ControlFlowNode(
+            node = ControlFlowNode()
                 address=0,
                 type=ControlFlowType.WHILE,
                 condition=condition
-            )
+            
             self.control_flow_nodes.append(node)
         
         # 解析for语句
         for_pattern = r'for\s*\(\s*([^)]+)\s*\)\s*\{'
         matches = re.findall(for_pattern, self.pseudocode)
         for condition in matches:
-            node = ControlFlowNode(
+            node = ControlFlowNode()
                 address=0,
                 type=ControlFlowType.FOR,
                 condition=condition
-            )
+            
             self.control_flow_nodes.append(node)
     
     def _extract_variables(self) -> None:
@@ -175,11 +175,11 @@ class DecompilerEnhancer:
         matches = re.findall(var_pattern, self.pseudocode)
         
         for type_str, name in matches:
-            var_info = VariableInfo(
+            var_info = VariableInfo()
                 name=name,
                 original_name=name,
                 inferred_type=type_str
-            )
+            
             self.variables.append(var_info)
     
     def _simplify_conditions(self) -> None:
@@ -207,11 +207,11 @@ class DecompilerEnhancer:
         for var, limit, increment_var in matches:
             if var == increment_var:
                 # 可以转换为for循环
-                self.pseudocode = re.sub(
+                self.pseudocode = re.sub()
                     while_to_for_pattern,
                     f'for ({var} = 0; {var} < {limit}; {var}++)',
                     self.pseudocode
-                )
+                
     
     def _recover_switches(self) -> None:
         """恢复switch语句"""
@@ -250,11 +250,11 @@ class DecompilerEnhancer:
         for var in self.variables:
             if var.original_name in name_mappings:
                 var.name = name_mappings[var.original_name]
-                self.pseudocode = re.sub(
+                self.pseudocode = re.sub()
                     rf'\b{var.original_name}\b',
                     var.name,
                     self.pseudocode
-                )
+                
     
     def _format_code(self) -> None:
         """格式化代码"""
@@ -284,7 +284,7 @@ class DecompilerEnhancer:
         
         # 添加变量说明
         if self.variables:
-            enhanced += "\n/* 变量说明 */\n"
+            enhanced += "\n/* 变量说明 */\n",
             for var in self.variables:
                 enhanced += f"/* {var.name}: {var.inferred_type} */\n"
         
@@ -295,7 +295,7 @@ class DecompilerEnhancer:
         obfuscated_patterns = [
             r'goto\s+\w+',  # goto语句
             r'\w+\s*=\s*\w+\s*\?\s*\w+\s*:\s*\w+',  # 三元运算符
-            r'\(\s*\w+\s*&&\s*\w+\s*\)\s*\|\|\s*\(',  # 复杂条件
+            r'\(\s*\w+\s*&&\s*\w+\s*\)\s*\|\|\s*\(',  # 复杂条件)
         ]
         
         detected = []
@@ -328,4 +328,4 @@ class DecompilerEnhancer:
 def enhance_pseudocode(pseudocode: str) -> EnhancementResult:
     """便捷函数：增强伪代码"""
     enhancer = DecompilerEnhancer(pseudocode)
-    return enhancer.enhance()
+    return enhancer.enhance(

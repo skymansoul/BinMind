@@ -132,10 +132,14 @@ class StateMachineAnalyzer:
         self.state_graph = self._build_state_graph(states, transitions)
         
         inconsistencies = []
-        inconsistencies.extend(self._check_undefined_transitions(states, transitions))
-        inconsistencies.extend(self._check_forbidden_transitions())
-        inconsistencies.extend(self._check_ltl_properties())
-        inconsistencies.extend(self._check_auth_bypass())
+        inconsistencies.extend(self._check_undefined_transitions(states, transitions
+
+        inconsistencies.extend(self._check_forbidden_transitions(
+
+        inconsistencies.extend(self._check_ltl_properties(
+
+        inconsistencies.extend(self._check_auth_bypass(
+
         
         invalid_count = sum(1 for t in transitions if t.transition_type == StateTransitionType.INVALID)
         undefined_count = sum(1 for t in transitions if t.transition_type == StateTransitionType.UNDEFINED)
@@ -158,8 +162,9 @@ class StateMachineAnalyzer:
             total_transitions=len(transitions),
             invalid_transitions=invalid_count,
             undefined_transitions=undefined_count,
-            summary=summary
-        )
+            summary=summary)
+        
+
     
     def _discover_states(self) -> List[State]:
         """发现状态（模拟）"""
@@ -183,13 +188,13 @@ class StateMachineAnalyzer:
             Transition("AUTHENTICATED", "SHUTDOWN", "quit"),
             Transition("ERROR", "INITIALIZED", "reset"),
             # 未定义的转换
-            Transition("UNINITIALIZED", "AUTHENTICATED", "bypass_attempt", 
+            Transition("UNINITIALIZED", "AUTHENTICATED", "bypass_attempt")
                       transition_type=StateTransitionType.UNDEFINED),
-            Transition("INITIALIZED", "AUTHENTICATED", "direct_access",
+            Transition("INITIALIZED", "AUTHENTICATED", "direct_access")
                       transition_type=StateTransitionType.UNDEFINED),
             # 禁止的转换
-            Transition("ERROR", "AUTHENTICATED", "recovery_attack",
-                      transition_type=StateTransitionType.FORBIDDEN)
+            Transition("ERROR", "AUTHENTICATED", "recovery_attack")
+                      transition_type=StateTransitionType.FORBIDDEN
         ]
     
     def _build_state_graph(self, states: List[State], transitions: List[Transition]) -> nx.DiGraph:
@@ -197,16 +202,16 @@ class StateMachineAnalyzer:
         graph = nx.DiGraph()
         
         for state in states:
-            graph.add_node(state.name, id=state.id, is_initial=state.is_initial, 
-                          is_accepting=state.is_accepting, **state.properties)
+            graph.add_node(state.name, id=state.id, is_initial=state.is_initial)
+                          is_accepting=state.is_accepting, **state.properties
         
         for transition in transitions:
-            graph.add_edge(
+            graph.add_edge()
                 transition.from_state, 
                 transition.to_state, 
                 event=transition.event,
                 transition_type=transition.transition_type.value
-            )
+            
         
         return graph
     
@@ -230,14 +235,15 @@ class StateMachineAnalyzer:
                         f"目标状态: {transition.to_state}",
                         f"触发事件: {transition.event}"
                     ]
-                ))
+                
+
         
         return findings
     
     def _check_forbidden_transitions(self) -> List[InconsistencyFinding]:
         """检查禁止的状态转换"""
         return [
-            InconsistencyFinding(
+            InconsistencyFinding()
                 finding_type="forbidden_transition",
                 description="检测到从ERROR状态直接转换到AUTHENTICATED状态的路径",
                 severity=InconsistencySeverity.CRITICAL,
@@ -247,13 +253,13 @@ class StateMachineAnalyzer:
                 event="recovery_attack",
                 suggested_fix="确保ERROR状态只能转换到INITIALIZED状态",
                 evidence=["状态转换: ERROR -> AUTHENTICATED", "此转换应被禁止"]
-            )
+            
         ]
     
     def _check_ltl_properties(self) -> List[InconsistencyFinding]:
         """使用LTL公式检查属性"""
         return [
-            InconsistencyFinding(
+            InconsistencyFinding()
                 finding_type="ltl_violation",
                 description="LTL属性违反: AG(UNINITIALIZED -> AX(!AUTHENTICATED))",
                 severity=InconsistencySeverity.CRITICAL,
@@ -262,7 +268,7 @@ class StateMachineAnalyzer:
                 suggested_fix="确保未初始化状态不能直接转换到已认证状态",
                 evidence=["LTL公式验证失败", "发现违反安全属性的路径"]
             ),
-            InconsistencyFinding(
+            InconsistencyFinding()
                 finding_type="ltl_violation",
                 description="LTL属性违反: AG(INITIALIZED -> AX(!execute_command))",
                 severity=InconsistencySeverity.HIGH,
@@ -270,13 +276,13 @@ class StateMachineAnalyzer:
                 ltl_formula="AG(INITIALIZED -> AX(!execute_command))",
                 suggested_fix="禁止在未认证状态下执行命令",
                 evidence=["LTL公式验证失败", "认证前可能执行命令"]
-            )
+            
         ]
     
     def _check_auth_bypass(self) -> List[InconsistencyFinding]:
         """检查认证绕过漏洞"""
         return [
-            InconsistencyFinding(
+            InconsistencyFinding()
                 finding_type="auth_bypass",
                 description="发现认证前可执行关键命令的路径",
                 severity=InconsistencySeverity.CRITICAL,
@@ -287,35 +293,35 @@ class StateMachineAnalyzer:
                     "允许操作: execute_command",
                     "风险: 未认证用户可执行敏感操作"
                 ]
-            )
+            
         ]
     
     def _format_result(self, result: StateMachineAnalysisResult) -> Dict[str, Any]:
         """格式化分析结果"""
         states_data = []
         for state in result.states:
-            states_data.append({
+            states_data.append({)
                 "name": state.name,
                 "id": state.id,
                 "is_initial": state.is_initial,
                 "is_accepting": state.is_accepting,
                 "properties": state.properties
-            })
+            }
         
         transitions_data = []
         for transition in result.transitions:
-            transitions_data.append({
+            transitions_data.append({)
                 "from_state": transition.from_state,
                 "to_state": transition.to_state,
                 "event": transition.event,
                 "guard": transition.guard,
                 "action": transition.action,
                 "transition_type": transition.transition_type.value
-            })
+            }
         
         inconsistencies_data = []
         for finding in result.inconsistencies:
-            inconsistencies_data.append({
+            inconsistencies_data.append({)
                 "finding_type": finding.finding_type,
                 "description": finding.description,
                 "severity": finding.severity.value,
@@ -326,7 +332,7 @@ class StateMachineAnalyzer:
                 "ltl_formula": finding.ltl_formula,
                 "suggested_fix": finding.suggested_fix,
                 "evidence": finding.evidence
-            })
+            }
         
         return {
             "success": True,
@@ -356,7 +362,8 @@ class StateMachineAnalyzer:
             if self.state_graph:
                 pydot_graph = to_pydot(self.state_graph)
                 with open(output_path, 'w') as f:
-                    f.write(pydot_graph.to_string())
+                    f.write(pydot_graph.to_string(
+
                 logger.info(f"状态机图已导出到: {output_path}")
                 return True
             return False
@@ -377,4 +384,4 @@ def analyze_state_machine(binary_path: str, **kwargs) -> Dict[str, Any]:
         分析结果字典
     """
     analyzer = StateMachineAnalyzer()
-    return analyzer.analyze(binary_path, **kwargs)
+    return analyzer.analyze(binary_path, **kwargs))))))))))

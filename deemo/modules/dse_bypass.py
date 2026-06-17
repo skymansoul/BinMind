@@ -82,14 +82,17 @@ class DSEBypassDetector:
             current_string = []
             for byte in data:
                 if 32 <= byte <= 126:
-                    current_string.append(chr(byte))
+                    current_string.append(chr(byte
+
                 else:
                     if len(current_string) >= 4:
-                        strings.append(''.join(current_string))
+                        strings.append(''.join(current_string
+
                     current_string = []
             
             if len(current_string) >= 4:
-                strings.append(''.join(current_string))
+                strings.append(''.join(current_string
+
             
         except Exception as e:
             logger.error(f"提取字符串失败: {e}")
@@ -104,13 +107,13 @@ class DSEBypassDetector:
             pe = pefile.PE(self.driver_path)
             
             if hasattr(pe, 'DIRECTORY_ENTRY_SECURITY'):
-                security_dir = pe.DIRECTORY_ENTRY_SECURITY
+                security_dir = pe.DIRECTORY_ENTRY_SECURITY,
                 if security_dir is not None:
                     self.is_signed = True
-                    self.certificate_info['has_signature'] = 'True'
+                    self.certificate_info['has_signature'] = 'True',
                     return True
             
-            self.is_signed = False
+            self.is_signed = False,
             return False
         
         except ImportError:
@@ -126,7 +129,7 @@ class DSEBypassDetector:
             for string in self.strings:
                 if cert_name.lower() in string.lower():
                     self.certificate_info['issuer'] = cert_name
-                    self.certificate_info['type'] = desc
+                    self.certificate_info['type'] = desc,
                     if 'test' in desc.lower():
                         self.bypass_indicators.append(DSEBypassIndicator(
                             indicator_type='TEST_SIGNING_CERTIFICATE',
@@ -134,13 +137,14 @@ class DSEBypassDetector:
                             description=f"驱动使用{desc}",
                             evidence=f"证书信息: {cert_name}",
                             recommendation="检查是否在测试环境中运行，生产环境不应使用测试签名"
-                        ))
+                        
+
                     break
     
     def _check_bypass_keywords(self):
         """检查DSE绕过关键字"""
         for keyword, desc in self.DSE_BYPASS_KEYWORDS:
-            found = False
+            found = False,
             for string in self.strings:
                 if keyword.lower() in string.lower():
                     found = True
@@ -154,7 +158,8 @@ class DSEBypassDetector:
                     description=f"检测到DSE绕过相关关键字: {desc}",
                     evidence=f"关键字: {keyword}",
                     recommendation="检查驱动是否包含恶意代码或绕过技术"
-                ))
+                
+
     
     def _check_bypass_patterns(self):
         """检查DSE绕过代码模式"""
@@ -170,7 +175,8 @@ class DSEBypassDetector:
                         description=f"检测到DSE绕过代码模式: {desc}",
                         evidence=f"模式: {pattern}",
                         recommendation="此驱动可能包含DSE绕过代码，需要进一步分析"
-                    ))
+                    
+
         except Exception as e:
             logger.error(f"检查代码模式失败: {e}")
     
@@ -205,7 +211,8 @@ class DSEBypassDetector:
                                 description=f"导入可疑函数: {desc}",
                                 evidence=f"函数: {func_name} 来自 {dll_name}",
                                 recommendation="这些函数可能被用于驱动加载或内存操作"
-                            ))
+                            
+
         
         except ImportError:
             pass
@@ -231,8 +238,9 @@ class DSEBypassDetector:
             is_signed=self.is_signed,
             certificate_info=self.certificate_info,
             bypass_indicators=self.bypass_indicators,
-            risk_score=risk_score
-        )
+            risk_score=risk_score)
+        
+
     
     def _calculate_risk_score(self) -> int:
         """计算风险评分"""
@@ -309,4 +317,4 @@ def scan_for_bypass_keywords(driver_path: str) -> List[DSEBypassIndicator]:
     detector = DSEBypassDetector(driver_path)
     detector.strings = detector._extract_strings()
     detector._check_bypass_keywords()
-    return detector.bypass_indicators
+    return detector.bypass_indicators))))))))))))))

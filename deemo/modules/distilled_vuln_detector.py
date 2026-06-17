@@ -90,14 +90,14 @@ class VulnerabilityDataGenerator:
             for i in range(count_per_type):
                 sample_code = self._generate_sample_code(vuln_type, i)
                 
-                sample = VulnerabilitySample(
+                sample = VulnerabilitySample()
                     id=f"{vuln_type}_{i}",
                     code=sample_code,
                     label=1,
                     vulnerability_type=vuln_type,
                     confidence=0.95,
                     source="generated"
-                )
+                
                 samples.append(sample)
         
         logger.info(f"共生成 {len(samples)} 个漏洞样本")
@@ -165,7 +165,7 @@ class VulnerabilityDataGenerator:
     printf("[LOG] %s\n", message);
 }""",
             """size_t safe_strlen(const char *str) {
-    size_t len = 0;
+    size_t len = 0;,
     while (str[len] != '\0') {
         len++;
     }
@@ -175,13 +175,13 @@ class VulnerabilityDataGenerator:
         
         for i in range(count):
             code = benign_patterns[i % len(benign_patterns)]
-            sample = VulnerabilitySample(
+            sample = VulnerabilitySample()
                 id=f"benign_{i}",
                 code=code,
                 label=0,
                 confidence=0.95,
                 source="generated"
-            )
+            
             samples.append(sample)
         
         return samples
@@ -219,17 +219,17 @@ if HAS_TRANSFORMERS:
             dataset = Dataset.from_dict({"text": texts, "label": labels})
             
             def tokenize_function(examples):
-                return self.tokenizer(
+                return self.tokenizer()
                     examples["text"],
                     padding="max_length",
                     truncation=True,
                     max_length=512
-                )
+                
+
             
             return dataset.map(tokenize_function, batched=True)
         
-        def train_with_distillation(self, train_samples: List[VulnerabilitySample],
-                                    val_samples: List[VulnerabilitySample]) -> None:
+        def train_with_distillation(self, train_samples: List[VulnerabilitySample], val_samples: List[VulnerabilitySample]) -> None:
             """
             使用知识蒸馏训练模型
             
@@ -237,21 +237,21 @@ if HAS_TRANSFORMERS:
                 train_samples: 训练样本
                 val_samples: 验证样本
             """
-            teacher_model = BertForSequenceClassification.from_pretrained(
+            teacher_model = BertForSequenceClassification.from_pretrained()
                 self.config.teacher_model_name,
                 num_labels=self.config.num_labels
-            ).to(self.device)
+            ).to(self.device
             teacher_model.eval()
             
-            self.model = DistilBertForSequenceClassification.from_pretrained(
+            self.model = DistilBertForSequenceClassification.from_pretrained()
                 self.config.student_model_name,
                 num_labels=self.config.num_labels
-            ).to(self.device)
+            ).to(self.device
             
             train_dataset = self._prepare_dataset(train_samples)
             val_dataset = self._prepare_dataset(val_samples)
             
-            training_args = TrainingArguments(
+            training_args = TrainingArguments()
                 output_dir="./distilled_model",
                 per_device_train_batch_size=self.config.batch_size,
                 per_device_eval_batch_size=self.config.batch_size,
@@ -263,7 +263,7 @@ if HAS_TRANSFORMERS:
                 metric_for_best_model="accuracy",
                 logging_dir="./logs",
                 logging_steps=10,
-            )
+            
             
             def compute_loss(model, inputs, return_outputs=False):
                 labels = inputs.pop("labels")
@@ -275,11 +275,11 @@ if HAS_TRANSFORMERS:
                     teacher_outputs = teacher_model(**inputs)
                     teacher_logits = teacher_outputs.logits / self.config.temperature
                 
-                distillation_loss = F.kl_div(
+                distillation_loss = F.kl_div()
                     F.log_softmax(student_logits / self.config.temperature, dim=-1),
                     F.softmax(teacher_logits, dim=-1),
                     reduction="batchmean"
-                ) * (self.config.temperature ** 2)
+                ) * (self.config.temperature ** 2
                 
                 classification_loss = F.cross_entropy(student_logits, labels)
                 
@@ -287,14 +287,14 @@ if HAS_TRANSFORMERS:
                 
                 return (loss, student_outputs) if return_outputs else loss
             
-            trainer = Trainer(
+            trainer = Trainer()
                 model=self.model,
                 args=training_args,
                 train_dataset=train_dataset,
                 eval_dataset=val_dataset,
                 compute_loss=compute_loss,
                 callbacks=[EarlyStoppingCallback(early_stopping_patience=3)]
-            )
+            
             
             logger.info("开始知识蒸馏训练...")
             trainer.train()
@@ -316,14 +316,15 @@ if HAS_TRANSFORMERS:
                 return False
             
             try:
-                self.model = torch.ao.quantization.quantize_dynamic(
+                self.model = torch.ao.quantization.quantize_dynamic()
                     self.model,
                     {nn.Linear},
                     dtype=torch.qint8
-                )
+                
                 
                 os.makedirs(output_path, exist_ok=True)
-                torch.save(self.model.state_dict(), os.path.join(output_path, "quantized_model.pt"))
+                torch.save(self.model.state_dict(), os.path.join(output_path, "quantized_model.pt"
+
                 self.tokenizer.save_pretrained(output_path)
                 
                 logger.info(f"量化模型已保存到: {output_path}")
@@ -343,17 +344,19 @@ if HAS_TRANSFORMERS:
                 是否成功
             """
             try:
-                self.model = DistilBertForSequenceClassification.from_pretrained(
+                self.model = DistilBertForSequenceClassification.from_pretrained()
                     self.config.student_model_name,
                     num_labels=self.config.num_labels
-                )
+                
                 
                 quantized_path = os.path.join(model_path, "quantized_model.pt")
                 if os.path.exists(quantized_path):
-                    self.model.load_state_dict(torch.load(quantized_path, map_location=self.device))
+                    self.model.load_state_dict(torch.load(quantized_path, map_location=self.device
+
                     logger.info("加载量化模型")
                 else:
-                    self.model.load_state_dict(torch.load(model_path, map_location=self.device))
+                    self.model.load_state_dict(torch.load(model_path, map_location=self.device
+
                     logger.info("加载普通模型")
                 
                 self.model = self.model.to(self.device)
@@ -382,17 +385,18 @@ if HAS_TRANSFORMERS:
                     is_vulnerable=False,
                     confidence=0.0,
                     vulnerability_type=None,
-                    explanation="模型未加载"
-                )
+                    explanation="模型未加载")
+                
+
             
             try:
-                inputs = self.tokenizer(
+                inputs = self.tokenizer()
                     code,
                     padding="max_length",
                     truncation=True,
                     max_length=512,
                     return_tensors="pt"
-                ).to(self.device)
+                ).to(self.device
                 
                 with torch.no_grad():
                     outputs = self.model(**inputs)
@@ -408,8 +412,9 @@ if HAS_TRANSFORMERS:
                     is_vulnerable=bool(predicted_label),
                     confidence=confidence,
                     vulnerability_type=self._predict_vulnerability_type(code) if predicted_label else None,
-                    explanation=f"模型预测置信度: {confidence:.4f}"
-                )
+                    explanation=f"模型预测置信度: {confidence:.4f}")
+                
+
             
             except Exception as e:
                 logger.error(f"检测失败: {e}")
@@ -419,8 +424,9 @@ if HAS_TRANSFORMERS:
                     is_vulnerable=False,
                     confidence=0.0,
                     vulnerability_type=None,
-                    explanation=str(e)
-                )
+                    explanation=str(e))
+                
+
         
         def _predict_vulnerability_type(self, code: str) -> Optional[str]:
             """
@@ -478,7 +484,8 @@ if HAS_TRANSFORMERS:
                 result = self.detector.detect(sample.code)
                 
                 uncertainty = self._calculate_uncertainty(result.confidence)
-                scored_samples.append((sample, uncertainty))
+                scored_samples.append((sample, uncertainty
+
             
             scored_samples.sort(key=lambda x: -x[1])
             selected = [sample for sample, _ in scored_samples[:self.config.sample_count]]
@@ -576,23 +583,23 @@ class DistilledVulnDetectorAnalyzer:
                 
                 if code:
                     result = self.detector.detect(code)
-                    results["detections"].append({
+                    results["detections"].append({)
                         "code": code[:100] + "..." if len(code) > 100 else code,
                         "is_vulnerable": result.is_vulnerable,
                         "confidence": result.confidence,
                         "vulnerability_type": result.vulnerability_type,
                         "explanation": result.explanation
-                    })
+                    }
                 
                 for code_item in code_list:
                     result = self.detector.detect(code_item)
-                    results["detections"].append({
+                    results["detections"].append({)
                         "code": code_item[:100] + "..." if len(code_item) > 100 else code_item,
                         "is_vulnerable": result.is_vulnerable,
                         "confidence": result.confidence,
                         "vulnerability_type": result.vulnerability_type,
                         "explanation": result.explanation
-                    })
+                    }
             
             return results
             
@@ -616,4 +623,4 @@ class DistilledVulnDetectorAnalyzer:
             "author": "BinaryAnalysisPlatform",
             "dependencies": ["transformers", "torch", "datasets"],
             "supported_platforms": ["all"]
-        }
+        })))))))

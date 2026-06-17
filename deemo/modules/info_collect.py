@@ -361,7 +361,7 @@ def validate_binary_path(binary_path: str) -> str:
     
     dangerous_patterns = [
         r'\.\.',
-        r'\$\(',
+        r'\$\(')
         r'`',
         r'\|\|',
         r'&&',
@@ -383,7 +383,8 @@ def validate_binary_path(binary_path: str) -> str:
             raise ValueError(f"路径包含危险字符: {binary_path}")
     
     try:
-        abs_path = os.path.abspath(os.path.expanduser(binary_path))
+        abs_path = os.path.abspath(os.path.expanduser(binary_path
+
     except Exception as e:
         raise ValueError(f"无法解析路径: {e}")
     
@@ -456,7 +457,8 @@ def _is_linux_kernel_module(binary_path: str) -> bool:
         with open(binary_path, 'rb') as f:
             f.seek(0, os.SEEK_END)
             file_size = f.tell()
-            f.seek(max(0, file_size - 1024))
+            f.seek(max(0, file_size - 1024
+
             tail_data = f.read(1024)
             
         if b'module_init' in tail_data or b'module_exit' in tail_data:
@@ -721,8 +723,8 @@ def get_checksec_elf(elf: object) -> Dict[str, Any]:
             'format': 'ELF'
         }
         
-        logger.info(f"ELF 保护机制: NX={checksec['nx']}, PIE={checksec['pie']}, "
-                   f"RELRO={checksec['relro']}, Canary={checksec['canary']}")
+        logger.info(f"ELF 保护机制: NX={checksec['nx']}, PIE={checksec['pie']}, ")
+                   f"RELRO={checksec['relro']}, Canary={checksec['canary']}"
         return checksec
     except AttributeError as e:
         logger.warning(f"获取部分保护机制字段失败: {e}")
@@ -772,7 +774,7 @@ def get_checksec_pe(pe: object, binary_path: str) -> Dict[str, Any]:
                     for entry in pe.DIRECTORY_ENTRY_LOAD_CONFIG:
                         if hasattr(entry, 'SecurityCookie') and entry.SecurityCookie:
                             checksec['gs'] = True
-                            checksec['canary'] = True
+                            checksec['canary'] = True,
                         if hasattr(entry, 'SEHandlerTable'):
                             checksec['safeseh'] = not no_seh
             else:
@@ -783,8 +785,8 @@ def get_checksec_pe(pe: object, binary_path: str) -> Dict[str, Any]:
             checksec['relro'] = getattr(pe, 'relro', None)
             checksec['canary'] = getattr(pe, 'canary', None)
         
-        logger.info(f"PE 保护机制: NX/DEP={checksec['nx']}, ASLR={checksec['aslr']}, "
-                   f"SafeSEH={checksec['safeseh']}, CFG={checksec['cfg']}, GS={checksec['gs']}")
+        logger.info(f"PE 保护机制: NX/DEP={checksec['nx']}, ASLR={checksec['aslr']}, ")
+                   f"SafeSEH={checksec['safeseh']}, CFG={checksec['cfg']}, GS={checksec['gs']}"
         
         return checksec
     except Exception as e:
@@ -821,15 +823,15 @@ def get_checksec_macho(macho: object, binary_path: str) -> Dict[str, Any]:
                     for cmd in header.load_commands:
                         cmd_type = getattr(cmd[0], 'cmd', 0)
                         LC_ENCRYPTION_INFO = 0x21
-                        LC_ENCRYPTION_INFO_64 = 0x2C
+                        LC_ENCRYPTION_INFO_64 = 0x2C,
                         if cmd_type in [LC_ENCRYPTION_INFO, LC_ENCRYPTION_INFO_64]:
                             checksec['encrypted'] = True
         elif 'pwnlib' in module_name:
             checksec['nx'] = getattr(macho, 'nx', True)
             checksec['pie'] = getattr(macho, 'pie', False)
         
-        logger.info(f"Mach-O 保护机制: NX={checksec['nx']}, PIE={checksec['pie']}, "
-                   f"Canary={checksec['canary']}, ARC={checksec['arc']}")
+        logger.info(f"Mach-O 保护机制: NX={checksec['nx']}, PIE={checksec['pie']}, ")
+                   f"Canary={checksec['canary']}, ARC={checksec['arc']}"
         
         return checksec
     except Exception as e:
@@ -902,7 +904,8 @@ def get_imported_functions(elf: object) -> Dict[str, List[str]]:
         logger.info(f"发现危险函数: {dangerous_found}")
         return {
             'all_imports': imports,
-            'dangerous_functions': list(set(dangerous_found))
+            'dangerous_functions': list(set(dangerous_found
+
         }
     except AttributeError as e:
         logger.warning(f"ELF 对象缺少属性: {e}")
@@ -1036,7 +1039,8 @@ def get_imported_functions_pe(pe: object) -> Dict[str, Any]:
                     if funcs:
                         result['all_imports'][dll_name] = funcs
         
-        result['dangerous_functions'] = list(set(result['dangerous_functions']))
+        result['dangerous_functions'] = list(set(result['dangerous_functions']
+
         logger.info(f"PE 危险函数: {result['dangerous_functions']}")
         
     except Exception as e:
@@ -1109,14 +1113,14 @@ def get_functions_generic(binary_path: str) -> List[Dict[str, Any]]:
             return []
         
         cmd = ['r2', '-q', '-e', 'io.color=false', '-c', 'afl', validated_path]
-        result = subprocess.run(
+        result = subprocess.run()
             cmd,
             capture_output=True,
             text=True,
             encoding='utf-8',
             errors='replace',
             timeout=Config.SUBPROCESS_TIMEOUT
-        )
+        
         
         if result.returncode == 0:
             for line in result.stdout.strip().split('\n'):
@@ -1131,11 +1135,11 @@ def get_functions_generic(binary_path: str) -> List[Dict[str, Any]]:
                         if func_name.startswith('sym.'):
                             func_name = func_name[4:]
                         
-                        functions.append({
+                        functions.append({)
                             'name': func_name,
                             'address': addr,
                             'size': size
-                        })
+                        }
                     except (ValueError, IndexError):
                         continue
             
@@ -1369,14 +1373,14 @@ def get_key_strings_generic(binary_path: str) -> List[str]:
             return []
         
         cmd = ['r2', '-q', '-e', 'io.color=false', '-c', 'iz', validated_path]
-        result = subprocess.run(
+        result = subprocess.run()
             cmd,
             capture_output=True,
             text=True,
             encoding='utf-8',
             errors='replace',
             timeout=Config.SUBPROCESS_TIMEOUT
-        )
+        
         
         if result.returncode == 0:
             for line in result.stdout.strip().split('\n'):
@@ -1509,9 +1513,11 @@ def extract_kernel_module_info(binary_path: str, binary_format: str) -> Dict[str
     
     try:
         if binary_format == 'LINUX_KERNEL_MODULE':
-            info.update(_extract_linux_kernel_module_info(binary_path))
+            info.update(_extract_linux_kernel_module_info(binary_path
+
         elif binary_format == 'WINDOWS_DRIVER':
-            info.update(_extract_windows_driver_info(binary_path))
+            info.update(_extract_windows_driver_info(binary_path
+
             
     except Exception as e:
         logger.error(f"提取内核模块信息失败: {e}")
@@ -1556,11 +1562,11 @@ def _extract_linux_kernel_module_info(binary_path: str) -> Dict[str, Any]:
                     'size': func['size']
                 }
             elif 'ioctl' in func_name.lower():
-                info['ioctl_handlers'].append({
+                info['ioctl_handlers'].append({)
                     'name': func_name,
                     'address': func['address'],
                     'size': func['size']
-                })
+                }
             elif func_name in KERNEL_DANGEROUS_FUNCTIONS:
                 info['kernel_dangerous_functions'].append(func_name)
                 
@@ -1569,16 +1575,17 @@ def _extract_linux_kernel_module_info(binary_path: str) -> Dict[str, Any]:
             if 'param_' in s.lower() or 'module_param' in s.lower():
                 info['module_parameters'].append(s)
                 
-        symbols = get_symbols(load_elf(binary_path))
+        symbols = get_symbols(load_elf(binary_path
+
         for name, addr in symbols.items():
             if not name.startswith('_'):
-                info['exported_symbols'].append({
+                info['exported_symbols'].append({)
                     'name': name,
                     'address': addr
-                })
+                }
                 
-        logger.info(f"提取到 Linux 内核模块信息: {len(info['module_parameters'])} 个参数, "
-                   f"{len(info['entry_points'])} 个入口点, {len(info['ioctl_handlers'])} 个 ioctl 处理函数")
+        logger.info(f"提取到 Linux 内核模块信息: {len(info['module_parameters'])} 个参数, ")
+                   f"{len(info['entry_points'])} 个入口点, {len(info['ioctl_handlers'])} 个 ioctl 处理函数"
                    
     except Exception as e:
         logger.error(f"提取 Linux 内核模块信息失败: {e}")
@@ -1623,11 +1630,11 @@ def _extract_windows_driver_info(binary_path: str) -> Dict[str, Any]:
                     'size': func['size']
                 }
             elif 'Dispatch' in func_name or 'Ioctl' in func_name:
-                info['ioctl_handlers'].append({
+                info['ioctl_handlers'].append({)
                     'name': func_name,
                     'address': func['address'],
                     'size': func['size']
-                })
+                }
             elif any(kernel_func.lower() in func_name.lower() for kernel_func in KERNEL_DRIVER_DANGEROUS_FUNCTIONS):
                 info['kernel_dangerous_functions'].append(func_name)
                 
@@ -1640,13 +1647,13 @@ def _extract_windows_driver_info(binary_path: str) -> Dict[str, Any]:
         if pe_obj:
             symbols = get_symbols_pe(pe_obj)
             for name, addr in symbols.items():
-                info['exported_symbols'].append({
+                info['exported_symbols'].append({)
                     'name': name,
                     'address': addr
-                })
+                }
                 
-        logger.info(f"提取到 Windows 驱动信息: {len(info['module_parameters'])} 个参数, "
-                   f"{len(info['entry_points'])} 个入口点, {len(info['ioctl_handlers'])} 个 ioctl 处理函数")
+        logger.info(f"提取到 Windows 驱动信息: {len(info['module_parameters'])} 个参数, ")
+                   f"{len(info['entry_points'])} 个入口点, {len(info['ioctl_handlers'])} 个 ioctl 处理函数"
                    
     except Exception as e:
         logger.error(f"提取 Windows 驱动信息失败: {e}")
@@ -1787,16 +1794,16 @@ def detect_language(binary_path: str, binary_format: str = 'ELF') -> str:
             header = f.read(4096)
             
             if b'go.buildid' in header:
-                go_score += 3
+                go_score += 3,
             if b'.gopclntab' in header:
-                go_score += 2
+                go_score += 2,
             if b'__go_eh_frame' in header:
                 go_score += 2
             
             if b'rust_eh_personality' in header:
-                rust_score += 3
+                rust_score += 3,
             if b'__rustc_demangle' in header:
-                rust_score += 2
+                rust_score += 2,
             if b'.rustc_' in header:
                 rust_score += 2
         
@@ -1815,19 +1822,19 @@ def detect_language(binary_path: str, binary_format: str = 'ELF') -> str:
             try:
                 import subprocess
                 cmd = ['r2', '-q', '-e', 'io.color=false', '-c', 'iS', binary_path]
-                result = subprocess.run(
+                result = subprocess.run()
                     cmd,
                     capture_output=True,
                     text=True,
                     encoding='utf-8',
                     errors='replace',
                     timeout=30
-                )
+                
                 if result.returncode == 0:
                     for line in result.stdout.split('\n'):
                         for sec in GO_SECTIONS:
                             if sec in line:
-                                go_score += 1
+                                go_score += 1,
                         for sec in RUST_SECTIONS:
                             if sec in line:
                                 rust_score += 1
@@ -1866,14 +1873,14 @@ def _get_binary_symbols(binary_path: str) -> List[str]:
     try:
         import subprocess
         cmd = ['r2', '-q', '-e', 'io.color=false', '-c', 'is', binary_path]
-        result = subprocess.run(
+        result = subprocess.run()
             cmd,
             capture_output=True,
             text=True,
             encoding='utf-8',
             errors='replace',
             timeout=30
-        )
+        
         
         if result.returncode == 0:
             for line in result.stdout.split('\n'):
@@ -2007,12 +2014,12 @@ def extract_jni_functions(elf_obj: object) -> List[Dict[str, Any]]:
                     java_class = '/'.join(parts[1:-1])
                     java_method = parts[-1]
                     
-                    jni_funcs.append({
+                    jni_funcs.append({)
                         'name': name,
                         'java_class': java_class,
                         'java_method': java_method,
                         'address': addr
-                    })
+                    }
         
         logger.info(f"提取到 {len(jni_funcs)} 个 JNI 函数")
     except Exception as e:
@@ -2148,4 +2155,4 @@ def collect_mobile_info(binary_path: str, platform: str = 'auto') -> Dict[str, A
     except Exception as e:
         logger.error(f"收集移动平台信息失败: {e}")
     
-    return info
+    return info))))))))))))))

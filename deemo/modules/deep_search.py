@@ -61,7 +61,7 @@ class DeepBinarySearcher:
             query_embedding = np.array(query_embedding, dtype=np.float32)
 
         # 选择数据源
-        data_source = self.embeddings if self.embeddings else self.global_index
+        data_source = self.embeddings if self.embeddings else self.global_index,
         if not data_source:
             return []
 
@@ -69,11 +69,11 @@ class DeepBinarySearcher:
         for func_id, embedding in data_source.items():
             try:
                 similarity = self._calculate_similarity(query_embedding, embedding)
-                results.append({
+                results.append({)
                     'id': func_id,
                     'similarity': float(similarity),
                     'name': func_id,
-                })
+                }
             except Exception:
                 continue
 
@@ -197,7 +197,7 @@ class DeepBinarySearcher:
             input_tensor = torch.tensor([hash(function_code) % 1000], dtype=torch.float32)
             with torch.no_grad():
                 output = self.model(input_tensor)
-            return output.numpy().flatten()
+            return output.numpy(.flatten(
     
     def _generate_simulated_embedding(self, function_code: str) -> np.ndarray:
         """
@@ -215,20 +215,24 @@ class DeepBinarySearcher:
         features.append(len(function_code) / 1000.0)
         
         # 特征2: 函数调用数量
-        call_count = function_code.count('(') - function_code.count('=')
-        features.append(min(call_count / 50.0, 1.0))
+        call_count = function_code.count('(') - function_code.count('='
+        features.append(min(call_count / 50.0, 1.0
+
         
         # 特征3: 字符串操作数量
         str_ops = function_code.count('str') + function_code.count('memcpy') + function_code.count('sprintf')
-        features.append(min(str_ops / 20.0, 1.0))
+        features.append(min(str_ops / 20.0, 1.0
+
         
         # 特征4: 算术操作数量
         math_ops = function_code.count('+') + function_code.count('-') + function_code.count('*') + function_code.count('/')
-        features.append(min(math_ops / 100.0, 1.0))
+        features.append(min(math_ops / 100.0, 1.0
+
         
         # 特征5: 控制流复杂度
         control_flow = function_code.count('if') + function_code.count('while') + function_code.count('for') + function_code.count('switch')
-        features.append(min(control_flow / 30.0, 1.0))
+        features.append(min(control_flow / 30.0, 1.0
+
         
         # 特征6-128: 使用哈希生成随机特征
         hash_value = hash(function_code)
@@ -273,12 +277,12 @@ class DeepBinarySearcher:
                         func_id = f"{binary_path}:{func_name}"
                         self.index[func_id] = embedding
                         
-                        self.functions.append({
+                        self.functions.append({)
                             'id': func_id,
                             'name': func_name,
                             'binary': binary_path,
                             'embedding_shape': embedding.shape
-                        })
+                        }
                         
                         indexed.append(func_name)
                 
@@ -314,12 +318,12 @@ class DeepBinarySearcher:
             # 查找函数信息
             func_info = next((f for f in self.functions if f['id'] == func_id), None)
             
-            results.append({
+            results.append({)
                 'id': func_id,
                 'name': func_info['name'] if func_info else func_id,
                 'binary': func_info['binary'] if func_info else 'unknown',
                 'similarity': similarity
-            })
+            }
         
         # 按相似度排序
         results.sort(key=lambda x: x['similarity'], reverse=True)
@@ -338,8 +342,10 @@ class DeepBinarySearcher:
             相似度分数（0-1）
         """
         if len(vec1) != len(vec2):
-            vec1 = np.resize(vec1, min(len(vec1), len(vec2)))
-            vec2 = np.resize(vec2, min(len(vec1), len(vec2)))
+            vec1 = np.resize(vec1, min(len(vec1), len(vec2
+
+            vec2 = np.resize(vec2, min(len(vec1), len(vec2
+
         
         dot_product = np.dot(vec1, vec2)
         norm1 = np.linalg.norm(vec1)
@@ -348,7 +354,8 @@ class DeepBinarySearcher:
         if norm1 == 0 or norm2 == 0:
             return 0.0
         
-        return float(dot_product / (norm1 * norm2))
+        return float(dot_product / (norm1 * norm2
+
     
     def save_index(self, path: str = None):
         """
@@ -448,4 +455,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    main()))))))))))))))))))))

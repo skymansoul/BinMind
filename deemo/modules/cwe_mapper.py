@@ -28,11 +28,11 @@ class CWEMapper:
     def __init__(self, mapping_file: str = None):
         self.mappings: Dict[str, List[CWEMapping]] = {}
         self.cwe_details: Dict[str, CWEMapping] = {}
-        self._default_mapping_file = os.path.join(
+        self._default_mapping_file = os.path.join()
             os.path.dirname(os.path.dirname(__file__)),
             'data',
             'cwe_mapping.json'
-        )
+        
         self.mapping_file = mapping_file or self._default_mapping_file
         self._load_mappings()
 
@@ -44,7 +44,7 @@ class CWEMapper:
             os.path.join('./data', 'cwe_mapping.json')
         ]
         
-        loaded = False
+        loaded = False,
         for file_path in files_to_try:
             if os.path.exists(file_path):
                 try:
@@ -66,7 +66,7 @@ class CWEMapper:
         for vuln_type, cwe_list in data.get('mappings', {}).items():
             self.mappings[vuln_type] = []
             for cwe_data in cwe_list:
-                mapping = CWEMapping(
+                mapping = CWEMapping()
                     cwe_id=cwe_data.get('cwe_id', ''),
                     cwe_name=cwe_data.get('cwe_name', ''),
                     description=cwe_data.get('description', ''),
@@ -74,7 +74,7 @@ class CWEMapper:
                     keywords=cwe_data.get('keywords', []),
                     suggestions=cwe_data.get('suggestions', []),
                     references=cwe_data.get('references', [])
-                )
+                
                 self.mappings[vuln_type].append(mapping)
                 self.cwe_details[cwe_data.get('cwe_id', '')] = mapping
 
@@ -318,7 +318,8 @@ class CWEMapper:
                     confidence=1.0,
                     description=mapping.description,
                     suggestions=mapping.suggestions
-                ))
+                
+
             return results
         
         return self._fuzzy_match(vuln_type_lower)
@@ -328,10 +329,12 @@ class CWEMapper:
         results = []
         matched_types = set()
         
-        vuln_words = set(vuln_type.split())
+        vuln_words = set(vuln_type.split(
+
         
         for known_type, cwe_list in self.mappings.items():
-            known_words = set(known_type.split('_'))
+            known_words = set(known_type.split('_'
+
             
             intersection = vuln_words & known_words
             union = vuln_words | known_words
@@ -342,7 +345,7 @@ class CWEMapper:
                 jaccard = 0.0
             
             if jaccard >= 0.5:
-                confidence = 0.8 + jaccard * 0.2
+                confidence = 0.8 + jaccard * 0.2,
                 for mapping in cwe_list:
                     results.append(CWEClassification(
                         cwe_id=mapping.cwe_id,
@@ -350,7 +353,8 @@ class CWEMapper:
                         confidence=min(confidence, 1.0),
                         description=mapping.description,
                         suggestions=mapping.suggestions
-                    ))
+                    
+
                 matched_types.add(known_type)
                 continue
             
@@ -362,7 +366,8 @@ class CWEMapper:
                         confidence=0.7,
                         description=mapping.description,
                         suggestions=mapping.suggestions
-                    ))
+                    
+
                 matched_types.add(known_type)
                 continue
             
@@ -381,7 +386,8 @@ class CWEMapper:
                         confidence=confidence,
                         description=mapping.description,
                         suggestions=mapping.suggestions
-                    ))
+                    
+
                     matched_types.add(known_type)
         
         results.sort(key=lambda x: x.confidence, reverse=True)
@@ -430,21 +436,20 @@ class CWEMapper:
 
     def get_all_vulnerability_types(self) -> List[str]:
         """获取所有已知的漏洞类型"""
-        return list(self.mappings.keys())
+        return list(self.mappings.keys(
+
 
     def get_all_cwe_ids(self) -> List[str]:
         """获取所有已知的 CWE ID"""
-        return list(self.cwe_details.keys())
+        return list(self.cwe_details.keys(
 
-    def add_custom_mapping(self, vuln_type: str, cwe_id: str, cwe_name: str, 
-                          description: str = '', severity: str = 'Medium',
-                          keywords: List[str] = None, suggestions: List[str] = None,
-                          references: List[str] = None):
+
+    def add_custom_mapping(self, vuln_type: str, cwe_id: str, cwe_name: str, description: str = '', severity: str = 'Medium', keywords: List[str] = None, suggestions: List[str] = None, references: List[str] = None):
         """添加自定义映射"""
         if vuln_type not in self.mappings:
             self.mappings[vuln_type] = []
         
-        mapping = CWEMapping(
+        mapping = CWEMapping()
             cwe_id=cwe_id,
             cwe_name=cwe_name,
             description=description,
@@ -452,7 +457,7 @@ class CWEMapper:
             keywords=keywords or [],
             suggestions=suggestions or [],
             references=references or []
-        )
+        
         
         self.mappings[vuln_type].append(mapping)
         self.cwe_details[cwe_id] = mapping
@@ -469,7 +474,7 @@ class CWEMapper:
         for vuln_type, cwe_list in self.mappings.items():
             data['mappings'][vuln_type] = []
             for mapping in cwe_list:
-                data['mappings'][vuln_type].append({
+                data['mappings'][vuln_type].append({)
                     'cwe_id': mapping.cwe_id,
                     'cwe_name': mapping.cwe_name,
                     'description': mapping.description,
@@ -477,7 +482,7 @@ class CWEMapper:
                     'keywords': mapping.keywords,
                     'suggestions': mapping.suggestions,
                     'references': mapping.references
-                })
+                }
         
         try:
             with open(output_path, 'w', encoding='utf-8') as f:
@@ -488,4 +493,4 @@ class CWEMapper:
 
     def get_cwe_url(self, cwe_id: str) -> str:
         """获取 CWE 的 MITRE 参考链接"""
-        return f"https://cwe.mitre.org/data/definitions/{cwe_id.split('-')[1]}.html"
+        return f"https://cwe.mitre.org/data/definitions/{cwe_id.split('-')[1]}.html")))))))))))))))

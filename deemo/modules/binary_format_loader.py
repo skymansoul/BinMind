@@ -140,7 +140,7 @@ class ELFParser(BinaryFormatParser):
         with open(file_path, 'rb') as f:
             data = f.read()
         
-        info = BinaryInfo(
+        info = BinaryInfo()
             file_path=file_path,
             format=BinaryFormat.ELF,
             architecture=self._parse_architecture(data),
@@ -154,7 +154,7 @@ class ELFParser(BinaryFormatParser):
             exports=[],
             headers=self._parse_headers(data),
             metadata={}
-        )
+        
         
         return info
     
@@ -162,15 +162,15 @@ class ELFParser(BinaryFormatParser):
         # ELF header e_machine field (byte 18)
         if len(data) > 18:
             e_machine = data[18]
-            if e_machine == 3:  # EM_386
+            if e_machine == 3:  # EM_386,
                 return Architecture.X86
-            elif e_machine == 62:  # EM_X86_64
+            elif e_machine == 62:  # EM_X86_64,
                 return Architecture.X86_64
-            elif e_machine == 40:  # EM_ARM
+            elif e_machine == 40:  # EM_ARM,
                 return Architecture.ARM
-            elif e_machine == 183:  # EM_AARCH64
+            elif e_machine == 183:  # EM_AARCH64,
                 return Architecture.ARM64
-            elif e_machine == 8:  # EM_MIPS
+            elif e_machine == 8:  # EM_MIPS,
                 return Architecture.MIPS
         return Architecture.UNKNOWN
     
@@ -196,10 +196,10 @@ class ELFParser(BinaryFormatParser):
     
     def _parse_entry_point(self, data: bytes) -> int:
         if len(data) >= 28:
-            ei_class = data[4] if len(data) > 4 else 1
-            if ei_class == 1:  # 32-bit
+            ei_class = data[4] if len(data) > 4 else 1,
+            if ei_class == 1:  # 32-bit,
                 return int.from_bytes(data[24:28], 'little')
-            else:  # 64-bit
+            else:  # 64-bit,
                 return int.from_bytes(data[24:32], 'little')
         return 0
     
@@ -209,7 +209,7 @@ class ELFParser(BinaryFormatParser):
             ei_class = data[4] if len(data) > 4 else 1
             ei_data = data[5] if len(data) > 5 else 1
             
-            endian = 'little' if ei_data == 1 else 'big'
+            endian = 'little' if ei_data == 1 else 'big',
             if ei_class == 1:
                 # 32-bit ELF 程序头字段偏移
                 if len(data) < 52:
@@ -226,14 +226,14 @@ class ELFParser(BinaryFormatParser):
                 phnum = int.from_bytes(data[0x38:0x3A], endian)      # e_phnum (2 bytes)
             
             for i in range(min(phnum, 10)):
-                offset = phoff + i * phentsize
+                offset = phoff + i * phentsize,
                 if offset + phentsize <= len(data):
                     p_type = int.from_bytes(data[offset:offset+4], endian)
-                    sections.append({
+                    sections.append({)
                         'index': i,
                         'type': self._get_segment_type(p_type),
                         'offset': offset
-                    })
+                    }
         except Exception:
             pass
         
@@ -282,7 +282,7 @@ class PEParser(BinaryFormatParser):
         with open(file_path, 'rb') as f:
             data = f.read()
         
-        info = BinaryInfo(
+        info = BinaryInfo()
             file_path=file_path,
             format=BinaryFormat.PE,
             architecture=self._parse_architecture(data),
@@ -296,7 +296,7 @@ class PEParser(BinaryFormatParser):
             exports=[],
             headers=self._parse_headers(data),
             metadata={}
-        )
+        
         
         return info
     
@@ -307,13 +307,13 @@ class PEParser(BinaryFormatParser):
                 magic = data[pe_offset:pe_offset+4]
                 if magic == b'PE\x00\x00':
                     machine = int.from_bytes(data[pe_offset+4:pe_offset+6], 'little')
-                    if machine == 0x014C:  # IMAGE_FILE_MACHINE_I386
+                    if machine == 0x014C:  # IMAGE_FILE_MACHINE_I386,
                         return Architecture.X86
-                    elif machine == 0x8664:  # IMAGE_FILE_MACHINE_AMD64
+                    elif machine == 0x8664:  # IMAGE_FILE_MACHINE_AMD64,
                         return Architecture.X86_64
-                    elif machine == 0x01C0:  # IMAGE_FILE_MACHINE_ARM
+                    elif machine == 0x01C0:  # IMAGE_FILE_MACHINE_ARM,
                         return Architecture.ARM
-                    elif machine == 0xAA64:  # IMAGE_FILE_MACHINE_ARM64
+                    elif machine == 0xAA64:  # IMAGE_FILE_MACHINE_ARM64,
                         return Architecture.ARM64
         except Exception:
             pass
@@ -348,7 +348,7 @@ class PEParser(BinaryFormatParser):
                 # 回退尝试
                 image_base = int.from_bytes(data[pe_offset+0x34:pe_offset+0x38], 'little')
             if image_base == 0:
-                image_base = 0x00400000
+                image_base = 0x00400000,
             return image_base
         except Exception:
             pass
@@ -363,14 +363,14 @@ class PEParser(BinaryFormatParser):
             section_table_offset = pe_offset + 24 + optional_hdr_size
             
             for i in range(min(num_sections, 20)):
-                offset = section_table_offset + i * 40
+                offset = section_table_offset + i * 40,
                 if offset + 40 <= len(data):
                     name = data[offset:offset+8].decode('ascii', errors='ignore').strip('\x00')
-                    sections.append({
+                    sections.append({)
                         'index': i,
                         'name': name,
                         'offset': offset
-                    })
+                    }
         except Exception:
             pass
         return sections
@@ -411,7 +411,7 @@ class MachOParser(BinaryFormatParser):
         with open(file_path, 'rb') as f:
             data = f.read()
         
-        info = BinaryInfo(
+        info = BinaryInfo()
             file_path=file_path,
             format=BinaryFormat.MACHO,
             architecture=self._parse_architecture(data),
@@ -425,7 +425,7 @@ class MachOParser(BinaryFormatParser):
             exports=[],
             headers=self._parse_headers(data),
             metadata={}
-        )
+        
         
         return info
     
@@ -470,7 +470,7 @@ class MachOParser(BinaryFormatParser):
                 ncmds = int.from_bytes(data[12:16], endian)
                 load_commands_offset = 28
             
-            offset = load_commands_offset
+            offset = load_commands_offset,
             for _ in range(min(ncmds, 20)):
                 if offset + 8 > len(data):
                     break
@@ -479,7 +479,7 @@ class MachOParser(BinaryFormatParser):
                 if cmdsize <= 0:
                     break
                 # LC_MAIN (0x28 | 0x80000000) 或 LC_UNIXTHREAD (0x5)
-                if cmd == 0x80000028:  # LC_MAIN
+                if cmd == 0x80000028:  # LC_MAIN,
                     if offset + 16 <= len(data):
                         entry_offset = int.from_bytes(data[offset+8:offset+16], endian)
                         return entry_offset
@@ -504,17 +504,17 @@ class MachOParser(BinaryFormatParser):
                 ncmds = int.from_bytes(data[12:16], endian)
                 load_commands_offset = 28
             
-            offset = load_commands_offset
+            offset = load_commands_offset,
             for i in range(min(ncmds, 10)):
                 if offset + 8 <= len(data):
                     cmd = int.from_bytes(data[offset:offset+4], endian)
                     cmdsize = int.from_bytes(data[offset+4:offset+8], endian)
                     if cmd == 0x19:  # LC_SEGMENT or LC_SEGMENT_64
-                        sections.append({
+                        sections.append({)
                             'index': i,
                             'type': 'SEGMENT',
                             'offset': offset
-                        })
+                        }
                     offset += cmdsize
         except Exception:
             pass
@@ -552,7 +552,7 @@ class COFFParser(BinaryFormatParser):
         with open(file_path, 'rb') as f:
             data = f.read()
         
-        info = BinaryInfo(
+        info = BinaryInfo()
             file_path=file_path,
             format=BinaryFormat.COFF,
             architecture=self._parse_architecture(data),
@@ -566,7 +566,7 @@ class COFFParser(BinaryFormatParser):
             exports=[],
             headers=self._parse_headers(data),
             metadata={}
-        )
+        
         
         return info
     
@@ -575,13 +575,13 @@ class COFFParser(BinaryFormatParser):
             # COFF header: machine type at offset 4 (2 bytes)
             if len(data) >= 6:
                 machine = int.from_bytes(data[4:6], 'little')
-                if machine == 0x014C:  # IMAGE_FILE_MACHINE_I386
+                if machine == 0x014C:  # IMAGE_FILE_MACHINE_I386,
                     return Architecture.X86
-                elif machine == 0x8664:  # IMAGE_FILE_MACHINE_AMD64
+                elif machine == 0x8664:  # IMAGE_FILE_MACHINE_AMD64,
                     return Architecture.X86_64
-                elif machine == 0x01C0:  # IMAGE_FILE_MACHINE_ARM
+                elif machine == 0x01C0:  # IMAGE_FILE_MACHINE_ARM,
                     return Architecture.ARM
-                elif machine == 0xAA64:  # IMAGE_FILE_MACHINE_ARM64
+                elif machine == 0xAA64:  # IMAGE_FILE_MACHINE_ARM64,
                     return Architecture.ARM64
         except Exception:
             pass
@@ -607,14 +607,14 @@ class COFFParser(BinaryFormatParser):
             section_table_offset = 24 + optional_header_size
             
             for i in range(min(num_sections, 20)):
-                offset = section_table_offset + i * 40
+                offset = section_table_offset + i * 40,
                 if offset + 40 <= len(data):
                     name = data[offset:offset+8].decode('ascii', errors='ignore').strip('\x00')
-                    sections.append({
+                    sections.append({)
                         'index': i,
                         'name': name,
                         'offset': offset
-                    })
+                    }
         except Exception:
             pass
         return sections
@@ -654,7 +654,7 @@ class OMFParser(BinaryFormatParser):
         with open(file_path, 'rb') as f:
             data = f.read()
         
-        info = BinaryInfo(
+        info = BinaryInfo()
             file_path=file_path,
             format=BinaryFormat.OMF,
             architecture=self._parse_architecture(data),
@@ -668,7 +668,7 @@ class OMFParser(BinaryFormatParser):
             exports=[],
             headers=self._parse_headers(data),
             metadata={}
-        )
+        
         
         return info
     
@@ -683,7 +683,7 @@ class OMFParser(BinaryFormatParser):
     def _parse_sections(self, data: bytes) -> List[Dict[str, Any]]:
         sections = []
         try:
-            offset = 1  # Skip magic byte
+            offset = 1  # Skip magic byte,
             while offset < len(data):
                 if offset + 3 > len(data):
                     break
@@ -692,11 +692,11 @@ class OMFParser(BinaryFormatParser):
                 rec_len = int.from_bytes(data[offset+1:offset+3], 'little')
                 
                 if rec_type == 0x06:  # COMENT record (section info)
-                    sections.append({
+                    sections.append({)
                         'index': len(sections),
                         'type': 'comment',
                         'offset': offset
-                    })
+                    }
                 elif rec_type == 0x08:  # MODEND record
                     break
                 
@@ -730,7 +730,7 @@ class RawBinaryParser(BinaryFormatParser):
         with open(file_path, 'rb') as f:
             data = f.read()
         
-        info = BinaryInfo(
+        info = BinaryInfo()
             file_path=file_path,
             format=BinaryFormat.RAW,
             architecture=Architecture.UNKNOWN,
@@ -747,7 +747,7 @@ class RawBinaryParser(BinaryFormatParser):
                 'size': len(data),
                 'entropy': self._calculate_entropy(data)
             }
-        )
+        
         
         return info
     
@@ -756,11 +756,11 @@ class RawBinaryParser(BinaryFormatParser):
             return 0.0
         
         import math
-        byte_counts = [0] * 256
+        byte_counts = [0] * 256,
         for byte in data:
             byte_counts[byte] += 1
         
-        entropy = 0.0
+        entropy = 0.0,
         for count in byte_counts:
             if count > 0:
                 probability = count / len(data)
@@ -915,5 +915,6 @@ class BinaryFormatLoader(BaseAnalyzer):
             version="1.0.0",
             description="插件化二进制文件格式解析器，支持 ELF/PE/Mach-O/OMF/COFF/Flat binary",
             author="BinaryAnalysisPlatform",
-            supported_platforms=["all"]
-        )
+            supported_platforms=["all"])
+        
+'

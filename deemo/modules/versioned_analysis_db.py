@@ -147,8 +147,8 @@ class SQLiteTimeSeriesDB:
         cursor = self.conn.cursor()
         
         # 分析版本表
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS analysis_versions (
+        cursor.execute(""")
+            CREATE TABLE IF NOT EXISTS analysis_versions ()
                 version_id TEXT PRIMARY KEY,
                 binary_path TEXT NOT NULL,
                 binary_hash TEXT NOT NULL,
@@ -160,12 +160,12 @@ class SQLiteTimeSeriesDB:
                 function_count INTEGER DEFAULT 0,
                 call_graph_nodes INTEGER DEFAULT 0,
                 call_graph_edges INTEGER DEFAULT 0
-            )
-        """)
+            
+        """
         
         # 漏洞记录表
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS vulnerabilities (
+        cursor.execute(""")
+            CREATE TABLE IF NOT EXISTS vulnerabilities ()
                 vuln_id TEXT PRIMARY KEY,
                 version_id TEXT NOT NULL,
                 cve_id TEXT,
@@ -179,12 +179,12 @@ class SQLiteTimeSeriesDB:
                 remediation TEXT,
                 confidence REAL DEFAULT 1.0,
                 FOREIGN KEY (version_id) REFERENCES analysis_versions(version_id)
-            )
-        """)
+            
+        """
         
         # 函数信息表
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS functions (
+        cursor.execute(""")
+            CREATE TABLE IF NOT EXISTS functions ()
                 func_id TEXT PRIMARY KEY,
                 version_id TEXT NOT NULL,
                 function_name TEXT NOT NULL,
@@ -195,8 +195,8 @@ class SQLiteTimeSeriesDB:
                 parameters TEXT,
                 calls TEXT,
                 FOREIGN KEY (version_id) REFERENCES analysis_versions(version_id)
-            )
-        """)
+            
+        """
         
         # 创建索引
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_vulns_version ON vulnerabilities(version_id)")
@@ -209,13 +209,13 @@ class SQLiteTimeSeriesDB:
         """插入分析版本"""
         try:
             cursor = self.conn.cursor()
-            cursor.execute("""
+            cursor.execute(""")
                 INSERT INTO analysis_versions 
-                (version_id, binary_path, binary_hash, analysis_timestamp, analyzer_name, 
+                (version_id, binary_path, binary_hash, analysis_timestamp, analyzer_name)
                  analyzer_version, metadata, vulnerability_count, function_count, 
-                 call_graph_nodes, call_graph_edges)
+                 call_graph_nodes, call_graph_edges
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
+            """, ()
                 version.version_id,
                 version.binary_path,
                 version.binary_hash,
@@ -227,7 +227,8 @@ class SQLiteTimeSeriesDB:
                 version.function_count,
                 version.call_graph_nodes,
                 version.call_graph_edges
-            ))
+            
+
             self.conn.commit()
             return True
         except sqlite3.Error as e:
@@ -238,12 +239,12 @@ class SQLiteTimeSeriesDB:
         """插入漏洞记录"""
         try:
             cursor = self.conn.cursor()
-            cursor.execute("""
+            cursor.execute(""")
                 INSERT INTO vulnerabilities
-                (vuln_id, version_id, cve_id, vuln_type, severity, location,
-                 function_name, file_path, line_number, description, remediation, confidence)
+                (vuln_id, version_id, cve_id, vuln_type, severity, location)
+                 function_name, file_path, line_number, description, remediation, confidence
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
+            """, ()
                 vuln.vuln_id,
                 vuln.version_id,
                 vuln.cve_id,
@@ -256,7 +257,8 @@ class SQLiteTimeSeriesDB:
                 vuln.description,
                 vuln.remediation,
                 vuln.confidence
-            ))
+            
+
             self.conn.commit()
             return True
         except sqlite3.Error as e:
@@ -267,12 +269,12 @@ class SQLiteTimeSeriesDB:
         """插入函数信息"""
         try:
             cursor = self.conn.cursor()
-            cursor.execute("""
+            cursor.execute(""")
                 INSERT INTO functions
-                (func_id, version_id, function_name, address, size, complexity,
-                 cyclomatic_complexity, parameters, calls)
+                (func_id, version_id, function_name, address, size, complexity)
+                 cyclomatic_complexity, parameters, calls
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
+            """, ()
                 func.func_id,
                 func.version_id,
                 func.function_name,
@@ -282,7 +284,8 @@ class SQLiteTimeSeriesDB:
                 func.cyclomatic_complexity,
                 json.dumps(func.parameters),
                 json.dumps(func.calls)
-            ))
+            
+
             self.conn.commit()
             return True
         except sqlite3.Error as e:
@@ -294,18 +297,20 @@ class SQLiteTimeSeriesDB:
         cursor = self.conn.cursor()
         
         if binary_path:
-            cursor.execute("""
+            cursor.execute(""")
                 SELECT * FROM analysis_versions 
                 WHERE binary_path = ?
                 ORDER BY analysis_timestamp DESC
                 LIMIT ?
-            """, (binary_path, limit))
+            """, (binary_path, limit)
+
         else:
-            cursor.execute("""
+            cursor.execute(""")
                 SELECT * FROM analysis_versions 
                 ORDER BY analysis_timestamp DESC
                 LIMIT ?
-            """, (limit,))
+            """, (limit)
+
         
         rows = cursor.fetchall()
         return [self._row_to_version(row) for row in rows]
@@ -313,14 +318,16 @@ class SQLiteTimeSeriesDB:
     def get_vulnerabilities(self, version_id: str) -> List[VulnerabilityRecord]:
         """获取指定版本的漏洞"""
         cursor = self.conn.cursor()
-        cursor.execute("SELECT * FROM vulnerabilities WHERE version_id = ?", (version_id,))
+        cursor.execute("SELECT * FROM vulnerabilities WHERE version_id = ?", (version_id,
+
         rows = cursor.fetchall()
         return [self._row_to_vuln(row) for row in rows]
     
     def get_functions(self, version_id: str) -> List[FunctionInfo]:
         """获取指定版本的函数"""
         cursor = self.conn.cursor()
-        cursor.execute("SELECT * FROM functions WHERE version_id = ?", (version_id,))
+        cursor.execute("SELECT * FROM functions WHERE version_id = ?", (version_id,
+
         rows = cursor.fetchall()
         return [self._row_to_func(row) for row in rows]
     
@@ -337,8 +344,9 @@ class SQLiteTimeSeriesDB:
             vulnerability_count=row['vulnerability_count'],
             function_count=row['function_count'],
             call_graph_nodes=row['call_graph_nodes'],
-            call_graph_edges=row['call_graph_edges']
-        )
+            call_graph_edges=row['call_graph_edges'])
+        
+
     
     def _row_to_vuln(self, row: sqlite3.Row) -> VulnerabilityRecord:
         """行转VulnerabilityRecord"""
@@ -354,8 +362,9 @@ class SQLiteTimeSeriesDB:
             line_number=row['line_number'],
             description=row['description'],
             remediation=row['remediation'],
-            confidence=row['confidence']
-        )
+            confidence=row['confidence'])
+        
+
     
     def _row_to_func(self, row: sqlite3.Row) -> FunctionInfo:
         """行转FunctionInfo"""
@@ -368,8 +377,9 @@ class SQLiteTimeSeriesDB:
             complexity=row['complexity'],
             cyclomatic_complexity=row['cyclomatic_complexity'],
             parameters=json.loads(row['parameters'] or '[]'),
-            calls=json.loads(row['calls'] or '[]')
-        )
+            calls=json.loads(row['calls'] or '[]'))
+        
+
     
     def close(self) -> None:
         """关闭数据库连接"""
@@ -380,8 +390,7 @@ class SQLiteTimeSeriesDB:
 class Neo4jGraphDB:
     """Neo4j 图数据库"""
     
-    def __init__(self, uri: str = "bolt://localhost:7687", 
-                 user: str = "neo4j", password: str = "password"):
+    def __init__(self, uri: str = "bolt://localhost:7687", user: str = "neo4j", password: str = "password"):
         """
         初始化 Neo4j 连接
         
@@ -397,7 +406,8 @@ class Neo4jGraphDB:
         
         if NEO4J_AVAILABLE:
             try:
-                self.driver = GraphDatabase.driver(uri, auth=(user, password))
+                self.driver = GraphDatabase.driver(uri, auth=(user, password
+
             except Exception as e:
                 logger.warning(f"Neo4j 连接失败: {e}")
     
@@ -420,50 +430,50 @@ class Neo4jGraphDB:
                 session.run("MATCH (v:Version {id: $vid})-[*]-() DELETE v", vid=version_id)
                 
                 # 创建版本节点
-                session.run(
+                session.run()
                     "CREATE (v:Version {id: $vid, timestamp: $ts})",
                     vid=version_id, ts=time.time()
-                )
+                
                 
                 # 插入节点
                 for node in nodes:
-                    session.run("""
+                    session.run(""")
                         MATCH (v:Version {id: $vid})
-                        CREATE (v)-[:HAS_FUNCTION]->(f:Function {
+                        CREATE (v)-[:HAS_FUNCTION]->(f:Function {)
                             name: $name,
                             address: $addr,
                             version_id: $vid
-                        })
+                        }
                     """, vid=version_id, name=node.get('func_name', ''), 
-                        addr=node.get('address', 0))
+                        addr=node.get('address', 0)
+
                 
                 # 插入边
                 for caller, callee in edges:
-                    session.run("""
+                    session.run(""")
                         MATCH (v:Version {id: $vid})
                         MATCH (f1:Function {name: $caller, version_id: $vid})
                         MATCH (f2:Function {name: $callee, version_id: $vid})
                         CREATE (f1)-[:CALLS]->(f2)
-                    """, vid=version_id, caller=caller, callee=callee)
+                    """, vid=version_id, caller=caller, callee=callee
                 
             return True
         except Exception as e:
             logger.error(f"Neo4j 插入失败: {e}")
             return False
     
-    def get_call_paths(self, version_id: str, 
-                      source_func: str, target_func: str) -> List[List[str]]:
+    def get_call_paths(self, version_id: str, source_func: str, target_func: str) -> List[List[str]]:
         """查找函数调用路径"""
         if not self.driver:
             return []
         
         try:
             with self.driver.session() as session:
-                result = session.run("""
+                result = session.run(""")
                     MATCH path = (f1:Function {name: $source, version_id: $vid})
                                 -[:CALLS*]->(f2:Function {name: $target, version_id: $vid})
                     RETURN path
-                """, vid=version_id, source=source_func, target=target_func)
+                """, vid=version_id, source=source_func, target=target_func
                 
                 paths = []
                 for record in result:
@@ -483,8 +493,7 @@ class Neo4jGraphDB:
 class VersionDiffEngine:
     """版本差异分析引擎"""
     
-    def __init__(self, time_series_db: SQLiteTimeSeriesDB,
-                 graph_db: Optional[Neo4jGraphDB] = None):
+    def __init__(self, time_series_db: SQLiteTimeSeriesDB, graph_db: Optional[Neo4jGraphDB] = None):
         """
         初始化差异引擎
         
@@ -495,8 +504,7 @@ class VersionDiffEngine:
         self.db = time_series_db
         self.graph = graph_db
     
-    def compare_versions(self, version1_id: str, 
-                        version2_id: str) -> List[DiffResult]:
+    def compare_versions(self, version1_id: str, version2_id: str) -> List[DiffResult]:
         """
         比较两个版本的差异
         
@@ -510,13 +518,16 @@ class VersionDiffEngine:
         diffs = []
         
         # 比较漏洞
-        diffs.extend(self._compare_vulnerabilities(version1_id, version2_id))
+        diffs.extend(self._compare_vulnerabilities(version1_id, version2_id
+
         
         # 比较函数
-        diffs.extend(self._compare_functions(version1_id, version2_id))
+        diffs.extend(self._compare_functions(version1_id, version2_id
+
         
         # 比较度量
-        diffs.extend(self._compare_metrics(version1_id, version2_id))
+        diffs.extend(self._compare_metrics(version1_id, version2_id
+
         
         logger.info(f"版本比较完成: {len(diffs)} 个差异")
         return diffs
@@ -538,7 +549,8 @@ class VersionDiffEngine:
                     item_id=vuln.vuln_id,
                     item_name=f"{vuln.vuln_type} at {loc}",
                     details={'severity': vuln.severity, 'cve': vuln.cve_id}
-                ))
+                
+
         
         # 移除的漏洞
         for loc, vuln in vulns1.items():
@@ -550,7 +562,8 @@ class VersionDiffEngine:
                     item_id=vuln.vuln_id,
                     item_name=f"{vuln.vuln_type} at {loc}",
                     details={'severity': vuln.severity, 'cve': vuln.cve_id}
-                ))
+                
+
         
         # 严重程度改变的漏洞
         for loc, vuln2 in vulns2.items():
@@ -567,7 +580,8 @@ class VersionDiffEngine:
                             'old_severity': vuln1.severity,
                             'new_severity': vuln2.severity
                         }
-                    ))
+                    
+
         
         return diffs
     
@@ -587,7 +601,8 @@ class VersionDiffEngine:
                     item_id=func.func_id,
                     item_name=name,
                     details={'address': hex(func.address), 'size': func.size}
-                ))
+                
+
             else:
                 # 检查复杂度变化
                 f1 = funcs1[name]
@@ -602,7 +617,8 @@ class VersionDiffEngine:
                             'old_complexity': f1.complexity,
                             'new_complexity': func.complexity
                         }
-                    ))
+                    
+
         
         for name, func in funcs1.items():
             if name not in funcs2:
@@ -613,7 +629,8 @@ class VersionDiffEngine:
                     item_id=func.func_id,
                     item_name=name,
                     details={'address': hex(func.address)}
-                ))
+                
+
         
         return diffs
     
@@ -650,7 +667,8 @@ class VersionDiffEngine:
                         'new_value': new_val,
                         'change': new_val - old_val
                     }
-                ))
+                
+
         
         return diffs
     
@@ -680,23 +698,22 @@ class VersionDiffEngine:
             'details': [asdict(d) for d in diffs]
         }
     
-    def _assess_risk_delta(self, added: List[DiffResult],
-                          removed: List[DiffResult]) -> Dict[str, Any]:
+    def _assess_risk_delta(self, added: List[DiffResult], removed: List[DiffResult]) -> Dict[str, Any]:
         """评估风险变化"""
         severity_map = {'Critical': 4, 'High': 3, 'Medium': 2, 'Low': 1}
         
-        added_score = sum(severity_map.get(d.details.get('severity', 'Low'), 1) 
-                         for d in added)
-        removed_score = sum(severity_map.get(d.details.get('severity', 'Low'), 1) 
-                          for d in removed)
+        added_score = sum(severity_map.get(d.details.get('severity', 'Low'), 1) )
+                         for d in added
+        removed_score = sum(severity_map.get(d.details.get('severity', 'Low'), 1) )
+                          for d in removed
         
         return {
             'risk_delta': added_score - removed_score,
             'risk_trend': 'increased' if added_score > removed_score 
                          else 'decreased' if added_score < removed_score 
                          else 'unchanged',
-            'new_critical': len([d for d in added 
-                                if d.details.get('severity') == 'Critical'])
+            'new_critical': len([d for d in added )
+                                if d.details.get('severity') == 'Critical']
         }
 
 
@@ -711,8 +728,7 @@ class VersionedAnalysisDB:
     4. 追踪攻击面变化
     """
     
-    def __init__(self, db_path: str = "data/versioned_analysis.db",
-                 neo4j_uri: Optional[str] = None):
+    def __init__(self, db_path: str = "data/versioned_analysis.db", neo4j_uri: Optional[str] = None):
         """
         初始化版本化数据库
         
@@ -732,10 +748,7 @@ class VersionedAnalysisDB:
         
         self.diff_engine = VersionDiffEngine(self.time_series_db, self.graph_db)
     
-    def record_analysis(self, binary_path: str, 
-                       analysis_result: Dict[str, Any],
-                       analyzer_name: str = "Unknown",
-                       analyzer_version: str = "1.0.0") -> str:
+    def record_analysis(self, binary_path: str, analysis_result: Dict[str, Any], analyzer_name: str = "Unknown", analyzer_version: str = "1.0.0") -> str:
         """
         记录分析结果
         
@@ -756,7 +769,7 @@ class VersionedAnalysisDB:
         version_id = f"v_{int(time.time() * 1000000)}_{binary_hash[:8]}_{uuid.uuid4().hex[:4]}"
         
         # 创建版本记录
-        version = AnalysisVersion(
+        version = AnalysisVersion()
             version_id=version_id,
             binary_path=binary_path,
             binary_hash=binary_hash,
@@ -768,13 +781,13 @@ class VersionedAnalysisDB:
             function_count=analysis_result.get('function_count', 0),
             call_graph_nodes=analysis_result.get('call_graph_nodes', 0),
             call_graph_edges=analysis_result.get('call_graph_edges', 0)
-        )
+        
         
         self.time_series_db.insert_version(version)
         
         # 插入漏洞记录
         for vuln_data in analysis_result.get('vulnerabilities', []):
-            vuln = VulnerabilityRecord(
+            vuln = VulnerabilityRecord()
                 vuln_id=f"{version_id}_{len(vuln_data)}",
                 version_id=version_id,
                 cve_id=vuln_data.get('cve_id'),
@@ -786,12 +799,12 @@ class VersionedAnalysisDB:
                 line_number=vuln_data.get('line'),
                 description=vuln_data.get('description', ''),
                 confidence=vuln_data.get('confidence', 1.0)
-            )
+            
             self.time_series_db.insert_vulnerability(vuln)
         
         # 插入函数信息
         for func_data in analysis_result.get('functions', []):
-            func = FunctionInfo(
+            func = FunctionInfo()
                 func_id=f"{version_id}_{func_data.get('name', 'unknown')}",
                 version_id=version_id,
                 function_name=func_data.get('name', 'unknown'),
@@ -799,7 +812,7 @@ class VersionedAnalysisDB:
                 size=func_data.get('size', 0),
                 complexity=func_data.get('complexity', 0),
                 calls=func_data.get('calls', [])
-            )
+            
             self.time_series_db.insert_function(func)
         
         # 更新图数据库
@@ -812,8 +825,7 @@ class VersionedAnalysisDB:
         logger.info(f"记录分析版本: {version_id}")
         return version_id
     
-    def compare_versions(self, version1_id: str,
-                        version2_id: str) -> Dict[str, Any]:
+    def compare_versions(self, version1_id: str, version2_id: str) -> Dict[str, Any]:
         """比较两个版本"""
         diffs = self.diff_engine.compare_versions(version1_id, version2_id)
         delta = self.diff_engine.generate_attack_surface_delta(version1_id, version2_id)
@@ -831,14 +843,13 @@ class VersionedAnalysisDB:
         versions = self.time_series_db.get_versions(binary_path)
         return [asdict(v) for v in versions]
     
-    def get_trend(self, binary_path: str, 
-                  days: int = 30) -> Dict[str, Any]:
+    def get_trend(self, binary_path: str, days: int = 30) -> Dict[str, Any]:
         """获取趋势分析"""
         cutoff_time = time.time() - (days * 24 * 3600)
         versions = self.time_series_db.get_versions(binary_path)
         
         # 过滤时间范围
-        recent_versions = [v for v in versions 
+        recent_versions = [v for v in versions,
                          if v.analysis_timestamp >= cutoff_time]
         
         if not recent_versions:
@@ -869,9 +880,9 @@ class VersionedAnalysisDB:
         """计算二进制哈希"""
         try:
             with open(binary_path, 'rb') as f:
-                return hashlib.sha256(f.read()).hexdigest()[:16]
+                return hashlib.sha256(f.read().hexdigest([:16])
         except:
-            return hashlib.md5(binary_path.encode()).hexdigest()
+            return hashlib.md5(binary_path.encode().hexdigest()
     
     def close(self) -> None:
         """关闭数据库连接"""
@@ -880,8 +891,7 @@ class VersionedAnalysisDB:
             self.graph_db.close()
 
 
-def create_versioned_db(db_path: str = "data/versioned_analysis.db",
-                        neo4j_uri: Optional[str] = None) -> VersionedAnalysisDB:
+def create_versioned_db(db_path: str = "data/versioned_analysis.db", neo4j_uri: Optional[str] = None) -> VersionedAnalysisDB:
     """
     创建版本化数据库的便捷函数
     
@@ -892,4 +902,4 @@ def create_versioned_db(db_path: str = "data/versioned_analysis.db",
     Returns:
         数据库实例
     """
-    return VersionedAnalysisDB(db_path, neo4j_uri)
+    return VersionedAnalysisDB(db_path, neo4j_uri)))))))))))))))))

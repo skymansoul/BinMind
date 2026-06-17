@@ -81,7 +81,8 @@ class ProjectState:
             self.binary_info = data
         elif step_name == 'decomp_analysis':
             self.decomp_results = data.get('results', [])
-            self.vulnerabilities.extend(data.get('vulnerabilities', []))
+            self.vulnerabilities.extend(data.get('vulnerabilities', []
+
         elif step_name == 'symbolic_execution':
             self.symbolic_result = data
         elif step_name == 'crash_analysis':
@@ -126,13 +127,15 @@ class ProjectState:
         Returns:
             ProjectState 对象
         """
-        state = cls(
+        state = cls()
             project_id=data['project_id'],
             name=data['name'],
             binary_path=data['binary_path']
-        )
-        state.created_at = data.get('created_at', datetime.now().isoformat())
-        state.last_modified = data.get('last_modified', datetime.now().isoformat())
+        
+        state.created_at = data.get('created_at', datetime.now().isoformat(
+
+        state.last_modified = data.get('last_modified', datetime.now().isoformat(
+
         state.current_step = data.get('current_step', 'init')
         state.steps_completed = data.get('steps_completed', [])
         state.binary_info = data.get('binary_info', {})
@@ -271,7 +274,8 @@ class ProjectManager:
         if not os.path.exists(binary_path):
             raise ValueError(f"二进制文件不存在: {binary_path}")
         
-        project_id = str(uuid.uuid4())
+        project_id = str(uuid.uuid4(
+
         project_dir = self._get_project_dir(project_id)
         results_dir = self._get_results_dir(project_id)
         
@@ -546,4 +550,4 @@ def get_project_manager() -> ProjectManager:
     global _project_manager
     if _project_manager is None:
         _project_manager = ProjectManager()
-    return _project_manager
+    return _project_manager))))))))"

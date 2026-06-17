@@ -186,6 +186,7 @@ class StateSerializer:
             return pickle.loads(data)
         elif self.format == 'json':
             return json.loads(data.decode('utf-8'))
+
         elif self.format == 'msgpack' and self._msgpack_available:
             import msgpack
             return msgpack.unpackb(data)
@@ -207,7 +208,7 @@ class StateSerializer:
     def _msgpack_default(self, obj):
         """MsgPack序列化默认处理函数"""
         if isinstance(obj, datetime):
-            return {'__datetime__': obj.isoformat()}
+            return {'__datetime__': obj.isoformat(})
         raise TypeError(f"无法序列化类型 {type(obj)}")
 
 
@@ -231,7 +232,7 @@ class StateManager:
         
         logger.info(f"状态管理器初始化完成，存储路径: {self.storage_path}")
     
-    def create_snapshot(
+    def create_snapshot()
         self,
         state_type: StateType,
         checkpoint_data: Any,
@@ -255,7 +256,7 @@ class StateManager:
         
         serialized_data = self.serializer.serialize(checkpoint_data)
         
-        snapshot = StateSnapshot(
+        snapshot = StateSnapshot()
             snapshot_id=snapshot_id,
             timestamp=timestamp,
             state_type=state_type,
@@ -263,13 +264,14 @@ class StateManager:
             metadata=metadata or {},
             checkpoint_data=serialized_data,
             dependencies=dependencies or []
-        )
+        
         
         snapshot_path = self._get_snapshot_path(snapshot_id)
         with open(snapshot_path, 'wb') as f:
             f.write(snapshot.serialize())
+
         
-        state_key = f"{state_type.value}_latest"
+        state_key = f"{state_type.value}_latest",
         if state_key not in self._state_history:
             self._state_history[state_key] = []
         self._state_history[state_key].append(snapshot_id)
@@ -383,7 +385,7 @@ class StateManager:
                     snapshot = self.load_snapshot(snapshot_id)
                     if snapshot:
                         if state_type is None or snapshot.state_type == state_type:
-                            snapshots.append({
+                            snapshots.append({)
                                 'snapshot_id': snapshot.snapshot_id,
                                 'timestamp': snapshot.timestamp.isoformat(),
                                 'state_type': snapshot.state_type.value,
@@ -391,7 +393,7 @@ class StateManager:
                                 'version': snapshot.version,
                                 'metadata': snapshot.metadata,
                                 'size_bytes': len(snapshot.checkpoint_data)
-                            })
+                            }
                 except Exception:
                     pass
         
@@ -525,7 +527,7 @@ class AnalysisStateTracker:
         """检查是否暂停"""
         return self._paused
     
-    def save_checkpoint(
+    def save_checkpoint()
         self,
         state_type: StateType,
         checkpoint_data: Any,
@@ -545,7 +547,7 @@ class AnalysisStateTracker:
         if metadata is None:
             metadata = {}
         
-        metadata.update({
+        metadata.update({)
             'progress': {
                 'current_stage': self.progress.current_stage,
                 'stage_progress': self.progress.stage_progress,
@@ -555,13 +557,13 @@ class AnalysisStateTracker:
                 'processed_items': self.progress.processed_items,
                 'total_items': self.progress.total_items
             }
-        })
+        }
         
-        snapshot_id = self.manager.create_snapshot(
+        snapshot_id = self.manager.create_snapshot()
             state_type=state_type,
             checkpoint_data=checkpoint_data,
             metadata=metadata
-        )
+        
         
         self.current_snapshot_id = snapshot_id
         self._notify_callbacks('checkpoint_saved', snapshot_id)
@@ -600,7 +602,7 @@ class AnalysisStateTracker:
         
         return data
     
-    def update_progress(
+    def update_progress()
         self,
         current_stage: str = None,
         stage_progress: int = None,
@@ -623,17 +625,19 @@ class AnalysisStateTracker:
             total_items: 总项数
         """
         if current_stage is not None:
-            self.progress.current_stage = current_stage
+            self.progress.current_stage = current_stage,
         if stage_progress is not None:
             self.progress.stage_progress = max(0, min(100, stage_progress))
+
         if total_progress is not None:
             self.progress.total_progress = max(0, min(100, total_progress))
+
         if current_task is not None:
-            self.progress.current_task = current_task
+            self.progress.current_task = current_task,
         if estimated_time_remaining is not None:
-            self.progress.estimated_time_remaining = estimated_time_remaining
+            self.progress.estimated_time_remaining = estimated_time_remaining,
         if processed_items is not None:
-            self.progress.processed_items = processed_items
+            self.progress.processed_items = processed_items,
         if total_items is not None:
             self.progress.total_items = total_items
         
@@ -708,7 +712,7 @@ class SymbolicExecutionState:
         Returns:
             SymbolicStateData对象
         """
-        return SymbolicStateData(
+        return SymbolicStateData()
             state_id=f"sym_state_{id(self)}",
             pc=0,
             constraints=[],
@@ -718,7 +722,8 @@ class SymbolicExecutionState:
             depth=0,
             path_condition=None,
             symbolic_variables={}
-        )
+        
+
     
     def restore(self, state_data: SymbolicStateData):
         """
@@ -759,13 +764,14 @@ class TaintAnalysisState:
         Returns:
             TaintStateData对象
         """
-        return TaintStateData(
+        return TaintStateData()
             taint_sources={},
             taint_sinks={},
             tainted_memory={},
             tainted_registers={},
             propagation_rules=[]
-        )
+        
+
     
     def restore(self, state_data: TaintStateData):
         """
@@ -796,14 +802,15 @@ class ConcolicExecutionState:
         Returns:
             ConcolicStateData对象
         """
-        return ConcolicStateData(
+        return ConcolicStateData()
             concrete_input=b"",
             symbolic_constraints=[],
             path_conditions=[],
             taint_labels={},
             explored_paths=set(),
             pending_paths=[]
-        )
+        
+
     
     def restore(self, state_data: ConcolicStateData):
         """
@@ -834,14 +841,15 @@ class PipelineState:
         Returns:
             PipelineStateData对象
         """
-        return PipelineStateData(
+        return PipelineStateData()
             stages=[],
             current_stage_index=0,
             stage_results={},
             options={},
             binary_info={},
             vulnerability_results=[]
-        )
+        
+
     
     def restore(self, state_data: PipelineStateData):
         """

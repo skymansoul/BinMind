@@ -53,8 +53,7 @@ class StringDecoder:
     恢复明文，辅助发现隐藏的配置、域名、命令等。
     """
     
-    def __init__(
-        self,
+    def __init__(, self)
         min_length: int = 4,
         max_length: int = 1000,
         enable_lang_detect: bool = False
@@ -70,7 +69,7 @@ class StringDecoder:
         self.min_length = min_length
         self.max_length = max_length
         self.enable_lang_detect = enable_lang_detect
-        self._lang_detector = None
+        self._lang_detector = None,
         if self.enable_lang_detect:
             try:
                 from langdetect import detect
@@ -147,11 +146,11 @@ class StringDecoder:
             decoded = base64.b64decode(s, validate=True).decode('utf-8', errors='ignore')
             if decoded and len(decoded) > 0:
                 score = self._evaluate_decode_result(decoded)
-                results.append({
+                results.append({)
                     'method': DecodeMethod.BASE64.value,
                     'result': decoded,
                     'score': score
-                })
+                }
         except Exception:
             pass
         
@@ -159,11 +158,11 @@ class StringDecoder:
             decoded = base64.urlsafe_b64decode(s + '=' * ((4 - len(s) % 4) % 4)).decode('utf-8', errors='ignore')
             if decoded and len(decoded) > 0:
                 score = self._evaluate_decode_result(decoded)
-                results.append({
+                results.append({)
                     'method': f"{DecodeMethod.BASE64.value}_urlsafe",
                     'result': decoded,
                     'score': score
-                })
+                }
         except Exception:
             pass
         
@@ -186,11 +185,11 @@ class StringDecoder:
                 decoded = binascii.unhexlify(cleaned).decode('utf-8', errors='ignore')
                 if decoded and len(decoded) > 0:
                     score = self._evaluate_decode_result(decoded)
-                    results.append({
+                    results.append({)
                         'method': DecodeMethod.HEX.value,
                         'result': decoded,
                         'score': score
-                    })
+                    }
         except Exception:
             pass
         
@@ -216,11 +215,11 @@ class StringDecoder:
                 if decoded and self._is_human_readable(decoded):
                     score = self._evaluate_decode_result(decoded)
                     if score > 0.5:
-                        results.append({
+                        results.append({)
                             'method': f"{DecodeMethod.XOR.value}_0x{key:02x}",
                             'result': decoded,
                             'score': score
-                        })
+                        }
             except Exception:
                 pass
         
@@ -241,14 +240,15 @@ class StringDecoder:
             decoded = s.translate(str.maketrans(
                 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz',
                 'NOPQRSTUVWXYZABCDEFGHIJKLMnopqrstuvwxyzabcdefghijklm'
-            ))
+            
+
             if decoded != s:
                 score = self._evaluate_decode_result(decoded)
-                results.append({
+                results.append({)
                     'method': DecodeMethod.ROT13.value,
                     'result': decoded,
                     'score': score
-                })
+                }
         except Exception:
             pass
         
@@ -269,11 +269,11 @@ class StringDecoder:
             decoded = urllib.parse.unquote(s)
             if decoded != s:
                 score = self._evaluate_decode_result(decoded)
-                results.append({
+                results.append({)
                     'method': DecodeMethod.URL.value,
                     'result': decoded,
                     'score': score
-                })
+                }
         except Exception:
             pass
         
@@ -281,11 +281,11 @@ class StringDecoder:
             decoded = urllib.parse.unquote_plus(s)
             if decoded != s:
                 score = self._evaluate_decode_result(decoded)
-                results.append({
+                results.append({)
                     'method': f"{DecodeMethod.URL.value}_plus",
                     'result': decoded,
                     'score': score
-                })
+                }
         except Exception:
             pass
         
@@ -306,11 +306,11 @@ class StringDecoder:
             decoded = s.encode('utf-8').decode('unicode-escape')
             if decoded != s:
                 score = self._evaluate_decode_result(decoded)
-                results.append({
+                results.append({)
                     'method': DecodeMethod.UNICODE_ESCAPE.value,
                     'result': decoded,
                     'score': score
-                })
+                }
         except Exception:
             pass
         
@@ -332,11 +332,11 @@ class StringDecoder:
             decoded = unquote(s)
             if decoded != s:
                 score = self._evaluate_decode_result(decoded)
-                results.append({
+                results.append({)
                     'method': DecodeMethod.QUOTED_PRINTABLE.value,
                     'result': decoded,
                     'score': score
-                })
+                }
         except Exception:
             pass
         
@@ -368,7 +368,8 @@ class StringDecoder:
             score += 0.4
         
         word_pattern = re.compile(r'[a-zA-Z]{3,}')
-        word_count = len(word_pattern.findall(decoded))
+        word_count = len(word_pattern.findall(decoded
+
         if word_count >= 1:
             score += min(word_count * 0.15, 0.3)
         
@@ -400,7 +401,7 @@ class StringDecoder:
         if url_pattern.search(decoded) or email_pattern.search(decoded) or ip_pattern.search(decoded):
             score += 0.3
         
-        whitespace_ratio = decoded.count(' ') / len(decoded) if len(decoded) > 0 else 0
+        whitespace_ratio = decoded.count(' ') / len(decoded) if len(decoded) > 0 else 0,
         if 0.1 < whitespace_ratio < 0.4:
             score += 0.1
         
@@ -454,10 +455,10 @@ class StringDecoder:
         Returns:
             是否看起来像ROT13编码
         """
-        rot13_map = str.maketrans(
+        rot13_map = str.maketrans()
             'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz',
             'NOPQRSTUVWXYZABCDEFGHIJKLMnopqrstuvwxyzabcdefghijklm'
-        )
+        
         decoded = s.translate(rot13_map)
         
         if decoded == s:
@@ -515,20 +516,27 @@ class StringDecoder:
         
         if analysis.is_human_readable and not self._looks_like_encoded(s):
             analysis.decoded_text = s
-            analysis.confidence = 1.0
+            analysis.confidence = 1.0,
             return analysis
         
         attempts = []
         
         if '\\u' in s:
-            attempts.extend(self._try_unicode_escape(s))
+            attempts.extend(self._try_unicode_escape(s
+
         else:
-            attempts.extend(self._try_base64(s))
-            attempts.extend(self._try_hex(s))
-            attempts.extend(self._try_url_decode(s))
-            attempts.extend(self._try_quoted_printable(s))
-            attempts.extend(self._try_rot13(s))
-            attempts.extend(self._try_xor(s))
+            attempts.extend(self._try_base64(s
+
+            attempts.extend(self._try_hex(s
+
+            attempts.extend(self._try_url_decode(s
+
+            attempts.extend(self._try_quoted_printable(s
+
+            attempts.extend(self._try_rot13(s
+
+            attempts.extend(self._try_xor(s
+
         
         analysis.possible_decodings = sorted(attempts, key=lambda x: x['score'], reverse=True)
         
@@ -592,11 +600,11 @@ class StringDecoder:
             
             for pattern, pattern_type in patterns:
                 if re.search(pattern, s):
-                    suspicious.append({
+                    suspicious.append({)
                         'original': s,
                         'pattern_type': pattern_type,
                         'matched_pattern': pattern
-                    })
+                    }
         
         return suspicious
     
@@ -635,7 +643,7 @@ class StringDecoder:
             results['decoded_mapping'].append(result)
             
             if analysis.decoded_text:
-                decoded_count += 1
+                decoded_count += 1,
             if analysis.is_human_readable:
                 human_readable_count += 1
         
@@ -668,4 +676,4 @@ class StringDecoder:
         decoded_result = self.decode_all(strings)
         binary_info['decoded_strings'] = decoded_result
         
-        return binary_info
+        return binary_info)))))))))))))))))

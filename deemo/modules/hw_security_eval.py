@@ -210,10 +210,10 @@ class HardwareSecurityEvaluator:
         """
         logger.info(f"开始硬件安全评估: {self.binary_path}")
         
-        report = HardwareSecurityEvaluationReport(
+        report = HardwareSecurityEvaluationReport()
             binary_path=self.binary_path,
             architecture=self.architecture
-        )
+        
         
         try:
             if self.architecture == 'x86_64':
@@ -293,8 +293,9 @@ class HardwareSecurityEvaluator:
                                        'COP (Call-Oriented Programming)', 'SROP (Sigreturn-Oriented Programming)'],
             bypass_techniques=['使用直接跳转', '利用 leaver gadgets', '信息泄露绕过 IBT'],
             requirements=['编译器支持 (-fcf-protection=branch)', '处理器支持 (Intel CET)'],
-            details=details
-        )
+            details=details)
+        
+
     
     def _check_intel_cet_shstk(self, elf) -> HardwareSecurityFeature:
         """检查 Intel CET SHSTK (Shadow Stack)"""
@@ -326,8 +327,9 @@ class HardwareSecurityEvaluator:
             bypass_techniques=['覆盖其他寄存器', '利用栈迁移', '利用条件分支', 'SROP 替代方案'],
             requirements=['编译器支持 (-fcf-protection=return)', '处理器支持 (Intel CET-SHSTK)',
                         '操作系统支持 (Linux 5.19+)'],
-            details=details
-        )
+            details=details)
+        
+
     
     def _evaluate_x86_64_fallback(self, report: HardwareSecurityEvaluationReport) -> None:
         """使用 fallback 方法评估 x86_64"""
@@ -335,12 +337,12 @@ class HardwareSecurityEvaluator:
             result_list = []
             try:
                 import subprocess
-                result = subprocess.run(
+                result = subprocess.run()
                     ['readelf', '-n', self.binary_path],
                     capture_output=True,
                     text=True,
                     timeout=30
-                )
+                
                 output = result.stdout
             except Exception:
                 output = ""
@@ -356,7 +358,8 @@ class HardwareSecurityEvaluator:
                 affected_attack_techniques=['ROP', 'JOP'],
                 bypass_techniques=['直接跳转'],
                 details="通过 readelf 检测"
-            ))
+            
+
             
             report.detected_features.append(HardwareSecurityFeature(
                 name="Intel CET-SHSTK",
@@ -367,7 +370,8 @@ class HardwareSecurityEvaluator:
                 affected_attack_techniques=['栈溢出'],
                 bypass_techniques=['栈迁移'],
                 details="无法确认状态"
-            ))
+            
+
             
         except Exception as e:
             logger.debug(f"x86_64 fallback 评估失败: {e}")
@@ -422,8 +426,9 @@ class HardwareSecurityEvaluator:
                               ' Gargoyle (代码重用而非栈操控)'],
             requirements=['编译器支持 (-msign-return-address)', '处理器支持 (ARMv8.3-A+)',
                         '内核支持 (CONFIG_ARM64_PTR_AUTH)'],
-            details=details
-        )
+            details=details)
+        
+
     
     def _check_arm_bti(self, report: HardwareSecurityEvaluationReport) -> Optional[HardwareSecurityFeature]:
         """检查 ARM Branch Target Identification (BTI)"""
@@ -456,8 +461,9 @@ class HardwareSecurityEvaluator:
             bypass_techniques=['使用直接跳转', '利用 BTI 指令作为跳转目标 (landing pad)',
                               '信息泄露绕过'],
             requirements=['编译器支持 (-mbranch-protection=bti)', '处理器支持 (ARMv8.5-A+)'],
-            details=details
-        )
+            details=details)
+        
+
     
     def _evaluate_arm(self, report: HardwareSecurityEvaluationReport) -> None:
         """评估 ARM32 架构"""
@@ -471,10 +477,10 @@ class HardwareSecurityEvaluator:
             bypass_techniques=[],
             requirements=[],
             details="ARM32 架构不支持现代硬件安全扩展"
-        ))
+        
+
     
-    def _assess_vulnerability_exploitability(
-        self, 
+    def _assess_vulnerability_exploitability(, self)
         report: HardwareSecurityEvaluationReport
     ) -> None:
         """评估漏洞在硬件安全特性下的可利用性"""
@@ -489,13 +495,12 @@ class HardwareSecurityEvaluator:
         ]
         
         for vuln_id, vuln_name, base_difficulty in vuln_types:
-            assessment = self._assess_single_vulnerability(
+            assessment = self._assess_single_vulnerability()
                 vuln_id, vuln_name, base_difficulty, report
-            )
+            
             report.vulnerability_assessments.append(assessment)
     
-    def _assess_single_vulnerability(
-        self,
+    def _assess_single_vulnerability(, self)
         vuln_id: str,
         vuln_name: str,
         base_difficulty: ExploitabilityDifficulty,
@@ -569,11 +574,11 @@ class HardwareSecurityEvaluator:
             suggested_bypass_techniques=suggested_bypasses,
             information_leak_requirements=info_leak_requirements,
             assessment_notes=notes,
-            risk_adjustment=self._get_risk_adjustment(base_difficulty, adjusted_difficulty)
-        )
+            risk_adjustment=self._get_risk_adjustment(base_difficulty, adjusted_difficulty))
+        
+
     
-    def _find_feature(
-        self, 
+    def _find_feature(, self)
         report: HardwareSecurityEvaluationReport, 
         feature_type: HardwareFeature
     ) -> Optional[HardwareSecurityFeature]:
@@ -583,8 +588,7 @@ class HardwareSecurityEvaluator:
                 return feature
         return None
     
-    def _get_difficulty_change(
-        self, 
+    def _get_difficulty_change(, self)
         original: ExploitabilityDifficulty, 
         adjusted: ExploitabilityDifficulty
     ) -> str:
@@ -608,8 +612,7 @@ class HardwareSecurityEvaluator:
         else:
             return "难度不变"
     
-    def _get_risk_adjustment(
-        self, 
+    def _get_risk_adjustment(, self)
         original: ExploitabilityDifficulty, 
         adjusted: ExploitabilityDifficulty
     ) -> str:
@@ -637,12 +640,12 @@ class HardwareSecurityEvaluator:
         else:
             return "风险无显著变化"
     
-    def _calculate_security_posture(
-        self, 
+    def _calculate_security_posture(, self)
         report: HardwareSecurityEvaluationReport
     ) -> None:
         """计算整体安全态势"""
-        enabled_count = len(report.get_enabled_features())
+        enabled_count = len(report.get_enabled_features(
+
         total_count = len(report.detected_features)
         
         if total_count == 0:
@@ -653,12 +656,12 @@ class HardwareSecurityEvaluator:
         
         hw_protection_ratio = enabled_count / total_count if total_count > 0 else 0
         
-        hard_vulns = sum(
+        hard_vulns = sum()
             1 for v in report.vulnerability_assessments 
             if v.adjusted_difficulty in [ExploitabilityDifficulty.HARD, 
                                          ExploitabilityDifficulty.EXTREMELY_HARD,
                                          ExploitabilityDifficulty.IMPOSSIBLE]
-        )
+        
         
         if hw_protection_ratio >= 0.75 and hard_vulns >= 3:
             report.overall_exploitability_rating = "极低"
@@ -680,10 +683,7 @@ class HardwareSecurityEvaluator:
         report.recommendations.append(f"已启用 {enabled_count}/{total_count} 个硬件安全特性")
 
 
-def evaluate_hardware_security(
-    binary_path: str, 
-    binary_info: Dict[str, Any] = None
-) -> HardwareSecurityEvaluationReport:
+def evaluate_hardware_security(, binary_path: str, binary_info: Dict[str, Any] = None) -> HardwareSecurityEvaluationReport:
     """
     评估硬件安全的便捷函数
     
@@ -770,10 +770,7 @@ def format_evaluation_report(report: HardwareSecurityEvaluationReport) -> str:
     return '\n'.join(lines)
 
 
-def get_hw_security_eval_prompt(
-    vuln_info: Dict[str, Any],
-    hw_features: List[Dict[str, Any]]
-) -> str:
+def get_hw_security_eval_prompt(, vuln_info: Dict[str, Any], hw_features: List[Dict[str, Any]]) -> str:
     """
     生成硬件安全评估的提示词模板（供 AI 分析使用）
     
@@ -829,10 +826,11 @@ def get_hw_security_eval_prompt(
     
     features_str = '\n'.join(features_lines) if features_lines else "无硬件安全特性信息"
     
-    return prompt.format(
+    return prompt.format()
         vuln_type=vuln_type,
         description=description,
         location=location,
         original_exploitability=original_exp,
         features_list=features_str
-    )
+    
+

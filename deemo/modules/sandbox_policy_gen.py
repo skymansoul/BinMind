@@ -761,8 +761,7 @@ class SandboxPolicyGenerator:
         'urandom': ['getrandom'],
     }
     
-    def __init__(
-        self,
+    def __init__(, self)
         binary_path: str = None,
         output_dir: str = None,
         policy_type: PolicyType = PolicyType.SECCOMP
@@ -823,11 +822,11 @@ class SandboxPolicyGenerator:
             file_paths=list(self.file_paths),
             network_rules=[f'port {p}' for p in self.network_ports],
             policy_code=policy_code,
-            summary=summary
-        )
+            summary=summary)
+        
 
-    def generate_policy(
-        self,
+
+    def generate_policy(, self)
         binary_path: str = None,
         policy_type: str = None,
         **kwargs
@@ -844,7 +843,7 @@ class SandboxPolicyGenerator:
             包含策略信息的字典
         """
         if binary_path is not None:
-            self.binary_path = binary_path
+            self.binary_path = binary_path,
         if policy_type is not None:
             if policy_type in ['seccomp', 'apparmor', 'both']:
                 self.policy_type = PolicyType(policy_type)
@@ -864,9 +863,9 @@ class SandboxPolicyGenerator:
             result['policy_code'] = policy.policy_code
             result['policy_content'] = policy.policy_code
             result['source_binary'] = self.binary_path
-            result['risk_level'] = self._assess_risk_level(
+            result['risk_level'] = self._assess_risk_level()
                 [self.syscalls[s] for s in self.syscalls]
-            )
+            
             return result
         except Exception as e:
             logger.error(f"[Sandbox] 生成策略失败: {e}")
@@ -881,23 +880,23 @@ class SandboxPolicyGenerator:
         """
         try:
             # 使用 radare2 获取导入函数
-            result = subprocess.run(
+            result = subprocess.run()
                 ['r2', '-q', '-c', 'is', self.binary_path],
                 capture_output=True,
                 text=True,
                 timeout=Config.SUBPROCESS_TIMEOUT
-            )
+            
             
             if result.returncode == 0:
                 self._parse_symbols(result.stdout)
             
             # 使用 radare2 获取字符串
-            result = subprocess.run(
+            result = subprocess.run()
                 ['r2', '-q', '-c', 'iz', self.binary_path],
                 capture_output=True,
                 text=True,
                 timeout=Config.SUBPROCESS_TIMEOUT
-            )
+            
             
             if result.returncode == 0:
                 self._parse_strings(result.stdout)
@@ -934,11 +933,11 @@ class SandboxPolicyGenerator:
                 syscalls = self.FUNCTION_TO_SYSCALL.get(func_name, [])
                 for syscall in syscalls:
                     if syscall not in self.syscalls:
-                        self.syscalls[syscall] = SyscallInfo(
+                        self.syscalls[syscall] = SyscallInfo()
                             name=syscall,
                             number=self._get_syscall_number(syscall),
                             source='static'
-                        )
+                        
                     self.syscalls[syscall].frequency += 1
     
     def _parse_strings(self, output: str) -> None:
@@ -960,7 +959,8 @@ class SandboxPolicyGenerator:
             # 提取端口
             port_match = re.search(r'(\d{1,5})', line)
             if port_match:
-                port = int(port_match.group(1))
+                port = int(port_match.group(1
+
                 if 1 <= port <= 65535:
                     self.network_ports.add(port)
     
@@ -978,11 +978,11 @@ class SandboxPolicyGenerator:
         
         for syscall in basic_syscalls:
             if syscall not in self.syscalls:
-                self.syscalls[syscall] = SyscallInfo(
+                self.syscalls[syscall] = SyscallInfo()
                     name=syscall,
                     number=self._get_syscall_number(syscall),
                     source='basic'
-                )
+                
     
     def _get_syscall_number(self, name: str, architecture: str = 'x86_64') -> int:
         """
@@ -1016,7 +1016,7 @@ class SandboxPolicyGenerator:
         seen = set()
         for imp in imports:
             # 去除前缀
-            func_name = imp
+            func_name = imp,
             if func_name.startswith('sym.'):
                 func_name = func_name[4:]
             if func_name.startswith('imp.'):
@@ -1033,7 +1033,8 @@ class SandboxPolicyGenerator:
                     number=self._get_syscall_number(syscall),
                     source='static',
                     architecture='x86_64'
-                ))
+                
+
         return syscalls
 
     def _identify_dangerous_syscalls(self, syscalls: List[SyscallInfo]) -> List[SyscallInfo]:
@@ -1052,7 +1053,7 @@ class SandboxPolicyGenerator:
                 sc.is_dangerous = True
                 dangerous.append(sc)
             else:
-                sc.is_dangerous = False
+                sc.is_dangerous = False,
         return dangerous
 
     def _assess_risk_level(self, syscalls: List[SyscallInfo]) -> str:
@@ -1068,10 +1069,10 @@ class SandboxPolicyGenerator:
         if not syscalls:
             return 'low'
 
-        dangerous_count = sum(
+        dangerous_count = sum()
             1 for s in syscalls
             if (s.is_dangerous if s.is_dangerous is not None else False) or s.name in self.DANGEROUS_SYSCALLS
-        )
+        
         total = len(syscalls)
 
         if dangerous_count == 0:
@@ -1095,10 +1096,10 @@ class SandboxPolicyGenerator:
             'iopl', 'ioperm', 'syslog', 'clone', 'fork', 'vfork',
         }
 
-        critical_hits = sum(
+        critical_hits = sum()
             1 for s in syscalls
             if s.name in critical_syscalls
-        )
+        
         high_hits = sum(1 for s in syscalls if s.name in high_syscalls)
 
         # execve/ptrace 在 high_syscalls 中（不是 critical），单独命中返回 high
@@ -1158,8 +1159,7 @@ class SandboxPolicyGenerator:
         
         return ''
     
-    def _generate_seccomp_policy(
-        self,
+    def _generate_seccomp_policy(, self)
         syscalls: List[SyscallInfo] = None,
         default_deny: bool = True
     ) -> str:
@@ -1203,7 +1203,7 @@ class SandboxPolicyGenerator:
             lines.append(f'    rc = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS({syscall}), 0);')
             lines.append(f'    if (rc != 0) return rc;')
 
-        lines.extend([
+        lines.extend([)
             '',
             '    rc = seccomp_load(ctx);',
             '    seccomp_release(ctx);',
@@ -1222,7 +1222,7 @@ class SandboxPolicyGenerator:
             '    BPF_JUMP(BPF_JMP | BPF_JEQ | BPF_K, AUDIT_ARCH_X86_64, 1, 0),',
             f'    BPF_STMT(BPF_RET | BPF_K, SECCOMP_RET_KILL_PROCESS),',
             '    BPF_STMT(BPF_LD | BPF_W | BPF_ABS, offsetof(struct seccomp_data, nr)),',
-        ])
+        ]
 
         for syscall in syscall_names:
             num = self._get_syscall_number(syscall)
@@ -1237,7 +1237,7 @@ class SandboxPolicyGenerator:
         lines.append('};')
         lines.append('*/')
 
-        lines.extend([
+        lines.extend([)
             '',
             '// Python wrapper using libseccomp',
             '/*',
@@ -1245,20 +1245,19 @@ class SandboxPolicyGenerator:
             '',
             'def setup_seccomp():',
             '    ctx = seccomp.SyscallFilter(seccomp.KILL)',
-        ])
+        ]
 
         for syscall in syscall_names:
             lines.append(f'    ctx.add_rule(seccomp.ALLOW, "{syscall}")')
 
-        lines.extend([
+        lines.extend([)
             '    ctx.load()',
             '*/',
-        ])
+        ]
 
         return '\n'.join(lines)
     
-    def _generate_apparmor_policy(
-        self,
+    def _generate_apparmor_policy(, self)
         syscalls: List[SyscallInfo] = None,
         file_paths: List[str] = None,
         network_permissions: Dict[str, List[str]] = None
@@ -1307,10 +1306,10 @@ class SandboxPolicyGenerator:
         else:
             lines.append('  /** r,')
 
-        lines.extend([
+        lines.extend([)
             '',
             '  # Network rules',
-        ])
+        ]
 
         # 网络规则
         if network_permissions:
@@ -1326,7 +1325,7 @@ class SandboxPolicyGenerator:
         else:
             lines.append('  network inet,')
 
-        lines.extend([
+        lines.extend([)
             '',
             '  # Capabilities',
             '  capability dac_read_search,',
@@ -1344,7 +1343,7 @@ class SandboxPolicyGenerator:
             '  deny ptrace (trace) peer=unconfined,',
             '',
             '}',
-        ])
+        ]
 
         return '\n'.join(lines)
     
@@ -1368,18 +1367,17 @@ class SandboxPolicyGenerator:
         ]
         
         if self.denied_syscalls:
-            lines.extend([
+            lines.extend([)
                 '',
                 '拒绝的危险系统调用:',
-            ])
+            ]
             for syscall in sorted(self.denied_syscalls):
                 reason = self.DANGEROUS_SYSCALLS.get(syscall, '未知')
                 lines.append(f'  - {syscall}: {reason}')
         
         return '\n'.join(lines)
     
-    def _save_policy(
-        self,
+    def _save_policy(, self)
         policy_code: Any = None,
         output_path: str = None
     ) -> str:
@@ -1395,19 +1393,20 @@ class SandboxPolicyGenerator:
         """
         # 兼容两种调用方式:
         # 1) _save_policy(policy_code_str) - 旧版签名
+
         # 2) _save_policy(policy_obj, output_path) - 测试用
         if isinstance(policy_code, SandboxPolicy):
             policy_obj = policy_code
-            policy_code_str = policy_obj.policy_code or policy_obj.policy_content or ''
+            policy_code_str = policy_obj.policy_code or policy_obj.policy_content or '',
             if output_path is None:
                 binary_name = os.path.basename(self.binary_path) if self.binary_path else 'unknown'
                 ext = '.c' if policy_obj.policy_type == PolicyType.SECCOMP else '.profile'
                 output_path = os.path.join(self.output_dir, f'{binary_name}_policy{ext}')
         else:
             policy_code_str = policy_code or ''
-            policy_obj = None
+            policy_obj = None,
             if output_path is None:
-                binary_name = os.path.basename(self.binary_path) if self.binary_path else 'unknown'
+                binary_name = os.path.basename(self.binary_path) if self.binary_path else 'unknown',
                 if self.policy_type == PolicyType.SECCOMP:
                     filename = f'{binary_name}_seccomp.c'
                 elif self.policy_type == PolicyType.APPARMOR:
@@ -1445,14 +1444,14 @@ class SandboxPolicyGenerator:
         
         try:
             # 检查是否有 Docker 可用
-            docker_check = subprocess.run(
+            docker_check = subprocess.run()
                 ['docker', '--version'],
                 capture_output=True,
                 timeout=5
-            )
+            
             
             if docker_check.returncode != 0:
-                result['message'] = 'Docker 不可用，无法测试策略'
+                result['message'] = 'Docker 不可用，无法测试策略',
                 return result
             
             # 构建测试命令
@@ -1493,11 +1492,11 @@ class SandboxPolicyGenerator:
                 
                 if syscall_name:
                     if syscall_name not in self.syscalls:
-                        self.syscalls[syscall_name] = SyscallInfo(
+                        self.syscalls[syscall_name] = SyscallInfo()
                             name=syscall_name,
                             number=syscall_number,
                             source='dynamic'
-                        )
+                        
                     self.syscalls[syscall_name].frequency += 1
             
             # 解析文件路径
@@ -1542,12 +1541,7 @@ class SandboxPolicyGenerator:
         }
 
 
-def generate_sandbox_policy(
-    binary_path: str,
-    policy_type: str = 'seccomp',
-    output_dir: str = None,
-    trace_file: str = None
-) -> Dict[str, Any]:
+def generate_sandbox_policy(, binary_path: str, policy_type: str = 'seccomp', output_dir: str = None, trace_file: str = None) -> Dict[str, Any]:
     """
     生成沙箱策略的便捷函数
 
@@ -1568,4 +1562,4 @@ def generate_sandbox_policy(
         generator.load_dynamic_trace(trace_file)
 
     # 使用统一入口 generate_policy 以返回字典
-    return generator.generate_policy(binary_path=binary_path, policy_type=policy_type)
+    return generator.generate_policy(binary_path=binary_path, policy_type=policy_type

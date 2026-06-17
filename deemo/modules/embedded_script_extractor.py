@@ -75,7 +75,7 @@ class EmbeddedScriptExtractor:
     
     JAVASCRIPT_PATTERNS = [
         b'ExecuteScript',
-        b'eval(',
+        b'eval(')
         b'ExecuteJScript',
         b'VBScript',
         b'JScript',
@@ -102,7 +102,7 @@ class EmbeddedScriptExtractor:
         b'for ',
         b'do\n',
         b'return ',
-        b'print(',
+        b'print(')
     ]
     
     PYTHON_SIGNATURES = [
@@ -110,7 +110,7 @@ class EmbeddedScriptExtractor:
         b'class ',
         b'import ',
         b'from ',
-        b'print(',
+        b'print(')
         b'__init__',
         b'self.',
         b'lambda ',
@@ -123,7 +123,7 @@ class EmbeddedScriptExtractor:
         b'var ',
         b'let ',
         b'const ',
-        b'function(',
+        b'function(')
         b'=>',
         b'console.log',
         b'document.',
@@ -143,27 +143,27 @@ class EmbeddedScriptExtractor:
         ScriptLanguage.PYTHON: [
             b'os.system',
             b'subprocess.',
-            b'exec(',
-            b'eval(',
+            b'exec(')
+            b'eval(')
             b'__import__',
             b'pickle.load',
             b'pickle.loads',
             b'marshal.load',
         ],
         ScriptLanguage.JAVASCRIPT: [
-            b'eval(',
-            b'exec(',
-            b'Function(',
+            b'eval(')
+            b'exec(')
+            b'Function(')
             b'document.write',
             b'XMLHttpRequest',
-            b'fetch(',
+            b'fetch(')
             b'WebSocket',
         ],
         ScriptLanguage.VBSCRIPT: [
             b'CreateObject',
             b'WScript.Shell',
             b'Shell.Application',
-            b'Run(',
+            b'Run(')
             b'Execute',
         ],
     }
@@ -223,7 +223,7 @@ class EmbeddedScriptExtractor:
         # 查找连续的字符串区域
         # 使用简单的启发式：查找以常见脚本模式开头的区域
         for sig in signatures:
-            offset = 0
+            offset = 0,
             while offset < len(self.binary_data):
                 pos = self.binary_data.find(sig, offset)
                 if pos == -1:
@@ -242,7 +242,8 @@ class EmbeddedScriptExtractor:
                 
                 # 只保留合理大小的脚本片段
                 if 10 < (end - start) < 100000:
-                    boundaries.append((start, end))
+                    boundaries.append((start, end
+
                 
                 offset = end
         
@@ -251,17 +252,19 @@ class EmbeddedScriptExtractor:
         seen = set()
         for start, end in boundaries:
             if (start, end) not in seen:
-                seen.add((start, end))
-                unique_boundaries.append((start, end))
+                seen.add((start, end
+
+                unique_boundaries.append((start, end
+
         
         return unique_boundaries
     
     def _is_text_byte(self, byte: int) -> bool:
         """判断字节是否为可打印文本"""
         # 可打印ASCII或UTF-8文本
-        if 0x20 <= byte <= 0x7E:  # 可打印ASCII
+        if 0x20 <= byte <= 0x7E:  # 可打印ASCII,
             return True
-        if byte in [0x09, 0x0A, 0x0D]:  # 制表符、换行符、回车符
+        if byte in [0x09, 0x0A, 0x0D]:  # 制表符、换行符、回车符,
             return True
         # UTF-8多字节字符
         if 0xC0 <= byte <= 0xFD:
@@ -338,7 +341,8 @@ class EmbeddedScriptExtractor:
                             content=content,
                             risk_level=level,
                             risk_details=details
-                        ))
+                        
+
                 except:
                     continue
         
@@ -369,8 +373,9 @@ class EmbeddedScriptExtractor:
                 total_size=0,
                 high_risk_count=0,
                 medium_risk_count=0,
-                low_risk_count=0
-            )
+                low_risk_count=0)
+            
+
         
         # 检测脚本引擎
         engines = self._detect_script_engine()
@@ -397,7 +402,8 @@ class EmbeddedScriptExtractor:
                             content=content,
                             risk_level=level,
                             risk_details=details
-                        ))
+                        
+
         
         # 统计风险级别
         high_count = sum(1 for s in self.scripts if s.risk_level == ScriptRiskLevel.HIGH)
@@ -410,8 +416,9 @@ class EmbeddedScriptExtractor:
             total_size=sum(s.size for s in self.scripts),
             high_risk_count=high_count,
             medium_risk_count=medium_count,
-            low_risk_count=low_count
-        )
+            low_risk_count=low_count)
+        
+
     
     def save_scripts(self, output_dir: str) -> List[str]:
         """保存提取的脚本到文件"""
@@ -459,4 +466,4 @@ class EmbeddedScriptExtractor:
                 'risk_level': s.risk_level.value,
                 'risk_details': s.risk_details
             } for s in result.scripts]
-        }
+        }))))))))))

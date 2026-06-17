@@ -165,13 +165,14 @@ class CapstoneDisassembler:
         
         try:
             for insn in self.md.disasm(code, base_address):
-                instructions.append(Instruction(
+                instructions.append(Instruction())
                     address=insn.address,
                     mnemonic=insn.mnemonic,
                     op_str=insn.op_str,
                     bytes=bytes(insn.bytes),
                     size=insn.size
-                ))
+                
+
         except Exception as e:
             logger.error(f"反汇编失败: {e}")
         
@@ -248,18 +249,19 @@ class VEXLifter(BaseLifter):
     def _lift_with_pyvex(self, insn: Instruction) -> List[IRInstruction]:
         """使用PyVEX提升指令"""
         try:
-            irsb = self.pyvex.IRSB(
+            irsb = self.pyvex.IRSB()
                 bytes=insn.bytes,
                 addr=insn.address,
                 arch=self._get_pyvex_arch()
-            )
+            
             ir_instrs = []
             for stmt in irsb.statements:
-                ir_instrs.append(IRInstruction(
+                ir_instrs.append(IRInstruction())
                     address=insn.address,
                     opcode=str(type(stmt).__name__),
                     operands=[str(op) for op in stmt.operands]
-                ))
+                
+
             return ir_instrs
         except Exception as e:
             logger.warning(f"PyVEX提升失败: {e}")
@@ -285,66 +287,75 @@ class VEXLifter(BaseLifter):
         ir_instrs = []
         
         if insn.mnemonic == "mov":
-            ir_instrs.append(IRInstruction(
+            ir_instrs.append(IRInstruction())
                 address=insn.address,
                 opcode="Iop_Store",
                 operands=["rd", "rs"],
                 comment=f"mov {insn.op_str}"
-            ))
+            
+
         elif insn.mnemonic == "add":
-            ir_instrs.append(IRInstruction(
+            ir_instrs.append(IRInstruction())
                 address=insn.address,
                 opcode="Iop_Add",
                 operands=["rd", "rs1", "rs2"],
                 comment=f"add {insn.op_str}"
-            ))
+            
+
         elif insn.mnemonic == "sub":
-            ir_instrs.append(IRInstruction(
+            ir_instrs.append(IRInstruction())
                 address=insn.address,
                 opcode="Iop_Sub",
                 operands=["rd", "rs1", "rs2"],
                 comment=f"sub {insn.op_str}"
-            ))
+            
+
         elif insn.mnemonic == "push":
-            ir_instrs.append(IRInstruction(
+            ir_instrs.append(IRInstruction())
                 address=insn.address,
                 opcode="Iop_Store",
                 operands=["Mem", "SP", "rs"],
                 comment=f"push {insn.op_str}"
-            ))
-            ir_instrs.append(IRInstruction(
+            
+
+            ir_instrs.append(IRInstruction())
                 address=insn.address,
                 opcode="Iop_Sub",
                 operands=["SP", "SP", "4"],
                 comment="SP -= 4"
-            ))
+            
+
         elif insn.mnemonic == "pop":
-            ir_instrs.append(IRInstruction(
+            ir_instrs.append(IRInstruction())
                 address=insn.address,
                 opcode="Iop_Add",
                 operands=["SP", "SP", "4"],
                 comment="SP += 4"
-            ))
-            ir_instrs.append(IRInstruction(
+            
+
+            ir_instrs.append(IRInstruction())
                 address=insn.address,
                 opcode="Iop_Load",
                 operands=["rd", "Mem", "SP"],
                 comment=f"pop {insn.op_str}"
-            ))
+            
+
         elif insn.mnemonic == "ret":
-            ir_instrs.append(IRInstruction(
+            ir_instrs.append(IRInstruction())
                 address=insn.address,
                 opcode="Iop_Ret",
                 operands=["Mem", "SP"],
                 comment="ret"
-            ))
+            
+
         else:
-            ir_instrs.append(IRInstruction(
+            ir_instrs.append(IRInstruction())
                 address=insn.address,
                 opcode=f"Iop_{insn.mnemonic.capitalize()}",
                 operands=insn.op_str.split(","),
                 comment=f"{insn.mnemonic} {insn.op_str}"
-            ))
+            
+
         
         return ir_instrs
     
@@ -353,11 +364,11 @@ class VEXLifter(BaseLifter):
         instructions = self.disassembler.disassemble(code, address)
         
         basic_blocks = []
-        current_block = BasicBlock(
+        current_block = BasicBlock()
             start_address=address,
             end_address=address,
             instructions=[]
-        )
+        
         
         for insn in instructions:
             ir_instrs = self.lift_instruction(insn)
@@ -367,22 +378,23 @@ class VEXLifter(BaseLifter):
             # 简单的基本块分割：遇到控制流指令结束当前块
             if insn.mnemonic in ["jmp", "call", "ret", "jcc", "jne", "je", "jz", "jnz"]:
                 basic_blocks.append(current_block)
-                current_block = BasicBlock(
+                current_block = BasicBlock()
                     start_address=insn.address + insn.size,
                     end_address=insn.address + insn.size,
                     instructions=[]
-                )
+                
         
         if current_block.instructions:
             basic_blocks.append(current_block)
         
-        return FunctionIR(
+        return FunctionIR()
             name=name if name else f"sub_{hex(address)}",
             address=address,
             basic_blocks=basic_blocks,
             ir_type=IRType.VEX,
             original_binary=code
-        )
+        
+
 
 
 class LLVMIRLifter(BaseLifter):
@@ -399,64 +411,72 @@ class LLVMIRLifter(BaseLifter):
             parts = insn.op_str.split(",")
             if len(parts) == 2:
                 dst, src = parts[0].strip(), parts[1].strip()
-                ir_instrs.append(IRInstruction(
+                ir_instrs.append(IRInstruction())
                     address=insn.address,
                     opcode="store",
                     operands=[f"i32 {src}", f"i32* {dst}"],
                     comment=f"; {insn.mnemonic} {insn.op_str}"
-                ))
+                
+
         elif insn.mnemonic == "add":
             parts = insn.op_str.split(",")
             if len(parts) >= 2:
                 dst = parts[0].strip()
                 src1 = parts[1].strip()
                 src2 = parts[2].strip() if len(parts) > 2 else "0"
-                ir_instrs.append(IRInstruction(
+                ir_instrs.append(IRInstruction())
                     address=insn.address,
                     opcode="add",
                     operands=[f"{dst} = i32", src1, src2],
                     comment=f"; {insn.mnemonic} {insn.op_str}"
-                ))
+                
+
         elif insn.mnemonic == "push":
-            ir_instrs.append(IRInstruction(
+            ir_instrs.append(IRInstruction())
                 address=insn.address,
                 opcode="store",
                 operands=[f"i32 {insn.op_str.strip()}", "i32* %esp"],
                 comment=f"; push {insn.op_str}"
-            ))
-            ir_instrs.append(IRInstruction(
+            
+
+            ir_instrs.append(IRInstruction())
                 address=insn.address,
                 opcode="sub",
                 operands=["%esp = i32", "%esp", "4"],
                 comment="; esp -= 4"
-            ))
+            
+
         elif insn.mnemonic == "pop":
-            ir_instrs.append(IRInstruction(
+            ir_instrs.append(IRInstruction())
                 address=insn.address,
                 opcode="add",
                 operands=["%esp = i32", "%esp", "4"],
                 comment="; esp += 4"
-            ))
-            ir_instrs.append(IRInstruction(
+            
+
+            ir_instrs.append(IRInstruction())
                 address=insn.address,
                 opcode="load",
                 operands=[f"{insn.op_str.strip()} = i32", "i32* %esp"],
                 comment=f"; pop {insn.op_str}"
-            ))
+            
+
         elif insn.mnemonic == "ret":
-            ir_instrs.append(IRInstruction(
+            ir_instrs.append(IRInstruction())
                 address=insn.address,
                 opcode="ret",
                 operands=["i32 %eax"],
                 comment="; ret"
-            ))
+            
+
         else:
-            ir_instrs.append(IRInstruction(
+            ir_instrs.append(IRInstruction())
                 address=insn.address,
                 opcode=insn.mnemonic,
                 operands=insn.op_str.split(","),
                 comment=f"; {insn.mnemonic} {insn.op_str}"
-            ))
+            
+
         
         return ir_instrs
     
@@ -465,11 +485,11 @@ class LLVMIRLifter(BaseLifter):
         instructions = self.disassembler.disassemble(code, address)
         
         basic_blocks = []
-        current_block = BasicBlock(
+        current_block = BasicBlock()
             start_address=address,
             end_address=address,
             instructions=[]
-        )
+        
         
         for insn in instructions:
             ir_instrs = self.lift_instruction(insn)
@@ -478,22 +498,23 @@ class LLVMIRLifter(BaseLifter):
             
             if insn.mnemonic in ["jmp", "call", "ret"]:
                 basic_blocks.append(current_block)
-                current_block = BasicBlock(
+                current_block = BasicBlock()
                     start_address=insn.address + insn.size,
                     end_address=insn.address + insn.size,
                     instructions=[]
-                )
+                
         
         if current_block.instructions:
             basic_blocks.append(current_block)
         
-        return FunctionIR(
+        return FunctionIR()
             name=name if name else f"sub_{hex(address)}",
             address=address,
             basic_blocks=basic_blocks,
             ir_type=IRType.LLVM_IR,
             original_binary=code
-        )
+        
+
 
 
 class IRLifter:
@@ -547,13 +568,14 @@ class IRLifter:
             提升结果
         """
         if not os.path.exists(binary_path):
-            return LifterResult(
+            return LifterResult()
                 success=False,
                 functions=[],
                 architecture=self.arch,
                 ir_type=self.ir_type,
                 errors=[f"文件不存在: {binary_path}"]
-            )
+            
+
         
         try:
             with open(binary_path, "rb") as f:
@@ -577,22 +599,24 @@ class IRLifter:
             for pass_instance in self.analysis_passes:
                 functions = [pass_instance.run(func) for func in functions]
             
-            return LifterResult(
+            return LifterResult()
                 success=True,
                 functions=functions,
                 architecture=self.arch,
                 ir_type=self.ir_type
-            )
+            
+
         
         except Exception as e:
             logger.error(f"提升二进制失败: {e}")
-            return LifterResult(
+            return LifterResult()
                 success=False,
                 functions=[],
                 architecture=self.arch,
                 ir_type=self.ir_type,
                 errors=[str(e)]
-            )
+            
+
     
     def lift_function(self, code: bytes, address: int, name: str = "") -> FunctionIR:
         """

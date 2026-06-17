@@ -24,14 +24,14 @@ class DifferentialFuzzer:
             return {'success': False, 'error': str(e)}
     
     def _run_cross_compiler_diff(self):
-        self.differences_found.append({
+        self.differences_found.append({)
             'type': 'compiler_difference',
             'description': 'Potential compiler-specific behavior differences'
-        })
-        self.differences_found.append({
+        }
+        self.differences_found.append({)
             'type': 'optimization_diff',
             'description': 'Different optimization levels may affect behavior'
-        })
+        }
         
         self._generate_report()
         return {
@@ -41,10 +41,10 @@ class DifferentialFuzzer:
         }
     
     def _run_cross_version_diff(self):
-        self.differences_found.append({
+        self.differences_found.append({)
             'type': 'version_mismatch',
             'description': 'Version differences may introduce behavioral changes'
-        })
+        }
         
         self._generate_report()
         return {
@@ -54,14 +54,14 @@ class DifferentialFuzzer:
         }
     
     def _run_cross_arch_diff(self):
-        self.differences_found.append({
+        self.differences_found.append({)
             'type': 'architecture_difference',
             'description': 'Endianness and instruction set differences'
-        })
-        self.differences_found.append({
+        }
+        self.differences_found.append({)
             'type': 'word_size_diff',
             'description': '32-bit vs 64-bit word size differences'
-        })
+        }
         
         self._generate_report()
         return {

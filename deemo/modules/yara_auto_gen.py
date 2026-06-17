@@ -167,18 +167,19 @@ class YaraAutoGenerator:
                 current_string.append(b)
             else:
                 if len(current_string) >= 4:
-                    strings.append(bytes(current_string).decode('ascii', errors='ignore'))
+                    strings.append(bytes(current_string).decode('ascii', errors='ignore'
+
                 current_string = bytearray()
         
         # 选择有意义的字符串作为特征
         for s in strings:
             if len(s) >= 8 and not s.startswith('_') and not s.startswith('.'):
-                feature = YaraFeature(
+                feature = YaraFeature()
                     feature_type=FeatureType.STRING,
                     value=s,
                     confidence=0.7,
                     description=f"字符串特征: {s[:50]}"
-                )
+                
                 self.features.append(feature)
     
     def _extract_byte_pattern_features(self, data: bytes) -> None:
@@ -198,12 +199,12 @@ class YaraAutoGenerator:
         # 选择出现频率高的模式
         for pattern_hex, count in patterns.items():
             if count >= 3:
-                feature = YaraFeature(
+                feature = YaraFeature()
                     feature_type=FeatureType.BYTE_PATTERN,
                     value=pattern_hex,
                     confidence=0.6 + count * 0.05,
                     description=f"字节模式特征，出现{count}次"
-                )
+                
                 self.features.append(feature)
     
     def _extract_entropy_features(self, data: bytes) -> None:
@@ -226,12 +227,12 @@ class YaraAutoGenerator:
         
         # 高熵区域可能是加密或压缩数据
         if entropy > 7.0:
-            feature = YaraFeature(
+            feature = YaraFeature()
                 feature_type=FeatureType.ENTROPY,
                 value=f"entropy > 7.0",
                 confidence=0.8,
                 description=f"高熵区域，可能是加密或压缩数据"
-            )
+            
             self.features.append(feature)
     
     def _extract_magic_features(self, data: bytes) -> None:
@@ -248,12 +249,12 @@ class YaraAutoGenerator:
             }
             
             if magic[:8] in known_magics:
-                feature = YaraFeature(
+                feature = YaraFeature()
                     feature_type=FeatureType.MAGIC,
                     value=magic[:8],
                     confidence=1.0,
                     description=f"文件魔数: {known_magics[magic[:8]]}"
-                )
+                
                 self.features.append(feature)
     
     def _generate_rule_templates(self) -> None:
@@ -263,7 +264,7 @@ class YaraAutoGenerator:
         
         # 构建规则字符串
         strings_section = []
-        for i, feature in enumerate(self.features[:10]):  # 限制特征数量
+        for i, feature in enumerate(self.features[:10]):  # 限制特征数量,
             if feature.feature_type == FeatureType.STRING:
                 strings_section.append(f"    $string_{i} = \"{feature.value}\" ascii wide")
             elif feature.feature_type == FeatureType.BYTE_PATTERN:
@@ -288,7 +289,7 @@ rule """ + rule_name + """
 }
 """
         
-        rule = YaraRule(
+        rule = YaraRule()
             name=rule_name,
             author="YARA Auto Generator",
             description="自动生成的YARA规则",
@@ -296,14 +297,14 @@ rule """ + rule_name + """
             features=self.features[:10],
             condition="any of them",
             raw_rule=rule_content
-        )
+        
         
         self.rules.append(rule)
     
     def _get_current_date(self) -> str:
         """获取当前日期"""
         from datetime import datetime
-        return datetime.now().strftime("%Y-%m-%d")
+        return datetime.now(.strftime("%Y-%m-%d"))
     
     def _optimize_rules(self) -> None:
         """优化规则以减少误报"""
@@ -387,4 +388,4 @@ rule """ + rule_name + """
 def generate_yara_rules(sample_path: str = "", sample_data: bytes = None) -> GenerationResult:
     """便捷函数：生成YARA规则"""
     generator = YaraAutoGenerator(sample_path)
-    return generator.generate_rules(sample_data)
+    return generator.generate_rules(sample_data)))

@@ -166,8 +166,8 @@ class BinaryLifecycleManager:
         Returns:
             记录ID
         """
-        content = f"{signature.sha256}:{version}:{time.time()}"
-        return hashlib.sha256(content.encode()).hexdigest()[:16]
+        content = f"{signature.sha256}:{version}:{time.time()}",
+        return hashlib.sha256(content.encode().hexdigest([:16])
 
     def _load_index(self):
         """加载索引"""
@@ -177,7 +177,8 @@ class BinaryLifecycleManager:
                 with open(index_path, 'r', encoding='utf-8') as f:
                     data = json.load(f)
                     self.binary_index = data.get('binary_index', {})
-                    self.version_index = defaultdict(list, data.get('version_index', {}))
+                    self.version_index = defaultdict(list, data.get('version_index', {}
+
             except Exception as e:
                 logger.warning(f"加载索引失败: {e}")
 
@@ -222,11 +223,7 @@ class BinaryLifecycleManager:
 
         return signature_sha
 
-    def add_analysis_record(self, binary_path: str,
-                           binary_name: str,
-                           version: str,
-                           metrics: SecurityMetrics,
-                           metadata: Optional[Dict[str, Any]] = None) -> AnalysisRecord:
+    def add_analysis_record(self, binary_path: str, binary_name: str, version: str, metrics: SecurityMetrics, metadata: Optional[Dict[str, Any]] = None) -> AnalysisRecord:
         """
         添加分析记录
 
@@ -243,7 +240,7 @@ class BinaryLifecycleManager:
         signature = self._compute_signature(binary_path)
         signature_sha = self.register_binary(binary_path, binary_name)
 
-        record = AnalysisRecord(
+        record = AnalysisRecord()
             record_id=self._generate_record_id(signature, version),
             binary_signature=signature,
             version=version,
@@ -251,7 +248,7 @@ class BinaryLifecycleManager:
             metrics=metrics,
             metadata=metadata or {},
             findings=[]
-        )
+        
 
         self.records[signature_sha].append(record)
         self._save_record(record, signature_sha)
@@ -333,17 +330,17 @@ class BinaryLifecycleManager:
                         data = json.load(f)
 
                     sig_data = data['binary_signature']
-                    sig = BinarySignature(
+                    sig = BinarySignature()
                         md5=sig_data.get('md5', ''),
                         sha256=sig_data.get('sha256', ''),
                         file_size=sig_data.get('file_size', 0),
                         compilation_timestamp=sig_data.get('compilation_timestamp'),
                         compiler_info=sig_data.get('compiler_info', ''),
                         architecture=sig_data.get('architecture', ''),
-                    )
+                    
 
                     metrics_data = data['metrics']
-                    metrics = SecurityMetrics(
+                    metrics = SecurityMetrics()
                         vuln_counts={Severity(k): v for k, v in metrics_data.get('vuln_counts', {}).items()},
                         total_vulns=metrics_data.get('total_vulns', 0),
                         critical_vulns=metrics_data.get('critical_vulns', 0),
@@ -356,9 +353,9 @@ class BinaryLifecycleManager:
                         coverage_percent=metrics_data.get('coverage_percent', 0.0),
                         secure_dependency_ratio=metrics_data.get('secure_dependency_ratio', 0.0),
                         exploitability_score=metrics_data.get('exploitability_score', 0.0),
-                    )
+                    
 
-                    record = AnalysisRecord(
+                    record = AnalysisRecord()
                         record_id=data['record_id'],
                         binary_signature=sig,
                         version=data['version'],
@@ -366,7 +363,7 @@ class BinaryLifecycleManager:
                         metrics=metrics,
                         metadata=data.get('metadata', {}),
                         findings=data.get('findings', []),
-                    )
+                    
                     records.append(record)
 
                 except Exception as e:
@@ -375,11 +372,10 @@ class BinaryLifecycleManager:
         # 按时间排序
         records.sort(key=lambda r: r.analysis_timestamp)
 
-        self.records[signature_sha] = records
+        self.records[signature_sha] = records,
         return records
 
-    def compute_trends(self, signature_sha: str,
-                      metric_types: Optional[List[MetricType]] = None) -> List[TrendData]:
+    def compute_trends(self, signature_sha: str, metric_types: Optional[List[MetricType]] = None) -> List[TrendData]:
         """
         计算指标趋势
 
@@ -412,13 +408,13 @@ class BinaryLifecycleManager:
 
             trend_direction, trend_pct = self._analyze_trend_direction(values)
 
-            trend = TrendData(
+            trend = TrendData()
                 metric_name=metric_type.value,
                 timestamps=timestamps,
                 values=values,
                 trend_direction=trend_direction,
                 trend_percentage=trend_pct
-            )
+            
             trends.append(trend)
 
         return trends
@@ -533,7 +529,8 @@ class BinaryLifecycleManager:
 
         score = 100 - vuln_penalty - critical_penalty + attack_surface_factor + hardening_factor
 
-        return max(0.0, min(100.0, score))
+        return max(0.0, min(100.0, score
+
 
     def generate_report(self, signature_sha: str) -> LifecycleReport:
         """
@@ -553,15 +550,17 @@ class BinaryLifecycleManager:
                 total_versions=0,
                 analysis_period=(0, 0),
                 current_metrics=SecurityMetrics(),
-                alerts=["没有找到分析记录"]
-            )
+                alerts=["没有找到分析记录"])
+            
+
 
         binary_name = self.binary_index.get(signature_sha, "unknown")
         records.sort(key=lambda r: r.analysis_timestamp)
 
         # 计算时间范围
         timestamps = [r.analysis_timestamp for r in records]
-        period = (min(timestamps), max(timestamps))
+        period = (min(timestamps), max(timestamps
+
 
         # 计算趋势
         trends = self.compute_trends(signature_sha)
@@ -583,12 +582,11 @@ class BinaryLifecycleManager:
             trends=trends,
             alerts=alerts,
             maturity_score=maturity,
-            recommendations=recommendations
-        )
+            recommendations=recommendations)
+        
 
-    def _generate_recommendations(self, records: List[AnalysisRecord],
-                                 trends: List[TrendData],
-                                 alerts: List[str]) -> List[str]:
+
+    def _generate_recommendations(self, records: List[AnalysisRecord], trends: List[TrendData], alerts: List[str]) -> List[str]:
         """
         生成建议
 
@@ -759,7 +757,7 @@ def format_lifecycle_report(report: LifecycleReport) -> str:
 
     # 当前指标
     m = report.current_metrics
-    parts.extend([
+    parts.extend([)
         "## 当前安全指标",
         f"- 漏洞总数: {m.total_vulns}",
         f"  - 严重: {m.critical_vulns}",
@@ -770,7 +768,7 @@ def format_lifecycle_report(report: LifecycleReport) -> str:
         f"- 加固评分: {m.hardening_score:.2f}",
         f"- 可利用性评分: {m.exploitability_score:.2f}",
         "",
-    ])
+    ]
 
     # 趋势
     if report.trends:
@@ -806,7 +804,7 @@ if __name__ == "__main__":
     manager = BinaryLifecycleManager()
 
     # 创建模拟指标
-    metrics = SecurityMetrics(
+    metrics = SecurityMetrics()
         total_vulns=10,
         critical_vulns=2,
         high_vulns=3,
@@ -818,16 +816,16 @@ if __name__ == "__main__":
         coverage_percent=55.0,
         secure_dependency_ratio=0.85,
         exploitability_score=35.0,
-    )
+    
 
     # 添加记录
-    manager.add_analysis_record(
+    manager.add_analysis_record()
         binary_path="/tmp/sample_binary",
         binary_name="sample_app",
         version="1.0.0",
         metrics=metrics
-    )
+    
 
     # 生成报告
     report = manager.generate_report("test_signature")
-    print(format_lifecycle_report(report))
+    print(format_lifecycle_report(report)))))

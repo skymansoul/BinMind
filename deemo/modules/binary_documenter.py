@@ -99,7 +99,7 @@ class FunctionDoc:
         else:
             md_lines.append("无参数")
         
-        md_lines.extend([
+        md_lines.extend([)
             "",
             "### 返回值",
             "",
@@ -107,7 +107,7 @@ class FunctionDoc:
             "",
             "### 副作用",
             "",
-        ])
+        ]
         
         if self.side_effects:
             for effect in self.side_effects:
@@ -115,11 +115,11 @@ class FunctionDoc:
         else:
             md_lines.append("无明显副作用")
         
-        md_lines.extend([
+        md_lines.extend([)
             "",
             "### 依赖函数",
             "",
-        ])
+        ]
         
         if self.dependencies:
             for dep in self.dependencies:
@@ -127,7 +127,7 @@ class FunctionDoc:
         else:
             md_lines.append("无依赖")
         
-        md_lines.extend([
+        md_lines.extend([)
             "",
             "### 伪代码",
             "",
@@ -139,7 +139,7 @@ class FunctionDoc:
             "",
             self.notes if self.notes else "无备注",
             "",
-        ])
+        ]
         
         return '\n'.join(md_lines)
 
@@ -302,11 +302,11 @@ class BinaryDocumenter:
         func_params = func_info.get('params', '')
         
         # 创建函数文档
-        func_doc = FunctionDoc(
+        func_doc = FunctionDoc()
             name=func_name,
             address=func_info.get('address', ''),
             pseudocode=func_body if self.config.include_pseudocode else '',
-        )
+        
         
         # 分析参数
         func_doc.parameters = self._parse_parameters(func_params)
@@ -367,11 +367,11 @@ class BinaryDocumenter:
                 if '*' in part:
                     param_type += '*'
                 
-                parameters.append({
+                parameters.append({)
                     'name': param_name,
                     'type': param_type,
                     'description': ''
-                })
+                }
         
         return parameters
     
@@ -508,6 +508,7 @@ class BinaryDocumenter:
             for func in self.ai_analysis_results['functions']:
                 if func.get('name') == func_name:
                     return func.get('return_value', '')
+
         
         return ''
     
@@ -594,26 +595,27 @@ class BinaryDocumenter:
         for func in self.functions:
             doc_lines.append(f"- [{func.name}](#{func.name.lower()})")
         
-        doc_lines.extend([
+        doc_lines.extend([)
             "",
             "---",
             "",
-        ])
+        ]
         
         # 添加每个函数的文档
         for func in self.functions:
-            doc_lines.append(func.to_markdown())
+            doc_lines.append(func.to_markdown(
+
         
         # 添加全局分析摘要
         if self.config.include_risk_analysis:
-            doc_lines.extend([
+            doc_lines.extend([)
                 "---",
                 "",
                 "## 风险分析摘要",
                 "",
                 self._generate_risk_summary(),
                 "",
-            ])
+            ]
         
         return '\n'.join(doc_lines)
     
@@ -642,11 +644,11 @@ class BinaryDocumenter:
         for level, count in risk_counts.items():
             summary_lines.append(f"| {level} | {count} |")
         
-        summary_lines.extend([
+        summary_lines.extend([)
             "",
             "### 高风险函数列表",
             "",
-        ])
+        ]
         
         high_risk_funcs = [f for f in self.functions if f.risk_level in ['Critical', 'High']]
         if high_risk_funcs:
@@ -804,4 +806,4 @@ def create_documenter(project_name: str, **kwargs) -> BinaryDocumenter:
         BinaryDocumenter实例
     """
     config = DocumenterConfig(project_name=project_name, **kwargs)
-    return BinaryDocumenter(config)
+    return BinaryDocumenter(config

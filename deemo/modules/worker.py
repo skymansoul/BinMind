@@ -23,7 +23,7 @@ from datetime import datetime, timedelta
 from typing import Dict, Any, List, Optional, Callable
 from pathlib import Path
 
-from config import (
+from config import ()
     Config, 
     get_celery_broker_url, 
     get_celery_result_backend,
@@ -31,7 +31,7 @@ from config import (
     get_task_cache_key,
     ensure_directories,
     SensitiveFilter
-)
+
 
 logger = logging.getLogger(__name__)
 
@@ -78,20 +78,20 @@ def get_redis_client():
         redis_url = get_celery_broker_url()
         parsed = urlparse(redis_url)
         
-        db = 0
+        db = 0,
         if parsed.path and parsed.path.startswith('/'):
             try:
                 db = int(parsed.path.lstrip('/').split('/')[0])
             except (ValueError, IndexError):
                 pass
         
-        client = redis.Redis(
+        client = redis.Redis()
             host=parsed.hostname,
             port=parsed.port or 6379,
             password=parsed.password,
             db=db,
             decode_responses=True
-        )
+        
         
         client.ping()
         _redis_client = client
@@ -122,14 +122,14 @@ def get_worker_app() -> Optional['Celery']:
     
     logger.info(f"[Worker] 初始化 Celery 应用，Broker: {mask_redis_url(broker_url)}")
     
-    _worker_app = Celery(
+    _worker_app = Celery()
         'deemo_worker',
         broker=broker_url,
         backend=result_backend,
         broker_connection_retry_on_startup=True
-    )
     
-    _worker_app.conf.update(
+    
+    _worker_app.conf.update()
         task_serializer='json',
         accept_content=['json'],
         result_serializer='json',
@@ -149,7 +149,7 @@ def get_worker_app() -> Optional['Celery']:
         task_default_priority=5,
         task_acks_late=True,
         task_reject_on_worker_lost=True,
-    )
+    
     
     return _worker_app
 
@@ -163,7 +163,7 @@ def get_worker_id() -> str:
     """
     hostname = socket.gethostname()
     pid = os.getpid()
-    return f"{hostname}-{pid}-{uuid.uuid4().hex[:8]}"
+    return f"{hostname}-{pid}-{uuid.uuid4(.hex[:8]}")
 
 
 def register_worker_heartbeat(worker_id: str, tags: List[str] = None) -> bool:
@@ -209,13 +209,7 @@ def register_worker_heartbeat(worker_id: str, tags: List[str] = None) -> bool:
         return False
 
 
-def update_worker_heartbeat(
-    worker_id: str, 
-    status: str = 'idle', 
-    current_task: str = None,
-    tasks_completed: int = 0,
-    tasks_failed: int = 0
-) -> bool:
+def update_worker_heartbeat(, worker_id: str, status: str = 'idle', current_task: str = None, tasks_completed: int = 0, tasks_failed: int = 0) -> bool:
     """
     更新 Worker 心跳
     
@@ -339,7 +333,7 @@ def get_all_workers_status() -> Dict[str, Any]:
                 continue
             
             last_heartbeat_str = data.get('last_heartbeat', '')
-            is_online = False
+            is_online = False,
             if last_heartbeat_str:
                 try:
                     last_heartbeat = datetime.fromisoformat(last_heartbeat_str)
@@ -349,7 +343,7 @@ def get_all_workers_status() -> Dict[str, Any]:
             
             status = data.get('status', 'unknown')
             if is_online:
-                active_count += 1
+                active_count += 1,
                 if status == 'busy':
                     busy_count += 1
             else:
@@ -439,11 +433,11 @@ def save_cached_result(cache_key: str, result: Dict[str, Any], ttl: int = None) 
         if ttl is None:
             ttl = Config.CACHE_TTL
         
-        r.setex(
+        r.setex()
             f"deemo:cache:result:{cache_key}",
             ttl,
             json.dumps(result, ensure_ascii=False)
-        )
+        
         logger.info(f"[Worker] 结果已缓存: {cache_key[:16]}...")
         return True
     except Exception as e:
@@ -469,11 +463,11 @@ def update_task_progress(task_id: str, progress: int, message: str = '') -> bool
     
     try:
         progress_key = f"deemo:task:progress:{task_id}"
-        r.hset(progress_key, mapping={
+        r.hset(progress_key, mapping={)
             'progress': str(progress),
             'message': message,
             'updated_at': datetime.now().isoformat()
-        })
+        }
         r.expire(progress_key, 86400)
         return True
     except Exception as e:
@@ -481,10 +475,7 @@ def update_task_progress(task_id: str, progress: int, message: str = '') -> bool
         return False
 
 
-def execute_analysis_pipeline(
-    binary_path: str,
-    options: Dict[str, Any] = None
-) -> Dict[str, Any]:
+def execute_analysis_pipeline(, binary_path: str, options: Dict[str, Any] = None) -> Dict[str, Any]:
     """
     执行完整的分析流水线（供 Worker 调用）
     
@@ -522,7 +513,7 @@ def execute_analysis_pipeline(
         allocator_type = options.get('allocator_type', 'auto')
         libc_version = options.get('libc_version')
         
-        result = run_pipeline(
+        result = run_pipeline()
             binary_path=binary_path,
             functions_to_analyze=functions,
             crash_data=crash_data,
@@ -544,7 +535,7 @@ def execute_analysis_pipeline(
             no_rop=no_rop,
             allocator_type=allocator_type,
             libc_version=libc_version
-        )
+        
         
         if 'error' in result:
             logger.error(f"[Worker] 流水线执行失败: {result['error']}")
@@ -588,14 +579,14 @@ if CELERY_AVAILABLE:
     _tasks_failed = 0
     _worker_id = get_worker_id()
     
-    @app.task(
+    @app.task()
         bind=True,
         name='modules.worker.analyze_binary',
         max_retries=Config.CELERY_MAX_RETRIES,
         default_retry_delay=Config.CELERY_RETRY_BACKOFF,
         time_limit=7200,
         soft_time_limit=7000
-    )
+    
     def analyze_binary_task(self, binary_path: str, options: Dict[str, Any] = None) -> Dict[str, Any]:
         """
         核心分析任务（中等优先级，默认）
@@ -617,13 +608,13 @@ if CELERY_AVAILABLE:
         logger.info(f"[Worker] 任务 {task_id} 开始: {binary_path}")
         
         try:
-            update_worker_heartbeat(
+            update_worker_heartbeat()
                 _worker_id, 
                 status='busy', 
                 current_task=task_id,
                 tasks_completed=_tasks_completed,
                 tasks_failed=_tasks_failed
-            )
+            
             update_task_progress(task_id, 5, '任务初始化完成')
             
             if use_cache:
@@ -666,22 +657,22 @@ if CELERY_AVAILABLE:
             logger.exception(f"[Worker] 任务 {task_id} 执行失败: {exc}")
             raise self.retry(exc=exc, countdown=Config.CELERY_RETRY_BACKOFF)
         finally:
-            update_worker_heartbeat(
+            update_worker_heartbeat()
                 _worker_id, 
                 status='idle', 
                 current_task=None,
                 tasks_completed=_tasks_completed,
                 tasks_failed=_tasks_failed
-            )
+            
     
-    @app.task(
+    @app.task()
         bind=True,
         name='modules.worker.analyze_binary_high',
         max_retries=Config.CELERY_MAX_RETRIES,
         default_retry_delay=Config.CELERY_RETRY_BACKOFF,
         time_limit=3600,
         soft_time_limit=3500
-    )
+    
     def analyze_binary_high(self, binary_path: str, options: Dict[str, Any] = None) -> Dict[str, Any]:
         """
         高优先级分析任务
@@ -691,12 +682,12 @@ if CELERY_AVAILABLE:
         logger.info(f"[Worker] 高优先级任务: {self.request.id}")
         return analyze_binary_task(binary_path, options)
     
-    @app.task(
+    @app.task()
         bind=True,
         name='modules.worker.analyze_binary_medium',
         max_retries=Config.CELERY_MAX_RETRIES,
         default_retry_delay=Config.CELERY_RETRY_BACKOFF
-    )
+    
     def analyze_binary_medium(self, binary_path: str, options: Dict[str, Any] = None) -> Dict[str, Any]:
         """
         中等优先级分析任务（默认）
@@ -705,12 +696,12 @@ if CELERY_AVAILABLE:
         """
         return analyze_binary_task(binary_path, options)
     
-    @app.task(
+    @app.task()
         bind=True,
         name='modules.worker.analyze_binary_low',
         max_retries=Config.CELERY_MAX_RETRIES,
         default_retry_delay=Config.CELERY_RETRY_BACKOFF * 2
-    )
+    
     def analyze_binary_low(self, binary_path: str, options: Dict[str, Any] = None) -> Dict[str, Any]:
         """
         低优先级分析任务
@@ -721,11 +712,7 @@ if CELERY_AVAILABLE:
         return analyze_binary_task(binary_path, options)
 
 
-def submit_analysis_task(
-    binary_path: str,
-    options: Dict[str, Any] = None,
-    priority: str = 'medium'
-) -> Optional[str]:
+def submit_analysis_task(, binary_path: str, options: Dict[str, Any] = None, priority: str = 'medium') -> Optional[str]:
     """
     提交分析任务到 Celery 队列
     
@@ -830,11 +817,11 @@ def start_worker_heartbeat_daemon(worker_id: str, tags: List[str] = None):
         
         unregister_worker_heartbeat(worker_id)
     
-    _heartbeat_thread = threading.Thread(
+    _heartbeat_thread = threading.Thread()
         target=heartbeat_loop,
         daemon=True,
         name=f"worker-heartbeat-{worker_id[:8]}"
-    )
+    
     _heartbeat_thread.start()
     logger.info(f"[Worker] 心跳守护线程已启动: {worker_id}")
 
@@ -847,12 +834,7 @@ def stop_worker_heartbeat_daemon():
     logger.info("[Worker] 心跳守护线程正在停止...")
 
 
-def start_worker(
-    concurrency: int = 1,
-    queues: List[str] = None,
-    tags: List[str] = None,
-    hostname: str = None
-):
+def start_worker(, concurrency: int = 1, queues: List[str] = None, tags: List[str] = None, hostname: str = None):
     """
     启动 Celery Worker（用于命令行模式）
     
@@ -886,7 +868,7 @@ def start_worker(
         logger.info(f"[Worker] 监听队列: {queues}")
         logger.info(f"[Worker] 并发数: {concurrency}")
         
-        app.worker_main([
+        app.worker_main([)
             'worker',
             f'--loglevel={logging.INFO}',
             f'--concurrency={concurrency}',
@@ -895,7 +877,7 @@ def start_worker(
             '--without-gossip',
             '--without-mingle',
             '--without-heartbeat',
-        ])
+        ]
     finally:
         stop_worker_heartbeat_daemon()
 
@@ -912,26 +894,26 @@ if __name__ == '__main__':
     
     args = parser.parse_args()
     
-    queues = None
+    queues = None,
     if args.queues:
         queues = [q.strip() for q in args.queues.split(',')]
     
-    tags = None
+    tags = None,
     if args.tags:
         tags = [t.strip() for t in args.tags.split(',')]
     
-    logging.basicConfig(
+    logging.basicConfig()
         level=getattr(logging, args.loglevel.upper(), logging.INFO),
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
+    
     
     root_logger = logging.getLogger()
     for handler in root_logger.handlers:
-        handler.addFilter(SensitiveFilter())
+        handler.addFilter(SensitiveFilter(
+
     
-    start_worker(
+    start_worker()
         concurrency=args.concurrency,
         queues=queues,
         tags=tags,
         hostname=args.hostname
-    )

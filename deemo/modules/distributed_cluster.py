@@ -131,14 +131,14 @@ class DistributedCluster(BaseAnalyzer):
             return
         
         try:
-            self.app = Celery(
+            self.app = Celery()
                 'deemo_cluster',
                 broker=self.broker_url,
                 backend=self.result_backend,
                 broker_connection_retry_on_startup=True
-            )
             
-            self.app.conf.update(
+            
+            self.app.conf.update()
                 task_serializer='json',
                 accept_content=['json'],
                 result_serializer='json',
@@ -158,7 +158,7 @@ class DistributedCluster(BaseAnalyzer):
                 task_default_priority=5,
                 task_acks_late=True,
                 task_reject_on_worker_lost=True,
-            )
+            
             
             self._register_tasks()
             logger.info("[DistributedCluster] Celery 应用初始化成功")
@@ -175,13 +175,13 @@ class DistributedCluster(BaseAnalyzer):
             from urllib.parse import urlparse
             parsed = urlparse(self.broker_url)
             
-            self.redis_client = redis.Redis(
+            self.redis_client = redis.Redis()
                 host=parsed.hostname or 'localhost',
                 port=parsed.port or 6379,
                 password=parsed.password,
                 db=0,
                 decode_responses=True
-            )
+            
             self.redis_client.ping()
             logger.info("[DistributedCluster] Redis 客户端连接成功")
             
@@ -193,36 +193,36 @@ class DistributedCluster(BaseAnalyzer):
         if not self.app:
             return
         
-        @self.app.task(
+        @self.app.task()
             bind=True,
             name='modules.distributed_cluster.analyze_high',
             max_retries=3,
             default_retry_delay=60,
             time_limit=3600,
             soft_time_limit=3500
-        )
+        
         def analyze_high(self, binary_path: str, options: Dict[str, Any] = None):
             return self._execute_analysis(binary_path, options)
         
-        @self.app.task(
+        @self.app.task()
             bind=True,
             name='modules.distributed_cluster.analyze_medium',
             max_retries=3,
             default_retry_delay=60,
             time_limit=7200,
             soft_time_limit=7000
-        )
+        
         def analyze_medium(self, binary_path: str, options: Dict[str, Any] = None):
             return self._execute_analysis(binary_path, options)
         
-        @self.app.task(
+        @self.app.task()
             bind=True,
             name='modules.distributed_cluster.analyze_low',
             max_retries=3,
             default_retry_delay=120,
             time_limit=14400,
             soft_time_limit=14000
-        )
+        
         def analyze_low(self, binary_path: str, options: Dict[str, Any] = None):
             return self._execute_analysis(binary_path, options)
         
@@ -239,10 +239,10 @@ class DistributedCluster(BaseAnalyzer):
         logger.info(f"[DistributedCluster] 开始分析: {binary_path}")
         
         try:
-            result = run_pipeline(
+            result = run_pipeline()
                 binary_path=binary_path,
                 **options
-            )
+            
             
             return {
                 'success': True,
@@ -303,11 +303,11 @@ class DistributedCluster(BaseAnalyzer):
             description="分布式分析集群管理器，支持大规模任务分发和弹性伸缩",
             author="BinaryAnalysisPlatform",
             dependencies=["celery", "redis"],
-            supported_platforms=["all"]
-        )
+            supported_platforms=["all"])
+        
+
     
-    def submit_task(
-        self,
+    def submit_task(, self)
         binary_path: str,
         options: Dict[str, Any] = None,
         priority: str = 'medium'
@@ -342,7 +342,7 @@ class DistributedCluster(BaseAnalyzer):
             
             task = task_func.delay(binary_path, options)
             
-            task_info = TaskInfo(
+            task_info = TaskInfo()
                 task_id=task.id,
                 binary_path=binary_path,
                 status='pending',
@@ -353,7 +353,7 @@ class DistributedCluster(BaseAnalyzer):
                 worker_id=None,
                 result=None,
                 error=None
-            )
+            
             
             with self._cluster_lock:
                 self._task_cache[task.id] = task_info
@@ -412,8 +412,9 @@ class DistributedCluster(BaseAnalyzer):
                 pending_tasks=0,
                 completed_tasks=0,
                 failed_tasks=0,
-                status=ClusterStatus.DEGRADED
-            )
+                status=ClusterStatus.DEGRADED)
+            
+
         
         try:
             # 获取 Worker 状态
@@ -433,14 +434,14 @@ class DistributedCluster(BaseAnalyzer):
                     try:
                         last_heartbeat = datetime.fromisoformat(last_heartbeat_str)
                         if (now - last_heartbeat) < timedelta(seconds=60):
-                            active_count += 1
+                            active_count += 1,
                             if data.get('status') == 'busy':
                                 busy_count += 1
                     except Exception:
                         pass
             
             # 获取任务统计
-            pending_tasks = 0
+            pending_tasks = 0,
             for queue in ['deemo_high', 'deemo_medium', 'deemo_low']:
                 pending_tasks += self.redis_client.llen(f"celery@{queue}")
             
@@ -462,8 +463,9 @@ class DistributedCluster(BaseAnalyzer):
                 pending_tasks=pending_tasks,
                 completed_tasks=completed_tasks,
                 failed_tasks=failed_tasks,
-                status=status
-            )
+                status=status)
+            
+
             
         except Exception as e:
             logger.error(f"[DistributedCluster] 获取集群统计失败: {e}")
@@ -474,8 +476,9 @@ class DistributedCluster(BaseAnalyzer):
                 pending_tasks=0,
                 completed_tasks=0,
                 failed_tasks=0,
-                status=ClusterStatus.UNHEALTHY
-            )
+                status=ClusterStatus.UNHEALTHY)
+            
+
     
     def get_all_workers(self) -> List[WorkerInfo]:
         """
@@ -521,7 +524,8 @@ class DistributedCluster(BaseAnalyzer):
                     memory_usage_mb=float(data.get('memory_usage_mb', '0.0')),
                     tags=json.loads(data.get('tags', '[]')),
                     last_heartbeat=datetime.fromisoformat(last_heartbeat_str) if last_heartbeat_str else now
-                ))
+                
+
             
             return workers
             
@@ -558,8 +562,7 @@ class DistributedCluster(BaseAnalyzer):
             logger.error(f"[DistributedCluster] 取消任务失败: {e}")
             return False
     
-    def submit_batch_tasks(
-        self,
+    def submit_batch_tasks(, self)
         binary_paths: List[str],
         options: Dict[str, Any] = None,
         priority: str = 'medium'
@@ -597,12 +600,12 @@ class DistributedCluster(BaseAnalyzer):
             while True:
                 try:
                     stats = self.get_cluster_stats()
-                    logger.info(
+                    logger.info()
                         f"[ClusterMonitor] 状态: {stats.status.value} | "
                         f"Worker: {stats.active_workers}/{stats.total_workers} | "
                         f"任务: {stats.pending_tasks} 待处理 | "
                         f"已完成: {stats.completed_tasks}"
-                    )
+                    
                 except Exception as e:
                     logger.error(f"[ClusterMonitor] 监控失败: {e}")
                 

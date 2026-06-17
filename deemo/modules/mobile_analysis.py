@@ -96,7 +96,7 @@ class MobileBinaryAnalyzer:
         self.binary_path = Path(binary_path)
         self.platform = self._detect_platform(platform)
         self.binary_data = self._read_binary()
-        self.result = MobileAnalysisResult(
+        self.result = MobileAnalysisResult()
             platform=self.platform,
             jni_functions=[],
             objective_c_classes=[],
@@ -104,7 +104,7 @@ class MobileBinaryAnalyzer:
             vulnerabilities=[],
             android_specific={},
             ios_specific={}
-        )
+        
 
     def _detect_platform(self, platform: str) -> MobilePlatform:
         """
@@ -118,7 +118,8 @@ class MobileBinaryAnalyzer:
         """
         if platform != 'auto':
             try:
-                return MobilePlatform(platform.lower())
+                return MobilePlatform(platform.lower(
+
             except ValueError:
                 logger.warning(f"无效的平台类型: {platform}，使用自动检测")
         
@@ -172,14 +173,17 @@ class MobileBinaryAnalyzer:
         current_string = []
         for i, byte in enumerate(self.binary_data):
             if 0x20 <= byte <= 0x7E:
-                current_string.append(chr(byte))
+                current_string.append(chr(byte
+
             else:
                 if len(current_string) >= min_length:
-                    strings.append((''.join(current_string), i - len(current_string)))
+                    strings.append((''.join(current_string), i - len(current_string
+
                 current_string = []
         
         if len(current_string) >= min_length:
-            strings.append((''.join(current_string), len(self.binary_data) - len(current_string)))
+            strings.append((''.join(current_string), len(self.binary_data) - len(current_string
+
         
         return strings
 
@@ -208,13 +212,13 @@ class MobileBinaryAnalyzer:
                 java_class = f"{pkg.replace('_', '/')}.{cls}"
                 java_method = '_'.join(method_parts)
                 
-                jni_func = JNIFunction(
+                jni_func = JNIFunction()
                     name=string,
                     java_class=java_class,
                     java_method=java_method,
                     signature="",
                     address=offset
-                )
+                
                 jni_functions.append(jni_func)
         
         logger.info(f"发现 {len(jni_functions)} 个 JNI 函数")
@@ -250,7 +254,8 @@ class MobileBinaryAnalyzer:
                             methods=[],
                             protocols=[],
                             address=offset
-                        ))
+                        
+
         
         logger.info(f"发现 {len(classes)} 个 Objective-C 类")
         return classes
@@ -290,7 +295,8 @@ class MobileBinaryAnalyzer:
                         type=type_name,
                         address=offset,
                         score=score
-                    ))
+                    
+
                     break
         
         # 去重
@@ -415,10 +421,11 @@ class MobileBinaryAnalyzer:
                         description=f"检测到 {desc}，可能存在 Intent 劫持风险",
                         location=f"字符串偏移 0x{offset:x}",
                         code_snippet=string
-                    ))
+                    
+
         
         # 检测 URL Scheme 劫持风险
-        url_scheme_pattern = r'urlscheme|URLScheme|scheme.*://'
+        url_scheme_pattern = r'urlscheme|URLScheme|scheme.*://',
         for string, offset in strings:
             if re.search(url_scheme_pattern, string, re.IGNORECASE):
                 vulnerabilities.append(MobileVulnerability(
@@ -427,7 +434,8 @@ class MobileBinaryAnalyzer:
                     description="检测到 URL Scheme 定义，可能存在劫持风险",
                     location=f"字符串偏移 0x{offset:x}",
                     code_snippet=string
-                ))
+                
+
         
         # 检测硬编码密钥
         for sensitive in self.result.sensitive_strings:
@@ -438,7 +446,8 @@ class MobileBinaryAnalyzer:
                     description=f"发现硬编码的 {sensitive.type.replace('_', ' ')}",
                     location=f"偏移 0x{sensitive.address:x}",
                     remediation="不应将敏感密钥硬编码在二进制文件中，应使用安全的密钥管理方案"
-                ))
+                
+
         
         # 检测不安全的数据存储
         if self.platform == MobilePlatform.IOS:
@@ -449,7 +458,8 @@ class MobileBinaryAnalyzer:
                     description="使用 NSUserDefaults 存储数据，可能导致敏感信息泄露",
                     location="iOS 二进制",
                     remediation="敏感数据应使用 Keychain 或加密存储"
-                ))
+                
+
         
         # 检测 JNI 参数验证缺失
         if self.platform == MobilePlatform.ANDROID:
@@ -461,7 +471,8 @@ class MobileBinaryAnalyzer:
                         description=f"JNI 方法 {jni_func.name} 可能缺少参数验证",
                         location=jni_func.name,
                         remediation="JNI 方法应验证所有输入参数的合法性"
-                    ))
+                    
+
         
         logger.info(f"发现 {len(vulnerabilities)} 个移动平台特有漏洞")
         return vulnerabilities
@@ -505,4 +516,4 @@ class MobileBinaryAnalyzer:
             'high_risk_vulnerabilities': [
                 v for v in self.result.vulnerabilities if v.severity in ['Critical', 'High']
             ]
-        }
+        }))))))))))))))))))))))))"'

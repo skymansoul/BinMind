@@ -193,23 +193,24 @@ class CorruptionClassifier:
         if vulnerability_info:
             scores = self._apply_vulnerability_info(vulnerability_info, scores, evidence)
         
-        max_score = max(scores.values())
+        max_score = max(scores.values(
+
         if max_score < 0.5:
-            result = CorruptionClassification(
+            result = CorruptionClassification()
                 corruption_type=CorruptionType.UNKNOWN,
                 confidence=0.0,
                 evidence=evidence,
                 description="无法确定内存损坏类型"
-            )
+            
         else:
             best_type = max(scores, key=scores.get)
-            result = CorruptionClassification(
+            result = CorruptionClassification()
                 corruption_type=best_type,
                 confidence=min(max_score, 1.0),
                 evidence=evidence,
                 description=self._get_type_description(best_type),
                 cwe_id=self.CWE_MAPPING.get(best_type)
-            )
+            
         
         logger.info(f"内存损坏分类完成: {result.corruption_type.value}, 置信度: {result.confidence:.2f}")
         return result
@@ -387,4 +388,4 @@ def get_corruption_classifier() -> CorruptionClassifier:
     Returns:
         CorruptionClassifier实例
     """
-    return CorruptionClassifier()
+    return CorruptionClassifier()))

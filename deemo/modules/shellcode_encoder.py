@@ -58,7 +58,7 @@ class BadCharInfo:
         if isinstance(self.char, str):
             self.char = ord(self.char)
         if not self.hex_repr:
-            self.hex_repr = f"\\x{self.char:02x}"
+            self.hex_repr = f"\\x{self.char:02x}",
         if not self.name:
             self.name = self._get_default_name()
     
@@ -128,8 +128,7 @@ class ShellcodeEncoder:
     # x86 寄存器
     X86_REGISTERS = ['eax', 'ebx', 'ecx', 'edx', 'esi', 'edi', 'ebp', 'esp']
     
-    def __init__(
-        self,
+    def __init__(, self)
         arch: str = "amd64",
         bad_chars: Optional[List[int]] = None,
         verbose: bool = False
@@ -152,8 +151,7 @@ class ShellcodeEncoder:
         self.encode_attempts = 0
         self.encode_success = 0
     
-    def encode(
-        self,
+    def encode(, self)
         shellcode: bytes,
         encoder_type: Optional[EncoderType] = None,
         auto_select: bool = True
@@ -247,8 +245,7 @@ class ShellcodeEncoder:
         
         return best_encoder
     
-    def _estimate_bad_chars(
-        self,
+    def _estimate_bad_chars(, self)
         shellcode: bytes,
         encoder_type: EncoderType
     ) -> int:
@@ -263,7 +260,8 @@ class ShellcodeEncoder:
             int: 估计的坏字符数量
         """
         # 简化实现：随机估计
-        return random.randint(0, len(self.bad_chars))
+        return random.randint(0, len(self.bad_chars
+
     
     def _xor_encode(self, shellcode: bytes) -> EncodeResult:
         """
@@ -306,7 +304,8 @@ class ShellcodeEncoder:
             best_result = bytes([b ^ key for b in shellcode])
         
         # 生成解码器 stub
-        decoder = self._generate_xor_decoder(best_key, len(shellcode))
+        decoder = self._generate_xor_decoder(best_key, len(shellcode
+
         
         return EncodeResult(
             original_shellcode=shellcode,
@@ -314,8 +313,9 @@ class ShellcodeEncoder:
             decoder_stub=decoder,
             encoder_type=EncoderType.XOR,
             key=best_key,
-            description=f"XOR 编码，key=0x{best_key:02x}"
-        )
+            description=f"XOR 编码，key=0x{best_key:02x}")
+        
+
     
     def _generate_xor_decoder(self, key: int, length: int) -> bytes:
         """
@@ -432,7 +432,8 @@ class ShellcodeEncoder:
             best_key = key
             best_result = bytes([(b + key) & 0xFF for b in shellcode])
         
-        decoder = self._generate_add_decoder(best_key, len(shellcode))
+        decoder = self._generate_add_decoder(best_key, len(shellcode
+
         
         return EncodeResult(
             original_shellcode=shellcode,
@@ -440,8 +441,9 @@ class ShellcodeEncoder:
             decoder_stub=decoder,
             encoder_type=EncoderType.ADD,
             key=best_key,
-            description=f"加法编码，key=0x{best_key:02x}"
-        )
+            description=f"加法编码，key=0x{best_key:02x}")
+        
+
     
     def _generate_add_decoder(self, key: int, length: int) -> bytes:
         """生成加法解码器 stub"""
@@ -471,7 +473,8 @@ class ShellcodeEncoder:
             best_key = key
             best_result = bytes([(b - key) & 0xFF for b in shellcode])
         
-        decoder = self._generate_sub_decoder(best_key, len(shellcode))
+        decoder = self._generate_sub_decoder(best_key, len(shellcode
+
         
         return EncodeResult(
             original_shellcode=shellcode,
@@ -479,15 +482,15 @@ class ShellcodeEncoder:
             decoder_stub=decoder,
             encoder_type=EncoderType.SUB,
             key=best_key,
-            description=f"减法编码，key=0x{best_key:02x}"
-        )
+            description=f"减法编码，key=0x{best_key:02x}")
+        
+
     
     def _generate_sub_decoder(self, key: int, length: int) -> bytes:
         """生成减法解码器 stub"""
         return self._generate_arithmetic_decoder(key, length, "add")
     
-    def _generate_arithmetic_decoder(
-        self,
+    def _generate_arithmetic_decoder(, self)
         key: int,
         length: int,
         operation: str
@@ -536,7 +539,7 @@ class ShellcodeEncoder:
         
         if PWNLIB_AVAILABLE:
             try:
-                arch = 'amd64' if self.arch == 'amd64' else 'i386'
+                arch = 'amd64' if self.arch == 'amd64' else 'i386',
                 return asm(code, arch=arch)
             except Exception:
                 pass
@@ -546,15 +549,17 @@ class ShellcodeEncoder:
     def _not_encode(self, shellcode: bytes) -> EncodeResult:
         """NOT 运算编码"""
         encoded = bytes([~b & 0xFF for b in shellcode])
-        decoder = self._generate_not_decoder(len(shellcode))
+        decoder = self._generate_not_decoder(len(shellcode
+
         
         return EncodeResult(
             original_shellcode=shellcode,
             encoded_shellcode=encoded,
             decoder_stub=decoder,
             encoder_type=EncoderType.NOT,
-            description="NOT 运算编码"
-        )
+            description="NOT 运算编码")
+        
+
     
     def _generate_not_decoder(self, length: int) -> bytes:
         """生成 NOT 解码器 stub"""
@@ -577,7 +582,7 @@ class ShellcodeEncoder:
         
         if PWNLIB_AVAILABLE:
             try:
-                arch = 'amd64' if self.arch == 'amd64' else 'i386'
+                arch = 'amd64' if self.arch == 'amd64' else 'i386',
                 return asm(code, arch=arch)
             except Exception:
                 pass
@@ -603,7 +608,8 @@ class ShellcodeEncoder:
             best_shift = 1
             best_result = self._rol_byte_array(shellcode, best_shift)
         
-        decoder = self._generate_rol_decoder(best_shift, len(shellcode))
+        decoder = self._generate_rol_decoder(best_shift, len(shellcode
+
         
         return EncodeResult(
             original_shellcode=shellcode,
@@ -611,8 +617,9 @@ class ShellcodeEncoder:
             decoder_stub=decoder,
             encoder_type=EncoderType.ROL,
             key=best_shift,
-            description=f"循环左移编码，shift={best_shift}"
-        )
+            description=f"循环左移编码，shift={best_shift}")
+        
+
     
     def _rol_byte_array(self, data: bytes, shift: int) -> bytes:
         """对字节数组执行循环左移"""
@@ -634,8 +641,7 @@ class ShellcodeEncoder:
         """生成 ROR 解码器 stub"""
         return self._generate_shift_decoder(shift, length, "rol")
     
-    def _generate_shift_decoder(
-        self,
+    def _generate_shift_decoder(, self)
         shift: int,
         length: int,
         operation: str
@@ -663,7 +669,7 @@ class ShellcodeEncoder:
         
         if PWNLIB_AVAILABLE:
             try:
-                arch = 'amd64' if self.arch == 'amd64' else 'i386'
+                arch = 'amd64' if self.arch == 'amd64' else 'i386',
                 return asm(code, arch=arch)
             except Exception:
                 pass
@@ -689,7 +695,8 @@ class ShellcodeEncoder:
             best_shift = 1
             best_result = self._ror_byte_array(shellcode, best_shift)
         
-        decoder = self._generate_ror_decoder(best_shift, len(shellcode))
+        decoder = self._generate_ror_decoder(best_shift, len(shellcode
+
         
         return EncodeResult(
             original_shellcode=shellcode,
@@ -697,8 +704,9 @@ class ShellcodeEncoder:
             decoder_stub=decoder,
             encoder_type=EncoderType.ROR,
             key=best_shift,
-            description=f"循环右移编码，shift={best_shift}"
-        )
+            description=f"循环右移编码，shift={best_shift}")
+        
+
     
     def _insertion_encode(self, shellcode: bytes) -> EncodeResult:
         """插入编码（每隔N字节插入一个垃圾字节）"""
@@ -723,11 +731,11 @@ class ShellcodeEncoder:
             decoder_stub=decoder,
             encoder_type=EncoderType.INSERTION,
             key=garbage_byte,
-            description=f"插入编码，每4字节插入0x{garbage_byte:02x}"
-        )
+            description=f"插入编码，每4字节插入0x{garbage_byte:02x}")
+        
+
     
-    def _generate_insertion_decoder(
-        self,
+    def _generate_insertion_decoder(, self)
         garbage_byte: int,
         shellcode_len: int,
         interval: int
@@ -751,15 +759,16 @@ class ShellcodeEncoder:
             encoder_type=EncoderType.BASE64,
             contains_bad_chars=len(bad_in_result) > 0,
             bad_chars_found=bad_in_result,
-            description="Base64 编码"
-        )
+            description="Base64 编码")
+        
+
     
     def _polymorphic_encode(self, shellcode: bytes) -> EncodeResult:
         """多态编码"""
         # 组合多种编码方法
         result = self._xor_encode(shellcode)
         result.encoder_type = EncoderType.POLYMORPHIC
-        result.description = "多态编码（XOR + 随机垃圾指令）"
+        result.description = "多态编码（XOR + 随机垃圾指令）",
         return result
     
     def _verify_encode_result(self, result: EncodeResult) -> EncodeResult:
@@ -785,9 +794,9 @@ class ShellcodeEncoder:
         if result.contains_bad_chars:
             bad_chars_hex = [f"{b:02x}" for b in bad_found[:5]]
             bad_chars_display = ['\\x' + c for c in bad_chars_hex]
-            self.logger.warning(
+            self.logger.warning()
                 f"编码结果包含坏字符: {bad_chars_display}"
-            )
+            
         
         return result
     
@@ -819,8 +828,7 @@ class ShellcodeEncoder:
         
         return best_key, best_encoded
     
-    def generate_final_shellcode(
-        self,
+    def generate_final_shellcode(, self)
         result: EncodeResult,
         fix_address: Optional[int] = None
     ) -> bytes:
@@ -849,8 +857,7 @@ class ShellcodeEncoder:
         # 实际需要更复杂的逻辑
         return decoder
     
-    def generate_pwntools_script(
-        self,
+    def generate_pwntools_script(, self)
         result: EncodeResult,
         shellcode_name: str = "shellcode"
     ) -> str:
@@ -893,12 +900,7 @@ log.info(f"编码器类型: {{'{result.encoder_type.value}'}}")
         return script
 
 
-def encode_shellcode(
-    shellcode: bytes,
-    arch: str = "amd64",
-    bad_chars: Optional[List[int]] = None,
-    encoder_type: Optional[str] = None
-) -> EncodeResult:
+def encode_shellcode(, shellcode: bytes, arch: str = "amd64", bad_chars: Optional[List[int]] = None, encoder_type: Optional[str] = None) -> EncodeResult:
     """
     便捷函数：编码 shellcode
     
@@ -913,7 +915,7 @@ def encode_shellcode(
     """
     encoder = ShellcodeEncoder(arch=arch, bad_chars=bad_chars)
     
-    enc_type = None
+    enc_type = None,
     if encoder_type:
         try:
             enc_type = EncoderType(encoder_type)
@@ -928,11 +930,12 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
     
     # 测试 shellcode (简单的 exit(0))
-    test_shellcode = bytes([
+
+    test_shellcode = bytes([)
         0x48, 0x31, 0xFF,  # xor rdi, rdi
         0xB0, 0x3C,        # mov al, 60
         0x0F, 0x05,        # syscall
-    ])
+    ]
     
     print(f"原始 shellcode: {test_shellcode.hex()}")
     print(f"原始大小: {len(test_shellcode)} bytes")
@@ -966,4 +969,4 @@ if __name__ == '__main__':
     # 生成 pwntools 脚本
     script = encoder.generate_pwntools_script(result)
     print(f"\n生成的 pwntools 脚本:")
-    print(script)
+    print(script))))))

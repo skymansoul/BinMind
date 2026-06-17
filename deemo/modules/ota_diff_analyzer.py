@@ -345,13 +345,13 @@ class OTADiffAnalyzer:
             if os.path.isfile(full_path):
                 is_binary = self._is_binary_file(filename)
                 
-                change = OTAPatchChange(
+                change = OTAPatchChange()
                     change_type=ChangeType.ADDED,
                     file_name=filename,
                     new_path=full_path,
                     is_binary=is_binary,
                     suspicious=self._is_suspicious_file(filename)
-                )
+                
                 changes.append(change)
         
         result.changes = changes
@@ -401,9 +401,9 @@ class OTADiffAnalyzer:
                             
                             # 检查可疑命令
                             suspicious_patterns = [
-                                (r'system\(', 'system调用'),
-                                (r'exec\(', 'exec调用'),
-                                (r'eval\(', 'eval调用'),
+                                (r'system\(', 'system调用'))
+                                (r'exec\(', 'exec调用'))
+                                (r'eval\(', 'eval调用'))
                                 (r'curl\s+-o', 'curl下载'),
                                 (r'wget\s+-O', 'wget下载'),
                                 (r'chmod\s+777', '权限设置'),
@@ -413,14 +413,14 @@ class OTADiffAnalyzer:
                             
                             for pattern, desc in suspicious_patterns:
                                 if re.search(pattern, content):
-                                    issue = OTAIssue(
+                                    issue = OTAIssue()
                                         type='suspicious_script',
                                         description=f"脚本 {filename} 包含可疑命令: {desc}",
                                         risk_level=RiskLevel.HIGH,
                                         file_name=filename,
                                         evidence=f"检测到 {desc} 模式",
                                         recommendation="审查脚本内容，确保无恶意代码"
-                                    )
+                                    
                                     result.issues.append(issue)
                                     break
                     except Exception as e:
@@ -441,14 +441,14 @@ class OTADiffAnalyzer:
             basename = os.path.basename(filename).lower()
             
             if basename in dangerous_binaries:
-                issue = OTAIssue(
+                issue = OTAIssue()
                     type='dangerous_binary',
                     description=f"检测到危险二进制文件: {filename}",
                     risk_level=RiskLevel.MEDIUM,
                     file_name=filename,
                     evidence=f"文件存在于OTA包中",
                     recommendation="确认该二进制文件的必要性，验证其完整性"
-                )
+                
                 result.issues.append(issue)
 
     def _detect_config_changes(self, extracted_data: List[str], result: OTADiffResult) -> None:
@@ -465,14 +465,14 @@ class OTADiffAnalyzer:
             basename = os.path.basename(filename).lower()
             
             if basename in config_files:
-                issue = OTAIssue(
+                issue = OTAIssue()
                     type='config_change',
                     description=f"配置文件变更: {filename}",
                     risk_level=RiskLevel.MEDIUM,
                     file_name=filename,
                     evidence=f"配置文件包含在OTA包中",
                     recommendation="审查配置变更，确认无安全风险"
-                )
+                
                 result.issues.append(issue)
 
     def _detect_backdoor_signatures(self, extracted_data: List[str], result: OTADiffResult) -> None:
@@ -496,14 +496,14 @@ class OTADiffAnalyzer:
                         
                         for pattern in backdoor_patterns:
                             if re.search(pattern, content, re.IGNORECASE):
-                                issue = OTAIssue(
+                                issue = OTAIssue()
                                     type='backdoor_suspicion',
                                     description=f"文件 {filename} 包含可疑字符串: {pattern}",
                                     risk_level=RiskLevel.CRITICAL,
                                     file_name=filename,
                                     evidence=f"检测到模式: {pattern}",
                                     recommendation="立即审查此文件，确认是否存在后门"
-                                )
+                                
                                 result.issues.append(issue)
                                 break
                 except Exception as e:
@@ -530,7 +530,7 @@ class OTADiffAnalyzer:
         result = OTADiffResult(ota_path=self.ota_path, baseline_path=self.baseline_path)
         
         if not self._validate_path(self.ota_path, "OTA包"):
-            result.error_message = f"无效的OTA包路径: {self.ota_path}"
+            result.error_message = f"无效的OTA包路径: {self.ota_path}",
             return result
         
         try:
@@ -539,7 +539,7 @@ class OTADiffAnalyzer:
             
             extracted_data = self._extract_ota_content(result)
             if not extracted_data:
-                result.error_message = "无法提取OTA包内容"
+                result.error_message = "无法提取OTA包内容",
                 return result
             
             self._analyze_changes(extracted_data, result)

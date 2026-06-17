@@ -110,9 +110,7 @@ class HeapFengShuiStrategist:
         self.chunks: List[HeapChunk] = []
         self.current_chunk_id = 0
         
-    def generate_strategy(self, vuln_type: VulnerabilityType, 
-                         target_struct_size: int,
-                         additional_constraints: Optional[Dict[str, Any]] = None) -> FengShuiStrategy:
+    def generate_strategy(self, vuln_type: VulnerabilityType, target_struct_size: int, additional_constraints: Optional[Dict[str, Any]] = None) -> FengShuiStrategy:
         """
         生成堆风水策略
         
@@ -163,7 +161,8 @@ class HeapFengShuiStrategist:
                 action=FengShuiAction.FILL_TCACHE,
                 size=target_size,
                 comment="填充tcache防止目标chunk被快速重用"
-            ))
+            
+
         
         # 步骤2: 分配目标chunk
         chunk_id = self._next_chunk_id()
@@ -172,7 +171,8 @@ class HeapFengShuiStrategist:
             size=target_size,
             chunk_id=chunk_id,
             comment=f"分配目标chunk #{chunk_id}"
-        ))
+        
+
         
         # 步骤3: 分配guard chunk保护目标chunk
         guard_id = self._next_chunk_id()
@@ -181,21 +181,24 @@ class HeapFengShuiStrategist:
             size=target_size,
             chunk_id=guard_id,
             comment=f"分配guard chunk #{guard_id}保护目标chunk"
-        ))
+        
+
         
         # 步骤4: 释放guard chunk（可能放入tcache）
         steps.append(FengShuiStep(
             action=FengShuiAction.FREE,
             chunk_id=guard_id,
             comment=f"释放guard chunk #{guard_id}"
-        ))
+        
+
         
         # 步骤5: 释放目标chunk（触发UAF条件）
         steps.append(FengShuiStep(
             action=FengShuiAction.FREE,
             chunk_id=chunk_id,
             comment=f"释放目标chunk #{chunk_id} - 触发UAF条件"
-        ))
+        
+
         
         # 步骤6: 调整堆布局，使目标chunk进入unsorted bin或fastbin
         if target_size <= 0x80 and self.config.use_fastbin:
@@ -203,7 +206,8 @@ class HeapFengShuiStrategist:
                 action=FengShuiAction.ALLOC,
                 size=0x90,
                 comment="分配大chunk触发fastbin整理"
-            ))
+            
+
         
         strategy.steps = steps
         strategy.notes.append("策略: UAF标准风水流程")
@@ -230,7 +234,8 @@ class HeapFengShuiStrategist:
             size=target_size,
             chunk_id=target_chunk,
             comment=f"分配目标chunk #{target_chunk}"
-        ))
+        
+
         
         # 步骤2: 分配相邻chunk（将被溢出覆盖）
         victim_chunk = self._next_chunk_id()
@@ -240,7 +245,8 @@ class HeapFengShuiStrategist:
             size=victim_size,
             chunk_id=victim_chunk,
             comment=f"分配相邻victim chunk #{victim_chunk}"
-        ))
+        
+
         
         # 步骤3: 如果启用tcache，可能需要填充tcache
         if self.config.enable_tcache:
@@ -251,14 +257,16 @@ class HeapFengShuiStrategist:
                     size=victim_size,
                     chunk_id=filler_chunk,
                     comment=f"分配tcache填充chunk #{filler_chunk}"
-                ))
+                
+
         
         # 步骤4: 释放victim chunk使其进入tcache
         steps.append(FengShuiStep(
             action=FengShuiAction.FREE,
             chunk_id=victim_chunk,
             comment=f"释放victim chunk #{victim_chunk}到tcache"
-        ))
+        
+
         
         # 步骤5: 执行溢出操作（由漏洞触发）
         steps.append(FengShuiStep(
@@ -266,7 +274,8 @@ class HeapFengShuiStrategist:
             content="overflow_payload",
             chunk_id=target_chunk,
             comment=f"通过漏洞溢出覆盖victim chunk元数据"
-        ))
+        
+
         
         # 步骤6: 分配新chunk获取控制
         new_chunk = self._next_chunk_id()
@@ -275,7 +284,8 @@ class HeapFengShuiStrategist:
             size=victim_size,
             chunk_id=new_chunk,
             comment=f"分配新chunk #{new_chunk}获取控制"
-        ))
+        
+
         
         strategy.steps = steps
         strategy.notes.append("策略: 堆溢出标准风水流程")
@@ -303,7 +313,8 @@ class HeapFengShuiStrategist:
                     size=target_size,
                     chunk_id=filler_chunk,
                     comment=f"分配tcache填充chunk #{filler_chunk}"
-                ))
+                
+
         
         # 步骤2: 分配目标chunk
         target_chunk = self._next_chunk_id()
@@ -312,21 +323,24 @@ class HeapFengShuiStrategist:
             size=target_size,
             chunk_id=target_chunk,
             comment=f"分配目标chunk #{target_chunk}"
-        ))
+        
+
         
         # 步骤3: 第一次释放（如果tcache已满，进入unsorted bin）
         steps.append(FengShuiStep(
             action=FengShuiAction.FREE,
             chunk_id=target_chunk,
             comment=f"第一次释放chunk #{target_chunk}"
-        ))
+        
+
         
         # 步骤4: 第二次释放（double free）
         steps.append(FengShuiStep(
             action=FengShuiAction.FREE,
             chunk_id=target_chunk,
             comment=f"第二次释放chunk #{target_chunk} - double free"
-        ))
+        
+
         
         # 步骤5: 分配两次获取控制
         for i in range(2):
@@ -336,7 +350,8 @@ class HeapFengShuiStrategist:
                 size=target_size,
                 chunk_id=new_chunk,
                 comment=f"第{i+1}次分配获取chunk #{new_chunk}"
-            ))
+            
+
         
         strategy.steps = steps
         strategy.notes.append("策略: Double Free标准风水流程")
@@ -357,7 +372,8 @@ class HeapFengShuiStrategist:
             size=target_size,
             chunk_id=self._next_chunk_id(),
             comment="分配目标chunk"
-        ))
+        
+
         
         strategy.steps = steps
         strategy.notes.append("策略: 通用堆风水流程")
@@ -392,7 +408,8 @@ class HeapFengShuiStrategist:
         if version_num >= 34:
             base_prob -= 0.1
             
-        return min(1.0, max(0.0, base_prob))
+        return min(1.0, max(0.0, base_prob
+
     
     def _describe_target_layout(self, target_size: int) -> str:
         """
@@ -413,7 +430,7 @@ class HeapFengShuiStrategist:
     
     def _next_chunk_id(self) -> int:
         """获取下一个chunk ID"""
-        self.current_chunk_id += 1
+        self.current_chunk_id += 1,
         return self.current_chunk_id
     
     def _get_optimal_victim_size(self, target_size: int) -> int:
@@ -442,7 +459,8 @@ class HeapFengShuiStrategist:
         """
         code_lines = []
         code_lines.append("// 自动生成的堆风水代码")
-        code_lines.append("// 策略成功率: {:.1%}".format(strategy.success_probability))
+        code_lines.append("// 策略成功率: {:.1%}".format(strategy.success_probability
+
         code_lines.append("")
         code_lines.append("#include <stdlib.h>")
         code_lines.append("#include <string.h>")
@@ -512,7 +530,8 @@ class HeapFengShuiStrategist:
         """
         code_lines = []
         code_lines.append("# 自动生成的堆风水代码")
-        code_lines.append("# 策略成功率: {:.1%}".format(strategy.success_probability))
+        code_lines.append("# 策略成功率: {:.1%}".format(strategy.success_probability
+
         code_lines.append("# 建议使用pwntools的malloc/free包装")
         code_lines.append("")
         code_lines.append("def fengshui(io):")
@@ -553,7 +572,7 @@ class HeapFengShuiStrategist:
         """
         layout = ["堆布局模拟:"]
         
-        current_addr = 0x555555554000  # 虚拟地址起始
+        current_addr = 0x555555554000  # 虚拟地址起始,
         for step in strategy.steps:
             if step.action == FengShuiAction.ALLOC and step.size:
                 layout.append(f"  [ALLOC] 地址: 0x{current_addr:012x}, 大小: 0x{step.size:x}, ID: #{step.chunk_id}")
@@ -564,10 +583,7 @@ class HeapFengShuiStrategist:
         return "\n".join(layout)
 
 
-def generate_fengshui_strategy(vuln_type: str, 
-                              allocator: str = "ptmalloc",
-                              libc_version: str = "2.31",
-                              target_size: int = 0x80) -> FengShuiStrategy:
+def generate_fengshui_strategy(vuln_type: str, allocator: str = "ptmalloc", libc_version: str = "2.31", target_size: int = 0x80) -> FengShuiStrategy:
     """
     便捷函数：生成堆风水策略
     
@@ -580,13 +596,13 @@ def generate_fengshui_strategy(vuln_type: str,
     Returns:
         堆风水策略对象
     """
-    config = FengShuiConfig(
+    config = FengShuiConfig()
         allocator=AllocatorType(allocator),
         libc_version=libc_version,
         target_size=target_size
-    )
+    
     
     strategist = HeapFengShuiStrategist(config)
     
     vuln_enum = VulnerabilityType(vuln_type)
-    return strategist.generate_strategy(vuln_enum, target_size)
+    return strategist.generate_strategy(vuln_enum, target_size)))))))))))))))))))))))))))))))))))))))))

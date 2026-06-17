@@ -63,8 +63,8 @@ def run():
         common_structs = [
             ("iovec", [("iov_base", PointerDataType(), 8), ("iov_len", IntegerDataType(8), 8)]),
             ("timeval", [("tv_sec", IntegerDataType(8), 8), ("tv_usec", IntegerDataType(8), 8)]),
-            ("sockaddr_in", [("sin_family", IntegerDataType(2), 2), ("sin_port", IntegerDataType(2), 2), 
-                            ("sin_addr", IntegerDataType(4), 4), ("sin_zero", IntegerDataType(8), 8)])
+            ("sockaddr_in", [("sin_family", IntegerDataType(2), 2), ("sin_port", IntegerDataType(2), 2))
+                            ("sin_addr", IntegerDataType(4), 4), ("sin_zero", IntegerDataType(8), 8)]
         ]
         
         dataManager = currentProgram.getDataTypeManager()

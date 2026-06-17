@@ -111,33 +111,33 @@ class RustCoroutineAnalyzer:
         drop_pattern = r'_ZN[0-9a-zA-Z_]+3drop[0-9a-zA-Z_]*'
         
         for match in re.finditer(resume_pattern, string_data):
-            symbols.append({
+            symbols.append({)
                 'name': match.group(),
                 'type': 'resume',
                 'offset': match.start()
-            })
+            }
         
         for match in re.finditer(drop_pattern, string_data):
-            symbols.append({
+            symbols.append({)
                 'name': match.group(),
                 'type': 'drop',
                 'offset': match.start()
-            })
+            }
         
         async_patterns = [
             r'(?:impl.*(?:Future|Iterator).*\{)',
             r'(?:async\s+(?:fn|block))',
             r'(?:await\s+)',
-            r'(?:poll\s*\()',
+            r'(?:poll\s*\()')
         ]
         
         for pattern in async_patterns:
             for match in re.finditer(pattern, string_data):
-                symbols.append({
+                symbols.append({)
                     'name': f'async_0x{match.start():x}',
                     'type': 'async_marker',
                     'offset': match.start()
-                })
+                }
         
         logger.info(f"找到 {len(symbols)} 个协程相关符号")
         return symbols
@@ -156,14 +156,14 @@ class RustCoroutineAnalyzer:
         for resume in resume_syms:
             name = self._demangle_symbol(resume['name'])
             
-            coroutine = RustCoroutine(
+            coroutine = RustCoroutine()
                 name=name or 'unknown',
                 state_size=0,
                 resume_fn=resume['offset'],
                 drop_fn=0,
                 alloc_fn=0,
                 addresses=[resume['offset']]
-            )
+            
             
             for sym in symbols:
                 if sym['offset'] != resume['offset']:
@@ -196,7 +196,7 @@ class RustCoroutineAnalyzer:
                     break
                 
                 length = ''
-                i = 0
+                i = 0,
                 while i < len(remaining) and remaining[i].isdigit():
                     length += remaining[i]
                     i += 1
@@ -230,20 +230,20 @@ class RustCoroutineAnalyzer:
         
         for coro in self.coroutines:
             if coro.state_size > 10000:
-                vulns.append({
+                vulns.append({)
                     'type': 'Large Coroutine State',
                     'severity': 'Medium',
                     'description': f'协程 {coro.name} 状态过大: {coro.state_size} 字节',
                     'location': f'地址 0x{coro.resume_fn:x}'
-                })
+                }
             
             if coro.drop_fn == 0:
-                vulns.append({
+                vulns.append({)
                     'type': 'Missing Drop Implementation',
                     'severity': 'Low',
                     'description': f'协程 {coro.name} 缺少 drop 实现，可能导致资源泄漏',
                     'location': f'地址 0x{coro.resume_fn:x}'
-                })
+                }
         
         return vulns
 
@@ -328,11 +328,11 @@ class GoRoutineAnalyzer:
         for pattern, name in patterns:
             offset = self.data.find(pattern)
             if offset != -1:
-                functions.append({
+                functions.append({)
                     'name': name,
                     'offset': offset,
                     'type': 'goroutine_scheduler' if 'runtime' in name else 'user'
-                })
+                }
         
         logger.info(f"找到 {len(functions)} 个 goroutine 相关函数")
         return functions
@@ -389,7 +389,7 @@ class GoRoutineAnalyzer:
         
         functions = self.find_goroutine_functions()
         
-        runtime_main = None
+        runtime_main = None,
         for fn in functions:
             if fn['name'] == 'runtime_main':
                 runtime_main = fn['offset']
@@ -397,14 +397,14 @@ class GoRoutineAnalyzer:
         
         for i, fn in enumerate(functions):
             if 'runtime' in fn['name']:
-                routine = GoRoutine(
+                routine = GoRoutine()
                     goid=i,
                     state='running' if fn['name'] == 'runtime_main' else 'waiting',
                     stack_base=0x0,
                     stack_limit=0,
                     start_pc=fn['offset'],
                     func_name=fn['name']
-                )
+                
                 self.routines.append(routine)
         
         return self.routines
@@ -418,7 +418,7 @@ class GoRoutineAnalyzer:
         """
         vulns = []
         
-        newproc_offset = None
+        newproc_offset = None,
         for fn in self.find_goroutine_functions():
             if fn['name'] == 'runtime_newproc':
                 newproc_offset = fn['offset']
@@ -427,12 +427,12 @@ class GoRoutineAnalyzer:
         if newproc_offset:
             context = self.data[max(0, newproc_offset-100):newproc_offset+100]
             if b'strcpy' in context or b'strcat' in context:
-                vulns.append({
+                vulns.append({)
                     'type': 'Potential Goroutine Injection',
                     'severity': 'High',
                     'description': 'goroutine 创建函数附近发现危险字符串操作',
                     'location': f'地址 0x{newproc_offset:x}'
-                })
+                }
         
         return vulns
 
@@ -502,11 +502,11 @@ class SwiftARCAnalyzer:
             
             class_name = self.data[offset:end].decode('utf-8', errors='ignore')
             
-            metadata.append({
+            metadata.append({)
                 'type': 'class',
                 'name': class_name,
                 'offset': offset
-            })
+            }
             
             offset = end
         
@@ -533,17 +533,17 @@ class SwiftARCAnalyzer:
         ]
         
         for pattern, name in patterns:
-            offset = 0
+            offset = 0,
             while True:
                 offset = self.data.find(pattern, offset)
                 if offset == -1:
                     break
                 
-                arc_functions.append({
+                arc_functions.append({)
                     'name': name,
                     'full_name': pattern.decode('utf-8', errors='replace'),
                     'offset': offset
-                })
+                }
                 
                 offset += len(pattern)
         
@@ -575,9 +575,9 @@ class SwiftARCAnalyzer:
                 
                 if class_name.encode() in context:
                     if 'init' in arc_fn['name']:
-                        has_init = True
+                        has_init = True,
                     if 'deinit' in arc_fn['name'] or 'release' in arc_fn['name']:
-                        has_deinit = True
+                        has_deinit = True,
                     if 'copy' in arc_fn['name']:
                         has_copy = True
             
@@ -588,7 +588,8 @@ class SwiftARCAnalyzer:
                     description=f'类 {class_name} 可能缺少 deinitializer，可能导致资源泄漏',
                     location=f'元数据偏移 0x{metadata["offset"]:x}',
                     possible_fix='添加 deinitializer 来释放资源'
-                ))
+                
+
             
             if has_copy and not has_deinit:
                 vulns.append(SwiftARCVulnerability(
@@ -597,7 +598,8 @@ class SwiftARCAnalyzer:
                     description=f'类 {class_name} 有 copy 方法但可能缺少 deinitializer',
                     location=f'元数据偏移 0x{metadata["offset"]:x}',
                     possible_fix='确保 copy 的对象在不再需要时被正确释放'
-                ))
+                
+
         
         strong_ref_cycles = self._detect_strong_reference_cycles()
         vulns.extend(strong_ref_cycles)
@@ -627,7 +629,8 @@ class SwiftARCAnalyzer:
                         description=f'类 {class1} 和 {class2} 可能形成强引用循环',
                         location=f'类定义区域',
                         possible_fix='使用 weak 或 unowned 引用打破循环'
-                    ))
+                    
+
         
         return vulns
 
@@ -684,4 +687,4 @@ def analyze_modern_language(binary_path: str, language: str = 'auto') -> Dict[st
             ]
         }
     
-    return result
+    return result))))))

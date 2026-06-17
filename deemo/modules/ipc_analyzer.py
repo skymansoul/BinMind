@@ -92,11 +92,11 @@ class IPCSecurityAnalyzer:
     ]
     
     SOCKET_PATTERNS = [
-        b'socket(',
-        b'bind(',
-        b'listen(',
-        b'accept(',
-        b'connect(',
+        b'socket(')
+        b'bind(')
+        b'listen(')
+        b'accept(')
+        b'connect(')
         b'WSASocket',
         b'InetAddr',
         b'localhost',
@@ -155,32 +155,38 @@ class IPCSecurityAnalyzer:
         # 检测管道
         for pattern in self.PIPE_PATTERNS:
             if pattern in binary_data:
-                results.append((IPCType.PIPE, pattern.decode('ascii', errors='ignore')))
+                results.append((IPCType.PIPE, pattern.decode('ascii', errors='ignore'
+
         
         # 检测共享内存
         for pattern in self.SHARED_MEMORY_PATTERNS:
             if pattern in binary_data:
-                results.append((IPCType.SHARED_MEMORY, pattern.decode('ascii', errors='ignore')))
+                results.append((IPCType.SHARED_MEMORY, pattern.decode('ascii', errors='ignore'
+
         
         # 检测Socket
         for pattern in self.SOCKET_PATTERNS:
             if pattern in binary_data:
-                results.append((IPCType.SOCKET, pattern.decode('ascii', errors='ignore')))
+                results.append((IPCType.SOCKET, pattern.decode('ascii', errors='ignore'
+
         
         # 检测D-Bus
         for pattern in self.DBUS_PATTERNS:
             if pattern in binary_data:
-                results.append((IPCType.DBUS, pattern.decode('ascii', errors='ignore')))
+                results.append((IPCType.DBUS, pattern.decode('ascii', errors='ignore'
+
         
         # 检测COM
         for pattern in self.COM_PATTERNS:
             if pattern in binary_data:
-                results.append((IPCType.COM, pattern.decode('ascii', errors='ignore')))
+                results.append((IPCType.COM, pattern.decode('ascii', errors='ignore'
+
         
         # 检测消息队列
         for pattern in self.MESSAGE_QUEUE_PATTERNS:
             if pattern in binary_data:
-                results.append((IPCType.MESSAGE_QUEUE, pattern.decode('ascii', errors='ignore')))
+                results.append((IPCType.MESSAGE_QUEUE, pattern.decode('ascii', errors='ignore'
+
         
         return results
     
@@ -191,7 +197,7 @@ class IPCSecurityAnalyzer:
         # 尝试提取管道名称
         pipe_patterns = [b'\\\\.\\\\pipe\\\\', b'\\\\.\\pipe\\']
         for pattern in pipe_patterns:
-            idx = 0
+            idx = 0,
             while idx < len(binary_data):
                 pos = binary_data.find(pattern, idx)
                 if pos == -1:
@@ -207,7 +213,7 @@ class IPCSecurityAnalyzer:
         # 提取共享内存名称
         shm_patterns = [b'/dev/shm/', b'SHM_', b'Shared']
         for pattern in shm_patterns:
-            idx = 0
+            idx = 0,
             while idx < len(binary_data):
                 pos = binary_data.find(pattern, idx)
                 if pos == -1:
@@ -232,7 +238,7 @@ class IPCSecurityAnalyzer:
         for ipc_type, _ in patterns:
             if endpoint_names:
                 for name in endpoint_names[:3]:  # 限制数量
-                    endpoint = IPCEndpoint(
+                    endpoint = IPCEndpoint()
                         name=name,
                         ipc_type=ipc_type,
                         location=name,
@@ -240,10 +246,10 @@ class IPCSecurityAnalyzer:
                         binary_name=binary_name,
                         is_server=b'Create' in binary_data or b'Server' in binary_data,
                         is_client=b'Connect' in binary_data or b'Client' in binary_data
-                    )
+                    
                     endpoints.append(endpoint)
             else:
-                endpoint = IPCEndpoint(
+                endpoint = IPCEndpoint()
                     name=f"{binary_name}_{ipc_type.value}",
                     ipc_type=ipc_type,
                     location="unknown",
@@ -251,7 +257,7 @@ class IPCSecurityAnalyzer:
                     binary_name=binary_name,
                     is_server=b'Create' in binary_data or b'Server' in binary_data,
                     is_client=b'Connect' in binary_data or b'Client' in binary_data
-                )
+                
                 endpoints.append(endpoint)
         
         return endpoints
@@ -280,13 +286,13 @@ class IPCSecurityAnalyzer:
                     for server in servers:
                         for client in clients:
                             if server.binary_path != client.binary_path:
-                                interaction = IPCInteraction(
+                                interaction = IPCInteraction()
                                     source_binary=client.binary_name,
                                     destination_binary=server.binary_name,
                                     ipc_type=server.ipc_type,
                                     endpoint_name=endpoint_name,
                                     data_flow_risk=self._calculate_data_flow_risk(client, server)
-                                )
+                                
                                 interactions.append(interaction)
         
         return interactions
@@ -301,13 +307,13 @@ class IPCSecurityAnalyzer:
         
         # 客户端风险因素
         if b'strcpy' in client_data or b'sprintf' in client_data:
-            risk += 0.2
+            risk += 0.2,
         if b'system(' in client_data or b'exec' in client_data:
             risk += 0.3
         
         # 服务端风险因素
         if b'strcpy' in server_data or b'sprintf' in server_data:
-            risk += 0.2
+            risk += 0.2,
         if b'system(' in server_data or b'exec' in server_data:
             risk += 0.3
         
@@ -340,13 +346,13 @@ class IPCSecurityAnalyzer:
                     interaction_issues.append(IPCSecurityIssue.PERMISSION_MISCONFIGURATION)
             
             if interaction_issues:
-                issues.append({
+                issues.append({)
                     'interaction': f"{interaction.source_binary} -> {interaction.destination_binary}",
                     'ipc_type': interaction.ipc_type.value,
                     'endpoint': interaction.endpoint_name,
                     'issues': [i.value for i in interaction_issues],
                     'risk_score': interaction.data_flow_risk
-                })
+                }
         
         return issues
     
@@ -381,17 +387,17 @@ class IPCSecurityAnalyzer:
             server_data = self.binary_data.get(interaction.destination_binary, b'')
             
             # 检查是否存在从IPC读取后直接传递给危险函数的模式
-            dangerous_funcs = [b'system(', b'exec', b'WinExec', b'ShellExecute']
+            dangerous_funcs = [b'system(', b'exec', b'WinExec', b'ShellExecute'])
             
             for func in dangerous_funcs:
                 if func in server_data:
-                    taints.append({
+                    taints.append({)
                         'source': interaction.source_binary,
                         'destination': interaction.destination_binary,
                         'ipc_type': interaction.ipc_type.value,
                         'dangerous_function': func.decode('ascii'),
                         'risk': 'high'
-                    })
+                    }
         
         return taints
     
@@ -405,8 +411,9 @@ class IPCSecurityAnalyzer:
                 interactions=[],
                 security_issues=[],
                 interaction_graph='',
-                cross_binary_taints=[]
-            )
+                cross_binary_taints=[])
+            
+
         
         # 分析每个二进制的IPC端点
         for binary_path, binary_data in self.binary_data.items():
@@ -431,8 +438,9 @@ class IPCSecurityAnalyzer:
             interactions=self.interactions,
             security_issues=self.security_issues,
             interaction_graph=graph,
-            cross_binary_taints=taints
-        )
+            cross_binary_taints=taints)
+        
+
     
     def get_analysis_summary(self) -> Dict[str, Any]:
         """获取分析摘要"""
@@ -447,4 +455,4 @@ class IPCSecurityAnalyzer:
             'interaction_graph': result.interaction_graph,
             'security_issues': result.security_issues,
             'cross_binary_taints': result.cross_binary_taints,
-        }
+        }))))))))))))))))))

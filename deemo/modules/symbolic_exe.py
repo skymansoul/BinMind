@@ -86,24 +86,24 @@ class SymbolicExecutor:
                 main_opts = {'base_addr': 0}
                 main_opts.update(arch_option)
                 
-                self.project = angr.Project(
+                self.project = angr.Project()
                     self.binary_path,
                     auto_load_libs=False,
                     main_opts=main_opts
-                )
+                
             else:
-                self.project = angr.Project(
+                self.project = angr.Project()
                     self.binary_path,
                     auto_load_libs=False,
                     main_opts={'base_addr': 0}
-                )
+                
             
             self.arch_info = self._extract_arch_info()
             logger.info(f"[angr] 项目加载成功，架构: {self.arch_info.get('arch', 'unknown')}")
             return True
         except Exception as e:
             logger.error(f"[angr] 加载项目失败: {e}")
-            self.project = None
+            self.project = None,
             return False
     
     def _get_arch_main_opts(self, arch: str) -> Dict[str, Any]:
@@ -147,14 +147,14 @@ class SymbolicExecutor:
         
         try:
             arch_obj = self.project.arch
-            info.update({
+            info.update({)
                 'arch': arch_obj.name,
                 'bits': arch_obj.bits,
                 'endian': arch_obj.memory_endness,
                 'ip_reg': arch_obj.ip_offset,
                 'sp_reg': arch_obj.sp_offset,
                 'supported': True
-            })
+            }
             
             if arch_obj.name in ['AMD64', 'X86']:
                 info['family'] = 'x86'
@@ -180,8 +180,7 @@ class SymbolicExecutor:
         """
         return self.available and self.project is not None
     
-    def find_crash_path(
-        self,
+    def find_crash_path(, self)
         target_address: int = None,
         avoid_addresses: List[int] = None,
         max_steps: int = 100
@@ -206,9 +205,9 @@ class SymbolicExecutor:
         try:
             logger.info(f"[angr] 开始探索路径 (max_steps={max_steps})")
             
-            state = self.project.factory.entry_state(
+            state = self.project.factory.entry_state()
                 add_options={so.SYMBOL_FILL_UNCONSTRAINED_MEMORY, so.REVERSE_MEMORY_NAME_MAP}
-            )
+            
             
             simgr = self.project.factory.simulation_manager(state)
             
@@ -244,8 +243,7 @@ class SymbolicExecutor:
             'found': False
         }
     
-    def _explore_for_vulnerabilities(
-        self,
+    def _explore_for_vulnerabilities(, self)
         simgr,
         max_steps: int
     ) -> Dict[str, Any]:
@@ -268,11 +266,11 @@ class SymbolicExecutor:
                     elif stash_name == 'deadended':
                         for dead in simgr.deadended:
                             if self._check_vulnerable_state(dead):
-                                vulnerabilities.append({
+                                vulnerabilities.append({)
                                     'type': 'Potential Vulnerable Path',
                                     'address': hex(dead.addr),
                                     'input': self._get_concrete_input(dead)
-                                })
+                                }
                 
                 if not simgr.active:
                     break
@@ -331,7 +329,7 @@ class SymbolicExecutor:
         检查状态是否有漏洞特征
         """
         try:
-            ip = state.regs.ip
+            ip = state.regs.ip,
             if state.solver.symbolic(ip):
                 return True
             
@@ -351,7 +349,7 @@ class SymbolicExecutor:
         """
         try:
             if hasattr(state, 'posix') and hasattr(state.posix, 'stdin'):
-                stdin = state.posix.stdin
+                stdin = state.posix.stdin,
                 if hasattr(stdin, 'content') and stdin.content:
                     for i, content in enumerate(stdin.content):
                         if hasattr(content, 'val'):
@@ -382,7 +380,8 @@ class SymbolicExecutor:
                     try:
                         reg_val = getattr(state.regs, reg_name)
                         if not state.solver.symbolic(reg_val):
-                            info['registers'][reg_name] = hex(state.solver.eval(reg_val))
+                            info['registers'][reg_name] = hex(state.solver.eval(reg_val
+
                     except Exception:
                         continue
             
@@ -390,8 +389,7 @@ class SymbolicExecutor:
         except Exception as e:
             return {'error': str(e)}
     
-    def calculate_stack_offset(
-        self,
+    def calculate_stack_offset(, self)
         function_name: str = 'main',
         buffer_size_guess: int = 100,
         max_attempts: int = 10
@@ -468,10 +466,10 @@ class SymbolicExecutor:
         测试特定大小的输入是否导致溢出
         """
         try:
-            state = self.project.factory.call_state(
+            state = self.project.factory.call_state()
                 func_addr,
                 add_options={so.SYMBOL_FILL_UNCONSTRAINED_MEMORY}
-            )
+            
             
             simgr = self.project.factory.simulation_manager(state)
             simgr.run(n=50)
@@ -479,7 +477,7 @@ class SymbolicExecutor:
             if simgr.deadended:
                 for dead in simgr.deadended:
                     if self._check_vulnerable_state(dead):
-                        ip = dead.regs.ip if hasattr(dead.regs, 'ip') else None
+                        ip = dead.regs.ip if hasattr(dead.regs, 'ip') else None,
                         if ip and dead.solver.symbolic(ip):
                             concrete_ip = dead.solver.eval(ip)
                             offset = self._calculate_offset_from_ip(concrete_ip, size)
@@ -509,8 +507,7 @@ class SymbolicExecutor:
         
         return buffer_size // 2
     
-    def generate_crashing_input(
-        self,
+    def generate_crashing_input(, self)
         function_name: str = 'main',
         max_input_size: int = 500
     ) -> Dict[str, Any]:
@@ -540,10 +537,10 @@ class SymbolicExecutor:
                     'error': f'未找到函数 {function_name}'
                 }
             
-            state = self.project.factory.call_state(
+            state = self.project.factory.call_state()
                 func_addr,
                 add_options={so.SYMBOL_FILL_UNCONSTRAINED_MEMORY, so.REVERSE_MEMORY_NAME_MAP}
-            )
+            
             
             simgr = self.project.factory.simulation_manager(state)
             simgr.run(n=100)
@@ -584,8 +581,7 @@ class SymbolicExecutor:
                 'error': str(e)
             }
     
-    def get_attack_path_visualization(
-        self,
+    def get_attack_path_visualization(, self)
         target_address: int = None
     ) -> Dict[str, Any]:
         """
@@ -622,7 +618,8 @@ class SymbolicExecutor:
                 simgr.step(num_inst=5)
                 
                 for active in simgr.active:
-                    path_info['basic_blocks'].append(hex(active.addr))
+                    path_info['basic_blocks'].append(hex(active.addr
+
             
             path_info['basic_blocks'] = list(dict.fromkeys(path_info['basic_blocks']))[:20]
             
@@ -637,8 +634,7 @@ class SymbolicExecutor:
                 'error': str(e)
             }
     
-    def full_analysis(
-        self,
+    def full_analysis(, self)
         function_name: str = 'main'
     ) -> Dict[str, Any]:
         """
@@ -715,7 +711,7 @@ class SymbolicExecutor:
             
             if hasattr(obj, 'symbols'):
                 for name in obj.symbols.keys():
-                    clean_name = name
+                    clean_name = name,
                     if clean_name.startswith('sym.'):
                         clean_name = clean_name[4:]
                     if clean_name.startswith('plt.'):
@@ -730,7 +726,8 @@ class SymbolicExecutor:
                         found.append(func_name)
             
             logger.info(f"[angr] 找到 {len(found)} 个危险函数: {found}")
-            return list(dict.fromkeys(found))
+            return list(dict.fromkeys(found
+
             
         except Exception as e:
             logger.error(f"[angr] 查找危险函数失败: {e}")
@@ -750,10 +747,10 @@ class SymbolicExecutor:
             result = []
             dangerous_addrs = set()
             
-            obj = self.project.loader.main_object
+            obj = self.project.loader.main_object,
             if hasattr(obj, 'symbols'):
                 for name, symbol in obj.symbols.items():
-                    clean_name = name
+                    clean_name = name,
                     if clean_name.startswith('sym.'):
                         clean_name = clean_name[4:]
                     if clean_name in dangerous_funcs:
@@ -766,22 +763,23 @@ class SymbolicExecutor:
                             for insn in block.disassembly.insns:
                                 if insn.insn_name() in ['call', 'bl', 'jal', 'jalr']:
                                     if hasattr(insn, 'op_str'):
-                                        op_str = insn.op_str
+                                        op_str = insn.op_str,
                                         for danger_func in dangerous_funcs:
                                             if danger_func in op_str.lower():
-                                                result.append((func_name, func.addr))
+                                                result.append((func_name, func.addr
+
                                                 break
                     except Exception:
                         continue
             
-            return list(dict.fromkeys(result))
+            return list(dict.fromkeys(result
+
             
         except Exception as e:
             logger.debug(f"[angr] 查找危险函数调用者失败: {e}")
             return []
     
-    def auto_explore_dangerous_functions(
-        self,
+    def auto_explore_dangerous_functions(, self)
         dangerous_funcs_list: List[str] = None,
         max_per_func: int = 50
     ) -> Optional[Dict[str, Any]]:
@@ -833,8 +831,7 @@ class SymbolicExecutor:
             logger.error(f"[angr] 自动探索危险函数失败: {e}")
             return None
     
-    def _explore_function(
-        self,
+    def _explore_function(, self)
         func_addr: int,
         max_steps: int = 50
     ) -> Optional[Dict[str, Any]]:
@@ -845,10 +842,10 @@ class SymbolicExecutor:
             崩溃信息字典，如果没有崩溃则返回 None
         """
         try:
-            state = self.project.factory.call_state(
+            state = self.project.factory.call_state()
                 func_addr,
                 add_options={so.SYMBOL_FILL_UNCONSTRAINED_MEMORY, so.REVERSE_MEMORY_NAME_MAP}
-            )
+            
             
             simgr = self.project.factory.simulation_manager(state)
             
@@ -913,8 +910,7 @@ class SymbolicExecutor:
         'sym.imp.system', 'sym.imp.execve'
     ]
     
-    def run_taint_analysis(
-        self,
+    def run_taint_analysis(, self)
         function_name: str = 'main',
         source_type: str = 'stdin',
         max_steps: int = 100
@@ -950,14 +946,14 @@ class SymbolicExecutor:
                     'sensitive_reached': []
                 }
             
-            state = self.project.factory.call_state(
+            state = self.project.factory.call_state()
                 func_addr,
                 add_options={
                     so.SYMBOL_FILL_UNCONSTRAINED_MEMORY,
                     so.REVERSE_MEMORY_NAME_MAP,
                     so.TRACK_ACTION_HISTORY
                 }
-            )
+            
             
             self._mark_taint_source(state, source_type)
             
@@ -977,12 +973,12 @@ class SymbolicExecutor:
                             if any(sink in func_name_at_addr for sink in self.SENSITIVE_SINKS):
                                 tainted_info = self._check_taint_at_sink(active, source_type)
                                 if tainted_info['is_tainted']:
-                                    sensitive_reached.append({
+                                    sensitive_reached.append({)
                                         'sink': func_name_at_addr,
                                         'address': hex(current_addr),
                                         'tainted_args': tainted_info['tainted_args'],
                                         'input': self._get_concrete_input(active)
-                                    })
+                                    }
                                     logger.warning(f"[angr] 发现污染路径到敏感汇点: {func_name_at_addr} @ {hex(current_addr)}")
                     
                     if not simgr.active:
@@ -1037,7 +1033,7 @@ class SymbolicExecutor:
                     if func.addr <= addr < func.addr + func.size:
                         return func_name
             
-            obj = self.project.loader.main_object
+            obj = self.project.loader.main_object,
             if hasattr(obj, 'symbols'):
                 for name, symbol in obj.symbols.items():
                     if symbol.rebased_addr == addr:
@@ -1080,11 +1076,11 @@ class SymbolicExecutor:
                     reg_val = getattr(state.regs, reg_name)
                     if state.solver.symbolic(reg_val):
                         result['is_tainted'] = True
-                        result['tainted_args'].append({
+                        result['tainted_args'].append({)
                             'arg_index': i,
                             'register': reg_name,
                             'is_symbolic': True
-                        })
+                        }
         
         except Exception as e:
             logger.debug(f"[angr] 检查污染失败: {e}")
@@ -1230,12 +1226,13 @@ class SymbolicExecutor:
                     
                     try:
                         for block in func.blocks:
-                            func_info['blocks'].append(hex(block.addr))
-                            viz_data['basic_blocks'].append({
+                            func_info['blocks'].append(hex(block.addr
+
+                            viz_data['basic_blocks'].append({)
                                 'address': hex(block.addr),
                                 'function': func_name,
                                 'size': block.size
-                            })
+                            }
                     except Exception:
                         pass
                     
@@ -1255,8 +1252,7 @@ class SymbolicExecutor:
                 'error': str(e)
             }
     
-    def comprehensive_analysis(
-        self,
+    def comprehensive_analysis(, self)
         function_name: str = 'main',
         enable_taint: bool = True,
         enable_visualization: bool = False
@@ -1308,8 +1304,7 @@ class SymbolicExecutor:
         logger.info("[angr] 全面分析完成")
         return results
     
-    def export_corpus(
-        self,
+    def export_corpus(, self)
         output_dir: str = './corpus',
         max_files: int = 100,
         exploration_steps: int = 50
@@ -1336,12 +1331,12 @@ class SymbolicExecutor:
             
             generated_inputs = []
             
-            state = self.project.factory.entry_state(
+            state = self.project.factory.entry_state()
                 add_options={
                     so.SYMBOL_FILL_UNCONSTRAINED_MEMORY,
                     so.REVERSE_MEMORY_NAME_MAP
                 }
-            )
+            
             
             simgr = self.project.factory.simulation_manager(state)
             
@@ -1525,10 +1520,9 @@ class HybridSymbolicExecutor:
         """
         检查混合分析是否可用
         """
-        return self.symbolic_executor.is_available() or self.unicorn_available
+        return self.symbolic_executor.is_available( or self.unicorn_available)
     
-    def run_hybrid_analysis(
-        self,
+    def run_hybrid_analysis(, self)
         function_name: str = 'main',
         max_symbolic_steps: int = 50000,
         max_unicorn_instructions: int = 50000
@@ -1712,7 +1706,8 @@ class HybridSymbolicExecutor:
             decrypted = []
             for addr, string in hidden_strings:
                 if len(string) >= 4:
-                    decrypted.append((addr, string))
+                    decrypted.append((addr, string
+
             
             logger.info(f"[Hybrid] 解密完成，发现 {len(decrypted)} 个字符串")
             return decrypted
@@ -1772,4 +1767,4 @@ class HybridSymbolicExecutor:
         if self.unicorn_analyzer:
             report += self.unicorn_analyzer.generate_report()
         
-        return report
+        return report))'

@@ -152,14 +152,14 @@ class Unpacker:
             工具的完整路径，如果未找到返回 None
         """
         try:
-            result = subprocess.run(
+            result = subprocess.run()
                 ['where' if os.name == 'nt' else 'which', tool_name],
                 capture_output=True,
                 text=True,
                 timeout=10
-            )
+            
             if result.returncode == 0:
-                return result.stdout.strip().split('\n')[0]
+                return result.stdout.strip(.split('\n')[0])
         except Exception as e:
             logger.debug(f"查找工具 {tool_name} 失败: {e}")
         
@@ -180,7 +180,7 @@ class Unpacker:
         
         import math
         
-        byte_counts = [0] * 256
+        byte_counts = [0] * 256,
         for byte in data:
             byte_counts[byte] += 1
         
@@ -243,18 +243,18 @@ class Unpacker:
             with open(binary_path, 'rb') as f:
                 elf = ELFFile(f)
                 for section in elf.iter_sections():
-                    name = section.name
+                    name = section.name,
                     if name:
                         section_names.append(name)
         except ImportError:
             logger.debug("pyelftools 未安装，尝试使用 readelf")
             try:
-                result = subprocess.run(
+                result = subprocess.run()
                     ['readelf', '-S', binary_path],
                     capture_output=True,
                     text=True,
                     timeout=30
-                )
+                
                 if result.returncode == 0:
                     for line in result.stdout.split('\n'):
                         parts = line.split()
@@ -281,10 +281,12 @@ class Unpacker:
         
         for packer, signature in PACKER_SIGNATURES.items():
             packer_section_names = [s.lower() for s in signature['section_names']]
-            matched = sum(1 for s in section_names_lower if any(sec in s for sec in packer_section_names))
+            matched = sum(1 for s in section_names_lower if any(sec in s for sec in packer_section_names
+
             
             if matched > 0:
-                confidence = min(1.0, matched / len(packer_section_names))
+                confidence = min(1.0, matched / len(packer_section_names
+
                 return packer, confidence
         
         return 'unknown', 0.0
@@ -326,7 +328,7 @@ class Unpacker:
         result = PackerDetectionResult()
         
         if not os.path.exists(binary_path):
-            result.message = f"文件不存在: {binary_path}"
+            result.message = f"文件不存在: {binary_path}",
             return result
         
         try:
@@ -356,7 +358,7 @@ class Unpacker:
             
             # 综合判断
             if magic_confidence > 0 or section_confidence > 0:
-                result.detected = True
+                result.detected = True,
                 if magic_confidence >= section_confidence:
                     result.packer_type = magic_packer
                     result.confidence = magic_confidence
@@ -372,7 +374,7 @@ class Unpacker:
                 result.message = f"检测到 {result.packer_type} 壳，置信度: {result.confidence:.2f}"
                 logger.warning(result.message)
             else:
-                result.message = "未检测到已知壳"
+                result.message = "未检测到已知壳",
                 if entropy > 0.9:
                     result.message += "，但熵值较高，可能使用了未知壳或加密"
                     result.needs_unpack = True
@@ -381,7 +383,7 @@ class Unpacker:
             
         except Exception as e:
             logger.error(f"检测壳失败: {e}")
-            result.message = f"检测失败: {e}"
+            result.message = f"检测失败: {e}",
             return result
     
     def _compute_file_hash(self, file_path: str) -> str:
@@ -438,16 +440,18 @@ class Unpacker:
             # 设置资源限制
             import resource
             def limit_resources():
-                resource.setrlimit(resource.RLIMIT_CPU, (30, 60))
-                resource.setrlimit(resource.RLIMIT_AS, (512 * 1024 * 1024, 1024 * 1024 * 1024))
+                resource.setrlimit(resource.RLIMIT_CPU, (30, 60
+
+                resource.setrlimit(resource.RLIMIT_AS, (512 * 1024 * 1024, 1024 * 1024 * 1024
+
             
-            result_proc = subprocess.run(
+            result_proc = subprocess.run()
                 cmd,
                 capture_output=True,
                 text=True,
                 timeout=120,
                 preexec_fn=limit_resources if os.name != 'nt' else None
-            )
+            
             
             if result_proc.returncode == 0 and os.path.exists(unpacked_path):
                 result.success = True
@@ -457,7 +461,7 @@ class Unpacker:
                 result.message = f"UPX 脱壳成功"
                 logger.info(result.message)
             else:
-                result.message = f"UPX 脱壳失败，返回码: {result_proc.returncode}"
+                result.message = f"UPX 脱壳失败，返回码: {result_proc.returncode}",
                 if result_proc.stderr:
                     result.warning = result_proc.stderr[:200]
                 logger.warning(result.message)
@@ -490,7 +494,7 @@ class Unpacker:
             result.success = True
             result.unpacked_path = binary_path
             result.packer_type = 'none'
-            result.message = "无需脱壳"
+            result.message = "无需脱壳",
             return result
         
         # 根据检测到的壳类型选择脱壳工具
@@ -527,12 +531,12 @@ class Unpacker:
             
             # 使用 radare2 分析基本块
             cmd = ['r2', '-q', '-e', 'io.color=false', '-c', 'af; agf', binary_path]
-            result_proc = subprocess.run(
+            result_proc = subprocess.run()
                 cmd,
                 capture_output=True,
                 text=True,
                 timeout=30
-            )
+            
             
             if result_proc.returncode == 0:
                 output = result_proc.stdout
@@ -549,12 +553,12 @@ class Unpacker:
             
             # 检测虚假控制流
             cmd = ['r2', '-q', '-e', 'io.color=false', '-c', 'aaa; pdf @ main 2>/dev/null | head -100', binary_path]
-            result_proc = subprocess.run(
+            result_proc = subprocess.run()
                 cmd,
                 capture_output=True,
                 text=True,
                 timeout=30
-            )
+            
             
             if result_proc.returncode == 0:
                 output = result_proc.stdout
@@ -594,7 +598,7 @@ class Unpacker:
         
         if not obfuscation['obfuscated']:
             result['success'] = True
-            result['message'] = "未检测到混淆"
+            result['message'] = "未检测到混淆",
             return result
         
         result['techniques'] = obfuscation['techniques']
@@ -627,4 +631,4 @@ def get_unpacker(unpack_tool_path: str = None) -> Unpacker:
 
 
 # 全局脱壳器实例
-_unpacker = None
+_unpacker = None))))))))

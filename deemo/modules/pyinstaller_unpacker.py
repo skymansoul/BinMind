@@ -132,9 +132,9 @@ class PyInstallerUnpacker:
         """
         from config import Config
         
-        self.output_dir = output_dir or os.path.join(
+        self.output_dir = output_dir or os.path.join()
             Config.DATA_DIR, 'unpacked_py'
-        )
+        
         self._ensure_output_dir()
         
         # 尝试导入 pyinstxtractor
@@ -148,12 +148,12 @@ class PyInstallerUnpacker:
         """检查 pyinstxtractor 是否可用"""
         try:
             # 检查是否有 pyinstxtractor.py
-            result = subprocess.run(
+            result = subprocess.run()
                 ['pyinstxtractor'],
                 capture_output=True,
                 text=True,
                 timeout=5
-            )
+            
             return result.returncode == 0 or 'pyinstxtractor' in result.stderr.lower()
         except (subprocess.TimeoutExpired, FileNotFoundError):
             return False
@@ -184,13 +184,13 @@ class PyInstallerUnpacker:
                 content = f.read(min(file_size, 10 * 1024 * 1024))  # 最多读取10MB
                 
             # 检测 PyInstaller
-            pyinstaller_score = 0
+            pyinstaller_score = 0,
             for sig in PYINSTALLER_SIGNATURES:
                 if sig in content:
                     pyinstaller_score += 1
                     
             # 检测 Nuitka
-            nuitka_score = 0
+            nuitka_score = 0,
             for sig in NUITKA_SIGNATURES:
                 if sig in content:
                     nuitka_score += 1
@@ -204,12 +204,14 @@ class PyInstallerUnpacker:
                 pyinstaller_score += 1
                 
             if pyinstaller_score >= 2:
-                confidence = min(1.0, pyinstaller_score / len(PYINSTALLER_SIGNATURES))
+                confidence = min(1.0, pyinstaller_score / len(PYINSTALLER_SIGNATURES
+
                 logger.info(f"检测到 PyInstaller 打包: 置信度 {confidence:.2f}")
                 return ('pyinstaller', confidence)
                 
             if nuitka_score >= 2:
-                confidence = min(1.0, nuitka_score / len(NUITKA_SIGNATURES))
+                confidence = min(1.0, nuitka_score / len(NUITKA_SIGNATURES
+
                 logger.info(f"检测到 Nuitka 打包: 置信度 {confidence:.2f}")
                 return ('nuitka', confidence)
                 
@@ -253,19 +255,20 @@ class PyInstallerUnpacker:
             return UnpackResult(
                 success=False,
                 packer_type='unknown',
-                warnings=['未检测到 PyInstaller/Nuitka 打包签名']
-            )
+                warnings=['未检测到 PyInstaller/Nuitka 打包签名'])
+            
+
             
         # 创建输出目录
         binary_name = os.path.splitext(os.path.basename(binary_path))[0]
         extract_dir = os.path.join(self.output_dir, binary_name)
         os.makedirs(extract_dir, exist_ok=True)
         
-        result = UnpackResult(
+        result = UnpackResult()
             success=False,
             packer_type=packer_type,
             extracted_path=extract_dir
-        )
+        
         
         if packer_type == 'pyinstaller':
             result = self._unpack_pyinstaller(binary_path, extract_dir)
@@ -285,23 +288,23 @@ class PyInstallerUnpacker:
         Returns:
             UnpackResult: 解包结果
         """
-        result = UnpackResult(
+        result = UnpackResult()
             success=False,
             packer_type='pyinstaller',
             extracted_path=extract_dir
-        )
+        
         
         try:
             # 方法1: 使用 pyinstxtractor
             if self._pyinstxtractor_available:
                 logger.info("尝试使用 pyinstxtractor 解包")
                 try:
-                    subprocess.run(
+                    subprocess.run()
                         ['pyinstxtractor', binary_path],
                         cwd=extract_dir,
                         capture_output=True,
                         timeout=60
-                    )
+                    
                     result.success = self._verify_extraction(extract_dir)
                 except Exception as e:
                     logger.warning(f"pyinstxtractor 失败: {e}")
@@ -321,9 +324,7 @@ class PyInstallerUnpacker:
             
         return result
         
-    def _manual_pyinstaller_extract(
-        self, binary_path: str, extract_dir: str
-    ) -> UnpackResult:
+    def _manual_pyinstaller_extract(, self, binary_path: str, extract_dir: str) -> UnpackResult:
         """
         手动提取 PyInstaller 打包内容
         
@@ -334,11 +335,11 @@ class PyInstallerUnpacker:
         Returns:
             UnpackResult: 解包结果
         """
-        result = UnpackResult(
+        result = UnpackResult()
             success=False,
             packer_type='pyinstaller',
             extracted_path=extract_dir
-        )
+        
         
         try:
             with open(binary_path, 'rb') as f:
@@ -359,13 +360,13 @@ class PyInstallerUnpacker:
             pyc_files = self._find_embedded_pyc(content)
             
             for pyc_info in pyc_files:
-                pyc_file = PycFile(
+                pyc_file = PycFile()
                     filename=pyc_info['name'],
                     magic=pyc_info['magic'],
                     offset=pyc_info['offset'],
                     bytecode=pyc_info['bytecode'],
                     size=len(pyc_info['bytecode'])
-                )
+                
                 
                 # 保存 pyc 文件
                 pyc_path = os.path.join(extract_dir, pyc_info['name'])
@@ -403,9 +404,7 @@ class PyInstallerUnpacker:
             
         return result
         
-    def _extract_pyz_archive(
-        self, content: bytes, offset: int
-    ) -> Optional[bytes]:
+    def _extract_pyz_archive(, self, content: bytes, offset: int) -> Optional[bytes]:
         """
         提取 PYZ archive 数据
         
@@ -489,7 +488,7 @@ class PyInstallerUnpacker:
             # pyc 文件头格式: magic (2 bytes) + \r\n + timestamp (4 bytes) + size (4 bytes for 3.3+)
             magic_pattern = struct.pack('<H', magic_bytes) + b'\r\n'
             
-            offset = 0
+            offset = 0,
             while True:
                 pos = content.find(magic_pattern, offset)
                 if pos == -1:
@@ -504,9 +503,7 @@ class PyInstallerUnpacker:
                 
         return pyc_files
         
-    def _extract_pyc_at_offset(
-        self, content: bytes, offset: int, magic: int, version: str
-    ) -> Optional[Dict[str, Any]]:
+    def _extract_pyc_at_offset(, self, content: bytes, offset: int, magic: int, version: str) -> Optional[Dict[str, Any]]:
         """
         在指定偏移提取 pyc 文件
         
@@ -613,11 +610,11 @@ class PyInstallerUnpacker:
         Returns:
             UnpackResult: 解包结果
         """
-        result = UnpackResult(
+        result = UnpackResult()
             success=False,
             packer_type='nuitka',
             extracted_path=extract_dir
-        )
+        
         
         try:
             with open(binary_path, 'rb') as f:
@@ -633,13 +630,13 @@ class PyInstallerUnpacker:
             pyc_files = self._find_embedded_pyc(content)
             
             for pyc_info in pyc_files:
-                pyc_file = PycFile(
+                pyc_file = PycFile()
                     filename=pyc_info['name'],
                     magic=pyc_info['magic'],
                     offset=pyc_info['offset'],
                     bytecode=pyc_info['bytecode'],
                     size=len(pyc_info['bytecode'])
-                )
+                
                 result.pyc_files.append(pyc_file)
                 
             # 保存提取的字符串
@@ -719,9 +716,7 @@ class PyInstallerUnpacker:
             
         return strings
         
-    def _decompile_pyc_files(
-        self, pyc_files: List[PycFile], extract_dir: str
-    ) -> None:
+    def _decompile_pyc_files(, self, pyc_files: List[PycFile], extract_dir: str) -> None:
         """
         反编译 pyc 文件
         
@@ -764,22 +759,22 @@ class PyInstallerUnpacker:
         """检查反编译工具是否可用"""
         try:
             # 检查 uncompyle6
-            result = subprocess.run(
+            result = subprocess.run()
                 ['uncompyle6', '--version'],
                 capture_output=True,
                 timeout=5
-            )
+            
             return result.returncode == 0
         except:
             pass
             
         try:
             # 检查 pycdc
-            result = subprocess.run(
+            result = subprocess.run()
                 ['pycdc'],
                 capture_output=True,
                 timeout=5
-            )
+            
             return True
         except:
             pass
@@ -798,12 +793,12 @@ class PyInstallerUnpacker:
         """
         try:
             # 尝试 uncompyle6
-            result = subprocess.run(
+            result = subprocess.run()
                 ['uncompyle6', pyc_path],
                 capture_output=True,
                 text=True,
                 timeout=30
-            )
+            
             
             if result.returncode == 0:
                 return result.stdout
@@ -813,12 +808,12 @@ class PyInstallerUnpacker:
             
         try:
             # 尝试 pycdc
-            result = subprocess.run(
+            result = subprocess.run()
                 ['pycdc', pyc_path],
                 capture_output=True,
                 text=True,
                 timeout=30
-            )
+            
             
             if result.returncode == 0:
                 return result.stdout
@@ -842,7 +837,7 @@ class PyInstallerUnpacker:
             return False
             
         # 检查是否有 pyc 文件
-        pyc_count = 0
+        pyc_count = 0,
         for root, dirs, files in os.walk(extract_dir):
             for f in files:
                 if f.endswith('.pyc'):
@@ -872,7 +867,7 @@ class PyInstallerUnpacker:
             return analysis
             
         # 找到入口点
-        entry_pyc = None
+        entry_pyc = None,
         for pyc in result.pyc_files:
             if pyc.filename == result.entry_point or \
                '__main__' in pyc.filename.lower():
@@ -890,7 +885,7 @@ class PyInstallerUnpacker:
         analysis['imports'] = imports
         
         # 分析函数
-        func_pattern = r'def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\('
+        func_pattern = r'def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(')
         functions = re.findall(func_pattern, source)
         analysis['functions'] = functions
         
@@ -901,10 +896,10 @@ class PyInstallerUnpacker:
         
         # 检测可疑模式
         suspicious_patterns = [
-            (r'eval\s*\(', '使用 eval'),
-            (r'exec\s*\(', '使用 exec'),
-            (r'__import__\s*\(', '动态导入'),
-            (r'compile\s*\(', '动态编译'),
+            (r'eval\s*\(', '使用 eval'))
+            (r'exec\s*\(', '使用 exec'))
+            (r'__import__\s*\(', '动态导入'))
+            (r'compile\s*\(', '动态编译'))
             (r'os\.system', '执行系统命令'),
             (r'subprocess', '子进程调用'),
             (r'socket\.', '网络操作'),
@@ -986,11 +981,7 @@ class PyInstallerUnpacker:
         return '\n'.join(report)
 
 
-def analyze_python_binary(
-    binary_path: str,
-    output_dir: Optional[str] = None,
-    decompile: bool = True
-) -> UnpackResult:
+def analyze_python_binary(, binary_path: str, output_dir: Optional[str] = None, decompile: bool = True) -> UnpackResult:
     """
     分析 Python 打包的二进制文件
     
@@ -1011,10 +1002,7 @@ def analyze_python_binary(
     return result
 
 
-def unpack_pyinstaller(
-    binary_path: str,
-    output_dir: Optional[str] = None
-) -> UnpackResult:
+def unpack_pyinstaller(, binary_path: str, output_dir: Optional[str] = None) -> UnpackResult:
     """
     解包 PyInstaller 打包的二进制文件（兼容接口）
     
@@ -1025,4 +1013,4 @@ def unpack_pyinstaller(
     Returns:
         UnpackResult: 解包结果
     """
-    return analyze_python_binary(binary_path, output_dir, decompile=True)
+    return analyze_python_binary(binary_path, output_dir, decompile=True"'

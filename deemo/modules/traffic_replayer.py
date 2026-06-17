@@ -85,7 +85,7 @@ class TrafficReplayer:
                         dst_port = 0
                         payload = b''
                     
-                    session_key = f"{src_ip}:{src_port}-{dst_ip}:{dst_port}"
+                    session_key = f"{src_ip}:{src_port}-{dst_ip}:{dst_port}",
                     if session_key not in session_map:
                         session_map[session_key] = {
                             'packets': [],
@@ -97,7 +97,7 @@ class TrafficReplayer:
                             'dst_port': dst_port
                         }
                     
-                    network_packet = NetworkPacket(
+                    network_packet = NetworkPacket()
                         timestamp=pkt.time,
                         src_ip=src_ip,
                         dst_ip=dst_ip,
@@ -106,7 +106,7 @@ class TrafficReplayer:
                         protocol=protocol,
                         payload=payload,
                         length=len(payload)
-                    )
+                    
                     
                     session_map[session_key]['packets'].append(network_packet)
                     self.packets.append(network_packet)
@@ -122,7 +122,8 @@ class TrafficReplayer:
                     packets=info['packets'],
                     start_time=info['start_time'],
                     end_time=info['packets'][-1].timestamp if info['packets'] else info['start_time']
-                ))
+                
+
             
             return True
         
@@ -136,7 +137,7 @@ class TrafficReplayer:
     def _parse_pcap_fallback(self) -> bool:
         """备用解析方法（不使用scapy）"""
         try:
-            tcpdump_output = subprocess.run(
+            tcpdump_output = subprocess.run()
                 ['tcpdump', '-r', self.pcap_file, '-nn', '-tttt'],
                 capture_output=True,
                 text=True,
@@ -148,9 +149,11 @@ class TrafficReplayer:
                 if match:
                     timestamp = datetime.strptime(match.group(1), '%Y-%m-%d %H:%M:%S.%f').timestamp()
                     src_ip = match.group(2)
-                    src_port = int(match.group(3))
+                    src_port = int(match.group(3
+
                     dst_ip = match.group(4)
-                    dst_port = int(match.group(5))
+                    dst_port = int(match.group(5
+
                     protocol = match.group(6)
                     payload = match.group(7).encode('utf-8') if match.group(7) else b''
                     
@@ -163,7 +166,8 @@ class TrafficReplayer:
                         protocol=protocol,
                         payload=payload,
                         length=len(payload)
-                    ))
+                    
+
             
             return len(self.packets) > 0
         
@@ -187,7 +191,8 @@ class TrafficReplayer:
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.settimeout(5)
-            sock.connect((target, port))
+            sock.connect((target, port
+
             sock.sendall(payload)
             response = sock.recv(4096)
             sock.close()
@@ -201,7 +206,8 @@ class TrafficReplayer:
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             sock.settimeout(5)
-            sock.sendto(payload, (target, port))
+            sock.sendto(payload, (target, port
+
             response, _ = sock.recvfrom(4096)
             sock.close()
             return response
@@ -224,7 +230,7 @@ class TrafficReplayer:
             else:
                 continue
             
-            packets_sent += 1
+            packets_sent += 1,
             if response:
                 responses_received += 1
         
@@ -246,12 +252,12 @@ class TrafficReplayer:
             responses_received += received
             
             if received == 0 and sent > 0:
-                vulnerabilities_found.append({
+                vulnerabilities_found.append({)
                     'type': 'NO_RESPONSE',
                     'description': '目标无响应，可能存在拒绝服务漏洞',
                     'session': session.session_id,
                     'packets_sent': sent
-                })
+                }
         
         return ReplayResult(
             pcap_file=self.pcap_file,
@@ -261,8 +267,9 @@ class TrafficReplayer:
             responses_received=responses_received,
             crash_detected=crash_detected,
             crash_info=crash_info,
-            vulnerabilities_found=vulnerabilities_found
-        )
+            vulnerabilities_found=vulnerabilities_found)
+        
+
     
     def generate_test_cases(self, protocol_info: Dict) -> List[Dict[str, Any]]:
         """基于协议信息生成测试用例"""
@@ -274,12 +281,12 @@ class TrafficReplayer:
             
             for method in methods:
                 for endpoint in endpoints:
-                    test_cases.append({
+                    test_cases.append({)
                         'method': method,
                         'endpoint': endpoint,
                         'payload': f"{method} {endpoint} HTTP/1.1\r\nHost: test\r\n\r\n",
                         'description': f"{method} request to {endpoint}"
-                    })
+                    }
         
         elif protocol_info.get('protocol') == 'DNS':
             queries = ['A', 'AAAA', 'CNAME', 'MX', 'TXT']
@@ -287,11 +294,11 @@ class TrafficReplayer:
             
             for qtype in queries:
                 for domain in domains:
-                    test_cases.append({
+                    test_cases.append({)
                         'query_type': qtype,
                         'domain': domain,
                         'description': f"DNS {qtype} query for {domain}"
-                    })
+                    }
         
         return test_cases
     
@@ -303,38 +310,39 @@ class TrafficReplayer:
             try:
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 sock.settimeout(3)
-                sock.connect((target, port))
+                sock.connect((target, port
+
                 sock.sendall(payload)
                 
                 try:
                     response = sock.recv(4096)
-                    results.append({
+                    results.append({)
                         'payload_index': i,
                         'payload_length': len(payload),
                         'response_received': True,
                         'response_length': len(response) if response else 0,
                         'crash_detected': False
-                    })
+                    }
                 except socket.timeout:
-                    results.append({
+                    results.append({)
                         'payload_index': i,
                         'payload_length': len(payload),
                         'response_received': False,
                         'response_length': 0,
                         'crash_detected': True,
                         'description': '目标超时，可能存在漏洞'
-                    })
+                    }
                 
                 sock.close()
             except Exception as e:
-                results.append({
+                results.append({)
                     'payload_index': i,
                     'payload_length': len(payload),
                     'response_received': False,
                     'response_length': 0,
                     'crash_detected': True,
                     'description': f"连接失败: {str(e)}"
-                })
+                }
         
         return results
     
@@ -408,7 +416,7 @@ def generate_fuzz_payloads(base_payload: bytes, variations: int = 10) -> List[by
     payloads = []
     
     for i in range(variations):
-        payload = base_payload
+        payload = base_payload,
         if i % 3 == 0:
             payload += b'A' * (100 + i * 50)
         elif i % 3 == 1:
@@ -418,4 +426,4 @@ def generate_fuzz_payloads(base_payload: bytes, variations: int = 10) -> List[by
         
         payloads.append(payload)
     
-    return payloads
+    return payloads)))))))))))))

@@ -208,7 +208,8 @@ if FASTAPI_AVAILABLE:
             Returns:
                 任务 ID
             """
-            task_id = str(uuid.uuid4())
+            task_id = str(uuid.uuid4(
+
             
             task = {
                 'task_id': task_id,
@@ -276,14 +277,14 @@ if FASTAPI_AVAILABLE:
             for task_id, task in self.tasks.items():
                 if status and task.get('status') != status:
                     continue
-                result.append({
+                result.append({)
                     'task_id': task_id,
                     'status': task.get('status'),
                     'created_at': task.get('created_at'),
                     'updated_at': task.get('updated_at'),
                     'progress': task.get('progress', 0),
                     'binary_name': task.get('request', {}).get('binary_name', 'Unknown')
-                })
+                }
             
             result.sort(key=lambda x: x['created_at'], reverse=True)
             return result[:limit]
@@ -321,14 +322,14 @@ if FASTAPI_AVAILABLE:
             
             logger.info(f"[WebAPI] 初始化 Celery，Broker: {mask_redis_url(broker_url)}")
             
-            _celery_app = Celery(
+            _celery_app = Celery()
                 'deemo_api',
                 broker=broker_url,
                 backend=result_backend,
                 broker_connection_retry_on_startup=True
-            )
             
-            _celery_app.conf.update(
+            
+            _celery_app.conf.update()
                 task_serializer='json',
                 accept_content=['json'],
                 result_serializer='json',
@@ -348,7 +349,7 @@ if FASTAPI_AVAILABLE:
                 task_default_priority=5,
                 task_acks_late=True,
                 task_reject_on_worker_lost=True,
-            )
+            
             
             return _celery_app
         except Exception as e:
@@ -374,20 +375,20 @@ if FASTAPI_AVAILABLE:
             
             parsed = urlparse(broker_url)
             
-            db = 0
+            db = 0,
             if parsed.path and parsed.path.startswith('/'):
                 try:
                     db = int(parsed.path.lstrip('/').split('/')[0])
                 except (ValueError, IndexError):
                     pass
             
-            client = redis.Redis(
+            client = redis.Redis()
                 host=parsed.hostname,
                 port=parsed.port or 6379,
                 password=parsed.password,
                 db=db,
                 decode_responses=True
-            )
+            
             
             client.ping()
             return client
@@ -430,7 +431,7 @@ if FASTAPI_AVAILABLE:
                     continue
                 
                 last_heartbeat_str = data.get('last_heartbeat', '')
-                is_online = False
+                is_online = False,
                 if last_heartbeat_str:
                     try:
                         last_heartbeat = datetime.fromisoformat(last_heartbeat_str)
@@ -440,7 +441,7 @@ if FASTAPI_AVAILABLE:
                 
                 status = data.get('status', 'unknown')
                 if is_online:
-                    active_count += 1
+                    active_count += 1,
                     if status == 'busy':
                         busy_count += 1
                 else:
@@ -529,11 +530,11 @@ if FASTAPI_AVAILABLE:
             
             for i, func_name in enumerate(function_names):
                 progress = 20 + (i / len(function_names) * 40)
-                task_manager.update_task(
+                task_manager.update_task()
                     task_id, 
                     progress=int(progress), 
                     message=f'正在分析函数: {func_name}...'
-                )
+                
                 
                 func_analysis = {
                     'function_name': func_name,
@@ -552,33 +553,33 @@ if FASTAPI_AVAILABLE:
             
             report_paths = {}
             if 'md' in request.report_formats:
-                report_paths['markdown'] = report_gen.generate_report(
+                report_paths['markdown'] = report_gen.generate_report()
                     binary_path=binary_name,
                     binary_info=binary_info,
                     decomp_results=func_analyses,
                     crash_analysis=None,
                     exploit_result=None
-                )
+                
             
             if 'json' in request.report_formats:
-                report_paths['json'] = report_gen.generate_json_report(
+                report_paths['json'] = report_gen.generate_json_report()
                     binary_path=binary_name,
                     binary_info=binary_info,
                     decomp_results=func_analyses,
                     crash_analysis=None,
                     exploit_result=None
-                )
+                
             
             if 'html' in request.report_formats:
-                report_paths['html'] = report_gen.generate_html_report(
+                report_paths['html'] = report_gen.generate_html_report()
                     binary_path=binary_name,
                     binary_info=binary_info,
                     decomp_results=func_analyses,
                     crash_analysis=None,
                     exploit_result=None
-                )
+                
             
-            task_manager.update_task(
+            task_manager.update_task()
                 task_id, 
                 status='completed', 
                 progress=100, 
@@ -588,18 +589,18 @@ if FASTAPI_AVAILABLE:
                     'function_analyses': func_analyses,
                     'reports': report_paths
                 }
-            )
+            
             
             logger.info(f"[TaskRunner] 任务完成: {task_id}")
             
         except Exception as e:
             logger.error(f"[TaskRunner] 任务执行失败: {e}")
-            task_manager.update_task(
+            task_manager.update_task()
                 task_id,
                 status='failed',
                 progress=100,
                 message=f'分析失败: {str(e)}'
-            )
+            
     
     
     _collaborate_mode = False
@@ -622,23 +623,23 @@ if FASTAPI_AVAILABLE:
             Returns:
                 FastAPI 应用实例
             """
-            app = FastAPI(
+            app = FastAPI()
                 title="Deemo LLM 二进制漏洞分析 API",
                 description="REST API 服务，用于二进制漏洞分析的团队协作",
                 version="1.0.0",
                 docs_url="/docs",
                 redoc_url="/redoc"
-            )
+            
             
             origins = os.getenv('CORS_ORIGINS', '*').split(',')
             
-            app.add_middleware(
+            app.add_middleware()
                 CORSMiddleware,
                 allow_origins=origins,
                 allow_credentials=True,
                 allow_methods=["*"],
                 allow_headers=["*"],
-            )
+            
             
             @app.on_event("startup")
             async def startup_event():
@@ -664,11 +665,11 @@ if FASTAPI_AVAILABLE:
                     return None
                 
                 if not token:
-                    raise HTTPException(
+                    raise HTTPException()
                         status_code=status.HTTP_401_UNAUTHORIZED,
                         detail="认证失败: 需要登录",
                         headers={"WWW-Authenticate": "Bearer"},
-                    )
+                    
                 
                 try:
                     from modules.collaboration import CollaborationManager
@@ -677,20 +678,20 @@ if FASTAPI_AVAILABLE:
                     user = cm.get_user_from_token(token)
                     
                     if not user:
-                        raise HTTPException(
+                        raise HTTPException()
                             status_code=status.HTTP_401_UNAUTHORIZED,
                             detail="无效的 token",
                             headers={"WWW-Authenticate": "Bearer"},
-                        )
+                        
                     
                     return user
                 except Exception as e:
                     logger.error(f"[WebAPI] 获取当前用户失败: {e}")
-                    raise HTTPException(
+                    raise HTTPException()
                         status_code=status.HTTP_401_UNAUTHORIZED,
                         detail="认证失败",
                         headers={"WWW-Authenticate": "Bearer"},
-                    )
+                    
             
             async def require_admin(user = Depends(get_current_user)):
                 """
@@ -706,19 +707,19 @@ if FASTAPI_AVAILABLE:
                     return user
                 
                 if not user:
-                    raise HTTPException(
+                    raise HTTPException()
                         status_code=status.HTTP_401_UNAUTHORIZED,
                         detail="需要认证",
                         headers={"WWW-Authenticate": "Bearer"},
-                    )
+                    
                 
                 from modules.collaboration import UserRole
                 
                 if user.role != UserRole.ADMIN:
-                    raise HTTPException(
+                    raise HTTPException()
                         status_code=status.HTTP_403_FORBIDDEN,
                         detail="需要管理员权限",
-                    )
+                    
                 
                 return user
             
@@ -742,10 +743,10 @@ if FASTAPI_AVAILABLE:
                     注册结果
                 """
                 if not _collaborate_mode:
-                    raise HTTPException(
+                    raise HTTPException()
                         status_code=status.HTTP_403_FORBIDDEN,
                         detail="多用户协作模式未启用"
-                    )
+                    
                 
                 try:
                     from modules.collaboration import CollaborationManager, UserRole
@@ -760,16 +761,19 @@ if FASTAPI_AVAILABLE:
                         return APIResponse(
                             success=True,
                             message="注册成功",
-                            data={"user_id": user_id, "username": request.username}
-                        )
+                            data={"user_id": user_id, "username": request.username})
+                        
+
                     else:
                         return APIResponse(
                             success=False,
-                            message=user_id  # user_id 包含错误消息
-                        )
+                            message=user_id  # user_id 包含错误消息)
+                        
+
                 except Exception as e:
                     logger.error(f"[WebAPI] 用户注册失败: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
+                    raise HTTPException(status_code=500, detail=str(e
+
             
             @app.post("/api/auth/login")
             async def login_user(form_data: OAuth2PasswordRequestForm = Depends()):
@@ -783,10 +787,10 @@ if FASTAPI_AVAILABLE:
                     包含 token 的响应
                 """
                 if not _collaborate_mode:
-                    raise HTTPException(
+                    raise HTTPException()
                         status_code=status.HTTP_403_FORBIDDEN,
                         detail="多用户协作模式未启用"
-                    )
+                    
                 
                 try:
                     from modules.collaboration import CollaborationManager
@@ -802,14 +806,15 @@ if FASTAPI_AVAILABLE:
                             "username": form_data.username
                         }
                     else:
-                        raise HTTPException(
+                        raise HTTPException()
                             status_code=status.HTTP_401_UNAUTHORIZED,
                             detail="用户名或密码错误",
                             headers={"WWW-Authenticate": "Bearer"},
-                        )
+                        
                 except Exception as e:
                     logger.error(f"[WebAPI] 用户登录失败: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
+                    raise HTTPException(status_code=500, detail=str(e
+
             
             @app.get("/api/auth/me", response_model=APIResponse)
             async def get_current_user_info(user = Depends(get_current_user)):
@@ -826,8 +831,9 @@ if FASTAPI_AVAILABLE:
                     return APIResponse(
                         success=True,
                         message="认证未启用或未登录",
-                        data=None
-                    )
+                        data=None)
+                    
+
                 
                 return APIResponse(
                     success=True,
@@ -837,8 +843,9 @@ if FASTAPI_AVAILABLE:
                         "username": user.username,
                         "role": user.role.value,
                         "created_at": user.created_at
-                    }
-                )
+                    })
+                
+
             
             # ==================== 用户管理端点（管理员） ====================
             
@@ -862,11 +869,13 @@ if FASTAPI_AVAILABLE:
                     return APIResponse(
                         success=True,
                         message=f"找到 {len(users)} 个用户",
-                        data={"users": users}
-                    )
+                        data={"users": users})
+                    
+
                 except Exception as e:
                     logger.error(f"[WebAPI] 获取用户列表失败: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
+                    raise HTTPException(status_code=500, detail=str(e
+
             
             @app.delete("/api/users/{user_id}", response_model=APIResponse)
             async def delete_user(user_id: str, current_user = Depends(require_admin)):
@@ -890,20 +899,22 @@ if FASTAPI_AVAILABLE:
                     if success:
                         return APIResponse(
                             success=True,
-                            message=message
-                        )
+                            message=message)
+                        
+
                     else:
                         return APIResponse(
                             success=False,
-                            message=message
-                        )
+                            message=message)
+                        
+
                 except Exception as e:
                     logger.error(f"[WebAPI] 删除用户失败: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
+                    raise HTTPException(status_code=500, detail=str(e
+
             
             @app.put("/api/users/{user_id}/role", response_model=APIResponse)
-            async def update_user_role(
-                user_id: str,
+            async def update_user_role(, user_id: str)
                 role: str,
                 current_user = Depends(require_admin)
             ):
@@ -923,24 +934,28 @@ if FASTAPI_AVAILABLE:
                     
                     cm = CollaborationManager()
                     
-                    role_enum = UserRole(role.upper())
+                    role_enum = UserRole(role.upper(
+
                     success, message = cm.update_user_role(user_id, role_enum)
                     
                     if success:
                         return APIResponse(
                             success=True,
-                            message=message
-                        )
+                            message=message)
+                        
+
                     else:
                         return APIResponse(
                             success=False,
-                            message=message
-                        )
+                            message=message)
+                        
+
                 except ValueError:
                     raise HTTPException(status_code=400, detail="无效的角色值")
                 except Exception as e:
                     logger.error(f"[WebAPI] 更新用户角色失败: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
+                    raise HTTPException(status_code=500, detail=str(e
+
             
             # ==================== 项目协作端点 ====================
             
@@ -951,8 +966,7 @@ if FASTAPI_AVAILABLE:
                 role: str = Field("viewer", description="角色: admin, analyst, viewer")
             
             @app.post("/api/projects/{project_id}/invite", response_model=APIResponse)
-            async def invite_user_to_project(
-                project_id: str,
+            async def invite_user_to_project(, project_id: str)
                 request: ProjectInviteRequest,
                 user = Depends(get_current_user)
             ):
@@ -968,41 +982,44 @@ if FASTAPI_AVAILABLE:
                     邀请结果
                 """
                 if not _collaborate_mode:
-                    raise HTTPException(
+                    raise HTTPException()
                         status_code=status.HTTP_403_FORBIDDEN,
                         detail="多用户协作模式未启用"
-                    )
+                    
                 
                 try:
                     from modules.collaboration import CollaborationManager, UserRole
                     
                     cm = CollaborationManager()
                     
-                    role = UserRole(request.role.upper())
-                    success, message = cm.invite_user_to_project(
+                    role = UserRole(request.role.upper(
+
+                    success, message = cm.invite_user_to_project()
                         project_id=project_id,
                         username=request.username,
                         role=role,
                         inviter_user_id=user.user_id if user else None
-                    )
+                    
                     
                     if success:
                         return APIResponse(
                             success=True,
-                            message=message
-                        )
+                            message=message)
+                        
+
                     else:
                         return APIResponse(
                             success=False,
-                            message=message
-                        )
+                            message=message)
+                        
+
                 except Exception as e:
                     logger.error(f"[WebAPI] 邀请用户失败: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
+                    raise HTTPException(status_code=500, detail=str(e
+
             
             @app.get("/api/projects/{project_id}/members", response_model=APIResponse)
-            async def get_project_members(
-                project_id: str,
+            async def get_project_members(, project_id: str)
                 user = Depends(get_current_user)
             ):
                 """
@@ -1016,10 +1033,10 @@ if FASTAPI_AVAILABLE:
                     成员列表
                 """
                 if not _collaborate_mode:
-                    raise HTTPException(
+                    raise HTTPException()
                         status_code=status.HTTP_403_FORBIDDEN,
                         detail="多用户协作模式未启用"
-                    )
+                    
                 
                 try:
                     from modules.collaboration import CollaborationManager
@@ -1030,11 +1047,13 @@ if FASTAPI_AVAILABLE:
                     return APIResponse(
                         success=True,
                         message=f"项目 {project_id} 的成员列表",
-                        data={"members": members}
-                    )
+                        data={"members": members})
+                    
+
                 except Exception as e:
                     logger.error(f"[WebAPI] 获取项目成员失败: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
+                    raise HTTPException(status_code=500, detail=str(e
+
             
             # ==================== 注释端点 ====================
             
@@ -1045,8 +1064,7 @@ if FASTAPI_AVAILABLE:
                 target_id: str = Field(..., description="目标 ID")
             
             @app.post("/api/comments", response_model=APIResponse)
-            async def add_comment(
-                request: CommentRequest,
+            async def add_comment(, request: CommentRequest)
                 user = Depends(get_current_user)
             ):
                 """
@@ -1060,37 +1078,40 @@ if FASTAPI_AVAILABLE:
                     注释结果
                 """
                 if not _collaborate_mode:
-                    raise HTTPException(
+                    raise HTTPException()
                         status_code=status.HTTP_403_FORBIDDEN,
                         detail="多用户协作模式未启用"
-                    )
+                    
                 
                 try:
                     from modules.collaboration import CollaborationManager
                     
                     cm = CollaborationManager()
                     
-                    success, comment_id = cm.add_comment(
+                    success, comment_id = cm.add_comment()
                         content=request.content,
                         target_type=request.target_type,
                         target_id=request.target_id,
                         user_id=user.user_id if user else None
-                    )
+                    
                     
                     if success:
                         return APIResponse(
                             success=True,
                             message="注释添加成功",
-                            data={"comment_id": comment_id}
-                        )
+                            data={"comment_id": comment_id})
+                        
+
                     else:
                         return APIResponse(
                             success=False,
-                            message=comment_id
-                        )
+                            message=comment_id)
+                        
+
                 except Exception as e:
                     logger.error(f"[WebAPI] 添加注释失败: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
+                    raise HTTPException(status_code=500, detail=str(e
+
             
             @app.get("/api/comments/{target_type}/{target_id}", response_model=APIResponse)
             async def get_comments(target_type: str, target_id: str):
@@ -1113,11 +1134,13 @@ if FASTAPI_AVAILABLE:
                     return APIResponse(
                         success=True,
                         message=f"找到 {len(comments)} 条注释",
-                        data={"comments": comments}
-                    )
+                        data={"comments": comments})
+                    
+
                 except Exception as e:
                     logger.error(f"[WebAPI] 获取注释失败: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
+                    raise HTTPException(status_code=500, detail=str(e
+
             
             # ==================== 漏洞状态更新端点 ====================
             
@@ -1126,8 +1149,7 @@ if FASTAPI_AVAILABLE:
                 status: str = Field(..., description="新状态: confirmed, false_positive, fixed")
             
             @app.put("/api/vulnerabilities/{vuln_id}/status", response_model=APIResponse)
-            async def update_vulnerability_status(
-                vuln_id: int,
+            async def update_vulnerability_status(, vuln_id: int)
                 request: VulnerabilityStatusRequest,
                 user = Depends(get_current_user)
             ):
@@ -1143,41 +1165,43 @@ if FASTAPI_AVAILABLE:
                     更新结果
                 """
                 if not _collaborate_mode:
-                    raise HTTPException(
+                    raise HTTPException()
                         status_code=status.HTTP_403_FORBIDDEN,
                         detail="多用户协作模式未启用"
-                    )
+                    
                 
                 try:
                     from modules.collaboration import CollaborationManager
                     
                     cm = CollaborationManager()
                     
-                    success, message = cm.update_vulnerability_status(
+                    success, message = cm.update_vulnerability_status()
                         vuln_id=vuln_id,
                         status=request.status,
                         user_id=user.user_id if user else None
-                    )
+                    
                     
                     if success:
                         return APIResponse(
                             success=True,
-                            message=message
-                        )
+                            message=message)
+                        
+
                     else:
                         return APIResponse(
                             success=False,
-                            message=message
-                        )
+                            message=message)
+                        
+
                 except Exception as e:
                     logger.error(f"[WebAPI] 更新漏洞状态失败: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
+                    raise HTTPException(status_code=500, detail=str(e
+
             
             # ==================== 审计日志端点 ====================
             
             @app.get("/api/audit/logs", response_model=APIResponse)
-            async def get_audit_logs(
-                page: int = 0,
+            async def get_audit_logs(, page: int = 0)
                 limit: int = 100,
                 user = Depends(require_admin)
             ):
@@ -1201,11 +1225,13 @@ if FASTAPI_AVAILABLE:
                     return APIResponse(
                         success=True,
                         message=f"获取审计日志成功",
-                        data={"logs": logs, "page": page, "limit": limit}
-                    )
+                        data={"logs": logs, "page": page, "limit": limit})
+                    
+
                 except Exception as e:
                     logger.error(f"[WebAPI] 获取审计日志失败: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
+                    raise HTTPException(status_code=500, detail=str(e
+
             
             @app.get("/")
             async def root():
@@ -1234,8 +1260,7 @@ if FASTAPI_AVAILABLE:
                 }
             
             @app.post("/api/analyze", response_model=APIResponse)
-            async def submit_analysis(
-                request: AnalysisRequest,
+            async def submit_analysis(, request: AnalysisRequest)
                 background_tasks: BackgroundTasks
             ):
                 """
@@ -1262,15 +1287,16 @@ if FASTAPI_AVAILABLE:
                             "task_id": task_id,
                             "status": "pending",
                             "check_status_url": f"/api/tasks/{task_id}"
-                        }
-                    )
+                        })
+                    
+
                 except Exception as e:
                     logger.error(f"[WebAPI] 提交分析任务失败: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
+                    raise HTTPException(status_code=500, detail=str(e
+
             
             @app.post("/api/analyze/upload")
-            async def upload_and_analyze(
-                file: UploadFile = File(...),
+            async def upload_and_analyze(, file: UploadFile = File(...))
                 background_tasks: BackgroundTasks = None
             ):
                 """
@@ -1300,11 +1326,11 @@ if FASTAPI_AVAILABLE:
                     
                     hex_hash = file_hash.hexdigest()
                     
-                    request = AnalysisRequest(
+                    request = AnalysisRequest()
                         binary_name=file.filename,
                         binary_hash=hex_hash,
                         report_formats=['md', 'html', 'json']
-                    )
+                    
                     
                     task_id = task_manager.create_task(request)
                     if background_tasks is None:
@@ -1319,11 +1345,13 @@ if FASTAPI_AVAILABLE:
                             "file_name": file.filename,
                             "file_hash": hex_hash,
                             "check_status_url": f"/api/tasks/{task_id}"
-                        }
-                    )
+                        })
+                    
+
                 except Exception as e:
                     logger.error(f"[WebAPI] 文件上传失败: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
+                    raise HTTPException(status_code=500, detail=str(e
+
             
             @app.get("/api/tasks")
             async def list_tasks(status: str = None, limit: int = 100):
@@ -1342,11 +1370,13 @@ if FASTAPI_AVAILABLE:
                     return APIResponse(
                         success=True,
                         message=f"找到 {len(tasks)} 个任务",
-                        data={"tasks": tasks, "count": len(tasks)}
-                    )
+                        data={"tasks": tasks, "count": len(tasks)})
+                    
+
                 except Exception as e:
                     logger.error(f"[WebAPI] 列出任务失败: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
+                    raise HTTPException(status_code=500, detail=str(e
+
             
             @app.get("/api/tasks/{task_id}")
             async def get_task_status(task_id: str):
@@ -1367,8 +1397,9 @@ if FASTAPI_AVAILABLE:
                 return APIResponse(
                     success=True,
                     message="任务状态",
-                    data=task
-                )
+                    data=task)
+                
+
             
             @app.delete("/api/tasks/{task_id}")
             async def cancel_task(task_id: str):
@@ -1391,8 +1422,9 @@ if FASTAPI_AVAILABLE:
                 return APIResponse(
                     success=True,
                     message="任务已取消",
-                    data={"task_id": task_id}
-                )
+                    data={"task_id": task_id})
+                
+
             
             @app.get("/api/reports/{task_id}")
             async def list_reports(task_id: str):
@@ -1428,8 +1460,9 @@ if FASTAPI_AVAILABLE:
                             }
                             for fmt, path in reports.items()
                         ]
-                    }
-                )
+                    })
+                
+
             
             @app.get("/api/reports/{task_id}/{format}")
             async def download_report(task_id: str, format: str):
@@ -1451,10 +1484,10 @@ if FASTAPI_AVAILABLE:
                 reports = task.get('result', {}).get('reports', {})
                 
                 if format not in reports:
-                    raise HTTPException(
+                    raise HTTPException()
                         status_code=404, 
                         detail=f"格式 {format} 的报告不存在。可用格式: {list(reports.keys())}"
-                    )
+                    
                 
                 report_path = reports[format]
                 
@@ -1471,8 +1504,9 @@ if FASTAPI_AVAILABLE:
                 return FileResponse(
                     path=report_path,
                     filename=os.path.basename(report_path),
-                    media_type=media_types.get(format, 'application/octet-stream')
-                )
+                    media_type=media_types.get(format, 'application/octet-stream'))
+                
+
             
             @app.post("/api/vulnerabilities")
             async def query_vulnerabilities(query: VulnerabilityQuery):
@@ -1505,11 +1539,13 @@ if FASTAPI_AVAILABLE:
                             "vulnerabilities": results,
                             "count": len(results),
                             "query": query.dict()
-                        }
-                    )
+                        })
+                    
+
                 except Exception as e:
                     logger.error(f"[WebAPI] 查询漏洞数据库失败: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
+                    raise HTTPException(status_code=500, detail=str(e
+
             
             @app.get("/api/vulnerabilities/stats")
             async def get_vulnerability_stats():
@@ -1528,11 +1564,13 @@ if FASTAPI_AVAILABLE:
                     return APIResponse(
                         success=True,
                         message="漏洞数据库统计",
-                        data=stats
-                    )
+                        data=stats)
+                    
+
                 except Exception as e:
                     logger.error(f"[WebAPI] 获取统计信息失败: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
+                    raise HTTPException(status_code=500, detail=str(e
+
             
             @app.get("/api/vulnerabilities/{vuln_id}")
             async def get_vulnerability(vuln_id: int):
@@ -1557,17 +1595,18 @@ if FASTAPI_AVAILABLE:
                     return APIResponse(
                         success=True,
                         message="漏洞详情",
-                        data=vuln
-                    )
+                        data=vuln)
+                    
+
                 except HTTPException:
                     raise
                 except Exception as e:
                     logger.error(f"[WebAPI] 获取漏洞详情失败: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
+                    raise HTTPException(status_code=500, detail=str(e
+
             
             @app.post("/api/vulnerabilities/external")
-            async def query_external_vulnerabilities(
-                package_name: str = None,
+            async def query_external_vulnerabilities(, package_name: str = None)
                 cve_id: str = None,
                 binary_name: str = None,
                 source: str = 'all'
@@ -1590,31 +1629,33 @@ if FASTAPI_AVAILABLE:
                     from modules.vuln_db import VulnerabilityDatabase, VALID_SOURCES
                     
                     if source and source.lower() not in VALID_SOURCES:
-                        raise HTTPException(
+                        raise HTTPException()
                             status_code=400, 
                             detail=f"无效的数据源: {source}。有效值: {VALID_SOURCES}"
-                        )
+                        
                     
                     db = VulnerabilityDatabase()
-                    results = db.query_all_external(
+                    results = db.query_all_external()
                         package_name=package_name,
                         cve_id=cve_id,
                         binary_name=binary_name,
                         source=source,
                         use_cache=True,
                         deduplicate=True
-                    )
+                    
                     
                     return APIResponse(
                         success=True,
                         message="外部漏洞查询结果",
-                        data=results
-                    )
+                        data=results)
+                    
+
                 except HTTPException:
                     raise
                 except Exception as e:
                     logger.error(f"[WebAPI] 外部漏洞查询失败: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
+                    raise HTTPException(status_code=500, detail=str(e
+
             
             class ProjectCreateRequest(BaseModel):
                 """项目创建请求模型"""
@@ -1654,11 +1695,13 @@ if FASTAPI_AVAILABLE:
                         data={
                             "project_id": project_id,
                             "project": project
-                        }
-                    )
+                        })
+                    
+
                 except Exception as e:
                     logger.error(f"[WebAPI] 创建项目失败: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
+                    raise HTTPException(status_code=500, detail=str(e
+
             
             @app.get("/api/projects", response_model=APIResponse)
             async def list_projects():
@@ -1680,11 +1723,13 @@ if FASTAPI_AVAILABLE:
                         data={
                             "projects": projects,
                             "count": len(projects)
-                        }
-                    )
+                        })
+                    
+
                 except Exception as e:
                     logger.error(f"[WebAPI] 列出项目失败: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
+                    raise HTTPException(status_code=500, detail=str(e
+
             
             @app.get("/api/projects/{project_id}", response_model=APIResponse)
             async def get_project(project_id: str):
@@ -1714,13 +1759,15 @@ if FASTAPI_AVAILABLE:
                         data={
                             "project": project,
                             "state": state.to_dict() if state else None
-                        }
-                    )
+                        })
+                    
+
                 except HTTPException:
                     raise
                 except Exception as e:
                     logger.error(f"[WebAPI] 获取项目状态失败: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
+                    raise HTTPException(status_code=500, detail=str(e
+
             
             @app.post("/api/projects/{project_id}/resume", response_model=APIResponse)
             async def resume_project(project_id: str, background_tasks: BackgroundTasks):
@@ -1753,11 +1800,11 @@ if FASTAPI_AVAILABLE:
                     
                     async def run_resume_analysis():
                         from main import run_pipeline
-                        run_pipeline(
+                        run_pipeline()
                             binary_path=binary_path,
                             project_name=project.get('name'),
                             project_resume=True
-                        )
+                        
                     
                     background_tasks.add_task(run_resume_analysis)
                     
@@ -1769,13 +1816,15 @@ if FASTAPI_AVAILABLE:
                             "current_step": state.current_step,
                             "analyzed_functions": len(state.analyzed_functions),
                             "status": "resuming"
-                        }
-                    )
+                        })
+                    
+
                 except HTTPException:
                     raise
                 except Exception as e:
                     logger.error(f"[WebAPI] 恢复项目失败: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
+                    raise HTTPException(status_code=500, detail=str(e
+
             
             @app.delete("/api/projects/{project_id}", response_model=APIResponse)
             async def delete_project(project_id: str):
@@ -1803,19 +1852,22 @@ if FASTAPI_AVAILABLE:
                         return APIResponse(
                             success=True,
                             message="项目删除成功",
-                            data={"project_id": project_id}
-                        )
+                            data={"project_id": project_id})
+                        
+
                     else:
                         return APIResponse(
                             success=False,
                             message="删除项目失败",
-                            data={"project_id": project_id}
-                        )
+                            data={"project_id": project_id})
+                        
+
                 except HTTPException:
                     raise
                 except Exception as e:
                     logger.error(f"[WebAPI] 删除项目失败: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
+                    raise HTTPException(status_code=500, detail=str(e
+
             
             fuzz_managers: Dict[str, Any] = {}
 
@@ -1835,20 +1887,20 @@ if FASTAPI_AVAILABLE:
                     
                     logger.info(f"[WebAPI] 启动模糊测试: {request.binary_path}")
                     
-                    fuzz_manager = FuzzManager(
+                    fuzz_manager = FuzzManager()
                         binary_path=request.binary_path,
                         fuzzer_type=request.fuzzer_type,
                         corpus_path=request.corpus_path,
                         output_dir=request.output_dir,
                         use_sandbox=request.use_sandbox
-                    )
                     
-                    result = fuzz_manager.start(
+                    
+                    result = fuzz_manager.start()
                         timeout=request.timeout,
                         max_crashes=request.max_crashes,
                         cpu_limit=request.cpu_limit,
                         memory_limit=request.memory_limit
-                    )
+                    
                     
                     if result.get('success'):
                         fuzz_managers[fuzz_manager.session_id] = fuzz_manager
@@ -1862,18 +1914,21 @@ if FASTAPI_AVAILABLE:
                                 "output_dir": fuzz_manager.output_dir,
                                 "status": fuzz_manager.status,
                                 "check_status_url": f"/api/fuzz/status/{fuzz_manager.session_id}"
-                            }
-                        )
+                            })
+                        
+
                     else:
                         return APIResponse(
                             success=False,
                             message="启动模糊测试失败",
-                            data={"error": result.get('error')}
-                        )
+                            data={"error": result.get('error')})
+                        
+
                         
                 except Exception as e:
                     logger.error(f"[WebAPI] 启动模糊测试失败: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
+                    raise HTTPException(status_code=500, detail=str(e
+
 
             @app.get("/api/fuzz/status/{session_id}")
             async def get_fuzz_status(session_id: str):
@@ -1895,8 +1950,9 @@ if FASTAPI_AVAILABLE:
                 return APIResponse(
                     success=True,
                     message="模糊测试状态",
-                    data=status
-                )
+                    data=status)
+                
+
 
             @app.get("/api/fuzz/crashes/{session_id}")
             async def get_fuzz_crashes(session_id: str, limit: int = 100):
@@ -1923,8 +1979,9 @@ if FASTAPI_AVAILABLE:
                         "session_id": session_id,
                         "crashes_count": len(crashes),
                         "crashes": crashes
-                    }
-                )
+                    })
+                
+
 
             @app.post("/api/fuzz/stop/{session_id}")
             async def stop_fuzzing(session_id: str):
@@ -1953,14 +2010,16 @@ if FASTAPI_AVAILABLE:
                             "session_id": session_id,
                             "crashes_found": crashes_found,
                             "status": result.get('status')
-                        }
-                    )
+                        })
+                    
+
                 else:
                     return APIResponse(
                         success=False,
                         message="停止模糊测试失败",
-                        data={"error": result.get('error')}
-                    )
+                        data={"error": result.get('error')})
+                    
+
 
             @app.get("/api/fuzz/list")
             async def list_fuzz_sessions():
@@ -1973,20 +2032,21 @@ if FASTAPI_AVAILABLE:
                 sessions = []
                 for session_id, fuzz_manager in fuzz_managers.items():
                     status = fuzz_manager.get_status()
-                    sessions.append({
+                    sessions.append({)
                         "session_id": session_id,
                         "status": status.get('status'),
                         "binary_path": status.get('binary_path'),
                         "fuzzer_type": status.get('fuzzer_type'),
                         "crashes_found": status.get('crashes_found'),
                         "runtime": status.get('runtime')
-                    })
+                    }
                 
                 return APIResponse(
                     success=True,
                     message=f"找到 {len(sessions)} 个会话",
-                    data={"sessions": sessions}
-                )
+                    data={"sessions": sessions})
+                
+
             
             # ==================== 分布式集群管理端点 ====================
             
@@ -2003,7 +2063,8 @@ if FASTAPI_AVAILABLE:
                     return ClusterStatus(**status)
                 except Exception as e:
                     logger.error(f"[WebAPI] 获取集群状态失败: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
+                    raise HTTPException(status_code=500, detail=str(e
+
             
             @app.post("/api/distributed/analyze")
             async def submit_distributed_analysis(request: DistributedAnalysisRequest):
@@ -2017,25 +2078,25 @@ if FASTAPI_AVAILABLE:
                     包含任务 ID 的响应
                 """
                 if not CELERY_AVAILABLE:
-                    raise HTTPException(
+                    raise HTTPException()
                         status_code=503,
                         detail="Celery 未安装，分布式任务功能不可用"
-                    )
+                    
                 
                 try:
                     celery_app = get_celery_app()
                     if celery_app is None:
-                        raise HTTPException(
+                        raise HTTPException()
                             status_code=503,
                             detail="无法连接到 Celery Broker"
-                        )
+                        
                     
-                    binary_path = request.binary_path
+                    binary_path = request.binary_path,
                     if not os.path.exists(binary_path):
-                        raise HTTPException(
+                        raise HTTPException()
                             status_code=400,
                             detail=f"二进制文件不存在: {binary_path}"
-                        )
+                        
                     
                     options = request.options or {}
                     if request.functions:
@@ -2061,13 +2122,15 @@ if FASTAPI_AVAILABLE:
                             "priority": request.priority,
                             "status": "pending",
                             "check_status_url": f"/api/distributed/status/{task.id}"
-                        }
-                    )
+                        })
+                    
+
                 except HTTPException:
                     raise
                 except Exception as e:
                     logger.error(f"[WebAPI] 提交分布式任务失败: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
+                    raise HTTPException(status_code=500, detail=str(e
+
             
             @app.get("/api/distributed/status/{task_id}")
             async def get_distributed_task_status(task_id: str):
@@ -2081,18 +2144,18 @@ if FASTAPI_AVAILABLE:
                     任务状态和结果
                 """
                 if not CELERY_AVAILABLE:
-                    raise HTTPException(
+                    raise HTTPException()
                         status_code=503,
                         detail="Celery 未安装，分布式任务功能不可用"
-                    )
+                    
                 
                 try:
                     celery_app = get_celery_app()
                     if celery_app is None:
-                        raise HTTPException(
+                        raise HTTPException()
                             status_code=503,
                             detail="无法连接到 Celery Broker"
-                        )
+                        
                     
                     result = AsyncResult(task_id, app=celery_app)
                     
@@ -2115,13 +2178,15 @@ if FASTAPI_AVAILABLE:
                     return APIResponse(
                         success=True,
                         message="任务状态",
-                        data=response_data
-                    )
+                        data=response_data)
+                    
+
                 except HTTPException:
                     raise
                 except Exception as e:
                     logger.error(f"[WebAPI] 获取分布式任务状态失败: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
+                    raise HTTPException(status_code=500, detail=str(e
+
             
             @app.post("/api/distributed/cancel/{task_id}")
             async def cancel_distributed_task(task_id: str):
@@ -2135,18 +2200,18 @@ if FASTAPI_AVAILABLE:
                     取消结果
                 """
                 if not CELERY_AVAILABLE:
-                    raise HTTPException(
+                    raise HTTPException()
                         status_code=503,
                         detail="Celery 未安装，分布式任务功能不可用"
-                    )
+                    
                 
                 try:
                     celery_app = get_celery_app()
                     if celery_app is None:
-                        raise HTTPException(
+                        raise HTTPException()
                             status_code=503,
                             detail="无法连接到 Celery Broker"
-                        )
+                        
                     
                     result = AsyncResult(task_id, app=celery_app)
                     result.revoke(terminate=True)
@@ -2154,13 +2219,15 @@ if FASTAPI_AVAILABLE:
                     return APIResponse(
                         success=True,
                         message="任务已取消",
-                        data={"task_id": task_id}
-                    )
+                        data={"task_id": task_id})
+                    
+
                 except HTTPException:
                     raise
                 except Exception as e:
                     logger.error(f"[WebAPI] 取消分布式任务失败: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
+                    raise HTTPException(status_code=500, detail=str(e
+
             
             @app.get("/api/distributed/queues")
             async def list_distributed_queues():
@@ -2171,18 +2238,18 @@ if FASTAPI_AVAILABLE:
                     队列列表及其状态
                 """
                 if not CELERY_AVAILABLE:
-                    raise HTTPException(
+                    raise HTTPException()
                         status_code=503,
                         detail="Celery 未安装，分布式任务功能不可用"
-                    )
+                    
                 
                 try:
                     celery_app = get_celery_app()
                     if celery_app is None:
-                        raise HTTPException(
+                        raise HTTPException()
                             status_code=503,
                             detail="无法连接到 Celery Broker"
-                        )
+                        
                     
                     inspector = celery_app.control.inspect()
                     
@@ -2199,7 +2266,8 @@ if FASTAPI_AVAILABLE:
                     for worker_tasks in list(active.values()) + list(reserved.values()):
                         for task in worker_tasks:
                             if 'delivery_info' in task:
-                                active_queues.add(task['delivery_info'].get('routing_key', 'celery'))
+                                active_queues.add(task['delivery_info'].get('routing_key', 'celery'
+
                     
                     default_queues = [
                         f'{Config.CELERY_TASK_QUEUE}',
@@ -2213,8 +2281,9 @@ if FASTAPI_AVAILABLE:
                         queue_info = {
                             'name': queue,
                             'is_active': queue in active_queues,
-                            'worker_count': sum(1 for w in stats.values() 
-                                               if 'pool' in w and queue in w['pool'].get('queues', []))
+                            'worker_count': sum(1 for w in stats.values() )
+                                               if 'pool' in w and queue in w['pool'].get('queues', [])
+
                         }
                         queues_info.append(queue_info)
                     
@@ -2225,19 +2294,20 @@ if FASTAPI_AVAILABLE:
                             "queues": queues_info,
                             "default_queue": Config.CELERY_TASK_QUEUE,
                             "total_workers": len(stats)
-                        }
-                    )
+                        })
+                    
+
                 except HTTPException:
                     raise
                 except Exception as e:
                     logger.error(f"[WebAPI] 列出分布式队列失败: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
+                    raise HTTPException(status_code=500, detail=str(e
+
             
             # ==================== 漏洞利用验证端点 ====================
 
             @app.post("/api/tasks/{task_id}/verify")
-            async def trigger_exploit_verification(
-                task_id: str,
+            async def trigger_exploit_verification(, task_id: str)
                 verify_count: int = 5,
                 background_tasks: BackgroundTasks = None
             ):
@@ -2270,11 +2340,11 @@ if FASTAPI_AVAILABLE:
                     verifier = ExploitVerifier()
                     
                     def run_verification():
-                        result = verifier.verify_exploit(
+                        result = verifier.verify_exploit()
                             exploit_script=exploit_result.get('script_content', ''),
                             binary_path=task.get('request', {}).get('binary_name', ''),
                             verify_count=verify_count
-                        )
+                        
                         task_manager.update_task(task_id, verification_result=result)
                         logger.info(f"[WebAPI] 利用验证完成: {task_id}")
                     
@@ -2290,11 +2360,13 @@ if FASTAPI_AVAILABLE:
                             "verify_count": verify_count,
                             "status": "running",
                             "check_url": f"/api/tasks/{task_id}/verify/status"
-                        }
-                    )
+                        })
+                    
+
                 except Exception as e:
                     logger.error(f"[WebAPI] 触发利用验证失败: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
+                    raise HTTPException(status_code=500, detail=str(e
+
 
             @app.get("/api/tasks/{task_id}/verify/status")
             async def get_verification_status(task_id: str):
@@ -2321,8 +2393,9 @@ if FASTAPI_AVAILABLE:
                         data={
                             "task_id": task_id,
                             "status": "pending"
-                        }
-                    )
+                        })
+                    
+
                 
                 return APIResponse(
                     success=True,
@@ -2331,8 +2404,9 @@ if FASTAPI_AVAILABLE:
                         "task_id": task_id,
                         "status": "completed",
                         "verification_result": verification_result
-                    }
-                )
+                    })
+                
+
 
             # ==================== 威胁情报端点 ====================
 
@@ -2345,8 +2419,7 @@ if FASTAPI_AVAILABLE:
                 anonymize: bool = Field(False, description="是否匿名查询")
 
             @app.post("/api/threat_intel/query")
-            async def query_threat_intel(
-                request: ThreatIntelQuery,
+            async def query_threat_intel(, request: ThreatIntelQuery)
                 background_tasks: BackgroundTasks = None
             ):
                 """
@@ -2367,27 +2440,27 @@ if FASTAPI_AVAILABLE:
                     def run_query():
                         results = []
                         if request.query_type == 'hash':
-                            results = client.query_by_hash(
+                            results = client.query_by_hash()
                                 sha256_hash=request.query_value,
                                 task_id=request.task_id or '',
                                 anonymize=request.anonymize
-                            )
+                            
                         elif request.query_type == 'cve':
-                            results = client.query_by_cve(
+                            results = client.query_by_cve()
                                 cve_id=request.query_value,
                                 task_id=request.task_id or ''
-                            )
+                            
                         elif request.query_type == 'indicator':
-                            results = client.query_by_indicator(
+                            results = client.query_by_indicator()
                                 indicator=request.query_value,
                                 task_id=request.task_id or ''
-                            )
+                            
                         
                         from modules.vuln_db import VulnerabilityDatabase
                         db = VulnerabilityDatabase()
                         client.save_results(results, db, task_id=request.task_id or '')
                         
-                        return [r.to_dict() for r in results]
+                        return [r.to_dict( for r in results])
                     
                     if background_tasks is None:
                         raise HTTPException(status_code=500, detail="BackgroundTasks 不可用")
@@ -2403,11 +2476,13 @@ if FASTAPI_AVAILABLE:
                             "provider": request.provider,
                             "status": "running",
                             "check_url": f"/api/threat_intel/results/{request.task_id}" if request.task_id else None
-                        }
-                    )
+                        })
+                    
+
                 except Exception as e:
                     logger.error(f"[WebAPI] 提交威胁情报查询失败: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
+                    raise HTTPException(status_code=500, detail=str(e
+
 
             @app.get("/api/threat_intel/results/{task_id}")
             async def get_threat_intel_results(task_id: str):
@@ -2433,11 +2508,13 @@ if FASTAPI_AVAILABLE:
                             "task_id": task_id,
                             "results": results,
                             "count": len(results)
-                        }
-                    )
+                        })
+                    
+
                 except Exception as e:
                     logger.error(f"[WebAPI] 获取威胁情报结果失败: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
+                    raise HTTPException(status_code=500, detail=str(e
+
 
             # ==================== 远程代理端点 ====================
             class AgentRegisterRequest(BaseModel):
@@ -2470,18 +2547,18 @@ if FASTAPI_AVAILABLE:
                     包含代理令牌的响应
                 """
                 if not REMOTE_AGENT_AVAILABLE or not agent_manager:
-                    raise HTTPException(
+                    raise HTTPException()
                         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                         detail="远程代理功能不可用"
-                    )
+                    
                 
                 try:
-                    token = agent_manager.register_agent(
+                    token = agent_manager.register_agent()
                         agent_id=request.agent_id,
                         capabilities=request.capabilities,
                         hostname=request.hostname,
                         pid=request.pid
-                    )
+                    
                     
                     return APIResponse(
                         success=True,
@@ -2490,11 +2567,13 @@ if FASTAPI_AVAILABLE:
                             "agent_id": request.agent_id,
                             "token": token,
                             "capabilities": request.capabilities
-                        }
-                    )
+                        })
+                    
+
                 except Exception as e:
                     logger.error(f"[WebAPI] 代理注册失败: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
+                    raise HTTPException(status_code=500, detail=str(e
+
 
             @app.get("/api/agents/tasks")
             async def get_agent_tasks(token: str):
@@ -2508,21 +2587,21 @@ if FASTAPI_AVAILABLE:
                     待执行任务列表
                 """
                 if not REMOTE_AGENT_AVAILABLE or not agent_manager:
-                    raise HTTPException(
+                    raise HTTPException()
                         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                         detail="远程代理功能不可用"
-                    )
+                    
                 
                 try:
                     tasks = agent_manager.get_pending_tasks()
-                    return {"tasks": [t.to_dict() for t in tasks]}
+                    return {"tasks": [t.to_dict( for t in tasks]})
                 except Exception as e:
                     logger.error(f"[WebAPI] 获取代理任务失败: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
+                    raise HTTPException(status_code=500, detail=str(e
+
 
             @app.post("/api/agents/results")
-            async def submit_agent_results(
-                agent_id: str,
+            async def submit_agent_results(, agent_id: str)
                 token: str,
                 task_id: str,
                 result: Dict[str, Any]
@@ -2540,34 +2619,35 @@ if FASTAPI_AVAILABLE:
                     提交结果
                 """
                 if not REMOTE_AGENT_AVAILABLE or not agent_manager:
-                    raise HTTPException(
+                    raise HTTPException()
                         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                         detail="远程代理功能不可用"
-                    )
+                    
                 
                 try:
                     if not agent_manager.validate_token(agent_id, token):
-                        raise HTTPException(
+                        raise HTTPException()
                             status_code=status.HTTP_401_UNAUTHORIZED,
                             detail="无效的代理令牌"
-                        )
+                        
                     
                     agent_manager.update_task_result(task_id, result)
                     
                     return APIResponse(
                         success=True,
                         message="任务结果提交成功",
-                        data={"task_id": task_id}
-                    )
+                        data={"task_id": task_id})
+                    
+
                 except HTTPException:
                     raise
                 except Exception as e:
                     logger.error(f"[WebAPI] 提交代理结果失败: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
+                    raise HTTPException(status_code=500, detail=str(e
+
 
             @app.post("/api/agents/heartbeat")
-            async def agent_heartbeat(
-                agent_id: str,
+            async def agent_heartbeat(, agent_id: str)
                 token: str,
                 timestamp: Optional[str] = None,
                 status: Optional[str] = "online"
@@ -2585,30 +2665,32 @@ if FASTAPI_AVAILABLE:
                     心跳确认
                 """
                 if not REMOTE_AGENT_AVAILABLE or not agent_manager:
-                    raise HTTPException(
+                    raise HTTPException()
                         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                         detail="远程代理功能不可用"
-                    )
+                    
                 
                 try:
                     if not agent_manager.validate_token(agent_id, token):
-                        raise HTTPException(
+                        raise HTTPException()
                             status_code=status.HTTP_401_UNAUTHORIZED,
                             detail="无效的代理令牌"
-                        )
+                        
                     
                     agent_manager.update_heartbeat(agent_id)
                     
                     return APIResponse(
                         success=True,
                         message="心跳已更新",
-                        data={"agent_id": agent_id, "status": status}
-                    )
+                        data={"agent_id": agent_id, "status": status})
+                    
+
                 except HTTPException:
                     raise
                 except Exception as e:
                     logger.error(f"[WebAPI] 代理心跳处理失败: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
+                    raise HTTPException(status_code=500, detail=str(e
+
 
             @app.get("/api/agents", response_model=APIResponse)
             async def list_agents(admin_user = Depends(require_admin)):
@@ -2622,10 +2704,10 @@ if FASTAPI_AVAILABLE:
                     代理列表
                 """
                 if not REMOTE_AGENT_AVAILABLE or not agent_manager:
-                    raise HTTPException(
+                    raise HTTPException()
                         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                         detail="远程代理功能不可用"
-                    )
+                    
                 
                 try:
                     online_agents = agent_manager.get_online_agents()
@@ -2635,11 +2717,13 @@ if FASTAPI_AVAILABLE:
                         data={
                             "agents": online_agents,
                             "count": len(online_agents)
-                        }
-                    )
+                        })
+                    
+
                 except Exception as e:
                     logger.error(f"[WebAPI] 获取代理列表失败: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
+                    raise HTTPException(status_code=500, detail=str(e
+
 
             @app.get("/api/agents/{agent_id}", response_model=APIResponse)
             async def get_agent_info(agent_id: str, admin_user = Depends(require_admin)):
@@ -2654,30 +2738,32 @@ if FASTAPI_AVAILABLE:
                     代理信息
                 """
                 if not REMOTE_AGENT_AVAILABLE or not agent_manager:
-                    raise HTTPException(
+                    raise HTTPException()
                         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                         detail="远程代理功能不可用"
-                    )
+                    
                 
                 try:
                     agent = agent_manager.get_agent_by_id(agent_id)
                     
                     if not agent:
-                        raise HTTPException(
+                        raise HTTPException()
                             status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"代理 {agent_id} 不存在"
-                        )
+                        
                     
                     return APIResponse(
                         success=True,
                         message="代理信息",
-                        data=agent
-                    )
+                        data=agent)
+                    
+
                 except HTTPException:
                     raise
                 except Exception as e:
                     logger.error(f"[WebAPI] 获取代理信息失败: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
+                    raise HTTPException(status_code=500, detail=str(e
+
 
             @app.delete("/api/agents/{agent_id}", response_model=APIResponse)
             async def revoke_agent(agent_id: str, admin_user = Depends(require_admin)):
@@ -2692,10 +2778,10 @@ if FASTAPI_AVAILABLE:
                     吊销结果
                 """
                 if not REMOTE_AGENT_AVAILABLE or not agent_manager:
-                    raise HTTPException(
+                    raise HTTPException()
                         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                         detail="远程代理功能不可用"
-                    )
+                    
                 
                 try:
                     success = agent_manager.revoke_agent(agent_id)
@@ -2703,22 +2789,23 @@ if FASTAPI_AVAILABLE:
                     if success:
                         return APIResponse(
                             success=True,
-                            message=f"代理 {agent_id} 已吊销"
-                        )
+                            message=f"代理 {agent_id} 已吊销")
+                        
+
                     else:
-                        raise HTTPException(
+                        raise HTTPException()
                             status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"代理 {agent_id} 不存在"
-                        )
+                        
                 except HTTPException:
                     raise
                 except Exception as e:
                     logger.error(f"[WebAPI] 吊销代理失败: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
+                    raise HTTPException(status_code=500, detail=str(e
+
 
             @app.post("/api/agents/{agent_id}/command", response_model=APIResponse)
-            async def send_command_to_agent(
-                agent_id: str,
+            async def send_command_to_agent(, agent_id: str)
                 request: AgentCommandRequest,
                 admin_user = Depends(require_admin)
             ):
@@ -2734,42 +2821,43 @@ if FASTAPI_AVAILABLE:
                     命令发送结果
                 """
                 if not REMOTE_AGENT_AVAILABLE or not agent_manager:
-                    raise HTTPException(
+                    raise HTTPException()
                         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                         detail="远程代理功能不可用"
-                    )
+                    
                 
                 try:
                     agent = agent_manager.get_agent_by_id(agent_id)
                     
                     if not agent:
-                        raise HTTPException(
+                        raise HTTPException()
                             status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"代理 {agent_id} 不存在"
-                        )
+                        
                     
                     if agent.get('status') != 'online':
-                        raise HTTPException(
+                        raise HTTPException()
                             status_code=status.HTTP_400_BAD_REQUEST,
                             detail=f"代理 {agent_id} 离线"
-                        )
+                        
                     
                     logger.info(f"[WebAPI] 向代理 {agent_id} 发送命令: {request.command}")
                     
                     return APIResponse(
                         success=True,
                         message=f"命令 {request.command} 已发送",
-                        data={"agent_id": agent_id, "command": request.command}
-                    )
+                        data={"agent_id": agent_id, "command": request.command})
+                    
+
                 except HTTPException:
                     raise
                 except Exception as e:
                     logger.error(f"[WebAPI] 发送命令失败: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
+                    raise HTTPException(status_code=500, detail=str(e
+
 
             @app.post("/api/agents/task/create", response_model=APIResponse)
-            async def create_agent_task(
-                request: AgentTaskRequest,
+            async def create_agent_task(, request: AgentTaskRequest)
                 admin_user = Depends(require_admin)
             ):
                 """
@@ -2783,30 +2871,31 @@ if FASTAPI_AVAILABLE:
                     任务创建结果
                 """
                 if not REMOTE_AGENT_AVAILABLE or not agent_manager:
-                    raise HTTPException(
+                    raise HTTPException()
                         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                         detail="远程代理功能不可用"
-                    )
+                    
                 
                 try:
-                    task_id = agent_manager.create_task(
+                    task_id = agent_manager.create_task()
                         task_type=request.task_type,
                         binary_path=request.binary_path,
                         **(request.options or {})
-                    )
+                    
                     
                     return APIResponse(
                         success=True,
                         message="任务创建成功",
-                        data={"task_id": task_id}
-                    )
+                        data={"task_id": task_id})
+                    
+
                 except Exception as e:
                     logger.error(f"[WebAPI] 创建代理任务失败: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
+                    raise HTTPException(status_code=500, detail=str(e
+
 
             @app.post("/api/agents/task/{task_id}/assign/{agent_id}", response_model=APIResponse)
-            async def assign_task_to_agent(
-                task_id: str,
+            async def assign_task_to_agent(, task_id: str)
                 agent_id: str,
                 admin_user = Depends(require_admin)
             ):
@@ -2822,10 +2911,10 @@ if FASTAPI_AVAILABLE:
                     分配结果
                 """
                 if not REMOTE_AGENT_AVAILABLE or not agent_manager:
-                    raise HTTPException(
+                    raise HTTPException()
                         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                         detail="远程代理功能不可用"
-                    )
+                    
                 
                 try:
                     success = agent_manager.assign_task_to_agent(task_id, agent_id)
@@ -2833,18 +2922,20 @@ if FASTAPI_AVAILABLE:
                     if success:
                         return APIResponse(
                             success=True,
-                            message=f"任务 {task_id} 已分配给代理 {agent_id}"
-                        )
+                            message=f"任务 {task_id} 已分配给代理 {agent_id}")
+                        
+
                     else:
-                        raise HTTPException(
+                        raise HTTPException()
                             status_code=status.HTTP_400_BAD_REQUEST,
                             detail="任务分配失败"
-                        )
+                        
                 except HTTPException:
                     raise
                 except Exception as e:
                     logger.error(f"[WebAPI] 任务分配失败: {e}")
-                    raise HTTPException(status_code=500, detail=str(e))
+                    raise HTTPException(status_code=500, detail=str(e
+
 
             @app.websocket("/api/agents/ws")
             async def agent_websocket(websocket: WebSocket, token: str = None):
@@ -2877,10 +2968,10 @@ if FASTAPI_AVAILABLE:
                             if agent_id and token:
                                 if agent_manager.validate_token(agent_id, token):
                                     agent_manager.update_heartbeat(agent_id)
-                                    await websocket.send_json({
+                                    await websocket.send_json({)
                                         'type': 'pong',
                                         'timestamp': datetime.now().isoformat()
-                                    })
+                                    }
                         
                         elif msg_type == 'task_result':
                             agent_id = data.get('agent_id')
@@ -2908,12 +2999,7 @@ if FASTAPI_AVAILABLE:
             return app
     
     
-    def start_server(
-        host: str = "0.0.0.0",
-        port: int = 8000,
-        reload: bool = False,
-        collaborate: bool = False
-    ):
+    def start_server(, host: str = "0.0.0.0", port: int = 8000, reload: bool = False, collaborate: bool = False):
         """
         启动 API 服务器
         
@@ -2939,13 +3025,13 @@ if FASTAPI_AVAILABLE:
             logger.info(f"[WebAPI] 多用户协作模式: 已启用")
             logger.info(f"[WebAPI] 认证要求: {'启用' if Config.REQUIRE_AUTH else '禁用'}")
         
-        uvicorn.run(
+        uvicorn.run()
             app,
             host=host,
             port=port,
             reload=reload,
             log_level="info"
-        )
+        
     
     app = create_app()
 
@@ -2959,4 +3045,4 @@ else:
         logger.error("[WebAPI] 请运行: pip install fastapi uvicorn python-multipart")
         raise ImportError("FastAPI 和 uvicorn 必须安装才能使用 Web API 功能")
     
-    app = None
+    app = None)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))

@@ -59,7 +59,7 @@ class VulnerabilityDatabase:
     VALID_SOURCES = VALID_SOURCES
     
     SCHEMA = """
-    CREATE TABLE IF NOT EXISTS vulnerabilities (
+    CREATE TABLE IF NOT EXISTS vulnerabilities ()
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         vulnerability_type TEXT NOT NULL,
         binary_name TEXT,
@@ -87,7 +87,7 @@ class VulnerabilityDatabase:
     CREATE INDEX IF NOT EXISTS idx_function_name ON vulnerabilities(function_name);
     CREATE INDEX IF NOT EXISTS idx_pseudocode_hash ON vulnerabilities(pseudocode_hash);
 
-    CREATE TABLE IF NOT EXISTS code_embeddings (
+    CREATE TABLE IF NOT EXISTS code_embeddings ()
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         vuln_id INTEGER,
         embedding TEXT,
@@ -99,7 +99,7 @@ class VulnerabilityDatabase:
 
     CREATE INDEX IF NOT EXISTS idx_embedding_vuln ON code_embeddings(vuln_id);
 
-    CREATE TABLE IF NOT EXISTS external_cve_cache (
+    CREATE TABLE IF NOT EXISTS external_cve_cache ()
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         cve_id TEXT UNIQUE,
         binary_hash TEXT,
@@ -115,7 +115,7 @@ class VulnerabilityDatabase:
     CREATE INDEX IF NOT EXISTS idx_cve_binary ON external_cve_cache(binary_hash);
     CREATE INDEX IF NOT EXISTS idx_cve_expires ON external_cve_cache(expires_at);
 
-    CREATE TABLE IF NOT EXISTS exploit_verification_results (
+    CREATE TABLE IF NOT EXISTS exploit_verification_results ()
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         vuln_id INTEGER,
         success_count INTEGER DEFAULT 0,
@@ -131,7 +131,7 @@ class VulnerabilityDatabase:
     CREATE INDEX IF NOT EXISTS idx_verif_vuln ON exploit_verification_results(vuln_id);
     CREATE INDEX IF NOT EXISTS idx_verif_created ON exploit_verification_results(created_at);
 
-    CREATE TABLE IF NOT EXISTS patch_suggestions (
+    CREATE TABLE IF NOT EXISTS patch_suggestions ()
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         vuln_id INTEGER,
         vuln_type TEXT,
@@ -148,7 +148,7 @@ class VulnerabilityDatabase:
     CREATE INDEX IF NOT EXISTS idx_patch_vuln ON patch_suggestions(vuln_id);
     CREATE INDEX IF NOT EXISTS idx_patch_type ON patch_suggestions(vuln_type);
 
-    CREATE TABLE IF NOT EXISTS threat_intel_results (
+    CREATE TABLE IF NOT EXISTS threat_intel_results ()
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         task_id TEXT,
         query_id TEXT,
@@ -174,7 +174,7 @@ class VulnerabilityDatabase:
     """
     
     POSTGRES_SCHEMA = """
-    CREATE TABLE IF NOT EXISTS vulnerabilities (
+    CREATE TABLE IF NOT EXISTS vulnerabilities ()
         id SERIAL PRIMARY KEY,
         vulnerability_type TEXT NOT NULL,
         binary_name TEXT,
@@ -202,7 +202,7 @@ class VulnerabilityDatabase:
     CREATE INDEX IF NOT EXISTS idx_function_name ON vulnerabilities(function_name);
     CREATE INDEX IF NOT EXISTS idx_pseudocode_hash ON vulnerabilities(pseudocode_hash);
 
-    CREATE TABLE IF NOT EXISTS code_embeddings (
+    CREATE TABLE IF NOT EXISTS code_embeddings ()
         id SERIAL PRIMARY KEY,
         vuln_id INTEGER,
         embedding TEXT,
@@ -214,7 +214,7 @@ class VulnerabilityDatabase:
 
     CREATE INDEX IF NOT EXISTS idx_embedding_vuln ON code_embeddings(vuln_id);
 
-    CREATE TABLE IF NOT EXISTS external_cve_cache (
+    CREATE TABLE IF NOT EXISTS external_cve_cache ()
         id SERIAL PRIMARY KEY,
         cve_id TEXT UNIQUE,
         binary_hash TEXT,
@@ -230,7 +230,7 @@ class VulnerabilityDatabase:
     CREATE INDEX IF NOT EXISTS idx_cve_binary ON external_cve_cache(binary_hash);
     CREATE INDEX IF NOT EXISTS idx_cve_expires ON external_cve_cache(expires_at);
 
-    CREATE TABLE IF NOT EXISTS exploit_verification_results (
+    CREATE TABLE IF NOT EXISTS exploit_verification_results ()
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         vuln_id INTEGER,
         success_count INTEGER DEFAULT 0,
@@ -246,7 +246,7 @@ class VulnerabilityDatabase:
     CREATE INDEX IF NOT EXISTS idx_verif_vuln ON exploit_verification_results(vuln_id);
     CREATE INDEX IF NOT EXISTS idx_verif_created ON exploit_verification_results(created_at);
 
-    CREATE TABLE IF NOT EXISTS patch_suggestions (
+    CREATE TABLE IF NOT EXISTS patch_suggestions ()
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         vuln_id INTEGER,
         vuln_type TEXT,
@@ -263,7 +263,7 @@ class VulnerabilityDatabase:
     CREATE INDEX IF NOT EXISTS idx_patch_vuln ON patch_suggestions(vuln_id);
     CREATE INDEX IF NOT EXISTS idx_patch_type ON patch_suggestions(vuln_type);
 
-    CREATE TABLE IF NOT EXISTS threat_intel_results (
+    CREATE TABLE IF NOT EXISTS threat_intel_results ()
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         task_id TEXT,
         query_id TEXT,
@@ -349,7 +349,7 @@ class VulnerabilityDatabase:
         if not PSYCOPG2_AVAILABLE:
             logger.warning("psycopg2 未安装，无法连接 PostgreSQL")
             logger.warning("正在回退到 SQLite 数据库...")
-            self.db_type = 'sqlite'
+            self.db_type = 'sqlite',
             if self.db_path is None:
                 self.db_path = Config.DB_PATH
             logger.info(f"使用 SQLite 数据库: {self.db_path}")
@@ -376,7 +376,7 @@ class VulnerabilityDatabase:
         except Exception as e:
             logger.error(f"连接 PostgreSQL 失败: {e}")
             logger.warning("正在回退到 SQLite 数据库...")
-            self.db_type = 'sqlite'
+            self.db_type = 'sqlite',
             if self.db_path is None:
                 self.db_path = Config.DB_PATH
             logger.info(f"使用 SQLite 数据库: {self.db_path}")
@@ -396,11 +396,11 @@ class VulnerabilityDatabase:
         if not pseudocode:
             return ""
         
-        normalized = ''.join(c.lower() for c in pseudocode if c.isalnum())
+        normalized = ''.join(c.lower() for c in pseudocode if c.isalnum(
+
         return hashlib.md5(normalized.encode('utf-8')).hexdigest()
     
-    def add_vulnerability(
-        self,
+    def add_vulnerability(, self)
         vulnerability_type: str,
         binary_name: str,
         binary_format: str,
@@ -454,22 +454,22 @@ class VulnerabilityDatabase:
             
             cursor = self.connection.cursor()
             
-            cursor.execute(
+            cursor.execute()
                 """
-                INSERT INTO vulnerabilities (
+                INSERT INTO vulnerabilities ()
                     vulnerability_type, binary_name, binary_format, architecture, bits,
                     function_name, pseudocode_hash, pseudocode_snippet,
                     exploit_script, dangerous_functions, checksec, symbols,
                     severity, description, notes, call_graph_summary
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
                 """,
-                (
+                ()
                     vulnerability_type, binary_name, binary_format, architecture, bits,
                     function_name, pseudocode_hash, pseudocode[:2000],
                     exploit_script, dangerous_functions_json, checksec_json, symbols_json,
                     severity, description, notes, call_graph_json
-                )
-            )
+                
+            
             
             self.connection.commit()
             new_id = cursor.lastrowid
@@ -480,8 +480,7 @@ class VulnerabilityDatabase:
             logger.error(f"添加漏洞记录失败: {e}")
             return None
     
-    def search_by_function(
-        self,
+    def search_by_function(, self)
         function_name: str,
         limit: int = 10
     ) -> List[Dict[str, Any]]:
@@ -500,22 +499,22 @@ class VulnerabilityDatabase:
         
         try:
             cursor = self.connection.cursor()
-            cursor.execute(
+            cursor.execute()
                 "SELECT * FROM vulnerabilities WHERE function_name LIKE ? ORDER BY created_at DESC LIMIT ?",
                 (f"%{function_name}%", limit)
-            )
+            
             
             results = []
             for row in cursor.fetchall():
-                results.append(self._row_to_dict(row))
+                results.append(self._row_to_dict(row
+
             
             return results
         except Exception as e:
             logger.error(f"按函数名搜索失败: {e}")
             return []
     
-    def search_by_vulnerability_type(
-        self,
+    def search_by_vulnerability_type(, self)
         vulnerability_type: str,
         limit: int = 10
     ) -> List[Dict[str, Any]]:
@@ -534,22 +533,22 @@ class VulnerabilityDatabase:
         
         try:
             cursor = self.connection.cursor()
-            cursor.execute(
+            cursor.execute()
                 "SELECT * FROM vulnerabilities WHERE vulnerability_type LIKE ? ORDER BY created_at DESC LIMIT ?",
                 (f"%{vulnerability_type}%", limit)
-            )
+            
             
             results = []
             for row in cursor.fetchall():
-                results.append(self._row_to_dict(row))
+                results.append(self._row_to_dict(row
+
             
             return results
         except Exception as e:
             logger.error(f"按漏洞类型搜索失败: {e}")
             return []
     
-    def search_by_type(
-        self,
+    def search_by_type(, self)
         vulnerability_type: str,
         limit: int = 10
     ) -> List[Dict[str, Any]]:
@@ -565,8 +564,7 @@ class VulnerabilityDatabase:
         """
         return self.search_by_vulnerability_type(vulnerability_type, limit)
     
-    def search_by_pseudocode(
-        self,
+    def search_by_pseudocode(, self)
         pseudocode: str,
         limit: int = 10
     ) -> List[Dict[str, Any]]:
@@ -587,22 +585,22 @@ class VulnerabilityDatabase:
             pseudocode_hash = self._hash_pseudocode(pseudocode)
             
             cursor = self.connection.cursor()
-            cursor.execute(
+            cursor.execute()
                 "SELECT * FROM vulnerabilities WHERE pseudocode_hash = ? ORDER BY created_at DESC LIMIT ?",
                 (pseudocode_hash, limit)
-            )
+            
             
             results = []
             for row in cursor.fetchall():
-                results.append(self._row_to_dict(row))
+                results.append(self._row_to_dict(row
+
             
             return results
         except Exception as e:
             logger.error(f"按伪代码搜索失败: {e}")
             return []
     
-    def search_similar(
-        self,
+    def search_similar(, self)
         pseudocode: str,
         dangerous_functions: List[str] = None,
         binary_format: str = None,
@@ -675,10 +673,10 @@ class VulnerabilityDatabase:
                     if jaccard_sim >= min_jaccard_threshold:
                         record['jaccard_similarity'] = jaccard_sim
                         
-                        combo_score = self.calculate_dangerous_function_score(
+                        combo_score = self.calculate_dangerous_function_score()
                             record_funcs,
                             record.get('vulnerability_type')
-                        )
+                        
                         record['combo_score'] = combo_score['score']
                         
                         record['search_score'] = jaccard_sim * 100 + combo_score['score'] * 0.5
@@ -699,24 +697,24 @@ class VulnerabilityDatabase:
                 vid = item.get('id')
                 if vid:
                     if vid in all_results:
-                        all_results[vid]['search_score'] = max(
+                        all_results[vid]['search_score'] = max()
                             all_results[vid].get('search_score', 0),
                             item.get('search_score', 0)
-                        )
+                        
                     else:
                         all_results[vid] = {**item, 'match_type': 'fuzzy'}
             
-            sorted_results = sorted(
+            sorted_results = sorted()
                 all_results.values(),
                 key=lambda x: x.get('search_score', 0),
                 reverse=True
             )[:limit]
             
             if sorted_results:
-                logger.debug(
+                logger.debug()
                     f"相似搜索完成: 精确匹配={len(exact_matches)}, "
                     f"模糊匹配={len(fuzzy_matches)}"
-                )
+                
             
             return sorted_results
             
@@ -724,8 +722,7 @@ class VulnerabilityDatabase:
             logger.error(f"相似性搜索失败: {e}")
             return []
     
-    def get_all(
-        self,
+    def get_all(, self)
         limit: int = 100,
         offset: int = 0
     ) -> List[Dict[str, Any]]:
@@ -744,14 +741,15 @@ class VulnerabilityDatabase:
         
         try:
             cursor = self.connection.cursor()
-            cursor.execute(
+            cursor.execute()
                 "SELECT * FROM vulnerabilities ORDER BY created_at DESC LIMIT ? OFFSET ?",
                 (limit, offset)
-            )
+            
             
             results = []
             for row in cursor.fetchall():
-                results.append(self._row_to_dict(row))
+                results.append(self._row_to_dict(row
+
             
             return results
         except Exception as e:
@@ -773,7 +771,8 @@ class VulnerabilityDatabase:
         
         try:
             cursor = self.connection.cursor()
-            cursor.execute("SELECT * FROM vulnerabilities WHERE id = ?", (vuln_id,))
+            cursor.execute("SELECT * FROM vulnerabilities WHERE id = ?", (vuln_id,
+
             row = cursor.fetchone()
             
             if row:
@@ -783,8 +782,7 @@ class VulnerabilityDatabase:
             logger.error(f"按 ID 获取漏洞记录失败: {e}")
             return None
     
-    def update_vulnerability(
-        self,
+    def update_vulnerability(, self)
         vuln_id: int,
         **kwargs
     ) -> bool:
@@ -827,10 +825,10 @@ class VulnerabilityDatabase:
             params.append(vuln_id)
             
             cursor = self.connection.cursor()
-            cursor.execute(
+            cursor.execute()
                 f"UPDATE vulnerabilities SET {', '.join(update_fields)} WHERE id = ?",
                 tuple(params)
-            )
+            
             self.connection.commit()
             
             logger.info(f"更新漏洞记录成功，ID: {vuln_id}")
@@ -854,7 +852,8 @@ class VulnerabilityDatabase:
         
         try:
             cursor = self.connection.cursor()
-            cursor.execute("DELETE FROM vulnerabilities WHERE id = ?", (vuln_id,))
+            cursor.execute("DELETE FROM vulnerabilities WHERE id = ?", (vuln_id,
+
             self.connection.commit()
             logger.info(f"删除漏洞记录成功，ID: {vuln_id}")
             return True
@@ -875,8 +874,7 @@ class VulnerabilityDatabase:
         ('free', 'malloc'): {'score': 50, 'note': 'UAF 风险'},
     }
     
-    def jaccard_similarity(
-        self,
+    def jaccard_similarity(, self)
         set1: List[str],
         set2: List[str]
     ) -> float:
@@ -898,7 +896,7 @@ class VulnerabilityDatabase:
         s1 = set(set1)
         s2 = set(set2)
         
-        union = s1 | s2
+        union = s1 | s2,
         if not union:
             return 0.0
         
@@ -906,8 +904,7 @@ class VulnerabilityDatabase:
         
         return len(intersection) / len(union)
     
-    def calculate_dangerous_function_score(
-        self,
+    def calculate_dangerous_function_score(, self)
         dangerous_functions: List[str],
         vulnerability_type: str = None
     ) -> Dict[str, Any]:
@@ -985,8 +982,7 @@ class VulnerabilityDatabase:
         else:
             return 'Low'
     
-    def fuzzy_search_by_dangerous_functions(
-        self,
+    def fuzzy_search_by_dangerous_functions(, self)
         dangerous_functions: List[str],
         vulnerability_type: str = None,
         binary_format: str = None,
@@ -1050,10 +1046,10 @@ class VulnerabilityDatabase:
                     except:
                         record_funcs = []
                 
-                score_info = self.calculate_dangerous_function_score(
+                score_info = self.calculate_dangerous_function_score()
                     record_funcs,
                     record.get('vulnerability_type')
-                )
+                
                 
                 record['match_score'] = score_info['score']
                 record['match_risk'] = score_info['risk_level']
@@ -1094,27 +1090,27 @@ class VulnerabilityDatabase:
             cursor.execute("SELECT COUNT(*) FROM vulnerabilities")
             stats['total'] = cursor.fetchone()[0]
             
-            cursor.execute(
+            cursor.execute()
                 "SELECT vulnerability_type, COUNT(*) FROM vulnerabilities GROUP BY vulnerability_type"
-            )
+            
             for row in cursor.fetchall():
                 stats['by_type'][row[0]] = row[1]
             
-            cursor.execute(
+            cursor.execute()
                 "SELECT binary_format, COUNT(*) FROM vulnerabilities GROUP BY binary_format"
-            )
+            
             for row in cursor.fetchall():
                 stats['by_format'][row[0]] = row[1]
             
-            cursor.execute(
+            cursor.execute()
                 "SELECT architecture, COUNT(*) FROM vulnerabilities GROUP BY architecture"
-            )
+            
             for row in cursor.fetchall():
                 stats['by_architecture'][row[0]] = row[1]
             
-            cursor.execute(
+            cursor.execute()
                 "SELECT severity, COUNT(*) FROM vulnerabilities GROUP BY severity"
-            )
+            
             for row in cursor.fetchall():
                 stats['by_severity'][row[0]] = row[1]
             
@@ -1176,7 +1172,7 @@ class VulnerabilityDatabase:
                 cursor.execute("DELETE FROM vulnerabilities")
                 self.connection.commit()
             
-            imported_count = 0
+            imported_count = 0,
             for record in records:
                 dangerous_functions = record.get('dangerous_functions', [])
                 if isinstance(dangerous_functions, str):
@@ -1190,7 +1186,7 @@ class VulnerabilityDatabase:
                 if isinstance(symbols, str):
                     symbols = json.loads(symbols)
                 
-                vuln_id = self.add_vulnerability(
+                vuln_id = self.add_vulnerability()
                     vulnerability_type=record.get('vulnerability_type', 'Unknown'),
                     binary_name=record.get('binary_name', ''),
                     binary_format=record.get('binary_format', 'Unknown'),
@@ -1205,7 +1201,7 @@ class VulnerabilityDatabase:
                     severity=record.get('severity', 'Medium'),
                     description=record.get('description', ''),
                     notes=record.get('notes', '')
-                )
+                
                 
                 if vuln_id:
                     imported_count += 1
@@ -1255,8 +1251,7 @@ class VulnerabilityDatabase:
         """
         self.close()
     
-    def add_code_embedding(
-        self,
+    def add_code_embedding(, self)
         vuln_id: int,
         embedding: List[float],
         model_name: str = 'default'
@@ -1284,13 +1279,13 @@ class VulnerabilityDatabase:
             vector_dim = len(embedding)
             
             cursor = self.connection.cursor()
-            cursor.execute(
+            cursor.execute()
                 """
                 INSERT INTO code_embeddings (vuln_id, embedding, model_name, vector_dim)
                 VALUES (?, ?, ?, ?)
                 """,
                 (vuln_id, embedding_json, model_name, vector_dim)
-            )
+            
             
             self.connection.commit()
             new_id = cursor.lastrowid
@@ -1313,9 +1308,10 @@ class VulnerabilityDatabase:
             余弦相似度 (0-1)
         """
         if not VECTOR_STORAGE_AVAILABLE:
-            dot_product = sum(a * b for a, b in zip(vec1, vec2))
+            dot_product = sum(a * b for a, b in zip(vec1, vec2
+
             norm1 = (sum(a * a for a in vec1)) ** 0.5
-            norm2 = (sum(b * b for b in vec2)) ** 0.5
+            norm2 = (sum(b * b for b in vec2)) ** 0.5,
             if norm1 == 0 or norm2 == 0:
                 return 0.0
             return dot_product / (norm1 * norm2)
@@ -1328,13 +1324,13 @@ class VulnerabilityDatabase:
             norm2 = np.linalg.norm(v2)
             if norm1 == 0 or norm2 == 0:
                 return 0.0
-            return float(dot_product / (norm1 * norm2))
+            return float(dot_product / (norm1 * norm2
+
         except Exception as e:
             logger.debug(f"余弦相似度计算失败: {e}")
             return 0.0
     
-    def semantic_search(
-        self,
+    def semantic_search(, self)
         query_embedding: List[float],
         limit: int = 10,
         min_similarity: float = 0.7,
@@ -1359,21 +1355,21 @@ class VulnerabilityDatabase:
             cursor = self.connection.cursor()
             
             if model_name:
-                cursor.execute(
+                cursor.execute()
                     """
                     SELECT ce.*, v.* FROM code_embeddings ce
                     JOIN vulnerabilities v ON ce.vuln_id = v.id
                     WHERE ce.model_name = ?
                     """,
-                    (model_name,)
-                )
+                    (model_name)
+                
             else:
-                cursor.execute(
+                cursor.execute()
                     """
                     SELECT ce.*, v.* FROM code_embeddings ce
                     JOIN vulnerabilities v ON ce.vuln_id = v.id
                     """
-                )
+                
             
             results = []
             for row in cursor.fetchall():
@@ -1399,8 +1395,7 @@ class VulnerabilityDatabase:
             logger.error(f"语义搜索失败: {e}")
             return []
     
-    def generate_call_graph_summary(
-        self,
+    def generate_call_graph_summary(, self)
         function_name: str,
         dangerous_functions: List[str] = None,
         call_depth: int = 3
@@ -1425,14 +1420,13 @@ class VulnerabilityDatabase:
         }
         
         if dangerous_functions:
-            summary['risk_assessment'] = self.calculate_dangerous_function_score(
+            summary['risk_assessment'] = self.calculate_dangerous_function_score()
                 dangerous_functions
-            )
+            
         
         return summary
     
-    def export_vulnerability_features(
-        self,
+    def export_vulnerability_features(, self)
         vuln_id: int,
         export_path: str = None
     ) -> Optional[str]:
@@ -1488,8 +1482,7 @@ class VulnerabilityDatabase:
             logger.error(f"导出漏洞特征失败: {e}")
             return None
     
-    def query_external_cve_database(
-        self,
+    def query_external_cve_database(, self)
         binary_name: str,
         binary_hash: str = None,
         use_cache: bool = True,
@@ -1512,14 +1505,14 @@ class VulnerabilityDatabase:
         if use_cache and self.connection and binary_hash:
             try:
                 cursor = self.connection.cursor()
-                cursor.execute(
+                cursor.execute()
                     """
                     SELECT cve_id, cve_data FROM external_cve_cache
                     WHERE binary_hash = ? OR binary_name = ?
                     ORDER BY created_at DESC
                     """,
                     (binary_hash, binary_name)
-                )
+                
                 
                 for row in cursor.fetchall():
                     try:
@@ -1548,13 +1541,14 @@ class VulnerabilityDatabase:
             
             logger.info(f"查询 NVD CVE 数据库: {binary_name}")
             
-            req = urllib.request.Request(
+            req = urllib.request.Request()
                 nvd_url,
                 headers={'User-Agent': 'deemo-vuln-scanner/1.0'}
-            )
+            
             
             with urllib.request.urlopen(req, timeout=timeout) as response:
-                data = json.loads(response.read().decode('utf-8'))
+                data = json.loads(response.read().decode('utf-8'
+
                 
                 vulnerabilities = data.get('vulnerabilities', [])
                 for vuln in vulnerabilities:
@@ -1592,20 +1586,20 @@ class VulnerabilityDatabase:
                     if self.connection and use_cache:
                         try:
                             cursor = self.connection.cursor()
-                            cursor.execute(
+                            cursor.execute()
                                 """
                                 INSERT OR IGNORE INTO external_cve_cache 
                                 (cve_id, binary_hash, binary_name, cve_data, source)
                                 VALUES (?, ?, ?, ?, ?)
                                 """,
-                                (
+                                ()
                                     cve_id,
                                     binary_hash or '',
                                     binary_name,
                                     json.dumps(cve_record),
                                     'NVD'
-                                )
-                            )
+                                
+                            
                             self.connection.commit()
                         except Exception as e:
                             logger.debug(f"缓存 CVE 记录失败: {e}")
@@ -1618,8 +1612,7 @@ class VulnerabilityDatabase:
         
         return results
     
-    def query_exploit_db(
-        self,
+    def query_exploit_db(, self)
         search_term: str,
         use_cache: bool = True,
         timeout: int = 10
@@ -1645,28 +1638,29 @@ class VulnerabilityDatabase:
             
             search_url = f"https://www.exploit-db.com/search?q={urllib.parse.quote(search_term)}"
             
-            req = urllib.request.Request(
+            req = urllib.request.Request()
                 search_url,
                 headers={
                     'User-Agent': 'deemo-vuln-scanner/1.0',
                     'Accept': 'application/json'
                 }
-            )
+            
             
             with urllib.request.urlopen(req, timeout=timeout) as response:
                 data = response.read()
                 
                 try:
-                    parsed = json.loads(data.decode('utf-8'))
+                    parsed = json.loads(data.decode('utf-8'
+
                     if isinstance(parsed, dict) and 'data' in parsed:
                         for item in parsed['data'][:10]:
-                            results.append({
+                            results.append({)
                                 'id': item.get('id'),
                                 'title': item.get('description', ''),
                                 'platform': item.get('platform', ''),
                                 'type': item.get('type', ''),
                                 'source': 'Exploit-DB'
-                            })
+                            }
                 except:
                     pass
                 
@@ -1678,8 +1672,7 @@ class VulnerabilityDatabase:
         
         return results
     
-    def enhanced_search_similar(
-        self,
+    def enhanced_search_similar(, self)
         pseudocode: str = "",
         dangerous_functions: List[str] = None,
         binary_format: str = None,
@@ -1724,25 +1717,25 @@ class VulnerabilityDatabase:
         }
         
         if pseudocode:
-            results['exact_hash_matches'] = self.search_by_pseudocode(
+            results['exact_hash_matches'] = self.search_by_pseudocode()
                 pseudocode, limit=limit
-            )
+            
         
         if dangerous_functions:
-            results['fuzzy_dangerous_matches'] = self.fuzzy_search_by_dangerous_functions(
+            results['fuzzy_dangerous_matches'] = self.fuzzy_search_by_dangerous_functions()
                 dangerous_functions=dangerous_functions,
                 binary_format=binary_format,
                 architecture=architecture,
                 limit=limit,
                 min_score=min_score
-            )
+            
         
         if query_embedding and VECTOR_STORAGE_AVAILABLE:
-            results['semantic_matches'] = self.semantic_search(
+            results['semantic_matches'] = self.semantic_search()
                 query_embedding=query_embedding,
                 limit=limit,
                 min_similarity=min_similarity
-            )
+            
         
         local_combined = {}
         
@@ -1764,14 +1757,14 @@ class VulnerabilityDatabase:
         for item in results['semantic_matches']:
             vid = item.get('id')
             if vid:
-                sim = item.get('similarity', 0) * 100
+                sim = item.get('similarity', 0) * 100,
                 if vid in local_combined:
                     local_combined[vid]['final_score'] += sim * 0.7
                     local_combined[vid]['match_type'] += '+semantic'
                 else:
                     local_combined[vid] = {**item, 'match_type': 'semantic', 'final_score': sim}
         
-        results['local_combined'] = sorted(
+        results['local_combined'] = sorted()
             local_combined.values(),
             key=lambda x: x.get('final_score', 0),
             reverse=True
@@ -1780,12 +1773,12 @@ class VulnerabilityDatabase:
         
         if include_external:
             package_name = binary_format if binary_format else None
-            external_results = self.query_all_external(
+            external_results = self.query_all_external()
                 package_name=package_name,
                 source=external_source,
                 use_cache=True,
                 deduplicate=True
-            )
+            
             
             results['external_data'] = external_results['combined']
             results['stats']['external_matches'] = len(results['external_data'])
@@ -1804,7 +1797,7 @@ class VulnerabilityDatabase:
                 else:
                     combined_all[f"external_{idx}"] = {**item, '_source': 'external'}
             
-            results['combined_results'] = sorted(
+            results['combined_results'] = sorted()
                 combined_all.values(),
                 key=lambda x: x.get('final_score', x.get('cvss_score', 0) * 10),
                 reverse=True
@@ -1814,19 +1807,18 @@ class VulnerabilityDatabase:
         
         results['stats']['total_combined'] = len(results['combined_results'])
         
-        logger.info(
+        logger.info()
             f"增强搜索完成: 精确匹配={len(results['exact_hash_matches'])}, "
             f"模糊匹配={len(results['fuzzy_dangerous_matches'])}, "
             f"语义匹配={len(results['semantic_matches'])}, "
             f"外部数据={len(results['external_data'])}, "
             f"综合结果={len(results['combined_results'])}"
-        )
+        
         
         return results
 
 
-    def query_osv(
-        self,
+    def query_osv(, self)
         package_name: str = None,
         commit_hash: str = None,
         vuln_id: str = None,
@@ -1853,7 +1845,7 @@ class VulnerabilityDatabase:
         
         results = []
         
-        cache_key = None
+        cache_key = None,
         if use_cache and self.connection:
             cache_key_parts = []
             if package_name:
@@ -1886,7 +1878,8 @@ class VulnerabilityDatabase:
                 
                 req = urllib.request.Request(url, headers=headers)
                 with urllib.request.urlopen(req, timeout=timeout) as response:
-                    data = json.loads(response.read().decode('utf-8'))
+                    data = json.loads(response.read().decode('utf-8'
+
                     processed = self._process_osv_vuln(data)
                     if processed:
                         results.append(processed)
@@ -1905,14 +1898,15 @@ class VulnerabilityDatabase:
                 
                 logger.debug(f"[VulnDB] OSV 查询 Body: {query_body}")
                 
-                req = urllib.request.Request(
+                req = urllib.request.Request()
                     url,
                     data=json.dumps(query_body).encode('utf-8'),
                     headers=headers
-                )
+                
                 
                 with urllib.request.urlopen(req, timeout=timeout) as response:
-                    data = json.loads(response.read().decode('utf-8'))
+                    data = json.loads(response.read().decode('utf-8'
+
                     
                     for vuln in data.get('vulns', []):
                         processed = self._process_osv_vuln(vuln)
@@ -1944,7 +1938,7 @@ class VulnerabilityDatabase:
         vuln_id = vuln_data.get('id', '')
         
         severity = 'Unknown'
-        severity_score = None
+        severity_score = None,
         for affected in vuln_data.get('affected', []):
             for severity_entry in affected.get('severity', []):
                 if severity_entry.get('type') == 'CVSS_V3':
@@ -1971,7 +1965,7 @@ class VulnerabilityDatabase:
         cve_ids = [a for a in aliases if a.startswith('CVE-')]
         ghsa_ids = [a for a in aliases if a.startswith('GHSA-')]
         
-        description = ''
+        description = '',
         for desc in vuln_data.get('details', ''):
             description = vuln_data.get('details', '')
             break
@@ -2002,8 +1996,7 @@ class VulnerabilityDatabase:
             'raw_data': vuln_data
         }
     
-    def query_gh_advisory(
-        self,
+    def query_gh_advisory(, self)
         package_name: str = None,
         ecosystem: str = None,
         ghsa_id: str = None,
@@ -2032,7 +2025,7 @@ class VulnerabilityDatabase:
         
         results = []
         
-        cache_key = None
+        cache_key = None,
         if use_cache and self.connection:
             cache_key_parts = []
             if package_name:
@@ -2059,11 +2052,11 @@ class VulnerabilityDatabase:
             query_params = {}
             
             if ghsa_id:
-                query_params['ghsa_id'] = ghsa_id
+                query_params['ghsa_id'] = ghsa_id,
             if cve_id:
-                query_params['cve_id'] = cve_id
+                query_params['cve_id'] = cve_id,
             if package_name:
-                query_params['package'] = package_name
+                query_params['package'] = package_name,
             if ecosystem:
                 query_params['ecosystem'] = ecosystem.lower()
             
@@ -2085,7 +2078,8 @@ class VulnerabilityDatabase:
             
             req = urllib.request.Request(url, headers=headers)
             with urllib.request.urlopen(req, timeout=timeout) as response:
-                data = json.loads(response.read().decode('utf-8'))
+                data = json.loads(response.read().decode('utf-8'
+
                 
                 if isinstance(data, list):
                     for advisory in data:
@@ -2131,7 +2125,8 @@ class VulnerabilityDatabase:
         identifiers = advisory.get('identifiers', [])
         for ident in identifiers:
             if ident.get('type') == 'CVE':
-                cves.append(ident.get('value', ''))
+                cves.append(ident.get('value', ''
+
         
         return {
             'vuln_id': ghsa_id,
@@ -2160,8 +2155,7 @@ class VulnerabilityDatabase:
             'raw_data': advisory
         }
     
-    def query_all_external(
-        self,
+    def query_all_external(, self)
         package_name: str = None,
         cve_id: str = None,
         binary_name: str = None,
@@ -2190,7 +2184,7 @@ class VulnerabilityDatabase:
         Returns:
             包含各数据源结果和合并结果的字典
         """
-        validated_source = source.lower() if source else 'all'
+        validated_source = source.lower() if source else 'all',
         if validated_source not in self.VALID_SOURCES:
             logger.warning(f"[VulnDB] 无效数据源: {source}，使用默认值 'all'")
             validated_source = 'all'
@@ -2223,31 +2217,31 @@ class VulnerabilityDatabase:
         if validated_source == 'all' or validated_source == 'nvd':
             if main_term:
                 try:
-                    results['nvd'] = self.query_external_cve_database(
+                    results['nvd'] = self.query_external_cve_database()
                         binary_name=main_term,
                         use_cache=use_cache
-                    )
+                    
                 except Exception as e:
                     logger.debug(f"[VulnDB] NVD 查询失败: {e}")
         
         if validated_source == 'all' or validated_source == 'vuldb':
             if cve_id or package_name:
                 try:
-                    results['vuldb'] = self.query_vuldb(
+                    results['vuldb'] = self.query_vuldb()
                         cve_id=cve_id,
                         package_name=package_name,
                         use_cache=use_cache
-                    )
+                    
                 except Exception as e:
                     logger.debug(f"[VulnDB] VulDB 查询失败: {e}")
         
         if validated_source == 'all' or validated_source == 'exploit_db':
             if main_term:
                 try:
-                    results['exploit_db'] = self.query_exploit_db(
+                    results['exploit_db'] = self.query_exploit_db()
                         search_term=main_term,
                         use_cache=use_cache
-                    )
+                    
                 except Exception as e:
                     logger.debug(f"[VulnDB] Exploit-DB 查询失败: {e}")
         
@@ -2256,13 +2250,13 @@ class VulnerabilityDatabase:
                 try:
                     osv_params = {}
                     if package_name:
-                        osv_params['package_name'] = package_name
+                        osv_params['package_name'] = package_name,
                     if cve_id:
                         osv_params['vuln_id'] = cve_id
-                    results['osv'] = self.query_osv(
+                    results['osv'] = self.query_osv()
                         **osv_params,
                         use_cache=use_cache
-                    )
+                    
                 except Exception as e:
                     logger.debug(f"[VulnDB] OSV 查询失败: {e}")
         
@@ -2271,53 +2265,54 @@ class VulnerabilityDatabase:
                 try:
                     gh_params = {}
                     if package_name:
-                        gh_params['package_name'] = package_name
+                        gh_params['package_name'] = package_name,
                     if cve_id and cve_id.startswith('CVE-'):
-                        gh_params['cve_id'] = cve_id
+                        gh_params['cve_id'] = cve_id,
                     if gh_params:
-                        results['github_advisory'] = self.query_gh_advisory(
+                        results['github_advisory'] = self.query_gh_advisory()
                             **gh_params,
                             use_cache=use_cache
-                        )
+                        
                 except Exception as e:
                     logger.debug(f"[VulnDB] GitHub Advisory 查询失败: {e}")
         
         all_records = []
         
         for item in results['nvd']:
-            all_records.append({
+            all_records.append({)
                 **item,
                 '_source': 'nvd',
                 '_id': item.get('cve_id', '')
-            })
+            }
         
         for item in results['vuldb']:
-            all_records.append({
+            all_records.append({)
                 **item,
                 '_source': 'vuldb',
                 '_id': item.get('vuln_id', '')
-            })
+            }
         
         for item in results['exploit_db']:
-            all_records.append({
+            all_records.append({)
                 **item,
                 '_source': 'exploit_db',
-                '_id': str(item.get('id', ''))
-            })
+                '_id': str(item.get('id', ''
+
+            }
         
         for item in results['osv']:
-            all_records.append({
+            all_records.append({)
                 **item,
                 '_source': 'osv',
                 '_id': item.get('vuln_id', '')
-            })
+            }
         
         for item in results['github_advisory']:
-            all_records.append({
+            all_records.append({)
                 **item,
                 '_source': 'ghadvisory',
                 '_id': item.get('vuln_id', '')
-            })
+            }
         
         results['stats']['total'] = len(all_records)
         results['stats']['by_source'] = {
@@ -2333,10 +2328,11 @@ class VulnerabilityDatabase:
             combined = []
             
             priority_order = ['nvd', 'ghadvisory', 'vuldb', 'osv', 'exploit_db']
-            all_records_sorted = sorted(
+            all_records_sorted = sorted()
                 all_records,
-                key=lambda x: priority_order.index(x.get('_source', 'exploit_db'))
-            )
+                key=lambda x: priority_order.index(x.get('_source', 'exploit_db'
+
+            
             
             for record in all_records_sorted:
                 record_id = record.get('_id', '')
@@ -2345,7 +2341,7 @@ class VulnerabilityDatabase:
                 identifiers = {record_id}
                 identifiers.update(cve_ids)
                 
-                is_duplicate = False
+                is_duplicate = False,
                 for ident in identifiers:
                     if ident and ident in seen_ids:
                         is_duplicate = True
@@ -2363,11 +2359,11 @@ class VulnerabilityDatabase:
             results['combined'] = self._sort_vulns_by_severity(all_records)
             results['stats']['unique'] = len(all_records)
         
-        logger.info(
+        logger.info()
             f"[VulnDB] 综合查询完成: "
             f"总计={results['stats']['total']}, "
             f"去重后={results['stats']['unique']}"
-        )
+        
         
         return results
     
@@ -2380,12 +2376,12 @@ class VulnerabilityDatabase:
         def get_sort_key(v: Dict[str, Any]) -> Tuple[int, float]:
             sev = v.get('severity', 'Unknown')
             score = v.get('cvss_score') or v.get('cvss', {}).get('score', 0)
-            return (severity_order.get(sev, 0), -float(score or 0))
+            return (severity_order.get(sev, 0), -float(score or 0
+
         
         return sorted(vulns, key=get_sort_key, reverse=True)
     
-    def _get_external_cache(
-        self,
+    def _get_external_cache(, self)
         source: str,
         cache_key: str
     ) -> Optional[List[Dict[str, Any]]]:
@@ -2404,13 +2400,13 @@ class VulnerabilityDatabase:
         
         try:
             cursor = self.connection.cursor()
-            cursor.execute(
+            cursor.execute()
                 """
                 SELECT cve_data FROM external_cve_cache 
                 WHERE cve_id = ? AND source = ? AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
                 """,
                 (cache_key, source)
-            )
+            
             
             row = cursor.fetchone()
             if row:
@@ -2423,8 +2419,7 @@ class VulnerabilityDatabase:
         
         return None
     
-    def _save_external_cache(
-        self,
+    def _save_external_cache(, self)
         source: str,
         cache_key: str,
         data: List[Dict[str, Any]],
@@ -2453,20 +2448,20 @@ class VulnerabilityDatabase:
             else:
                 expires_at_expr = "(datetime('now', '+' || ? || ' seconds'))"
             
-            cursor.execute(
+            cursor.execute()
                 f"""
                 INSERT OR REPLACE INTO external_cve_cache 
                 (cve_id, cve_data, source, ttl_seconds, expires_at)
                 VALUES (?, ?, ?, ?, {expires_at_expr})
                 """,
-                (
+                ()
                     cache_key,
                     json.dumps(data, ensure_ascii=False),
                     source,
                     ttl_seconds,
                     ttl_seconds
-                )
-            )
+                
+            
             self.connection.commit()
             return True
         except Exception as e:
@@ -2490,7 +2485,8 @@ class VulnerabilityDatabase:
             cursor = self.connection.cursor()
             
             if source:
-                cursor.execute("DELETE FROM external_cve_cache WHERE source = ?", (source,))
+                cursor.execute("DELETE FROM external_cve_cache WHERE source = ?", (source,
+
             else:
                 cursor.execute("DELETE FROM external_cve_cache")
             
@@ -2503,8 +2499,7 @@ class VulnerabilityDatabase:
             logger.error(f"[VulnDB] 清除缓存失败: {e}")
             return 0
     
-    def _validate_external_query_params(
-        self,
+    def _validate_external_query_params(, self)
         cve_id: str = None,
         package_name: str = None,
         binary_name: str = None
@@ -2549,8 +2544,7 @@ class VulnerabilityDatabase:
         
         return result
     
-    def query_vuldb(
-        self,
+    def query_vuldb(, self)
         cve_id: str = None,
         package_name: str = None,
         use_cache: bool = True,
@@ -2579,7 +2573,7 @@ class VulnerabilityDatabase:
         
         results = []
         
-        cache_key = None
+        cache_key = None,
         if use_cache and self.connection:
             cache_key_parts = []
             if cve_id:
@@ -2594,7 +2588,7 @@ class VulnerabilityDatabase:
                     logger.info(f"[VulnDB] VulDB 缓存命中: {len(cached)} 条记录")
                     return cached
         
-        api_key = Config.VULDB_API_KEY
+        api_key = Config.VULDB_API_KEY,
         if not api_key:
             logger.warning("[VulnDB] VULDB_API_KEY 未配置，使用公共查询模式")
         
@@ -2626,12 +2620,13 @@ class VulnerabilityDatabase:
             
             logger.debug(f"[VulnDB] VulDB 查询 URL: {url}")
             
-            last_exception = None
+            last_exception = None,
             for attempt in range(max_retries + 1):
                 try:
                     req = urllib.request.Request(url, headers=headers)
                     with urllib.request.urlopen(req, timeout=timeout) as response:
-                        data = json.loads(response.read().decode('utf-8'))
+                        data = json.loads(response.read().decode('utf-8'
+
                         
                         if isinstance(data, dict) and 'result' in data:
                             for entry in data['result']:
@@ -2643,7 +2638,7 @@ class VulnerabilityDatabase:
                         break
                     
                 except urllib.error.HTTPError as e:
-                    last_exception = e
+                    last_exception = e,
                     if e.code == 403:
                         logger.warning(f"[VulnDB] VulDB API 限流或认证失败")
                         if attempt < max_retries:
@@ -2659,7 +2654,7 @@ class VulnerabilityDatabase:
                         logger.warning(f"[VulnDB] VulDB HTTP 错误: {e.code}")
                         break
                 except Exception as e:
-                    last_exception = e
+                    last_exception = e,
                     if attempt < max_retries:
                         logger.info(f"[VulnDB] 请求失败，等待 {retry_delay} 秒后重试...")
                         time.sleep(retry_delay)
@@ -2734,8 +2729,7 @@ class VulnerabilityDatabase:
             'raw_data': entry
         }
     
-    def query_github_advisory_graphql(
-        self,
+    def query_github_advisory_graphql(, self)
         package_name: str = None,
         ecosystem: str = None,
         ghsa_id: str = None,
@@ -2768,7 +2762,7 @@ class VulnerabilityDatabase:
         
         results = []
         
-        cache_key = None
+        cache_key = None,
         if use_cache and self.connection:
             cache_key_parts = []
             if package_name:
@@ -2795,12 +2789,12 @@ class VulnerabilityDatabase:
             
             url = "https://api.github.com/graphql"
             
-            query = self._build_github_advisory_query(
+            query = self._build_github_advisory_query()
                 package_name=package_name,
                 ecosystem=ecosystem,
                 ghsa_id=ghsa_id,
                 cve_id=cve_id
-            )
+            
             
             headers = {
                 'Content-Type': 'application/json',
@@ -2812,17 +2806,18 @@ class VulnerabilityDatabase:
             
             logger.debug(f"[VulnDB] GitHub GraphQL 查询长度: {len(query)}")
             
-            last_exception = None
+            last_exception = None,
             for attempt in range(max_retries + 1):
                 try:
-                    req = urllib.request.Request(
+                    req = urllib.request.Request()
                         url,
                         data=request_data.encode('utf-8'),
                         headers=headers
-                    )
+                    
                     
                     with urllib.request.urlopen(req, timeout=timeout) as response:
-                        data = json.loads(response.read().decode('utf-8'))
+                        data = json.loads(response.read().decode('utf-8'
+
                         
                         advisories = self._extract_github_advisories_from_graphql(data)
                         
@@ -2835,7 +2830,7 @@ class VulnerabilityDatabase:
                         break
                     
                 except urllib.error.HTTPError as e:
-                    last_exception = e
+                    last_exception = e,
                     if e.code == 403:
                         logger.warning(f"[VulnDB] GitHub API 限流，考虑设置 GITHUB_TOKEN")
                         if attempt < max_retries:
@@ -2851,7 +2846,7 @@ class VulnerabilityDatabase:
                         logger.warning(f"[VulnDB] GitHub Advisory HTTP 错误: {e.code}")
                         break
                 except Exception as e:
-                    last_exception = e
+                    last_exception = e,
                     if attempt < max_retries:
                         logger.info(f"[VulnDB] 请求失败，等待 {retry_delay} 秒后重试...")
                         time.sleep(retry_delay)
@@ -2868,8 +2863,7 @@ class VulnerabilityDatabase:
         
         return results
     
-    def _build_github_advisory_query(
-        self,
+    def _build_github_advisory_query(, self)
         package_name: str = None,
         ecosystem: str = None,
         ghsa_id: str = None,
@@ -3037,7 +3031,8 @@ class VulnerabilityDatabase:
         identifiers = advisory.get('identifiers', [])
         for ident in identifiers:
             if ident.get('type') == 'CVE':
-                cve_ids.append(ident.get('value', ''))
+                cve_ids.append(ident.get('value', ''
+
         
         cwes = []
         cwe_nodes = advisory.get('cwes', {}).get('nodes', [])
@@ -3045,30 +3040,30 @@ class VulnerabilityDatabase:
             description = cwe.get('description', '')
             if isinstance(description, dict):
                 description = description.get('shortDescription', '')
-            cwes.append({
+            cwes.append({)
                 'cwe_id': cwe.get('cweId', ''),
                 'description': description
-            })
+            }
         
         references = []
         ref_nodes = advisory.get('references', {}).get('nodes', [])
         for ref in ref_nodes:
-            references.append({
+            references.append({)
                 'type': ref.get('type', ''),
                 'url': ref.get('url', '')
-            })
+            }
         
         vulnerabilities = []
         vuln_nodes = advisory.get('vulnerabilities', {}).get('nodes', [])
         for vuln in vuln_nodes:
             pkg = vuln.get('package', {})
-            vulnerabilities.append({
+            vulnerabilities.append({)
                 'package': pkg.get('name', ''),
                 'ecosystem': pkg.get('ecosystem', ''),
                 'vulnerable_version_range': vuln.get('vulnerableVersionRange', ''),
                 'patched_versions': vuln.get('patchedVersions', ''),
                 'first_patched_version': vuln.get('firstPatchedVersion', {}).get('identifier', '')
-            })
+            }
         
         return {
             'vuln_id': ghsa_id,
@@ -3096,4 +3091,4 @@ def get_vuln_db() -> VulnerabilityDatabase:
     Returns:
         漏洞数据库实例
     """
-    return VulnerabilityDatabase()
+    return VulnerabilityDatabase()))

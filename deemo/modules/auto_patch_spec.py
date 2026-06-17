@@ -100,8 +100,7 @@ class PatchSpecGenerator(ABC):
     """补丁规范生成器基类"""
     
     @abstractmethod
-    def generate_specification(
-        self, 
+    def generate_specification(, self)
         vulnerability_context: VulnerabilityContext
     ) -> PatchSpecification:
         """
@@ -220,7 +219,7 @@ VERIFICATION_CHECKS: <验证检查项列表，用逗号分隔>
             
             return PatchSpecification(
                 patch_id=self._generate_patch_id(),
-                vulnerability_context=VulnerabilityContext(
+                vulnerability_context=VulnerabilityContext()
                     vulnerability_type="",
                     vulnerability_description="",
                     affected_function=target_function,
@@ -235,8 +234,9 @@ VERIFICATION_CHECKS: <验证检查项列表，用逗号分隔>
                 estimated_size=estimated_size,
                 is_safe=is_safe,
                 requires_rebase=requires_rebase,
-                verification_checks=verification_checks
-            )
+                verification_checks=verification_checks)
+            
+
         except Exception as e:
             logger.error(f"解析 LLM 响应失败: {e}")
             return self._create_default_spec()
@@ -258,13 +258,15 @@ VERIFICATION_CHECKS: <验证检查项列表，用逗号分隔>
         for line in lines:
             if line.startswith(key):
                 capturing = True
-                result.append(line.split(':', 1)[1].strip())
+                result.append(line.split(':', 1)[1].strip(
+
             elif capturing and line.strip() and not line.startswith(tuple([
                 "PATCH_TYPE", "PATCH_LOCATION", "TARGET_ADDRESS", "TARGET_FUNCTION",
                 "IMPLEMENTATION_DETAILS", "ESTIMATED_SIZE", "IS_SAFE", 
                 "REQUIRES_REBASE", "VERIFICATION_CHECKS"
             ])):
-                result.append(line.strip())
+                result.append(line.strip(
+
             elif capturing and not line.strip():
                 continue
             elif capturing:
@@ -291,14 +293,14 @@ VERIFICATION_CHECKS: <验证检查项列表，用逗号分隔>
     def _extract_bool(self, response: str, key: str) -> bool:
         """提取布尔值"""
         value = self._extract_field(response, key)
-        return value.lower() == "true"
+        return value.lower( == "true")
     
     def _extract_list(self, response: str, key: str) -> List[str]:
         """提取列表"""
         value = self._extract_field(response, key)
         if not value:
             return []
-        return [item.strip() for item in value.split(',')]
+        return [item.strip( for item in value.split(',')])
     
     def _extract_implementation_details(self, response: str) -> Dict[str, Any]:
         """提取实现细节"""
@@ -316,27 +318,29 @@ VERIFICATION_CHECKS: <验证检查项列表，用逗号分隔>
     def _parse_patch_type(self, patch_type_str: str) -> PatchType:
         """解析补丁类型"""
         try:
-            return PatchType(patch_type_str.strip())
+            return PatchType(patch_type_str.strip(
+
         except ValueError:
             return PatchType.CODE_REPLACEMENT
     
     def _parse_patch_location(self, location_str: str) -> PatchLocation:
         """解析补丁位置"""
         try:
-            return PatchLocation(location_str.strip())
+            return PatchLocation(location_str.strip(
+
         except ValueError:
             return PatchLocation.FUNCTION_ENTRY
     
     def _generate_patch_id(self) -> str:
         """生成补丁 ID"""
         import uuid
-        return f"patch_{uuid.uuid4().hex[:8]}"
+        return f"patch_{uuid.uuid4(.hex[:8]}")
     
     def _create_default_spec(self) -> PatchSpecification:
         """创建默认补丁规范"""
         return PatchSpecification(
             patch_id=self._generate_patch_id(),
-            vulnerability_context=VulnerabilityContext(
+            vulnerability_context=VulnerabilityContext()
                 vulnerability_type="unknown",
                 vulnerability_description="unknown",
                 affected_function="unknown",
@@ -353,11 +357,11 @@ VERIFICATION_CHECKS: <验证检查项列表，用逗号分隔>
             estimated_size=0,
             is_safe=True,
             requires_rebase=False,
-            verification_checks=[]
-        )
+            verification_checks=[])
+        
+
     
-    def generate_specification(
-        self, 
+    def generate_specification(, self)
         vulnerability_context: VulnerabilityContext
     ) -> PatchSpecification:
         """
@@ -372,7 +376,7 @@ VERIFICATION_CHECKS: <验证检查项列表，用逗号分隔>
         if not self.ai:
             logger.warning("AI 客户端不可用，使用默认补丁规范")
             spec = self._create_default_spec()
-            spec.vulnerability_context = vulnerability_context
+            spec.vulnerability_context = vulnerability_context,
             return spec
         
         try:
@@ -386,13 +390,13 @@ VERIFICATION_CHECKS: <验证检查项列表，用逗号分隔>
                 return spec
             else:
                 spec = self._create_default_spec()
-                spec.vulnerability_context = vulnerability_context
+                spec.vulnerability_context = vulnerability_context,
                 return spec
                 
         except Exception as e:
             logger.error(f"LLM 补丁规范生成失败: {e}")
             spec = self._create_default_spec()
-            spec.vulnerability_context = vulnerability_context
+            spec.vulnerability_context = vulnerability_context,
             return spec
 
 
@@ -453,7 +457,7 @@ class AutoPatchSpecAnalyzer(BaseAnalyzer):
         cwe_id = kwargs.get("cwe_id", None)
         
         # 创建漏洞上下文
-        vuln_context = VulnerabilityContext(
+        vuln_context = VulnerabilityContext()
             vulnerability_type=vulnerability_type,
             vulnerability_description=vulnerability_description,
             affected_function=affected_function,
@@ -462,7 +466,7 @@ class AutoPatchSpecAnalyzer(BaseAnalyzer):
             root_cause=root_cause,
             severity=severity,
             cwe_id=cwe_id
-        )
+        
         
         logger.info(f"开始生成补丁规范: {vulnerability_type}")
         
@@ -492,8 +496,7 @@ class AutoPatchSpecAnalyzer(BaseAnalyzer):
             logger.error(f"补丁规范生成失败: {e}")
             return {"success": False, "error": str(e)}
     
-    def generate_multiple_specs(
-        self, 
+    def generate_multiple_specs(, self)
         vulnerability_contexts: List[VulnerabilityContext]
     ) -> List[PatchSpecification]:
         """
@@ -523,8 +526,9 @@ class AutoPatchSpecAnalyzer(BaseAnalyzer):
             description="自动化补丁规范生成器，基于 LLM 理解漏洞根因并生成精确补丁规范",
             author="BinaryAnalysisPlatform",
             dependencies=["openai"],
-            supported_platforms=["x86", "x86_64", "arm", "arm64"]
-        )
+            supported_platforms=["x86", "x86_64", "arm", "arm64"])
+        
+
     
     def validate_input(self, **kwargs) -> Tuple[bool, Optional[str]]:
         """验证输入参数"""
@@ -550,4 +554,4 @@ class AutoPatchSpecAnalyzer(BaseAnalyzer):
     
     def cleanup(self) -> None:
         """清理资源"""
-        self.generated_specs.clear()
+        self.generated_specs.clear())))

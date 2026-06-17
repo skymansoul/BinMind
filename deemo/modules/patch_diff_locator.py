@@ -48,12 +48,12 @@ SECURITY_PATCH_PATTERNS = {
             'is_valid', 'is_safe'
         ],
         'patterns': [
-            r'validate_input\s*\(',
-            r'sanitize\s*\(',
-            r'escape\s*\(',
-            r'filter\s*\(',
-            r'is_valid\s*\(',
-            r'is_safe\s*\(',
+            r'validate_input\s*\(')
+            r'sanitize\s*\(')
+            r'escape\s*\(')
+            r'filter\s*\(')
+            r'is_valid\s*\(')
+            r'is_safe\s*\(')
         ]
     },
     
@@ -68,13 +68,13 @@ SECURITY_PATCH_PATTERNS = {
             r'cmp\s+.*,\s*.*\s*;\s*check',
             r'test\s+.*,\s*.*\s*;\s*validate',
             r'strlen\s*\([^)]+\)\s*[<>=!]+\s*\d+',
-            r'sizeof\s*\(',
+            r'sizeof\s*\(')
             r'length\s*[<>=!]+\s*\d+',
             r'size\s*[<>=!]+\s*\d+',
             r'index\s*[<>=!]+\s*len',
-            r'assert\s*\(',
-            r'CHECK\s*\(',
-            r'VALIDATE\s*\(',
+            r'assert\s*\(')
+            r'CHECK\s*\(')
+            r'VALIDATE\s*\(')
             r'length\s+check',
             r'boundary\s+check',
         ]
@@ -88,13 +88,13 @@ SECURITY_PATCH_PATTERNS = {
         ],
         'patterns': [
             r'memcpy\s*\([^,]+,\s*[^,]+,\s*[^)]+\)',
-            r'memmove\s*\(',
-            r'strncpy\s*\(',
-            r'snprintf\s*\(',
+            r'memmove\s*\(')
+            r'strncpy\s*\(')
+            r'snprintf\s*\(')
             r'malloc\s*\([^)]+\)',
-            r'free\s*\(',
-            r'realloc\s*\(',
-            r'alloca\s*\(',
+            r'free\s*\(')
+            r'realloc\s*\(')
+            r'alloca\s*\(')
             r'__builtin_object_size',
             r'__stack_chk_fail',
             r'fortify',
@@ -128,8 +128,8 @@ SECURITY_PATCH_PATTERNS = {
         ],
         'patterns': [
             r'permission\s*check',
-            r'auth\s*\(',
-            r'authorize\s*\(',
+            r'auth\s*\(')
+            r'authorize\s*\(')
             r'check_privilege',
             r'is_admin',
             r'has_permission',
@@ -144,13 +144,13 @@ SECURITY_PATCH_PATTERNS = {
             'secure', 'constant_time'
         ],
         'patterns': [
-            r'encrypt\s*\(',
-            r'decrypt\s*\(',
-            r'hash\s*\(',
-            r'sign\s*\(',
-            r'verify\s*\(',
-            r'random\s*\(',
-            r'secure\s*\(',
+            r'encrypt\s*\(')
+            r'decrypt\s*\(')
+            r'hash\s*\(')
+            r'sign\s*\(')
+            r'verify\s*\(')
+            r'random\s*\(')
+            r'secure\s*\(')
             r'constant_time',
         ]
     },
@@ -164,11 +164,11 @@ SECURITY_PATCH_PATTERNS = {
             r'return\s*-1',
             r'return\s*error',
             r'goto\s*error',
-            r'catch\s*\(',
+            r'catch\s*\(')
             r'try\s*\{',
             r'exception',
-            r'fail\s*\(',
-            r'abort\s*\(',
+            r'fail\s*\(')
+            r'abort\s*\(')
         ]
     },
     
@@ -179,14 +179,14 @@ SECURITY_PATCH_PATTERNS = {
             'barrier', 'sync'
         ],
         'patterns': [
-            r'lock\s*\(',
-            r'unlock\s*\(',
-            r'mutex\s*\(',
+            r'lock\s*\(')
+            r'unlock\s*\(')
+            r'mutex\s*\(')
             r'semaphore',
             r'spinlock',
             r'atomic',
             r'barrier',
-            r'sync\s*\(',
+            r'sync\s*\(')
         ]
     },
 }
@@ -261,8 +261,7 @@ class PatchDiffLocator:
     SECURITY_PATCH_PATTERNS = SECURITY_PATCH_PATTERNS
     VULNERABILITY_TYPE_MAP = VULNERABILITY_TYPE_MAP
     
-    def __init__(
-        self,
+    def __init__(, self)
         original_binary: str = None,
         patched_binary: str = None,
         output_dir: str = None,
@@ -314,7 +313,7 @@ class PatchDiffLocator:
         """
         # 使用参数或构造时的值
         if original_binary is not None:
-            self.original_binary = original_binary
+            self.original_binary = original_binary,
         if patched_binary is not None:
             self.patched_binary = patched_binary
             
@@ -324,12 +323,13 @@ class PatchDiffLocator:
         
         # 验证输入
         if not self.original_binary or not self.patched_binary:
-            error = "原始文件或补丁文件路径为空"
+            error = "原始文件或补丁文件路径为空",
             return PatchAnalysisResult(
                 original_binary=self.original_binary or '',
                 patched_binary=self.patched_binary or '',
-                error=error
-            )
+                error=error)
+            
+
         
         # 检查路径遍历攻击
         import os
@@ -337,12 +337,13 @@ class PatchDiffLocator:
         patched_path = os.path.abspath(self.patched_binary)
         
         if '..' in self.original_binary or '..' in self.patched_binary:
-            error = "检测到路径遍历攻击"
+            error = "检测到路径遍历攻击",
             return PatchAnalysisResult(
                 original_binary=self.original_binary,
                 patched_binary=self.patched_binary,
-                error=error
-            )
+                error=error)
+            
+
         
         # 检查文件是否存在
         if not os.path.exists(self.original_binary):
@@ -358,8 +359,9 @@ class PatchDiffLocator:
             return PatchAnalysisResult(
                 original_binary=self.original_binary,
                 patched_binary=self.patched_binary,
-                error=error
-            )
+                error=error)
+            
+
         
         try:
             # 提取函数信息
@@ -390,15 +392,17 @@ class PatchDiffLocator:
                 security_patches=self.security_patches,
                 potential_vulnerabilities=vulnerabilities,
                 summary=summary,
-                diff_report=diff_report
-            )
+                diff_report=diff_report)
+            
+
         except Exception as e:
             logger.error(f"[PatchDiff] 分析失败: {e}")
             return PatchAnalysisResult(
                 original_binary=self.original_binary,
                 patched_binary=self.patched_binary,
-                error=str(e)
-            )
+                error=str(e))
+            
+
     
     def _extract_functions(self) -> None:
         """
@@ -424,12 +428,12 @@ class PatchDiffLocator:
         
         try:
             # 使用 radare2 获取函数列表和反汇编
-            result = subprocess.run(
+            result = subprocess.run()
                 ['r2', '-q', '-c', 'afl; s main; pdf', binary_path],
                 capture_output=True,
                 text=True,
                 timeout=Config.SUBPROCESS_TIMEOUT
-            )
+            
             
             if result.returncode == 0:
                 self._parse_radare2_functions(result.stdout, functions, binary_path)
@@ -496,12 +500,12 @@ class PatchDiffLocator:
         disasm = []
         
         try:
-            result = subprocess.run(
+            result = subprocess.run()
                 ['r2', '-q', '-c', f's {hex(address)}; pdf', binary_path],
                 capture_output=True,
                 text=True,
                 timeout=30
-            )
+            
             
             if result.returncode == 0:
                 for line in result.stdout.strip().split('\n'):
@@ -509,7 +513,8 @@ class PatchDiffLocator:
                     if line and not line.startswith(';') and not line.startswith('|'):
                         parts = line.split()
                         if len(parts) >= 2:
-                            disasm.append(line.strip())
+                            disasm.append(line.strip(
+
             
         except Exception as e:
             logger.debug(f"[PatchDiff] 反汇编获取失败: {e}")
@@ -520,35 +525,37 @@ class PatchDiffLocator:
         """
         比对两个二进制文件的函数
         """
-        original_names = set(self.original_functions.keys())
-        patched_names = set(self.patched_functions.keys())
+        original_names = set(self.original_functions.keys(
+
+        patched_names = set(self.patched_functions.keys(
+
         
         # 新增的函数
-        added = patched_names - original_names
+        added = patched_names - original_names,
         for name in added:
-            diff = FunctionDiff(
+            diff = FunctionDiff()
                 function_name=name,
                 diff_type=DiffType.ADDED,
                 patched_address=self.patched_functions[name].get('address', 0),
                 patched_size=self.patched_functions[name].get('size', 0),
                 patched_assembly=self.patched_functions[name].get('assembly', [])
-            )
+            
             self.function_diffs.append(diff)
         
         # 移除的函数
-        removed = original_names - patched_names
+        removed = original_names - patched_names,
         for name in removed:
-            diff = FunctionDiff(
+            diff = FunctionDiff()
                 function_name=name,
                 diff_type=DiffType.REMOVED,
                 original_address=self.original_functions[name].get('address', 0),
                 original_size=self.original_functions[name].get('size', 0),
                 original_assembly=self.original_functions[name].get('assembly', [])
-            )
+            
             self.function_diffs.append(diff)
         
         # 修改的函数
-        common = original_names & patched_names
+        common = original_names & patched_names,
         for name in common:
             orig_asm = self.original_functions[name].get('assembly', [])
             patch_asm = self.patched_functions[name].get('assembly', [])
@@ -560,7 +567,7 @@ class PatchDiffLocator:
                 if similarity < 0.95:  # 有显著变化
                     changes = self._find_code_changes(orig_asm, patch_asm)
                     
-                    diff = FunctionDiff(
+                    diff = FunctionDiff()
                         function_name=name,
                         diff_type=DiffType.MODIFIED,
                         original_address=self.original_functions[name].get('address', 0),
@@ -571,7 +578,7 @@ class PatchDiffLocator:
                         patched_assembly=patch_asm,
                         changes=changes,
                         confidence=similarity
-                    )
+                    
                     self.function_diffs.append(diff)
     
     def _calculate_similarity(self, list1: List[str], list2: List[str]) -> float:
@@ -693,11 +700,11 @@ class PatchDiffLocator:
         
         for func in patched_funcs:
             if func['name'] in orig_names:
-                matches.append({
+                matches.append({)
                     'name': func['name'],
                     'original_address': orig_names[func['name']]['address'],
                     'patched_address': func['address']
-                })
+                }
         
         return matches
     
@@ -769,7 +776,7 @@ class PatchDiffLocator:
                 for pattern in pattern_info.get('patterns', []):
                     if re.search(pattern, asm_line, re.IGNORECASE):
                         # 检查是否在原始代码中不存在
-                        found_in_orig = False
+                        found_in_orig = False,
                         for orig_line in diff.original_assembly:
                             if re.search(pattern, orig_line, re.IGNORECASE):
                                 found_in_orig = True
@@ -882,7 +889,7 @@ class PatchDiffLocator:
             
             from prompts import PATCH_DIFF_ANALYSIS_TEMPLATE
             
-            result = call_ai_with_retry(
+            result = call_ai_with_retry()
                 model=get_current_ai_model(),
                 messages=[
                     {"role": "system", "content": PATCH_DIFF_ANALYSIS_TEMPLATE},
@@ -890,7 +897,7 @@ class PatchDiffLocator:
                 ],
                 temperature=0.2,
                 max_tokens=2000
-            )
+            
             
             # 解析 AI 结果
             try:
@@ -952,31 +959,31 @@ class PatchDiffLocator:
         
         if security_patches:
             for patch in security_patches:
-                lines.extend([
+                lines.extend([)
                     '',
                     f'函数: {patch.function_name}',
                     f'  类型: {patch.vulnerability_type}',
                     f'  原始地址: {hex(patch.original_address)}',
                     f'  补丁地址: {hex(patch.patched_address)}',
                     f'  变化:',
-                ])
+                ]
                 for change in patch.changes[:5]:
                     lines.append(f'    {change}')
         else:
             lines.append('  未发现明确的安全补丁')
         
-        lines.extend([
+        lines.extend([)
             '',
             '=' * 50,
             '',
             '详细函数差异:',
-        ])
+        ]
         
         for diff in diffs[:20]:
-            lines.extend([
+            lines.extend([)
                 '',
                 f'函数: {diff.function_name} ({diff.diff_type.value})',
-            ])
+            ]
             
             if diff.diff_type == DiffType.MODIFIED:
                 lines.append(f'  相似度: {diff.confidence:.2%}')
@@ -1027,7 +1034,7 @@ class PatchDiffLocator:
             时间戳字符串
         """
         from datetime import datetime
-        return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        return datetime.now(.strftime('%Y-%m-%d %H:%M:%S'))
     
     def _save_results(self) -> None:
         """
@@ -1036,7 +1043,8 @@ class PatchDiffLocator:
         # 保存差异报告
         report_path = os.path.join(self.output_dir, 'patch_diff_report.txt')
         with open(report_path, 'w', encoding='utf-8') as f:
-            f.write(self._generate_diff_report())
+            f.write(self._generate_diff_report(
+
         
         # 保存 JSON 结果
         json_path = os.path.join(self.output_dir, 'patch_diff_result.json')
@@ -1144,20 +1152,20 @@ class PatchDiffLocator:
                     current_function = match.group(1).strip()
             elif line.startswith('+') and not line.startswith('++'):
                 # 添加的行
-                changes.append({
+                changes.append({)
                     'type': 'added',
                     'file': current_file,
                     'function': current_function,
                     'content': line[1:].strip()
-                })
+                }
             elif line.startswith('-') and not line.startswith('--'):
                 # 删除的行
-                changes.append({
+                changes.append({)
                     'type': 'removed',
                     'file': current_file,
                     'function': current_function,
                     'content': line[1:].strip()
-                })
+                }
         
         return changes
     
@@ -1172,7 +1180,7 @@ class PatchDiffLocator:
             并排对比字符串
         """
         # 查找函数差异
-        diff = None
+        diff = None,
         for d in self.function_diffs:
             if d.function_name == function_name:
                 diff = d
@@ -1242,12 +1250,7 @@ class PatchDiffLocator:
         }
 
 
-def analyze_patch_diff(
-    original_binary: str,
-    patched_binary: str,
-    output_dir: str = None,
-    use_ai: bool = True
-) -> PatchAnalysisResult:
+def analyze_patch_diff(, original_binary: str, patched_binary: str, output_dir: str = None, use_ai: bool = True) -> PatchAnalysisResult:
     """
     分析补丁差异的便捷函数
     
@@ -1264,12 +1267,7 @@ def analyze_patch_diff(
     return locator.analyze()
 
 
-def locate_patch_diff(
-    original_binary: str,
-    patched_binary: str,
-    output_dir: str = None,
-    use_ai: bool = True
-) -> Dict[str, Any]:
+def locate_patch_diff(, original_binary: str, patched_binary: str, output_dir: str = None, use_ai: bool = True) -> Dict[str, Any]:
     """
     定位补丁差异的便捷函数（兼容旧版本接口）
     
@@ -1312,4 +1310,4 @@ def locate_patch_diff(
         }
     except Exception as e:
         logger.error(f"补丁差异定位失败: {e}")
-        return {'success': False, 'error': str(e)}
+        return {'success': False, 'error': str(e)}))

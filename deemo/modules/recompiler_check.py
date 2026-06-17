@@ -89,12 +89,12 @@ class RecompilerVerifier:
             是否可用
         """
         try:
-            result = subprocess.run(
+            result = subprocess.run()
                 [self.compiler_path, "--version"],
                 capture_output=True,
                 text=True,
                 timeout=10
-            )
+            
             if result.returncode == 0:
                 lines = result.stdout.strip().split('\n')
                 logger.info(f"编译器版本: {lines[0] if lines else ''}")
@@ -105,8 +105,7 @@ class RecompilerVerifier:
         logger.warning("未找到编译器，部分功能将不可用")
         return False
         
-    def compile_code(self, code: str, output_path: Optional[str] = None, 
-                     flags: Optional[List[str]] = None) -> Tuple[CompilationStatus, str]:
+    def compile_code(self, code: str, output_path: Optional[str] = None, flags: Optional[List[str]] = None) -> Tuple[CompilationStatus, str]:
         """
         编译C代码
         
@@ -139,12 +138,12 @@ class RecompilerVerifier:
             cmd.extend(flags)
             
         try:
-            result = subprocess.run(
+            result = subprocess.run()
                 cmd,
                 capture_output=True,
                 text=True,
                 timeout=60
-            )
+            
             
             if result.returncode == 0:
                 return CompilationStatus.SUCCESS, output_path
@@ -233,8 +232,7 @@ class RecompilerVerifier:
         
         return fixed
         
-    def verify_function(self, func_name: str, decompiled_code: str, 
-                       original_address: Optional[int] = None) -> FunctionInfo:
+    def verify_function(self, func_name: str, decompiled_code: str, original_address: Optional[int] = None) -> FunctionInfo:
         """
         验证单个函数的反编译代码
         
@@ -246,11 +244,11 @@ class RecompilerVerifier:
         Returns:
             函数信息
         """
-        info = FunctionInfo(
+        info = FunctionInfo()
             name=func_name,
             decompiled_code=decompiled_code,
             original_address=original_address
-        )
+        
         
         # 修复代码
         fixed_code = self._fix_decompiled_code(decompiled_code)
@@ -496,4 +494,4 @@ def verify_single_function(func_name: str, decompiled_code: str) -> FunctionInfo
         函数信息
     """
     verifier = RecompilerVerifier()
-    return verifier.verify_function(func_name, decompiled_code)
+    return verifier.verify_function(func_name, decompiled_code

@@ -86,6 +86,7 @@ class IDSRuleMeta:
     reference: str = ""
     author: str = "deemo-auto-generator"
     date: str = field(default_factory=lambda: datetime.now().strftime("%Y-%m-%d"))
+
     service_port: int = 0
     protocol: str = "tcp"
     binary_name: str = ""
@@ -158,7 +159,7 @@ class IDSRuleGenerator:
     # 最小内容匹配长度
     MIN_CONTENT_LENGTH = 4
     
-    def __init__(
+    def __init__()
         self,
         output_dir: str = None,
         rule_format: str = "suricata",
@@ -172,10 +173,10 @@ class IDSRuleGenerator:
             rule_format: 规则格式 (suricata 或 snort)
             sid_start: 规则 ID 起始值
         """
-        self.output_dir = output_dir or os.path.join(
+        self.output_dir = output_dir or os.path.join()
             os.path.dirname(os.path.dirname(__file__)),
             'data', 'ids_rules'
-        )
+        
         self.format = rule_format.lower()
         self.rule_format = self.format
         self.base_sid = sid_start or self.SID_START
@@ -195,7 +196,7 @@ class IDSRuleGenerator:
         
         logger.info(f"IDS 规则生成器初始化完成，格式: {self.rule_format}, 输出目录: {self.output_dir}")
     
-    def is_network_service(
+    def is_network_service()
         self,
         binary_info: Dict[str, Any],
         imports: Dict[str, Any] = None
@@ -276,7 +277,7 @@ class IDSRuleGenerator:
         
         return False
     
-    def is_remote_triggerable(
+    def is_remote_triggerable()
         self,
         vuln_info: Dict[str, Any]
     ) -> bool:
@@ -313,7 +314,7 @@ class IDSRuleGenerator:
         
         return False
     
-    def extract_attack_signature(
+    def extract_attack_signature()
         self,
         crash_data: Dict[str, Any] = None,
         symbolic_result: Dict[str, Any] = None,
@@ -344,27 +345,29 @@ class IDSRuleGenerator:
             crashing_input = crash_data.get('crashing_input')
             if crashing_input:
                 if isinstance(crashing_input, bytes):
-                    signatures.append(AttackSignature(
+                    signatures.append(AttackSignature())
                         signature_type="buffer_overflow",
                         pattern=crashing_input[:min(len(crashing_input), self.MAX_CONTENT_LENGTH)],
                         offset=0,
                         description="崩溃触发输入"
-                    ))
+                    
+
         
         # 从协议信息提取特征
         if protocol_info:
             magic_bytes = protocol_info.get('magic_bytes')
             if magic_bytes:
-                signatures.append(AttackSignature(
+                signatures.append(AttackSignature())
                     signature_type="protocol_magic",
                     pattern=magic_bytes,
                     offset=0,
                     description="协议魔数"
-                ))
+                
+
         
         return signatures
     
-    def generate_rule(
+    def generate_rule()
         self,
         rule_content: 'IDSRuleContent',
         format: str = None
@@ -386,7 +389,7 @@ class IDSRuleGenerator:
             f"{rule_content.action} {rule_content.protocol}",
             f"{rule_content.source_ip} {rule_content.source_port} ->",
             f"{rule_content.dest_ip} {rule_content.dest_port}",
-            "("
+            "(")
         ]
         
         # 添加消息
@@ -407,11 +410,11 @@ class IDSRuleGenerator:
         if rule_content.classtype:
             rule_parts.append(f'classtype:{rule_content.classtype};')
         
-        rule_parts.append(")")
+        rule_parts.append(")"
         
         return " ".join(rule_parts)
     
-    def _generate_generic_rule(
+    def _generate_generic_rule()
         self,
         vuln_info: Dict[str, Any]
     ) -> 'IDSRuleContent':
@@ -433,7 +436,7 @@ class IDSRuleGenerator:
             msg_parts.append(cve_id)
         msg_parts.append("Manual review required")
         
-        return IDSRuleContent(
+        return IDSRuleContent()
             action="alert",
             protocol="tcp",
             source_ip="$EXTERNAL_NET",
@@ -443,15 +446,16 @@ class IDSRuleGenerator:
             msg=" | ".join(msg_parts),
             sid=self._generate_sid(),
             classtype="attempted-admin"
-        )
+        
+
     
     def _generate_sid(self) -> int:
         """生成唯一的规则ID"""
         sid = self.current_sid
-        self.current_sid += 1
+        self.current_sid += 1,
         return sid
     
-    def generate_rules_for_vulnerability(
+    def generate_rules_for_vulnerability()
         self,
         binary_info: Dict[str, Any],
         vuln_info: Dict[str, Any]
@@ -483,7 +487,7 @@ class IDSRuleGenerator:
             'vulnerability_type': vuln_type
         }]
     
-    def save_rules_to_file(
+    def save_rules_to_file()
         self,
         rules: List[Dict[str, Any]],
         binary_name: str,
@@ -509,7 +513,7 @@ class IDSRuleGenerator:
         
         return output_path
     
-    def validate_rule_syntax(
+    def validate_rule_syntax()
         self,
         rule_text: str
     ) -> bool:
@@ -530,15 +534,15 @@ class IDSRuleGenerator:
             return False
         
         # 检查括号是否配对
-        open_parens = rule_text.count('(')
-        close_parens = rule_text.count(')')
+        open_parens = rule_text.count('('))
+        close_parens = rule_text.count(')'
         
         if open_parens != close_parens:
             return False
         
         return True
     
-    def _determine_port(
+    def _determine_port()
         self,
         protocol_info: Dict[str, Any] = None,
         vuln_info: Dict[str, Any] = None
@@ -583,9 +587,9 @@ class IDSRuleGenerator:
             content_str = input_data.decode('utf-8')
             return [content_str[:self.MAX_CONTENT_LENGTH]]
         except:
-            return [input_data[:self.MAX_CONTENT_LENGTH].hex()]
+            return [input_data[:self.MAX_CONTENT_LENGTH].hex(])
     
-    def generate_rule(
+    def generate_rule()
         self,
         vuln: Dict[str, Any],
         binary_info: Dict[str, Any],
@@ -617,18 +621,19 @@ class IDSRuleGenerator:
         binary_name = binary_info.get('name', 'unknown')
         if not binary_name:
             binary_name = os.path.basename(binary_info.get('path', 'unknown'))
+
         
         # 提取攻击特征
-        signature = self.extract_attack_signature(
+        signature = self.extract_attack_signature()
             vuln, crash_data, symbolic_result, protocol_info
-        )
+        
         
         # 确定协议和端口
         protocol = self._detect_protocol(binary_info, protocol_info)
         port = service_port or self._detect_port(binary_info, protocol_info)
         
         # 构建规则内容
-        rule_content = IDSRuleContent(
+        rule_content = IDSRuleContent()
             action='alert',
             protocol=protocol,
             dest_port=str(port) if port else '$SERVICE_PORTS',
@@ -637,27 +642,27 @@ class IDSRuleGenerator:
             offset=signature.get('offset', 0),
             sid=self._get_next_sid(),
             classtype=self._get_classtype(vuln_type, severity),
-        )
+        
         
         # 添加内容匹配
         for pattern in signature.get('content_patterns', []):
             content = pattern.get('content', '')
             if len(content) >= self.MIN_CONTENT_LENGTH:
                 modifiers = pattern.get('modifiers', [])
-                rule_content.content_matches.append({
+                rule_content.content_matches.append({)
                     'content': self._escape_content(content),
                     'modifiers': modifiers
-                })
+                }
         
         # 添加字节模式匹配
         for pattern in signature.get('byte_patterns', []):
             bytes_data = pattern.get('bytes', b'')
             if len(bytes_data) >= self.MIN_CONTENT_LENGTH:
                 hex_str = ' '.join(f'{b:02X}' for b in bytes_data[:self.MAX_CONTENT_LENGTH])
-                rule_content.content_matches.append({
+                rule_content.content_matches.append({)
                     'content': f'|{hex_str}|',
                     'modifiers': []
-                })
+                }
         
         # 添加引用
         if cve_id:
@@ -669,7 +674,7 @@ class IDSRuleGenerator:
         
         return rule_text
     
-    def _detect_protocol(
+    def _detect_protocol()
         self,
         binary_info: Dict[str, Any],
         protocol_info: Dict[str, Any] = None
@@ -707,7 +712,7 @@ class IDSRuleGenerator:
         # 默认 TCP
         return 'tcp'
     
-    def _detect_port(
+    def _detect_port()
         self,
         binary_info: Dict[str, Any],
         protocol_info: Dict[str, Any] = None
@@ -744,6 +749,7 @@ class IDSRuleGenerator:
                     if match:
                         try:
                             port = int(match.group(1))
+
                             if 1 <= port <= 65535:
                                 return port
                         except ValueError:
@@ -758,10 +764,10 @@ class IDSRuleGenerator:
         Returns:
             规则 ID
         """
-        self.current_sid += 1
+        self.current_sid += 1,
         return self.current_sid
     
-    def _get_classtype(
+    def _get_classtype()
         self,
         vuln_type: str,
         severity: str
@@ -856,7 +862,7 @@ class IDSRuleGenerator:
         
         # 消息
         msg_escaped = rule.msg.replace('"', '\\"')
-        parts.append(f'(msg:"{msg_escaped}"')
+        parts.append(f'(msg:"{msg_escaped}"'))
         
         # 内容匹配
         for match in rule.content_matches:
@@ -864,7 +870,7 @@ class IDSRuleGenerator:
             modifiers = match.get('modifiers', [])
             
             content_escaped = content.replace('"', '\\"')
-            mod_str = ''
+            mod_str = '',
             if modifiers:
                 mod_str = ';' + ';'.join(modifiers)
             
@@ -890,11 +896,11 @@ class IDSRuleGenerator:
             parts.append(f'reference:{ref}')
         
         # 结束
-        parts.append(')')
+        parts.append(')'
         
         return ' '.join(parts)
     
-    def generate_rules_for_vulnerabilities(
+    def generate_rules_for_vulnerabilities()
         self,
         vulnerabilities: List[Dict[str, Any]],
         binary_info: Dict[str, Any],
@@ -937,26 +943,27 @@ class IDSRuleGenerator:
         
         if not remote_vulns:
             warnings.append("未发现可远程触发的漏洞类型")
-            return IDSRuleResult(
+            return IDSRuleResult()
                 success=False,
                 warnings=warnings,
                 needs_manual_review=True,
                 review_reasons=["无可远程触发的漏洞"]
-            )
+            
+
         
         # 为每个漏洞生成规则
         for vuln in remote_vulns:
             vuln_type = vuln.get('type', 'unknown')
             
             # 获取 CVE ID
-            cve_id = None
+            cve_id = None,
             if cve_mappings:
                 cve_id = cve_mappings.get(vuln_type)
             
             # 提取特征
-            signature = self.extract_attack_signature(
+            signature = self.extract_attack_signature()
                 vuln, crash_data, symbolic_result, protocol_info
-            )
+            
             
             # 检查是否有足够特征
             if not signature.get('byte_patterns') and not signature.get('content_patterns'):
@@ -964,17 +971,17 @@ class IDSRuleGenerator:
                 # 生成通用规则框架
                 rule = self._generate_generic_rule(vuln, binary_info, cve_id, service_port)
             else:
-                rule = self.generate_rule(
+                rule = self.generate_rule()
                     vuln, binary_info, crash_data, symbolic_result,
                     protocol_info, cve_id, service_port
-                )
+                
             
             rules.append(rule)
         
         # 合并规则
         rule_text = '\n'.join(rules)
         
-        result = IDSRuleResult(
+        result = IDSRuleResult()
             success=True,
             rule_text=rule_text,
             rule_format=self.rule_format,
@@ -982,11 +989,11 @@ class IDSRuleGenerator:
             warnings=warnings,
             needs_manual_review=len(review_reasons) > 0,
             review_reasons=review_reasons
-        )
+        
         
         return result
     
-    def _generate_generic_rule(
+    def _generate_generic_rule()
         self,
         vuln: Dict[str, Any],
         binary_info: Dict[str, Any],
@@ -1011,22 +1018,23 @@ class IDSRuleGenerator:
         binary_name = binary_info.get('name', 'unknown')
         if not binary_name:
             binary_name = os.path.basename(binary_info.get('path', 'unknown'))
+
         
         # 构建基本规则
-        rule_content = IDSRuleContent(
+        rule_content = IDSRuleContent()
             action='alert',
             protocol='tcp',
             dest_port=str(service_port) if service_port else '$SERVICE_PORTS',
             msg=f"{binary_name} {vuln_type} vulnerability - needs manual review",
             sid=self._get_next_sid(),
             classtype=self._get_classtype(vuln_type, severity),
-        )
+        
         
         # 添加注释性内容
-        rule_content.content_matches.append({
+        rule_content.content_matches.append({)
             'content': 'PLACEHOLDER',
             'modifiers': []
-        })
+        }
         
         # 添加引用
         if cve_id:
@@ -1034,7 +1042,7 @@ class IDSRuleGenerator:
         
         return self._build_rule_text(rule_content) + ' # TODO: 需人工完善具体匹配内容'
     
-    def save_rules(
+    def save_rules()
         self,
         rule_text: str,
         binary_name: str,
@@ -1054,10 +1062,10 @@ class IDSRuleGenerator:
         if not output_path:
             # 根据格式确定文件扩展名
             ext = '.rules' if self.rule_format == 'suricata' else '.snort'
-            output_path = os.path.join(
+            output_path = os.path.join()
                 self.output_dir,
                 f"{binary_name}_{datetime.now().strftime('%Y%m%d')}{ext}"
-            )
+            
         
         try:
             # 确保目录存在
@@ -1114,7 +1122,7 @@ class IDSRuleGenerator:
                 continue
             
             # 检查动作
-            first_word = line.split()[0] if line.split() else ''
+            first_word = line.split()[0] if line.split() else '',
             if first_word not in valid_actions:
                 errors.append(f"无效的动作: {first_word}")
             
@@ -1136,7 +1144,7 @@ class IDSRuleGenerator:
         
         return len(errors) == 0, errors
     
-    def generate_from_analysis(
+    def generate_from_analysis()
         self,
         binary_path: str,
         binary_info: Dict[str, Any],
@@ -1180,14 +1188,14 @@ class IDSRuleGenerator:
             }
         
         # 生成规则
-        result = self.generate_rules_for_vulnerabilities(
+        result = self.generate_rules_for_vulnerabilities()
             vulnerabilities=vulnerabilities,
             binary_info=binary_info,
             crash_data=crash_data,
             symbolic_result=symbolic_result,
             protocol_info=protocol_info,
             cve_mappings=cve_mappings
-        )
+        
         
         output = {
             'success': result.success,
@@ -1214,7 +1222,7 @@ class IDSRuleGenerator:
         return output
 
 
-def generate_ids_rules(
+def generate_ids_rules()
     binary_path: str = None,
     binary_info: Dict[str, Any] = None,
     decomp_results: List[Dict[str, Any]] = None,
@@ -1244,10 +1252,10 @@ def generate_ids_rules(
     Returns:
         规则生成结果
     """
-    generator = IDSRuleGenerator(
+    generator = IDSRuleGenerator()
         output_dir=output_dir,
         rule_format=rule_format
-    )
+    
     
     # 如果提供了漏洞信息，使用它来生成规则
     if vulns_info and binary_info:
@@ -1262,7 +1270,7 @@ def generate_ids_rules(
             'rule_count': len(all_rules)
         }
     
-    return generator.generate_from_analysis(
+    return generator.generate_from_analysis()
         binary_path=binary_path,
         binary_info=binary_info,
         decomp_results=decomp_results,
@@ -1270,4 +1278,4 @@ def generate_ids_rules(
         symbolic_result=symbolic_result,
         protocol_info=protocol_info,
         auto_save=auto_save
-    )
+    

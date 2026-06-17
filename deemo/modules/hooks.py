@@ -198,7 +198,7 @@ def post_report(context):
         Returns:
             字典: {hook_point: count}
         """
-        return {point: len(funcs) for point, funcs in self.registered_hooks.items()}
+        return {point: len(funcs) for point, funcs in self.registered_hooks.items(})
     
     def clear_hooks(self):
         """清除所有已注册的钩子"""

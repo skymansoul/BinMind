@@ -58,21 +58,21 @@ class VulnPropagationAnalyzer:
                 
                 if 'calls' in func_info:
                     for called_func in func_info['calls']:
-                        self.propagation_graph.add_edge(
+                        self.propagation_graph.add_edge()
                             func_name, 
                             called_func, 
                             edge_type='call',
                             confidence=1.0
-                        )
+                        
         
         if 'data_flows' in binary_analysis:
             for flow in binary_analysis['data_flows']:
-                self.propagation_graph.add_edge(
+                self.propagation_graph.add_edge()
                     flow['source'],
                     flow['target'],
                     edge_type='data_flow',
                     confidence=flow.get('confidence', 1.0)
-                )
+                
         
         if 'memory_regions' in binary_analysis:
             for region in binary_analysis['memory_regions']:
@@ -80,62 +80,62 @@ class VulnPropagationAnalyzer:
     
     def _add_function_node(self, name: str, info: Dict) -> None:
         """添加函数节点"""
-        node = VulnerabilityNode(
+        node = VulnerabilityNode()
             node_id=f"func_{name}",
             node_type='function',
             name=name,
             description=info.get('description', f"函数 {name}"),
             severity='low'
-        )
+        
         self.vulnerability_nodes[node.node_id] = node
-        self.propagation_graph.add_node(
+        self.propagation_graph.add_node()
             node.node_id,
             **node.__dict__
-        )
+        
     
     def _add_memory_node(self, region: Dict) -> None:
         """添加内存区域节点"""
         node_id = f"mem_{region.get('name', 'unknown')}"
-        node = VulnerabilityNode(
+        node = VulnerabilityNode()
             node_id=node_id,
             node_type='memory',
             name=region.get('name', 'unknown'),
             description=region.get('description', "内存区域"),
             severity='low'
-        )
+        
         self.vulnerability_nodes[node_id] = node
-        self.propagation_graph.add_node(
+        self.propagation_graph.add_node()
             node_id,
             **node.__dict__
-        )
+        
     
     def add_vulnerability_source(self, vuln_info: Dict) -> str:
         """添加漏洞源节点"""
         node_id = f"vuln_{vuln_info.get('id', 'unknown')}"
-        node = VulnerabilityNode(
+        node = VulnerabilityNode()
             node_id=node_id,
             node_type='vulnerability',
             name=vuln_info.get('name', 'Unknown Vulnerability'),
             description=vuln_info.get('description', ''),
             severity=vuln_info.get('severity', 'medium'),
             is_source=True
-        )
+        
         self.vulnerability_nodes[node_id] = node
-        self.propagation_graph.add_node(
+        self.propagation_graph.add_node()
             node_id,
             **node.__dict__
-        )
+        
         
         if 'location' in vuln_info:
             location = vuln_info['location']
             if location.startswith('0x'):
                 location = f"func_{location}"
-            self.propagation_graph.add_edge(
+            self.propagation_graph.add_edge()
                 node_id,
                 location,
                 edge_type='data_flow',
                 confidence=0.95
-            )
+            
         
         return node_id
     
@@ -201,8 +201,9 @@ class VulnPropagationAnalyzer:
             propagation_graph=self.propagation_graph,
             affected_nodes=list(self.affected_functions),
             critical_paths=critical_paths,
-            summary=summary
-        )
+            summary=summary)
+        
+
     
     def _generate_summary(self, vuln_info: Dict, critical_paths: List[List[str]]) -> str:
         """生成分析摘要"""
@@ -215,9 +216,9 @@ class VulnPropagationAnalyzer:
         if critical_paths:
             parts.append("\n主要传播路径:")
             for i, path in enumerate(critical_paths[:3], 1):
-                path_desc = " -> ".join([
+                path_desc = " -> ".join([)
                     self._get_node_name(n) for n in path
-                ])
+                ]
                 parts.append(f"{i}. {path_desc}")
         
         return '\n'.join(parts)
@@ -263,34 +264,24 @@ class VulnPropagationAnalyzer:
         return '\n'.join(lines)
 
 
-def analyze_vuln_propagation(
-    vuln_info: Dict,
-    binary_analysis: Dict
-) -> PropagationResult:
+def analyze_vuln_propagation(, vuln_info: Dict, binary_analysis: Dict) -> PropagationResult:
     """分析漏洞传播路径的便捷函数"""
     analyzer = VulnPropagationAnalyzer()
     return analyzer.analyze(vuln_info, binary_analysis)
 
 
-def build_program_dependency_graph(
-    functions: Dict[str, Any],
-    data_flows: List[Dict[str, Any]],
-    memory_regions: List[Dict[str, Any]] = None
-) -> nx.DiGraph:
+def build_program_dependency_graph(, functions: Dict[str, Any], data_flows: List[Dict[str, Any]], memory_regions: List[Dict[str, Any]] = None) -> nx.DiGraph:
     """构建程序依赖图"""
     analyzer = VulnPropagationAnalyzer()
-    analyzer.build_dependency_graph({
+    analyzer.build_dependency_graph({)
         'functions': functions,
         'data_flows': data_flows,
         'memory_regions': memory_regions or []
-    })
+    }
     return analyzer.propagation_graph
 
 
-def find_affected_functions(
-    graph: nx.DiGraph,
-    source_node: str
-) -> List[str]:
+def find_affected_functions(, graph: nx.DiGraph, source_node: str) -> List[str]:
     """查找受影响的函数"""
     affected = set()
     

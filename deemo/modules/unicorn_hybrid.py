@@ -118,21 +118,21 @@ class UnicornHybridAnalyzer:
         if magic == b'\x7fELF':
             # ELF 文件
             ei_class = self.binary_data[4]
-            if ei_class == 2:  # 64-bit
+            if ei_class == 2:  # 64-bit,
                 return UC_ARCH_X86_64
-            else:  # 32-bit
+            else:  # 32-bit,
                 return UC_ARCH_X86
         elif magic in [b'\xcf\xfa\xed\xfe', b'\xfa\xcf\xfe\xed']:
             # Mach-O 文件
             cpu_type_offset = 4
             cpu_type = struct.unpack('<I', self.binary_data[cpu_type_offset:cpu_type_offset+4])[0]
-            if cpu_type == 0x01000007:  # ARM64
+            if cpu_type == 0x01000007:  # ARM64,
                 return UC_ARCH_ARM64
-            elif cpu_type == 7:  # ARM
+            elif cpu_type == 7:  # ARM,
                 return UC_ARCH_ARM
-            elif cpu_type == 7:  # i386
+            elif cpu_type == 7:  # i386,
                 return UC_ARCH_X86
-            elif cpu_type == 0x01000007:  # x86_64
+            elif cpu_type == 0x01000007:  # x86_64,
                 return UC_ARCH_X86_64
         elif magic[:2] == b'MZ':
             # PE 文件
@@ -141,11 +141,11 @@ class UnicornHybridAnalyzer:
                 pe_magic = self.binary_data[pe_offset:pe_offset+4]
                 if pe_magic == b'PE\x00\x00':
                     machine = struct.unpack('<H', self.binary_data[pe_offset+4:pe_offset+6])[0]
-                    if machine == 0x8664:  # x64
+                    if machine == 0x8664:  # x64,
                         return UC_ARCH_X86_64
-                    elif machine == 0x014C:  # x86
+                    elif machine == 0x014C:  # x86,
                         return UC_ARCH_X86
-                    elif machine == 0xAA64:  # ARM64
+                    elif machine == 0xAA64:  # ARM64,
                         return UC_ARCH_ARM64
         
         # 默认返回 x86_64
@@ -203,7 +203,8 @@ class UnicornHybridAnalyzer:
                 end=base_addr + code_size,
                 perms=unicorn.UC_PROT_READ | unicorn.UC_PROT_EXEC,
                 name="code"
-            ))
+            
+
             
             # 数据段
             data_addr = base_addr + code_size
@@ -214,7 +215,8 @@ class UnicornHybridAnalyzer:
                 end=data_addr + data_size,
                 perms=unicorn.UC_PROT_READ | unicorn.UC_PROT_WRITE,
                 name="data"
-            ))
+            
+
             
             # 栈
             stack_addr = 0x7ffffff0000
@@ -225,7 +227,8 @@ class UnicornHybridAnalyzer:
                 end=stack_addr + stack_size,
                 perms=unicorn.UC_PROT_READ | unicorn.UC_PROT_WRITE,
                 name="stack"
-            ))
+            
+
             
             # 设置栈指针
             if self.arch == UC_ARCH_X86_64:
@@ -279,14 +282,17 @@ class UnicornHybridAnalyzer:
             
             for byte in memory:
                 if 0x20 <= byte <= 0x7E:
-                    current_string.append(chr(byte))
+                    current_string.append(chr(byte
+
                 else:
                     if len(current_string) >= 4:
-                        strings.append(''.join(current_string))
+                        strings.append(''.join(current_string
+
                     current_string = []
             
             if len(current_string) >= 4:
-                strings.append(''.join(current_string))
+                strings.append(''.join(current_string
+
                 
         except Exception as e:
             logger.warning(f"从内存提取字符串失败: {e}")
@@ -306,8 +312,7 @@ class UnicornHybridAnalyzer:
         data = user_data
         data['branch_targets'].add(address)
 
-    def _run_concrete_execution(
-        self, 
+    def _run_concrete_execution(, self)
         start_addr: int, 
         max_instructions: int = 100000,
         timeout_ms: int = 30000
@@ -330,26 +335,27 @@ class UnicornHybridAnalyzer:
                 branch_targets=set(),
                 register_values={},
                 memory_snapshot={},
-                error="Unicorn 不可用"
-            )
+                error="Unicorn 不可用")
+            
+
         
-        result = ExecutionResult(
+        result = ExecutionResult()
             success=False,
             strings_found=[],
             branch_targets=set(),
             register_values={},
             memory_snapshot={}
-        )
+        
         
         user_data = {'branch_targets': result.branch_targets}
         
         try:
             # 设置分支跟踪
-            self.uc.hook_add(
+            self.uc.hook_add()
                 unicorn.UC_HOOK_CODE,
                 self._trace_branch,
                 user_data=user_data
-            )
+            
             
             start_time = time.time()
             
@@ -363,7 +369,8 @@ class UnicornHybridAnalyzer:
             # 提取字符串
             for region in self.memory_regions:
                 if region.name == "data":
-                    result.strings_found.extend(self._extract_strings_from_memory(region.start, region.end))
+                    result.strings_found.extend(self._extract_strings_from_memory(region.start, region.end
+
             
             # 获取寄存器值
             if self.arch == UC_ARCH_X86_64:
@@ -373,7 +380,8 @@ class UnicornHybridAnalyzer:
                     result.register_values[reg_name] = self.uc.reg_read(reg_const)
             
             # 去重字符串
-            result.strings_found = list(set(result.strings_found))
+            result.strings_found = list(set(result.strings_found
+
             
         except unicorn.UcError as e:
             result.error = f"Unicorn 错误: {e}"
@@ -422,15 +430,18 @@ class UnicornHybridAnalyzer:
         current_string = []
         for byte in self.binary_data:
             if 0x20 <= byte <= 0x7E:  # 可打印ASCII字符
-                current_string.append(chr(byte))
+                current_string.append(chr(byte
+
             else:
                 if len(current_string) >= 4:  # 至少4个字符才视为有效字符串
-                    hidden_strings.append(''.join(current_string))
+                    hidden_strings.append(''.join(current_string
+
                 current_string = []
         
         # 检查最后的字符串
         if len(current_string) >= 4:
-            hidden_strings.append(''.join(current_string))
+            hidden_strings.append(''.join(current_string
+
         
         # 查找潜在的解密循环模式（简化实现）
         decrypt_patterns = [
@@ -448,8 +459,7 @@ class UnicornHybridAnalyzer:
         
         return hidden_strings
 
-    def hybrid_analysis(
-        self, 
+    def hybrid_analysis(, self)
         symbolic_info: Optional[Dict[str, Any]] = None,
         timeout: int = 30,
         max_instructions: int = 100000
@@ -472,8 +482,9 @@ class UnicornHybridAnalyzer:
                 dynamic_jump_targets=set(),
                 simplified_constraints=[],
                 execution_time_ms=0,
-                instructions_executed=0
-            )
+                instructions_executed=0)
+            
+
         
         logger.info("开始混合符号执行分析")
         
@@ -486,8 +497,9 @@ class UnicornHybridAnalyzer:
                 dynamic_jump_targets=set(),
                 simplified_constraints=[],
                 execution_time_ms=0,
-                instructions_executed=0
-            )
+                instructions_executed=0)
+            
+
         
         hidden_strings = []
         jump_targets = set()
@@ -503,10 +515,12 @@ class UnicornHybridAnalyzer:
                 instructions_executed += max_instructions
         
         # 提取隐藏字符串
-        hidden_strings.extend(self._extract_hidden_strings())
+        hidden_strings.extend(self._extract_hidden_strings(
+
         
         # 去重
-        hidden_strings = list(set(hidden_strings))
+        hidden_strings = list(set(hidden_strings
+
         
         end_time = time.time()
         execution_time_ms = int((end_time - start_time) * 1000)
@@ -518,8 +532,9 @@ class UnicornHybridAnalyzer:
             dynamic_jump_targets=jump_targets,
             simplified_constraints=constraints,
             execution_time_ms=execution_time_ms,
-            instructions_executed=instructions_executed
-        )
+            instructions_executed=instructions_executed)
+        
+
 
     def get_available_architectures(self) -> List[str]:
         """
@@ -537,4 +552,4 @@ class UnicornHybridAnalyzer:
         Returns:
             是否可用
         """
-        return UNICORN_AVAILABLE
+        return UNICORN_AVAILABLE))))))))))))))))))))))))

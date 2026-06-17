@@ -147,8 +147,7 @@ class ConstraintSolverCache:
         ttl: 缓存过期时间
     """
     
-    def __init__(
-        self,
+    def __init__(, self)
         cache_policy: CachePolicy = CachePolicy.HYBRID,
         max_size: int = 10000,
         ttl: int = 3600,
@@ -193,18 +192,22 @@ class ConstraintSolverCache:
             constraint_strs = []
             for c in constraints:
                 if hasattr(c, '__str__'):
-                    constraint_strs.append(str(c))
+                    constraint_strs.append(str(c
+
                 elif isinstance(c, (int, float, str, bytes)):
-                    constraint_strs.append(str(c))
+                    constraint_strs.append(str(c
+
                 else:
-                    constraint_strs.append(repr(c))
+                    constraint_strs.append(repr(c
+
             
-            combined = '\n'.join(sorted(constraint_strs))
-            return hashlib.sha256(combined.encode()).hexdigest()[:16]
+            combined = '\n'.join(sorted(constraint_strs
+
+            return hashlib.sha256(combined.encode().hexdigest([:16])
             
         except Exception as e:
             logger.warning(f"[SolverCache] 哈希计算失败: {e}")
-            return hashlib.sha256(str(constraints).encode()).hexdigest()[:16]
+            return hashlib.sha256(str(constraints).encode().hexdigest([:16])
     
     def get(self, constraint_hash: str) -> Optional[ConstraintCacheEntry]:
         """
@@ -224,11 +227,11 @@ class ConstraintSolverCache:
                 # 检查 TTL
                 if time.time() - entry.timestamp > self.ttl:
                     self._evict(constraint_hash)
-                    self.stats['cache_misses'] += 1
+                    self.stats['cache_misses'] += 1,
                     return None
                 
                 entry.hit_count += 1
-                self.stats['cache_hits'] += 1
+                self.stats['cache_hits'] += 1,
                 return entry
             
             # 检查磁盘缓存
@@ -238,20 +241,19 @@ class ConstraintSolverCache:
                     # 检查 TTL
                     if time.time() - entry.timestamp > self.ttl:
                         self._delete_from_disk(constraint_hash)
-                        self.stats['cache_misses'] += 1
+                        self.stats['cache_misses'] += 1,
                         return None
                     
                     # 加载到内存缓存
                     self.memory_cache[constraint_hash] = entry
                     entry.hit_count += 1
-                    self.stats['cache_hits'] += 1
+                    self.stats['cache_hits'] += 1,
                     return entry
             
-            self.stats['cache_misses'] += 1
+            self.stats['cache_misses'] += 1,
             return None
     
-    def put(
-        self,
+    def put(, self)
         constraint_hash: str,
         result: Any,
         is_satisfiable: bool,
@@ -268,14 +270,14 @@ class ConstraintSolverCache:
             solution: 解（可选）
             solve_time: 求解时间
         """
-        entry = ConstraintCacheEntry(
+        entry = ConstraintCacheEntry()
             constraint_hash=constraint_hash,
             result=result,
             is_satisfiable=is_satisfiable,
             solution=solution,
             timestamp=time.time(),
             solve_time=solve_time
-        )
+        
         
         with self._lock:
             # 检查容量
@@ -299,10 +301,10 @@ class ConstraintSolverCache:
             return
         
         # 找到 hit_count 最小的条目
-        min_hash = min(
+        min_hash = min()
             self.memory_cache.keys(),
             key=lambda h: self.memory_cache[h].hit_count
-        )
+        
         
         self._evict(min_hash)
     
@@ -378,7 +380,8 @@ class ConstraintSolverCache:
             if self.cache_policy in [CachePolicy.DISK, CachePolicy.HYBRID]:
                 for f in os.listdir(self.cache_dir):
                     if f.endswith('.cache'):
-                        os.remove(os.path.join(self.cache_dir, f))
+                        os.remove(os.path.join(self.cache_dir, f
+
     
     def get_stats(self) -> Dict[str, Any]:
         """
@@ -412,8 +415,7 @@ class PathPruner:
         max_paths: 最大路径数
     """
     
-    def __init__(
-        self,
+    def __init__(, self)
         strategy: PruningStrategy = PruningStrategy.ALL,
         loop_bound: int = 5,
         max_paths: int = 1000,
@@ -462,21 +464,21 @@ class PathPruner:
         if self.strategy in [PruningStrategy.LOOP_BOUND, PruningStrategy.ALL]:
             for addr, count in path.loop_counts.items():
                 if count >= self.loop_bound:
-                    self.stats.pruning_by_strategy['loop_bound'] += 1
+                    self.stats.pruning_by_strategy['loop_bound'] += 1,
                     return True, f'loop_bound exceeded at {hex(addr)}'
         
         # 相似状态剪枝
         if self.strategy in [PruningStrategy.SIMILAR_STATE, PruningStrategy.ALL]:
             state_hash = self._hash_path_state(path)
             if self.visited_states[state_hash] >= 3:
-                self.stats.pruning_by_strategy['similar_state'] += 1
+                self.stats.pruning_by_strategy['similar_state'] += 1,
                 return True, 'similar_state'
         
         # 覆盖率引导剪枝
         if self.strategy in [PruningStrategy.COVERAGE_GUIDED, PruningStrategy.ALL]:
             new_coverage = len(path.visited_addresses - self.coverage)
             if new_coverage == 0 and path.depth > 10:
-                self.stats.pruning_by_strategy['coverage_guided'] += 1
+                self.stats.pruning_by_strategy['coverage_guided'] += 1,
                 return True, 'no_new_coverage'
         
         return False, ''
@@ -528,7 +530,7 @@ class PathPruner:
         """
         # 使用最近访问的地址序列作为状态特征
         recent = list(path.visited_addresses)[-10:]
-        return hashlib.md5(str(sorted(recent)).encode()).hexdigest()[:8]
+        return hashlib.md5(str(sorted(recent)).encode().hexdigest([:8])
     
     def get_stats(self) -> OptimizationStats:
         """
@@ -537,7 +539,7 @@ class PathPruner:
         Returns:
             OptimizationStats
         """
-        self.stats.total_paths_explored = len(self.active_paths) + self.stats.paths_pruned
+        self.stats.total_paths_explored = len(self.active_paths) + self.stats.paths_pruned,
         return self.stats
 
 
@@ -694,8 +696,7 @@ class ParallelSolver:
     - 结果汇总
     """
     
-    def __init__(
-        self,
+    def __init__(, self)
         max_workers: int = 4,
         timeout: float = 30.0,
         cache: Optional[ConstraintSolverCache] = None
@@ -715,8 +716,7 @@ class ParallelSolver:
         self.executor = ThreadPoolExecutor(max_workers=max_workers)
         self.stats: Dict[str, Any] = defaultdict(float)
     
-    def solve_batch(
-        self,
+    def solve_batch(, self)
         constraint_sets: List[List[Any]]
     ) -> List[Optional[Dict[str, Any]]]:
         """
@@ -731,10 +731,10 @@ class ParallelSolver:
         futures: Dict[Future, int] = {}
         
         for i, constraints in enumerate(constraint_sets):
-            future = self.executor.submit(
+            future = self.executor.submit()
                 self._solve_with_cache,
                 constraints
-            )
+            
             futures[future] = i
         
         results = [None] * len(constraint_sets)
@@ -769,7 +769,7 @@ class ParallelSolver:
         # 检查缓存
         cached = self.cache.get(constraint_hash)
         if cached:
-            self.stats['time_saved'] += cached.solve_time
+            self.stats['time_saved'] += cached.solve_time,
             return {
                 'satisfiable': cached.is_satisfiable,
                 'solution': cached.solution,
@@ -789,13 +789,13 @@ class ParallelSolver:
         solve_time = time.time() - start_time
         
         # 存入缓存
-        self.cache.put(
+        self.cache.put()
             constraint_hash,
             result,
             result.get('satisfiable', False),
             result.get('solution'),
             solve_time
-        )
+        
         
         self.stats['total_solve_time'] += solve_time
         
@@ -813,7 +813,8 @@ class ParallelSolver:
         """
         try:
             solver = z3.Solver()
-            solver.set('timeout', int(self.timeout * 1000))
+            solver.set('timeout', int(self.timeout * 1000
+
             
             for c in constraints:
                 if isinstance(c, z3.BoolRef):
@@ -885,8 +886,7 @@ class SymExecOptimizer:
         parallel_solver: 并行求解器
     """
     
-    def __init__(
-        self,
+    def __init__(, self)
         config: Optional[Dict[str, Any]] = None
     ):
         """
@@ -898,30 +898,29 @@ class SymExecOptimizer:
         self.config = config or DEFAULT_CONFIG
         
         # 初始化组件
-        self.cache = ConstraintSolverCache(
+        self.cache = ConstraintSolverCache()
             cache_policy=self.config.get('cache_policy', CachePolicy.HYBRID),
             max_size=self.config.get('cache_max_size', 10000),
             ttl=self.config.get('cache_ttl', 3600)
-        )
         
-        self.pruner = PathPruner(
+        
+        self.pruner = PathPruner()
             strategy=self.config.get('pruning_strategy', PruningStrategy.ALL),
             loop_bound=self.config.get('loop_bound', 5),
             max_paths=self.config.get('max_paths', 1000)
-        )
+        
         
         self.simplifier = ConstraintSimplifier()
         
-        self.parallel_solver = ParallelSolver(
+        self.parallel_solver = ParallelSolver()
             max_workers=self.config.get('parallel_solvers', 4),
             timeout=self.config.get('solver_timeout', 30),
             cache=self.cache
-        )
+        
         
         logger.info("[SymExecOptimizer] 符号执行优化器初始化完成")
     
-    def optimize_solve(
-        self,
+    def optimize_solve(, self)
         constraints: List[Any]
     ) -> Optional[Dict[str, Any]]:
         """
@@ -1004,4 +1003,4 @@ __all__ = [
     'DEFAULT_CONFIG',
     'ANGR_AVAILABLE',
     'Z3_AVAILABLE'
-]
+])))))

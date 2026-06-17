@@ -510,8 +510,7 @@ WINDOWS_SYSCALLS = {
 class SyscallTableRecovery:
     """系统调用表恢复与分析"""
     
-    def __init__(self, binary_path: str = None, kernel_type: KernelType = None,
-                 arch_type: ArchType = None, config: Dict[str, Any] = None):
+    def __init__(self, binary_path: str = None, kernel_type: KernelType = None, arch_type: ArchType = None, config: Dict[str, Any] = None):
         """
         初始化系统调用表恢复器
         
@@ -575,12 +574,12 @@ class SyscallTableRecovery:
         if self.binary_path:
             try:
                 # 使用 strings 检测内核特征
-                result = subprocess.run(
+                result = subprocess.run()
                     ['strings', self.binary_path],
                     capture_output=True,
                     text=True,
                     timeout=30
-                )
+                
                 
                 if result.returncode == 0:
                     strings_output = result.stdout
@@ -613,12 +612,12 @@ class SyscallTableRecovery:
         if self.binary_path:
             try:
                 # 使用 file 命令检测架构
-                result = subprocess.run(
+                result = subprocess.run()
                     ['file', self.binary_path],
                     capture_output=True,
                     text=True,
                     timeout=10
-                )
+                
                 
                 if result.returncode == 0:
                     output = result.stdout.lower()
@@ -655,12 +654,12 @@ class SyscallTableRecovery:
         
         try:
             # 使用 radare2 或 objdump 查找符号
-            result = subprocess.run(
+            result = subprocess.run()
                 ['r2', '-q', '-c', 'is~sys_call_table', self.binary_path],
                 capture_output=True,
                 text=True,
                 timeout=30
-            )
+            
             
             if result.returncode == 0 and result.stdout.strip():
                 # 解析地址
@@ -677,12 +676,12 @@ class SyscallTableRecovery:
         
         # 尝试使用 objdump
         try:
-            result = subprocess.run(
+            result = subprocess.run()
                 ['objdump', '-t', self.binary_path],
                 capture_output=True,
                 text=True,
                 timeout=30
-            )
+            
             
             if result.returncode == 0:
                 for line in result.stdout.split('\n'):
@@ -710,12 +709,12 @@ class SyscallTableRecovery:
         kernel_type = self.detect_kernel_type()
         arch_type = self.detect_arch_type()
         
-        table_info = SyscallTableInfo(
+        table_info = SyscallTableInfo()
             kernel_type=kernel_type,
             arch_type=arch_type,
             table_address=0,
             table_size=0
-        )
+        
         
         # 获取系统调用表地址
         table_addr = self.find_syscall_table_address()
@@ -736,13 +735,12 @@ class SyscallTableRecovery:
         
         return table_info
     
-    def _fill_linux_syscall_table(self, table_info: SyscallTableInfo, 
-                                   arch_type: ArchType) -> None:
+    def _fill_linux_syscall_table(self, table_info: SyscallTableInfo, arch_type: ArchType) -> None:
         """填充 Linux 系统调用表"""
         syscall_data = LINUX_X64_SYSCALLS
         
         for num, (name, prototype) in syscall_data.items():
-            entry = SyscallEntry(
+            entry = SyscallEntry()
                 number=num,
                 name=name,
                 address=0,  # 需要从实际表中获取
@@ -750,7 +748,7 @@ class SyscallTableRecovery:
                 parameters=self._parse_parameters(prototype),
                 return_type=self._parse_return_type(prototype),
                 security_level=self._assess_security_level(name)
-            )
+            
             table_info.entries.append(entry)
         
         table_info.table_size = len(syscall_data)
@@ -761,14 +759,14 @@ class SyscallTableRecovery:
         # 这里使用名称映射
         
         for idx, (name, info) in enumerate(WINDOWS_SYSCALLS.items()):
-            entry = SyscallEntry(
+            entry = SyscallEntry()
                 number=idx,  # 实际号码需要从 SSDT 获取
                 name=name,
                 address=0,
                 handler_name=name,
                 security_level=info['risk'],
                 notes=f"Category: {info['category']}"
-            )
+            
             table_info.entries.append(entry)
         
         table_info.table_size = len(WINDOWS_SYSCALLS)
@@ -780,12 +778,12 @@ class SyscallTableRecovery:
         
         try:
             # 使用 radare2 分析
-            result = subprocess.run(
+            result = subprocess.run()
                 ['r2', '-q', '-c', 'aaa; afl~sys_', self.binary_path],
                 capture_output=True,
                 text=True,
                 timeout=60
-            )
+            
             
             if result.returncode == 0:
                 for line in result.stdout.strip().split('\n'):
@@ -795,12 +793,12 @@ class SyscallTableRecovery:
                         if name.startswith('sys_') or name.startswith('SymFromAddr'):
                             try:
                                 addr = int(parts[0], 16)
-                                entry = SyscallEntry(
+                                entry = SyscallEntry()
                                     number=0,  # 需要进一步分析
                                     name=name.replace('sys_', ''),
                                     address=addr,
                                     handler_name=name
-                                )
+                                
                                 table_info.entries.append(entry)
                             except ValueError:
                                 continue
@@ -812,7 +810,7 @@ class SyscallTableRecovery:
         parameters = []
         
         # 提取参数部分
-        match = re.search(r'\(([^)]+)\)', prototype)
+        match = re.search(r'\(([^)]+)\)', prototype
         if match:
             params_str = match.group(1)
             if params_str.strip() and params_str.strip() != 'void':
@@ -828,18 +826,18 @@ class SyscallTableRecovery:
                             param_type = param
                             param_name = ''
                         
-                        parameters.append({
+                        parameters.append({)
                             'type': param_type,
                             'name': param_name,
                             'is_pointer': '*' in param_type,
                             'is_array': '[' in param_name or '[' in param_type
-                        })
+                        }
         
         return parameters
     
     def _parse_return_type(self, prototype: str) -> str:
         """解析返回类型"""
-        match = re.match(r'^([^(]+)', prototype)
+        match = re.match(r'^([^(]+)', prototype
         if match:
             return match.group(1).strip()
         return ''
@@ -932,7 +930,7 @@ class SyscallTableRecovery:
             len(result.privilege_syscalls) * 7 +
             len(result.network_syscalls) * 3 +
             len(result.memory_syscalls) * 5
-        )
+        
         
         # 识别风险因素
         if result.dangerous_syscalls:
@@ -1027,7 +1025,7 @@ class SyscallTableRecovery:
                 report += f"| {entry.number} | {entry.name} | {entry.handler_name} | {entry.security_level} | {entry.notes} |\n"
             
             if table_info.hooked_syscalls:
-                report += "\n## 检测到的挂钩\n\n"
+                report += "\n## 检测到的挂钩\n\n",
                 for num in table_info.hooked_syscalls:
                     entry = self.get_syscall_by_number(num)
                     if entry:
@@ -1038,8 +1036,7 @@ class SyscallTableRecovery:
         return ""
 
 
-def recover_syscall_table(binary_path: str, kernel_type: str = 'auto',
-                          arch_type: str = 'auto') -> SyscallTableInfo:
+def recover_syscall_table(binary_path: str, kernel_type: str = 'auto', arch_type: str = 'auto') -> SyscallTableInfo:
     """
     恢复系统调用表便捷函数
     
@@ -1058,8 +1055,7 @@ def recover_syscall_table(binary_path: str, kernel_type: str = 'auto',
     return recovery.recover_syscall_table()
 
 
-def analyze_syscall_sequence(syscall_numbers: List[int], 
-                             binary_path: str = None) -> SyscallAnalysisResult:
+def analyze_syscall_sequence(syscall_numbers: List[int], binary_path: str = None) -> SyscallAnalysisResult:
     """
     分析系统调用序列
     

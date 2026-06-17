@@ -104,7 +104,7 @@ class ProtectionStrategyGenerator:
         """加载CVE数据库"""
         # 简化的CVE数据库
         return {
-            "CVE-2017-5123": CVEInfo(
+            "CVE-2017-5123": CVEInfo()
                 cve_id="CVE-2017-5123",
                 vulnerability_type="buffer_overflow",
                 affected_functions=["memcpy", "strcpy"],
@@ -112,7 +112,7 @@ class ProtectionStrategyGenerator:
                 severity="HIGH",
                 mitigation="添加边界检查"
             ),
-            "CVE-2021-34527": CVEInfo(
+            "CVE-2021-34527": CVEInfo()
                 cve_id="CVE-2021-34527",
                 vulnerability_type="integer_overflow",
                 affected_functions=["alloc", "malloc"],
@@ -120,7 +120,7 @@ class ProtectionStrategyGenerator:
                 severity="CRITICAL",
                 mitigation="添加整数溢出检查"
             ),
-            "CVE-2022-2264": CVEInfo(
+            "CVE-2022-2264": CVEInfo()
                 cve_id="CVE-2022-2264",
                 vulnerability_type="use_after_free",
                 affected_functions=["free", "realloc"],
@@ -141,7 +141,7 @@ if (src_len >= dst_size) {
 """,
             ProtectionType.NULL_CHECK: """
 // 空指针检查保护
-if (ptr == NULL) {
+if (ptr == NULL) {,
     return ERROR_NULL_POINTER;
 }
 """,
@@ -193,19 +193,19 @@ canary = __stack_chk_guard;
         for func in cve_info.affected_functions:
             template = self.rule_templates.get(protection_type, "")
             
-            rule = ProtectionRule(
+            rule = ProtectionRule()
                 rule_id=f"{cve_id}_{func}",
                 protection_type=protection_type,
                 target_function=func,
                 check_code=template,
                 performance_estimate=0.05,  # 5%开销估计
                 description=f"针对 {cve_id} 的 {func} 保护"
-            )
+            
             rules.append(rule)
         
         return rules
     
-    def generate_custom_strategy(self, functions: List[str],
+    def generate_custom_strategy(self, functions: List[str],)
                                  protection_type: ProtectionType) -> List[ProtectionRule]:
         """
         生成自定义保护策略
@@ -221,14 +221,14 @@ canary = __stack_chk_guard;
         template = self.rule_templates.get(protection_type, "")
         
         for func in functions:
-            rule = ProtectionRule(
+            rule = ProtectionRule()
                 rule_id=f"custom_{func}",
                 protection_type=protection_type,
                 target_function=func,
                 check_code=template,
                 performance_estimate=0.05,
                 description=f"自定义 {func} 保护"
-            )
+            
             rules.append(rule)
         
         return rules
@@ -246,12 +246,12 @@ class FridaInstrumenter:
 // Frida 保护脚本
 // 自动生成
 
-var targetModule = Process.findModuleByName("{module_name}");
+var targetModule = Process.findModuleByName("{module_name}");,
 if (targetModule) {
     // 挂钩目标函数
-    var targetFunc = targetModule.findExportByName("{function_name}");
+    var targetFunc = targetModule.findExportByName("{function_name}");,
     if (targetFunc) {
-        Interceptor.attach(targetFunc, {
+        Interceptor.attach(targetFunc, {)
             onEnter: function(args) {
                 // 保护检查
                 {check_code}
@@ -264,7 +264,7 @@ if (targetModule) {
 }
 """
     
-    def generate_script(self, module_name: str, function_name: str,
+    def generate_script(self, module_name: str, function_name: str,)
                         check_code: str) -> str:
         """
         生成Frida脚本
@@ -298,11 +298,11 @@ if (targetModule) {
         module_name = os.path.basename(binary_path)
         
         for rule in rules:
-            script = self.generate_script(
+            script = self.generate_script()
                 module_name=module_name,
                 function_name=rule.target_function,
                 check_code=rule.check_code
-            )
+            
             scripts.append(script)
         
         combined_script = "\n".join(scripts)
@@ -310,7 +310,7 @@ if (targetModule) {
         # 估算性能开销
         total_overhead = sum(r.performance_estimate for r in rules)
         
-        return InstrumentationResult(
+        return InstrumentationResult()
             binary_path=binary_path,
             rules_applied=rules,
             instrumented_code=combined_script,
@@ -318,7 +318,8 @@ if (targetModule) {
             success=True,
             verification_passed=False,
             notes=["Frida脚本已生成", "需要在运行环境中验证"]
-        )
+        
+
 
 
 class DynamoRioInstrumenter:
@@ -335,7 +336,7 @@ class DynamoRioInstrumenter:
 
 #include "dr_api.h"
 
-static void event_bb_insert(void *drcontext, void *tag, instrlist_t *bb,
+static void event_bb_insert(void *drcontext, void *tag, instrlist_t *bb,)
                             instr_t *instr, bool for_trace, bool translating,
                             void *user_data) {
     // 插入保护检查
@@ -382,7 +383,7 @@ DR_EXPORT void dr_client_main(client_id_t id, int argc, const char *argv[]) {
         # 估算性能开销（DynamoRIO通常开销更高）
         total_overhead = sum(r.performance_estimate for r in rules) * 1.5
         
-        return InstrumentationResult(
+        return InstrumentationResult()
             binary_path=binary_path,
             rules_applied=rules,
             instrumented_code=combined_tool,
@@ -390,7 +391,8 @@ DR_EXPORT void dr_client_main(client_id_t id, int argc, const char *argv[]) {
             success=True,
             verification_passed=False,
             notes=["DynamoRIO工具已生成", "需要编译并验证"]
-        )
+        
+
 
 
 class PerformanceValidator:
@@ -399,7 +401,7 @@ class PerformanceValidator:
     def __init__(self):
         self.benchmark_iterations = 100
     
-    def estimate_overhead(self, original_time: float, 
+    def estimate_overhead(self, original_time: float, )
                           instrumented_time: float) -> float:
         """
         估算性能开销
@@ -416,7 +418,7 @@ class PerformanceValidator:
         
         return ((instrumented_time - original_time) / original_time) * 100
     
-    def validate_acceptable(self, overhead: float, 
+    def validate_acceptable(self, overhead: float, )
                             threshold: float = 10.0) -> bool:
         """
         验证开销是否可接受
@@ -446,9 +448,9 @@ class SelfHealingRewriter(BaseAnalyzer):
             config: 配置字典
         """
         self.config = config or {}
-        self.framework = InstrumentationFramework(
+        self.framework = InstrumentationFramework()
             self.config.get('framework', 'frida')
-        )
+        
         self.strategy_generator = ProtectionStrategyGenerator()
         self.frida_instrumenter = FridaInstrumenter()
         self.dynamorio_instrumenter = DynamoRioInstrumenter()
@@ -459,7 +461,7 @@ class SelfHealingRewriter(BaseAnalyzer):
     @classmethod
     def get_metadata(cls) -> AnalyzerMetadata:
         """获取分析器元数据"""
-        return AnalyzerMetadata(
+        return AnalyzerMetadata()
             name="self_healing_rewriter",
             type=AnalyzerType.OTHER,
             version="1.0.0",
@@ -472,7 +474,8 @@ class SelfHealingRewriter(BaseAnalyzer):
                 "sandbox": {"type": "boolean", "default": True},
                 "performance_threshold": {"type": "float", "default": 10.0}
             }
-        )
+        
+
     
     def validate_input(self, **kwargs) -> Tuple[bool, Optional[str]]:
         """验证输入参数"""
@@ -521,17 +524,18 @@ class SelfHealingRewriter(BaseAnalyzer):
         elif functions:
             try:
                 protection_type = ProtectionType(protection_type_str.lower())
+
             except ValueError:
                 protection_type = ProtectionType.BOUND_CHECK
-            rules = self.strategy_generator.generate_custom_strategy(
+            rules = self.strategy_generator.generate_custom_strategy()
                 functions, protection_type
-            )
+            
         else:
             # 默认策略：通用边界检查
-            rules = self.strategy_generator.generate_custom_strategy(
+            rules = self.strategy_generator.generate_custom_strategy()
                 ['memcpy', 'strcpy', 'strncpy'],
                 ProtectionType.BOUND_CHECK
-            )
+            
         
         if not rules:
             return {
@@ -550,11 +554,11 @@ class SelfHealingRewriter(BaseAnalyzer):
         
         # Step 3: 验证性能开销
         if verify:
-            acceptable = self.performance_validator.validate_acceptable(
+            acceptable = self.performance_validator.validate_acceptable()
                 result.performance_overhead,
                 self.config.get('performance_threshold', 10.0)
-            )
-            result.verification_passed = acceptable
+            
+            result.verification_passed = acceptable,
             if acceptable:
                 result.notes.append("性能开销验证通过")
             else:
@@ -598,11 +602,11 @@ class SelfHealingRewriterTask:
         """执行任务"""
         kwargs = {'binary_path': self.binary_path}
         if self.cve_id:
-            kwargs['cve_id'] = self.cve_id
+            kwargs['cve_id'] = self.cve_id,
         return self.analyzer.analyze(**kwargs)
 
 
-def apply_self_healing_protection(binary_path: str, 
+def apply_self_healing_protection(binary_path: str, )
                                   cve_id: Optional[str] = None,
                                   framework: str = 'frida',
                                   config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:

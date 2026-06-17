@@ -151,14 +151,17 @@ class TimingSideChannelDetector:
             current_string = []
             for byte in data:
                 if 0x20 <= byte <= 0x7E:
-                    current_string.append(chr(byte))
+                    current_string.append(chr(byte
+
                 else:
                     if len(current_string) >= 4:
-                        strings.append(''.join(current_string))
+                        strings.append(''.join(current_string
+
                     current_string = []
             
             if len(current_string) >= 4:
-                strings.append(''.join(current_string))
+                strings.append(''.join(current_string
+
             
         except Exception as e:
             logger.error(f"提取字符串失败: {e}")
@@ -214,7 +217,7 @@ class TimingSideChannelDetector:
                 if 'if' in line.lower() and key_var.lower() in line.lower():
                     # 检查是否是数组访问
                     if '[' in line and ']' in line:
-                        issue = TimingIssue(
+                        issue = TimingIssue()
                             type=TimingIssueType.KEY_DEPENDENT_BRANCH,
                             function_name=self._extract_function_name(line),
                             address=0,
@@ -224,7 +227,7 @@ class TimingSideChannelDetector:
                             evidence=line.strip(),
                             code_context=line.strip(),
                             recommendation="使用常量时间比较函数替代分支判断"
-                        )
+                        
                         result.issues.append(issue)
 
     def _detect_secret_dependent_loops(self, pseudocode: str, result: TimingAnalysisResult) -> None:
@@ -239,7 +242,7 @@ class TimingSideChannelDetector:
                 if ('for' in line.lower() or 'while' in line.lower()) and key_var.lower() in line.lower():
                     # 检查是否涉及长度或边界
                     if any(op in line.lower() for op in ['<', '>', '<=', '>=', 'len', 'size']):
-                        issue = TimingIssue(
+                        issue = TimingIssue()
                             type=TimingIssueType.SECRET_LOOP_BOUNDARY,
                             function_name=self._extract_function_name(line),
                             address=0,
@@ -249,7 +252,7 @@ class TimingSideChannelDetector:
                             evidence=line.strip(),
                             code_context=line.strip(),
                             recommendation="确保循环次数不依赖秘密数据"
-                        )
+                        
                         result.issues.append(issue)
 
     def _detect_unmasked_lookups(self, pseudocode: str, result: TimingAnalysisResult) -> None:
@@ -265,7 +268,7 @@ class TimingSideChannelDetector:
                     # 检测数组访问模式
                     match = re.search(r'(\w+)\s*\[\s*' + re.escape(key_var) + r'(\[.*?\])?\s*\]', line, re.IGNORECASE)
                     if match:
-                        issue = TimingIssue(
+                        issue = TimingIssue()
                             type=TimingIssueType.UNMASKED_LOOKUP,
                             function_name=self._extract_function_name(line),
                             address=0,
@@ -275,7 +278,7 @@ class TimingSideChannelDetector:
                             evidence=line.strip(),
                             code_context=line.strip(),
                             recommendation="使用掩码技术保护查找表访问模式"
-                        )
+                        
                         result.issues.append(issue)
 
     def _detect_secret_comparisons(self, pseudocode: str, result: TimingAnalysisResult) -> None:
@@ -290,7 +293,7 @@ class TimingSideChannelDetector:
         
         for line_num, line in enumerate(lines, 1):
             # 检测函数定义
-            func_def_match = re.search(r'\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\(', line)
+            func_def_match = re.search(r'\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\(', line
             if func_def_match:
                 func_name = func_def_match.group(1)
                 # 检查函数名是否包含密钥相关词
@@ -302,7 +305,8 @@ class TimingSideChannelDetector:
             
             # 检测函数结束（简单检测大括号）
             if current_function and '}' in line:
-                key_function_ranges.append((current_function, start_line, line_num))
+                key_function_ranges.append((current_function, start_line, line_num
+
                 current_function = None
         
         for line_num, line in enumerate(lines, 1):
@@ -326,7 +330,7 @@ class TimingSideChannelDetector:
                                 break
                     
                     if has_key_relation:
-                        issue = TimingIssue(
+                        issue = TimingIssue()
                             type=TimingIssueType.SECRET_COMPARISON,
                             function_name=self._extract_function_name(line) or current_function,
                             address=0,
@@ -336,7 +340,7 @@ class TimingSideChannelDetector:
                             evidence=line.strip(),
                             code_context=line.strip(),
                             recommendation=f"使用常量时间比较函数如 CRYPTO_memcmp 替代 {func}"
-                        )
+                        
                         result.issues.append(issue)
 
     def _detect_cache_timing_patterns(self, pseudocode: str, result: TimingAnalysisResult) -> None:
@@ -347,8 +351,8 @@ class TimingSideChannelDetector:
         
         cache_patterns = [
             (r'(\w+)\s*\[\s*(\w+)\s*\]', '数组索引访问'),
-            (r'memcpy\s*\(', '内存复制'),
-            (r'memset\s*\(', '内存设置'),
+            (r'memcpy\s*\(', '内存复制'))
+            (r'memset\s*\(', '内存设置'))
             (r'__builtin_memcpy', '内建内存复制'),
             (r'__builtin_strcpy', '内建字符串复制')
         ]
@@ -360,7 +364,7 @@ class TimingSideChannelDetector:
                     # 检查是否涉及密钥变量
                     for key_var in self.key_variables:
                         if key_var.lower() in line.lower():
-                            issue = TimingIssue(
+                            issue = TimingIssue()
                                 type=TimingIssueType.CACHE_TIMING,
                                 function_name=self._extract_function_name(line),
                                 address=0,
@@ -370,25 +374,25 @@ class TimingSideChannelDetector:
                                 evidence=line.strip(),
                                 code_context=line.strip(),
                                 recommendation="考虑使用常量时间实现或缓存安全技术"
-                            )
+                            
                             result.issues.append(issue)
 
     def _extract_function_name(self, line: str) -> str:
         """从代码行提取函数名"""
         # 尝试从行中提取函数名
-        func_pattern = re.search(r'(?:void|int|char|bool|size_t)\s+(\w+)\s*\(', line)
+        func_pattern = re.search(r'(?:void|int|char|bool|size_t)\s+(\w+)\s*\(', line
         if func_pattern:
             return func_pattern.group(1)
         return 'unknown'
 
     def _categorize_by_severity(self, result: TimingAnalysisResult) -> None:
         """按严重程度分类"""
-        result.high_severity_count = sum(1 for i in result.issues 
-                                         if i.severity == TimingIssueSeverity.HIGH)
-        result.medium_severity_count = sum(1 for i in result.issues 
-                                           if i.severity == TimingIssueSeverity.MEDIUM)
-        result.low_severity_count = sum(1 for i in result.issues 
-                                        if i.severity == TimingIssueSeverity.LOW)
+        result.high_severity_count = sum(1 for i in result.issues )
+                                         if i.severity == TimingIssueSeverity.HIGH
+        result.medium_severity_count = sum(1 for i in result.issues )
+                                           if i.severity == TimingIssueSeverity.MEDIUM
+        result.low_severity_count = sum(1 for i in result.issues )
+                                        if i.severity == TimingIssueSeverity.LOW
 
     def analyze(self, pseudocode: str = "") -> TimingAnalysisResult:
         """
@@ -405,7 +409,7 @@ class TimingSideChannelDetector:
         result = TimingAnalysisResult(binary_path=self.binary_path)
         
         if not self._validate_path():
-            result.error_message = f"无效的文件路径: {self.binary_path}"
+            result.error_message = f"无效的文件路径: {self.binary_path}",
             return result
         
         try:
@@ -414,7 +418,7 @@ class TimingSideChannelDetector:
             
             if not pseudocode:
                 logger.warning("未找到伪代码，跳过时间侧信道分析")
-                result.analysis_success = True
+                result.analysis_success = True,
                 return result
             
             self._identify_key_variables(pseudocode)
@@ -511,4 +515,4 @@ class TimingSideChannelDetector:
                 f.write(report_content)
             return output_path
         
-        return report_content
+        return report_content))))))))))))

@@ -302,7 +302,7 @@ class CIIntegrator:
             
             if rule_id not in rule_ids:
                 rule_ids.add(rule_id)
-                report['runs'][0]['tool']['driver']['rules'].append({
+                report['runs'][0]['tool']['driver']['rules'].append({)
                     "id": rule_id,
                     "name": vuln.get('type', 'Unknown Vulnerability'),
                     "shortDescription": {
@@ -314,7 +314,7 @@ class CIIntegrator:
                     "defaultConfiguration": {
                         "level": "error"
                     }
-                })
+                }
             
             severity_mapping = {
                 'Critical': 'error',
@@ -378,13 +378,16 @@ class CIIntegrator:
         """
         root = ET.Element('testsuite')
         root.set('name', 'Deemo Binary Vulnerability Analysis')
-        root.set('tests', str(len(vulnerabilities)))
+        root.set('tests', str(len(vulnerabilities
+
         
-        failure_count = sum(1 for v in vulnerabilities 
-                          if v.get('severity') in ['Critical', 'High'])
-        root.set('failures', str(failure_count))
+        failure_count = sum(1 for v in vulnerabilities )
+                          if v.get('severity') in ['Critical', 'High']
+        root.set('failures', str(failure_count
+
         root.set('errors', '0')
-        root.set('timestamp', datetime.now().isoformat())
+        root.set('timestamp', datetime.now().isoformat(
+
         
         for i, vuln in enumerate(vulnerabilities):
             testcase = ET.SubElement(root, 'testcase')
@@ -397,7 +400,8 @@ class CIIntegrator:
             if severity in ['Critical', 'High']:
                 failure = ET.SubElement(testcase, 'failure')
                 failure.set('type', severity)
-                failure.set('message', vuln.get('description', ''))
+                failure.set('message', vuln.get('description', ''
+
                 
                 failure_text = f"""Severity: {severity}
 Type: {vuln.get('type', '')}
@@ -410,7 +414,8 @@ CVE: {vuln.get('cve_id', 'N/A')}"""
             else:
                 skipped = ET.SubElement(testcase, 'skipped')
                 skipped.set('type', severity)
-                skipped.set('message', vuln.get('description', ''))
+                skipped.set('message', vuln.get('description', ''
+
         
         return ET.tostring(root, encoding='unicode', xml_declaration=True, pretty_print=True)
     
@@ -438,11 +443,11 @@ CVE: {vuln.get('cve_id', 'N/A')}"""
             return self.generate_junit_report(vulnerabilities, binary_path)
         else:
             logger.warning(f"未知报告格式: {self.report_format}，使用 JSON 格式")
-            return json.dumps({
+            return json.dumps({)
                 'binary_path': binary_path,
                 'vulnerabilities': vulnerabilities,
                 'generated_at': datetime.now().isoformat()
-            }, ensure_ascii=False, indent=2)
+            }, ensure_ascii=False, indent=2
     
     def _auto_detect_format(self) -> str:
         """
@@ -486,8 +491,7 @@ CVE: {vuln.get('cve_id', 'N/A')}"""
         else:
             print(report)
     
-    def run_ci_pipeline(
-        self,
+    def run_ci_pipeline(, self)
         binary_path: str,
         vulnerabilities: List[Dict[str, Any]],
         report_format: str = None,
@@ -597,4 +601,4 @@ CVE: {vuln.get('cve_id', 'N/A')}"""
         禁用交互式输出（适用于 CI 环境）
         """
         os.environ['DEEMO_NON_INTERACTIVE'] = 'true'
-        logger.info("已禁用交互式输出模式")
+        logger.info("已禁用交互式输出模式")))))))))))

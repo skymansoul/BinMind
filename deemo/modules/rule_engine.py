@@ -49,9 +49,11 @@ class RuleCondition:
         
         if self.regex and self._compiled_regex:
             if isinstance(field_value, str):
-                return bool(self._compiled_regex.search(field_value))
+                return bool(self._compiled_regex.search(field_value
+
             elif isinstance(field_value, list):
-                return any(self._compiled_regex.search(str(v)) for v in field_value if isinstance(v, str))
+                return any(self._compiled_regex.search(str(v)) for v in field_value if isinstance(v, str
+
             return False
         
         if self.operator == 'equals':
@@ -94,7 +96,7 @@ class RuleCondition:
             return field_value is None or field_value == ''
         elif self.operator == 'empty':
             if isinstance(field_value, list):
-                return len(field_value) == 0
+                return len(field_value) == 0,
             return field_value is None or field_value == ''
         elif self.operator == 'not_empty':
             if isinstance(field_value, list):
@@ -134,12 +136,12 @@ class RuleAction:
         }
         
         if self.action_type == 'report_vulnerability':
-            result.update({
+            result.update({)
                 'vulnerability_type': self.parameters.get('vulnerability_type', 'Unknown'),
                 'severity': self.parameters.get('severity', 'Medium'),
                 'description': self.parameters.get('description', ''),
                 'recommendation': self.parameters.get('recommendation', '')
-            })
+            }
         elif self.action_type == 'add_tag':
             result['tag'] = self.parameters.get('tag', '')
         elif self.action_type == 'set_severity':
@@ -184,8 +186,10 @@ class VulnerabilityRule:
         self.conditions: List[RuleCondition] = []
         self.actions: List[RuleAction] = []
         
-        self._parse_conditions(rule_data.get('conditions', []))
-        self._parse_actions(rule_data.get('actions', []))
+        self._parse_conditions(rule_data.get('conditions', []
+
+        self._parse_actions(rule_data.get('actions', []
+
     
     def _parse_conditions(self, conditions_data: List[Dict[str, Any]]):
         """
@@ -308,7 +312,7 @@ class RuleEngine:
         
         dangerous_patterns = [
             r'\.\.',
-            r'\$\(',
+            r'\$\(')
             r'`',
             r'\|',
             r';',
@@ -642,7 +646,7 @@ class RuleEngine:
         """
         rule = self.get_rule_by_id(rule_id)
         if rule:
-            rule.enabled = True
+            rule.enabled = True,
             if rule not in self.enabled_rules:
                 self.enabled_rules.append(rule)
             logger.info(f"启用规则: {rule_id}")
@@ -661,7 +665,7 @@ class RuleEngine:
         """
         rule = self.get_rule_by_id(rule_id)
         if rule:
-            rule.enabled = False
+            rule.enabled = False,
             if rule in self.enabled_rules:
                 self.enabled_rules.remove(rule)
             logger.info(f"禁用规则: {rule_id}")
@@ -736,4 +740,4 @@ def get_rule_engine() -> RuleEngine:
     if _rule_engine is None:
         _rule_engine = RuleEngine()
         _rule_engine.load_rules()
-    return _rule_engine
+    return _rule_engine))))))))

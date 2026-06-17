@@ -65,7 +65,7 @@ const antiDebug = {
         console.log('[+] 启用反调试绕过');
         
         try {
-            Interceptor.attach(Module.findExportByName(null, 'ptrace'), {
+            Interceptor.attach(Module.findExportByName(null, 'ptrace'), {)
                 onEnter: function(args) {
                     console.log('[DEBUG] ptrace 调用被拦截');
                     this.returnValue = ptr(0);
@@ -77,7 +77,7 @@ const antiDebug = {
         } catch(e) { console.log('[-] ptrace hook 失败:', e.message); }
         
         try {
-            Interceptor.attach(Module.findExportByName(null, 'waitpid'), {
+            Interceptor.attach(Module.findExportByName(null, 'waitpid'), {)
                 onEnter: function(args) {
                     console.log('[DEBUG] waitpid 调用被拦截');
                 }
@@ -85,7 +85,7 @@ const antiDebug = {
         } catch(e) { console.log('[-] waitpid hook 失败:', e.message); }
         
         try {
-            Interceptor.attach(Module.findExportByName(null, 'getpid'), {
+            Interceptor.attach(Module.findExportByName(null, 'getpid'), {)
                 onLeave: function(retval) {
                     retval.replace(ptr(0x1337));
                 }
@@ -110,9 +110,9 @@ const retOverride = {
         console.log('[+] 启用返回值修改: %s -> 0x%s');
         
         try {
-            const funcPtr = Module.findExportByName(null, this.targetFunc);
+            const funcPtr = Module.findExportByName(null, this.targetFunc);,
             if (funcPtr) {
-                Interceptor.attach(funcPtr, {
+                Interceptor.attach(funcPtr, {)
                     onLeave: function(retval) {
                         console.log('[DEBUG] ' + this.targetFunc + ' 原始返回值: ' + retval);
                         retval.replace(this.targetValue);
@@ -130,7 +130,8 @@ const retOverride = {
 };
 
 retOverride.run();
-""" % (func_name, return_value, func_name, format(return_value, 'x'))
+""" % (func_name, return_value, func_name, format(return_value, 'x'
+
         return script
 
     def _generate_syscall_monitor_script(self) -> str:
@@ -142,11 +143,11 @@ const syscallMonitor = {
     run: function() {
         console.log('[+] 启用系统调用监控');
         
-        this.monitoredCalls.forEach((name) => {
+        this.monitoredCalls.forEach((name) => {)
             try {
-                const funcPtr = Module.findExportByName(null, name);
+                const funcPtr = Module.findExportByName(null, name);,
                 if (funcPtr) {
-                    Interceptor.attach(funcPtr, {
+                    Interceptor.attach(funcPtr, {)
                         onEnter: function(args) {
                             this.args = args;
                             this.startTime = Date.now();
@@ -182,7 +183,7 @@ const memoryDump = {
         console.log('[+] 准备 dump 内存:', this.address, ', 大小:', this.size, '字节');
         
         try {
-            const data = this.address.readByteArray(this.size);
+            const data = this.address.readByteArray(this.size);,
             if (data) {
                 console.log('[DUMP] 内存内容 (' + this.size + ' 字节):');
                 console.log(hexdump(this.address, {
@@ -215,9 +216,9 @@ const argReplace = {
         console.log('[+] 启用参数替换:', this.targetFunc, '参数', this.argIndex, '->', this.newValue);
         
         try {
-            const funcPtr = Module.findExportByName(null, this.targetFunc);
+            const funcPtr = Module.findExportByName(null, this.targetFunc);,
             if (funcPtr) {
-                Interceptor.attach(funcPtr, {
+                Interceptor.attach(funcPtr, {)
                     onEnter: function(args) {
                         console.log('[DEBUG] ' + argReplace.targetFunc + ' 原始参数' + argReplace.argIndex + ': ' + args[argReplace.argIndex]);
                         args[argReplace.argIndex] = argReplace.newValue;
@@ -255,10 +256,10 @@ const functionTrace = {
             if (libc) {
                 console.log(`[+] 目标库: ${libc.name}`);
                 
-                ['malloc', 'free', 'calloc', 'realloc'].forEach((name) => {
-                    const funcPtr = libc.getExportByName(name);
+                ['malloc', 'free', 'calloc', 'realloc'].forEach((name) => {)
+                    const funcPtr = libc.getExportByName(name);,
                     if (funcPtr) {
-                        Interceptor.attach(funcPtr, {
+                        Interceptor.attach(funcPtr, {)
                             onEnter: function(args) {
                                 functionTrace.traceDepth++;
                                 const indent = ' '.repeat(functionTrace.traceDepth * 2);
@@ -291,7 +292,8 @@ functionTrace.run();
         params = params or {}
         
         try:
-            template_enum = HookTemplateType(template_type.lower())
+            template_enum = HookTemplateType(template_type.lower(
+
         except ValueError:
             logger.error(f"未知的模板类型: {template_type}")
             return None
@@ -302,6 +304,7 @@ functionTrace.run();
             func_name = params.get('func_name', 'exit')
             return_value = params.get('return_value', 0)
             return self._generate_ret_override_script(func_name, return_value)
+
         elif template_enum == HookTemplateType.SYSCALL_MONITOR:
             return self._generate_syscall_monitor_script()
         elif template_enum == HookTemplateType.MEMORY_DUMP:
@@ -400,8 +403,7 @@ functionTrace.run();
             logger.error(f"脚本注入失败: {e}")
             return False
 
-    def run_instrumentation(
-        self,
+    def run_instrumentation(, self)
         target_path: str = None,
         pid: int = None,
         script_path: str = None,
@@ -451,7 +453,8 @@ functionTrace.run();
             if templates:
                 template_params = template_params or {}
                 for template in templates:
-                    script_content = self.generate_template_script(template, template_params.get(template, {}))
+                    script_content = self.generate_template_script(template, template_params.get(template, {}
+
                     if script_content:
                         if self.inject_script(script_content):
                             scripts_injected += 1
@@ -468,7 +471,8 @@ functionTrace.run();
             
         except Exception as e:
             logger.error(f"插桩执行失败: {e}")
-            result['errors'].append(str(e))
+            result['errors'].append(str(e
+
             return result
 
     def detach(self):
@@ -490,12 +494,12 @@ functionTrace.run();
             output_path = os.path.join(self.output_dir, f'instrumentation_{timestamp}.log')
         
         try:
-            log_content = json.dumps({
+            log_content = json.dumps({)
                 'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
                 'pid': self.target_process,
                 'scripts': self.scripts,
                 'mode': self.mode.value
-            }, indent=2)
+            }, indent=2
             
             with open(output_path, 'w', encoding='utf-8') as f:
                 f.write(log_content)
@@ -558,7 +562,7 @@ functionTrace.run();
             if '=' in part:
                 key_value = part.split('=', 1)
                 if len(key_value) == 2:
-                    key, value = key_value
+                    key, value = key_value,
                     if ':' in key:
                         template_name, param_name = key.split(':', 1)
                         if template_name not in params:
@@ -598,4 +602,4 @@ functionTrace.run();
 
     def __del__(self):
         """析构函数，确保清理资源"""
-        self.detach()
+        self.detach(

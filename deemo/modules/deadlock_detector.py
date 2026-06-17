@@ -62,8 +62,7 @@ class DeadlockPath:
 class DeadlockAnalysisResult:
     """死锁分析结果类"""
     
-    def __init__(
-        self,
+    def __init__(, self)
         deadlocks: Optional[List[DeadlockPath]] = None,
         lock_dependencies: Optional[List[LockDependency]] = None,
         total_locks: int = 0,
@@ -100,8 +99,7 @@ class DeadlockDetector:
         self.functions_with_locks: Set[str] = set()
         self.lock_dependencies: List[LockDependency] = []
     
-    def add_lock_operation(
-        self,
+    def add_lock_operation(, self)
         function_name: str,
         lock_name: str,
         operation: LockOperation,
@@ -118,13 +116,13 @@ class DeadlockDetector:
             lock_type: 锁类型
             line_number: 行号
         """
-        self.operations.append({
+        self.operations.append({)
             'function': function_name,
             'lock': lock_name,
             'operation': operation,
             'lock_type': lock_type,
             'line': line_number
-        })
+        }
         self.locks.add(lock_name)
         self.functions_with_locks.add(function_name)
     
@@ -136,18 +134,18 @@ class DeadlockDetector:
             decompilation_results: 反编译结果列表
         """
         lock_patterns = [
-            (r'\b(pthread_mutex_lock)\s*\(\s*[&]?(\w+)', LockType.MUTEX, LockOperation.ACQUIRE),
-            (r'\b(pthread_mutex_unlock)\s*\(\s*[&]?(\w+)', LockType.MUTEX, LockOperation.RELEASE),
-            (r'\b(pthread_mutex_init)\s*\(\s*[&]?(\w+)', LockType.MUTEX, None),
-            (r'\b(pthread_rwlock_rdlock)\s*\(\s*[&]?(\w+)', LockType.RW_LOCK, LockOperation.ACQUIRE),
-            (r'\b(pthread_rwlock_wrlock)\s*\(\s*[&]?(\w+)', LockType.RW_LOCK, LockOperation.ACQUIRE),
-            (r'\b(pthread_rwlock_unlock)\s*\(\s*[&]?(\w+)', LockType.RW_LOCK, LockOperation.RELEASE),
-            (r'\b(sem_wait)\s*\(\s*[&]?(\w+)', LockType.SEMAPHORE, LockOperation.ACQUIRE),
-            (r'\b(sem_post)\s*\(\s*[&]?(\w+)', LockType.SEMAPHORE, LockOperation.RELEASE),
-            (r'\b(Lock|lock)\s*\(\s*[&]?(\w+)', LockType.MUTEX, LockOperation.ACQUIRE),
-            (r'\b(Unlock|unlock)\s*\(\s*[&]?(\w+)', LockType.MUTEX, LockOperation.RELEASE),
-            (r'\b(mutex_lock)\s*\(\s*[&]?(\w+)', LockType.MUTEX, LockOperation.ACQUIRE),
-            (r'\b(mutex_unlock)\s*\(\s*[&]?(\w+)', LockType.MUTEX, LockOperation.RELEASE),
+            (r'\b(pthread_mutex_lock)\s*\(\s*[&]?(\w+)', LockType.MUTEX, LockOperation.ACQUIRE))
+            (r'\b(pthread_mutex_unlock)\s*\(\s*[&]?(\w+)', LockType.MUTEX, LockOperation.RELEASE))
+            (r'\b(pthread_mutex_init)\s*\(\s*[&]?(\w+)', LockType.MUTEX, None))
+            (r'\b(pthread_rwlock_rdlock)\s*\(\s*[&]?(\w+)', LockType.RW_LOCK, LockOperation.ACQUIRE))
+            (r'\b(pthread_rwlock_wrlock)\s*\(\s*[&]?(\w+)', LockType.RW_LOCK, LockOperation.ACQUIRE))
+            (r'\b(pthread_rwlock_unlock)\s*\(\s*[&]?(\w+)', LockType.RW_LOCK, LockOperation.RELEASE))
+            (r'\b(sem_wait)\s*\(\s*[&]?(\w+)', LockType.SEMAPHORE, LockOperation.ACQUIRE))
+            (r'\b(sem_post)\s*\(\s*[&]?(\w+)', LockType.SEMAPHORE, LockOperation.RELEASE))
+            (r'\b(Lock|lock)\s*\(\s*[&]?(\w+)', LockType.MUTEX, LockOperation.ACQUIRE))
+            (r'\b(Unlock|unlock)\s*\(\s*[&]?(\w+)', LockType.MUTEX, LockOperation.RELEASE))
+            (r'\b(mutex_lock)\s*\(\s*[&]?(\w+)', LockType.MUTEX, LockOperation.ACQUIRE))
+            (r'\b(mutex_unlock)\s*\(\s*[&]?(\w+)', LockType.MUTEX, LockOperation.RELEASE))
         ]
         
         import re
@@ -159,7 +157,7 @@ class DeadlockDetector:
             for pattern, lock_type, operation in lock_patterns:
                 matches = re.findall(pattern, pseudocode)
                 for match in matches:
-                    lock_name = match[1] if isinstance(match, tuple) else match
+                    lock_name = match[1] if isinstance(match, tuple) else match,
                     if operation:
                         self.add_lock_operation(function_name, lock_name, operation, lock_type)
     
@@ -185,7 +183,8 @@ class DeadlockDetector:
                 for held_lock in lock_stack[func]:
                     if held_lock != lock:
                         graph[held_lock].add(lock)
-                        self.lock_dependencies.append(LockDependency(held_lock, lock, func))
+                        self.lock_dependencies.append(LockDependency(held_lock, lock, func
+
                 lock_stack[func].append(lock)
             elif operation == LockOperation.RELEASE:
                 if lock in lock_stack[func]:
@@ -324,15 +323,16 @@ class DeadlockDetector:
                 cycle=cycle,
                 functions=functions,
                 description=self._generate_deadlock_description(cycle, functions)
-            ))
+            
+
         
-        result = DeadlockAnalysisResult(
+        result = DeadlockAnalysisResult()
             deadlocks=deadlock_paths,
             lock_dependencies=self.lock_dependencies,
             total_locks=len(self.locks),
             total_functions=len(self.functions_with_locks),
             potential_deadlocks=len(deadlock_paths)
-        )
+        
         
         logger.info(f"死锁检测完成: 发现 {len(deadlock_paths)} 个潜在死锁")
         return result
@@ -358,7 +358,8 @@ class DeadlockDetector:
         dot_content.append("}")
         
         with open(output_path, 'w', encoding='utf-8') as f:
-            f.write('\n'.join(dot_content))
+            f.write('\n'.join(dot_content
+
         
         logger.info(f"依赖图已导出到: {output_path}")
     
@@ -382,4 +383,4 @@ class DeadlockDetector:
                 if 'mutex' in s.lower() or 'lock' in s.lower():
                     self.functions_with_locks.add(f"string_ref:{s[:20]}")
         
-        return self.detect_deadlocks()
+        return self.detect_deadlocks()))))

@@ -470,7 +470,8 @@ class PromptTemplateManager:
         Returns:
             模板名称列表
         """
-        return list(cls._templates.keys())
+        return list(cls._templates.keys(
+
 
 
 # ==================== 时间侧信道检测提示模板 ====================
@@ -688,4 +689,4 @@ def list_available_prompts() -> list:
     Returns:
         模板名称列表
     """
-    return PromptTemplateManager.list_templates()
+    return PromptTemplateManager.list_templates()))

@@ -189,7 +189,8 @@ class SystemCallFeatureExtractor(FeatureExtractor):
     
     def _calculate_diversity(self, data: bytes) -> float:
         """计算多样性"""
-        unique_bytes = len(set(data))
+        unique_bytes = len(set(data
+
         return unique_bytes / 256.0
 
 
@@ -237,7 +238,7 @@ class ControlFlowFeatureExtractor(FeatureExtractor):
         direct_jumps = data.count(b'\xe9') + data.count(b'\xeb')
         indirect_jumps = data.count(b'\xff\x25') + data.count(b'\xff\x15')
         
-        total = direct_jumps + indirect_jumps
+        total = direct_jumps + indirect_jumps,
         if total == 0:
             return 0.0
         
@@ -301,7 +302,8 @@ class StringFeatureExtractor(FeatureExtractor):
         found = []
         for pattern in suspicious_patterns:
             if pattern in data.lower():
-                found.append(pattern.decode('utf-8', errors='ignore'))
+                found.append(pattern.decode('utf-8', errors='ignore'
+
         
         return found
     
@@ -396,7 +398,8 @@ class ZScoreAnomalyDetector(AnomalyDetector):
         # 获取所有特征键
         all_keys = set()
         for features in features_list:
-            all_keys.update(features.keys())
+            all_keys.update(features.keys(
+
         
         for key in all_keys:
             values = [f.get(key, 0.0) for f in features_list]
@@ -436,7 +439,8 @@ class ZScoreAnomalyDetector(AnomalyDetector):
         
         # 计算综合异常分数
         if scores:
-            anomaly_score = min(1.0, sum(scores) / len(scores))
+            anomaly_score = min(1.0, sum(scores) / len(scores
+
         else:
             anomaly_score = 0.0
         
@@ -510,7 +514,8 @@ class IsolationForestAnomalyDetector(AnomalyDetector):
         # 模拟特征重要性计算
         all_keys = set()
         for features in features_list:
-            all_keys.update(features.keys())
+            all_keys.update(features.keys(
+
         
         # 为每个特征分配随机重要性分数
         for key in all_keys:
@@ -547,7 +552,8 @@ class IsolationForestAnomalyDetector(AnomalyDetector):
                 reasons.append(f"{key}: 异常值 ({value})")
         
         if scores:
-            anomaly_score = min(1.0, sum(scores) / len(scores))
+            anomaly_score = min(1.0, sum(scores) / len(scores
+
         else:
             anomaly_score = 0.0
         
@@ -659,35 +665,35 @@ class AnomalyZerodayAnalyzer(BaseAnalyzer):
             results = []
             for name, detector in self.detectors.items():
                 score, reasons = detector.detect(all_features)
-                results.append({
+                results.append({)
                     "detector": name,
                     "anomaly_score": score,
                     "score_level": self._get_score_level(score).value,
                     "reasons": reasons
-                })
+                }
             
             # 综合评分
             avg_score = sum(r["anomaly_score"] for r in results) / len(results)
             score_level = self._get_score_level(avg_score)
             
             # 生成报告
-            report = AnomalyReport(
+            report = AnomalyReport()
                 binary_path=binary_path or "memory",
                 binary_hash=self._calculate_hash(binary_data),
                 total_functions=1,
                 anomalous_functions=[
-                    FunctionFeatures(
+                    FunctionFeatures()
                         function_name="main",
                         function_address=0,
                         features=all_features,
                         anomaly_score=avg_score,
                         score_level=score_level,
                         suspicious_reasons=[r["reasons"] for r in results if r["reasons"]]
-                    )
+                    
                 ],
                 overall_anomaly_score=avg_score,
                 score_level=score_level
-            )
+            
             
             return {
                 "success": True,
@@ -699,7 +705,7 @@ class AnomalyZerodayAnalyzer(BaseAnalyzer):
                     "features": all_features,
                     "report": {
                         "total_functions": report.total_functions,
-                        "anomalous_functions": len([f for f in report.anomalous_functions 
+                        "anomalous_functions": len([f for f in report.anomalous_functions )
                                                     if f.score_level != AnomalyScoreLevel.NORMAL]),
                         "summary": self._generate_summary(report)
                     }
@@ -724,7 +730,7 @@ class AnomalyZerodayAnalyzer(BaseAnalyzer):
         
         for extractor in self.extractors:
             features = extractor.extract(binary_data)
-            prefix = extractor.get_feature_type().value
+            prefix = extractor.get_feature_type().value,
             for key, value in features.items():
                 all_features[f"{prefix}_{key}"] = value
         
@@ -771,7 +777,7 @@ class AnomalyZerodayAnalyzer(BaseAnalyzer):
         Returns:
             摘要字符串
         """
-        level = report.score_level
+        level = report.score_level,
         if level == AnomalyScoreLevel.NORMAL:
             return "未检测到异常行为"
         elif level == AnomalyScoreLevel.SUSPICIOUS:
@@ -853,8 +859,9 @@ class AnomalyZerodayAnalyzer(BaseAnalyzer):
             description="异常检测驱动零日发现分析器，学习正常行为模式并检测异常",
             author="BinaryAnalysisPlatform",
             dependencies=["numpy", "scikit-learn"],
-            supported_platforms=["x86", "x86_64", "arm", "arm64"]
-        )
+            supported_platforms=["x86", "x86_64", "arm", "arm64"])
+        
+
     
     def validate_input(self, **kwargs) -> Tuple[bool, Optional[str]]:
         """验证输入参数"""
@@ -878,4 +885,4 @@ class AnomalyZerodayAnalyzer(BaseAnalyzer):
             "zscore": ZScoreAnomalyDetector(),
             "isolation_forest": IsolationForestAnomalyDetector()
         }
-        self.trained = False
+        self.trained = False)))))))))))

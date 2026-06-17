@@ -124,10 +124,14 @@ class ErrorPathExplorer:
         system_calls = self._collect_system_calls()
         findings = []
         
-        findings.extend(self._test_permission_errors(system_calls))
-        findings.extend(self._test_resource_errors(system_calls))
-        findings.extend(self._test_memory_errors(system_calls))
-        findings.extend(self._test_file_errors(system_calls))
+        findings.extend(self._test_permission_errors(system_calls
+
+        findings.extend(self._test_resource_errors(system_calls
+
+        findings.extend(self._test_memory_errors(system_calls
+
+        findings.extend(self._test_file_errors(system_calls
+
         
         summary = {
             'total_findings': len(findings),
@@ -143,8 +147,9 @@ class ErrorPathExplorer:
             total_system_calls=len(system_calls),
             error_injections=len(system_calls) * 5,  # 每个系统调用尝试5种错误注入
             vulnerabilities_found=len(findings),
-            summary=summary
-        )
+            summary=summary)
+        
+
     
     def _collect_system_calls(self) -> List[SystemCallInfo]:
         """收集系统调用信息（模拟）"""
@@ -182,7 +187,8 @@ class ErrorPathExplorer:
                     "返回值未被检查",
                     "风险: 权限设置失败可能被静默忽略"
                 ]
-            ))
+            
+
         
         # 检测stat权限检查绕过
         stat_call = next((sc for sc in system_calls if sc.name == "stat"), None)
@@ -201,7 +207,8 @@ class ErrorPathExplorer:
                     "错误处理不完整",
                     "风险: 攻击者可能访问受限文件"
                 ]
-            ))
+            
+
         
         return findings
     
@@ -226,7 +233,8 @@ class ErrorPathExplorer:
                     "连接失败路径中未释放socket",
                     "风险: 资源耗尽"
                 ]
-            ))
+            
+
         
         # 检测文件描述符泄露
         open_call = next((sc for sc in system_calls if sc.name == "open"), None)
@@ -245,7 +253,8 @@ class ErrorPathExplorer:
                     "read失败时未close",
                     "风险: 文件描述符耗尽"
                 ]
-            ))
+            
+
         
         return findings
     
@@ -270,7 +279,8 @@ class ErrorPathExplorer:
                     "返回值未被检查",
                     "风险: NULL指针解引用崩溃"
                 ]
-            ))
+            
+
         
         return findings
     
@@ -295,7 +305,8 @@ class ErrorPathExplorer:
                     "错误返回值(-1)未被处理",
                     "风险: 使用无效文件描述符"
                 ]
-            ))
+            
+
         
         return findings
     
@@ -303,7 +314,7 @@ class ErrorPathExplorer:
         """格式化分析结果"""
         findings_data = []
         for finding in result.findings:
-            findings_data.append({
+            findings_data.append({)
                 "vulnerability_type": finding.vulnerability_type.value,
                 "severity": finding.severity.value,
                 "confidence": finding.confidence,
@@ -314,7 +325,7 @@ class ErrorPathExplorer:
                 "affected_function": finding.affected_function,
                 "suggested_fix": finding.suggested_fix,
                 "evidence": finding.evidence
-            })
+            }
         
         return {
             "success": True,
@@ -377,4 +388,4 @@ def explore_error_paths(binary_path: str, error_types: List[str] = None) -> Dict
         分析结果字典
     """
     explorer = ErrorPathExplorer()
-    return explorer.explore_error_paths(binary_path, error_types)
+    return explorer.explore_error_paths(binary_path, error_types)))))))))))))))))))))

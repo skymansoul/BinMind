@@ -105,7 +105,7 @@ class ObjcMessageSendParser(MessageSendParser):
             b'\xff\x15': 'objc_msgSend_indirect',  # call qword ptr [rip+offset]
         }
         self.selector_patterns = [
-            b'@selector(', b'sel_registerName', b'NSStringFromSelector'
+            b'@selector(', b'sel_registerName', b'NSStringFromSelector')
         ]
     
     def parse(self, binary_data: bytes) -> Tuple[List[ClassInfo], List[MessageSendSite]]:
@@ -140,7 +140,8 @@ class ObjcMessageSendParser(MessageSendParser):
                         name=class_name,
                         superclass=None,
                         methods=self._extract_methods_for_class(data, class_name)
-                    ))
+                    
+
                 offset = data.find(pattern, offset + 1)
         
         return classes
@@ -179,7 +180,8 @@ class ObjcMessageSendParser(MessageSendParser):
                     selector=selector,
                     call_type=call_type,
                     confidence=0.7
-                ))
+                
+
                 
                 offset = data.find(pattern, offset + 1)
         
@@ -240,7 +242,8 @@ class SwiftMessageSendParser(MessageSendParser):
                             name=class_name,
                             superclass=None,
                             methods=[]
-                        ))
+                        
+
                 offset = data.find(pattern, offset + 1)
         
         return classes
@@ -260,7 +263,8 @@ class SwiftMessageSendParser(MessageSendParser):
                     selector=self._infer_swift_method(data, offset),
                     call_type=call_type,
                     confidence=0.6
-                ))
+                
+
                 
                 offset = data.find(pattern, offset + 1)
         
@@ -309,8 +313,9 @@ class MessageSendResolver:
                     call_type=site.call_type,
                     resolved_target=f"{class_info.name}::{site.selector}",
                     resolved_address=self._compute_vtable_address(class_info, site.selector),
-                    confidence=0.9
-                )
+                    confidence=0.9)
+                
+
         
         # 尝试通过类型传播解析
         if site.selector in self.type_propagation_cache:
@@ -320,8 +325,9 @@ class MessageSendResolver:
                 selector=site.selector,
                 call_type=site.call_type,
                 resolved_target=f"{self.type_propagation_cache[site.selector]}::{site.selector}",
-                confidence=0.75
-            )
+                confidence=0.75)
+            
+
         
         return site
     
@@ -330,7 +336,7 @@ class MessageSendResolver:
         # 简单模拟：基于类名和选择器生成地址
         base_addr = 0x10000000
         class_offset = hash(class_info.name) % 0x1000
-        method_offset = class_info.methods.index(selector) * 8 if selector in class_info.methods else 0
+        method_offset = class_info.methods.index(selector) * 8 if selector in class_info.methods else 0,
         return base_addr + class_offset + method_offset
 
 
@@ -469,7 +475,7 @@ class ObjcMsgSendResolverAnalyzer(BaseAnalyzer):
         if total == 0:
             return f"{lang_name} 分析完成，未发现消息发送站点"
         else:
-            rate = (resolved / total) * 100
+            rate = (resolved / total) * 100,
             return f"{lang_name} 分析完成，共 {total} 个消息发送站点，成功解析 {resolved} 个 ({rate:.1f}%)"
     
     @classmethod
@@ -482,8 +488,9 @@ class ObjcMsgSendResolverAnalyzer(BaseAnalyzer):
             description="Swift/ObjC 消息发送静态解糖分析器，解析 objc_msgSend 和 Swift 虚调用",
             author="BinaryAnalysisPlatform",
             dependencies=[],
-            supported_platforms=["x86_64", "arm64"]
-        )
+            supported_platforms=["x86_64", "arm64"])
+        
+
     
     def validate_input(self, **kwargs) -> Tuple[bool, Optional[str]]:
         """验证输入参数"""
@@ -504,4 +511,4 @@ class ObjcMsgSendResolverAnalyzer(BaseAnalyzer):
     
     def cleanup(self) -> None:
         """清理资源"""
-        pass
+        pass))))))))

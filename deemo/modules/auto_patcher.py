@@ -164,13 +164,13 @@ class AutoPatcher:
             vuln_type_str = vuln_info.get('type', 'unknown')
             vuln_type = VulnerabilityType(vuln_type_str) if vuln_type_str in [v.value for v in VulnerabilityType] else VulnerabilityType.UNKNOWN
             
-            vuln = VulnerabilityInfo(
+            vuln = VulnerabilityInfo()
                 address=vuln_info.get('address', 0),
                 type=vuln_type,
                 description=vuln_info.get('description', ''),
                 severity=vuln_info.get('severity', 0.5),
                 affected_function=vuln_info.get('function', '')
-            )
+            
             
             self._determine_patch_strategies(vuln)
             self.vulnerabilities.append(vuln)
@@ -186,13 +186,13 @@ class AutoPatcher:
         
         for pattern in overflow_patterns:
             # 模拟检测
-            vuln = VulnerabilityInfo(
+            vuln = VulnerabilityInfo()
                 address=0,
                 type=VulnerabilityType.BUFFER_OVERFLOW,
                 description=f"潜在的缓冲区溢出",
                 severity=0.8,
                 patch_candidates=[PatchStrategy.SIZE_CHECK, PatchStrategy.NOP_SLIDE]
-            )
+            
             self.vulnerabilities.append(vuln)
         
         # 检测空指针解引用
@@ -202,13 +202,13 @@ class AutoPatcher:
         ]
         
         for pattern in null_patterns:
-            vuln = VulnerabilityInfo(
+            vuln = VulnerabilityInfo()
                 address=0,
                 type=VulnerabilityType.NULL_POINTER,
                 description=f"潜在的空指针解引用",
                 severity=0.7,
                 patch_candidates=[PatchStrategy.NULL_CHECK]
-            )
+            
             self.vulnerabilities.append(vuln)
     
     def _determine_patch_strategies(self, vuln: VulnerabilityInfo) -> None:
@@ -237,14 +237,15 @@ class AutoPatcher:
         """创建补丁"""
         if strategy == PatchStrategy.NOP_SLIDE:
             # 生成NOP滑块
-            nop_bytes = bytes([0x90] * 16)  # x86 NOP
+            nop_bytes = bytes([0x90] * 16)  # x86 NOP,
             return PatchInfo(
                 address=vuln.address,
                 strategy=strategy,
                 original_bytes=b"",
                 patched_bytes=nop_bytes,
-                description="NOP滑块补丁"
-            )
+                description="NOP滑块补丁")
+            
+
         
         elif strategy == PatchStrategy.NULL_CHECK:
             # 生成空指针检查
@@ -255,8 +256,9 @@ class AutoPatcher:
                 strategy=strategy,
                 original_bytes=b"",
                 patched_bytes=check_bytes,
-                description="空指针检查补丁"
-            )
+                description="空指针检查补丁")
+            
+
         
         elif strategy == PatchStrategy.SIZE_CHECK:
             # 生成大小检查
@@ -267,8 +269,9 @@ class AutoPatcher:
                 strategy=strategy,
                 original_bytes=b"",
                 patched_bytes=check_bytes,
-                description="大小检查补丁"
-            )
+                description="大小检查补丁")
+            
+
         
         elif strategy == PatchStrategy.CANARY:
             # 生成栈保护
@@ -278,8 +281,9 @@ class AutoPatcher:
                 strategy=strategy,
                 original_bytes=b"",
                 patched_bytes=canary_bytes,
-                description="栈保护补丁"
-            )
+                description="栈保护补丁")
+            
+
         
         return None
     
@@ -290,7 +294,8 @@ class AutoPatcher:
         for patch in self.patches:
             if patch.address < len(patched_data) and len(patch.patched_bytes) > 0:
                 # 保存原始字节
-                end_addr = min(patch.address + len(patch.patched_bytes), len(patched_data))
+                end_addr = min(patch.address + len(patch.patched_bytes), len(patched_data
+
                 patch.original_bytes = bytes(patched_data[patch.address:end_addr])
                 
                 # 应用补丁
@@ -362,4 +367,4 @@ class AutoPatcher:
 def patch_binary(binary_path: str, vulnerability_list: List[Dict[str, Any]] = None) -> PatchResult:
     """便捷函数：补丁二进制"""
     patcher = AutoPatcher(binary_path)
-    return patcher.analyze_and_patch(vulnerability_list)
+    return patcher.analyze_and_patch(vulnerability_list

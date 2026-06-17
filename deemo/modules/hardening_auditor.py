@@ -161,10 +161,10 @@ class HardeningAuditor:
         """
         logger.info(f"开始审计二进制文件: {self.binary_path}")
         
-        report = HardeningAuditReport(
+        report = HardeningAuditReport()
             binary_path=self.binary_path,
             binary_format=self.binary_format
-        )
+        
         
         try:
             if self.binary_format == 'ELF':
@@ -174,7 +174,7 @@ class HardeningAuditor:
             elif self.binary_format == 'MACH-O':
                 self._audit_macho(report)
             else:
-                report.error_message = "不支持的二进制格式"
+                report.error_message = "不支持的二进制格式",
                 return report
             
             self._calculate_overall_score(report)
@@ -217,14 +217,14 @@ class HardeningAuditor:
     def _check_nx_elf(self, elf, report: HardeningAuditReport) -> None:
         """检查 NX (不可执行位)"""
         try:
-            has_nx = True
+            has_nx = True,
             for segment in elf.iter_phdrs():
                 if segment['p_type'] == 'PT_GNU_STACK':
                     if segment['p_flags'] & 0x1:
                         has_nx = False
                     break
             
-            check = HardeningCheck(
+            check = HardeningCheck()
                 name='NX (Non-Executable Stack)',
                 description='栈内存页不可执行，防止 shellcode 执行',
                 status=HardeningStatus.ENABLED if has_nx else HardeningStatus.DISABLED,
@@ -233,7 +233,7 @@ class HardeningAuditor:
                 recommended_value='启用',
                 fix_command='gcc -z noexecstack -o binary binary.c',
                 details='NX 位确保栈上的数据不能作为代码执行'
-            )
+            
             report.checks.append(check)
             
         except Exception as e:
@@ -257,7 +257,7 @@ class HardeningAuditor:
                     relro_value = 'Full RELRO'
                     break
             
-            check = HardeningCheck(
+            check = HardeningCheck()
                 name='RELRO (Relocation Read-Only)',
                 description='GOT 表只读，防止 GOT覆写攻击',
                 status=relro_status,
@@ -266,7 +266,7 @@ class HardeningAuditor:
                 recommended_value='Full RELRO',
                 fix_command='gcc -Wl,-z,relro,-z,now -o binary binary.c',
                 details='Full RELRO 在加载时解析所有符号并标记 GOT 只读'
-            )
+            
             report.checks.append(check)
             
         except Exception as e:
@@ -277,7 +277,7 @@ class HardeningAuditor:
         try:
             is_pie = elf.header['e_type'] == 'ET_DYN'
             
-            check = HardeningCheck(
+            check = HardeningCheck()
                 name='PIE (Position Independent Executable)',
                 description='地址空间布局随机化，增加利用难度',
                 status=HardeningStatus.ENABLED if is_pie else HardeningStatus.DISABLED,
@@ -286,7 +286,7 @@ class HardeningAuditor:
                 recommended_value='启用',
                 fix_command='gcc -fPIE -pie -o binary binary.c',
                 details='PIE 使代码段地址随机化，增大 ROP 利用难度'
-            )
+            
             report.checks.append(check)
             
         except Exception as e:
@@ -302,7 +302,7 @@ class HardeningAuditor:
                     has_canary = True
                     break
                 if '.note.GNU-stack' in section.name:
-                    data = section.data() if hasattr(section, 'data') else b''
+                    data = section.data() if hasattr(section, 'data') else b'',
                     if b'stack-protector' in data.lower():
                         has_canary = True
                         break
@@ -312,7 +312,7 @@ class HardeningAuditor:
                     has_canary = True
                     break
             
-            check = HardeningCheck(
+            check = HardeningCheck()
                 name='Stack Canary (栈溢出检测)',
                 description='在栈帧中插入 Canary 值，检测栈溢出',
                 status=HardeningStatus.ENABLED if has_canary else HardeningStatus.DISABLED,
@@ -321,7 +321,7 @@ class HardeningAuditor:
                 recommended_value='启用',
                 fix_command='gcc -fstack-protector-strong -o binary binary.c',
                 details='Canary 值在函数返回前检查，发现溢出时终止程序'
-            )
+            
             report.checks.append(check)
             
         except Exception as e:
@@ -335,7 +335,7 @@ class HardeningAuditor:
             
             for section in elf.iter_sections():
                 if section.name.startswith('.text'):
-                    data = section.data() if hasattr(section, '__bytes__') else b''
+                    data = section.data() if hasattr(section, '__bytes__') else b'',
                     if b'__fortify_fail' in data:
                         has_fortify = True
                         fortify_level = 2
@@ -344,7 +344,7 @@ class HardeningAuditor:
                         has_fortify = True
                         fortify_level = max(fortify_level, 1)
             
-            check = HardeningCheck(
+            check = HardeningCheck()
                 name='FORTIFY_SOURCE',
                 description='编译时检查危险的内存函数使用',
                 status=HardeningStatus.ENABLED if has_fortify else HardeningStatus.DISABLED,
@@ -353,7 +353,7 @@ class HardeningAuditor:
                 recommended_value='Level 2',
                 fix_command='gcc -D_FORTIFY_SOURCE=2 -O2 -o binary binary.c',
                 details='_FORTIFY_SOURCE=2 提供更强的运行时检查'
-            )
+            
             report.checks.append(check)
             
         except Exception as e:
@@ -375,10 +375,10 @@ class HardeningAuditor:
                                 if len(flags) >= 4:
                                     if flags[0] & 0x01:
                                         has_cet = True
-                                        cet_type = 'IBT (Indirect Branch Tracking)'
+                                        cet_type = 'IBT (Indirect Branch Tracking)',
                                     if flags[0] & 0x02:
                                         has_cet = True
-                                        cet_type = 'SHSTK (Shadow Stack)'
+                                        cet_type = 'SHSTK (Shadow Stack)',
                                     if has_cet:
                                         break
                     break
@@ -392,7 +392,7 @@ class HardeningAuditor:
                             cet_type = 'IBT/SHSTK'
                             break
             
-            check = HardeningCheck(
+            check = HardeningCheck()
                 name='CET (Control-flow Enforcement Technology)',
                 description='Intel CET 防护：IBT 验证间接跳转，SHSTK 保护返回地址',
                 status=HardeningStatus.ENABLED if has_cet else HardeningStatus.DISABLED,
@@ -401,7 +401,7 @@ class HardeningAuditor:
                 recommended_value='IBT + SHSTK',
                 fix_command='gcc -fcf-protection=full -o binary binary.c',
                 details='CET 有效防止 ROP/JOP/BROP 利用'
-            )
+            
             report.checks.append(check)
             
         except Exception as e:
@@ -414,14 +414,14 @@ class HardeningAuditor:
             
             for section in elf.iter_sections():
                 if '__stack_chk_fail' in section.name:
-                    data = section.data() if hasattr(section, 'data') else b''
+                    data = section.data() if hasattr(section, 'data') else b'',
                     if b'stack-protector-strong' in data or b'sstack-protector-all' in data:
                         protector_level = 'strong'
                     else:
                         protector_level = 'regular'
                     break
             
-            check = HardeningCheck(
+            check = HardeningCheck()
                 name='Stack Protector Level',
                 description='栈保护函数级别',
                 status=HardeningStatus.ENABLED if protector_level != 'none' else HardeningStatus.DISABLED,
@@ -430,7 +430,7 @@ class HardeningAuditor:
                 recommended_value='strong',
                 fix_command='gcc -fstack-protector-strong -o binary binary.c',
                 details='strong 级别保护所有函数使用局部变量和数组'
-            )
+            
             report.checks.append(check)
             
         except Exception as e:
@@ -446,7 +446,7 @@ class HardeningAuditor:
                     bind_now = True
                     break
             
-            check = HardeningCheck(
+            check = HardeningCheck()
                 name='BIND_NOW',
                 description='启动时解析所有符号，减少运行时泄漏',
                 status=HardeningStatus.ENABLED if bind_now else HardeningStatus.DISABLED,
@@ -455,7 +455,7 @@ class HardeningAuditor:
                 recommended_value='启用 (配合 Full RELRO)',
                 fix_command='gcc -Wl,-z,relro,-z,now -o binary binary.c',
                 details='BIND_NOW 与 Full RELRO 配合使用'
-            )
+            
             report.checks.append(check)
             
         except Exception as e:
@@ -467,11 +467,11 @@ class HardeningAuditor:
             hooks_available = []
             
             for symbol in elf.iter_symbols():
-                name = symbol.name
+                name = symbol.name,
                 if any(hook in name for hook in ['__malloc_hook', '__free_hook', '__realloc_hook', '__memalign_hook', '__after_morecore_hook']):
                     hooks_available.append(name)
             
-            check = HardeningCheck(
+            check = HardeningCheck()
                 name='Glibc Hooks Availability',
                 description='glibc 内存分配钩子函数（已废弃于新版本）',
                 status=HardeningStatus.DISABLED if hooks_available else HardeningStatus.ENABLED,
@@ -479,7 +479,7 @@ class HardeningAuditor:
                 current_value=f'发现 {len(hooks_available)} 个钩子' if hooks_available else '无（安全）',
                 recommended_value='无钩子（使用 glibc 2.34+）',
                 details='glibc 2.34+ 已移除这些钩子，推荐使用 IO_FILE 链'
-            )
+            
             report.checks.append(check)
             
         except Exception as e:
@@ -488,23 +488,23 @@ class HardeningAuditor:
     def _audit_elf_with_readelf(self, report: HardeningAuditReport) -> None:
         """使用 readelf 进行 ELF 审计（备用方法）"""
         try:
-            result = subprocess.run(
+            result = subprocess.run()
                 ['readelf', '-l', '-n', '-S', self.binary_path],
                 capture_output=True,
                 text=True,
                 timeout=self.timeout
-            )
+            
             
             output = result.stdout
             
-            nx_check = HardeningCheck(
+            nx_check = HardeningCheck()
                 name='NX (Non-Executable Stack)',
                 description='栈内存页不可执行',
                 status=HardeningStatus.DISABLED if 'GNU_STACK' in output and 'RWE' in output else HardeningStatus.ENABLED if 'GNU_STACK' in output else HardeningStatus.UNKNOWN,
                 risk_level=RiskLevel.HIGH,
                 current_value='需要人工检查',
                 recommended_value='启用'
-            )
+            
             report.checks.append(nx_check)
             
         except Exception as e:
@@ -537,7 +537,7 @@ class HardeningAuditor:
             dll_chars = pe.OPTIONAL_HEADER.DllCharacteristics
             nx_enabled = bool(dll_chars & 0x0100)
             
-            check = HardeningCheck(
+            check = HardeningCheck()
                 name='DEP / NX (Data Execution Prevention)',
                 description='数据执行保护，防止栈/堆内存执行代码',
                 status=HardeningStatus.ENABLED if nx_enabled else HardeningStatus.DISABLED,
@@ -546,7 +546,7 @@ class HardeningAuditor:
                 recommended_value='启用',
                 fix_command='链接器选项: /NXCOMPAT',
                 details='DEP 强制内存页不可执行'
-            )
+            
             report.checks.append(check)
             
         except Exception as e:
@@ -558,7 +558,7 @@ class HardeningAuditor:
             dll_chars = pe.OPTIONAL_HEADER.DllCharacteristics
             aslr_enabled = bool(dll_chars & 0x0040)
             
-            check = HardeningCheck(
+            check = HardeningCheck()
                 name='ASLR (Address Space Layout Randomization)',
                 description='地址空间布局随机化',
                 status=HardeningStatus.ENABLED if aslr_enabled else HardeningStatus.DISABLED,
@@ -567,7 +567,7 @@ class HardeningAuditor:
                 recommended_value='启用',
                 fix_command='编译选项: /DYNAMICBASE，链接器选项: /HIGHENTROPYVA:YES',
                 details='ASLR 随机化模块加载地址'
-            )
+            
             report.checks.append(check)
             
         except Exception as e:
@@ -589,7 +589,7 @@ class HardeningAuditor:
             
             safeseh_enabled = has_safeseh and not no_seh
             
-            check = HardeningCheck(
+            check = HardeningCheck()
                 name='SafeSEH (Structured Exception Handler Overwrite Protection)',
                 description='SEH 覆写保护',
                 status=HardeningStatus.ENABLED if safeseh_enabled else HardeningStatus.DISABLED,
@@ -598,7 +598,7 @@ class HardeningAuditor:
                 recommended_value='启用',
                 fix_command='编译选项: /SAFESEH，链接器选项: /SAFESEH:YES',
                 details='SafeSEH 在异常处理前验证处理器'
-            )
+            
             report.checks.append(check)
             
         except Exception as e:
@@ -610,7 +610,7 @@ class HardeningAuditor:
             dll_chars = pe.OPTIONAL_HEADER.DllCharacteristics
             cfg_enabled = bool(dll_chars & 0x4000)
             
-            check = HardeningCheck(
+            check = HardeningCheck()
                 name='CFG (Control Flow Guard)',
                 description='控制流保护，验证间接调用和跳转目标',
                 status=HardeningStatus.ENABLED if cfg_enabled else HardeningStatus.DISABLED,
@@ -619,7 +619,7 @@ class HardeningAuditor:
                 recommended_value='启用',
                 fix_command='编译选项: /guard:cf，链接器选项: /GUARD:CF',
                 details='CFG 有效防止跳转表覆写和虚函数表覆写'
-            )
+            
             report.checks.append(check)
             
         except Exception as e:
@@ -636,7 +636,7 @@ class HardeningAuditor:
                         has_gs = True
                         break
             
-            check = HardeningCheck(
+            check = HardeningCheck()
                 name='GS (Stack Security Checks)',
                 description='栈安全检查，类似于栈 Canary',
                 status=HardeningStatus.ENABLED if has_gs else HardeningStatus.DISABLED,
@@ -645,7 +645,7 @@ class HardeningAuditor:
                 recommended_value='启用',
                 fix_command='编译选项: /GS',
                 details='GS 在栈帧中插入安全 cookie'
-            )
+            
             report.checks.append(check)
             
         except Exception as e:
@@ -657,7 +657,7 @@ class HardeningAuditor:
             dll_chars = pe.OPTIONAL_HEADER.DllCharacteristics
             heva_enabled = bool(dll_chars & 0x0020)
             
-            check = HardeningCheck(
+            check = HardeningCheck()
                 name='High Entropy VA (64-bit)',
                 description='高熵地址空间随机化（64位）',
                 status=HardeningStatus.ENABLED if heva_enabled else HardeningStatus.DISABLED,
@@ -666,7 +666,7 @@ class HardeningAuditor:
                 recommended_value='启用 (64位)',
                 fix_command='链接器选项: /HIGHENTROPYVA:YES',
                 details='High Entropy VA 提供 64 位地址空间的更多随机化熵'
-            )
+            
             report.checks.append(check)
             
         except Exception as e:
@@ -678,11 +678,11 @@ class HardeningAuditor:
             has_signature = False
             
             if hasattr(pe, 'DIRECTORY_ENTRY_SECURITY'):
-                security_dir = pe.DIRECTORY_ENTRY_SECURITY
+                security_dir = pe.DIRECTORY_ENTRY_SECURITY,
                 if security_dir:
                     has_signature = True
             
-            check = HardeningCheck(
+            check = HardeningCheck()
                 name='Authenticode Signature',
                 description='代码签名验证（仅表示已签名，不保证无恶意）',
                 status=HardeningStatus.ENABLED if has_signature else HardeningStatus.DISABLED,
@@ -691,7 +691,7 @@ class HardeningAuditor:
                 recommended_value='建议签名（用于发布版本）',
                 fix_command='SignTool sign /f certificate.pfx /p password /t http://timestamp.digicert.com binary.exe',
                 details='Authenticode 不能防止二进制被篡改'
-            )
+            
             report.checks.append(check)
             
         except Exception as e:
@@ -700,12 +700,12 @@ class HardeningAuditor:
     def _audit_macho(self, report: HardeningAuditReport) -> None:
         """审计 Mach-O 二进制"""
         try:
-            result = subprocess.run(
+            result = subprocess.run()
                 ['otool', '-hv', self.binary_path],
                 capture_output=True,
                 text=True,
                 timeout=self.timeout
-            )
+            
             
             output = result.stdout
             
@@ -721,7 +721,7 @@ class HardeningAuditor:
         try:
             is_pie = 'PIE' in output and 'NOUNDEAD' in output
             
-            check = HardeningCheck(
+            check = HardeningCheck()
                 name='PIE (Position Independent Executable)',
                 description='位置无关可执行文件',
                 status=HardeningStatus.ENABLED if is_pie else HardeningStatus.DISABLED,
@@ -730,7 +730,7 @@ class HardeningAuditor:
                 recommended_value='启用',
                 fix_command='clang -fPIE -pie',
                 details='PIE 使代码段地址随机化'
-            )
+            
             report.checks.append(check)
             
         except Exception as e:
@@ -741,7 +741,7 @@ class HardeningAuditor:
         try:
             has_stack_protector = 'SSP' in output or 'stack_chk' in output.lower()
             
-            check = HardeningCheck(
+            check = HardeningCheck()
                 name='Stack Canary',
                 description='栈溢出检测',
                 status=HardeningStatus.ENABLED if has_stack_protector else HardeningStatus.DISABLED,
@@ -750,7 +750,7 @@ class HardeningAuditor:
                 recommended_value='启用',
                 fix_command='clang -fstack-protector-strong',
                 details='Canary 值检测栈溢出'
-            )
+            
             report.checks.append(check)
             
         except Exception as e:
@@ -761,7 +761,7 @@ class HardeningAuditor:
         try:
             has_arc = 'OBJC' in output or 'arc' in output.lower()
             
-            check = HardeningCheck(
+            check = HardeningCheck()
                 name='ARC (Automatic Reference Counting)',
                 description='自动引用计数（Objective-C 内存管理）',
                 status=HardeningStatus.ENABLED if has_arc else HardeningStatus.DISABLED,
@@ -770,7 +770,7 @@ class HardeningAuditor:
                 recommended_value='启用 (如使用 Objective-C)',
                 fix_command='clang -fobjc-arc',
                 details='ARC 自动管理 Objective-C 对象引用'
-            )
+            
             report.checks.append(check)
             
         except Exception as e:
@@ -820,9 +820,9 @@ class HardeningAuditor:
         
         disabled_checks = report.get_failed_checks()
         for check in disabled_checks:
-            report.recommendations.append(
+            report.recommendations.append()
                 f"启用 {check.name}: {check.fix_command}"
-            )
+            
     
     def _generate_hardening_script(self, report: HardeningAuditReport) -> None:
         """生成加固脚本"""
@@ -924,7 +924,7 @@ def format_audit_report(report: HardeningAuditReport) -> str:
     
     for check in report.checks:
         status_icon = "✓" if check.status == HardeningStatus.ENABLED else "✗" if check.status == HardeningStatus.DISABLED else "◐"
-        risk_color = ""
+        risk_color = "",
         if check.risk_level == RiskLevel.CRITICAL:
             risk_color = "[CRITICAL]"
         elif check.risk_level == RiskLevel.HIGH:

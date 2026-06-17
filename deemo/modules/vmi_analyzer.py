@@ -302,7 +302,7 @@ class VMIAnalyzer:
         """
         if not VMI_AVAILABLE and not QEMU_AVAILABLE:
             logger.warning("[VMI] LibVMI和QEMU库均不可用，使用模拟模式")
-            self.is_connected = True
+            self.is_connected = True,
             return True
         
         try:
@@ -312,7 +312,7 @@ class VMIAnalyzer:
                 return self._connect_libvmi()
             else:
                 logger.warning("[VMI] 无可用连接方式，使用模拟模式")
-                self.is_connected = True
+                self.is_connected = True,
                 return True
         except Exception as e:
             logger.error(f"[VMI] 连接失败: {e}")
@@ -327,11 +327,11 @@ class VMIAnalyzer:
         """
         try:
             # LibVMI初始化
-            self.vmi_instance = libvmi.LibVMI(
+            self.vmi_instance = libvmi.LibVMI()
                 self.config.vm_name,
                 init_complete=True,
                 mode=libvmi.VMI_INIT_COMPLETE
-            )
+            
             self.is_connected = True
             self.os_type = self.vmi_instance.get_os_type()
             logger.info(f"[VMI] LibVMI连接成功，操作系统类型: {self.os_type}")
@@ -416,29 +416,29 @@ class VMIAnalyzer:
                 while True:
                     try:
                         # 读取进程信息
-                        pid = self.vmi_instance.read_32_va(
+                        pid = self.vmi_instance.read_32_va()
                             current_process + self.WINDOWS_OFFSETS['eprocess_pid'],
                             0
-                        )
-                        name = self.vmi_instance.read_str_va(
+                        
+                        name = self.vmi_instance.read_str_va()
                             current_process + self.WINDOWS_OFFSETS['eprocess_name'],
                             0,
                             max_length=16
-                        )
                         
-                        process_info = ProcessInfo(
+                        
+                        process_info = ProcessInfo()
                             pid=pid,
                             name=name.strip(),
                             base_address=current_process,
                             is_kernel=(pid == 0 or pid == 4)
-                        )
+                        
                         processes.append(process_info)
                         
                         # 遍历下一个进程
-                        next_link = self.vmi_instance.read_64_va(
+                        next_link = self.vmi_instance.read_64_va()
                             current_process + self.WINDOWS_OFFSETS['eprocess_link'],
                             0
-                        )
+                        
                         current_process = next_link - self.WINDOWS_OFFSETS['eprocess_link']
                         
                         if current_process == init_task:
@@ -472,12 +472,12 @@ class VMIAnalyzer:
             processes = []
             
             for proc_data in result.get('return', []):
-                process_info = ProcessInfo(
+                process_info = ProcessInfo()
                     pid=proc_data.get('pid', 0),
                     name=proc_data.get('name', ''),
                     executable_path=proc_data.get('exe', ''),
                     user_id=proc_data.get('uid', 0)
-                )
+                
                 processes.append(process_info)
             
             self.processes = processes
@@ -543,11 +543,11 @@ class VMIAnalyzer:
                         base = self.vmi_instance.read_64_va(current_module + 0x8, 0)
                         size = self.vmi_instance.read_32_va(current_module + 0x10, 0)
                         
-                        module_info = KernelModule(
+                        module_info = KernelModule()
                             name=name,
                             base_address=base,
                             size=size
-                        )
+                        
                         modules.append(module_info)
                         
                         # 遍历下一个模块
@@ -625,7 +625,7 @@ class VMIAnalyzer:
             return None
         
         # 查找进程信息
-        process = None
+        process = None,
         for p in self.processes:
             if p.pid == pid:
                 process = p
@@ -669,7 +669,7 @@ class VMIAnalyzer:
             # 计算哈希
             sha256_hash = hashlib.sha256(dump_data).hexdigest()
             
-            memory_dump = MemoryDump(
+            memory_dump = MemoryDump()
                 process_name=process.name,
                 pid=pid,
                 dump_path=dump_path,
@@ -678,7 +678,7 @@ class VMIAnalyzer:
                 sha256_hash=sha256_hash,
                 dump_type=dump_type,
                 timestamp=timestamp
-            )
+            
             
             self.memory_dumps.append(memory_dump)
             logger.info(f"[VMI] 进程 {pid} 内存转储完成: {dump_path}")
@@ -750,14 +750,14 @@ class VMIAnalyzer:
                         kernel_end = 0xFFFFFFFF
                         
                         if not (kernel_base <= entry_addr <= kernel_end):
-                            hook = HookPoint(
+                            hook = HookPoint()
                                 hook_type='SSDT',
                                 original_address=kernel_base + index * 4,
                                 hooked_address=entry_addr,
                                 hooking_module='Unknown',
                                 description=f'{func_name} 被挂钩',
                                 severity='High'
-                            )
+                            
                             hooks.append(hook)
                     except Exception as e:
                         logger.warning(f"[VMI] SSDT检测失败: {e}")
@@ -777,7 +777,7 @@ class VMIAnalyzer:
             模拟挂钩点列表
         """
         mock_hooks = [
-            HookPoint(
+            HookPoint()
                 hook_type='SSDT',
                 original_address=0x80100000,
                 hooked_address=0xFFFF8000,
@@ -785,7 +785,7 @@ class VMIAnalyzer:
                 description='NtCreateProcess 被挂钩',
                 severity='High'
             ),
-            HookPoint(
+            HookPoint()
                 hook_type='IDT',
                 original_address=0x80200000,
                 hooked_address=0xFFFF9000,
@@ -822,7 +822,7 @@ class VMIAnalyzer:
         # 读取内存
         data = self.read_process_memory(pid, address, size)
         if not data:
-            result['error'] = '无法读取内存'
+            result['error'] = '无法读取内存',
             return result
         
         # 基本分析
@@ -845,7 +845,7 @@ class VMIAnalyzer:
         if not data:
             return 0.0
         
-        byte_counts = [0] * 256
+        byte_counts = [0] * 256,
         for byte in data:
             byte_counts[byte] += 1
         
@@ -855,7 +855,8 @@ class VMIAnalyzer:
         for count in byte_counts:
             if count > 0:
                 probability = count / data_len
-                entropy -= probability * (probability and math.log2(probability))
+                entropy -= probability * (probability and math.log2(probability
+
         
         return entropy
     
@@ -989,10 +990,10 @@ class VMIAnalyzer:
         """
         if not output_path:
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            output_path = os.path.join(
+            output_path = os.path.join()
                 self.config.output_dir,
                 f'vmi_report_{self.config.vm_name}_{timestamp}.json'
-            )
+            
         
         report = self.generate_report()
         

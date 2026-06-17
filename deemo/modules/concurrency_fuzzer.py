@@ -160,8 +160,7 @@ class ConcurrencyFuzzer:
     SYNC_FUNCTIONS = SYNC_FUNCTIONS
     RACE_PATTERNS = RACE_PATTERNS
     
-    def __init__(
-        self,
+    def __init__(, self)
         binary_path: Optional[str] = None,
         output_dir: str = None,
         iterations: int = 100,
@@ -209,11 +208,11 @@ class ConcurrencyFuzzer:
         
         # 检查 rr
         try:
-            result = subprocess.run(
+            result = subprocess.run()
                 ['rr', '--version'],
                 capture_output=True,
                 timeout=5
-            )
+            
             if result.returncode == 0:
                 self.rr_available = True
                 logger.info("[ConcFuzz] rr 可用")
@@ -222,11 +221,11 @@ class ConcurrencyFuzzer:
         
         # 检查 Docker
         try:
-            result = subprocess.run(
+            result = subprocess.run()
                 ['docker', '--version'],
                 capture_output=True,
                 timeout=5
-            )
+            
             if result.returncode == 0:
                 self.docker_available = True
                 logger.info("[ConcFuzz] Docker 可用")
@@ -235,11 +234,11 @@ class ConcurrencyFuzzer:
         
         # 检查 Valgrind
         try:
-            result = subprocess.run(
+            result = subprocess.run()
                 ['valgrind', '--version'],
                 capture_output=True,
                 timeout=5
-            )
+            
             if result.returncode == 0:
                 self.valgrind_available = True
                 logger.info("[ConcFuzz] Valgrind 可用")
@@ -280,8 +279,9 @@ class ConcurrencyFuzzer:
             crashes=self.crashes,
             reproduction_steps=self.reproduction_steps,
             statistics=self._get_statistics(),
-            summary=summary
-        )
+            summary=summary)
+        
+
     
     def _analyze_sync_points(self) -> None:
         """
@@ -289,12 +289,12 @@ class ConcurrencyFuzzer:
         """
         try:
             # 使用 radare2 分析
-            result = subprocess.run(
+            result = subprocess.run()
                 ['r2', '-q', '-c', 'is', self.binary_path],
                 capture_output=True,
                 text=True,
                 timeout=Config.SUBPROCESS_TIMEOUT
-            )
+            
             
             if result.returncode == 0:
                 for line in result.stdout.strip().split('\n'):
@@ -347,7 +347,8 @@ class ConcurrencyFuzzer:
                     delay_ms=delay,
                     order=sync_order,
                     action='run'
-                ))
+                
+
             
             schedules.append(schedule)
         
@@ -365,7 +366,8 @@ class ConcurrencyFuzzer:
                         sync_point=sync_func,
                         order=0,
                         action='lock'
-                    ))
+                    
+
                     
                     # 线程 1 立即尝试获取同一锁
                     schedule.append(ThreadSchedule(
@@ -374,7 +376,8 @@ class ConcurrencyFuzzer:
                         sync_point=sync_func,
                         order=1,
                         action='lock'
-                    ))
+                    
+
                     
                     # 其他线程随机
                     for thread_id in range(2, self.max_threads):
@@ -383,7 +386,8 @@ class ConcurrencyFuzzer:
                             delay_ms=random.randint(10, 50),
                             order=random.randint(0, 10),
                             action='run'
-                        ))
+                        
+
                     
                     schedules.append(schedule)
         
@@ -405,11 +409,11 @@ class ConcurrencyFuzzer:
             futures = []
             
             for i, schedule in enumerate(schedules):
-                future = executor.submit(
+                future = executor.submit()
                     self._run_single_test,
                     schedule,
                     i
-                )
+                
                 futures.append(future)
             
             # 收集结果
@@ -421,8 +425,7 @@ class ConcurrencyFuzzer:
                 except Exception as e:
                     logger.debug(f"[ConcFuzz] 测试执行异常: {e}")
     
-    def _run_single_test(
-        self,
+    def _run_single_test(, self)
         schedule: List[ThreadSchedule],
         iteration: int
     ) -> Dict[str, Any]:
@@ -497,20 +500,20 @@ class ConcurrencyFuzzer:
             输出内容
         """
         # 构建调度注入脚本
-        schedule_json = json.dumps([
+        schedule_json = json.dumps([)
             {
                 'thread_id': s.thread_id,
                 'delay_ms': s.delay_ms,
                 'sync_point': s.sync_point
             }
             for s in schedule
-        ])
+        ]
         
         try:
             # 使用 Docker 运行
             container_cmd = f'python3 -c "import json; import time; schedule = json.loads(\'{schedule_json}\'); for s in schedule: time.sleep(s[\"delay_ms\"] / 1000)"'
             
-            result = subprocess.run(
+            result = subprocess.run()
                 [
                     'docker', 'run', '--rm',
                     '-v', f'{os.path.dirname(self.binary_path)}:/binary',
@@ -521,7 +524,7 @@ class ConcurrencyFuzzer:
                 capture_output=True,
                 text=True,
                 timeout=60
-            )
+            
             
             return result.stdout + result.stderr
             
@@ -541,7 +544,7 @@ class ConcurrencyFuzzer:
         """
         try:
             # 使用 DRD (Data Race Detector)
-            result = subprocess.run(
+            result = subprocess.run()
                 [
                     'valgrind',
                     '--tool=drd',
@@ -553,7 +556,7 @@ class ConcurrencyFuzzer:
                 capture_output=True,
                 text=True,
                 timeout=120
-            )
+            
             
             # 读取 DRD 输出
             drd_output = ''
@@ -581,17 +584,17 @@ class ConcurrencyFuzzer:
         """
         # 创建调度注入库（这里简化处理）
         try:
-            result = subprocess.run(
+            result = subprocess.run()
                 [self.binary_path],
                 capture_output=True,
                 text=True,
                 timeout=30,
                 env={
-                    'CONC_FUZZ_SCHEDULE': json.dumps([
+                    'CONC_FUZZ_SCHEDULE': json.dumps([)
                         {'delay': s.delay_ms} for s in schedule
-                    ])
+                    ]
                 }
-            )
+            
             
             return result.stdout + result.stderr
             
@@ -633,15 +636,15 @@ class ConcurrencyFuzzer:
             result: 测试结果
         """
         if result.get('race_detected'):
-            race = RaceCondition(
+            race = RaceCondition()
                 race_type=RaceType(result.get('race_type', 'unknown')),
                 location=result.get('race_location', 'unknown'),
                 description=f'在第 {result.get("iteration")} 次迭代中发现',
                 reproduction_probability=1.0 / self.iterations
-            )
+            
             
             # 检查是否已存在相同竞争
-            existing = False
+            existing = False,
             for r in self.races_found:
                 if r.location == race.location and r.race_type == race.race_type:
                     r.reproduction_probability += 1.0 / self.iterations
@@ -663,12 +666,12 @@ class ConcurrencyFuzzer:
         
         # 记录复现步骤
         if result.get('race_detected') or result.get('crash'):
-            self.reproduction_steps.append({
+            self.reproduction_steps.append({)
                 'iteration': result.get('iteration'),
                 'schedule': result.get('schedule'),
                 'race_type': result.get('race_type'),
                 'crash': result.get('crash')
-            })
+            }
     
     def _analyze_results(self) -> None:
         """
@@ -702,7 +705,7 @@ class ConcurrencyFuzzer:
             'crashes_found': len(self.crashes),
             'sync_points': len(self.sync_points),
             'thread_functions': len(self.thread_functions),
-            'race_types': defaultdict(int, {
+            'race_types': defaultdict(int, {)
                 race.race_type.value: sum(1 for r in self.races_found if r.race_type == race.race_type)
                 for race in self.races_found
             }),
@@ -734,10 +737,10 @@ class ConcurrencyFuzzer:
             lines.append(f'  - {race_type}: {count}')
         
         if self.races_found:
-            lines.extend([
+            lines.extend([)
                 '',
                 '高概率竞争:',
-            ])
+            ]
             
             for race in sorted(self.races_found, key=lambda x: -x.reproduction_probability)[:5]:
                 lines.append(f'  - {race.location}: {race.race_type.value} ({race.reproduction_probability:.1%})')
@@ -841,7 +844,7 @@ class ConcurrencyFuzzer:
             '',
             '    # 运行二进制',
             '    try:',
-            '        result = subprocess.run(',
+            '        result = subprocess.run(')
             '            [BINARY_PATH],',
             '            capture_output=True,',
             '            text=True,',
@@ -862,7 +865,7 @@ class ConcurrencyFuzzer:
         for step in self.reproduction_steps[:10]:
             lines.append(f'    {json.dumps(step)},')
         
-        lines.extend([
+        lines.extend([)
             ']',
             '',
             'if __name__ == "__main__":',
@@ -871,7 +874,7 @@ class ConcurrencyFuzzer:
             '        reproduce_race(schedule)',
             '        time.sleep(1)',
             '',
-        ])
+        ]
         
         return '\n'.join(lines)
     
@@ -1010,7 +1013,8 @@ class ConcurrencyFuzzer:
                         race_type=RaceType(race_type),
                         location='detected',
                         description=f'Detected via pattern: {pattern}'
-                    ))
+                    
+
         
         return races
     
@@ -1034,7 +1038,8 @@ class ConcurrencyFuzzer:
                 sync_point=sync_point,
                 delay_ms=random.randint(0, 100),
                 order=thread_id
-            ))
+            
+
         
         return schedule
     
@@ -1055,8 +1060,9 @@ class ConcurrencyFuzzer:
             thread_id=thread_id,
             sync_point=sync_point,
             delay_ms=delay_ms,
-            action='delay'
-        )
+            action='delay')
+        
+
     
     def _generate_order_schedule(self, thread_id: int, sync_point: str, order: int) -> ThreadSchedule:
         """
@@ -1074,8 +1080,9 @@ class ConcurrencyFuzzer:
             thread_id=thread_id,
             sync_point=sync_point,
             order=order,
-            action='force_order'
-        )
+            action='force_order')
+        
+
     
     def _generate_rr_script(self, binary_path: str, schedules: List[ThreadSchedule]) -> str:
         """
@@ -1145,7 +1152,8 @@ class ConcurrencyFuzzer:
             'sem_post'
         ]
         
-        return sorted(sync_points, key=lambda x: priority_order.index(x) if x in priority_order else len(priority_order))
+        return sorted(sync_points, key=lambda x: priority_order.index(x) if x in priority_order else len(priority_order
+
     
     def _find_best_schedule_index(self, schedules: List[ThreadSchedule], success_rates: List[float]) -> int:
         """
@@ -1165,12 +1173,7 @@ class ConcurrencyFuzzer:
         return success_rates.index(max_rate)
 
 
-def run_concurrency_fuzz(
-    binary_path: str,
-    iterations: int = 100,
-    output_dir: str = None,
-    analysis_file: str = None
-) -> ConcurrencyFuzzResult:
+def run_concurrency_fuzz(, binary_path: str, iterations: int = 100, output_dir: str = None, analysis_file: str = None) -> ConcurrencyFuzzResult:
     """
     运行并发模糊测试的便捷函数
     
@@ -1192,12 +1195,7 @@ def run_concurrency_fuzz(
 
 
 # 别名函数，保持向后兼容
-def fuzz_concurrency(
-    binary_path: str,
-    iterations: int = 100,
-    output_dir: str = None,
-    analysis_file: str = None
-) -> Dict[str, Any]:
+def fuzz_concurrency(, binary_path: str, iterations: int = 100, output_dir: str = None, analysis_file: str = None) -> Dict[str, Any]:
     """
     运行并发模糊测试的便捷函数（别名）
     
@@ -1227,4 +1225,4 @@ def fuzz_concurrency(
         'crashes': result.crashes,
         'statistics': result.statistics,
         'summary': result.summary
-    }
+    }))))))))

@@ -55,63 +55,63 @@ class SyscallClassifier:
     # 恶意软件特征模式
     MALICIOUS_PATTERNS = [
         # 勒索软件模式
-        SyscallPattern('ransomware_file_ops', 
+        SyscallPattern('ransomware_file_ops')
             ['CreateFile', 'WriteFile', 'EncryptFile', 'DeleteFile', 'MoveFile'],
             ThreatCategory.RANSOMWARE, 1.5),
-        SyscallPattern('ransomware_network', 
+        SyscallPattern('ransomware_network')
             ['Connect', 'Send', 'Recv', 'HttpSendRequest'],
             ThreatCategory.RANSOMWARE, 1.0),
         
         # 挖矿模式
-        SyscallPattern('miner_cpu', 
+        SyscallPattern('miner_cpu')
             ['CreateThread', 'CreateRemoteThread', 'Sleep', 'QueryPerformanceCounter'],
             ThreatCategory.MINER, 1.2),
-        SyscallPattern('miner_network', 
+        SyscallPattern('miner_network')
             ['Connect', 'Recv', 'Send', 'getaddrinfo'],
             ThreatCategory.MINER, 1.0),
         
         # 后门模式
-        SyscallPattern('backdoor_listen', 
+        SyscallPattern('backdoor_listen')
             ['socket', 'bind', 'listen', 'accept'],
             ThreatCategory.BACKDOOR, 1.5),
-        SyscallPattern('backdoor_exec', 
+        SyscallPattern('backdoor_exec')
             ['CreateProcess', 'WinExec', 'ShellExecute'],
             ThreatCategory.BACKDOOR, 1.3),
         
         # 间谍软件模式
-        SyscallPattern('spyware_keyboard', 
+        SyscallPattern('spyware_keyboard')
             ['GetAsyncKeyState', 'GetKeyboardState', 'SetWindowsHookEx'],
             ThreatCategory.SPYWARE, 1.5),
-        SyscallPattern('spyware_screenshot', 
+        SyscallPattern('spyware_screenshot')
             ['BitBlt', 'GetDC', 'CreateDC', 'PrintWindow'],
             ThreatCategory.SPYWARE, 1.2),
         
         # 下载器模式
-        SyscallPattern('downloader_http', 
+        SyscallPattern('downloader_http')
             ['HttpOpenRequest', 'HttpSendRequest', 'InternetReadFile', 'WriteFile'],
             ThreatCategory.DOWNLOADER, 1.5),
-        SyscallPattern('downloader_file', 
+        SyscallPattern('downloader_file')
             ['CreateFile', 'WriteFile', 'CreateProcess'],
             ThreatCategory.DOWNLOADER, 1.0),
         
         # 木马模式
-        SyscallPattern('trojan_inject', 
+        SyscallPattern('trojan_inject')
             ['OpenProcess', 'VirtualAllocEx', 'WriteProcessMemory', 'CreateRemoteThread'],
             ThreatCategory.TROJAN, 1.5),
-        SyscallPattern('trojan_persistence', 
+        SyscallPattern('trojan_persistence')
             ['RegSetValue', 'CreateService', 'ScheduleJob'],
             ThreatCategory.TROJAN, 1.3),
         
         # 蠕虫模式
-        SyscallPattern('worm_spread', 
+        SyscallPattern('worm_spread')
             ['NetShareEnum', 'NetUseAdd', 'CopyFile', 'CreateProcess'],
             ThreatCategory.WORM, 1.5),
         
         # 良性模式
-        SyscallPattern('benign_gui', 
+        SyscallPattern('benign_gui')
             ['CreateWindow', 'ShowWindow', 'UpdateWindow', 'DispatchMessage'],
             ThreatCategory.BENIGN, 1.0),
-        SyscallPattern('benign_file', 
+        SyscallPattern('benign_file')
             ['ReadFile', 'WriteFile', 'CloseHandle'],
             ThreatCategory.BENIGN, 0.8),
     ]
@@ -141,7 +141,7 @@ class SyscallClassifier:
     
     def _calculate_pattern_match(self, syscalls: List[str], pattern: SyscallPattern) -> float:
         """计算模式匹配分数"""
-        matched = 0
+        matched = 0,
         for call in pattern.pattern:
             if call.lower() in [s.lower() for s in syscalls]:
                 matched += 1
@@ -188,12 +188,14 @@ class SyscallClassifier:
                 self.scores[pattern.category] += score
         
         # 找到最高分的类别
-        max_score = max(self.scores.values())
+        max_score = max(self.scores.values(
+
         if max_score == 0:
             return ThreatCategory.UNKNOWN, 0.0
         
         # 计算置信度
-        total_score = sum(self.scores.values())
+        total_score = sum(self.scores.values(
+
         confidence = max_score / total_score if total_score > 0 else 0.0
         
         # 确定类别
@@ -230,8 +232,9 @@ class SyscallClassifier:
                 confidence=0.0,
                 score=0.0,
                 features={},
-                explanation="无系统调用数据"
-            )
+                explanation="无系统调用数据")
+            
+
         
         # 提取特征
         features = self._extract_features(syscalls)
@@ -250,8 +253,9 @@ class SyscallClassifier:
             confidence=confidence,
             score=score,
             features=features,
-            explanation=explanation
-        )
+            explanation=explanation)
+        
+
     
     def classify_sequence(self, sequence: SyscallSequence) -> ClassificationResult:
         """分类系统调用序列对象"""
@@ -261,7 +265,8 @@ class SyscallClassifier:
         """批量分类"""
         results = []
         for seq in sequences:
-            results.append(self.classify(seq.calls))
+            results.append(self.classify(seq.calls
+
         return results
     
     def get_malicious_probability(self, syscalls: List[str]) -> float:
@@ -294,10 +299,10 @@ class SyscallClassifier:
         """保存模型"""
         try:
             with open(path, 'wb') as f:
-                pickle.dump({
+                pickle.dump({)
                     'patterns': self.patterns,
                     'dangerous_syscalls': self.DANGEROUS_SYSCALLS
-                }, f)
+                }, f
             logger.info(f"模型已保存: {path}")
         except Exception as e:
             logger.error(f"保存模型失败: {e}")

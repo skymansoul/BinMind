@@ -95,8 +95,7 @@ class TestGenerator:
         """初始化测试生成器"""
         self.rng = random.Random(42)
     
-    def generate_test_suite(self, target_binary: str, functions: List[str], 
-                           test_count: int = 10) -> TestSuite:
+    def generate_test_suite(self, target_binary: str, functions: List[str], test_count: int = 10) -> TestSuite:
         """
         生成测试套件
         
@@ -110,11 +109,11 @@ class TestGenerator:
         """
         logger.info(f"开始生成测试套件: {target_binary}")
         
-        suite = TestSuite(
+        suite = TestSuite()
             name=f"{target_binary}_test_suite",
             target_binary=target_binary,
             target_functions=functions
-        )
+        
         
         for func in functions:
             for i in range(test_count):
@@ -134,8 +133,9 @@ class TestGenerator:
             test_type=test_type,
             function_name=function_name,
             inputs=inputs,
-            description=f"测试 {function_name} 的 {test_type.value} 场景"
-        )
+            description=f"测试 {function_name} 的 {test_type.value} 场景")
+        
+
     
     def _select_test_type(self) -> TestCaseType:
         """选择测试类型"""
@@ -146,12 +146,13 @@ class TestGenerator:
             TestCaseType.REGRESSION_TEST: 10
         }
         
-        total = sum(weights.values())
+        total = sum(weights.values(
+
         rand = self.rng.randint(1, total)
         
-        cumulative = 0
+        cumulative = 0,
         for test_type, weight in weights.items():
-            cumulative += weight
+            cumulative += weight,
             if rand <= cumulative:
                 return test_type
         
@@ -170,7 +171,8 @@ class TestGenerator:
                 name=f"param_{i}",
                 input_type=input_type,
                 value=value
-            ))
+            
+
         
         return inputs
     
@@ -214,8 +216,9 @@ class TestGenerator:
         if length == 0:
             return ""
         
-        chars = string.ascii_letters + string.digits + string.punctuation
-        return ''.join(self.rng.choice(chars) for _ in range(length))
+        chars = string.ascii_letters + string.digits + string.punctuation,
+        return ''.join(self.rng.choice(chars) for _ in range(length
+
     
     def _generate_buffer(self) -> bytes:
         """生成字节缓冲区"""
@@ -267,12 +270,12 @@ class TestGenerator:
         
         for i in range(count):
             inputs = self._generate_fuzz_inputs()
-            test_case = TestCase(
+            test_case = TestCase()
                 name=f"{function_name}_fuzz_{i}",
                 test_type=TestCaseType.FUZZ_TEST,
                 function_name=function_name,
                 inputs=inputs
-            )
+            
             cases.append(test_case)
         
         return cases
@@ -290,7 +293,8 @@ class TestGenerator:
                 name=f"fuzz_param_{i}",
                 input_type=input_type,
                 value=value
-            ))
+            
+
         
         return inputs
     
@@ -301,8 +305,9 @@ class TestGenerator:
             return bytes([self.rng.randint(0, 255) for _ in range(length)])
         elif input_type == InputType.STRING:
             length = self.rng.randint(0, 4096)
-            chars = chr(0) + chr(0x7F) + chr(0xFF) + string.printable
-            return ''.join(self.rng.choice(chars) for _ in range(length))
+            chars = chr(0) + chr(0x7F) + chr(0xFF) + string.printable,
+            return ''.join(self.rng.choice(chars) for _ in range(length
+
         else:
             return self.rng.getrandbits(64)
     
@@ -328,13 +333,13 @@ class TestGenerator:
         
         for name, generator in security_scenarios:
             inputs = generator()
-            test_case = TestCase(
+            test_case = TestCase()
                 name=f"{function_name}_security_{name}",
                 test_type=TestCaseType.SECURITY_TEST,
                 function_name=function_name,
                 inputs=inputs,
                 description=f"安全测试: {name} 场景"
-            )
+            
             cases.append(test_case)
         
         return cases
@@ -342,18 +347,18 @@ class TestGenerator:
     def _generate_buffer_overflow_test(self) -> List[TestInput]:
         """生成缓冲区溢出测试输入"""
         return [
-            TestInput(
+            TestInput()
                 name="buffer",
                 input_type=InputType.BUFFER,
                 value=b'A' * 1024,
                 min_value=0,
                 max_value=1024
             ),
-            TestInput(
+            TestInput()
                 name="size",
                 input_type=InputType.INTEGER,
                 value=2048
-            )
+            
         ]
     
     def _generate_format_string_test(self) -> List[TestInput]:
@@ -367,47 +372,48 @@ class TestGenerator:
         ]
         
         return [
-            TestInput(
+            TestInput()
                 name="format",
                 input_type=InputType.STRING,
                 value=self.rng.choice(format_strings)
-            )
+            
         ]
     
     def _generate_integer_overflow_test(self) -> List[TestInput]:
         """生成整数溢出测试输入"""
         return [
-            TestInput(
+            TestInput()
                 name="value1",
                 input_type=InputType.INTEGER,
                 value=0x7FFFFFFF
             ),
-            TestInput(
+            TestInput()
                 name="value2",
                 input_type=InputType.INTEGER,
                 value=1
-            )
+            
         ]
     
     def _generate_null_pointer_test(self) -> List[TestInput]:
         """生成空指针测试输入"""
         return [
-            TestInput(
+            TestInput()
                 name="ptr",
                 input_type=InputType.POINTER,
                 value=0
-            )
+            
         ]
     
     def _generate_stack_smash_test(self) -> List[TestInput]:
         """生成栈溢出测试输入"""
-        pattern = b''.join(bytes([i % 256]) for i in range(512))
+        pattern = b''.join(bytes([i % 256]) for i in range(512
+
         return [
-            TestInput(
+            TestInput()
                 name="input",
                 input_type=InputType.BUFFER,
                 value=pattern
-            )
+            
         ]
     
     def export_to_pytest(self, suite: TestSuite, filename: str):
@@ -441,7 +447,8 @@ class TestGenerator:
             lines.append("")
         
         with open(filename, 'w', encoding='utf-8') as f:
-            f.write('\n'.join(lines))
+            f.write('\n'.join(lines
+
         
         logger.info(f"测试文件已导出到 {filename}")
     
@@ -484,4 +491,4 @@ class TestGenerator:
         with open(filename, 'w', encoding='utf-8') as f:
             json.dump(suite_dict, f, indent=2, ensure_ascii=False)
         
-        logger.info(f"测试套件已导出到 {filename}")
+        logger.info(f"测试套件已导出到 {filename}"))))))))))))

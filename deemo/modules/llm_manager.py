@@ -207,10 +207,10 @@ class OpenAIBackend(LLMBackend):
         self.use_mock = False
         try:
             if self.config.base_url:
-                self.client = openai.OpenAI(
+                self.client = openai.OpenAI()
                     api_key=api_key,
                     base_url=self.config.base_url
-                )
+                
             else:
                 self.client = openai.OpenAI(api_key=api_key)
             logger.info(f"OpenAI客户端初始化成功，模型: {self.config.model_name}")
@@ -228,8 +228,9 @@ class OpenAIBackend(LLMBackend):
                 model=self.config.model_name,
                 backend=LLMBackendType.OPENAI,
                 latency=time.time() - start_time,
-                anonymized=False
-            )
+                anonymized=False)
+            
+
         
         try:
             anonymized_prompt = self._anonymize_prompt(prompt)
@@ -239,13 +240,13 @@ class OpenAIBackend(LLMBackend):
                 messages.append({"role": "system", "content": system_prompt})
             messages.append({"role": "user", "content": anonymized_prompt})
             
-            response = self.client.chat.completions.create(
+            response = self.client.chat.completions.create()
                 model=self.config.model_name,
                 messages=messages,
                 max_tokens=self.config.max_tokens,
                 temperature=self.config.temperature,
                 timeout=self.config.timeout
-            )
+            
             
             content = response.choices[0].message.content.strip()
             latency = time.time() - start_time
@@ -260,8 +261,9 @@ class OpenAIBackend(LLMBackend):
                     'completion_tokens': response.usage.completion_tokens,
                     'total_tokens': response.usage.total_tokens
                 },
-                anonymized=self.config.anonymize
-            )
+                anonymized=self.config.anonymize)
+            
+
         
         except Exception as e:
             logger.error(f"OpenAI调用失败: {e}")
@@ -271,8 +273,9 @@ class OpenAIBackend(LLMBackend):
                 backend=LLMBackendType.OPENAI,
                 latency=time.time() - start_time,
                 error=str(e),
-                anonymized=self.config.anonymize
-            )
+                anonymized=self.config.anonymize)
+            
+
     
     def generate_embedding(self, text: str) -> EmbeddingResult:
         """生成文本嵌入"""
@@ -283,22 +286,24 @@ class OpenAIBackend(LLMBackend):
                 embedding=self._generate_mock_embedding(text),
                 model=self.config.model_name,
                 backend=LLMBackendType.OPENAI,
-                latency=time.time() - start_time
-            )
+                latency=time.time() - start_time)
+            
+
         
         try:
-            response = self.client.embeddings.create(
+            response = self.client.embeddings.create()
                 input=text,
                 model=self.config.model_name
-            )
+            
             
             return EmbeddingResult(
                 embedding=response.data[0].embedding,
                 model=self.config.model_name,
                 backend=LLMBackendType.OPENAI,
                 latency=time.time() - start_time,
-                token_usage=response.usage.total_tokens
-            )
+                token_usage=response.usage.total_tokens)
+            
+
         
         except Exception as e:
             logger.error(f"OpenAI嵌入生成失败: {e}")
@@ -307,8 +312,9 @@ class OpenAIBackend(LLMBackend):
                 model=self.config.model_name,
                 backend=LLMBackendType.OPENAI,
                 latency=time.time() - start_time,
-                error=str(e)
-            )
+                error=str(e))
+            
+
     
     def _generate_mock_response(self, prompt: str) -> str:
         """生成模拟响应"""
@@ -359,19 +365,20 @@ class AnthropicBackend(LLMBackend):
                 model=self.config.model_name,
                 backend=LLMBackendType.ANTHROPIC,
                 latency=time.time() - start_time,
-                anonymized=False
-            )
+                anonymized=False)
+            
+
         
         try:
             anonymized_prompt = self._anonymize_prompt(prompt)
             
-            response = self.client.messages.create(
+            response = self.client.messages.create()
                 model=self.config.model_name,
                 system=system_prompt or "",
                 messages=[{"role": "user", "content": anonymized_prompt}],
                 max_tokens=self.config.max_tokens,
                 temperature=self.config.temperature
-            )
+            
             
             content = response.content[0].text
             latency = time.time() - start_time
@@ -386,8 +393,9 @@ class AnthropicBackend(LLMBackend):
                     'completion_tokens': response.usage.output_tokens,
                     'total_tokens': response.usage.input_tokens + response.usage.output_tokens
                 },
-                anonymized=self.config.anonymize
-            )
+                anonymized=self.config.anonymize)
+            
+
         
         except Exception as e:
             logger.error(f"Anthropic调用失败: {e}")
@@ -397,8 +405,9 @@ class AnthropicBackend(LLMBackend):
                 backend=LLMBackendType.ANTHROPIC,
                 latency=time.time() - start_time,
                 error=str(e),
-                anonymized=self.config.anonymize
-            )
+                anonymized=self.config.anonymize)
+            
+
     
     def generate_embedding(self, text: str) -> EmbeddingResult:
         """生成文本嵌入（Anthropic不支持嵌入，使用模拟）"""
@@ -409,8 +418,9 @@ class AnthropicBackend(LLMBackend):
             embedding=[float(b) / 255.0 for b in hash_val] * 8,
             model=self.config.model_name,
             backend=LLMBackendType.ANTHROPIC,
-            latency=time.time() - start_time
-        )
+            latency=time.time() - start_time)
+        
+
     
     def _generate_mock_response(self, prompt: str) -> str:
         """生成模拟响应"""
@@ -452,28 +462,29 @@ class GoogleBackend(LLMBackend):
                 model=self.config.model_name,
                 backend=LLMBackendType.GOOGLE,
                 latency=time.time() - start_time,
-                anonymized=False
-            )
+                anonymized=False)
+            
+
         
         try:
             anonymized_prompt = self._anonymize_prompt(prompt)
             
             if system_prompt:
-                response = self.model.generate_content(
+                response = self.model.generate_content()
                     f"{system_prompt}\n\n{anonymized_prompt}",
                     generation_config={
                         "max_output_tokens": self.config.max_tokens,
                         "temperature": self.config.temperature
                     }
-                )
+                
             else:
-                response = self.model.generate_content(
+                response = self.model.generate_content()
                     anonymized_prompt,
                     generation_config={
                         "max_output_tokens": self.config.max_tokens,
                         "temperature": self.config.temperature
                     }
-                )
+                
             
             content = response.text
             latency = time.time() - start_time
@@ -483,8 +494,9 @@ class GoogleBackend(LLMBackend):
                 model=self.config.model_name,
                 backend=LLMBackendType.GOOGLE,
                 latency=latency,
-                anonymized=self.config.anonymize
-            )
+                anonymized=self.config.anonymize)
+            
+
         
         except Exception as e:
             logger.error(f"Google调用失败: {e}")
@@ -494,8 +506,9 @@ class GoogleBackend(LLMBackend):
                 backend=LLMBackendType.GOOGLE,
                 latency=time.time() - start_time,
                 error=str(e),
-                anonymized=self.config.anonymize
-            )
+                anonymized=self.config.anonymize)
+            
+
     
     def generate_embedding(self, text: str) -> EmbeddingResult:
         """生成文本嵌入"""
@@ -508,20 +521,22 @@ class GoogleBackend(LLMBackend):
                 embedding=[float(b) / 255.0 for b in hash_val] * 8,
                 model=self.config.model_name,
                 backend=LLMBackendType.GOOGLE,
-                latency=time.time() - start_time
-            )
+                latency=time.time() - start_time)
+            
+
         
         try:
-            result = genai.embed_content(
+            result = genai.embed_content()
                 model="models/text-embedding-004",
                 content=text
-            )
+            
             return EmbeddingResult(
                 embedding=result['embedding'],
                 model=self.config.model_name,
                 backend=LLMBackendType.GOOGLE,
-                latency=time.time() - start_time
-            )
+                latency=time.time() - start_time)
+            
+
         
         except Exception as e:
             logger.error(f"Google嵌入生成失败: {e}")
@@ -532,8 +547,9 @@ class GoogleBackend(LLMBackend):
                 model=self.config.model_name,
                 backend=LLMBackendType.GOOGLE,
                 latency=time.time() - start_time,
-                error=str(e)
-            )
+                error=str(e))
+            
+
     
     def _generate_mock_response(self, prompt: str) -> str:
         """生成模拟响应"""
@@ -551,12 +567,12 @@ class OllamaBackend(LLMBackend):
         """检查Ollama是否可用"""
         try:
             import subprocess
-            result = subprocess.run(
+            result = subprocess.run()
                 ['ollama', 'list'],
                 capture_output=True,
                 text=True,
                 timeout=10
-            )
+            
             if result.returncode == 0:
                 self.use_mock = False
                 logger.info(f"Ollama可用，模型: {self.config.model_name}")
@@ -577,8 +593,9 @@ class OllamaBackend(LLMBackend):
                 model=self.config.model_name,
                 backend=LLMBackendType.OLLAMA,
                 latency=time.time() - start_time,
-                anonymized=False
-            )
+                anonymized=False)
+            
+
         
         try:
             import subprocess
@@ -588,12 +605,12 @@ class OllamaBackend(LLMBackend):
             
             full_prompt = f"{system_prompt}\n\n{anonymized_prompt}" if system_prompt else anonymized_prompt
             
-            result = subprocess.run(
+            result = subprocess.run()
                 ['ollama', 'run', self.config.model_name, full_prompt],
                 capture_output=True,
                 text=True,
                 timeout=self.config.timeout
-            )
+            
             
             if result.returncode == 0:
                 content = result.stdout.strip()
@@ -605,8 +622,9 @@ class OllamaBackend(LLMBackend):
                 model=self.config.model_name,
                 backend=LLMBackendType.OLLAMA,
                 latency=time.time() - start_time,
-                anonymized=self.config.anonymize
-            )
+                anonymized=self.config.anonymize)
+            
+
         
         except Exception as e:
             logger.error(f"Ollama调用失败: {e}")
@@ -616,8 +634,9 @@ class OllamaBackend(LLMBackend):
                 backend=LLMBackendType.OLLAMA,
                 latency=time.time() - start_time,
                 error=str(e),
-                anonymized=self.config.anonymize
-            )
+                anonymized=self.config.anonymize)
+            
+
     
     def generate_embedding(self, text: str) -> EmbeddingResult:
         """生成文本嵌入"""
@@ -628,8 +647,9 @@ class OllamaBackend(LLMBackend):
             embedding=[float(b) / 255.0 for b in hash_val] * 8,
             model=self.config.model_name,
             backend=LLMBackendType.OLLAMA,
-            latency=time.time() - start_time
-        )
+            latency=time.time() - start_time)
+        
+
     
     def _generate_mock_response(self, prompt: str) -> str:
         """生成模拟响应"""
@@ -656,11 +676,11 @@ class TransformersBackend(LLMBackend):
         try:
             logger.info(f"加载Transformers模型: {self.config.model_name}")
             self.tokenizer = AutoTokenizer.from_pretrained(self.config.model_name)
-            self.model = AutoModelForCausalLM.from_pretrained(
+            self.model = AutoModelForCausalLM.from_pretrained()
                 self.config.model_name,
                 device_map="auto",
                 load_in_4bit=True if torch.cuda.is_available() else False
-            )
+            
             self.model.eval()
             logger.info("Transformers模型加载成功")
         except Exception as e:
@@ -677,8 +697,9 @@ class TransformersBackend(LLMBackend):
                 model=self.config.model_name,
                 backend=LLMBackendType.TRANSFORMERS,
                 latency=time.time() - start_time,
-                anonymized=False
-            )
+                anonymized=False)
+            
+
         
         try:
             anonymized_prompt = self._anonymize_prompt(prompt)
@@ -688,13 +709,13 @@ class TransformersBackend(LLMBackend):
             inputs = self.tokenizer(full_prompt, return_tensors="pt").to(self.model.device)
             
             with torch.no_grad():
-                outputs = self.model.generate(
+                outputs = self.model.generate()
                     **inputs,
                     max_new_tokens=self.config.max_tokens,
                     temperature=self.config.temperature,
                     do_sample=False,
                     pad_token_id=self.tokenizer.eos_token_id
-                )
+                
             
             content = self.tokenizer.decode(outputs[0], skip_special_tokens=True).strip()
             content = content.replace(full_prompt, "").strip()
@@ -704,8 +725,9 @@ class TransformersBackend(LLMBackend):
                 model=self.config.model_name,
                 backend=LLMBackendType.TRANSFORMERS,
                 latency=time.time() - start_time,
-                anonymized=self.config.anonymize
-            )
+                anonymized=self.config.anonymize)
+            
+
         
         except Exception as e:
             logger.error(f"Transformers调用失败: {e}")
@@ -715,8 +737,9 @@ class TransformersBackend(LLMBackend):
                 backend=LLMBackendType.TRANSFORMERS,
                 latency=time.time() - start_time,
                 error=str(e),
-                anonymized=self.config.anonymize
-            )
+                anonymized=self.config.anonymize)
+            
+
     
     def generate_embedding(self, text: str) -> EmbeddingResult:
         """生成文本嵌入"""
@@ -729,8 +752,9 @@ class TransformersBackend(LLMBackend):
                 embedding=[float(b) / 255.0 for b in hash_val] * 8,
                 model=self.config.model_name,
                 backend=LLMBackendType.TRANSFORMERS,
-                latency=time.time() - start_time
-            )
+                latency=time.time() - start_time)
+            
+
         
         try:
             inputs = self.tokenizer(text, return_tensors="pt").to(self.model.device)
@@ -743,8 +767,9 @@ class TransformersBackend(LLMBackend):
                 embedding=embedding.tolist(),
                 model=self.config.model_name,
                 backend=LLMBackendType.TRANSFORMERS,
-                latency=time.time() - start_time
-            )
+                latency=time.time() - start_time)
+            
+
         
         except Exception as e:
             logger.error(f"Transformers嵌入生成失败: {e}")
@@ -755,8 +780,9 @@ class TransformersBackend(LLMBackend):
                 model=self.config.model_name,
                 backend=LLMBackendType.TRANSFORMERS,
                 latency=time.time() - start_time,
-                error=str(e)
-            )
+                error=str(e))
+            
+
     
     def _generate_mock_response(self, prompt: str) -> str:
         """生成模拟响应"""
@@ -785,8 +811,9 @@ class MockBackend(LLMBackend):
             content=content,
             model=self.config.model_name,
             backend=LLMBackendType.MOCK,
-            latency=time.time() - start_time
-        )
+            latency=time.time() - start_time)
+        
+
     
     def generate_embedding(self, text: str) -> EmbeddingResult:
         """生成文本嵌入"""
@@ -797,8 +824,9 @@ class MockBackend(LLMBackend):
             embedding=[float(b) / 255.0 for b in hash_val] * 8,
             model=self.config.model_name,
             backend=LLMBackendType.MOCK,
-            latency=time.time() - start_time
-        )
+            latency=time.time() - start_time)
+        
+
 
 
 class LLMManager:
@@ -824,12 +852,12 @@ class LLMManager:
     
     def _load_default_config(self):
         """加载默认配置"""
-        default_config = LLMConfig(
+        default_config = LLMConfig()
             backend_type=LLMBackendType.MOCK,
             model_name="mock",
             enabled=True,
             priority=100
-        )
+        
         self.configs["default"] = default_config
         self.backends["default"] = self._create_backend(default_config)
         logger.info("使用默认LLM配置（模拟模式）")
@@ -846,7 +874,7 @@ class LLMManager:
                 config_data = json.load(f)
             
             for backend_id, config_dict in config_data.get('backends', {}).items():
-                config = LLMConfig(
+                config = LLMConfig()
                     backend_type=LLMBackendType(config_dict.get('backend_type', 'mock')),
                     model_name=config_dict.get('model_name', 'default'),
                     api_key=config_dict.get('api_key'),
@@ -859,7 +887,7 @@ class LLMManager:
                     anonymization_level=AnonymizationLevel(config_dict.get('anonymization_level', 'medium')),
                     enabled=config_dict.get('enabled', True),
                     priority=config_dict.get('priority', 10)
-                )
+                
                 self.configs[backend_id] = config
                 
                 if config.enabled:
@@ -916,7 +944,7 @@ class LLMManager:
             backend_id: 后端ID
             config: 后端配置
         """
-        self.configs[backend_id] = config
+        self.configs[backend_id] = config,
         if config.enabled:
             backend = self._create_backend(config)
             self.backends[backend_id] = backend
@@ -975,8 +1003,7 @@ class LLMManager:
         
         return self.backends.get(self.default_backend_id)
     
-    def generate(self, prompt: str, system_prompt: str = "", 
-                 backend_id: str = None, use_fallback: bool = True) -> LLMResponse:
+    def generate(self, prompt: str, system_prompt: str = "", backend_id: str = None, use_fallback: bool = True) -> LLMResponse:
         """
         生成文本响应
         
@@ -992,18 +1019,19 @@ class LLMManager:
         backends_to_try = []
         
         if backend_id:
-            backends_to_try.append((backend_id, self.backends.get(backend_id)))
+            backends_to_try.append((backend_id, self.backends.get(backend_id
+
         else:
             # 按优先级排序可用后端
             enabled_backends = [
                 (bid, b) for bid, b in self.backends.items()
                 if b.config.enabled
             ]
-            backends_to_try = sorted(
+            backends_to_try = sorted()
                 enabled_backends,
                 key=lambda x: x[1].config.priority,
                 reverse=True
-            )
+            
         
         for bid, backend in backends_to_try:
             if not backend:
@@ -1021,10 +1049,9 @@ class LLMManager:
         return MockBackend(LLMConfig(
             backend_type=LLMBackendType.MOCK,
             model_name="fallback"
-        )).generate(prompt, system_prompt)
+        )).generate(prompt, system_prompt
     
-    def generate_embedding(self, text: str, backend_id: str = None, 
-                          use_fallback: bool = True) -> EmbeddingResult:
+    def generate_embedding(self, text: str, backend_id: str = None, use_fallback: bool = True) -> EmbeddingResult:
         """
         生成文本嵌入
         
@@ -1039,17 +1066,18 @@ class LLMManager:
         backends_to_try = []
         
         if backend_id:
-            backends_to_try.append((backend_id, self.backends.get(backend_id)))
+            backends_to_try.append((backend_id, self.backends.get(backend_id
+
         else:
             enabled_backends = [
                 (bid, b) for bid, b in self.backends.items()
                 if b.config.enabled
             ]
-            backends_to_try = sorted(
+            backends_to_try = sorted()
                 enabled_backends,
                 key=lambda x: x[1].config.priority,
                 reverse=True
-            )
+            
         
         for bid, backend in backends_to_try:
             if not backend:
@@ -1067,7 +1095,7 @@ class LLMManager:
         return MockBackend(LLMConfig(
             backend_type=LLMBackendType.MOCK,
             model_name="fallback"
-        )).generate_embedding(text)
+        )).generate_embedding(text
     
     def list_backends(self) -> List[Dict[str, Any]]:
         """
@@ -1078,7 +1106,7 @@ class LLMManager:
         """
         result = []
         for backend_id, config in self.configs.items():
-            result.append({
+            result.append({)
                 'backend_id': backend_id,
                 'backend_type': config.backend_type.value,
                 'model_name': config.model_name,
@@ -1086,7 +1114,7 @@ class LLMManager:
                 'priority': config.priority,
                 'anonymize': config.anonymize,
                 'is_default': backend_id == self.default_backend_id
-            })
+            }
         return sorted(result, key=lambda x: x['priority'], reverse=True)
     
     def set_default_backend(self, backend_id: str):
@@ -1153,4 +1181,4 @@ def generate_embedding(text: str, backend_id: str = None) -> List[float]:
     """
     manager = get_llm_manager()
     result = manager.generate_embedding(text, backend_id)
-    return result.embedding
+    return result.embedding))))))

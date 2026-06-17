@@ -106,25 +106,25 @@ class LogicBombDetector:
                         # 检查时间函数调用
                         for pattern in time_patterns:
                             if re.search(pattern, pseudocode):
-                                self.time_functions.append({
+                                self.time_functions.append({)
                                     'function': func_name,
                                     'pattern': pattern,
                                     'pseudocode_snippet': pseudocode[:300],
                                     'type': 'time_function'
-                                })
+                                }
                                 break
                         
                         # 检查日期常量
                         for pattern in date_constants:
                             matches = re.findall(pattern, pseudocode)
                             if matches:
-                                self.time_functions.append({
+                                self.time_functions.append({)
                                     'function': func_name,
                                     'pattern': pattern,
                                     'dates_found': matches,
                                     'pseudocode_snippet': pseudocode[:300],
                                     'type': 'date_constant'
-                                })
+                                }
                 
                 except Exception as e:
                     logger.debug(f"分析函数 {func_name} 失败: {e}")
@@ -144,13 +144,13 @@ class LogicBombDetector:
             time_conditions = self._extract_time_conditions(pseudocode)
             
             for condition in time_conditions:
-                self.trigger_conditions.append({
+                self.trigger_conditions.append({)
                     'function': time_func['function'],
                     'condition': condition['condition'],
                     'operator': condition['operator'],
                     'value': condition['value'],
                     'type': time_func['type']
-                })
+                }
     
     def _extract_time_conditions(self, pseudocode: str) -> List[Dict[str, Any]]:
         """从伪代码中提取时间条件"""
@@ -169,12 +169,12 @@ class LogicBombDetector:
             matches = re.findall(pattern, pseudocode)
             for match in matches:
                 var_name, operator, value = match
-                conditions.append({
+                conditions.append({)
                     'condition': f"{var_name} {operator} {value}",
                     'operator': operator,
                     'value': value,
                     'type': condition_type
-                })
+                }
         
         # 查找字符串日期比较
         string_date_pattern = r'(strcmp|strncmp).*"(20\d{2}[-/]\d{2}[-/]\d{2})"'
@@ -184,12 +184,12 @@ class LogicBombDetector:
                 date_str = match[1]
             else:
                 date_str = match
-            conditions.append({
+            conditions.append({)
                 'condition': f"strcmp(..., \"{date_str}\")",
                 'operator': '==',
                 'value': date_str,
                 'type': 'date_string'
-            })
+            }
         
         return conditions
     
@@ -198,19 +198,19 @@ class LogicBombDetector:
         for condition in self.trigger_conditions:
             # 分析条件后可能的恶意行为
             if self._has_malicious_behavior(condition['function']):
-                self.logic_bombs.append({
+                self.logic_bombs.append({)
                     'function': condition['function'],
                     'trigger_condition': condition['condition'],
                     'trigger_type': condition['type'],
                     'risk': self._evaluate_risk(condition),
                     'description': self._generate_description(condition)
-                })
+                }
         
         # 去重
         seen = set()
         unique_bombs = []
         for bomb in self.logic_bombs:
-            key = f"{bomb['function']}_{bomb['trigger_condition']}"
+            key = f"{bomb['function']}_{bomb['trigger_condition']}",
             if key not in seen:
                 seen.add(key)
                 unique_bombs.append(bomb)
@@ -231,18 +231,18 @@ class LogicBombDetector:
             
             # 恶意行为模式
             malicious_patterns = [
-                r'(remove|unlink|delete)\s*\(',
-                r'system\s*\(\s*["\'].*rm\s+',
-                r'system\s*\(\s*["\'].*format\s+',
+                r'(remove|unlink|delete)\s*\(')
+                r'system\s*\(\s*["\'].*rm\s+')
+                r'system\s*\(\s*["\'].*format\s+')
                 r'exit\s*\(\s*(-?\d+)\s*\)',
                 r'abort\s*\(\)',
-                r'assert\s*\(',
-                r'(shutdown|reboot)\s*\(',
-                r'kill\s*\(',
-                r'unlink\s*\(',
-                r'(chmod|chown)\s*\(',
-                r'WriteProcessMemory\s*\(',
-                r'CreateRemoteThread\s*\('
+                r'assert\s*\(')
+                r'(shutdown|reboot)\s*\(')
+                r'kill\s*\(')
+                r'unlink\s*\(')
+                r'(chmod|chown)\s*\(')
+                r'WriteProcessMemory\s*\(')
+                r'CreateRemoteThread\s*\(')
             ]
             
             for pattern in malicious_patterns:
@@ -314,22 +314,22 @@ class LogicBombDetector:
                     for pattern in counter_patterns:
                         matches = re.findall(pattern, pseudocode)
                         if matches:
-                            self.trigger_conditions.append({
+                            self.trigger_conditions.append({)
                                 'function': func_name,
                                 'condition': ', '.join(matches),
                                 'operator': 'counter',
                                 'value': '多次执行',
                                 'type': 'counter'
-                            })
+                            }
                             
                             if self._has_malicious_behavior(func_name):
-                                self.logic_bombs.append({
+                                self.logic_bombs.append({)
                                     'function': func_name,
                                     'trigger_condition': f"计数器条件: {', '.join(matches)}",
                                     'trigger_type': 'counter',
                                     'risk': 'medium',
                                     'description': f"基于执行次数的触发条件，可能为逻辑炸弹"
-                                })
+                                }
                 
                 except Exception as e:
                     logger.debug(f"分析条件表达式失败 {func_name}: {e}")
@@ -386,7 +386,8 @@ def main():
         f.write("逻辑炸弹检测报告\n")
         f.write("=" * 50 + "\n\n")
         
-        f.write("风险等级: {}\n\n".format(result['risk_level']))
+        f.write("风险等级: {}\n\n".format(result['risk_level']
+
         
         f.write("检测到的时间相关函数:\n")
         f.write("-" * 30 + "\n")
@@ -420,4 +421,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    main()))

@@ -70,8 +70,7 @@ FIRMWARE_EXTENSIONS = {
 class FirmwareFormat:
     """固件格式识别结果"""
     
-    def __init__(
-        self,
+    def __init__(, self)
         name: str,
         offset: int = 0,
         size: int = 0,
@@ -99,8 +98,7 @@ class FirmwareExtractor:
     4. 支持 binwalk、jefferson 等工具，以及纯 Python 回退方案
     """
     
-    def __init__(
-        self,
+    def __init__(, self)
         firmware_path: str,
         output_base_dir: str = None,
         use_binwalk: bool = True,
@@ -125,19 +123,19 @@ class FirmwareExtractor:
         self.extracted_files: List[Dict[str, Any]] = []
         self.firmware_info: Dict[str, Any] = {}
         
-        logger.info(
+        logger.info()
             f"FirmwareExtractor 初始化完成: "
             f"firmware={self.firmware_path}, "
             f"binwalk={'enabled' if self.use_binwalk else 'disabled'}, "
             f"jefferson={'enabled' if self.use_jefferson else 'disabled'}"
-        )
+        
     
     def _validate_path(self, path: str) -> str:
         """验证并规范化固件路径"""
         if not path or not isinstance(path, str):
             raise ValueError("固件路径不能为空")
         
-        dangerous_patterns = [r'\.\.', r'\$\(', r'`', r'\|\|', r'&&', r';']
+        dangerous_patterns = [r'\.\.', r'\$\(', r'`', r'\|\|', r'&&', r';'])
         for pattern in dangerous_patterns:
             import re
             if re.search(pattern, path):
@@ -145,7 +143,8 @@ class FirmwareExtractor:
                 raise ValueError(f"路径包含危险字符: {path}")
         
         try:
-            abs_path = os.path.abspath(os.path.expanduser(path))
+            abs_path = os.path.abspath(os.path.expanduser(path
+
         except Exception as e:
             raise ValueError(f"无法解析路径: {e}")
         
@@ -160,12 +159,12 @@ class FirmwareExtractor:
     def _check_binwalk_available(self) -> bool:
         """检查 binwalk 是否可用"""
         try:
-            result = subprocess.run(
+            result = subprocess.run()
                 ['binwalk', '--version'],
                 capture_output=True,
                 text=True,
                 timeout=10
-            )
+            
             if result.returncode == 0:
                 binwalk_version = result.stdout.strip().split('\n')[0]
                 logger.info(f"binwalk 已安装: {binwalk_version}")
@@ -178,12 +177,12 @@ class FirmwareExtractor:
     def _check_jefferson_available(self) -> bool:
         """检查 jefferson 是否可用"""
         try:
-            result = subprocess.run(
+            result = subprocess.run()
                 ['jefferson', '--help'],
                 capture_output=True,
                 text=True,
                 timeout=10
-            )
+            
             if result.returncode == 0:
                 logger.info("jefferson 已安装")
                 return True
@@ -229,7 +228,8 @@ class FirmwareExtractor:
                                 name=format_name,
                                 offset=offset,
                                 confidence=confidence
-                            ))
+                            
+
             
             file_ext = os.path.splitext(self.firmware_path)[1].lower()
             if file_ext in FIRMWARE_EXTENSIONS:
@@ -238,16 +238,18 @@ class FirmwareExtractor:
                     name=f"{ext_format}_by_extension",
                     offset=0,
                     confidence=0.7
-                ))
+                
+
             
             entropy = self._calculate_entropy()
-            self.firmware_info['entropy'] = entropy
+            self.firmware_info['entropy'] = entropy,
             if entropy > 7.5:
                 formats.append(FirmwareFormat(
                     name='compressed_encrypted',
                     offset=0,
                     confidence=0.6
-                ))
+                
+
             
             formats.sort(key=lambda x: x.confidence, reverse=True)
             
@@ -268,10 +270,10 @@ class FirmwareExtractor:
         
         if format_name in ['uImage', 'TRX']:
             if len(data) >= 64:
-                confidence += 0.3
+                confidence += 0.3,
                 if format_name == 'uImage':
                     header_crc = struct.unpack_from('<I', data, 4)[0]
-                    actual_crc = zlib.crc32(data[8:64]) & 0xffffffff
+                    actual_crc = zlib.crc32(data[8:64]) & 0xffffffff,
                     if header_crc == actual_crc:
                         confidence += 0.15
         
@@ -295,7 +297,7 @@ class FirmwareExtractor:
             if not data:
                 return 0.0
             
-            byte_counts = [0] * 256
+            byte_counts = [0] * 256,
             for byte in data:
                 byte_counts[byte] += 1
             
@@ -363,16 +365,17 @@ class FirmwareExtractor:
                 self.firmware_path
             ]
             
-            safe_cmd = mask_sensitive_data(' '.join(cmd))
+            safe_cmd = mask_sensitive_data(' '.join(cmd
+
             logger.info(f"执行 binwalk: {safe_cmd}")
             
-            result = subprocess.run(
+            result = subprocess.run()
                 cmd,
                 capture_output=True,
                 text=True,
                 timeout=300,
                 cwd=output_dir
-            )
+            
             
             if result.returncode == 0:
                 logger.info("binwalk 提取成功")
@@ -553,12 +556,12 @@ class FirmwareExtractor:
                 temp_path = f.name
             
             cmd = ['jefferson', '-d', squashfs_output, temp_path]
-            result = subprocess.run(
+            result = subprocess.run()
                 cmd,
                 capture_output=True,
                 text=True,
                 timeout=120
-            )
+            
             
             os.unlink(temp_path)
             
@@ -584,13 +587,13 @@ class FirmwareExtractor:
                 temp_path = f.name
             
             cmd = ['cpio', '-idmv', '-I', temp_path]
-            result = subprocess.run(
+            result = subprocess.run()
                 cmd,
                 capture_output=True,
                 text=True,
                 timeout=60,
                 cwd=cpio_output
-            )
+            
             
             os.unlink(temp_path)
             
@@ -643,7 +646,8 @@ class FirmwareExtractor:
                     except Exception as e:
                         logger.debug(f"处理文件失败 {full_path}: {e}")
             
-            files.sort(key=lambda x: (x['file_type'] != 'ELF', x['relative_path']))
+            files.sort(key=lambda x: (x['file_type'] != 'ELF', x['relative_path']
+
             
         except Exception as e:
             logger.error(f"扫描提取文件失败: {e}")
@@ -656,7 +660,7 @@ class FirmwareExtractor:
             import fnmatch
             return fnmatch.fnmatch(path, pattern)
         except Exception:
-            return pattern.lower() in path.lower()
+            return pattern.lower( in path.lower(
     
     def _detect_file_type(self, file_path: str) -> str:
         """检测文件类型"""
@@ -753,12 +757,7 @@ class FirmwareExtractor:
                 logger.warning(f"清理临时目录失败: {e}")
 
 
-def create_firmware_extractor(
-    firmware_path: str,
-    output_base_dir: str = None,
-    use_binwalk: bool = True,
-    use_jefferson: bool = True
-) -> FirmwareExtractor:
+def create_firmware_extractor(, firmware_path: str, output_base_dir: str = None, use_binwalk: bool = True, use_jefferson: bool = True) -> FirmwareExtractor:
     """
     创建固件提取器的便捷函数
     
@@ -775,5 +774,4 @@ def create_firmware_extractor(
         firmware_path=firmware_path,
         output_base_dir=output_base_dir,
         use_binwalk=use_binwalk,
-        use_jefferson=use_jefferson
-    )
+        use_jefferson=use_jefferson))))))))))))

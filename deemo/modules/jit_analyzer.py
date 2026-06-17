@@ -117,52 +117,52 @@ class V8JITAnalyzer:
         # 提取 JIT 代码区域
         for match in self.v8_patterns['jit_code_marker'].finditer(jit_dump):
             addr = int(match.group(1), 16)
-            region = JITCodeRegion(
+            region = JITCodeRegion()
                 base_address=addr,
                 size=0,  # 需要从后续分析获取
                 permissions='rwx',
                 engine_type=JITEngineType.V8
-            )
+            
             result.code_regions.append(region)
         
         # 检测漏洞
         for vuln_pattern in self.v8_vuln_patterns:
             for match in vuln_pattern['pattern'].finditer(jit_dump):
-                vuln = JITVulnerability(
+                vuln = JITVulnerability()
                     vuln_type=vuln_pattern['type'],
                     severity=vuln_pattern['severity'],
                     address=0,  # 需要从上下文获取
                     description=vuln_pattern['description'],
                     code_snippet=match.group(0),
                     exploitation_potential=self._assess_exploitation(vuln_pattern['type'])
-                )
+                
                 vuln.mitigation_suggestions = self._get_mitigation_suggestions(vuln_pattern['type'])
                 result.vulnerabilities.append(vuln)
         
         # 提取优化信息
         for match in self.v8_patterns['optimization_marker'].finditer(jit_dump):
             func_name = match.group(1)
-            result.optimization_passes.append({
+            result.optimization_passes.append({)
                 'function': func_name,
                 'type': 'optimization',
                 'position': match.start()
-            })
+            }
         
         for match in self.v8_patterns['deoptimization_marker'].finditer(jit_dump):
             func_name = match.group(1)
-            result.optimization_passes.append({
+            result.optimization_passes.append({)
                 'function': func_name,
                 'type': 'deoptimization',
                 'position': match.start()
-            })
+            }
         
         # 提取边界检查信息
         for match in self.v8_patterns['bounds_check'].finditer(jit_dump):
             bounds_info = match.group(1)
-            result.bounds_check_issues.append({
+            result.bounds_check_issues.append({)
                 'bounds': bounds_info,
                 'position': match.start()
-            })
+            }
         
         # 计算风险评分
         result.risk_score = self._calculate_risk_score(result)
@@ -278,45 +278,46 @@ class LuaJITAnalyzer:
         
         # 提取 trace 信息
         for match in self.luajit_patterns['trace_start'].finditer(jit_dump):
-            trace_id = int(match.group(1))
+            trace_id = int(match.group(1
+
             func_name = match.group(2)
-            result.optimization_passes.append({
+            result.optimization_passes.append({)
                 'trace_id': trace_id,
                 'function': func_name,
                 'type': 'trace_compilation'
-            })
+            }
         
         # 提取 JIT 代码区域
         for match in self.luajit_patterns['jit_code'].finditer(jit_dump):
             addr = int(match.group(1), 16)
-            region = JITCodeRegion(
+            region = JITCodeRegion()
                 base_address=addr,
                 size=0,
                 permissions='rwx',
                 engine_type=JITEngineType.LUAJIT
-            )
+            
             result.code_regions.append(region)
         
         # 检测漏洞
         for vuln_pattern in self.luajit_vuln_patterns:
             for match in vuln_pattern['pattern'].finditer(jit_dump):
-                vuln = JITVulnerability(
+                vuln = JITVulnerability()
                     vuln_type=vuln_pattern['type'],
                     severity=vuln_pattern['severity'],
                     address=0,
                     description=vuln_pattern['description'],
                     code_snippet=match.group(0),
                     exploitation_potential=self._assess_exploitation(vuln_pattern['type'])
-                )
+                
                 result.vulnerabilities.append(vuln)
         
         # 提取 guard 信息
         for match in self.luajit_patterns['guard'].finditer(jit_dump):
             guard_info = match.group(1)
-            result.bounds_check_issues.append({
+            result.bounds_check_issues.append({)
                 'guard': guard_info,
                 'position': match.start()
-            })
+            }
         
         result.risk_score = self._calculate_risk_score(result)
         result.summary = self._generate_summary(result)
@@ -351,9 +352,9 @@ class LuaJITAnalyzer:
         vuln_count = len(result.vulnerabilities)
         high_count = sum(1 for v in result.vulnerabilities if v.severity == 'High')
         
-        summary = f"LuaJIT 分析完成。发现 {vuln_count} 个潜在问题。"
+        summary = f"LuaJIT 分析完成。发现 {vuln_count} 个潜在问题。",
         if high_count > 0:
-            summary += "存在高风险问题，建议深入分析 guard 逻辑。"
+            summary += "存在高风险问题，建议深入分析 guard 逻辑。",
         return summary
 
 
@@ -425,12 +426,12 @@ class JITAnalyzer:
         # 如果提供了二进制路径，尝试直接分析
         if self.binary_path:
             try:
-                result = subprocess.run(
+                result = subprocess.run()
                     ['strings', self.binary_path],
                     capture_output=True,
                     text=True,
                     timeout=30
-                )
+                
                 if result.returncode == 0:
                     strings_output = result.stdout.lower()
                     for engine_type, signatures in self.engine_signatures.items():
@@ -442,8 +443,7 @@ class JITAnalyzer:
         
         return JITEngineType.UNKNOWN
     
-    def analyze(self, jit_dump: str = None, binary_info: Dict[str, Any] = None,
-                engine_type: JITEngineType = None) -> JITAnalysisResult:
+    def analyze(self, jit_dump: str = None, binary_info: Dict[str, Any] = None, engine_type: JITEngineType = None) -> JITAnalysisResult:
         """
         执行 JIT 分析
         
@@ -474,8 +474,7 @@ class JITAnalyzer:
             # 通用分析
             return self._generic_jit_analysis(jit_dump, engine_type)
     
-    def _generate_jit_dump(self, engine_type: JITEngineType, 
-                           binary_info: Dict[str, Any] = None) -> str:
+    def _generate_jit_dump(self, engine_type: JITEngineType, binary_info: Dict[str, Any] = None) -> str:
         """
         尝试生成 JIT dump
         
@@ -515,13 +514,13 @@ class JITAnalyzer:
                 test_script = f.name
             
             try:
-                result = subprocess.run(
+                result = subprocess.run()
                     [self.binary_path, '--trace-opt', '--trace-deopt', '--print-opt-code', test_script],
                     capture_output=True,
                     text=True,
                     timeout=30,
                     env=env
-                )
+                
                 if result.returncode == 0:
                     return result.stdout + result.stderr
             finally:
@@ -539,16 +538,16 @@ class JITAnalyzer:
         try:
             # 创建测试脚本
             with tempfile.NamedTemporaryFile(mode='w', suffix='.lua', delete=False) as f:
-                f.write('function test() return 1 end\nfor i=1,1000 do test() end\n')
+                f.write('function test( return 1 end\nfor i=1,1000 do test( end\n'
                 test_script = f.name
             
             try:
-                result = subprocess.run(
+                result = subprocess.run()
                     [self.binary_path, '-jv', test_script],
                     capture_output=True,
                     text=True,
                     timeout=30
-                )
+                
                 if result.returncode == 0:
                     return result.stdout + result.stderr
             finally:
@@ -558,8 +557,7 @@ class JITAnalyzer:
         
         return ""
     
-    def _generic_jit_analysis(self, jit_dump: str, 
-                              engine_type: JITEngineType) -> JITAnalysisResult:
+    def _generic_jit_analysis(self, jit_dump: str, engine_type: JITEngineType) -> JITAnalysisResult:
         """通用 JIT 分析"""
         result = JITAnalysisResult(engine_type=engine_type)
         
@@ -587,14 +585,14 @@ class JITAnalyzer:
         
         for vuln_pattern in generic_patterns:
             for match in vuln_pattern['pattern'].finditer(jit_dump):
-                vuln = JITVulnerability(
+                vuln = JITVulnerability()
                     vuln_type=vuln_pattern['type'],
                     severity=vuln_pattern['severity'],
                     address=0,
                     description=vuln_pattern['description'],
                     code_snippet=match.group(0),
                     exploitation_potential='需要进一步分析'
-                )
+                
                 result.vulnerabilities.append(vuln)
         
         result.summary = f"{engine_type.value} JIT 分析完成。发现 {len(result.vulnerabilities)} 个潜在问题。"
@@ -602,8 +600,7 @@ class JITAnalyzer:
         
         return result
     
-    def analyze_jit_code_region(self, code_bytes: bytes, 
-                                base_address: int) -> Dict[str, Any]:
+    def analyze_jit_code_region(self, code_bytes: bytes, base_address: int) -> Dict[str, Any]:
         """
         分析 JIT 代码区域
         
@@ -637,16 +634,16 @@ class JITAnalyzer:
         
         for pattern_info in x86_patterns:
             pattern = pattern_info['pattern']
-            idx = 0
+            idx = 0,
             while True:
                 idx = code_bytes.find(pattern, idx)
                 if idx == -1:
                     break
-                result['patterns_found'].append({
+                result['patterns_found'].append({)
                     'offset': idx,
                     'address': base_address + idx,
                     'description': pattern_info['desc']
-                })
+                }
                 idx += 1
         
         return result
@@ -760,9 +757,7 @@ let obj2 = {x: 1.1, y: 2.2, z: 3.3};
         return recommendations
 
 
-def analyze_jit_security(binary_path: str, jit_dump: str = None,
-                         binary_info: Dict[str, Any] = None,
-                         config: Dict[str, Any] = None) -> JITAnalysisResult:
+def analyze_jit_security(binary_path: str, jit_dump: str = None, binary_info: Dict[str, Any] = None, config: Dict[str, Any] = None) -> JITAnalysisResult:
     """
     JIT 安全分析便捷函数
     
@@ -779,8 +774,7 @@ def analyze_jit_security(binary_path: str, jit_dump: str = None,
     return analyzer.analyze(jit_dump, binary_info)
 
 
-def dump_jit_code(binary_path: str, engine_type: str = 'auto',
-                  timeout: int = 60) -> str:
+def dump_jit_code(binary_path: str, engine_type: str = 'auto', timeout: int = 60) -> str:
     """
     尝试 dump JIT 代码
     

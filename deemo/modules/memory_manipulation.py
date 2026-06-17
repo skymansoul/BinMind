@@ -121,14 +121,17 @@ class MemoryManipulationDetector:
             current_string = []
             for byte in data:
                 if 32 <= byte <= 126:
-                    current_string.append(chr(byte))
+                    current_string.append(chr(byte
+
                 else:
                     if len(current_string) >= 4:
-                        strings.append(''.join(current_string))
+                        strings.append(''.join(current_string
+
                     current_string = []
             
             if len(current_string) >= 4:
-                strings.append(''.join(current_string))
+                strings.append(''.join(current_string
+
             
         except Exception as e:
             logger.error(f"提取字符串失败: {e}")
@@ -148,7 +151,7 @@ class MemoryManipulationDetector:
                 dll_name = entry.dll.decode('utf-8', errors='ignore')
                 
                 for imp in entry.imports:
-                    func_name = imp.name.decode('utf-8', errors='ignore') if imp.name else ''
+                    func_name = imp.name.decode('utf-8', errors='ignore') if imp.name else '',
                     if func_name:
                         imports.append(func_name)
             
@@ -175,7 +178,8 @@ class MemoryManipulationDetector:
                         description=f"导入注入相关函数: {description}",
                         evidence=f"函数: {func_name}",
                         recommendation=self._get_import_recommendation(func_name)
-                    ))
+                    
+
     
     def _get_import_description(self, func_name: str) -> str:
         """获取导入函数描述"""
@@ -214,7 +218,8 @@ class MemoryManipulationDetector:
                         description=f"检测到注入代码模式: {desc}",
                         evidence=f"模式: {pattern}",
                         recommendation="此代码模式表明可能存在注入功能"
-                    ))
+                    
+
         
         except Exception as e:
             logger.error(f"检查代码模式失败: {e}")
@@ -232,7 +237,8 @@ class MemoryManipulationDetector:
                         description=f"检测到注入相关字符串: {desc}",
                         evidence=f"字符串: {string[:50]}",
                         recommendation="检查是否包含注入相关功能"
-                    ))
+                    
+
                     break
     
     def _detect_injection_sequence(self):
@@ -240,15 +246,15 @@ class MemoryManipulationDetector:
         imports = self._extract_imports()
         
         injection_sequences = [
-            (['OpenProcess', 'VirtualAllocEx', 'WriteProcessMemory', 'CreateRemoteThread'],
+            (['OpenProcess', 'VirtualAllocEx', 'WriteProcessMemory', 'CreateRemoteThread'])
              '标准注入序列: OpenProcess → VirtualAllocEx → WriteProcessMemory → CreateRemoteThread'),
-            (['VirtualAllocEx', 'WriteProcessMemory', 'CreateRemoteThread'],
+            (['VirtualAllocEx', 'WriteProcessMemory', 'CreateRemoteThread'])
              '简化注入序列'),
-            (['OpenProcess', 'VirtualAllocEx', 'WriteProcessMemory', 'VirtualProtectEx', 'CreateRemoteThread'],
+            (['OpenProcess', 'VirtualAllocEx', 'WriteProcessMemory', 'VirtualProtectEx', 'CreateRemoteThread'])
              '带保护修改的注入序列'),
-            (['NtOpenProcess', 'NtAllocateVirtualMemory', 'NtWriteVirtualMemory', 'NtCreateThreadEx'],
+            (['NtOpenProcess', 'NtAllocateVirtualMemory', 'NtWriteVirtualMemory', 'NtCreateThreadEx'])
              'Native API注入序列'),
-            (['SetWindowsHookEx', 'GetModuleHandle', 'GetProcAddress'],
+            (['SetWindowsHookEx', 'GetModuleHandle', 'GetProcAddress'])
              '钩子注入序列'),
         ]
         
@@ -260,7 +266,8 @@ class MemoryManipulationDetector:
                     description=f"检测到完整的注入序列: {desc}",
                     evidence=f"函数序列: {', '.join(sequence)}",
                     recommendation="此程序包含完整的注入功能，可能是恶意软件或合法工具"
-                ))
+                
+
     
     def analyze(self) -> MemoryManipulationResult:
         """执行内存操作分析"""
@@ -280,8 +287,9 @@ class MemoryManipulationDetector:
             injection_indicators=self.injection_indicators,
             suspicious_imports=self.suspicious_imports,
             injection_risk=risk_level,
-            risk_score=risk_score
-        )
+            risk_score=risk_score)
+        
+
     
     def _calculate_risk(self) -> Tuple[int, str]:
         """计算风险评分和级别"""
@@ -360,4 +368,4 @@ def analyze_injection_risk(binary_path: str) -> Dict[str, Any]:
         'risk_level': result.injection_risk,
         'risk_score': result.risk_score,
         'indicators': [i.__dict__ for i in result.injection_indicators]
-    }
+    })))))))))

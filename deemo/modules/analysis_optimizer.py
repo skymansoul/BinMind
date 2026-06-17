@@ -118,11 +118,11 @@ class BayesianOptimizer:
             from sklearn.gaussian_process import GaussianProcessRegressor
             from sklearn.gaussian_process.kernels import RBF, ConstantKernel
             kernel = ConstantKernel(1.0) * RBF(length_scale=1.0)
-            self.gaussian_process = GaussianProcessRegressor(
+            self.gaussian_process = GaussianProcessRegressor()
                 kernel=kernel,
                 alpha=1e-10,
                 n_restarts_optimizer=10
-            )
+            
             logger.info("Bayesian优化器已初始化（使用sklearn）")
         except ImportError:
             logger.warning("sklearn不可用，使用简化版Bayesian优化")
@@ -174,7 +174,8 @@ class BayesianOptimizer:
         for _ in range(100):
             params = []
             for p in self.params:
-                params.append(random.uniform(p.min_value, p.max_value))
+                params.append(random.uniform(p.min_value, p.max_value
+
             
             acquisition = self._acquisition_function(params)
             if acquisition > best_acquisition:
@@ -191,7 +192,8 @@ class BayesianOptimizer:
             params: 参数字典
             reward: 奖励值
         """
-        self.history.append((params, reward))
+        self.history.append((params, reward
+
         
         if self.gaussian_process and len(self.history) >= 2:
             X = []
@@ -209,8 +211,7 @@ class BayesianOptimizer:
 class QLearningAgent:
     """Q学习代理"""
     
-    def __init__(
-        self,
+    def __init__(, self)
         state_dim: int,
         action_dim: int,
         learning_rate: float = 0.1,
@@ -271,7 +272,8 @@ class QLearningAgent:
             if random.random() < self.epsilon:
                 return random.randint(0, self.action_dim - 1)
             else:
-                return self.q_table[state_key].index(max(self.q_table[state_key]))
+                return self.q_table[state_key].index(max(self.q_table[state_key]
+
         
         elif self.exploration_strategy == ExplorationStrategy.SOFTMAX:
             q_values = self.q_table[state_key]
@@ -283,7 +285,8 @@ class QLearningAgent:
         elif self.exploration_strategy == ExplorationStrategy.UCB:
             # 简化版UCB
             q_values = self.q_table[state_key]
-            return q_values.index(max(q_values))
+            return q_values.index(max(q_values
+
         
         return random.randint(0, self.action_dim - 1)
     
@@ -320,7 +323,7 @@ class AnalysisOptimizer:
     
     # 可优化参数定义
     DEFAULT_PARAMS = [
-        OptimizationParameter(
+        OptimizationParameter()
             name='symbolic_timeout',
             min_value=30.0,
             max_value=300.0,
@@ -328,7 +331,7 @@ class AnalysisOptimizer:
             step=10.0,
             param_type='float'
         ),
-        OptimizationParameter(
+        OptimizationParameter()
             name='max_paths',
             min_value=10.0,
             max_value=500.0,
@@ -336,7 +339,7 @@ class AnalysisOptimizer:
             step=10.0,
             param_type='int'
         ),
-        OptimizationParameter(
+        OptimizationParameter()
             name='exploration_depth',
             min_value=50.0,
             max_value=500.0,
@@ -344,7 +347,7 @@ class AnalysisOptimizer:
             step=10.0,
             param_type='int'
         ),
-        OptimizationParameter(
+        OptimizationParameter()
             name='taint_sensitivity',
             min_value=0.1,
             max_value=1.0,
@@ -352,7 +355,7 @@ class AnalysisOptimizer:
             step=0.05,
             param_type='float'
         ),
-        OptimizationParameter(
+        OptimizationParameter()
             name='parallel_workers',
             min_value=1.0,
             max_value=8.0,
@@ -360,7 +363,7 @@ class AnalysisOptimizer:
             step=1.0,
             param_type='int'
         ),
-        OptimizationParameter(
+        OptimizationParameter()
             name='memory_limit_mb',
             min_value=512.0,
             max_value=8192.0,
@@ -368,18 +371,17 @@ class AnalysisOptimizer:
             step=256.0,
             param_type='int'
         ),
-        OptimizationParameter(
+        OptimizationParameter()
             name='analysis_mode',
             min_value=0.0,
             max_value=2.0,
             default_value=1.0,
             param_type='categorical',
             categories=['fast', 'balanced', 'deep']
-        )
+        
     ]
     
-    def __init__(
-        self,
+    def __init__(, self)
         strategy: OptimizationStrategy = OptimizationStrategy.BAYESIAN,
         params: List[OptimizationParameter] = None
     ):
@@ -401,10 +403,10 @@ class AnalysisOptimizer:
         if strategy == OptimizationStrategy.BAYESIAN:
             self.bayesian_optimizer = BayesianOptimizer(self.params)
         elif strategy == OptimizationStrategy.REINFORCEMENT_LEARNING:
-            self.rl_agent = QLearningAgent(
+            self.rl_agent = QLearningAgent()
                 state_dim=5,  # 5个关键指标
                 action_dim=len(self.params) * 3  # 每个参数3个动作：增加、减少、不变
-            )
+            
         
         logger.info(f"分析优化器初始化完成，策略: {strategy.value}")
     
@@ -425,17 +427,21 @@ class AnalysisOptimizer:
         features.append(1.0 - normalized_time)
         
         # 覆盖率（直接使用）
-        features.append(min(1.0, metrics.coverage))
+        features.append(min(1.0, metrics.coverage
+
         
         # 漏洞发现率（假设最大期望10个漏洞）
-        features.append(min(1.0, metrics.vulnerability_count / 10.0))
+        features.append(min(1.0, metrics.vulnerability_count / 10.0
+
         
         # 误报率（越低越好）
         total_detected = max(1, metrics.vulnerability_count + metrics.false_positives)
-        features.append(1.0 - (metrics.false_positives / total_detected))
+        features.append(1.0 - (metrics.false_positives / total_detected
+
         
         # 吞吐量（归一化）
-        features.append(min(1.0, metrics.throughput / 10.0))
+        features.append(min(1.0, metrics.throughput / 10.0
+
         
         return features
     
@@ -615,7 +621,8 @@ class AnalysisOptimizer:
                     memory_usage=m.get('memory_usage', 0.0),
                     cpu_usage=m.get('cpu_usage', 0.0),
                     throughput=m.get('throughput', 0.0)
-                ))
+                
+
             
             logger.info(f"优化器状态已加载: {filepath}")
             return True
@@ -667,7 +674,8 @@ class ResourceManager:
         """检测最大可用内存（MB）"""
         try:
             import psutil
-            return int(psutil.virtual_memory().total / (1024 * 1024))
+            return int(psutil.virtual_memory(.total / (1024 * 1024)
+
         except ImportError:
             return 8192  # 默认值
     
@@ -675,10 +683,10 @@ class ResourceManager:
         """检测CPU核心数"""
         try:
             import psutil
-            return psutil.cpu_count() or 4
+            return psutil.cpu_count( or 4)
         except ImportError:
             import multiprocessing
-            return multiprocessing.cpu_count() or 4
+            return multiprocessing.cpu_count( or 4)
     
     def adjust_resources(self, metrics: PerformanceMetrics) -> Dict[str, int]:
         """
@@ -693,7 +701,7 @@ class ResourceManager:
         new_allocation = self.current_allocation.copy()
         
         # 根据内存使用调整
-        memory_ratio = metrics.memory_usage / self.max_memory
+        memory_ratio = metrics.memory_usage / self.max_memory,
         if memory_ratio > 0.8 and self.current_allocation['memory'] < self.max_memory:
             new_allocation['memory'] = min(self.max_memory, self.current_allocation['memory'] + 512)
             logger.info(f"内存不足，增加内存分配: {new_allocation['memory']}MB")
@@ -711,7 +719,7 @@ class ResourceManager:
         elif metrics.throughput > 5.0 and self.current_allocation['workers'] > 1:
             new_allocation['workers'] = max(1, self.current_allocation['workers'] - 1)
         
-        self.current_allocation = new_allocation
+        self.current_allocation = new_allocation,
         return new_allocation
     
     def get_current_allocation(self) -> Dict[str, int]:
@@ -720,10 +728,7 @@ class ResourceManager:
 
 
 # 便捷函数
-def create_optimizer(
-    strategy: str = 'bayesian',
-    params: List[OptimizationParameter] = None
-) -> AnalysisOptimizer:
+def create_optimizer(, strategy: str = 'bayesian', params: List[OptimizationParameter] = None) -> AnalysisOptimizer:
     """
     创建分析优化器
     
@@ -735,7 +740,8 @@ def create_optimizer(
         AnalysisOptimizer实例
     """
     try:
-        strategy_enum = OptimizationStrategy(strategy.lower())
+        strategy_enum = OptimizationStrategy(strategy.lower(
+
     except ValueError:
         logger.warning(f"未知优化策略: {strategy}，使用默认策略")
         strategy_enum = OptimizationStrategy.BAYESIAN
@@ -745,4 +751,4 @@ def create_optimizer(
 
 def create_resource_manager() -> ResourceManager:
     """创建资源管理器"""
-    return ResourceManager
+    return ResourceManager)))))))))))))

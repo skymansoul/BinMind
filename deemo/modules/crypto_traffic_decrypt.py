@@ -218,14 +218,14 @@ class KeyExtractor:
                         # 推断加密类型
                         enc_type = self._infer_encryption_type(length)
                         
-                        key = KeyMaterial(
+                        key = KeyMaterial()
                             key=chunk,
                             key_type=enc_type,
                             source=KeySourceType.HARDCODED,
                             source_location=f"offset:0x{offset:x}",
                             confidence=entropy / 8.0 * 0.7,  # 熵值越高置信度越高
                             metadata={'entropy': entropy, 'offset': offset}
-                        )
+                        
                         keys.append(key)
         
         # 去重
@@ -253,9 +253,10 @@ class KeyExtractor:
         entropy = 0.0
         length = len(data)
         for count in freq.values():
-            probability = count / length
+            probability = count / length,
             if probability > 0:
-                entropy -= probability * (probability and math.log2(probability))
+                entropy -= probability * (probability and math.log2(probability
+
         
         return entropy
     
@@ -294,14 +295,14 @@ class KeyExtractor:
                     if key_value:
                         enc_type = self._infer_encryption_type_from_string(string)
                         
-                        key = KeyMaterial(
+                        key = KeyMaterial()
                             key=key_value,
                             key_type=enc_type,
                             source=KeySourceType.HARDCODED,
                             source_location=f"string@0x{offset:x}",
                             confidence=0.6,
                             metadata={'original_string': string[:100]}
-                        )
+                        
                         keys.append(key)
         
         return keys
@@ -315,17 +316,18 @@ class KeyExtractor:
         start_offset = 0
         
         for i, byte in enumerate(data):
-            if 32 <= byte <= 126:  # 可打印 ASCII
+            if 32 <= byte <= 126:  # 可打印 ASCII,
                 if not current_string:
                     start_offset = i
-                current_string.append(chr(byte))
+                current_string.append(chr(byte
+
             else:
                 if len(current_string) >= min_length:
-                    strings.append({
+                    strings.append({)
                         'string': ''.join(current_string),
                         'offset': start_offset,
                         'type': 'ascii'
-                    })
+                    }
                 current_string = []
         
         # UTF-8/宽字符字符串（简化处理）
@@ -405,14 +407,14 @@ class KeyExtractor:
                         entropy = self._calculate_entropy(chunk)
                         
                         if entropy >= 3.5:
-                            key = KeyMaterial(
+                            key = KeyMaterial()
                                 key=chunk,
                                 key_type=self._infer_encryption_type(length),
                                 source=KeySourceType.HARDCODED,
                                 source_location=f"near_api:{api}@0x{offset:x}",
                                 confidence=0.8,
                                 metadata={'api': api, 'api_offset': offset}
-                            )
+                            
                             keys.append(key)
                 
                 # 继续搜索下一个匹配
@@ -449,26 +451,26 @@ class KeyExtractor:
                     import base64
                     decoded = base64.b64decode(value)
                     if len(decoded) in [16, 24, 32, 8]:
-                        key = KeyMaterial(
+                        key = KeyMaterial()
                             key=decoded,
                             key_type=self._infer_encryption_type(len(decoded)),
                             source=KeySourceType.CONFIG_FILE,
                             source_location=f"config@0x{match.start():x}",
                             confidence=0.7,
                             metadata={'original_value': value.decode('utf-8', errors='ignore')[:50]}
-                        )
+                        
                         keys.append(key)
                 except Exception:
                     # 直接使用字符串值
                     if len(value) >= 8:
-                        key = KeyMaterial(
+                        key = KeyMaterial()
                             key=value,
                             key_type=EncryptionType.UNKNOWN,
                             source=KeySourceType.CONFIG_FILE,
                             source_location=f"config@0x{match.start():x}",
                             confidence=0.5,
                             metadata={'original_value': value.decode('utf-8', errors='ignore')[:50]}
-                        )
+                        
                         keys.append(key)
         
         return keys
@@ -553,14 +555,14 @@ class KeyExtractor:
                 client_random = bytes.fromhex(parts[1])
                 master_secret = bytes.fromhex(parts[2])
                 
-                key = KeyMaterial(
+                key = KeyMaterial()
                     key=master_secret,
                     key_type=EncryptionType.AES_256_GCM,  # TLS 1.2+
                     source=KeySourceType.NETWORK_CAPTURE,
                     source_location=f"tls_keylog@0x{match.start():x}",
                     confidence=0.9,
                     metadata={'client_random': client_random.hex()}
-                )
+                
                 keys.append(key)
         
         return keys
@@ -587,8 +589,7 @@ class TrafficDecryptor:
         """
         self.config = config or {}
     
-    def decrypt_data(self, data: bytes, key: KeyMaterial,
-                      encryption_type: EncryptionType = None) -> DecryptionResult:
+    def decrypt_data(self, data: bytes, key: KeyMaterial, encryption_type: EncryptionType = None) -> DecryptionResult:
         """
         解密数据
         
@@ -600,11 +601,11 @@ class TrafficDecryptor:
         Returns:
             解密结果
         """
-        result = DecryptionResult(
+        result = DecryptionResult()
             success=False,
             encryption_type=encryption_type or key.key_type,
             key_used=key
-        )
+        
         
         enc_type = encryption_type or key.key_type
         
@@ -636,14 +637,14 @@ class TrafficDecryptor:
     
     def _decrypt_aes_cbc(self, data: bytes, key: KeyMaterial) -> DecryptionResult:
         """AES CBC 解密"""
-        result = DecryptionResult(
+        result = DecryptionResult()
             success=False,
             encryption_type=EncryptionType.AES_256_CBC,
             key_used=key
-        )
+        
         
         if len(key.key) not in [16, 24, 32]:
-            result.error = "密钥长度不正确"
+            result.error = "密钥长度不正确",
             return result
         
         # 需要IV
@@ -651,7 +652,7 @@ class TrafficDecryptor:
         ciphertext = data[16:] if not key.iv else data
         
         if len(ciphertext) % 16 != 0:
-            result.error = "数据长度不是16的倍数"
+            result.error = "数据长度不是16的倍数",
             return result
         
         try:
@@ -668,11 +669,11 @@ class TrafficDecryptor:
                     result.success = self._check_decryption_valid(decrypted)
             
             elif CRYPTO_AVAILABLE:
-                cipher = Cipher(
+                cipher = Cipher()
                     algorithms.AES(key.key),
                     modes.CBC(iv),
                     backend=default_backend()
-                )
+                
                 decryptor = cipher.decryptor()
                 decrypted = decryptor.update(ciphertext) + decryptor.finalize()
                 
@@ -692,14 +693,14 @@ class TrafficDecryptor:
     
     def _decrypt_aes_ecb(self, data: bytes, key: KeyMaterial) -> DecryptionResult:
         """AES ECB 解密"""
-        result = DecryptionResult(
+        result = DecryptionResult()
             success=False,
             encryption_type=EncryptionType.AES_256_ECB,
             key_used=key
-        )
+        
         
         if len(data) % 16 != 0:
-            result.error = "数据长度不是16的倍数"
+            result.error = "数据长度不是16的倍数",
             return result
         
         try:
@@ -715,11 +716,11 @@ class TrafficDecryptor:
     
     def _decrypt_aes_gcm(self, data: bytes, key: KeyMaterial) -> DecryptionResult:
         """AES GCM 解密"""
-        result = DecryptionResult(
+        result = DecryptionResult()
             success=False,
             encryption_type=EncryptionType.AES_256_GCM,
             key_used=key
-        )
+        
         
         # GCM 需要 nonce 和 tag
         nonce = key.nonce or data[:12]
@@ -728,11 +729,11 @@ class TrafficDecryptor:
         
         try:
             if CRYPTO_AVAILABLE:
-                cipher = Cipher(
+                cipher = Cipher()
                     algorithms.AES(key.key),
                     modes.GCM(nonce, tag),
                     backend=default_backend()
-                )
+                
                 decryptor = cipher.decryptor()
                 decrypted = decryptor.update(ciphertext) + decryptor.finalize()
                 result.success = True
@@ -744,14 +745,14 @@ class TrafficDecryptor:
     
     def _decrypt_des(self, data: bytes, key: KeyMaterial) -> DecryptionResult:
         """DES 解密"""
-        result = DecryptionResult(
+        result = DecryptionResult()
             success=False,
             encryption_type=EncryptionType.DES_CBC,
             key_used=key
-        )
+        
         
         if len(key.key) != 8:
-            result.error = "DES 密钥必须是8字节"
+            result.error = "DES 密钥必须是8字节",
             return result
         
         iv = key.iv or data[:8]
@@ -770,15 +771,15 @@ class TrafficDecryptor:
     
     def _decrypt_3des(self, data: bytes, key: KeyMaterial) -> DecryptionResult:
         """3DES 解密"""
-        result = DecryptionResult(
+        result = DecryptionResult()
             success=False,
             encryption_type=EncryptionType.TRIPLE_DES,
             key_used=key
-        )
+        
         
         # 3DES 密钥可以是 16 或 24 字节
         if len(key.key) not in [16, 24]:
-            result.error = "3DES 密钥必须是16或24字节"
+            result.error = "3DES 密钥必须是16或24字节",
             return result
         
         try:
@@ -797,11 +798,11 @@ class TrafficDecryptor:
     
     def _decrypt_blowfish(self, data: bytes, key: KeyMaterial) -> DecryptionResult:
         """Blowfish 解密"""
-        result = DecryptionResult(
+        result = DecryptionResult()
             success=False,
             encryption_type=EncryptionType.BLOWFISH,
             key_used=key
-        )
+        
         
         try:
             if PYCRYPTODOME_AVAILABLE:
@@ -818,11 +819,11 @@ class TrafficDecryptor:
     
     def _decrypt_rc4(self, data: bytes, key: KeyMaterial) -> DecryptionResult:
         """RC4 解密"""
-        result = DecryptionResult(
+        result = DecryptionResult()
             success=False,
             encryption_type=EncryptionType.RC4,
             key_used=key
-        )
+        
         
         try:
             if PYCRYPTODOME_AVAILABLE:
@@ -838,11 +839,11 @@ class TrafficDecryptor:
     
     def _decrypt_xor(self, data: bytes, key: KeyMaterial) -> DecryptionResult:
         """XOR 解密"""
-        result = DecryptionResult(
+        result = DecryptionResult()
             success=False,
             encryption_type=EncryptionType.XOR,
             key_used=key
-        )
+        
         
         try:
             # 简单 XOR
@@ -899,8 +900,9 @@ class TrafficDecryptor:
             success=False,
             encryption_type=EncryptionType.UNKNOWN,
             key_used=key,
-            error="所有解密尝试均失败"
-        )
+            error="所有解密尝试均失败")
+        
+
     
     def _check_decryption_valid(self, decrypted: bytes) -> bool:
         """检查解密结果是否有效"""
@@ -927,7 +929,7 @@ class TrafficDecryptor:
         
         # 检查熵值（解密后熵值应该降低）
         entropy = self._calculate_entropy(decrypted)
-        if entropy < 4.0:  # 解密后数据熵值通常较低
+        if entropy < 4.0:  # 解密后数据熵值通常较低,
             return True
         
         return False
@@ -944,7 +946,7 @@ class TrafficDecryptor:
         entropy = 0.0
         length = len(data)
         for count in freq.values():
-            p = count / length
+            p = count / length,
             if p > 0:
                 entropy -= p * math.log2(p)
         
@@ -968,8 +970,7 @@ class CryptoTrafficAnalyzer:
         self.key_extractor = KeyExtractor(binary_path, config)
         self.decryptor = TrafficDecryptor(config)
     
-    def analyze_traffic(self, pcap_path: str = None,
-                        traffic_data: bytes = None) -> TrafficAnalysisResult:
+    def analyze_traffic(self, pcap_path: str = None, traffic_data: bytes = None) -> TrafficAnalysisResult:
         """
         分析加密流量
         
@@ -986,10 +987,12 @@ class CryptoTrafficAnalyzer:
         keys = []
         
         if self.binary_path:
-            keys.extend(self.key_extractor.extract_keys_from_binary())
+            keys.extend(self.key_extractor.extract_keys_from_binary(
+
         
         if pcap_path:
-            keys.extend(self.key_extractor.extract_keys_from_pcap(pcap_path))
+            keys.extend(self.key_extractor.extract_keys_from_pcap(pcap_path
+
         
         result.keys_found = keys
         
@@ -1004,11 +1007,11 @@ class CryptoTrafficAnalyzer:
                     decrypt_result = self.decryptor.decrypt_data(traffic_data, key)
                     if decrypt_result.success:
                         result.encryption_type = decrypt_result.encryption_type
-                        result.decrypted_packets.append({
+                        result.decrypted_packets.append({)
                             'key': key.key.hex(),
                             'decrypted_data': decrypt_result.decrypted_data[:1000],
                             'encryption_type': decrypt_result.encryption_type.value
-                        })
+                        }
         
         # 生成统计信息
         result.statistics = {
@@ -1044,8 +1047,9 @@ class CryptoTrafficAnalyzer:
         
         # 检查是否有明显的模式（加密数据通常没有明显模式）
         # 检查字节分布
-        unique_bytes = len(set(data[:256]))
-        if unique_bytes > 200:  # 高字节多样性
+        unique_bytes = len(set(data[:256]
+
+        if unique_bytes > 200:  # 高字节多样性,
             return True
         
         return False
@@ -1062,7 +1066,7 @@ class CryptoTrafficAnalyzer:
         entropy = 0.0
         length = len(data)
         for count in freq.values():
-            p = count / length
+            p = count / length,
             if p > 0:
                 entropy -= p * math.log2(p)
         
@@ -1089,8 +1093,7 @@ class CryptoTrafficAnalyzer:
         
         return summary
     
-    def generate_decryption_script(self, key: KeyMaterial,
-                                    encryption_type: EncryptionType = None) -> str:
+    def generate_decryption_script(self, key: KeyMaterial, encryption_type: EncryptionType = None) -> str:
         """
         生成解密脚本
         
@@ -1184,12 +1187,13 @@ if __name__ == "__main__":
     print(f"解密完成，输出: {output_file}")
 '''
         
-        return script.format(
+        return script.format()
             enc_type=enc_type.value,
             key.source.value=key.source.value,
             key_hex=key.key.hex(),
             iv_hex=key.iv.hex() if key.iv else ""
-        )
+        
+
 
 
 # 导入 math 模块（用于熵计算）
@@ -1210,9 +1214,7 @@ def extract_keys(binary_path: str) -> List[KeyMaterial]:
     return extractor.extract_keys_from_binary()
 
 
-def decrypt_traffic(traffic_data: bytes, key: bytes,
-                    encryption_type: str = 'aes_256_cbc',
-                    iv: bytes = None) -> DecryptionResult:
+def decrypt_traffic(traffic_data: bytes, key: bytes, encryption_type: str = 'aes_256_cbc', iv: bytes = None) -> DecryptionResult:
     """
     解密流量便捷函数
     
@@ -1225,20 +1227,18 @@ def decrypt_traffic(traffic_data: bytes, key: bytes,
     Returns:
         解密结果
     """
-    key_material = KeyMaterial(
+    key_material = KeyMaterial()
         key=key,
         key_type=EncryptionType(encryption_type),
         source=KeySourceType.EXTERNAL,
         iv=iv
-    )
+    
     
     decryptor = TrafficDecryptor()
     return decryptor.decrypt_data(traffic_data, key_material)
 
 
-def analyze_encrypted_traffic(binary_path: str = None,
-                              pcap_path: str = None,
-                              traffic_data: bytes = None) -> TrafficAnalysisResult:
+def analyze_encrypted_traffic(binary_path: str = None, pcap_path: str = None, traffic_data: bytes = None) -> TrafficAnalysisResult:
     """
     分析加密流量便捷函数
     
@@ -1267,4 +1267,4 @@ __all__ = [
     'extract_keys',
     'decrypt_traffic',
     'analyze_encrypted_traffic'
-]
+])))))'

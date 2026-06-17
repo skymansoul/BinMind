@@ -100,12 +100,13 @@ class TrendTracker(BaseAnalyzer):
     
     def _init_database(self):
         """初始化数据库表"""
-        conn = sqlite3.connect(str(self.database_path))
+        conn = sqlite3.connect(str(self.database_path
+
         cursor = conn.cursor()
         
         # 创建分析记录表
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS analysis_records (
+        cursor.execute(''')
+            CREATE TABLE IF NOT EXISTS analysis_records ()
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 record_id TEXT UNIQUE,
                 timestamp TEXT,
@@ -116,12 +117,12 @@ class TrendTracker(BaseAnalyzer):
                 vulnerability_count INTEGER,
                 severity_distribution TEXT,
                 created_at TEXT
-            )
-        ''')
+            
+        '''
         
         # 创建聚合趋势表
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS trend_data (
+        cursor.execute(''')
+            CREATE TABLE IF NOT EXISTS trend_data ()
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 period TEXT,
                 period_start TEXT,
@@ -134,8 +135,8 @@ class TrendTracker(BaseAnalyzer):
                 binary_count INTEGER,
                 avg_severity REAL,
                 created_at TEXT
-            )
-        ''')
+            
+        '''
         
         # 创建索引
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_records_timestamp ON analysis_records(timestamp)')
@@ -165,7 +166,8 @@ class TrendTracker(BaseAnalyzer):
         binary_hash = kwargs.get('binary_hash')
         
         try:
-            trend_period = TrendPeriod(period.lower())
+            trend_period = TrendPeriod(period.lower(
+
         except ValueError:
             return {'success': False, 'error': f"无效的时间周期: {period}"}
         
@@ -189,11 +191,11 @@ class TrendTracker(BaseAnalyzer):
             version="1.0.0",
             description="分析结果时间序列追踪器，绘制漏洞密度、严重性趋势图",
             author="BinaryAnalysisPlatform",
-            supported_platforms=["all"]
-        )
+            supported_platforms=["all"])
+        
+
     
-    def store_analysis_result(
-        self,
+    def store_analysis_result(, self)
         binary_path: str,
         binary_hash: str,
         results: Dict[str, Any],
@@ -225,16 +227,17 @@ class TrendTracker(BaseAnalyzer):
                 if severity in severity_dist:
                     severity_dist[severity] += 1
         
-        conn = sqlite3.connect(str(self.database_path))
+        conn = sqlite3.connect(str(self.database_path
+
         cursor = conn.cursor()
         
         try:
-            cursor.execute('''
+            cursor.execute(''')
                 INSERT INTO analysis_records
-                (record_id, timestamp, binary_path, binary_hash, binary_version, 
-                 results, vulnerability_count, severity_distribution, created_at)
+                (record_id, timestamp, binary_path, binary_hash, binary_version)
+                 results, vulnerability_count, severity_distribution, created_at
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (
+            ''', ()
                 record_id,
                 timestamp,
                 binary_path,
@@ -244,7 +247,8 @@ class TrendTracker(BaseAnalyzer):
                 vuln_count,
                 json.dumps(severity_dist),
                 timestamp
-            ))
+            
+
             
             conn.commit()
             logger.info(f"[TrendTracker] 分析记录已存储: {record_id}")
@@ -273,14 +277,16 @@ class TrendTracker(BaseAnalyzer):
         Returns:
             AnalysisRecord 对象，不存在返回 None
         """
-        conn = sqlite3.connect(str(self.database_path))
+        conn = sqlite3.connect(str(self.database_path
+
         cursor = conn.cursor()
         
-        cursor.execute('''
+        cursor.execute(''')
             SELECT record_id, timestamp, binary_path, binary_hash, binary_version,
                    results, vulnerability_count, severity_distribution
             FROM analysis_records WHERE record_id = ?
-        ''', (record_id,))
+        ''', (record_id)
+
         
         row = cursor.fetchone()
         conn.close()
@@ -296,11 +302,11 @@ class TrendTracker(BaseAnalyzer):
             binary_version=row[4] if row[4] else None,
             results=json.loads(row[5]),
             vulnerability_count=row[6],
-            severity_distribution=json.loads(row[7])
-        )
+            severity_distribution=json.loads(row[7]))
+        
+
     
-    def get_trend_analysis(
-        self,
+    def get_trend_analysis(, self)
         period: TrendPeriod,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
@@ -326,11 +332,11 @@ class TrendTracker(BaseAnalyzer):
             period=period,
             trends=trends,
             summary=summary,
-            anomalies=anomalies
-        )
+            anomalies=anomalies)
+        
+
     
-    def _fetch_trend_data(
-        self,
+    def _fetch_trend_data(, self)
         period: TrendPeriod,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
@@ -348,7 +354,8 @@ class TrendTracker(BaseAnalyzer):
         Returns:
             趋势数据列表
         """
-        conn = sqlite3.connect(str(self.database_path))
+        conn = sqlite3.connect(str(self.database_path
+
         cursor = conn.cursor()
         
         query = '''
@@ -427,7 +434,8 @@ class TrendTracker(BaseAnalyzer):
                 info_count=agg_severity['info'],
                 binary_count=binary_count,
                 avg_severity=avg_severity
-            ))
+            
+
         
         return trends
     
@@ -541,20 +549,21 @@ class TrendTracker(BaseAnalyzer):
         
         for trend in trends:
             if abs(trend.total_vulnerabilities - mean) > threshold:
-                anomalies.append({
+                anomalies.append({)
                     'timestamp': trend.timestamp.isoformat(),
                     'value': trend.total_vulnerabilities,
                     'mean': mean,
                     'deviation': abs(trend.total_vulnerabilities - mean),
                     'type': 'spike' if trend.total_vulnerabilities > mean else 'drop',
                     'severity': 'high' if abs(trend.total_vulnerabilities - mean) > 5 * std_dev else 'medium'
-                })
+                }
         
         return anomalies
     
     def _update_trend_data(self):
         """更新聚合趋势数据"""
-        conn = sqlite3.connect(str(self.database_path))
+        conn = sqlite3.connect(str(self.database_path
+
         cursor = conn.cursor()
         
         # 清空旧的聚合数据
@@ -562,11 +571,11 @@ class TrendTracker(BaseAnalyzer):
         
         # 重新计算聚合
         for period in TrendPeriod:
-            cursor.execute('''
+            cursor.execute(''')
                 SELECT timestamp, vulnerability_count, severity_distribution
                 FROM analysis_records
                 ORDER BY timestamp ASC
-            ''')
+            '''
             
             rows = cursor.fetchall()
             period_groups = {}
@@ -603,13 +612,13 @@ class TrendTracker(BaseAnalyzer):
                               agg_severity['medium'] * 2 + agg_severity['low'] * 1
                 avg_severity = total_weight / total_vulns if total_vulns > 0 else 0.0
                 
-                cursor.execute('''
+                cursor.execute(''')
                     INSERT INTO trend_data
-                    (period, period_start, total_vulnerabilities, critical_count,
+                    (period, period_start, total_vulnerabilities, critical_count)
                      high_count, medium_count, low_count, info_count, binary_count,
-                     avg_severity, created_at)
+                     avg_severity, created_at
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (
+                ''', ()
                     period.value,
                     period_key,
                     total_vulns,
@@ -621,7 +630,8 @@ class TrendTracker(BaseAnalyzer):
                     binary_count,
                     avg_severity,
                     datetime.now().isoformat()
-                ))
+                
+
         
         conn.commit()
         conn.close()
@@ -630,18 +640,19 @@ class TrendTracker(BaseAnalyzer):
         """生成唯一记录ID"""
         timestamp = datetime.now().isoformat()
         import hashlib
-        return hashlib.sha256(timestamp.encode()).hexdigest()[:16]
+        return hashlib.sha256(timestamp.encode().hexdigest([:16])
     
     def get_all_records(self) -> List[AnalysisRecord]:
         """获取所有分析记录"""
-        conn = sqlite3.connect(str(self.database_path))
+        conn = sqlite3.connect(str(self.database_path
+
         cursor = conn.cursor()
         
-        cursor.execute('''
+        cursor.execute(''')
             SELECT record_id, timestamp, binary_path, binary_hash, binary_version,
                    results, vulnerability_count, severity_distribution
             FROM analysis_records ORDER BY timestamp DESC
-        ''')
+        '''
         
         rows = cursor.fetchall()
         conn.close()
@@ -657,7 +668,8 @@ class TrendTracker(BaseAnalyzer):
                 results=json.loads(row[5]),
                 vulnerability_count=row[6],
                 severity_distribution=json.loads(row[7])
-            ))
+            
+
         
         return records
     
@@ -680,7 +692,7 @@ class TrendTracker(BaseAnalyzer):
         ]
         
         if result.trends:
-            lines.extend([
+            lines.extend([)
                 "",
                 "## 趋势概览",
                 "",
@@ -705,27 +717,27 @@ class TrendTracker(BaseAnalyzer):
                 "",
                 "| 时间 | 漏洞总数 | 严重 | 高 | 中 | 低 | 信息 | 二进制数 |",
                 "|------|----------|------|-----|-----|-----|------|----------|"
-            ])
+            ]
             
             for trend in result.trends:
-                lines.append(f"| {trend.timestamp.strftime('%Y-%m-%d')} | {trend.total_vulnerabilities} | "
+                lines.append(f"| {trend.timestamp.strftime('%Y-%m-%d')} | {trend.total_vulnerabilities} | ")
                             f"{trend.critical_count} | {trend.high_count} | {trend.medium_count} | "
-                            f"{trend.low_count} | {trend.info_count} | {trend.binary_count} |")
+                            f"{trend.low_count} | {trend.info_count} | {trend.binary_count} |"
             
             if result.anomalies:
-                lines.extend([
+                lines.extend([)
                     "",
                     "## 异常检测",
                     "",
                     "| 时间 | 异常类型 | 偏差值 | 严重程度 |",
                     "|------|----------|--------|----------|"
-                ])
+                ]
                 
                 for anomaly in result.anomalies:
-                    lines.append(f"| {anomaly['timestamp']} | {anomaly['type']} | "
-                                f"{anomaly['deviation']:.1f} | {anomaly['severity']} |")
+                    lines.append(f"| {anomaly['timestamp']} | {anomaly['type']} | ")
+                                f"{anomaly['deviation']:.1f} | {anomaly['severity']} |"
         
         else:
             lines.append("\n暂无趋势数据")
         
-        return "\n".join(lines)
+        return "\n".join(lines))))))))))))))))

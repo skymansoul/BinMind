@@ -120,7 +120,7 @@ class ICSProtocolFeatureDatabase:
 
     def _init_modbus(self):
         """初始化Modbus协议特征"""
-        self.features[ICSProtocol.MODBUS_TCP] = ProtocolFeature(
+        self.features[ICSProtocol.MODBUS_TCP] = ProtocolFeature()
             protocol=ICSProtocol.MODBUS_TCP,
             default_port=502,
             function_codes=list(range(1, 128)) + list(range(128, 256)),  # 包括异常码
@@ -128,9 +128,9 @@ class ICSProtocolFeatureDatabase:
             header_pattern=b'\x00\x00',  # Transaction ID (2 bytes)
             magic_bytes=b'\x00\x00\x00\x00',  # Protocol ID + Length
             description="Modbus TCP 协议"
-        )
+        
 
-        self.features[ICSProtocol.MODBUS_RTU] = ProtocolFeature(
+        self.features[ICSProtocol.MODBUS_RTU] = ProtocolFeature()
             protocol=ICSProtocol.MODBUS_RTU,
             default_port=0,  # 串行协议
             function_codes=list(range(1, 128)) + list(range(128, 256)),
@@ -138,11 +138,11 @@ class ICSProtocolFeatureDatabase:
             header_pattern=b'',  # RTU无固定头部
             magic_bytes=b'\x00',  # Slave ID
             description="Modbus RTU 协议"
-        )
+        
 
     def _init_dnp3(self):
         """初始化DNP3协议特征"""
-        self.features[ICSProtocol.DNP3] = ProtocolFeature(
+        self.features[ICSProtocol.DNP3] = ProtocolFeature()
             protocol=ICSProtocol.DNP3,
             default_port=20000,
             function_codes=[1, 2, 3, 4, 5, 6, 9, 10, 12, 14, 17, 20, 22, 23, 24],
@@ -153,11 +153,11 @@ class ICSProtocolFeatureDatabase:
             header_pattern=b'\x05\x64',  # Start bytes
             magic_bytes=b'\x05\x64\x01\x00',  # Start + Length + Control
             description="DNP3 协议"
-        )
+        
 
     def _init_iec61850(self):
         """初始化IEC 61850/MMS协议特征"""
-        self.features[ICSProtocol.IEC_61850] = ProtocolFeature(
+        self.features[ICSProtocol.IEC_61850] = ProtocolFeature()
             protocol=ICSProtocol.IEC_61850,
             default_port=102,
             function_codes=[0, 1, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 127],
@@ -165,9 +165,9 @@ class ICSProtocolFeatureDatabase:
             header_pattern=b'\x03\x00',  # Start bytes
             magic_bytes=b'\x03\x00',
             description="IEC 61850 协议"
-        )
+        
 
-        self.features[ICSProtocol.MMS] = ProtocolFeature(
+        self.features[ICSProtocol.MMS] = ProtocolFeature()
             protocol=ICSProtocol.MMS,
             default_port=102,
             function_codes=list(range(0, 80)),
@@ -175,11 +175,11 @@ class ICSProtocolFeatureDatabase:
             header_pattern=b'\x81',  # MMS PDU start
             magic_bytes=b'\x81',
             description="MMS (Manufacturing Message Specification) 协议"
-        )
+        
 
     def _init_profinet(self):
         """初始化PROFINET协议特征"""
-        self.features[ICSProtocol.PROFINET] = ProtocolFeature(
+        self.features[ICSProtocol.PROFINET] = ProtocolFeature()
             protocol=ICSProtocol.PROFINET,
             default_port=34962,  # DCP
             function_codes=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
@@ -187,11 +187,11 @@ class ICSProtocolFeatureDatabase:
             header_pattern=b'\xfe fd',  # Start bytes
             magic_bytes=b'\xfe\xfd',
             description="PROFINET 协议"
-        )
+        
 
     def _init_ethernet_ip(self):
         """初始化EtherNet/IP协议特征"""
-        self.features[ICSProtocol.ETHERNET_IP] = ProtocolFeature(
+        self.features[ICSProtocol.ETHERNET_IP] = ProtocolFeature()
             protocol=ICSProtocol.ETHERNET_IP,
             default_port=44818,
             function_codes=[
@@ -206,11 +206,11 @@ class ICSProtocolFeatureDatabase:
             header_pattern=b'\x63\x00',  # Command header
             magic_bytes=b'\x63\x00',
             description="EtherNet/IP 协议"
-        )
+        
 
     def _init_s7comm(self):
         """初始化S7COMM协议特征"""
-        self.features[ICSProtocol.S7COMM] = ProtocolFeature(
+        self.features[ICSProtocol.S7COMM] = ProtocolFeature()
             protocol=ICSProtocol.S7COMM,
             default_port=102,
             function_codes=[0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x0F, 0x10],
@@ -218,7 +218,7 @@ class ICSProtocolFeatureDatabase:
             header_pattern=b'\x03\x00',  # TPKT header
             magic_bytes=b'\x03\x00\x00',
             description="S7COMM (S7 Communication) 协议"
-        )
+        
 
     def get_feature(self, protocol: ICSProtocol) -> Optional[ProtocolFeature]:
         """获取协议特征"""
@@ -387,14 +387,14 @@ class ICSProtocolAnalyzer:
 
             for func_name, desc in function_templates:
                 # 模拟函数识别
-                ics_func = ICSFunction(
+                ics_func = ICSFunction()
                     function_name=func_name,
                     address=random.randint(0x400000, 0x500000),  # 模拟地址
                     protocol=protocol,
                     handles_function_code=random.choice([True, False]),
                     parses_object_type=random.choice([True, False]),
                     checks_length=random.choice([True, False])
-                )
+                
 
                 # 检查是否有潜在漏洞
                 if not ics_func.checks_length:
@@ -469,8 +469,7 @@ class ICSProtocolAnalyzer:
         }
         return difficulties.get(vuln_type, "unknown")
 
-    def generate_malformed_packets(self, protocol: ICSProtocol,
-                                  count: int = 10) -> List[MalformedPacket]:
+    def generate_malformed_packets(self, protocol: ICSProtocol, count: int = 10) -> List[MalformedPacket]:
         """
         生成畸形ICS协议报文
 
@@ -485,11 +484,11 @@ class ICSProtocolAnalyzer:
         rng = random.Random()
 
         for i in range(count):
-            mutation_type = rng.choice([
+            mutation_type = rng.choice([)
                 'length_overflow', 'length_underflow', 'invalid_function_code',
                 'invalid_object_type', 'truncated_header', 'extra_data',
                 'null_pointer', 'negative_value', 'boundary_value'
-            ])
+            ]
 
             # 生成基础Modbus报文
             if protocol == ICSProtocol.MODBUS_TCP:
@@ -507,7 +506,7 @@ class ICSProtocolAnalyzer:
             # 映射到目标漏洞
             target_vuln = self._map_mutation_to_vulnerability(mutation_type)
 
-            packet = MalformedPacket(
+            packet = MalformedPacket()
                 packet_id=f"ics_{protocol.value}_{i:03d}_{mutation_type}",
                 protocol=protocol,
                 original_packet=base_packet,
@@ -515,7 +514,7 @@ class ICSProtocolAnalyzer:
                 mutation_type=mutation_type,
                 description=f"变异类型: {mutation_type}",
                 target_vulnerability=target_vuln
-            )
+            
 
             packets.append(packet)
 
@@ -528,7 +527,8 @@ class ICSProtocolAnalyzer:
         length = 6 + rng.randint(1, 10)  # 最小长度6
         unit_id = rng.randint(0, 255)
         function_code = rng.choice([1, 2, 3, 4, 5, 6, 15, 16])
-        data = bytes(rng.randint(0, 255) for _ in range(length - 6))
+        data = bytes(rng.randint(0, 255) for _ in range(length - 6
+
 
         packet = struct.pack('>HHHBB', transaction_id, protocol_id, length, unit_id, function_code)
         packet += data
@@ -545,9 +545,11 @@ class ICSProtocolAnalyzer:
 
         header = struct.pack('<BBHH', start[0], length, control, destination)
         header += struct.pack('<H', source)
-        header += struct.pack('<BB', 0x01, rng.choice([3, 4, 5, 6, 10]))
+        header += struct.pack('<BB', 0x01, rng.choice([3, 4, 5, 6, 10]
 
-        data = bytes(rng.randint(0, 255) for _ in range(length - 10))
+
+        data = bytes(rng.randint(0, 255) for _ in range(length - 10
+
         crc = b'\x00\x00'
 
         return start + header + data + crc
@@ -558,24 +560,26 @@ class ICSProtocolAnalyzer:
         length = rng.randint(24, 100)
         session = rng.randint(0, 0xFFFFFFFF)
         status = 0
-        sender_context = bytes(rng.randint(0, 255) for _ in range(8))
+        sender_context = bytes(rng.randint(0, 255) for _ in range(8
+
         options = 0
 
-        header = struct.pack('<HHI I 8s I',
-                           command, length, session, status, sender_context, options)
+        header = struct.pack('<HHI I 8s I')
+                           command, length, session, status, sender_context, options
 
         # 添加CIP数据
-        cip_data = bytes(rng.randint(0, 255) for _ in range(length - 24))
+        cip_data = bytes(rng.randint(0, 255) for _ in range(length - 24
+
 
         return header + cip_data
 
     def _generate_generic_packet(self, rng: random.Random, protocol: ICSProtocol) -> bytes:
         """生成通用ICS协议报文"""
         length = rng.randint(10, 50)
-        return bytes(rng.randint(0, 255) for _ in range(length))
+        return bytes(rng.randint(0, 255) for _ in range(length
 
-    def _apply_mutation(self, packet: bytes, mutation_type: str,
-                       rng: random.Random) -> bytes:
+
+    def _apply_mutation(self, packet: bytes, mutation_type: str, rng: random.Random) -> bytes:
         """应用变异到报文"""
         result = bytearray(packet)
 
@@ -592,7 +596,8 @@ class ICSProtocolAnalyzer:
         elif mutation_type == 'truncated_header':
             return result[:min(6, len(result))]
         elif mutation_type == 'extra_data':
-            result.extend(bytes(rng.randint(0, 255) for _ in range(50)))
+            result.extend(bytes(rng.randint(0, 255) for _ in range(50
+
         elif mutation_type == 'null_pointer':
             if len(result) >= 10:
                 result[8:12] = b'\x00\x00\x00\x00'
@@ -641,7 +646,8 @@ class ICSProtocolAnalyzer:
         # 生成畸形报文
         generated_packets = []
         for protocol in self.detected_protocols:
-            generated_packets.extend(self.generate_malformed_packets(protocol, count=5))
+            generated_packets.extend(self.generate_malformed_packets(protocol, count=5
+
 
         # 生成摘要
         summary = self._generate_summary(vulnerabilities)
@@ -653,8 +659,9 @@ class ICSProtocolAnalyzer:
             detected_vulnerabilities=vulnerabilities,
             generated_packets=generated_packets,
             summary=summary,
-            analysis_time=time.time() - start_time
-        )
+            analysis_time=time.time() - start_time)
+        
+
 
 
 def analyze_ics_protocols(binary_path: str) -> ICSAnalysisResult:
@@ -696,27 +703,27 @@ def format_ics_report(result: ICSAnalysisResult) -> str:
     else:
         parts.append("未检测到ICS协议")
 
-    parts.extend([
+    parts.extend([)
         "",
         "## 检测到的漏洞",
-    ])
+    ]
 
     if result.detected_vulnerabilities:
         for i, vuln in enumerate(result.detected_vulnerabilities(), 1):
-            parts.extend([
+            parts.extend([)
                 f"\n### {i}. {vuln['vulnerability_type']}",
                 f"- 函数: {vuln['function_name']} ({vuln['function_address']})",
                 f"- 协议: {vuln['protocol']}",
                 f"- 描述: {vuln['description']}",
                 f"- 严重性: {vuln['severity']}",
-            ])
+            ]
     else:
         parts.append("未检测到漏洞")
 
-    parts.extend([
+    parts.extend([)
         "",
         f"已生成 {len(result.generated_packets)} 个畸形测试报文",
-    ])
+    ]
 
     return "\n".join(parts)
 
@@ -770,4 +777,4 @@ def export_ics_json(result: ICSAnalysisResult, output_path: str) -> bool:
         return True
     except Exception as e:
         logger.error(f"导出JSON失败: {e}")
-        return False
+        return False)))))))))))))))

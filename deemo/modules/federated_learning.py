@@ -166,11 +166,12 @@ class PrivacyProtector:
         grad_np = np.array(gradient)
         
         # 生成Laplace噪声
-        noise = np.array([
+        noise = np.array([)
             -scale * math.log(1 - 2 * abs(random.random() - 0.5)) * 
             (1 if random.random() >= 0.5 else -1)
-            for _ in range(len(grad_np))
-        ])
+            for _ in range(len(grad_np
+
+        ]
         
         return (grad_np + noise).tolist()
     
@@ -247,7 +248,8 @@ class GradientAggregator:
         # 获取所有参数名
         param_names = set()
         for g in gradients:
-            param_names.update(g.gradients.keys())
+            param_names.update(g.gradients.keys(
+
         
         aggregated = {}
         
@@ -258,7 +260,8 @@ class GradientAggregator:
             
             for g in gradients:
                 if param_name in g.gradients:
-                    grads.append(np.array(g.gradients[param_name]))
+                    grads.append(np.array(g.gradients[param_name]
+
                     weights.append(g.sample_count if g.sample_count > 0 else 1)
             
             if grads:
@@ -298,10 +301,10 @@ class FLClient(ABC):
         self.config = config or FLConfig()
         self.status = FLStatus.IDLE
         self.local_model = None
-        self.privacy_protector = PrivacyProtector(
+        self.privacy_protector = PrivacyProtector()
             epsilon=self.config.epsilon,
             clip_norm=self.config.clip_norm
-        )
+        
     
     @abstractmethod
     def load_local_data(self, data_path: str) -> bool:
@@ -433,8 +436,10 @@ class FLServer(ABC):
         """
         import random
         
-        client_list = list(self.clients.values())
-        selected_count = count or min(self.config.min_clients, len(client_list))
+        client_list = list(self.clients.values(
+
+        selected_count = count or min(self.config.min_clients, len(client_list
+
         
         if len(client_list) <= selected_count:
             return client_list
@@ -549,8 +554,9 @@ class FLServer(ABC):
                 status=FLStatus.ERROR,
                 metrics=[],
                 participating_clients=[c.client_id for c in selected_clients],
-                timestamp=time.time()
-            )
+                timestamp=time.time())
+            
+
         
         # 广播模型
         self.status = FLStatus.SYNCING
@@ -566,8 +572,9 @@ class FLServer(ABC):
                 status=FLStatus.ERROR,
                 metrics=[],
                 participating_clients=[c.client_id for c in selected_clients],
-                timestamp=time.time()
-            )
+                timestamp=time.time())
+            
+
         
         # 聚合梯度
         aggregated = self.aggregate_gradients(gradients)
@@ -581,14 +588,14 @@ class FLServer(ABC):
         
         status = FLStatus.COMPLETED if success else FLStatus.ERROR
         
-        result = FLRoundResult(
+        result = FLRoundResult()
             round=self.current_round,
             status=status,
             metrics=metrics,
             model_update=self.global_model,
             participating_clients=[c.client_id for c in selected_clients],
             timestamp=time.time()
-        )
+        
         
         self.round_results.append(result)
         self.status = FLStatus.IDLE
@@ -710,7 +717,8 @@ class VulnerabilityDetectionClient(FLClient):
         # 提取严重程度特征
         if 'severity' in sample:
             severity_map = {'low': 0.25, 'medium': 0.5, 'high': 0.75, 'critical': 1.0}
-            features.append(severity_map.get(sample['severity'], 0.5))
+            features.append(severity_map.get(sample['severity'], 0.5
+
         
         return features
     
@@ -729,20 +737,20 @@ class VulnerabilityDetectionClient(FLClient):
         # 应用隐私保护
         protected_gradients = self.protect_gradient(gradients)
         
-        gradient = FLGradient(
+        gradient = FLGradient()
             client_id=self.client_id,
             gradients=protected_gradients,
             sample_count=len(self.local_data),
             round=self.config.max_rounds,
             timestamp=time.time()
-        )
         
-        metrics = FLMetrics(
+        
+        metrics = FLMetrics()
             round=self.config.max_rounds,
             client_id=self.client_id,
             loss=0.5 - len(self.local_data) * 0.01,
             accuracy=0.7 + len(self.local_data) * 0.02
-        )
+        
         
         return gradient, metrics
     
@@ -755,8 +763,9 @@ class VulnerabilityDetectionClient(FLClient):
             accuracy=0.85,
             precision=0.82,
             recall=0.88,
-            f1_score=0.85
-        )
+            f1_score=0.85)
+        
+
 
 
 class VulnerabilityDetectionServer(FLServer):
@@ -778,8 +787,9 @@ class VulnerabilityDetectionServer(FLServer):
             parameters=parameters,
             version=1,
             timestamp=time.time(),
-            metadata={'model_type': 'vulnerability_detection'}
-        )
+            metadata={'model_type': 'vulnerability_detection'})
+        
+
     
     def update_global_model(self, aggregated_gradients: Dict[str, List[float]]) -> bool:
         """更新全局模型"""
@@ -791,7 +801,8 @@ class VulnerabilityDetectionServer(FLServer):
                 params = self.global_model.parameters[param_name]
                 updated = [
                     params[i] + self.config.learning_rate * gradients[i]
-                    for i in range(min(len(params), len(gradients)))
+                    for i in range(min(len(params), len(gradients
+
                 ]
                 self.global_model.parameters[param_name] = updated
         
@@ -814,7 +825,7 @@ class FLNetworkSimulator:
     
     def add_client(self, client: FLClient):
         """添加客户端"""
-        self.clients[client.client_id] = client
+        self.clients[client.client_id] = client,
         if self.server:
             self.server.register_client(client)
     
@@ -828,7 +839,8 @@ class FLNetworkSimulator:
     def simulate_latency(self, base_latency: float = 0.1):
         """模拟网络延迟"""
         import random
-        time.sleep(base_latency + random.uniform(0, 0.1))
+        time.sleep(base_latency + random.uniform(0, 0.1
+
     
     def run_simulation(self, rounds: int = 10) -> List[FLRoundResult]:
         """运行模拟"""
@@ -863,4 +875,4 @@ def create_vuln_detection_server() -> VulnerabilityDetectionServer:
 
 def create_fl_simulator() -> FLNetworkSimulator:
     """创建联邦学习网络模拟器"""
-    return FLNetworkSimulator()
+    return FLNetworkSimulator())))))))))))))))))

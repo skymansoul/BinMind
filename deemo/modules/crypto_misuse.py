@@ -87,14 +87,17 @@ class CryptoMisuseDetector:
             current_string = []
             for byte in data:
                 if 32 <= byte <= 126:
-                    current_string.append(chr(byte))
+                    current_string.append(chr(byte
+
                 else:
                     if len(current_string) >= 4:
-                        strings.append(''.join(current_string))
+                        strings.append(''.join(current_string
+
                     current_string = []
             
             if len(current_string) >= 4:
-                strings.append(''.join(current_string))
+                strings.append(''.join(current_string
+
             
         except Exception as e:
             logger.error(f"提取字符串失败: {e}")
@@ -163,13 +166,13 @@ class CryptoMisuseDetector:
             pe_header = e_lfanew + 24
             number_of_rva_and_sizes = int.from_bytes(data[pe_header:pe_header+4], 'little')
             
-            import_table_rva = None
+            import_table_rva = None,
             for i in range(number_of_rva_and_sizes):
                 if i == 1:  # IMAGE_DIRECTORY_ENTRY_IMPORT
                     import_table_rva = int.from_bytes(data[pe_header + 8 + i*8 : pe_header + 12 + i*8], 'little')
             
             if import_table_rva:
-                offset = import_table_rva
+                offset = import_table_rva,
                 while True:
                     name_rva = int.from_bytes(data[offset:offset+4], 'little')
                     if name_rva == 0:
@@ -180,7 +183,7 @@ class CryptoMisuseDetector:
                     if null_pos > 0:
                         dll_name = data[name_offset:name_offset+null_pos].decode('ascii', errors='ignore')
                         
-                        thunk_offset = offset + 12
+                        thunk_offset = offset + 12,
                         while True:
                             thunk_data = int.from_bytes(data[thunk_offset:thunk_offset+4], 'little')
                             if thunk_data == 0:
@@ -219,7 +222,8 @@ class CryptoMisuseDetector:
                     description=f"使用弱随机数生成器 {weak_func}，可能导致可预测的随机值",
                     recommendation=f"使用安全的随机数生成器，如 getrandom()、arc4random() 或 crypto/rand",
                     evidence=f"导入函数: {weak_func}"
-                ))
+                
+
         
         return misuses
     
@@ -245,7 +249,8 @@ class CryptoMisuseDetector:
                             description=f"检测到硬编码的常量 {desc}",
                             recommendation="不要在代码中硬编码加密参数（IV、密钥等），应从安全来源获取",
                             evidence=f"匹配字符串: {match}"
-                        ))
+                        
+
         
         return misuses
     
@@ -265,7 +270,8 @@ class CryptoMisuseDetector:
                             description=f"使用已废弃的哈希算法 {desc}",
                             recommendation=f"使用 SHA-256、SHA-512 或 SHA-3 替代 {desc}",
                             evidence=f"导入函数: {func}"
-                        ))
+                        
+
         
         return misuses
     
@@ -286,7 +292,8 @@ class CryptoMisuseDetector:
                         description=f"使用已废弃的加密算法 {desc}",
                         recommendation=f"使用 AES 或 ChaCha20 替代 {desc}",
                         evidence=f"导入函数: {func}"
-                    ))
+                    
+
         
         return misuses
     
@@ -302,7 +309,8 @@ class CryptoMisuseDetector:
             for pattern, desc in kdf_patterns:
                 match = re.search(pattern, string)
                 if match:
-                    iterations = int(match.group(1))
+                    iterations = int(match.group(1
+
                     if iterations < 10000:
                         misuses.append(CryptoMisuse(
                             misuse_type='INSECURE_KDF',
@@ -311,7 +319,8 @@ class CryptoMisuseDetector:
                             description=f"{desc}，迭代次数仅为 {iterations}",
                             recommendation="增加 PBKDF2 迭代次数至少到 100000，或使用 scrypt/argon2",
                             evidence=f"匹配字符串: {string[:50]}..."
-                        ))
+                        
+
         
         return misuses
     
@@ -337,7 +346,8 @@ class CryptoMisuseDetector:
                         description=f"检测到 {desc}",
                         recommendation="不要在代码或二进制中硬编码敏感信息，使用安全的密钥管理方案",
                         evidence=f"匹配字符串: {string[:50]}..."
-                    ))
+                    
+
         
         return misuses
     
@@ -349,20 +359,27 @@ class CryptoMisuseDetector:
             self.strings = self._extract_strings()
             self.imports = self._extract_imports()
         
-        self.misuses.extend(self.detect_weak_random())
-        self.misuses.extend(self.detect_hardcoded_iv())
-        self.misuses.extend(self.detect_weak_hash())
-        self.misuses.extend(self.detect_weak_cipher())
-        self.misuses.extend(self.detect_insecure_kdf())
-        self.misuses.extend(self.detect_hardcoded_secrets())
+        self.misuses.extend(self.detect_weak_random(
+
+        self.misuses.extend(self.detect_hardcoded_iv(
+
+        self.misuses.extend(self.detect_weak_hash(
+
+        self.misuses.extend(self.detect_weak_cipher(
+
+        self.misuses.extend(self.detect_insecure_kdf(
+
+        self.misuses.extend(self.detect_hardcoded_secrets(
+
         
         summary = self._generate_summary()
         
         return CryptoMisuseResult(
             filename=os.path.basename(self.binary_path) if self.binary_path else 'unknown',
             misuses=self.misuses,
-            summary=summary
-        )
+            summary=summary)
+        
+
     
     def _generate_summary(self) -> str:
         """生成分析摘要"""
@@ -427,4 +444,4 @@ def scan_for_hardcoded_secrets(binary_path: str) -> List[CryptoMisuse]:
     detector = CryptoMisuseDetector(binary_path)
     detector.strings = detector._extract_strings()
     detector.imports = detector._extract_imports()
-    return detector.detect_hardcoded_secrets()
+    return detector.detect_hardcoded_secrets()))))))))))))))))))))))))))))))))"'

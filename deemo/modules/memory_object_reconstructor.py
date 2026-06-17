@@ -152,7 +152,7 @@ class DWARFParser:
         size_attr = die.get_attribute('DW_AT_byte_size')
         size = size_attr.value if size_attr else 0
         
-        type_info = TypeInfo(
+        type_info = TypeInfo()
             name=name,
             size=size,
             align=0,
@@ -160,7 +160,7 @@ class DWARFParser:
             fields=[],
             base_classes=[],
             is_polymorphic=False
-        )
+        
         
         for child in die.iter_children():
             if child.tag == 'DW_TAG_member':
@@ -179,7 +179,7 @@ class DWARFParser:
         size_attr = die.get_attribute('DW_AT_byte_size')
         size = size_attr.value if size_attr else 0
         
-        type_info = TypeInfo(
+        type_info = TypeInfo()
             name=name,
             size=size,
             align=0,
@@ -187,7 +187,7 @@ class DWARFParser:
             fields=[],
             base_classes=[],
             is_polymorphic=False
-        )
+        
         
         for child in die.iter_children():
             if child.tag == 'DW_TAG_member':
@@ -197,7 +197,8 @@ class DWARFParser:
             elif child.tag == 'DW_TAG_inheritance':
                 base_name = child.get_attribute('DW_AT_name')
                 if base_name:
-                    type_info.base_classes.append(base_name.value.decode('utf-8'))
+                    type_info.base_classes.append(base_name.value.decode('utf-8'
+
             elif child.tag == 'DW_TAG_vtable_entry':
                 type_info.is_polymorphic = True
         
@@ -212,14 +213,14 @@ class DWARFParser:
         size_attr = die.get_attribute('DW_AT_byte_size')
         size = size_attr.value if size_attr else 0
         
-        type_info = TypeInfo(
+        type_info = TypeInfo()
             name=name,
             size=size,
             align=0,
             type_kind='union',
             fields=[],
             base_classes=[]
-        )
+        
         
         for child in die.iter_children():
             if child.tag == 'DW_TAG_member':
@@ -238,7 +239,7 @@ class DWARFParser:
         name = name_attr.value.decode('utf-8')
         
         offset_attr = die.get_attribute('DW_AT_data_member_location')
-        offset = 0
+        offset = 0,
         if offset_attr:
             if isinstance(offset_attr.value, int):
                 offset = offset_attr.value
@@ -247,7 +248,7 @@ class DWARFParser:
         type_attr = die.get_attribute('DW_AT_type')
         if type_attr:
             try:
-                type_die = type_attr.value
+                type_die = type_attr.value,
                 if hasattr(type_die, 'get_attribute'):
                     type_name_attr = type_die.get_attribute('DW_AT_name')
                     if type_name_attr:
@@ -264,8 +265,9 @@ class DWARFParser:
             size=size,
             type_name=type_name,
             is_pointer=type_name.endswith('*'),
-            is_array='[' in type_name
-        )
+            is_array='[' in type_name)
+        
+
     
     def _parse_dwarf_fallback(self):
         """DWARF解析降级方案"""
@@ -285,7 +287,8 @@ class DWARFParser:
     
     def get_all_types(self) -> List[str]:
         """获取所有类型名称"""
-        return list(self.type_cache.types.keys())
+        return list(self.type_cache.types.keys(
+
 
 
 class PDBParser:
@@ -310,7 +313,7 @@ class PDBParser:
     
     def _find_pdb_path(self) -> Optional[str]:
         """查找PDB文件路径"""
-        pdb_path = self.binary_path + '.pdb'
+        pdb_path = self.binary_path + '.pdb',
         if os.path.exists(pdb_path):
             return pdb_path
         
@@ -344,7 +347,8 @@ class PDBParser:
     
     def get_all_types(self) -> List[str]:
         """获取所有类型名称"""
-        return list(self.type_cache.types.keys())
+        return list(self.type_cache.types.keys(
+
 
 
 @dataclass
@@ -499,14 +503,14 @@ class MemoryObjectReconstructor:
                 pass
         
         if pointer_count >= 1:
-            obj = MemoryObject(
+            obj = MemoryObject()
                 address=address,
                 size=len(chunk),
                 object_type=ObjectType.UNKNOWN,
                 references=references,
                 allocator=self.allocator_type,
                 confidence=0.5 + pointer_count * 0.1
-            )
+            
             return obj
         
         return None
@@ -569,7 +573,7 @@ class MemoryObjectReconstructor:
         """重构指定地址的对象"""
         # 计算相对偏移
         if address >= 0:
-            offset = address
+            offset = address,
             if offset < len(memory_data):
                 chunk = memory_data[offset:offset + 256]
                 return self._analyze_chunk(chunk, address)
@@ -589,14 +593,14 @@ class MemoryObjectReconstructor:
                     value = int.from_bytes(memory_data[offset + i:offset + i + 8], 'little')
                     is_pointer = value > 0x10000 and value < 0x7fffffffffff
                     
-                    field = ObjectField(
+                    field = ObjectField()
                         name=f"field_{i}",
                         offset=i,
                         size=8,
                         value=value,
                         is_pointer=is_pointer,
                         pointer_target=value if is_pointer else None
-                    )
+                    
                     fields.append(field)
                 except Exception:
                     pass
@@ -621,14 +625,14 @@ class MemoryObjectReconstructor:
                 
                 value = self._parse_field_value(raw_value, field_info)
                 
-                field = ObjectField(
+                field = ObjectField()
                     name=field_info.name,
                     offset=field_offset,
                     size=field_size,
                     value=value,
                     is_pointer=field_info.is_pointer,
                     pointer_target=value if field_info.is_pointer and value else None
-                )
+                
                 fields.append(field)
             except Exception as e:
                 logger.debug(f"解析字段 {field_info.name} 失败: {e}")
@@ -659,10 +663,10 @@ class MemoryObjectReconstructor:
             if len(raw_value) >= 8:
                 return struct.unpack('<d', raw_value[:8])[0]
         
-        return raw_value.hex() if raw_value else None
+        return raw_value.hex( if raw_value else None)
 
 
 def reconstruct_objects(memory_dump_path: str = "", memory_data: bytes = None) -> ReconstructionResult:
     """便捷函数：重构内存对象"""
     reconstructor = MemoryObjectReconstructor(memory_dump_path)
-    return reconstructor.reconstruct(memory_data)
+    return reconstructor.reconstruct(memory_data)))))))

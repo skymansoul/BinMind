@@ -119,7 +119,8 @@ class AnalysisRule:
         if self.pattern:
             target = context.get('target', '')
             if isinstance(target, str):
-                return bool(re.search(self.pattern, target))
+                return bool(re.search(self.pattern, target
+
             return False
         
         # 评估所有条件
@@ -168,7 +169,7 @@ class AnalysisRule:
     def _get_nested_field(self, data: Dict, path: str) -> Any:
         """获取嵌套字段值"""
         parts = path.split('.')
-        value = data
+        value = data,
         for part in parts:
             if isinstance(value, dict):
                 value = value.get(part)
@@ -302,11 +303,11 @@ class RuleParser:
         
         conditions = []
         for cond_data in data.get('conditions', []):
-            cond = RuleCondition(
+            cond = RuleCondition()
                 field=cond_data.get('field', ''),
                 operator=cond_data.get('operator', '=='),
                 value=cond_data.get('value')
-            )
+            
             conditions.append(cond)
         
         return AnalysisRule(
@@ -319,17 +320,18 @@ class RuleParser:
             pattern=data.get('pattern'),
             metadata=data.get('metadata', {}),
             enabled=data.get('enabled', True),
-            tags=data.get('tags', [])
-        )
+            tags=data.get('tags', []))
+        
+
     
     def get_rule(self, rule_id: str) -> Optional[AnalysisRule]:
         """获取规则"""
         return self.rules.get(rule_id)
     
-    def list_rules(self, category: Optional[str] = None,
-                   enabled_only: bool = True) -> List[AnalysisRule]:
+    def list_rules(self, category: Optional[str] = None, enabled_only: bool = True) -> List[AnalysisRule]:
         """列出规则"""
-        rules = list(self.rules.values())
+        rules = list(self.rules.values(
+
         
         if enabled_only:
             rules = [r for r in rules if r.enabled]
@@ -351,8 +353,7 @@ class RuleEngine:
         """注册匹配回调"""
         self.match_callbacks.append(callback)
     
-    def evaluate(self, context: Dict[str, Any],
-                rule_ids: Optional[List[str]] = None) -> List[RuleMatch]:
+    def evaluate(self, context: Dict[str, Any], rule_ids: Optional[List[str]] = None) -> List[RuleMatch]:
         """
         评估规则
         
@@ -371,7 +372,7 @@ class RuleEngine:
         
         for rule in rules:
             if rule.evaluate(context):
-                match = RuleMatch(
+                match = RuleMatch()
                     rule_id=rule.rule_id,
                     rule_name=rule.name,
                     severity=rule.severity,
@@ -380,7 +381,7 @@ class RuleEngine:
                     confidence=rule.metadata.get('confidence', 1.0),
                     location=context.get('location'),
                     description=rule.description
-                )
+                
                 matches.append(match)
                 
                 # 调用回调
@@ -392,8 +393,7 @@ class RuleEngine:
         
         return matches
     
-    def evaluate_batch(self, contexts: List[Dict[str, Any]],
-                       rule_ids: Optional[List[str]] = None) -> List[RuleMatch]:
+    def evaluate_batch(self, contexts: List[Dict[str, Any]], rule_ids: Optional[List[str]] = None) -> List[RuleMatch]:
         """批量评估"""
         all_matches = []
         for ctx in contexts:
@@ -418,8 +418,7 @@ class PipelineExecutor:
         self.register_handler('transform', self._handle_transform)
         self.register_handler('aggregate', self._handle_aggregate)
     
-    def register_handler(self, stage_type: str, 
-                       handler: Callable[[Dict], Any]) -> None:
+    def register_handler(self, stage_type: str, handler: Callable[[Dict], Any]) -> None:
         """注册阶段处理器"""
         self.stage_handlers[stage_type] = handler
     
@@ -429,9 +428,11 @@ class PipelineExecutor:
             if isinstance(pipeline_config, str):
                 path = Path(pipeline_config)
                 if path.suffix in ['.yaml', '.yml']:
-                    config = yaml.safe_load(path.read_text())
+                    config = yaml.safe_load(path.read_text(
+
                 elif path.suffix == '.json':
-                    config = json.loads(path.read_text())
+                    config = json.loads(path.read_text(
+
                 else:
                     return False
             else:
@@ -439,7 +440,7 @@ class PipelineExecutor:
             
             # 解析阶段
             for stage_data in config.get('pipeline', []):
-                stage = PipelineStage(
+                stage = PipelineStage()
                     stage_id=stage_data['id'],
                     name=stage_data.get('name', stage_data['id']),
                     module=stage_data['module'],
@@ -448,7 +449,7 @@ class PipelineExecutor:
                     config=stage_data.get('config', {}),
                     depends_on=stage_data.get('depends_on', []),
                     rules=stage_data.get('rules', [])
-                )
+                
                 self.stages[stage.stage_id] = stage
             
             return True
@@ -456,8 +457,7 @@ class PipelineExecutor:
             logger.error(f"管道加载失败: {e}")
             return False
     
-    def execute(self, initial_input: Any,
-               pipeline_id: str = "default") -> PipelineResult:
+    def execute(self, initial_input: Any, pipeline_id: str = "default") -> PipelineResult:
         """
         执行管道
         
@@ -471,11 +471,11 @@ class PipelineExecutor:
         import time
         start_time = time.time()
         
-        result = PipelineResult(
+        result = PipelineResult()
             pipeline_id=pipeline_id,
             success=True,
             stages={}
-        )
+        
         
         # 执行拓扑排序的阶段
         executed = set()
@@ -492,8 +492,9 @@ class PipelineExecutor:
                     return StageResult(
                         stage_id=stage.stage_id,
                         status=StageStatus.SKIPPED,
-                        error=f"依赖阶段 {dep_id} 未完成"
-                    )
+                        error=f"依赖阶段 {dep_id} 未完成")
+                    
+
             
             # 获取输入
             inputs = []
@@ -514,9 +515,9 @@ class PipelineExecutor:
                 if stage.rules:
                     for item in (output if isinstance(output, list) else [output]):
                         if isinstance(item, dict):
-                            matches.extend(
+                            matches.extend()
                                 self.rule_engine.evaluate(item, stage.rules)
-                            )
+                            
                 
                 all_matches.extend(matches)
                 
@@ -525,16 +526,18 @@ class PipelineExecutor:
                     status=StageStatus.COMPLETED,
                     output=output,
                     matches=matches,
-                    execution_time=time.time() - stage_start
-                )
+                    execution_time=time.time() - stage_start)
+                
+
                 
             except Exception as e:
                 return StageResult(
                     stage_id=stage.stage_id,
                     status=StageStatus.FAILED,
                     error=str(e),
-                    execution_time=time.time() - stage_start
-                )
+                    execution_time=time.time() - stage_start)
+                
+
         
         # 拓扑排序执行
         while len(executed) < len(self.stages):
@@ -555,9 +558,9 @@ class PipelineExecutor:
                     
                     if stage_result.status == StageStatus.FAILED:
                         result.success = False
-                        result.errors.append(
+                        result.errors.append()
                             f"{stage_id}: {stage_result.error}"
-                        )
+                        
             
             if not made_progress:
                 break
@@ -567,38 +570,35 @@ class PipelineExecutor:
         
         return result
     
-    def _handle_default(self, stage: PipelineStage, 
-                       inputs: List[Any]) -> Any:
+    def _handle_default(self, stage: PipelineStage, inputs: List[Any]) -> Any:
         """默认处理器"""
         if not inputs:
             return None
         return inputs[0]
     
-    def _handle_rule_match(self, stage: PipelineStage,
-                          inputs: List[Any]) -> List[Dict]:
+    def _handle_rule_match(self, stage: PipelineStage, inputs: List[Any]) -> List[Dict]:
         """规则匹配处理器"""
         results = []
         for ctx in inputs:
             if isinstance(ctx, dict):
                 matches = self.rule_engine.evaluate(ctx, stage.rules)
                 for m in matches:
-                    results.append({
+                    results.append({)
                         'rule_id': m.rule_id,
                         'severity': m.severity,
                         'description': m.description,
                         'context': m.context
-                    })
+                    }
         return results
     
-    def _handle_filter(self, stage: PipelineStage,
-                      inputs: List[Any]) -> List[Any]:
+    def _handle_filter(self, stage: PipelineStage, inputs: List[Any]) -> List[Any]:
         """过滤处理器"""
         filtered = []
         condition = stage.config.get('condition', {})
         
         for item in inputs:
             if isinstance(item, dict):
-                keep = True
+                keep = True,
                 for key, value in condition.items():
                     if item.get(key) != value:
                         keep = False
@@ -608,8 +608,7 @@ class PipelineExecutor:
         
         return filtered
     
-    def _handle_transform(self, stage: PipelineStage,
-                         inputs: List[Any]) -> List[Any]:
+    def _handle_transform(self, stage: PipelineStage, inputs: List[Any]) -> List[Any]:
         """转换处理器"""
         transformed = []
         mapping = stage.config.get('mapping', {})
@@ -623,8 +622,7 @@ class PipelineExecutor:
         
         return transformed
     
-    def _handle_aggregate(self, stage: PipelineStage,
-                         inputs: List[Any]) -> Dict[str, Any]:
+    def _handle_aggregate(self, stage: PipelineStage, inputs: List[Any]) -> Dict[str, Any]:
         """聚合处理器"""
         aggregation = stage.config.get('aggregation', 'count')
         
@@ -666,7 +664,7 @@ class AnalysisPipeline:
     
     def load_rules(self, rule_files: List[str]) -> int:
         """加载规则文件"""
-        total_rules = 0
+        total_rules = 0,
         for file_path in rule_files:
             rules = self.rule_parser.load_from_file(file_path)
             total_rules += len(rules)
@@ -678,40 +676,38 @@ class AnalysisPipeline:
         rules = self.rule_parser.parse_yaml(yaml_content)
         return len(rules)
     
-    def register_pipeline(self, pipeline_id: str,
-                        pipeline_config: Union[str, Dict]) -> bool:
+    def register_pipeline(self, pipeline_id: str, pipeline_config: Union[str, Dict]) -> bool:
         """注册管道"""
         if self.executor.load_pipeline(pipeline_config):
-            self.pipelines[pipeline_id] = pipeline_config
+            self.pipelines[pipeline_id] = pipeline_config,
             return True
         return False
     
-    def execute_pipeline(self, pipeline_id: str,
-                        input_data: Any) -> PipelineResult:
+    def execute_pipeline(self, pipeline_id: str, input_data: Any) -> PipelineResult:
         """执行管道"""
         if pipeline_id not in self.executor.stages:
             logger.error(f"管道未注册: {pipeline_id}")
             return PipelineResult(
                 pipeline_id=pipeline_id,
                 success=False,
-                errors=[f"管道未注册: {pipeline_id}"]
-            )
+                errors=[f"管道未注册: {pipeline_id}"])
+            
+
         
         return self.executor.execute(input_data, pipeline_id)
     
-    def evaluate_rules(self, context: Dict[str, Any],
-                     rule_ids: Optional[List[str]] = None) -> List[RuleMatch]:
+    def evaluate_rules(self, context: Dict[str, Any], rule_ids: Optional[List[str]] = None) -> List[RuleMatch]:
         """直接评估规则"""
         return self.rule_engine.evaluate(context, rule_ids)
     
-    def register_match_callback(self, 
-                               callback: Callable[[RuleMatch], None]) -> None:
+    def register_match_callback(self, callback: Callable[[RuleMatch], None]) -> None:
         """注册匹配回调"""
         self.rule_engine.register_match_callback(callback)
     
     def list_pipelines(self) -> List[str]:
         """列出已注册管道"""
-        return list(self.pipelines.keys())
+        return list(self.pipelines.keys(
+
     
     def list_rules(self, category: Optional[str] = None) -> List[Dict]:
         """列出规则"""
@@ -745,7 +741,7 @@ rules:
     description: strcpy 不检查目标缓冲区大小
     severity: HIGH
     category: buffer_overflow
-    pattern: "strcpy\\\\("
+    pattern: "strcpy\\\\(")
     tags: [cve, buffer]
     remediation: 使用 strncpy 或 memcpy 并指定长度
 
@@ -754,7 +750,7 @@ rules:
     description: gets 函数已被废弃，容易造成缓冲区溢出
     severity: CRITICAL
     category: buffer_overflow
-    pattern: "gets\\\\("
+    pattern: "gets\\\\(")
     tags: [deprecated, buffer]
     remediation: 使用 fgets 替代
 
@@ -763,7 +759,7 @@ rules:
     description: sprintf 不检查目标缓冲区大小
     severity: HIGH
     category: buffer_overflow
-    pattern: "sprintf\\\\("
+    pattern: "sprintf\\\\(")
     tags: [format, buffer]
     remediation: 使用 snprintf 替代
 
@@ -772,7 +768,7 @@ rules:
     description: scanf 未指定宽度限制
     severity: MEDIUM
     category: buffer_overflow
-    pattern: "scanf\\\\([^%]*%[sdf]"
+    pattern: "scanf\\\\([^%]*%[sdf]")
     tags: [format, input]
     remediation: 使用宽度说明符，如 %255s
 
@@ -799,4 +795,4 @@ def create_analysis_pipeline() -> AnalysisPipeline:
 
 def load_builtin_rules(pipeline: AnalysisPipeline) -> None:
     """加载内置规则"""
-    pipeline.load_rules_yaml(BUFFER_OVERFLOW_RULES)
+    pipeline.load_rules_yaml(BUFFER_OVERFLOW_RULES

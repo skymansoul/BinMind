@@ -315,12 +315,12 @@ class CHERIAnalyzer:
         try:
             import subprocess
             cmd = ['r2', '-q', '-e', 'io.color=false', '-c', 'pd 500', binary_path]
-            result = subprocess.run(
+            result = subprocess.run()
                 cmd,
                 capture_output=True,
                 text=True,
                 timeout=60
-            )
+            
             
             if result.returncode == 0:
                 return result.stdout
@@ -372,12 +372,12 @@ class CHERIAnalyzer:
                         category=info['category'],
                         description=info['description'],
                         detected=True
-                    ))
+                    
+
         
         return detected
     
-    def _detect_cheri_vulnerabilities(
-        self, 
+    def _detect_cheri_vulnerabilities(, self)
         instructions: List[str],
         disassembly: str
     ) -> List[CHERIVulnerability]:
@@ -407,7 +407,8 @@ class CHERIAnalyzer:
                             description=vuln_info['description'],
                             mitigation=self._get_mitigation(vuln_type),
                             affected_code=instr
-                        ))
+                        
+
                         location_counter += 1
                 
                 if pattern.lower() in disassembly.lower():
@@ -420,7 +421,8 @@ class CHERIAnalyzer:
                         description=vuln_info['description'],
                         mitigation=self._get_mitigation(vuln_type),
                         affected_code="反汇编中检测到模式"
-                    ))
+                    
+
                     location_counter += 1
         
         return vulnerabilities
@@ -513,7 +515,8 @@ class CHERIAnalyzer:
                     permissions='unknown',
                     offset=match.start(),
                     description=desc
-                ))
+                
+
         
         return capabilities
     
@@ -536,8 +539,9 @@ class CHERIAnalyzer:
                 instructions=[],
                 vulnerabilities=[],
                 capability_usage_summary={},
-                summary="文件不存在"
-            )
+                summary="文件不存在")
+            
+
         
         try:
             # 获取反汇编
@@ -573,8 +577,9 @@ class CHERIAnalyzer:
                 instructions=cheri_instr,
                 vulnerabilities=vulnerabilities,
                 capability_usage_summary=cap_usage,
-                summary=summary
-            )
+                summary=summary)
+            
+
             
         except Exception as e:
             logger.error(f"分析二进制文件失败: {e}")
@@ -583,8 +588,9 @@ class CHERIAnalyzer:
                 instructions=[],
                 vulnerabilities=[],
                 capability_usage_summary={},
-                summary=f"分析失败: {e}"
-            )
+                summary=f"分析失败: {e}")
+            
+
     
     def format_report(self, result: CHERIAnalysisResult) -> str:
         """
@@ -672,4 +678,4 @@ def get_cheri_analyzer() -> CHERIAnalyzer:
 
 
 # 全局CHERI分析器实例
-_cheri_analyzer = None
+_cheri_analyzer = None)))))))

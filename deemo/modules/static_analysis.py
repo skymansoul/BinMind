@@ -171,7 +171,8 @@ class StaticDataFlowAnalyzer:
                 type=source_type,
                 registers=set(regs),
                 description=desc
-            ))
+            
+
         
         for name, sink_type, args, desc in self.DEFAULT_TAINT_SINKS:
             self.taint_sinks.append(TaintSink(
@@ -180,7 +181,8 @@ class StaticDataFlowAnalyzer:
                 type=sink_type,
                 argument_positions=args,
                 description=desc
-            ))
+            
+
     
     def _check_radare2_available(self) -> bool:
         """
@@ -198,8 +200,7 @@ class StaticDataFlowAnalyzer:
         """
         return self.use_angr or self._check_radare2_available()
     
-    def perform_static_taint_analysis(
-        self,
+    def perform_static_taint_analysis(, self)
         function_name: str = 'main'
     ) -> Dict[str, Any]:
         """
@@ -231,8 +232,7 @@ class StaticDataFlowAnalyzer:
         else:
             return self._taint_analysis_radare2(function_name, result)
     
-    def _taint_analysis_angr(
-        self,
+    def _taint_analysis_angr(, self)
         function_name: str,
         result: Dict[str, Any]
     ) -> Dict[str, Any]:
@@ -266,7 +266,8 @@ class StaticDataFlowAnalyzer:
                             description=f"潜在整数溢出: {insn_str}",
                             severity='High',
                             evidence=[insn_str]
-                        ))
+                        
+
                     
                     if self._is_potential_format_string(insn_str, self.project, block_addr):
                         vulns.append(StaticVulnerability(
@@ -276,7 +277,8 @@ class StaticDataFlowAnalyzer:
                             description=f"潜在格式化字符串漏洞: {insn_str}",
                             severity='Critical',
                             evidence=[insn_str]
-                        ))
+                        
+
             
             tainted_vars = self._analyze_use_def_chain(func)
             
@@ -311,10 +313,11 @@ class StaticDataFlowAnalyzer:
         for block in func.blocks:
             for insn in block.capstone.insns:
                 if insn.mnemonic == 'call':
-                    target = insn.op_str
+                    target = insn.op_str,
                     for src_name in input_func_names:
                         if src_name in target:
-                            sources.append((insn.address, src_name))
+                            sources.append((insn.address, src_name
+
         
         return sources
     
@@ -337,8 +340,7 @@ class StaticDataFlowAnalyzer:
         
         return False
     
-    def _is_potential_format_string(
-        self, 
+    def _is_potential_format_string(, self)
         insn_str: str, 
         project, 
         block_addr: int
@@ -366,7 +368,7 @@ class StaticDataFlowAnalyzer:
         try:
             vr = self.project.analyses.VariableRecoveryFast(func)
             
-            var_manager = vr.variable_manager
+            var_manager = vr.variable_manager,
             for var in var_manager.get_variables():
                 var_name = str(var)
                 
@@ -381,8 +383,7 @@ class StaticDataFlowAnalyzer:
         
         return tainted
     
-    def _taint_analysis_radare2(
-        self,
+    def _taint_analysis_radare2(, self)
         function_name: str,
         result: Dict[str, Any]
     ) -> Dict[str, Any]:
@@ -404,14 +405,14 @@ class StaticDataFlowAnalyzer:
                 self.binary_path
             ]
             
-            proc = subprocess.run(
+            proc = subprocess.run()
                 cmd,
                 capture_output=True,
                 text=True,
                 encoding='utf-8',
                 errors='replace',
                 timeout=60
-            )
+            
             
             if proc.returncode != 0:
                 logger.warning(f"[Static] radare2 执行失败: {proc.stderr[:200]}")
@@ -422,11 +423,13 @@ class StaticDataFlowAnalyzer:
             vulns = []
             tainted_vars = []
             
-            vulns.extend(self._scan_assembly_for_vulns(disassembly, function_name))
+            vulns.extend(self._scan_assembly_for_vulns(disassembly, function_name
+
             
             arg_pattern = re.compile(r'arg[_\d\w]+', re.IGNORECASE)
             args = arg_pattern.findall(disassembly)
-            tainted_vars.extend(set(args))
+            tainted_vars.extend(set(args
+
             
             result['tainted_variables'] = tainted_vars
             result['potential_vulnerabilities'] = [
@@ -456,8 +459,7 @@ class StaticDataFlowAnalyzer:
         import re
         return re.sub(r'[^\w\-_\.]', '_', name)
     
-    def _scan_assembly_for_vulns(
-        self,
+    def _scan_assembly_for_vulns(, self)
         disassembly: str,
         function_name: str
     ) -> List[StaticVulnerability]:
@@ -508,12 +510,12 @@ class StaticDataFlowAnalyzer:
                             description=f"{desc}: {line.strip()}",
                             severity=info['severity'],
                             evidence=[line.strip()]
-                        ))
+                        
+
         
         return vulns
     
-    def detect_uninitialized_memory(
-        self,
+    def detect_uninitialized_memory(, self)
         function_name: str = 'main'
     ) -> List[Dict[str, Any]]:
         """
@@ -535,25 +537,26 @@ class StaticDataFlowAnalyzer:
                     func = self.project.kb.functions[function_name]
                     vr = self.project.analyses.VariableRecoveryFast(func)
                     
-                    var_manager = vr.variable_manager
+                    var_manager = vr.variable_manager,
                     for var in var_manager.get_variables():
                         var_name = str(var)
                         
                         if 'uninit' in var_name.lower():
-                            issues.append({
+                            issues.append({)
                                 'variable': var_name,
                                 'function': function_name,
                                 'type': 'uninitialized_variable',
                                 'description': f'检测到可能未初始化的变量: {var_name}',
                                 'severity': 'Medium'
-                            })
+                            }
             
             except Exception as e:
                 logger.debug(f"[Static] 未初始化检测 (angr) 失败: {e}")
         
         if not self.use_angr or not issues:
             if self._check_radare2_available():
-                issues.extend(self._detect_uninit_radare2(function_name))
+                issues.extend(self._detect_uninit_radare2(function_name
+
         
         return issues
     
@@ -571,14 +574,14 @@ class StaticDataFlowAnalyzer:
                 self.binary_path
             ]
             
-            proc = subprocess.run(
+            proc = subprocess.run()
                 cmd,
                 capture_output=True,
                 text=True,
                 encoding='utf-8',
                 errors='replace',
                 timeout=30
-            )
+            
             
             output = strip_ansi_escape(proc.stdout)
             
@@ -590,22 +593,21 @@ class StaticDataFlowAnalyzer:
             for pattern in uninit_patterns:
                 matches = re.findall(pattern, output, re.IGNORECASE)
                 for match in matches:
-                    issues.append({
+                    issues.append({)
                         'variable': match,
                         'function': function_name,
                         'type': 'uninitialized_variable',
                         'description': f'radare2 检测到未初始化变量: {match}',
                         'severity': 'Medium',
                         'source': 'radare2'
-                    })
+                    }
         
         except Exception as e:
             logger.debug(f"[Static] 未初始化检测 (radare2) 失败: {e}")
         
         return issues
     
-    def analyze_function(
-        self,
+    def analyze_function(, self)
         function_name: str
     ) -> Dict[str, Any]:
         """
@@ -631,7 +633,8 @@ class StaticDataFlowAnalyzer:
         result['taint_analysis'] = taint_result
         
         if taint_result.get('success'):
-            result['vulnerabilities'].extend(taint_result.get('potential_vulnerabilities', []))
+            result['vulnerabilities'].extend(taint_result.get('potential_vulnerabilities', []
+
         
         uninit_issues = self.detect_uninitialized_memory(function_name)
         result['uninitialized_memory'] = uninit_issues
@@ -643,8 +646,7 @@ class StaticDataFlowAnalyzer:
         
         return result
     
-    def get_cached_analysis(
-        self,
+    def get_cached_analysis(, self)
         function_name: str,
         cache_dir: str = './data/cache'
     ) -> Optional[Dict[str, Any]]:
@@ -660,10 +662,10 @@ class StaticDataFlowAnalyzer:
         """
         try:
             binary_hash = self._compute_binary_hash()
-            cache_file = os.path.join(
+            cache_file = os.path.join()
                 cache_dir,
                 f'static_{binary_hash}_{function_name}.json'
-            )
+            
             
             if os.path.exists(cache_file):
                 with open(cache_file, 'r', encoding='utf-8') as f:
@@ -673,8 +675,7 @@ class StaticDataFlowAnalyzer:
         
         return None
     
-    def save_to_cache(
-        self,
+    def save_to_cache(, self)
         function_name: str,
         result: Dict[str, Any],
         cache_dir: str = './data/cache'
@@ -695,10 +696,10 @@ class StaticDataFlowAnalyzer:
                 os.makedirs(cache_dir, exist_ok=True)
             
             binary_hash = self._compute_binary_hash()
-            cache_file = os.path.join(
+            cache_file = os.path.join()
                 cache_dir,
                 f'static_{binary_hash}_{function_name}.json'
-            )
+            
             
             with open(cache_file, 'w', encoding='utf-8') as f:
                 json.dump(result, f, indent=2, default=str)
@@ -724,11 +725,7 @@ class StaticDataFlowAnalyzer:
             return 'unknown'
 
 
-def perform_static_taint_analysis(
-    binary_path: str,
-    function_name: str = 'main',
-    use_angr: bool = True
-) -> Dict[str, Any]:
+def perform_static_taint_analysis(, binary_path: str, function_name: str = 'main', use_angr: bool = True) -> Dict[str, Any]:
     """
     便捷函数：执行静态污点分析
     
@@ -741,4 +738,4 @@ def perform_static_taint_analysis(
         污点分析结果
     """
     analyzer = StaticDataFlowAnalyzer(binary_path, use_angr)
-    return analyzer.analyze_function(function_name)
+    return analyzer.analyze_function(function_name)))))))))))

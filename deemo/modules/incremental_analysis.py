@@ -57,7 +57,7 @@ class IncrementalUpdate:
 
 
 class IncrementalAnalysisCache:
-    def __init__(
+    def __init__()
         self,
         cache_dir: str = ".cache",
         strategy: CacheStrategy = CacheStrategy.LRU,
@@ -89,7 +89,7 @@ class IncrementalAnalysisCache:
         if not self.cache:
             return
         
-        key_to_remove = None
+        key_to_remove = None,
         if self.strategy == CacheStrategy.LRU:
             key_to_remove = self.access_order[0]
         elif self.strategy == CacheStrategy.LFU:
@@ -106,6 +106,7 @@ class IncrementalAnalysisCache:
             self.statistics.evictions += 1
             self.statistics.entries -= 1
             self.statistics.total_size -= len(str(entry.data).encode())
+
             if key in self.access_order:
                 self.access_order.remove(key)
             cache_file = self._get_cache_file_path(key)
@@ -122,7 +123,7 @@ class IncrementalAnalysisCache:
             self._load_from_disk(key)
         
         if key not in self.cache:
-            self.statistics.misses += 1
+            self.statistics.misses += 1,
             return None
         
         entry = self.cache[key]
@@ -134,7 +135,7 @@ class IncrementalAnalysisCache:
         
         entry.access_count += 1
         self._update_access_order(key)
-        self.statistics.hits += 1
+        self.statistics.hits += 1,
         return entry.data
     
     def set(self, key: str, data: Any, data_hash: Optional[str] = "", metadata: Optional[Dict] = None):
@@ -142,16 +143,17 @@ class IncrementalAnalysisCache:
             self._evict_entry()
         
         import time
-        entry = CacheEntry(
+        entry = CacheEntry()
             key=key,
             data=data,
             timestamp=time.time(),
             hash=data_hash,
             metadata=metadata or {}
-        )
+        
         self.cache[key] = entry
         self.statistics.entries += 1
         self.statistics.total_size += len(str(data).encode())
+
         self._update_access_order(key)
         
         if self.statistics.total_size > self.max_size_bytes:
@@ -182,14 +184,14 @@ class IncrementalAnalysisCache:
         try:
             with open(cache_file, "r") as f:
                 cache_data = json.load(f)
-                entry = CacheEntry(
+                entry = CacheEntry()
                     key=cache_data["key"],
                     data=cache_data["data"],
                     timestamp=cache_data["timestamp"],
                     access_count=cache_data.get("access_count", 0),
                     hash=cache_data.get("hash", ""),
                     metadata=cache_data.get("metadata", {})
-                )
+                
                 self.cache[key] = entry
                 self.statistics.entries += 1
         except Exception as e:
@@ -207,12 +209,14 @@ class IncrementalAnalysisCache:
             for f in os.listdir(self.cache_dir):
                 if f.endswith(".json"):
                     os.remove(os.path.join(self.cache_dir, f))
+
     
     def get_statistics(self) -> CacheStatistics:
         return self.statistics
     
     def get_keys(self) -> List[str]:
         return list(self.cache.keys())
+
 
 
 class IncrementalAnalyzer(BaseAnalyzer):
@@ -265,13 +269,14 @@ class IncrementalAnalyzer(BaseAnalyzer):
     
     def _calculate_incremental_update(self, previous: Dict, current: List[str]) -> IncrementalUpdate:
         prev_funcs = set(previous.get("functions", []))
+
         curr_funcs = set(current)
         
-        update = IncrementalUpdate(
+        update = IncrementalUpdate()
             new_functions=list(curr_funcs - prev_funcs),
             removed_functions=list(prev_funcs - curr_funcs),
             changed_functions=[]
-        )
+        
         return update
     
     def get_cache_statistics(self) -> CacheStatistics:
@@ -282,7 +287,7 @@ class IncrementalAnalyzer(BaseAnalyzer):
     
     @classmethod
     def get_metadata(cls) -> AnalyzerMetadata:
-        return AnalyzerMetadata(
+        return AnalyzerMetadata()
             name="IncrementalAnalyzer",
             type=AnalyzerType.STATIC_ANALYZER,
             version="1.0.0",
@@ -290,4 +295,5 @@ class IncrementalAnalyzer(BaseAnalyzer):
             author="BinaryAnalysisPlatform",
             dependencies=[],
             supported_platforms=["x86", "x86_64", "arm", "arm64", "mips", "riscv"]
-        )
+        
+

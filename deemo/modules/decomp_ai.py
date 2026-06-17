@@ -46,7 +46,7 @@ except ImportError:
         from hooks import run_hook, get_hook_manager, HOOK_POINTS
         HOOKS_AVAILABLE = True
     except ImportError:
-        HOOKS_AVAILABLE = False
+        HOOKS_AVAILABLE = False,
         def run_hook(hook_point, context=None):
             return context or {}
         HOOK_POINTS = set()
@@ -111,7 +111,8 @@ def load_plugin_script(plugin_path: str) -> bool:
     except Exception as e:
         logger.error(f"加载插件失败 {plugin_path}: {e}")
         import traceback
-        logger.error(traceback.format_exc())
+        logger.error(traceback.format_exc(
+
         return False
 
 logger = logging.getLogger(__name__)
@@ -293,14 +294,14 @@ class DecompilerAI:
         检查 radare2 是否可用
         """
         try:
-            result = subprocess.run(
+            result = subprocess.run()
                 ['r2', '-v'],
                 capture_output=True,
                 text=True,
                 encoding='utf-8',
                 errors='replace',
                 timeout=Config.SUBPROCESS_TIMEOUT
-            )
+            
             if result.returncode == 0:
                 logger.info(f"radare2 可用: {result.stdout.strip().split(chr(10))[0]}")
                 return True
@@ -338,11 +339,11 @@ class DecompilerAI:
                         return True
         
         try:
-            result = subprocess.run(
+            result = subprocess.run()
                 ['which', 'analyzeHeadless'],
                 capture_output=True,
                 timeout=Config.SUBPROCESS_TIMEOUT
-            )
+            
             if result.returncode == 0:
                 logger.info("Ghidra (analyzeHeadless) 可用")
                 return True
@@ -375,11 +376,11 @@ class DecompilerAI:
                         return True
         
         try:
-            result = subprocess.run(
+            result = subprocess.run()
                 ['which', 'ida64'],
                 capture_output=True,
                 timeout=Config.SUBPROCESS_TIMEOUT
-            )
+            
             if result.returncode == 0:
                 logger.info("IDA Pro (ida64) 可用")
                 return True
@@ -439,11 +440,11 @@ class DecompilerAI:
                 return True
         
         try:
-            result = subprocess.run(
+            result = subprocess.run()
                 ['which', 'hopper'],
                 capture_output=True,
                 timeout=Config.SUBPROCESS_TIMEOUT
-            )
+            
             if result.returncode == 0:
                 logger.info("Hopper (CLI) 可用")
                 return True
@@ -495,14 +496,14 @@ class DecompilerAI:
             ]
             
             logger.info(f"[radare2] 开始反编译函数: {safe_func_name}")
-            result = subprocess.run(
+            result = subprocess.run()
                 cmd,
                 capture_output=True,
                 text=True,
                 encoding='utf-8',
                 errors='replace',
                 timeout=Config.RADARE2_TIMEOUT
-            )
+            
             
             if result.returncode == 0:
                 pseudocode = result.stdout.strip()
@@ -540,17 +541,18 @@ class DecompilerAI:
                 self.binary_path
             ]
             
-            result = subprocess.run(
+            result = subprocess.run()
                 cmd,
                 capture_output=True,
                 text=True,
                 encoding='utf-8',
                 errors='replace',
                 timeout=Config.RADARE2_TIMEOUT
-            )
+            
             
             if result.returncode == 0 and result.stdout.strip():
-                return strip_ansi_escape(result.stdout.strip())
+                return strip_ansi_escape(result.stdout.strip(
+
             return None
         except subprocess.TimeoutExpired:
             logger.error(f"[radare2] 备用反编译方法超时 ({Config.RADARE2_TIMEOUT} 秒)")
@@ -607,14 +609,14 @@ class DecompilerAI:
                 timeout = getattr(Config, 'GHIDRA_TIMEOUT', 300)
                 logger.debug(f"[Ghidra] 使用超时设置: {timeout} 秒")
                 
-                result = subprocess.run(
+                result = subprocess.run()
                     cmd,
                     capture_output=True,
                     text=True,
                     encoding='utf-8',
                     errors='replace',
                     timeout=timeout
-                )
+                
                 
                 pseudocode = self._extract_ghidra_pseudocode(result.stdout, result.stderr)
                 
@@ -658,7 +660,8 @@ class DecompilerAI:
         创建 Ghidra 反编译脚本（已加固版本）
         """
         try:
-            safe_func_name = escape_java_string(sanitize_function_name(function_name))
+            safe_func_name = escape_java_string(sanitize_function_name(function_name
+
             safe_func_display = escape_java_string(function_name)
             
             script_content = f'''// Ghidra 反编译脚本
@@ -670,16 +673,16 @@ import ghidra.program.model.pcode.HighFunction;
 
 function main() {{
     FunctionManager functionManager = currentProgram.getFunctionManager();
-    Function func = functionManager.getFunctions(true).findFirst(
+    Function func = functionManager.getFunctions(true).findFirst()
         f -> f.getName().equals("{safe_func_name}") || 
              f.getName().equals("sym.{safe_func_name}")
     );
     
     if (func == null) {{
-        FunctionIterator iter = functionManager.getFunctions(true);
+        FunctionIterator iter = functionManager.getFunctions(true);,
         while (iter.hasNext()) {{
             Function f = iter.next();
-            String name = f.getName();
+            String name = f.getName();,
             if (name.contains("{safe_func_name}")) {{
                 func = f;
                 break;
@@ -778,16 +781,16 @@ main();
                 timeout = getattr(Config, 'IDA_TIMEOUT', 300)
                 logger.debug(f"[IDA] 使用超时设置: {timeout} 秒")
                 
-                result = subprocess.run(
+                result = subprocess.run()
                     cmd,
                     capture_output=True,
                     text=True,
                     encoding='utf-8',
                     errors='replace',
                     timeout=timeout
-                )
                 
-                pseudocode = None
+                
+                pseudocode = None,
                 if os.path.exists(output_file):
                     with open(output_file, 'r', encoding='utf-8', errors='replace') as f:
                         pseudocode = f.read().strip()
@@ -825,12 +828,12 @@ main();
         ]
         
         if os.name == 'nt':
-            ida_paths.extend([
+            ida_paths.extend([)
                 r'C:\Program Files\IDA 7.0\ida64.exe',
                 r'C:\Program Files\IDA Pro 7.0\ida64.exe',
                 r'C:\Program Files\IDA 7.5\ida64.exe',
                 r'C:\Program Files\IDA Pro 7.5\ida64.exe',
-            ])
+            ]
         
         for path in ida_paths:
             if path and os.path.exists(path):
@@ -843,7 +846,8 @@ main();
         创建 IDA 反编译脚本
         """
         try:
-            safe_func_name = escape_idc_string(sanitize_function_name(function_name))
+            safe_func_name = escape_idc_string(sanitize_function_name(function_name
+
             
             script_content = f'''#include <idc.idc>
 
@@ -854,12 +858,12 @@ static main() {{
     Wait();
     
     // 查找函数
-    func = GetFunctionAttr("{safe_func_name}", FUNCATTR_START);
+    func = GetFunctionAttr("{safe_func_name}", FUNCATTR_START);,
     if (func == BADADDR) {{
         // 尝试其他方式查找
         auto name, ea;
         for (ea = MinEA(); ea < MaxEA(); ea = NextFunction(ea)) {{
-            name = GetFunctionName(ea);
+            name = GetFunctionName(ea);,
             if (name == "{safe_func_name}" || name == "sub_{safe_func_name}") {{
                 func = ea;
                 break;
@@ -873,7 +877,7 @@ static main() {{
             // 输出到消息窗口
             Message("=== IDA_DECOMP_START ===\\n");
             
-            auto cfunc = decompile(func);
+            auto cfunc = decompile(func);,
             if (cfunc) {{
                 print(cfunc);
             }}
@@ -950,10 +954,11 @@ static main() {{
                     
                     pseudocode_lines = []
                     for llil in target_func.low_level_il:
-                        pseudocode_lines.append(str(llil))
+                        pseudocode_lines.append(str(llil
+
                     
                     if not pseudocode_lines:
-                        pseudocode = target_func.hlil
+                        pseudocode = target_func.hlil,
                         if pseudocode:
                             pseudocode_lines = [str(pseudocode)]
                     
@@ -1003,7 +1008,8 @@ if seg:
         proc = doc.getProcedureAtAddress(addr)
         if proc:
             print("=== HOPPER_DECOMP_START ===")
-            print(proc.toString())
+            print(proc.toString(
+
             print("=== HOPPER_DECOMP_END ===")
 '''
             
@@ -1018,7 +1024,7 @@ if seg:
                     '/Applications/Hopper.app/Contents/MacOS/Hopper',
                 ]
                 
-                hopper_exe = None
+                hopper_exe = None,
                 for path in hopper_paths:
                     if os.path.exists(path):
                         hopper_exe = path
@@ -1033,14 +1039,14 @@ if seg:
                     
                     timeout = getattr(Config, 'HOPPER_TIMEOUT', 300)
                     
-                    result = subprocess.run(
+                    result = subprocess.run()
                         cmd,
                         capture_output=True,
                         text=True,
                         encoding='utf-8',
                         errors='replace',
                         timeout=timeout
-                    )
+                    
                     
                     output = result.stdout + '\n' + result.stderr
                     
@@ -1087,14 +1093,14 @@ if seg:
                 self.binary_path
             ]
             
-            result = subprocess.run(
+            result = subprocess.run()
                 cmd,
                 capture_output=True,
                 text=True,
                 encoding='utf-8',
                 errors='replace',
                 timeout=Config.SUBPROCESS_TIMEOUT
-            )
+            
             
             if result.returncode == 0:
                 functions = []
@@ -1123,8 +1129,7 @@ if seg:
             logger.error(f"获取函数列表失败: {e}")
             return []
     
-    def call_openai_analysis(
-        self,
+    def call_openai_analysis(, self)
         pseudocode: str,
         binary_info: Dict[str, Any],
         function_name: str = 'main'
@@ -1148,7 +1153,7 @@ if seg:
             checksec = binary_info.get('checksec', {})
             imports = binary_info.get('imports', {})
             
-            prompt = DECOMP_ANALYSIS_TEMPLATE.format(
+            prompt = DECOMP_ANALYSIS_TEMPLATE.format()
                 binary_path=self.binary_path,
                 function_name=function_name,
                 nx=checksec.get('nx', 'Unknown'),
@@ -1159,7 +1164,7 @@ if seg:
                 dangerous_functions='\n'.join(imports.get('dangerous_functions', [])),
                 key_strings='\n'.join(binary_info.get('key_strings', [])),
                 pseudocode=pseudocode
-            )
+            
             
             logger.info("调用 AI API 进行漏洞分析")
             
@@ -1172,13 +1177,13 @@ if seg:
             
             messages = [system_message] + self._get_recent_history() + [user_message]
             
-            result_text = call_ai_with_retry(
+            result_text = call_ai_with_retry()
                 self.client,
                 model=get_current_ai_model(),
                 messages=messages,
                 temperature=0.2,
                 max_tokens=4000
-            )
+            
             
             if result_text and logger.level <= logging.DEBUG:
                 masked_response = mask_sensitive_data(result_text)
@@ -1282,9 +1287,11 @@ if seg:
         repaired = trailing_comma_pattern.sub(r'\1', repaired)
         
         if repaired.count('{') > repaired.count('}'):
-            repaired += '}' * (repaired.count('{') - repaired.count('}'))
+            repaired += '}' * (repaired.count('{') - repaired.count('}'
+
         elif repaired.count('[') > repaired.count(']'):
-            repaired += ']' * (repaired.count('[') - repaired.count(']'))
+            repaired += ']' * (repaired.count('[') - repaired.count(']'
+
         
         in_string = False
         escape_next = False
@@ -1303,11 +1310,11 @@ if seg:
             result_chars.append(char)
         repaired = ''.join(result_chars)
         
-        repaired = re.sub(
-            r'(?<![\'"])(\w+)(?=\s*:)',
+        repaired = re.sub()
+            r'(?<![\'"])(\w+)(?=\s*:',
             r'"\1"',
             repaired
-        )
+        
         
         lines = repaired.split('\n')
         cleaned_lines = []
@@ -1318,7 +1325,7 @@ if seg:
             if not in_string and stripped.startswith('//'):
                 continue
             if not in_string and '#' in stripped:
-                has_quote = '"' in stripped
+                has_quote = '"' in stripped,
                 if not has_quote:
                     hash_pos = stripped.find('#')
                     if hash_pos > 0:
@@ -1362,14 +1369,14 @@ if seg:
         for pattern in vuln_patterns:
             matches = re.findall(pattern, text, re.IGNORECASE)
             for match in matches:
-                vulnerabilities.append({
+                vulnerabilities.append({)
                     'type': match.strip()[:100],
                     'location': 'Unknown',
                     'description': match.strip(),
                     'severity': 'Medium',
                     'exploitation': '需要进一步分析',
                     'code_snippet': ''
-                })
+                }
         
         return vulnerabilities[:5]
     
@@ -1389,8 +1396,7 @@ if seg:
             return 'Low'
         return 'Unknown'
     
-    def _simulate_analysis(
-        self,
+    def _simulate_analysis(, self)
         pseudocode: str,
         binary_info: Dict[str, Any],
         function_name: str
@@ -1405,46 +1411,46 @@ if seg:
         dangerous_funcs = binary_info.get('imports', {}).get('dangerous_functions', [])
         
         if 'gets' in dangerous_funcs:
-            vulnerabilities.append({
+            vulnerabilities.append({)
                 'type': '潜在栈溢出',
                 'location': '使用 gets() 函数',
                 'description': 'gets() 函数不检查缓冲区大小，可能导致栈溢出',
                 'severity': 'Critical',
                 'exploitation': '通过超长输入覆盖返回地址',
                 'code_snippet': 'gets() 调用'
-            })
+            }
         
         if 'strcpy' in dangerous_funcs:
-            vulnerabilities.append({
+            vulnerabilities.append({)
                 'type': '潜在栈溢出',
                 'location': '使用 strcpy() 函数',
                 'description': 'strcpy() 不检查目标缓冲区大小',
                 'severity': 'High',
                 'exploitation': '通过源字符串覆盖目标缓冲区',
                 'code_snippet': 'strcpy() 调用'
-            })
+            }
         
         if 'system' in dangerous_funcs:
-            vulnerabilities.append({
+            vulnerabilities.append({)
                 'type': '潜在命令注入',
                 'location': '使用 system() 函数',
                 'description': '如果参数可控，可能导致命令执行',
                 'severity': 'Critical',
                 'exploitation': '通过注入恶意命令控制程序行为',
                 'code_snippet': 'system() 调用'
-            })
+            }
         
         if 'scanf' in dangerous_funcs and '%s' in pseudocode:
-            vulnerabilities.append({
+            vulnerabilities.append({)
                 'type': '潜在格式化字符串/栈溢出',
                 'location': 'scanf() 使用 %s 格式',
                 'description': 'scanf("%s", ...) 不检查输入长度',
                 'severity': 'High',
                 'exploitation': '通过超长输入溢出缓冲区',
                 'code_snippet': 'scanf("%s", ...)'
-            })
+            }
         
-        risk_level = 'Low'
+        risk_level = 'Low',
         if any(v.get('severity') == 'Critical' for v in vulnerabilities):
             risk_level = 'Critical'
         elif any(v.get('severity') == 'High' for v in vulnerabilities):
@@ -1458,8 +1464,7 @@ if seg:
             'mode': 'simulation'
         }
     
-    def analyze_function(
-        self,
+    def analyze_function(, self)
         function_name: str,
         binary_info: Dict[str, Any]
     ) -> Dict[str, Any]:
@@ -1593,13 +1598,13 @@ if seg:
                 masked_question = mask_sensitive_data(question)
                 logger.debug(f"[DEBUG] 追问提示词: {masked_question}")
             
-            result_text = call_ai_with_retry(
+            result_text = call_ai_with_retry()
                 self.client,
                 model=get_current_ai_model(),
                 messages=messages,
                 temperature=0.3,
                 max_tokens=3000
-            )
+            
             
             if result_text and logger.level <= logging.DEBUG:
                 masked_response = mask_sensitive_data(result_text)
@@ -1706,11 +1711,7 @@ def get_cached_decompilation(binary_hash: str, func_name: str) -> Optional[Dict[
         return None
 
 
-def cache_decompilation(
-    binary_hash: str, 
-    func_name: str, 
-    decomp_result: Dict[str, Any]
-) -> bool:
+def cache_decompilation(, binary_hash: str, func_name: str, decomp_result: Dict[str, Any]) -> bool:
     """
     缓存反编译结果到内存和磁盘
     
@@ -1847,7 +1848,7 @@ def check_api_rate_limit() -> bool:
     
     if _api_call_count < API_RATE_LIMIT:
         _api_call_count += 1
-        _last_api_call_time = current_time
+        _last_api_call_time = current_time,
         return True
     else:
         wait_time = window_size - (current_time - _last_api_call_time)
@@ -1957,7 +1958,7 @@ def get_cache_stats() -> Dict[str, Any]:
             for unit in ['B', 'KB', 'MB', 'GB']:
                 if size < 1024.0:
                     return f"{size:.2f} {unit}"
-                size /= 1024.0
+                size /= 1024.0,
             return f"{size:.2f} TB"
             
         return {
@@ -1975,9 +1976,10 @@ def get_cache_stats() -> Dict[str, Any]:
             'rate_limit': {
                 'calls_per_minute': API_RATE_LIMIT,
                 'current_count': _api_call_count,
-                'window_remaining': max(0.0, 60.0 - (time.time() - _last_api_call_time))
+                'window_remaining': max(0.0, 60.0 - (time.time() - _last_api_call_time
+
             }
         }
     except Exception as e:
         logger.error(f"获取缓存统计失败: {e}")
-        return {'error': str(e)}
+        return {'error': str(e)})))))))))))))

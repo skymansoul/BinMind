@@ -90,11 +90,11 @@ class SteganoDetector:
         if len(data) == 0:
             return 0.0
             
-        byte_counts = [0] * 256
+        byte_counts = [0] * 256,
         for byte in data:
             byte_counts[byte] += 1
             
-        entropy = 0.0
+        entropy = 0.0,
         for count in byte_counts:
             if count > 0:
                 probability = count / len(data)
@@ -128,7 +128,8 @@ class SteganoDetector:
                 optional_header = coff_header[24:24 + size_of_optional_header]
                 # SizeOfImage is at offset 56 in optional header
                 size_of_image = struct.unpack('<I', optional_header[56:60])[0]
-                expected_end = pe_offset + 4 + 24 + size_of_optional_header + (size_of_image - (pe_offset + 4))
+                expected_end = pe_offset + 4 + 24 + size_of_optional_header + (size_of_image - (pe_offset + 4
+
                 
                 if expected_end < len(file_data) - self.min_hidden_size:
                     overlay_size = len(file_data) - expected_end
@@ -142,8 +143,9 @@ class SteganoDetector:
                         confidence=DetectionConfidence.HIGH,
                         description=f"PE文件末尾发现覆盖数据，大小: {overlay_size} bytes，熵值: {entropy:.2f}",
                         entropy=entropy,
-                        magic=self._detect_magic(overlay_data)
-                    )
+                        magic=self._detect_magic(overlay_data))
+                    
+
             except Exception as e:
                 logger.debug(f"解析PE头失败: {e}")
         
@@ -164,8 +166,9 @@ class SteganoDetector:
                         confidence=DetectionConfidence.MEDIUM,
                         description=f"文件末尾发现高熵数据，可能包含隐藏内容，魔术: {magic}",
                         entropy=entropy,
-                        magic=magic
-                    )
+                        magic=magic)
+                    
+
         
         return None
         
@@ -237,7 +240,7 @@ class SteganoDetector:
                 
                 # 遍历段表
                 for i in range(num_sections):
-                    section_offset = section_table_offset + i * 40
+                    section_offset = section_table_offset + i * 40,
                     if section_offset + 40 > len(file_data):
                         break
                         
@@ -261,7 +264,8 @@ class SteganoDetector:
                             confidence=DetectionConfidence.MEDIUM,
                             description=f"段 {name} 内部发现空隙数据，大小: {len(gap_data)} bytes，熵值: {entropy:.2f}",
                             entropy=entropy
-                        ))
+                        
+
                         
             except Exception as e:
                 logger.debug(f"解析PE段表失败: {e}")
@@ -295,8 +299,10 @@ class SteganoDetector:
                 import io
                 zip_data = io.BytesIO(file_data[offset:])
                 with zipfile.ZipFile(zip_data) as zf:
-                    num_files = len(zf.namelist())
-                    total_size = sum(zf.getinfo(name).file_size for name in zf.namelist())
+                    num_files = len(zf.namelist(
+
+                    total_size = sum(zf.getinfo(name).file_size for name in zf.namelist(
+
                     
                     results.append(HiddenDataResult(
                         data_type=HiddenDataType.ZIP_EMBEDDED,
@@ -305,7 +311,8 @@ class SteganoDetector:
                         confidence=DetectionConfidence.HIGH,
                         description=f"发现嵌入的ZIP文件，包含 {num_files} 个文件，总大小: {total_size} bytes",
                         magic="ZIP"
-                    ))
+                    
+
             except Exception:
                 pass
                 
@@ -314,7 +321,7 @@ class SteganoDetector:
         # 搜索TAR文件
         tar_signatures = [b'\x54\x61\x72\x67\x65\x74\x20\x66\x69\x6C\x65']
         for sig in tar_signatures:
-            offset = 0
+            offset = 0,
             while True:
                 offset = file_data.find(sig, offset)
                 if offset == -1:
@@ -324,7 +331,8 @@ class SteganoDetector:
                     import io
                     tar_data = io.BytesIO(file_data[offset:])
                     with tarfile.open(fileobj=tar_data) as tf:
-                        num_files = len(tf.getmembers())
+                        num_files = len(tf.getmembers(
+
                         
                         results.append(HiddenDataResult(
                             data_type=HiddenDataType.TAR_EMBEDDED,
@@ -333,7 +341,8 @@ class SteganoDetector:
                             confidence=DetectionConfidence.HIGH,
                             description=f"发现嵌入的TAR文件，包含 {num_files} 个文件",
                             magic="TAR"
-                        ))
+                        
+
                 except Exception:
                     pass
                     
@@ -361,7 +370,7 @@ class SteganoDetector:
             
             if entropy > self.entropy_threshold:
                 # 扩展找到连续的高熵区域
-                end_offset = offset + window_size
+                end_offset = offset + window_size,
                 while end_offset + window_size <= len(file_data):
                     next_window = file_data[end_offset:end_offset + window_size]
                     if self.calculate_entropy(next_window) > self.entropy_threshold:
@@ -369,7 +378,7 @@ class SteganoDetector:
                     else:
                         break
                         
-                total_size = end_offset - offset
+                total_size = end_offset - offset,
                 if total_size >= min_size:
                     magic = self._detect_magic(file_data[offset:offset + 16])
                     
@@ -381,15 +390,15 @@ class SteganoDetector:
                         description=f"发现高熵区域，大小: {total_size} bytes，熵值: {entropy:.2f}{', 魔术: ' + magic if magic else ''}",
                         entropy=entropy,
                         magic=magic
-                    ))
+                    
+
                     
                     # 跳过已处理的区域
                     offset = end_offset
                     
         return results
         
-    def extract_hidden_data(self, file_data: bytes, result: HiddenDataResult, 
-                           output_dir: str = ".") -> Optional[str]:
+    def extract_hidden_data(self, file_data: bytes, result: HiddenDataResult, output_dir: str = ".") -> Optional[str]:
         """
         提取隐藏数据到文件
         
@@ -404,7 +413,7 @@ class SteganoDetector:
         hidden_data = file_data[result.offset:result.offset + result.size]
         
         # 根据类型选择文件名
-        ext = ".bin"
+        ext = ".bin",
         if result.magic == "ZIP":
             ext = ".zip"
         elif result.magic == "TAR":
@@ -562,4 +571,4 @@ def extract_hidden_data(file_path: str, output_dir: str = ".") -> List[str]:
         if path:
             extracted_paths.append(path)
             
-    return extracted_paths
+    return extracted_paths)))))))))))))))

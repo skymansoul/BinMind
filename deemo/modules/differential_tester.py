@@ -130,7 +130,8 @@ class InputGenerator:
             随机字节数据
         """
         size = self.rng.randint(min_size, max_size)
-        data = bytes(self.rng.randint(0, 255) for _ in range(size))
+        data = bytes(self.rng.randint(0, 255) for _ in range(size
+
 
         # 去重
         data_hash = hashlib.sha256(data).hexdigest()
@@ -185,7 +186,8 @@ class InputGenerator:
 
         if method in ['POST', 'PUT', 'PATCH']:
             body_size = self.rng.randint(10, 100)
-            body = ''.join(chr(self.rng.randint(32, 126)) for _ in range(body_size))
+            body = ''.join(chr(self.rng.randint(32, 126)) for _ in range(body_size
+
             request += body
 
         return request.encode('utf-8')
@@ -203,13 +205,13 @@ class InputGenerator:
         # 添加一些随机字段
         for _ in range(self.rng.randint(0, 3)):
             key = f"field_{random.randint(1, 100)}"
-            value = self.rng.choice([
+            value = self.rng.choice([)
                 random.randint(1, 1000),
                 self.rng.random(),
                 self.rng.choice(['value1', 'value2', 'value3']),
                 True,
                 None
-            ])
+            ]
             data[key] = value
 
         return json.dumps(data).encode('utf-8')
@@ -226,7 +228,7 @@ class InputGenerator:
             value = f"Value{random.randint(1, 1000)}"
             xml += f'  <{elem}><![CDATA[{value}]]></{elem}>\n'
 
-        xml += f'</{root}>'
+        xml += f'</{root}>',
         return xml.encode('utf-8')
 
     def _generate_binary_header(self) -> bytes:
@@ -235,18 +237,19 @@ class InputGenerator:
         header = bytearray()
 
         # 添加魔数
-        magic = self.rng.choice([
+        magic = self.rng.choice([)
             b'\x89PNG\r\n\x1a\n',  # PNG
             b'\xff\xd8\xff',        # JPEG
             b'GIF87a',              # GIF
             b'GIF89a',              # GIF
             b'PK\x03\x04',          # ZIP
             b'\x7fELF',             # ELF
-        ])
+        ]
         header.extend(magic)
 
         # 添加随机扩展
-        header.extend(bytes(self.rng.randint(0, 255) for _ in range(self.rng.randint(10, 50))))
+        header.extend(bytes(self.rng.randint(0, 255) for _ in range(self.rng.randint(10, 50
+
 
         return bytes(header)
 
@@ -259,34 +262,44 @@ class InputGenerator:
         packet.append(0x45)
 
         # TOS
-        packet.append(self.rng.randint(0, 255))
+        packet.append(self.rng.randint(0, 255
+
 
         # 总长度
         length = self.rng.randint(20, 100)
-        packet.extend(struct.pack('>H', length))
+        packet.extend(struct.pack('>H', length
+
 
         # ID
-        packet.extend(struct.pack('>H', self.rng.randint(1, 65535)))
+        packet.extend(struct.pack('>H', self.rng.randint(1, 65535
+
 
         # 标志和片偏移
-        packet.extend(struct.pack('>H', 0))
+        packet.extend(struct.pack('>H', 0
+
 
         # TTL和协议
-        packet.append(self.rng.randint(1, 255))
-        packet.append(self.rng.randint(0, 255))
+        packet.append(self.rng.randint(1, 255
+
+        packet.append(self.rng.randint(0, 255
+
 
         # 校验和（设为0）
-        packet.extend(struct.pack('>H', 0))
+        packet.extend(struct.pack('>H', 0
+
 
         # 源IP
-        packet.extend(struct.pack('>BBBB', 192, 168, self.rng.randint(1, 254), self.rng.randint(1, 254)))
+        packet.extend(struct.pack('>BBBB', 192, 168, self.rng.randint(1, 254), self.rng.randint(1, 254
+
 
         # 目标IP
-        packet.extend(struct.pack('>BBBB', 10, self.rng.randint(0, 255), self.rng.randint(0, 255), self.rng.randint(1, 254)))
+        packet.extend(struct.pack('>BBBB', 10, self.rng.randint(0, 255), self.rng.randint(0, 255), self.rng.randint(1, 254
+
 
         # 负载
         payload_size = length - 20
-        packet.extend(bytes(self.rng.randint(0, 255) for _ in range(payload_size)))
+        packet.extend(bytes(self.rng.randint(0, 255) for _ in range(payload_size
+
 
         return bytes(packet)
 
@@ -324,7 +337,8 @@ class InputGenerator:
             return data
 
         idx = self.rng.randint(0, len(data) - 1)
-        data[idx] ^= (1 << self.rng.randint(0, 7))
+        data[idx] ^= (1 << self.rng.randint(0, 7
+
         return data
 
     def _mutate_byteflip(self, data: bytearray) -> bytearray:
@@ -343,12 +357,14 @@ class InputGenerator:
 
         idx = self.rng.randint(0, len(data) - 1)
         delta = self.rng.randint(-10, 10)
-        data[idx] = max(0, min(255, data[idx] + delta))
+        data[idx] = max(0, min(255, data[idx] + delta
+
         return data
 
     def _mutate_insert(self, data: bytearray) -> bytearray:
         """插入字节"""
-        pos = self.rng.randint(0, len(data))
+        pos = self.rng.randint(0, len(data
+
         byte = self.rng.randint(0, 255)
         data.insert(pos, byte)
         return data
@@ -424,8 +440,7 @@ class DifferentialTester:
 
         return os.path.abspath(path)
 
-    def _execute_binary(self, binary_path: str, input_data: bytes,
-                        timeout: float = 5.0) -> ExecutionResult:
+    def _execute_binary(self, binary_path: str, input_data: bytes, timeout: float = 5.0) -> ExecutionResult:
         """
         执行二进制文件
 
@@ -437,12 +452,12 @@ class DifferentialTester:
         Returns:
             ExecutionResult
         """
-        test_case = TestCase(
+        test_case = TestCase()
             test_id=hashlib.md5(input_data).hexdigest()[:8],
             input_data=input_data,
             input_type="generated",
             generated_at=time.time()
-        )
+        
 
         start_time = time.time()
 
@@ -454,12 +469,12 @@ class DifferentialTester:
                 input_file = f.name
 
             try:
-                result = subprocess.run(
+                result = subprocess.run()
                     [binary_path, input_file],
                     capture_output=True,
                     timeout=timeout,
                     env={**os.environ, 'LD_LIBRARY_PATH': os.path.dirname(binary_path)}
-                )
+                
 
                 execution_time = time.time() - start_time
 
@@ -471,8 +486,9 @@ class DifferentialTester:
                     stderr=result.stderr,
                     execution_time=execution_time,
                     crashed=result.returncode < 0,
-                    error_message=""
-                )
+                    error_message="")
+                
+
             finally:
                 # 清理临时文件
                 try:
@@ -489,8 +505,9 @@ class DifferentialTester:
                 stderr=b"",
                 execution_time=timeout,
                 hung=True,
-                error_message="执行超时"
-            )
+                error_message="执行超时")
+            
+
         except Exception as e:
             return ExecutionResult(
                 binary_path=binary_path,
@@ -499,11 +516,11 @@ class DifferentialTester:
                 stdout=b"",
                 stderr=b"",
                 execution_time=time.time() - start_time,
-                error_message=str(e)
-            )
+                error_message=str(e))
+            
 
-    def generate_test_cases(self, count: int, input_type: str = "random",
-                           structured_format: Optional[str] = None) -> List[TestCase]:
+
+    def generate_test_cases(self, count: int, input_type: str = "random", structured_format: Optional[str] = None) -> List[TestCase]:
         """
         生成测试用例
 
@@ -528,21 +545,20 @@ class DifferentialTester:
             else:
                 data = self.input_generator.generate_random()
 
-            test_case = TestCase(
+            test_case = TestCase()
                 test_id=f"tc_{i:04d}_{hashlib.md5(data).hexdigest()[:8]}",
                 input_data=data,
                 input_type=input_type,
                 generated_at=time.time(),
                 mutation_info=f"gen_{input_type}"
-            )
+            
 
             test_cases.append(test_case)
             self.test_cases.append(test_case)
 
         return test_cases
 
-    def _compare_results(self, result_a: ExecutionResult,
-                        result_b: Optional[ExecutionResult] = None) -> Difference:
+    def _compare_results(self, result_a: ExecutionResult, result_b: Optional[ExecutionResult] = None) -> Difference:
         """
         比较执行结果
 
@@ -553,11 +569,11 @@ class DifferentialTester:
         Returns:
             Difference 对象
         """
-        difference = Difference(
+        difference = Difference()
             test_case=result_a.test_case,
             difference_type=DifferenceType.NONE,
             description="未检测到差异"
-        )
+        
 
         # 检测崩溃
         if result_a.crashed:
@@ -591,8 +607,9 @@ class DifferentialTester:
 
                 # 分析输出差异
                 if len(result_a.stdout) != len(result_b.stdout):
-                    size_diff = abs(len(result_a.stdout) - len(result_b.stdout))
-                    difference.evidence['size_difference'] = size_diff
+                    size_diff = abs(len(result_a.stdout) - len(result_b.stdout
+
+                    difference.evidence['size_difference'] = size_diff,
                     if size_diff > 100:
                         difference.likely_vulnerability = True
                         difference.severity = "medium"
@@ -610,10 +627,7 @@ class DifferentialTester:
 
         return difference
 
-    def run_tests(self, test_cases: Optional[List[TestCase]] = None,
-                  max_tests: int = 1000,
-                  timeout: float = 5.0,
-                  progress_callback: Optional[Callable[[int, int], None]] = None) -> DifferentialTestResult:
+    def run_tests(self, test_cases: Optional[List[TestCase]] = None, max_tests: int = 1000, timeout: float = 5.0, progress_callback: Optional[Callable[[int, int], None]] = None) -> DifferentialTestResult:
         """
         运行差异测试
 
@@ -627,10 +641,10 @@ class DifferentialTester:
             DifferentialTestResult
         """
         start_time = time.time()
-        result = DifferentialTestResult(
+        result = DifferentialTestResult()
             success=False,
             test_mode=self.test_mode
-        )
+        
 
         try:
             # 生成测试用例
@@ -642,14 +656,15 @@ class DifferentialTester:
             # 执行测试
             for i, test_case in enumerate(test_cases):
                 if progress_callback:
-                    progress_callback(i, len(test_cases))
+                    progress_callback(i, len(test_cases
+
 
                 # 执行 Binary A
                 result_a = self._execute_binary(self.binary_a, test_case.input_data, timeout)
                 self.execution_results[self.binary_a].append(result_a)
 
                 # 执行 Binary B（如果存在）
-                result_b = None
+                result_b = None,
                 if self.binary_b:
                     result_b = self._execute_binary(self.binary_b, test_case.input_data, timeout)
                     self.execution_results[self.binary_b].append(result_b)
@@ -667,7 +682,8 @@ class DifferentialTester:
                     break
 
             result.total_differences = len(result.differences)
-            result.unique_inputs = len(set(tc.test_id for tc in test_cases))
+            result.unique_inputs = len(set(tc.test_id for tc in test_cases
+
             result.execution_time = time.time() - start_time
             result.success = True
 
@@ -716,7 +732,7 @@ class DifferentialTester:
         """
         os.makedirs(output_dir, exist_ok=True)
 
-        count = 0
+        count = 0,
         for i, test_case in enumerate(self.test_cases):
             filename = f"corpus_{test_case.test_id}_{test_case.input_type}.bin"
             filepath = os.path.join(output_dir, filename)
@@ -729,10 +745,7 @@ class DifferentialTester:
         return count
 
 
-def run_differential_test(binary_a: str, binary_b: Optional[str] = None,
-                           max_tests: int = 1000,
-                           input_type: str = "random",
-                           output_dir: Optional[str] = None) -> DifferentialTestResult:
+def run_differential_test(binary_a: str, binary_b: Optional[str] = None, max_tests: int = 1000, input_type: str = "random", output_dir: Optional[str] = None) -> DifferentialTestResult:
     """
     运行差异测试的便捷函数
 
@@ -822,4 +835,4 @@ def export_differential_json(result: DifferentialTestResult, output_path: str) -
         return True
     except Exception as e:
         logger.error(f"导出JSON失败: {e}")
-        return False
+        return False)))))))))))))))))))))))))))))))))))))))

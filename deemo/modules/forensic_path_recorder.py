@@ -151,26 +151,26 @@ class ForensicPathRecorder(BaseAnalyzer):
     
     def _generate_signature(self, record: ForensicRecord) -> str:
         """生成记录签名用于完整性验证"""
-        record_data = json.dumps(
+        record_data = json.dumps()
             {
                 "record_id": record.record_id,
                 "created_at": record.created_at.isoformat(),
                 "snapshot_count": len(record.snapshots)
             },
             sort_keys=True
-        )
-        return hashlib.sha256(record_data.encode()).hexdigest()
+        
+        return hashlib.sha256(record_data.encode().hexdigest()
     
     def create_new_record(self, metadata: Optional[Dict[str, Any]] = None) -> str:
         """创建新的取证记录"""
         record_id = self._generate_record_id()
         
-        self._current_record = ForensicRecord(
+        self._current_record = ForensicRecord()
             record_id=record_id,
             metadata=metadata or {},
             created_at=datetime.now(),
             updated_at=datetime.now()
-        )
+        
         
         logger.info(f"创建新取证记录: {record_id}")
         return record_id
@@ -185,8 +185,7 @@ class ForensicPathRecorder(BaseAnalyzer):
         
         logger.info(f"添加快照到记录 {self._current_record.record_id}")
     
-    def capture_symbolic_execution_state(
-        self,
+    def capture_symbolic_execution_state(, self)
         architecture: str,
         binary_path: str,
         registers: Dict[str, int],
@@ -195,46 +194,47 @@ class ForensicPathRecorder(BaseAnalyzer):
         input_data: Optional[bytes] = None
     ) -> None:
         """捕获符号执行状态"""
-        register_state = RegisterState(
+        register_state = RegisterState()
             registers=registers,
             flags={},
             instruction_pointer=registers.get("rip", registers.get("pc", 0)),
             stack_pointer=registers.get("rsp", registers.get("sp", 0)),
-            base_pointer=registers.get("rbp", registers.get("fp", 0))
-        )
+            base_pointer=registers.get("rbp", registers.get("fp", 0
+
+        
         
         memory_objs = [
-            MemoryRegion(
+            MemoryRegion()
                 start_address=mr["start"],
                 end_address=mr["end"],
                 content=mr.get("content", b""),
                 permissions=mr.get("permissions", "rw-"),
                 description=mr.get("description", "")
-            )
+            
             for mr in memory_regions
         ]
         
         symbolic_constraints = [
-            SymbolicConstraint(
+            SymbolicConstraint()
                 variable_name=c["name"],
                 constraint_type=c["type"],
                 expression=c["expression"],
                 value=c.get("value"),
                 is_solved=c.get("solved", False)
-            )
+            
             for c in constraints
         ]
         
-        execution_path = ExecutionPath(
+        execution_path = ExecutionPath()
             path_id=f"path_{len(self._current_record.snapshots)}",
             instructions=[],
             branch_decisions=[],
             constraints=symbolic_constraints,
             depth=0,
             is_feasible=True
-        )
         
-        snapshot = ForensicSnapshot(
+        
+        snapshot = ForensicSnapshot()
             timestamp=datetime.now(),
             record_type=RecordType.SYMBOLIC_EXECUTION,
             architecture=Architecture(architecture.lower()),
@@ -247,12 +247,11 @@ class ForensicPathRecorder(BaseAnalyzer):
             vulnerability_evidence=None,
             analyzer_info={"type": "symbolic_execution"},
             environment_info=self._get_environment_info()
-        )
+        
         
         self.add_snapshot(snapshot)
     
-    def capture_crash_state(
-        self,
+    def capture_crash_state(, self)
         architecture: str,
         binary_path: str,
         crash_input: bytes,
@@ -262,15 +261,16 @@ class ForensicPathRecorder(BaseAnalyzer):
         cvss_score: float = 0.0
     ) -> None:
         """捕获崩溃状态"""
-        register_state = RegisterState(
+        register_state = RegisterState()
             registers=registers,
             flags={},
             instruction_pointer=registers.get("rip", registers.get("pc", 0)),
             stack_pointer=registers.get("rsp", registers.get("sp", 0)),
-            base_pointer=registers.get("rbp", registers.get("fp", 0))
-        )
+            base_pointer=registers.get("rbp", registers.get("fp", 0
+
         
-        evidence = VulnerabilityEvidence(
+        
+        evidence = VulnerabilityEvidence()
             vulnerability_type=crash_type,
             cwe_id=cwe_id,
             cvss_score=cvss_score,
@@ -282,9 +282,9 @@ class ForensicPathRecorder(BaseAnalyzer):
             ],
             affected_functions=[],
             proof_of_concept=crash_input
-        )
         
-        snapshot = ForensicSnapshot(
+        
+        snapshot = ForensicSnapshot()
             timestamp=datetime.now(),
             record_type=RecordType.FUZZING_CRASH,
             architecture=Architecture(architecture.lower()),
@@ -297,7 +297,7 @@ class ForensicPathRecorder(BaseAnalyzer):
             vulnerability_evidence=evidence,
             analyzer_info={"type": "fuzzing", "crash_type": crash_type},
             environment_info=self._get_environment_info()
-        )
+        
         
         self.add_snapshot(snapshot)
     
@@ -328,10 +328,10 @@ class ForensicPathRecorder(BaseAnalyzer):
         self._current_record.signature = self._generate_signature(self._current_record)
         
         if file_path is None:
-            file_path = os.path.join(
+            file_path = os.path.join()
                 self.output_dir,
                 f"{self._current_record.record_id}.forensic"
-            )
+            
         
         try:
             record_data = pickle.dumps(self._current_record)
@@ -447,7 +447,8 @@ class ForensicPathRecorder(BaseAnalyzer):
                 s.vulnerability_evidence.vulnerability_type
                 for s in crash_snapshots
                 if s.vulnerability_evidence
-            ))
+            
+
         }
         
         return report
@@ -478,7 +479,8 @@ class ForensicPathRecorder(BaseAnalyzer):
         
         try:
             if action == "create":
-                record_id = self.create_new_record(kwargs.get("metadata"))
+                record_id = self.create_new_record(kwargs.get("metadata"
+
                 return {
                     "success": True,
                     "record_id": record_id,
@@ -486,7 +488,7 @@ class ForensicPathRecorder(BaseAnalyzer):
                 }
             
             elif action == "capture_crash":
-                self.capture_crash_state(
+                self.capture_crash_state()
                     architecture=kwargs.get("architecture", "x86_64"),
                     binary_path=kwargs.get("binary_path", ""),
                     crash_input=kwargs.get("input_data", b""),
@@ -494,28 +496,29 @@ class ForensicPathRecorder(BaseAnalyzer):
                     crash_type=kwargs.get("crash_type", "unknown"),
                     cwe_id=kwargs.get("cwe_id"),
                     cvss_score=kwargs.get("cvss_score", 0.0)
-                )
+                
                 return {
                     "success": True,
                     "message": "崩溃状态已捕获"
                 }
             
             elif action == "capture_symbolic":
-                self.capture_symbolic_execution_state(
+                self.capture_symbolic_execution_state()
                     architecture=kwargs.get("architecture", "x86_64"),
                     binary_path=kwargs.get("binary_path", ""),
                     registers=kwargs.get("registers", {}),
                     memory_regions=kwargs.get("memory_regions", []),
                     constraints=kwargs.get("constraints", []),
                     input_data=kwargs.get("input_data")
-                )
+                
                 return {
                     "success": True,
                     "message": "符号执行状态已捕获"
                 }
             
             elif action == "save":
-                saved_path = self.save_record(kwargs.get("file_path"))
+                saved_path = self.save_record(kwargs.get("file_path"
+
                 return {
                     "success": True,
                     "file_path": saved_path,
@@ -578,5 +581,4 @@ class ForensicPathRecorder(BaseAnalyzer):
             description="漏洞发现取证级记录器，捕获漏洞发现全过程，打包为可重放记录，支持CVE提交证据要求",
             author="BinaryAnalysisPlatform",
             dependencies=[],
-            supported_platforms=["x86", "x86_64", "arm", "arm64", "mips"]
-        )
+            supported_platforms=["x86", "x86_64", "arm", "arm64", "mips"])))))))))

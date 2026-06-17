@@ -134,7 +134,8 @@ class GNURadioXMLParser(GNURadioParser):
             
             flow_graph = FlowGraph(name="parsed_flowgraph")
             
-            root = ET.fromstring(binary_data.decode('utf-8', errors='ignore'))
+            root = ET.fromstring(binary_data.decode('utf-8', errors='ignore'
+
             
             for block in root.findall('.//block'):
                 name = block.get('name', '')
@@ -142,12 +143,12 @@ class GNURadioXMLParser(GNURadioParser):
                 
                 component_type = self._map_type(type_name)
                 
-                component = SDRComponent(
+                component = SDRComponent()
                     name=name,
                     type=component_type,
                     address=0,
                     description=block.get('comment', '')
-                )
+                
                 
                 for param in block.findall('.//param'):
                     param_name = param.get('name')
@@ -161,7 +162,8 @@ class GNURadioXMLParser(GNURadioParser):
                 src = connection.get('src_block')
                 dst = connection.get('dst_block')
                 if src and dst:
-                    flow_graph.connections.append((src, dst))
+                    flow_graph.connections.append((src, dst
+
             
             return flow_graph
         
@@ -245,7 +247,8 @@ class ParameterAnalyzer:
                             severity="high",
                             parameters=[rule.parameter_name],
                             recommended_fix=f"添加参数验证，确保 {rule.parameter_name} >= {rule.min_value}"
-                        ))
+                        
+
                     
                     if rule.max_value is not None and num_value > rule.max_value:
                         vulnerabilities.append(Vulnerability(
@@ -256,7 +259,8 @@ class ParameterAnalyzer:
                             severity="high",
                             parameters=[rule.parameter_name],
                             recommended_fix=f"添加参数验证，确保 {rule.parameter_name} <= {rule.max_value}"
-                        ))
+                        
+
                 
                 except ValueError:
                     # 非数值参数
@@ -271,7 +275,8 @@ class ParameterAnalyzer:
                     severity="medium",
                     parameters=[rule.parameter_name],
                     recommended_fix=f"添加必需参数 {rule.parameter_name} 的检查"
-                ))
+                
+
         
         return vulnerabilities
 
@@ -306,7 +311,8 @@ class SignalInjectionDetector:
                             severity="high",
                             parameters=["gain"],
                             recommended_fix="限制增益参数范围"
-                        ))
+                        
+
             
             elif component.type == SDRComponentType.DEMODULATOR:
                 # 检测是否有认证/加密机制
@@ -319,7 +325,8 @@ class SignalInjectionDetector:
                         location=component.address,
                         severity="high",
                         recommended_fix="添加信号认证和完整性检查"
-                    ))
+                    
+
         
         return vulnerabilities
 
@@ -352,8 +359,9 @@ class SDRBinaryAnalyzer:
                 success=False,
                 flow_graph=FlowGraph(name=""),
                 vulnerabilities=[],
-                errors=[f"文件不存在: {binary_path}"]
-            )
+                errors=[f"文件不存在: {binary_path}"])
+            
+
         
         try:
             with open(binary_path, 'rb') as f:
@@ -382,8 +390,9 @@ class SDRBinaryAnalyzer:
                 success=True,
                 flow_graph=flow_graph,
                 vulnerabilities=vulnerabilities,
-                signal_type=signal_type
-            )
+                signal_type=signal_type)
+            
+
         
         except Exception as e:
             logger.error(f"分析失败: {e}")
@@ -391,8 +400,9 @@ class SDRBinaryAnalyzer:
                 success=False,
                 flow_graph=FlowGraph(name=""),
                 vulnerabilities=[],
-                errors=[str(e)]
-            )
+                errors=[str(e)])
+            
+
     
     def _analyze_binary_sdr(self, data: bytes) -> FlowGraph:
         """分析二进制SDR代码"""
@@ -416,7 +426,8 @@ class SDRBinaryAnalyzer:
                     type=comp_type,
                     address=match,
                     description=f"发现于地址 0x{match:x}"
-                ))
+                
+
         
         return flow_graph
     
@@ -454,8 +465,9 @@ class SDRBinaryAnalyzer:
                 success=False,
                 flow_graph=FlowGraph(name=""),
                 vulnerabilities=[],
-                errors=[f"文件不存在: {flowgraph_path}"]
-            )
+                errors=[f"文件不存在: {flowgraph_path}"])
+            
+
         
         try:
             with open(flowgraph_path, 'rb') as f:
@@ -477,8 +489,9 @@ class SDRBinaryAnalyzer:
                 success=True,
                 flow_graph=flow_graph,
                 vulnerabilities=vulnerabilities,
-                signal_type=signal_type
-            )
+                signal_type=signal_type)
+            
+
         
         except Exception as e:
             logger.error(f"分析流图失败: {e}")
@@ -486,8 +499,9 @@ class SDRBinaryAnalyzer:
                 success=False,
                 flow_graph=FlowGraph(name=""),
                 vulnerabilities=[],
-                errors=[str(e)]
-            )
+                errors=[str(e)])
+            
+
     
     def generate_flowgraph_image(self, flow_graph: FlowGraph, output_path: str) -> bool:
         """
@@ -581,4 +595,4 @@ class SDRBinaryAnalyzer:
                     report.append(f"  修复建议: {vuln.recommended_fix}")
                 report.append("")
         
-        return "\n".join(report)
+        return "\n".join(report)))))))))))))))))

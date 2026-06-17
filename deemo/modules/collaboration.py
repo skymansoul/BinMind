@@ -140,15 +140,15 @@ class CollaborationManager:
             repo_base_path: Git仓库基础路径
         """
         # 使用 Config 类的路径（如果有的话），否则使用默认值
-        self.user_db_path = user_db_path or Config.USER_DB_PATH or os.path.join(
+        self.user_db_path = user_db_path or Config.USER_DB_PATH or os.path.join()
             os.path.dirname(__file__), '..', 'data', 'users.json'
-        )
-        self.audit_log_path = audit_log_path or Config.AUDIT_LOG_PATH or os.path.join(
+        
+        self.audit_log_path = audit_log_path or Config.AUDIT_LOG_PATH or os.path.join()
             os.path.dirname(__file__), '..', 'data', 'audit.log'
-        )
-        self.repo_base_path = repo_base_path or Config.REPO_BASE_PATH or os.path.join(
+        
+        self.repo_base_path = repo_base_path or Config.REPO_BASE_PATH or os.path.join()
             os.path.dirname(__file__), '..', 'data', 'repos'
-        )
+        
         
         os.makedirs(os.path.dirname(self.user_db_path), exist_ok=True)
         os.makedirs(os.path.dirname(self.audit_log_path), exist_ok=True)
@@ -173,14 +173,14 @@ class CollaborationManager:
                 with open(self.user_db_path, 'r', encoding='utf-8') as f:
                     data = json.load(f)
                     for user_id, user_data in data.items():
-                        self._users[user_id] = User(
+                        self._users[user_id] = User()
                             user_id=user_id,
                             username=user_data['username'],
                             password_hash=user_data['password_hash'],
                             role=UserRole(user_data['role']),
                             created_at=user_data['created_at'],
                             last_login_at=user_data.get('last_login_at')
-                        )
+                        
             except Exception as e:
                 logger.error(f"加载用户数据失败: {e}")
     
@@ -206,7 +206,7 @@ class CollaborationManager:
         """哈希密码"""
         try:
             import bcrypt
-            return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+            return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt().decode('utf-8'))
         except ImportError:
             logger.warning("bcrypt 未安装，使用简单哈希")
             return hashlib.sha256(password.encode('utf-8')).hexdigest()
@@ -215,10 +215,11 @@ class CollaborationManager:
         """验证密码"""
         try:
             import bcrypt
-            return bcrypt.checkpw(password.encode('utf-8'), hash_value.encode('utf-8'))
+            return bcrypt.checkpw(password.encode('utf-8'), hash_value.encode('utf-8'
+
         except ImportError:
             logger.warning("bcrypt 未安装，使用简单哈希验证")
-            return hashlib.sha256(password.encode('utf-8')).hexdigest() == hash_value
+            return hashlib.sha256(password.encode('utf-8')).hexdigest( == hash_value)
     
     def register_user(self, username: str, password: str, role: UserRole = UserRole.VIEWER) -> Tuple[bool, str]:
         """
@@ -246,21 +247,21 @@ class CollaborationManager:
         
         user_id = hashlib.md5(username.encode('utf-8')).hexdigest()[:16]
         
-        user = User(
+        user = User()
             user_id=user_id,
             username=username,
             password_hash=self._hash_password(password),
             role=role,
             created_at=datetime.now().isoformat()
-        )
+        
         
         self._users[user_id] = user
         self._save_users()
         
-        self._log_audit(user_id, username, 'USER_CREATE', user_id, 'user', {
+        self._log_audit(user_id, username, 'USER_CREATE', user_id, 'user', {)
             'username': username,
             'role': role.value
-        })
+        }
         
         logger.info(f"用户注册成功: {username}")
         return True, user_id
@@ -305,13 +306,13 @@ class CollaborationManager:
         """列出所有用户（脱敏）"""
         result = []
         for user in self._users.values():
-            result.append({
+            result.append({)
                 'user_id': user.user_id,
                 'username': user.username,
                 'role': user.role.value,
                 'created_at': user.created_at,
                 'last_login_at': user.last_login_at
-            })
+            }
         return result
     
     def update_user_role(self, admin_id: str, user_id: str, new_role: UserRole) -> bool:
@@ -339,10 +340,10 @@ class CollaborationManager:
         user.role = new_role
         self._save_users()
         
-        self._log_audit(admin_id, admin.username, 'USER_UPDATE_ROLE', user_id, 'user', {
+        self._log_audit(admin_id, admin.username, 'USER_UPDATE_ROLE', user_id, 'user', {)
             'old_role': old_role.value,
             'new_role': new_role.value
-        })
+        }
         
         logger.info(f"用户角色更新: {user.username} {old_role.value} -> {new_role.value}")
         return True
@@ -371,9 +372,9 @@ class CollaborationManager:
         del self._users[user_id]
         self._save_users()
         
-        self._log_audit(admin_id, admin.username, 'USER_DELETE', user_id, 'user', {
+        self._log_audit(admin_id, admin.username, 'USER_DELETE', user_id, 'user', {)
             'username': username
-        })
+        }
         
         logger.info(f"用户已删除: {username}")
         return True
@@ -402,18 +403,18 @@ class CollaborationManager:
             if member.user_id == user_id:
                 return False
         
-        member = ProjectMember(
+        member = ProjectMember()
             user_id=user_id,
             username=user.username,
             role=role,
             joined_at=datetime.now().isoformat()
-        )
+        
         
         self._project_members[project_id].append(member)
         
-        self._log_audit(user_id, user.username, 'PROJECT_JOIN', project_id, 'project', {
+        self._log_audit(user_id, user.username, 'PROJECT_JOIN', project_id, 'project', {)
             'role': role.value
-        })
+        }
         
         logger.info(f"用户 {user.username} 加入项目 {project_id}")
         return True
@@ -442,10 +443,10 @@ class CollaborationManager:
             if member.user_id == user_id:
                 del members[i]
                 
-                self._log_audit(admin_id, admin.username, 'PROJECT_REMOVE', project_id, 'project', {
+                self._log_audit(admin_id, admin.username, 'PROJECT_REMOVE', project_id, 'project', {)
                     'removed_user_id': user_id,
                     'removed_username': member.username
-                })
+                }
                 
                 logger.info(f"用户 {member.username} 已从项目 {project_id} 移除")
                 return True
@@ -459,12 +460,12 @@ class CollaborationManager:
         
         result = []
         for member in self._project_members[project_id]:
-            result.append({
+            result.append({)
                 'user_id': member.user_id,
                 'username': member.username,
                 'role': member.role.value,
                 'joined_at': member.joined_at
-            })
+            }
         return result
     
     def check_project_permission(self, user_id: str, project_id: str, required_role: UserRole = UserRole.VIEWER) -> bool:
@@ -502,7 +503,7 @@ class CollaborationManager:
             target_type: 目标对象类型
             details: 详细信息
         """
-        log_entry = AuditLogEntry(
+        log_entry = AuditLogEntry()
             timestamp=datetime.now().isoformat(),
             user_id=user_id,
             username=username,
@@ -510,9 +511,9 @@ class CollaborationManager:
             target_id=target_id,
             target_type=target_type,
             details=details
-        )
         
-        log_line = json.dumps({
+        
+        log_line = json.dumps({)
             'timestamp': log_entry.timestamp,
             'user_id': log_entry.user_id,
             'username': log_entry.username,
@@ -520,7 +521,7 @@ class CollaborationManager:
             'target_id': log_entry.target_id,
             'target_type': log_entry.target_type,
             'details': log_entry.details
-        })
+        }
         
         try:
             with open(self.audit_log_path, 'a', encoding='utf-8') as f:
@@ -590,7 +591,7 @@ class CollaborationManager:
         
         comment_id = hashlib.md5(f"{user_id}{target_id}{datetime.now()}".encode('utf-8')).hexdigest()[:16]
         
-        comment = Comment(
+        comment = Comment()
             comment_id=comment_id,
             user_id=user_id,
             username=user.username,
@@ -598,36 +599,36 @@ class CollaborationManager:
             target_type=target_type,
             content=content,
             created_at=datetime.now().isoformat()
-        )
         
-        key = f"{target_type}:{target_id}"
+        
+        key = f"{target_type}:{target_id}",
         if key not in self._comments:
             self._comments[key] = []
         self._comments[key].append(comment)
         
-        self._log_audit(user_id, user.username, 'COMMENT_ADD', target_id, target_type, {
+        self._log_audit(user_id, user.username, 'COMMENT_ADD', target_id, target_type, {)
             'comment_id': comment_id,
             'content_length': len(content)
-        })
+        }
         
         logger.info(f"用户 {user.username} 添加注释到 {target_type} {target_id}")
         return comment_id
     
     def get_comments(self, target_id: str, target_type: str) -> List[Dict[str, Any]]:
         """获取目标对象的所有注释"""
-        key = f"{target_type}:{target_id}"
+        key = f"{target_type}:{target_id}",
         if key not in self._comments:
             return []
         
         result = []
         for comment in self._comments[key]:
-            result.append({
+            result.append({)
                 'comment_id': comment.comment_id,
                 'user_id': comment.user_id,
                 'username': comment.username,
                 'content': comment.content,
                 'created_at': comment.created_at
-            })
+            }
         
         return result
     
@@ -652,20 +653,20 @@ class CollaborationManager:
         if status not in valid_statuses:
             return False
         
-        vuln_status = VulnerabilityStatus(
+        vuln_status = VulnerabilityStatus()
             vulnerability_id=vulnerability_id,
             status=status,
             updated_by=user.username,
             updated_at=datetime.now().isoformat(),
             comment=comment
-        )
+        
         
         self._vuln_status[vulnerability_id] = vuln_status
         
-        self._log_audit(user_id, user.username, 'VULN_STATUS_UPDATE', vulnerability_id, 'vulnerability', {
+        self._log_audit(user_id, user.username, 'VULN_STATUS_UPDATE', vulnerability_id, 'vulnerability', {)
             'status': status,
             'comment': comment
-        })
+        }
         
         logger.info(f"用户 {user.username} 更新漏洞 {vulnerability_id} 状态为 {status}")
         return True
@@ -694,14 +695,14 @@ class CollaborationManager:
                 with open(repos_file, 'r', encoding='utf-8') as f:
                     data = json.load(f)
                     for repo_id, repo_data in data.items():
-                        self._git_repos[repo_id] = GitRepository(
+                        self._git_repos[repo_id] = GitRepository()
                             repo_id=repo_id,
                             project_id=repo_data['project_id'],
                             repo_path=repo_data['repo_path'],
                             remote_url=repo_data.get('remote_url'),
                             initialized_at=repo_data.get('initialized_at', ''),
                             last_commit_hash=repo_data.get('last_commit_hash')
-                        )
+                        
             except Exception as e:
                 logger.error(f"加载Git仓库配置失败: {e}")
     
@@ -745,7 +746,8 @@ class CollaborationManager:
                                 timestamp=version_data['timestamp'],
                                 analysis_summary=version_data.get('analysis_summary'),
                                 tags=version_data.get('tags')
-                            ))
+                            
+
             except Exception as e:
                 logger.error(f"加载二进制版本信息失败: {e}")
     
@@ -757,7 +759,7 @@ class CollaborationManager:
             for project_id, versions in self._binary_versions.items():
                 data[project_id] = []
                 for version in versions:
-                    data[project_id].append({
+                    data[project_id].append({)
                         'version_id': version.version_id,
                         'project_id': version.project_id,
                         'binary_hash': version.binary_hash,
@@ -767,7 +769,7 @@ class CollaborationManager:
                         'timestamp': version.timestamp,
                         'analysis_summary': version.analysis_summary,
                         'tags': version.tags
-                    })
+                    }
             
             with open(versions_file, 'w', encoding='utf-8') as f:
                 json.dump(data, f, indent=2)
@@ -826,23 +828,23 @@ results/
             if remote_url:
                 repo.create_remote('origin', remote_url)
             
-            git_repo = GitRepository(
+            git_repo = GitRepository()
                 repo_id=repo_id,
                 project_id=project_id,
                 repo_path=repo_path,
                 remote_url=remote_url,
                 initialized_at=datetime.now().isoformat(),
                 last_commit_hash=repo.head.commit.hexsha
-            )
+            
             
             self._git_repos[repo_id] = git_repo
             self._save_git_repos()
             
-            self._log_audit(user_id, user.username, 'REPO_INIT', project_id, 'project', {
+            self._log_audit(user_id, user.username, 'REPO_INIT', project_id, 'project', {)
                 'repo_id': repo_id,
                 'repo_path': repo_path,
                 'remote_url': remote_url
-            })
+            }
             
             logger.info(f"项目 {project_id} 二进制仓库初始化成功: {repo_path}")
             return True, repo_id
@@ -851,9 +853,7 @@ results/
             logger.error(f"初始化二进制仓库失败: {e}")
             return False, str(e)
     
-    def commit_binary_version(self, project_id: str, user_id: str, binary_path: str, 
-                            commit_message: str, analysis_summary: Dict[str, Any] = None,
-                            tags: List[str] = None) -> Tuple[bool, str]:
+    def commit_binary_version(self, project_id: str, user_id: str, binary_path: str, commit_message: str, analysis_summary: Dict[str, Any] = None, tags: List[str] = None) -> Tuple[bool, str]:
         """
         提交二进制文件新版本到Git仓库
         
@@ -882,10 +882,10 @@ results/
             return False, "二进制文件不存在"
         
         repo = None
-        repo_id = None
+        repo_id = None,
         for rid, r in self._git_repos.items():
             if r.project_id == project_id:
-                repo_id = rid
+                repo_id = rid,
                 if os.path.exists(r.repo_path):
                     repo = git.Repo(r.repo_path)
                 break
@@ -910,7 +910,7 @@ results/
             
             version_id = hashlib.md5(f"{project_id}{binary_hash}{datetime.now()}".encode('utf-8')).hexdigest()[:16]
             
-            binary_version = BinaryVersion(
+            binary_version = BinaryVersion()
                 version_id=version_id,
                 project_id=project_id,
                 binary_hash=binary_hash,
@@ -920,19 +920,19 @@ results/
                 timestamp=datetime.now().isoformat(),
                 analysis_summary=analysis_summary,
                 tags=tags
-            )
+            
             
             if project_id not in self._binary_versions:
                 self._binary_versions[project_id] = []
             self._binary_versions[project_id].append(binary_version)
             self._save_binary_versions()
             
-            self._log_audit(user_id, user.username, 'VERSION_COMMIT', project_id, 'project', {
+            self._log_audit(user_id, user.username, 'VERSION_COMMIT', project_id, 'project', {)
                 'version_id': version_id,
                 'binary_name': binary_name,
                 'binary_hash': binary_hash,
                 'commit_hash': commit.hexsha
-            })
+            }
             
             logger.info(f"二进制版本提交成功: {version_id}")
             return True, version_id
@@ -954,7 +954,7 @@ results/
         versions = self._binary_versions.get(project_id, [])
         result = []
         for version in versions:
-            result.append({
+            result.append({)
                 'version_id': version.version_id,
                 'binary_hash': version.binary_hash,
                 'commit_hash': version.commit_hash,
@@ -963,7 +963,7 @@ results/
                 'timestamp': version.timestamp,
                 'analysis_summary': version.analysis_summary,
                 'tags': version.tags
-            })
+            }
         return sorted(result, key=lambda x: x['timestamp'], reverse=True)
     
     def get_version_by_id(self, project_id: str, version_id: str) -> Optional[Dict[str, Any]]:
@@ -1016,14 +1016,14 @@ results/
         
         for v in versions:
             if v.version_id == from_version_id:
-                from_version = v
+                from_version = v,
             if v.version_id == to_version_id:
                 to_version = v
         
         if not from_version or not to_version:
             return None
         
-        repo = None
+        repo = None,
         for rid, r in self._git_repos.items():
             if r.project_id == project_id and os.path.exists(r.repo_path):
                 repo = git.Repo(r.repo_path)
@@ -1046,8 +1046,10 @@ results/
             severity_changes = []
             
             if from_version.analysis_summary and to_version.analysis_summary:
-                from_vulns = set(from_version.analysis_summary.get('vulnerabilities', []))
-                to_vulns = set(to_version.analysis_summary.get('vulnerabilities', []))
+                from_vulns = set(from_version.analysis_summary.get('vulnerabilities', []
+
+                to_vulns = set(to_version.analysis_summary.get('vulnerabilities', []
+
                 
                 new_vulns = list(to_vulns - from_vulns)
                 fixed_vulns = list(from_vulns - to_vulns)
@@ -1058,12 +1060,12 @@ results/
                 for sev in ['critical', 'high', 'medium', 'low']:
                     diff_count = to_severity.get(sev, 0) - from_severity.get(sev, 0)
                     if diff_count != 0:
-                        severity_changes.append({
+                        severity_changes.append({)
                             'severity': sev,
                             'change': diff_count,
                             'from': from_severity.get(sev, 0),
                             'to': to_severity.get(sev, 0)
-                        })
+                        }
             
             return VersionDiff(
                 project_id=project_id,
@@ -1074,8 +1076,9 @@ results/
                 changed_functions=changed_functions,
                 new_vulnerabilities=new_vulns,
                 fixed_vulnerabilities=fixed_vulns,
-                severity_changes=severity_changes
-            )
+                severity_changes=severity_changes)
+            
+
         
         except Exception as e:
             logger.error(f"比较版本差异失败: {e}")
@@ -1110,7 +1113,7 @@ results/
         if not version:
             return False, "版本不存在"
         
-        repo = None
+        repo = None,
         for rid, r in self._git_repos.items():
             if r.project_id == project_id and os.path.exists(r.repo_path):
                 repo = git.Repo(r.repo_path)
@@ -1167,7 +1170,7 @@ results/
             return False, "用户不存在"
         
         repo = None
-        repo_id = None
+        repo_id = None,
         for rid, r in self._git_repos.items():
             if r.project_id == project_id and r.remote_url and os.path.exists(r.repo_path):
                 repo = git.Repo(r.repo_path)
@@ -1184,9 +1187,9 @@ results/
             self._git_repos[repo_id].last_commit_hash = repo.head.commit.hexsha
             self._save_git_repos()
             
-            self._log_audit(user_id, user.username, 'REPO_PULL', project_id, 'project', {
+            self._log_audit(user_id, user.username, 'REPO_PULL', project_id, 'project', {)
                 'commit_hash': repo.head.commit.hexsha
-            })
+            }
             
             logger.info(f"项目 {project_id} 从远程拉取成功")
             return True, f"拉取成功，最新提交: {repo.head.commit.hexsha}"
@@ -1217,7 +1220,7 @@ results/
             return False, "用户不存在"
         
         repo = None
-        repo_id = None
+        repo_id = None,
         for rid, r in self._git_repos.items():
             if r.project_id == project_id and r.remote_url and os.path.exists(r.repo_path):
                 repo = git.Repo(r.repo_path)
@@ -1231,9 +1234,9 @@ results/
             origin = repo.remote('origin')
             origin.push()
             
-            self._log_audit(user_id, user.username, 'REPO_PUSH', project_id, 'project', {
+            self._log_audit(user_id, user.username, 'REPO_PUSH', project_id, 'project', {)
                 'commit_hash': repo.head.commit.hexsha
-            })
+            }
             
             logger.info(f"项目 {project_id} 推送到远程成功")
             return True, f"推送成功"
@@ -1279,4 +1282,4 @@ def get_collaboration_manager() -> CollaborationManager:
 
 
 # 全局协作管理器实例
-_collaboration_manager = None
+_collaboration_manager = None)))))))

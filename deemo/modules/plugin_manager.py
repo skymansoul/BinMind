@@ -3,11 +3,14 @@ import importlib
 import os
 import sys
 import json
+import zipfile
+import shutil
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Type, Callable, Tuple
+from typing import Dict, List, Optional, Any, Type, Callable, Tuple, Set
 from pathlib import Path
 from enum import Enum
+from types import ModuleType
 
 logger = logging.getLogger(__name__)
 
@@ -38,14 +41,56 @@ class AnalyzerMetadata:
     dependencies: List[str] = field(default_factory=list)
     supported_platforms: List[str] = field(default_factory=list)
     config_schema: Optional[Dict[str, Any]] = None
+    requires: Optional[Dict[str, str]] = None
+    provides: Optional[List[str]] = None
+    compatible_versions: Optional[List[str]] = None
+    deprecated: bool = False
+    experimental: bool = False
+
+
+class ProgressCallback(ABC):
+    """进度回调抽象类"""
+    
+    @abstractmethod
+    def on_progress(self, progress: float, message: str = "") -> None:
+        """进度更新回调"""
+        pass
 
 
 class BaseAnalyzer(ABC):
     """
     分析器基类 - 所有分析模块必须继承此类
     
-    统一 analyze() 方法的输入输出规范
+    统一 analyze() 方法的输入输出规范，支持完整的生命周期管理
     """
+    
+    def __init__(self):
+        self._config = {}
+        self._progress_callback = None
+        self._initialized = False
+    
+    def initialize(self, config: Optional[Dict[str, Any]] = None) -> bool:
+        """
+        初始化分析器
+        
+        Args:
+            config: 配置参数
+            
+        Returns:
+            是否初始化成功
+        """
+        self._config = config or {}
+        self._initialized = True
+        logger.debug(f"分析器 {self.get_metadata().name} 初始化完成")
+        return True
+    
+    def finalize(self) -> None:
+        """
+        清理分析器资源（析构前调用）
+        """
+        self.cleanup()
+        self._initialized = False
+        logger.debug(f"分析器 {self.get_metadata().name} 已清理")
     
     @abstractmethod
     def analyze(self, **kwargs) -> Dict[str, Any]:
@@ -83,9 +128,86 @@ class BaseAnalyzer(ABC):
         """
         return True, None
     
+    def validate_output(self, result: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
+        """
+        验证输出结果格式
+        
+        Args:
+            result: 分析结果
+            
+        Returns:
+            (是否有效, 错误信息)
+        """
+        if not isinstance(result, dict):
+            return False, "结果必须是字典类型"
+        if 'success' not in result:
+            return False, "结果必须包含 'success' 键"
+        return True, None
+    
     def cleanup(self) -> None:
         """清理资源"""
         pass
+    
+    def set_progress_callback(self, callback: ProgressCallback) -> None:
+        """
+        设置进度回调
+        
+        Args:
+            callback: 进度回调函数
+        """
+        self._progress_callback = callback
+    
+    def update_progress(self, progress: float, message: str = "") -> None:
+        """
+        更新进度
+        
+        Args:
+            progress: 进度百分比 (0-1)
+            message: 进度消息
+        """
+        if self._progress_callback:
+            self._progress_callback.on_progress(progress, message)
+    
+    def check_dependencies(self) -> Dict[str, bool]:
+        """
+        检查依赖是否满足
+        
+        Returns:
+            依赖检查结果字典
+        """
+        metadata = self.get_metadata()
+        results = {}
+        
+        for dep in metadata.dependencies:
+            try:
+                importlib.import_module(dep)
+                results[dep] = True
+            except ImportError:
+                results[dep] = False
+        
+        return results
+    
+    def get_config_schema(self) -> Dict[str, Any]:
+        """
+        获取配置schema
+        
+        Returns:
+            配置schema字典
+        """
+        metadata = self.get_metadata()
+        return metadata.config_schema or {}
+    
+    def is_initialized(self) -> bool:
+        """检查分析器是否已初始化"""
+        return self._initialized
+    
+    def get_name(self) -> str:
+        """获取分析器名称"""
+        return self.get_metadata(.name
+    
+    def get_version(self) -> str:
+        """获取分析器版本"""
+        return self.get_metadata().version
 
 
 class PluginManager:
@@ -94,8 +216,10 @@ class PluginManager:
     
     负责：
     1. 加载内置分析器
-    2. 加载外部插件（通过 entry_points 或配置文件）
+    2. 加载外部插件（通过 entry_points、配置文件或插件包）
     3. 管理分析器生命周期
+    4. 插件包安装与卸载
+    5. 插件仓库管理
     """
     
     def __init__(self, plugins_dir: str = "plugins", config_file: Optional[str] = None):
@@ -108,11 +232,213 @@ class PluginManager:
         """
         self.plugins_dir = Path(plugins_dir)
         self.analyzers: Dict[str, Type[BaseAnalyzer]] = {}
-        self.loaded_plugins: Dict[str, Any] = {}
+        self.loaded_plugins: Dict[str, ModuleType] = {}
         self.config_file = config_file
+        self._initialized_analyzers: Dict[str, BaseAnalyzer] = {}
+        
+        self.plugins_dir.mkdir(parents=True, exist_ok=True)
         
         self._load_builtin_analyzers()
         self._load_external_plugins()
+    
+    def _load_external_plugins(self) -> None:
+        """加载外部插件（扩展版）"""
+        if not self.plugins_dir.exists():
+            return
+        
+        for item in self.plugins_dir.iterdir():
+            if item.is_dir():
+                # 检查是否是插件包（包含plugin.json）
+                plugin_json = item / "plugin.json"
+                if plugin_json.exists():
+                    self._load_plugin_package(item)
+                else:
+                    self._load_plugin_from_dir(item)
+            elif item.suffix == ".py":
+                self._load_plugin_from_file(item)
+            elif item.suffix == ".zip":
+                self._load_plugin_from_zip(item)
+    
+    def _load_plugin_package(self, plugin_dir: Path) -> None:
+        """从插件包目录加载插件"""
+        try:
+            plugin_json_path = plugin_dir / "plugin.json"
+            with open(plugin_json_path, 'r', encoding='utf-8') as f:
+                plugin_info = json.load(f)
+            
+            plugin_name = plugin_info.get("name", plugin_dir.name)
+            main_module = plugin_info.get("main", "main")
+            
+            sys.path.insert(0, str(self.plugins_dir)
+
+            
+            module = importlib.import_module(f"{plugin_dir.name}.{main_module}")
+            
+            for name in dir(module):
+                obj = getattr(module, name)
+                if isinstance(obj, type) and issubclass(obj, BaseAnalyzer) and obj != BaseAnalyzer:
+                    self.analyzers[plugin_name] = obj
+                    logger.info(f"加载插件包: {plugin_name}")
+            
+            self.loaded_plugins[plugin_name] = module
+            
+        except Exception as e:
+            logger.warning(f"加载插件包 {plugin_dir} 失败: {e}")
+        finally:
+            if str(self.plugins_dir) in sys.path:
+                sys.path.remove(str(self.plugins_dir)
+
+    
+    def _load_plugin_from_zip(self, zip_path: Path) -> None:
+        """从ZIP文件加载插件"""
+        try:
+            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                # 创建临时目录
+                temp_dir = self.plugins_dir / f"tmp_{zip_path.stem}"
+                temp_dir.mkdir(exist_ok=True)
+                
+                zip_ref.extractall(temp_dir)
+                
+                # 检查是否包含plugin.json
+                plugin_json_path = temp_dir / "plugin.json"
+                if plugin_json_path.exists():
+                    with open(plugin_json_path, 'r', encoding='utf-8') as f:
+                        plugin_info = json.load(f)
+                    plugin_name = plugin_info.get("name", zip_path.stem)
+                else:
+                    plugin_name = zip_path.stem
+                
+                sys.path.insert(0, str(self.plugins_dir)
+
+                
+                # 查找主模块
+                main_file = temp_dir / "__init__.py"
+                if main_file.exists():
+                    module = importlib.import_module(f"tmp_{zip_path.stem}")
+                    
+                    for name in dir(module):
+                        obj = getattr(module, name)
+                        if isinstance(obj, type) and issubclass(obj, BaseAnalyzer) and obj != BaseAnalyzer:
+                            self.analyzers[plugin_name] = obj
+                            logger.info(f"加载ZIP插件: {plugin_name}")
+                    
+                    self.loaded_plugins[plugin_name] = module
+                
+                # 清理临时目录
+                shutil.rmtree(temp_dir, ignore_errors=True)
+                
+        except Exception as e:
+            logger.warning(f"加载ZIP插件 {zip_path} 失败: {e}")
+        finally:
+            if str(self.plugins_dir) in sys.path:
+                sys.path.remove(str(self.plugins_dir)
+
+    
+    def install_plugin(self, plugin_path: str) -> bool:
+        """
+        安装插件
+        
+        Args:
+            plugin_path: 插件路径（目录或ZIP文件）
+            
+        Returns:
+            是否安装成功
+        """
+        path = Path(plugin_path)
+        
+        if not path.exists():
+            logger.error(f"插件路径不存在: {plugin_path}")
+            return False
+        
+        try:
+            if path.is_file() and path.suffix == ".zip":
+                # 解压ZIP到插件目录
+                plugin_name = path.stem
+                target_dir = self.plugins_dir / plugin_name
+                
+                with zipfile.ZipFile(path, 'r') as zip_ref:
+                    zip_ref.extractall(target_dir)
+                
+                logger.info(f"插件 {plugin_name} 已安装")
+                
+                # 立即加载
+                self._load_plugin_package(target_dir)
+                
+            elif path.is_dir():
+                # 复制目录到插件目录
+                plugin_name = path.name
+                target_dir = self.plugins_dir / plugin_name
+                
+                if target_dir.exists():
+                    shutil.rmtree(target_dir)
+                
+                shutil.copytree(path, target_dir)
+                
+                logger.info(f"插件 {plugin_name} 已安装")
+                
+                # 立即加载
+                self._load_plugin_package(target_dir)
+            
+            return True
+        except Exception as e:
+            logger.error(f"安装插件失败: {e}")
+            return False
+    
+    def uninstall_plugin(self, plugin_name: str) -> bool:
+        """
+        卸载插件
+        
+        Args:
+            plugin_name: 插件名称
+            
+        Returns:
+            是否卸载成功
+        """
+        try:
+            # 移除分析器注册
+            if plugin_name in self.analyzers:
+                del self.analyzers[plugin_name]
+            
+            # 移除已加载的模块
+            if plugin_name in self.loaded_plugins:
+                del self.loaded_plugins[plugin_name]
+            
+            # 移除已初始化的实例
+            if plugin_name in self._initialized_analyzers:
+                self._initialized_analyzers[plugin_name].finalize()
+                del self._initialized_analyzers[plugin_name]
+            
+            # 删除插件目录
+            plugin_dir = self.plugins_dir / plugin_name
+            if plugin_dir.exists():
+                shutil.rmtree(plugin_dir, ignore_errors=True)
+            
+            logger.info(f"插件 {plugin_name} 已卸载")
+            return True
+        except Exception as e:
+            logger.error(f"卸载插件失败: {e}")
+            return False
+    
+    def reload_plugin(self, plugin_name: str) -> bool:
+        """
+        重新加载插件
+        
+        Args:
+            plugin_name: 插件名称
+            
+        Returns:
+            是否重新加载成功
+        """
+        # 先卸载
+        self.uninstall_plugin(plugin_name)
+        
+        # 重新加载
+        plugin_dir = self.plugins_dir / plugin_name
+        if plugin_dir.exists():
+            self._load_plugin_package(plugin_dir)
+            return True
+        
+        return False
     
     def _load_builtin_analyzers(self) -> None:
         """加载内置分析器"""
@@ -172,6 +498,7 @@ class PluginManager:
                     author="BinaryAnalysisPlatform",
                     supported_platforms=["x86", "x86_64", "arm", "arm64"]
                 )
+
         
         return DecompilerAnalyzer
     
@@ -204,6 +531,7 @@ class PluginManager:
                     author="BinaryAnalysisPlatform",
                     supported_platforms=["x86", "x86_64", "arm", "arm64", "mips"]
                 )
+
         
         return StaticAnalyzer
     
@@ -236,6 +564,7 @@ class PluginManager:
                     dependencies=["angr", "claripy"],
                     supported_platforms=["x86", "x86_64", "arm", "arm64"]
                 )
+
         
         return SymbolicExecutorAnalyzer
     
@@ -267,6 +596,7 @@ class PluginManager:
                     author="BinaryAnalysisPlatform",
                     supported_platforms=["x86", "x86_64", "arm", "arm64"]
                 )
+
         
         return VulnerabilityDetector
     
@@ -298,6 +628,7 @@ class PluginManager:
                     author="BinaryAnalysisPlatform",
                     supported_platforms=["x86", "x86_64"]
                 )
+
         
         return ExploitGeneratorAnalyzer
     
@@ -330,6 +661,7 @@ class PluginManager:
                     author="BinaryAnalysisPlatform",
                     supported_platforms=["all"]
                 )
+
         
         return ReportGeneratorAnalyzer
     
@@ -366,6 +698,7 @@ class PluginManager:
                     dependencies=["openai", "numpy", "scikit-learn"],
                     supported_platforms=["all"]
                 )
+
         
         return SemanticSearchAnalyzer
     
@@ -398,6 +731,7 @@ class PluginManager:
                     dependencies=["openai", "numpy"],
                     supported_platforms=["all"]
                 )
+
         
         return PathPrioritizerAnalyzer
     
@@ -442,6 +776,7 @@ class PluginManager:
                     dependencies=["openai"],
                     supported_platforms=["all"]
                 )
+
         
         return RootCauseAnalyzer
     
@@ -483,6 +818,7 @@ class PluginManager:
                     dependencies=["torch", "numpy"],
                     supported_platforms=["x86", "x86_64"]
                 )
+
         
         return RLVulnAgentAnalyzer
     
@@ -516,6 +852,7 @@ class PluginManager:
                     dependencies=["torch", "numpy"],
                     supported_platforms=["all"]
                 )
+
         
         return MultiViewGNNAnalyzer
     
@@ -549,6 +886,7 @@ class PluginManager:
                     dependencies=["transformers", "torch", "datasets"],
                     supported_platforms=["all"]
                 )
+
         
         return DistilledVulnDetector
     
@@ -582,6 +920,7 @@ class PluginManager:
                     dependencies=["torch", "numpy"],
                     supported_platforms=["all"]
                 )
+
         
         return TrajectoryAnomaly
     
@@ -603,7 +942,8 @@ class PluginManager:
             return
         
         try:
-            sys.path.insert(0, str(self.plugins_dir))
+            sys.path.insert(0, str(self.plugins_dir)
+
             module_name = plugin_dir.name
             module = importlib.import_module(module_name)
             
@@ -617,12 +957,14 @@ class PluginManager:
             logger.warning(f"加载插件目录 {plugin_dir} 失败: {e}")
         finally:
             if str(self.plugins_dir) in sys.path:
-                sys.path.remove(str(self.plugins_dir))
+                sys.path.remove(str(self.plugins_dir)
+
     
     def _load_plugin_from_file(self, plugin_file: Path) -> None:
         """从文件加载插件"""
         try:
-            sys.path.insert(0, str(plugin_file.parent))
+            sys.path.insert(0, str(plugin_file.parent)
+
             module_name = plugin_file.stem
             module = importlib.import_module(module_name)
             
@@ -636,7 +978,8 @@ class PluginManager:
             logger.warning(f"加载插件文件 {plugin_file} 失败: {e}")
         finally:
             if str(plugin_file.parent) in sys.path:
-                sys.path.remove(str(plugin_file.parent))
+                sys.path.remove(str(plugin_file.parent)
+
     
     def get_analyzer(self, name: str) -> Optional[BaseAnalyzer]:
         """
@@ -650,7 +993,7 @@ class PluginManager:
         """
         analyzer_class = self.analyzers.get(name)
         if analyzer_class:
-            return analyzer_class()
+            return analyzer_class(
         return None
     
     def get_analyzer_metadata(self, name: str) -> Optional[AnalyzerMetadata]:
@@ -665,12 +1008,13 @@ class PluginManager:
         """
         analyzer_class = self.analyzers.get(name)
         if analyzer_class:
-            return analyzer_class.get_metadata()
+            return analyzer_class.get_metadata(
         return None
     
     def list_analyzers(self) -> List[str]:
         """列出所有可用的分析器"""
-        return list(self.analyzers.keys())
+        return list(self.analyzers.keys()
+
     
     def list_analyzers_with_metadata(self) -> List[Dict[str, Any]]:
         """列出所有分析器及其元数据"""
@@ -791,3 +1135,14 @@ def get_plugin_manager() -> PluginManager:
 
 
 _plugin_manager = None
+
+
+class PluginDependencyError(Exception):
+    """插件依赖错误"""
+    pass
+
+
+class PluginCompatibilityError(Exception):
+    """插件兼容性错误"""
+    pass
+)

@@ -81,7 +81,8 @@ class VulnerabilityFinding:
     cvss_score: float
     attack_vector: str
     payload: Optional[bytes] = None
-    timestamp: float = field(default_factory=lambda: time.time())
+    timestamp: float = field(default_factory=lambda: time.time(
+
     steps_to_reproduce: List[str] = field(default_factory=list)
 
 
@@ -132,7 +133,7 @@ class DigitalTwinRiskAnalyzer(BaseAnalyzer):
     def _load_penetration_scripts(self) -> List[PenetrationScript]:
         """加载预定义的渗透测试剧本"""
         return [
-            PenetrationScript(
+            PenetrationScript()
                 name="telnet_brute_force",
                 description="Telnet 服务暴力破解测试",
                 target_service="telnet",
@@ -140,7 +141,7 @@ class DigitalTwinRiskAnalyzer(BaseAnalyzer):
                 payload="hydra -L users.txt -P passwords.txt {target} telnet",
                 expected_outcome="检测弱密码或默认凭证"
             ),
-            PenetrationScript(
+            PenetrationScript()
                 name="http_directory_traversal",
                 description="HTTP 目录遍历测试",
                 target_service="http",
@@ -148,7 +149,7 @@ class DigitalTwinRiskAnalyzer(BaseAnalyzer):
                 payload="curl http://{target}/../../etc/passwd",
                 expected_outcome="检测目录遍历漏洞"
             ),
-            PenetrationScript(
+            PenetrationScript()
                 name="ssh_default_credentials",
                 description="SSH 默认凭证测试",
                 target_service="ssh",
@@ -156,14 +157,14 @@ class DigitalTwinRiskAnalyzer(BaseAnalyzer):
                 payload="sshpass -p 'admin' ssh admin@{target}",
                 expected_outcome="检测默认管理员凭证"
             ),
-            PenetrationScript(
+            PenetrationScript()
                 name="udp_fuzzing",
                 description="UDP 服务模糊测试",
                 target_service="udp",
                 attack_type="fuzzing",
                 payload="sulley -t {target}:{port} -f udp_fuzz.cfg",
                 expected_outcome="检测 UDP 协议漏洞"
-            )
+            
         ]
     
     def _start_emulation(self, config: EmulationConfig) -> bool:
@@ -187,13 +188,13 @@ class DigitalTwinRiskAnalyzer(BaseAnalyzer):
             
             cmd = [c for c in cmd if c]
             
-            self._emulation_process = subprocess.Popen(
+            self._emulation_process = subprocess.Popen()
                 " ".join(cmd),
                 shell=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 cwd=os.path.dirname(config.firmware_path)
-            )
+            
             
             time.sleep(5)
             
@@ -204,12 +205,12 @@ class DigitalTwinRiskAnalyzer(BaseAnalyzer):
             else:
                 stdout, stderr = self._emulation_process.communicate()
                 logger.error(f"模拟环境启动失败: {stderr.decode()}")
-                self._emulation_status = EmulationStatus.ERROR
+                self._emulation_status = EmulationStatus.ERROR,
                 return False
                 
         except Exception as e:
             logger.error(f"启动模拟环境时发生错误: {e}", exc_info=True)
-            self._emulation_status = EmulationStatus.ERROR
+            self._emulation_status = EmulationStatus.ERROR,
             return False
     
     def _stop_emulation(self) -> None:
@@ -227,8 +228,7 @@ class DigitalTwinRiskAnalyzer(BaseAnalyzer):
         
         self._emulation_status = EmulationStatus.STOPPED
     
-    def _run_fuzzer(self, target_service: str, fuzzer_type: FuzzerType = FuzzerType.AFL, 
-                    duration: int = 300) -> List[VulnerabilityFinding]:
+    def _run_fuzzer(self, target_service: str, fuzzer_type: FuzzerType = FuzzerType.AFL, duration: int = 300) -> List[VulnerabilityFinding]:
         """运行模糊测试"""
         logger.info(f"对 {target_service} 运行 {fuzzer_type.value} 模糊测试，持续 {duration} 秒")
         
@@ -254,7 +254,8 @@ class DigitalTwinRiskAnalyzer(BaseAnalyzer):
                         f"2. 发送畸形数据包",
                         f"3. 观察到崩溃/异常行为"
                     ]
-                ))
+                
+
             
             logger.info(f"模糊测试完成，发现 {len(findings)} 个漏洞")
             
@@ -279,8 +280,9 @@ class DigitalTwinRiskAnalyzer(BaseAnalyzer):
                     steps_to_reproduce=[
                         f"1. 访问 http://{target}/../../etc/passwd",
                         f"2. 观察返回内容包含敏感信息"
-                    ]
-                )
+                    ])
+                
+
             
             elif script.name == "ssh_default_credentials":
                 return VulnerabilityFinding(
@@ -293,8 +295,9 @@ class DigitalTwinRiskAnalyzer(BaseAnalyzer):
                     steps_to_reproduce=[
                         f"1. 尝试使用 admin/admin 登录 SSH",
                         f"2. 登录成功，凭证未修改"
-                    ]
-                )
+                    ])
+                
+
             
             return None
             
@@ -315,12 +318,12 @@ class DigitalTwinRiskAnalyzer(BaseAnalyzer):
             RiskLevel.INFO: 0.05
         }
         
-        total_weighted_score = sum(
+        total_weighted_score = sum()
             finding.cvss_score * severity_weights[finding.severity]
             for finding in findings
-        )
         
-        max_possible = len(findings) * 10.0
+        
+        max_possible = len(findings) * 10.0,
         return min(100.0, (total_weighted_score / max_possible) * 100)
     
     def _generate_recommendations(self, findings: List[VulnerabilityFinding]) -> List[str]:
@@ -331,34 +334,34 @@ class DigitalTwinRiskAnalyzer(BaseAnalyzer):
         high_count = sum(1 for f in findings if f.severity == RiskLevel.HIGH)
         
         if critical_count > 0:
-            recommendations.append(
+            recommendations.append()
                 "立即修复所有 CRITICAL 级别的漏洞，这些漏洞可被远程利用导致系统完全沦陷"
-            )
+            
         
         if high_count > 0:
-            recommendations.append(
+            recommendations.append()
                 "优先修复 HIGH 级别的漏洞，包括弱密码、目录遍历等问题"
-            )
+            
         
         path_traversal = any(f.type == "path_traversal" for f in findings)
         if path_traversal:
-            recommendations.append(
+            recommendations.append()
                 "实施严格的输入验证和路径规范化，防止目录遍历攻击"
-            )
+            
         
         weak_creds = any(f.type == "weak_credentials" for f in findings)
         if weak_creds:
-            recommendations.append(
+            recommendations.append()
                 "强制修改默认凭证，实施强密码策略"
-            )
+            
         
-        recommendations.append(
+        recommendations.append()
             "启用防火墙规则，限制不必要的网络服务暴露"
-        )
         
-        recommendations.append(
+        
+        recommendations.append()
             "定期更新固件，应用安全补丁"
-        )
+        
         
         return recommendations
     
@@ -394,7 +397,7 @@ class DigitalTwinRiskAnalyzer(BaseAnalyzer):
         all_findings: List[VulnerabilityFinding] = []
         
         try:
-            firmware_info = FirmwareInfo(
+            firmware_info = FirmwareInfo()
                 name=os.path.basename(firmware_path),
                 path=firmware_path,
                 architecture=architecture,
@@ -402,11 +405,12 @@ class DigitalTwinRiskAnalyzer(BaseAnalyzer):
                 size=os.path.getsize(firmware_path),
                 md5_hash="mock_md5_hash",
                 sha256_hash="mock_sha256_hash"
-            )
+            
             
             if enable_fuzzing:
                 logger.info("启动模糊测试阶段")
-                fuzz_findings = self._run_fuzzer("http", duration=min(scan_duration, 180))
+                fuzz_findings = self._run_fuzzer("http", duration=min(scan_duration, 180
+
                 all_findings.extend(fuzz_findings)
             
             if enable_penetration:
@@ -424,7 +428,7 @@ class DigitalTwinRiskAnalyzer(BaseAnalyzer):
             risk_score = self._calculate_risk_score(all_findings)
             recommendations = self._generate_recommendations(all_findings)
             
-            assessment = RiskAssessment(
+            assessment = RiskAssessment()
                 firmware_info=firmware_info,
                 scan_duration=time.time() - start_time,
                 total_vulnerabilities=len(all_findings),
@@ -445,7 +449,7 @@ class DigitalTwinRiskAnalyzer(BaseAnalyzer):
                     "nist_800_53": False if len(all_findings) > 5 else True,
                     "iso_27001": False if risk_score > 50 else True
                 }
-            )
+            
             
             return {
                 "success": True,
@@ -468,5 +472,4 @@ class DigitalTwinRiskAnalyzer(BaseAnalyzer):
             description="数字孪生漏洞风险评估器，构建IoT固件模拟环境，运行模糊测试与渗透剧本，实时评估安全状态",
             author="BinaryAnalysisPlatform",
             dependencies=["qemu", "afl-fuzz"],
-            supported_platforms=["arm", "arm64", "mips"]
-        )
+            supported_platforms=["arm", "arm64", "mips"])))

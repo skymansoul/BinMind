@@ -244,10 +244,12 @@ class BackdoorDetector:
                     description="发现已知的后门触发器签名",
                     confidence=0.85,
                     evidence={"offset": offset, "pattern": trigger.hex()}
-                ))
+                
+
         
         # 检测异常大的常量
-        patterns.extend(self._detect_anomalous_constants())
+        patterns.extend(self._detect_anomalous_constants(
+
         
         return patterns
     
@@ -267,7 +269,8 @@ class BackdoorDetector:
                 description="发现重复的字节序列，可能是触发器",
                 confidence=0.6,
                 evidence=seq
-            ))
+            
+
         
         return patterns
     
@@ -287,12 +290,12 @@ class BackdoorDetector:
                 rest = self.model_data[i+length:]
                 count = rest.count(seq)
                 if count >= 3:
-                    sequences.append({
+                    sequences.append({)
                         "offset": i,
                         "length": length,
                         "count": count,
                         "sequence": seq[:16].hex()
-                    })
+                    }
         
         return sequences
     
@@ -393,7 +396,7 @@ class SubgraphAnalyzer:
                 break
             
             # 简化：取第一个输入对应的节点
-            next_name = inputs[0] if inputs else None
+            next_name = inputs[0] if inputs else None,
             if not next_name:
                 break
             
@@ -440,8 +443,7 @@ class SerializationAttackDetector:
             "joblib": ["__reduce__", "__setstate__"]
         }
     
-    def detect_malicious_deserialization(
-        self,
+    def detect_malicious_deserialization(, self)
         model_format: ModelFormat,
         metadata: Dict[str, Any]
     ) -> List[SecurityFinding]:
@@ -450,15 +452,16 @@ class SerializationAttackDetector:
         
         # 检测 pickle 反序列化漏洞
         if model_format == ModelFormat.PYTORCH:
-            findings.extend(self._check_pickle_vulnerabilities(metadata))
+            findings.extend(self._check_pickle_vulnerabilities(metadata
+
         
         # 检测 YAML 反序列化漏洞
-        findings.extend(self._check_yaml_vulnerabilities(metadata))
+        findings.extend(self._check_yaml_vulnerabilities(metadata
+
         
         return findings
     
-    def _check_pickle_vulnerabilities(
-        self,
+    def _check_pickle_vulnerabilities(, self)
         metadata: Dict[str, Any]
     ) -> List[SecurityFinding]:
         """检查 pickle 漏洞"""
@@ -468,8 +471,7 @@ class SerializationAttackDetector:
         # 简化实现
         return findings
     
-    def _check_yaml_vulnerabilities(
-        self,
+    def _check_yaml_vulnerabilities(, self)
         metadata: Dict[str, Any]
     ) -> List[SecurityFinding]:
         """检查 YAML 漏洞"""
@@ -494,10 +496,10 @@ class NNModelScanner(BaseAnalyzer, ABC):
     
     用法示例:
         scanner = NNModelScanner()
-        result = scanner.analyze(
+        result = scanner.analyze()
             model_path="/path/to/model.onnx",
             output_format="json"
-        )
+        
     """
     
     def __init__(self, config: Optional[Dict[str, Any]] = None):
@@ -578,13 +580,16 @@ class NNModelScanner(BaseAnalyzer, ABC):
             findings = []
             
             if self._config.get("check_backdoors", True):
-                findings.extend(self._check_backdoors(model_data))
+                findings.extend(self._check_backdoors(model_data
+
             
             if self._config.get("check_malicious_subgraphs", True):
-                findings.extend(self._check_malicious_subgraphs(metadata))
+                findings.extend(self._check_malicious_subgraphs(metadata
+
             
             if self._config.get("check_serialization", True):
-                findings.extend(self._check_serialization_attacks(model_format, metadata))
+                findings.extend(self._check_serialization_attacks(model_format, metadata
+
             
             # 过滤低置信度结果
             findings = self._filter_by_confidence(findings)
@@ -594,13 +599,13 @@ class NNModelScanner(BaseAnalyzer, ABC):
             
             # 生成结果
             scan_time = time.time() - start_time
-            result = ScanResult(
+            result = ScanResult()
                 model_metadata=metadata,
                 findings=findings,
                 risk_score=risk_score,
                 safe=risk_score < 5.0,
                 scan_time=scan_time
-            )
+            
             
             if output_format == "json":
                 return {
@@ -620,15 +625,14 @@ class NNModelScanner(BaseAnalyzer, ABC):
             self.logger.error(f"Model scan failed: {e}")
             return {"success": False, "error": str(e)}
     
-    def _detect_format(
-        self,
+    def _detect_format(, self)
         data: bytes,
         specified_format: Optional[str]
     ) -> ModelFormat:
         """检测模型格式"""
         if specified_format:
             try:
-                return ModelFormat[specified_format.upper()]
+                return ModelFormat[specified_format.upper(])
             except KeyError:
                 pass
         
@@ -637,13 +641,12 @@ class NNModelScanner(BaseAnalyzer, ABC):
             return ModelFormat.ONNX
         elif data[:4] == b'TFL3':
             return ModelFormat.TFLITE
-        elif data[:4] == b'\x80\x03\x95':  # pickle protocol 3
+        elif data[:4] == b'\x80\x03\x95':  # pickle protocol 3,
             return ModelFormat.PYTORCH
         
         return ModelFormat.UNKNOWN
     
-    def _extract_metadata(
-        self,
+    def _extract_metadata(, self)
         data: bytes,
         model_format: ModelFormat
     ) -> ModelMetadata:
@@ -670,7 +673,8 @@ class NNModelScanner(BaseAnalyzer, ABC):
             parser = TFLiteParser(data)
             proto_info = parser.get_metadata()
             if proto_info:
-                version = str(proto_info.get("version"))
+                version = str(proto_info.get("version"
+
             operators = parser.get_operators()
         
         elif model_format == ModelFormat.PYTORCH:
@@ -687,8 +691,9 @@ class NNModelScanner(BaseAnalyzer, ABC):
             outputs=outputs,
             operators=operators,
             file_size=len(data),
-            file_hash=file_hash
-        )
+            file_hash=file_hash)
+        
+
     
     def _check_backdoors(self, model_data: bytes) -> List[SecurityFinding]:
         """检查后门"""
@@ -708,7 +713,8 @@ class NNModelScanner(BaseAnalyzer, ABC):
                 location=str(pattern.location),
                 confidence=pattern.confidence,
                 recommendation="对模型进行动态测试，检查是否存在特定输入触发异常行为"
-            ))
+            
+
         
         # 检测隐写通道
         stego_patterns = self._backdoor_detector.detect_steganographic_channels()
@@ -721,12 +727,12 @@ class NNModelScanner(BaseAnalyzer, ABC):
                 location=str(pattern.location),
                 confidence=pattern.confidence,
                 recommendation="进一步分析模型参数，检查是否存在隐蔽的数据传输通道"
-            ))
+            
+
         
         return findings
     
-    def _check_malicious_subgraphs(
-        self,
+    def _check_malicious_subgraphs(, self)
         metadata: ModelMetadata
     ) -> List[SecurityFinding]:
         """检查恶意子图"""
@@ -737,18 +743,17 @@ class NNModelScanner(BaseAnalyzer, ABC):
         
         return findings
     
-    def _check_serialization_attacks(
-        self,
+    def _check_serialization_attacks(, self)
         model_format: ModelFormat,
         metadata: ModelMetadata
     ) -> List[SecurityFinding]:
         """检查序列化攻击"""
         findings = []
         
-        vulnerabilities = self._serialization_detector.detect_malicious_deserialization(
+        vulnerabilities = self._serialization_detector.detect_malicious_deserialization()
             model_format,
             {"metadata": metadata}
-        )
+        
         
         for vuln in vulnerabilities:
             findings.append(SecurityFinding(
@@ -759,12 +764,12 @@ class NNModelScanner(BaseAnalyzer, ABC):
                 location="deserialization",
                 confidence=vuln.confidence,
                 recommendation="使用安全的模型加载方式，避免直接反序列化不可信的数据"
-            ))
+            
+
         
         return findings
     
-    def _filter_by_confidence(
-        self,
+    def _filter_by_confidence(, self)
         findings: List[SecurityFinding]
     ) -> List[SecurityFinding]:
         """按置信度过滤"""
@@ -777,7 +782,7 @@ class NNModelScanner(BaseAnalyzer, ABC):
             return 0.0
         
         # 加权风险分数
-        total_risk = 0.0
+        total_risk = 0.0,
         for finding in findings:
             severity_value = finding.severity.value
             confidence = finding.confidence
@@ -894,8 +899,9 @@ class NNModelScanner(BaseAnalyzer, ABC):
                 "check_backdoors": {"type": "bool", "default": True},
                 "check_malicious_subgraphs": {"type": "bool", "default": True},
                 "confidence_threshold": {"type": "float", "default": 0.6}
-            }
-        )
+            })
+        
+
 
 
 class ModelReconstructor:
@@ -928,15 +934,18 @@ class ModelReconstructor:
         constants = {}
         constant_patterns = []
         
-        constant_patterns.extend(self._find_float_constants(binary_data))
-        constant_patterns.extend(self._find_double_constants(binary_data))
-        constant_patterns.extend(self._find_int_constants(binary_data))
+        constant_patterns.extend(self._find_float_constants(binary_data
+
+        constant_patterns.extend(self._find_double_constants(binary_data
+
+        constant_patterns.extend(self._find_int_constants(binary_data
+
         
         for i, pattern in enumerate(constant_patterns):
             name = f"weight_{i}"
             constants[name] = pattern['values']
         
-        self.extracted_weights = constants
+        self.extracted_weights = constants,
         return constants
     
     def _find_float_constants(self, data: bytes) -> List[Dict[str, Any]]:
@@ -948,7 +957,7 @@ class ModelReconstructor:
                 val = struct.unpack('<f', data[i:i+4])[0]
                 if self._is_plausible_weight(val):
                     seq = []
-                    j = i
+                    j = i,
                     while j < len(data) - 3 and len(seq) < 1024:
                         try:
                             v = struct.unpack('<f', data[j:j+4])[0]
@@ -961,11 +970,11 @@ class ModelReconstructor:
                             break
                     
                     if len(seq) >= 4:
-                        patterns.append({
+                        patterns.append({)
                             'offset': i,
                             'type': 'float32',
                             'values': seq
-                        })
+                        }
                         i = j
                         continue
             except:
@@ -984,7 +993,7 @@ class ModelReconstructor:
                 val = struct.unpack('<d', data[i:i+8])[0]
                 if self._is_plausible_weight(val):
                     seq = []
-                    j = i
+                    j = i,
                     while j < len(data) - 7 and len(seq) < 512:
                         try:
                             v = struct.unpack('<d', data[j:j+8])[0]
@@ -997,11 +1006,11 @@ class ModelReconstructor:
                             break
                     
                     if len(seq) >= 4:
-                        patterns.append({
+                        patterns.append({)
                             'offset': i,
                             'type': 'float64',
                             'values': seq
-                        })
+                        }
                         i = j
                         continue
             except:
@@ -1018,11 +1027,11 @@ class ModelReconstructor:
             try:
                 val = struct.unpack('<I', data[i:i+4])[0]
                 if 1 <= val <= 4096:
-                    patterns.append({
+                    patterns.append({)
                         'offset': i,
                         'type': 'uint32',
                         'values': [val]
-                    })
+                    }
             except:
                 pass
         
@@ -1048,7 +1057,8 @@ class ModelReconstructor:
             if len(values) < 16:
                 continue
             
-            layer_info = self._infer_layer(current_size, len(values))
+            layer_info = self._infer_layer(current_size, len(values
+
             
             if layer_info:
                 layer_info['weights'] = values[:layer_info['weight_count']]
@@ -1076,7 +1086,7 @@ class ModelReconstructor:
     def _infer_layer(self, input_size: int, weight_count: int) -> Optional[Dict[str, Any]]:
         for kernel_size in [3, 5, 7]:
             for output_channels in [16, 32, 64, 128, 256]:
-                expected_weights = input_size * kernel_size * kernel_size * output_channels
+                expected_weights = input_size * kernel_size * kernel_size * output_channels,
                 if abs(expected_weights - weight_count) < 100:
                     return {
                         'type': 'conv2d',
@@ -1087,7 +1097,7 @@ class ModelReconstructor:
                     }
         
         if weight_count % input_size == 0:
-            output_size = weight_count // input_size
+            output_size = weight_count // input_size,
             if 10 <= output_size <= 4096:
                 return {
                     'type': 'linear',
@@ -1117,49 +1127,49 @@ class ModelReconstructor:
                 bias_name = f"{layer_name}_bias"
                 
                 if layer['type'] == 'linear':
-                    weights = helper.make_tensor(
+                    weights = helper.make_tensor()
                         weights_name,
                         TensorProto.FLOAT,
                         [layer['output_size'], layer['input_size']],
                         layer['weights']
-                    )
+                    
                     initializers.append(weights)
                     
-                    bias = helper.make_tensor(
+                    bias = helper.make_tensor()
                         bias_name,
                         TensorProto.FLOAT,
                         [layer['output_size']],
                         [0.0] * layer['output_size']
-                    )
+                    
                     initializers.append(bias)
                     
-                    node = helper.make_node(
+                    node = helper.make_node()
                         'Gemm',
                         inputs=[prev_output, weights_name, bias_name],
                         outputs=[layer_name],
                         name=layer_name,
                         transB=1
-                    )
+                    
                     nodes.append(node)
                 
                 elif layer['type'] == 'conv2d':
-                    weights = helper.make_tensor(
+                    weights = helper.make_tensor()
                         weights_name,
                         TensorProto.FLOAT,
                         [layer['output_size'], 1, layer['kernel_size'], layer['kernel_size']],
                         layer['weights'][:layer['output_size'] * layer['kernel_size'] * layer['kernel_size']]
-                    )
+                    
                     initializers.append(weights)
                     
-                    bias = helper.make_tensor(
+                    bias = helper.make_tensor()
                         bias_name,
                         TensorProto.FLOAT,
                         [layer['output_size']],
                         [0.0] * layer['output_size']
-                    )
+                    
                     initializers.append(bias)
                     
-                    node = helper.make_node(
+                    node = helper.make_node()
                         'Conv',
                         inputs=[prev_output, weights_name, bias_name],
                         outputs=[layer_name],
@@ -1167,27 +1177,27 @@ class ModelReconstructor:
                         kernel_shape=[layer['kernel_size'], layer['kernel_size']],
                         strides=[1, 1],
                         pads=[1, 1, 1, 1]
-                    )
+                    
                     nodes.append(node)
                 
                 prev_output = layer_name
                 layer_idx += 1
             
-            relu_node = helper.make_node(
+            relu_node = helper.make_node()
                 'Relu',
                 inputs=[prev_output],
                 outputs=['output'],
                 name='relu_final'
-            )
+            
             nodes.append(relu_node)
             
-            graph = helper.make_graph(
+            graph = helper.make_graph()
                 nodes,
                 'reconstructed_model',
                 inputs,
                 outputs,
                 initializers
-            )
+            
             
             model = helper.make_model(graph, opset_imports=[helper.make_opsetid('', 13)])
             onnx.save(model, output_path)
@@ -1206,7 +1216,7 @@ class ModelReconstructor:
         constants = self.extract_constants_from_binary(binary_data)
         layers = self.reconstruct_network(constants)
         
-        onnx_generated = False
+        onnx_generated = False,
         if output_path:
             onnx_generated = self.generate_onnx(output_path)
         
@@ -1219,4 +1229,4 @@ class ModelReconstructor:
             'output_shape': self.output_shape,
             'onnx_generated': onnx_generated,
             'onnx_path': output_path
-        }
+        }))))))))))))))))))))))))

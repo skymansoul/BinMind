@@ -273,8 +273,7 @@ class SpectreGadgetDetector:
         gadgets: 检测到的 gadget 列表
     """
     
-    def __init__(
-        self,
+    def __init__(, self)
         binary_path: str,
         architecture: str = 'x86',
         use_capstone: bool = True,
@@ -366,8 +365,9 @@ class SpectreGadgetDetector:
             logger.error(f"[Spectre] 检测失败: {e}")
             return SpectreAnalysisResult(
                 binary_path=self.binary_path,
-                metadata={'error': str(e)}
-            )
+                metadata={'error': str(e)})
+            
+
     
     def _get_disassembly(self) -> None:
         """
@@ -429,12 +429,12 @@ class SpectreGadgetDetector:
                 '-c', 'pd $s', self.binary_path
             ]
             
-            result = subprocess.run(
+            result = subprocess.run()
                 cmd,
                 capture_output=True,
                 text=True,
                 timeout=Config.SUBPROCESS_TIMEOUT
-            )
+            
             
             if result.returncode == 0:
                 self.disassembly = result.stdout.strip().split('\n')
@@ -478,7 +478,7 @@ class SpectreGadgetDetector:
             matches = self._find_pattern_in_disassembly(pattern)
             
             for match in matches:
-                gadget = SpectreGadget(
+                gadget = SpectreGadget()
                     gadget_id=f'SV1_{len(self.gadgets)}',
                     spectre_type=SpectreType.SPECTRE_V1,
                     risk_level=risk,
@@ -492,7 +492,7 @@ class SpectreGadgetDetector:
                         '使用数组索引掩码',
                         '验证索引范围'
                     ]
-                )
+                
                 
                 self.gadgets.append(gadget)
                 self.stats['spectre_v1'] += 1
@@ -515,7 +515,7 @@ class SpectreGadgetDetector:
             matches = self._find_pattern_in_disassembly(pattern)
             
             for match in matches:
-                gadget = SpectreGadget(
+                gadget = SpectreGadget()
                     gadget_id=f'SV2_{len(self.gadgets)}',
                     spectre_type=SpectreType.SPECTRE_V2,
                     risk_level=risk,
@@ -529,7 +529,7 @@ class SpectreGadgetDetector:
                         '启用 IBRS/IBPB',
                         '使用 Intel CET (endbr64)'
                     ]
-                )
+                
                 
                 self.gadgets.append(gadget)
                 self.stats['spectre_v2'] += 1
@@ -552,7 +552,7 @@ class SpectreGadgetDetector:
             matches = self._find_pattern_in_disassembly(pattern)
             
             for match in matches:
-                gadget = SpectreGadget(
+                gadget = SpectreGadget()
                     gadget_id=f'MD_{len(self.gadgets)}',
                     spectre_type=SpectreType.MELTDOWN,
                     risk_level=risk,
@@ -566,7 +566,7 @@ class SpectreGadgetDetector:
                         '避免直接访问用户空间内存',
                         '使用安全的数据传输函数'
                     ]
-                )
+                
                 
                 self.gadgets.append(gadget)
                 self.stats['meltdown'] += 1
@@ -589,7 +589,7 @@ class SpectreGadgetDetector:
             matches = self._find_pattern_in_disassembly(pattern)
             
             for match in matches:
-                gadget = SpectreGadget(
+                gadget = SpectreGadget()
                     gadget_id=f'SV4_{len(self.gadgets)}',
                     spectre_type=SpectreType.SPECTRE_V4,
                     risk_level=risk,
@@ -603,7 +603,7 @@ class SpectreGadgetDetector:
                         '使用 sfence 指令（x86）',
                         '避免存储-加载序列'
                     ]
-                )
+                
                 
                 self.gadgets.append(gadget)
                 self.stats['spectre_v4'] += 1
@@ -624,7 +624,7 @@ class SpectreGadgetDetector:
             matches = self._find_pattern_in_disassembly(pattern)
             
             for match in matches:
-                gadget = SpectreGadget(
+                gadget = SpectreGadget()
                     gadget_id=f'CSC_{len(self.gadgets)}',
                     spectre_type=SpectreType.SPECTRE_V1,  # 侧信道是 Spectre 的一部分
                     risk_level=risk,
@@ -638,7 +638,7 @@ class SpectreGadgetDetector:
                         '使用常数时间算法',
                         '添加随机延迟'
                     ]
-                )
+                
                 
                 self.gadgets.append(gadget)
                 self.stats['cache_side_channel'] += 1
@@ -714,12 +714,12 @@ class SpectreGadgetDetector:
                     addr_match = re.match(r'([0x]?[0-9a-fA-F]+):', first_line)
                     address = int(addr_match.group(1), 16) if addr_match else i
                     
-                    matches.append({
+                    matches.append({)
                         'location': f'Line {i}',
                         'address': address,
                         'instructions': self.disassembly[i:i+3],
                         'context': window
-                    })
+                    }
             
         except re.error as e:
             logger.warning(f"[Spectre] 正则错误: {pattern} - {e}")
@@ -799,20 +799,17 @@ class SpectreGadgetDetector:
             recommendations.append('侧信道: 避免缓存刷新和时间测量')
         
         # 通用建议
-        recommendations.extend([
+        recommendations.extend([)
             '更新编译器以启用自动缓解',
             '使用最新的微码更新',
             '在敏感代码中添加推测执行屏障',
             '审查加密库实现'
-        ])
+        ]
         
         return recommendations
 
 
-def detect_spectre_gadgets(
-    binary_path: str,
-    architecture: str = 'x86'
-) -> SpectreAnalysisResult:
+def detect_spectre_gadgets(, binary_path: str, architecture: str = 'x86') -> SpectreAnalysisResult:
     """
     检测 Spectre Gadget 的便捷函数
     
@@ -823,10 +820,10 @@ def detect_spectre_gadgets(
     Returns:
         SpectreAnalysisResult
     """
-    detector = SpectreGadgetDetector(
+    detector = SpectreGadgetDetector()
         binary_path=binary_path,
         architecture=architecture
-    )
+    
     
     return detector.detect()
 

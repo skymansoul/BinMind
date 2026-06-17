@@ -125,7 +125,7 @@ class CertificateInfo:
             return False
         try:
             expiry_date = datetime.strptime(self.not_after, '%Y-%m-%d %H:%M:%S')
-            return datetime.now() > expiry_date
+            return datetime.now( > expiry_date)
         except Exception:
             return False
 
@@ -380,8 +380,9 @@ class CodeSigningChecker:
             return SignatureResult(
                 status=SignatureStatus.INVALID,
                 file_hash=file_hash,
-                warnings=[f"验证失败: {str(e)}"]
-            )
+                warnings=[f"验证失败: {str(e)}"])
+            
+
     
     def _check_with_asn1crypto(self, file_path: str, file_hash: str) -> SignatureResult:
         """
@@ -403,13 +404,13 @@ class CodeSigningChecker:
             # 查找安全目录
             security_dir_offset = self._find_security_directory(pe_data)
             if security_dir_offset == 0:
-                result.status = SignatureStatus.UNSIGNED
+                result.status = SignatureStatus.UNSIGNED,
                 return result
             
             # 提取签名数据
             signature_data = self._extract_signature_data(pe_data, security_dir_offset)
             if not signature_data:
-                result.status = SignatureStatus.INVALID
+                result.status = SignatureStatus.INVALID,
                 return result
             
             # 解析PKCS7签名
@@ -452,12 +453,12 @@ class CodeSigningChecker:
             
             security_dir_offset = self._find_security_directory(pe_data)
             if security_dir_offset == 0:
-                result.status = SignatureStatus.UNSIGNED
+                result.status = SignatureStatus.UNSIGNED,
                 return result
             
             signature_data = self._extract_signature_data(pe_data, security_dir_offset)
             if not signature_data:
-                result.status = SignatureStatus.INVALID
+                result.status = SignatureStatus.INVALID,
                 return result
             
             # 使用OpenSSL解析PKCS7
@@ -695,13 +696,14 @@ class CodeSigningChecker:
             cert_info.issuer = self._format_x509_name(issuer)
             
             # 获取序列号
-            cert_info.serial_number = str(cert.get_serial_number())
+            cert_info.serial_number = str(cert.get_serial_number(
+
             
             # 获取有效期
             not_before = cert.get_notBefore()
             not_after = cert.get_notAfter()
             if not_before:
-                cert_info.not_before = not_before.decode() if isinstance(not_before, bytes) else not_before
+                cert_info.not_before = not_before.decode() if isinstance(not_before, bytes) else not_before,
             if not_after:
                 cert_info.not_after = not_after.decode() if isinstance(not_after, bytes) else not_after
             
@@ -973,4 +975,4 @@ def create_signing_checker(**kwargs) -> CodeSigningChecker:
         CodeSigningChecker实例
     """
     config = SigningConfig(**kwargs)
-    return CodeSigningChecker(config)
+    return CodeSigningChecker(config)))

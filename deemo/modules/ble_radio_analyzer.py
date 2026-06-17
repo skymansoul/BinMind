@@ -113,14 +113,14 @@ class BLERadioAnalyzer(BaseAnalyzer):
         self.binary_path: str = ""
         self.ble_version: Optional[str] = None
         self.services: List[BLEService] = []
-        self.security_config: BLESecurityConfig = BLESecurityConfig(
+        self.security_config: BLESecurityConfig = BLESecurityConfig()
             encryption_enabled=False,
             encryption_algorithm=EncryptionAlgorithm.NONE,
             mitm_protection=False,
             secure_connections=False,
             bonding_enabled=False,
             maximum_encryption_key_size=0
-        )
+        
         self.vulnerabilities: List[BLEVulnerability] = []
     
     def analyze(self, **kwargs) -> Dict[str, Any]:
@@ -179,8 +179,9 @@ class BLERadioAnalyzer(BaseAnalyzer):
             version="1.0.0",
             description="BLE协议分析器，逆向链路层固件，检测配对弱点、加密误用、GATT权限问题",
             author="BinaryAnalysisPlatform",
-            supported_platforms=["arm", "arm64", "riscv"]
-        )
+            supported_platforms=["arm", "arm64", "riscv"])
+        
+
     
     def _identify_ble_version(self) -> None:
         """识别 BLE 版本"""
@@ -229,7 +230,8 @@ class BLERadioAnalyzer(BaseAnalyzer):
                         start_handle=0,
                         end_handle=0,
                         characteristics=[]
-                    ))
+                    
+
             except:
                 continue
         
@@ -244,7 +246,8 @@ class BLERadioAnalyzer(BaseAnalyzer):
                     permissions=0x01,
                     handle=0,
                     value_handle=0
-                ))
+                
+
     
     def _get_service_name(self, uuid: int) -> Optional[str]:
         """获取服务名称"""
@@ -315,7 +318,8 @@ class BLERadioAnalyzer(BaseAnalyzer):
         key_size_pattern = re.compile(rb'(128|256)\s*bit\s*encryption')
         match = key_size_pattern.search(self.binary_data)
         if match:
-            self.security_config.maximum_encryption_key_size = int(match.group(1))
+            self.security_config.maximum_encryption_key_size = int(match.group(1
+
     
     def _detect_vulnerabilities(self) -> None:
         """检测 BLE 安全漏洞"""
@@ -334,7 +338,8 @@ class BLERadioAnalyzer(BaseAnalyzer):
                 description="BLE 加密未启用，通信数据可能被窃听",
                 affected_layer=BLELayer.SM,
                 cvss_score=9.8
-            ))
+            
+
     
     def _detect_mitm_vulnerability(self) -> None:
         """检测 MITM 漏洞"""
@@ -345,7 +350,8 @@ class BLERadioAnalyzer(BaseAnalyzer):
                 description="未启用 MITM 保护，配对过程可能被中间人攻击",
                 affected_layer=BLELayer.SM,
                 cvss_score=7.5
-            ))
+            
+
     
     def _detect_weak_key_size(self) -> None:
         """检测弱密钥长度"""
@@ -357,7 +363,8 @@ class BLERadioAnalyzer(BaseAnalyzer):
                     description=f"加密密钥长度过短 ({self.security_config.maximum_encryption_key_size} bit)",
                     affected_layer=BLELayer.SM,
                     cvss_score=7.2
-                ))
+                
+
     
     def _detect_rc4_usage(self) -> None:
         """检测 RC4 使用"""
@@ -368,7 +375,8 @@ class BLERadioAnalyzer(BaseAnalyzer):
                 description="使用不安全的 RC4 加密算法，存在严重安全风险",
                 affected_layer=BLELayer.SM,
                 cvss_score=9.8
-            ))
+            
+
     
     def _detect_insecure_gatt_permissions(self) -> None:
         """检测不安全的 GATT 权限"""
@@ -394,7 +402,8 @@ class BLERadioAnalyzer(BaseAnalyzer):
                         affected_layer=BLELayer.GATT,
                         cvss_score=4.0,
                         related_characteristics=[characteristic.uuid]
-                    ))
+                    
+
     
     def _security_config_to_dict(self) -> Dict[str, Any]:
         """安全配置转字典"""
@@ -453,4 +462,4 @@ def analyze_ble_firmware(binary_path: str) -> Dict[str, Any]:
         分析结果
     """
     analyzer = BLERadioAnalyzer()
-    return analyzer.analyze(binary_path=binary_path)
+    return analyzer.analyze(binary_path=binary_path)))))))))))))))))

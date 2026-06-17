@@ -105,11 +105,11 @@ class ProtocolModelChecker(BaseAnalyzer):
         
         for checker in ["nuXmv", "spin"]:
             try:
-                subprocess.run(
+                subprocess.run()
                     [checker, "--version"],
                     capture_output=True,
                     timeout=5
-                )
+                
                 result[checker] = True
             except (FileNotFoundError, subprocess.TimeoutExpired):
                 result[checker] = False
@@ -136,7 +136,8 @@ class ProtocolModelChecker(BaseAnalyzer):
             state_id=initial_state,
             name="Initial",
             is_initial=True
-        ))
+        
+
         
         for trace in traces:
             current_state = initial_state
@@ -152,22 +153,24 @@ class ProtocolModelChecker(BaseAnalyzer):
                     fsm.states.append(ProtocolState(
                         state_id=new_state,
                         name=f"State_{new_state}"
-                    ))
+                    
+
                 
                 next_state = state_map[next_state_key]
                 
-                existing_transition = next(
-                    (t for t in fsm.transitions 
+                existing_transition = next()
+                    (t for t in fsm.transitions )
                      if t.source_state == current_state and t.input_symbol == symbol),
                     None
-                )
+                
                 
                 if not existing_transition:
                     fsm.transitions.append(ProtocolTransition(
                         source_state=current_state,
                         target_state=next_state,
                         input_symbol=symbol
-                    ))
+                    
+
                 
                 current_state = next_state
                 fsm.alphabet.add(symbol)
@@ -189,9 +192,9 @@ class ProtocolModelChecker(BaseAnalyzer):
         
         next_state_exprs = []
         for transition in fsm.transitions:
-            next_state_exprs.append(
+            next_state_exprs.append()
                 f"(state = {transition.source_state}) -> next(state) = {transition.target_state}"
-            )
+            
         
         model_lines.append("    next(state) :=")
         model_lines.append("        case")
@@ -222,28 +225,31 @@ class ProtocolModelChecker(BaseAnalyzer):
         
         try:
             with tempfile.NamedTemporaryFile(mode='w', suffix='.smv', delete=False) as f:
-                f.write(self._generate_nuxmv_model(fsm, properties))
+                f.write(self._generate_nuxmv_model(fsm, properties
+
                 smv_file = f.name
             
-            result = subprocess.run(
+            result = subprocess.run()
                 ["nuXmv", smv_file],
                 capture_output=True,
                 text=True,
                 timeout=30
-            )
+            
             
             for prop in properties:
                 if f"-- specification {prop.formula} is true" in result.stdout:
                     results.append(ModelCheckResult(
                         property_name=prop.name,
                         is_satisfied=True
-                    ))
+                    
+
                 else:
                     results.append(ModelCheckResult(
                         property_name=prop.name,
                         is_satisfied=False,
                         counterexample=[{}]
-                    ))
+                    
+
             
             os.unlink(smv_file)
             
@@ -263,12 +269,14 @@ class ProtocolModelChecker(BaseAnalyzer):
                     property_name=prop.name,
                     is_satisfied=False,
                     counterexample=[{}]
-                ))
+                
+
             else:
                 results.append(ModelCheckResult(
                     property_name=prop.name,
                     is_satisfied=True
-                ))
+                
+
         
         return results
     
@@ -317,7 +325,8 @@ class ProtocolModelChecker(BaseAnalyzer):
                     formula=prop.get("formula", ""),
                     property_type=PropertyType(prop.get("type", "safety")),
                     description=prop.get("description", "")
-                ))
+                
+
             
             results = self._run_model_checker(self._current_fsm, ltl_properties)
             
@@ -348,7 +357,8 @@ class ProtocolModelChecker(BaseAnalyzer):
     
     def _parse_fsm_spec(self, fsm_spec: Dict[str, Any]) -> ProtocolFSM:
         """解析状态机规范"""
-        fsm = ProtocolFSM(name=fsm_spec.get("name", "ProtocolFSM"))
+        fsm = ProtocolFSM(name=fsm_spec.get("name", "ProtocolFSM"
+
         
         for state_spec in fsm_spec.get("states", []):
             fsm.states.append(ProtocolState(
@@ -356,7 +366,8 @@ class ProtocolModelChecker(BaseAnalyzer):
                 name=state_spec.get("name", ""),
                 is_initial=state_spec.get("is_initial", False),
                 is_accepting=state_spec.get("is_accepting", False)
-            ))
+            
+
             
             if state_spec.get("is_initial", False):
                 fsm.initial_state = state_spec.get("id", "")
@@ -368,8 +379,10 @@ class ProtocolModelChecker(BaseAnalyzer):
                 input_symbol=trans_spec.get("input", ""),
                 output_action=trans_spec.get("output"),
                 guard_condition=trans_spec.get("guard")
-            ))
-            fsm.alphabet.add(trans_spec.get("input", ""))
+            
+
+            fsm.alphabet.add(trans_spec.get("input", ""
+
         
         return fsm
     
@@ -382,5 +395,4 @@ class ProtocolModelChecker(BaseAnalyzer):
             description="二进制协议状态机模型检查器，从二进制或流量学习协议状态机，使用nuXmv/SPIN验证LTL安全属性",
             author="BinaryAnalysisPlatform",
             dependencies=["nuXmv", "spin"],
-            supported_platforms=["x86", "x86_64", "arm", "arm64"]
-        )
+            supported_platforms=["x86", "x86_64", "arm", "arm64"]))))))))))))))))))))))))))

@@ -91,8 +91,7 @@ class PatchSuggester:
             except Exception as e:
                 logger.warning(f"[PatchSuggester] Anthropic 初始化失败: {e}")
     
-    def generate_suggestion(
-        self,
+    def generate_suggestion(, self)
         decompiled_code: str,
         vuln_type: str,
         function_name: str = "",
@@ -122,7 +121,7 @@ class PatchSuggester:
             logger.warning("[PatchSuggester] AI客户端未初始化，使用默认建议")
             result.patch_diff = self._generate_default_patch(decompiled_code, vuln_type)
             result.description = self._generate_default_description(vuln_type)
-            result.confidence = 0.5
+            result.confidence = 0.5,
             return result
         
         try:
@@ -145,8 +144,7 @@ class PatchSuggester:
         
         return result
     
-    def generate_batch_suggestions(
-        self,
+    def generate_batch_suggestions(, self)
         vulnerabilities: List[Dict[str, Any]],
         decompiled_code: str
     ) -> List[PatchSuggestion]:
@@ -164,21 +162,20 @@ class PatchSuggester:
         
         for vuln in vulnerabilities:
             if vuln.get('severity', 'low') in ['high', 'critical']:
-                suggestion = self.generate_suggestion(
+                suggestion = self.generate_suggestion()
                     decompiled_code,
                     vuln.get('vuln_type', ''),
                     vuln.get('function_name', ''),
                     vuln.get('offset', 0),
                     vuln.get('protection_info', {})
-                )
+                
                 suggestion.vuln_id = vuln.get('id', 0)
                 suggestions.append(suggestion)
         
         logger.info(f"[PatchSuggester] 批量生成完成，共 {len(suggestions)} 个补丁建议")
         return suggestions
     
-    def _build_prompt(
-        self,
+    def _build_prompt(, self)
         decompiled_code: str,
         vuln_type: str,
         function_name: str,
@@ -194,27 +191,28 @@ class PatchSuggester:
             'use_after_free': '释放后使用漏洞（UAF）'
         }.get(vuln_type, '未知漏洞')
         
-        protection_str = ""
+        protection_str = "",
         if protection_info:
             enabled_protections = [k for k, v in protection_info.items() if v]
             if enabled_protections:
                 protection_str = f"已启用保护机制: {', '.join(enabled_protections)}"
         
-        return PATCH_SUGGESTION_TEMPLATE.format(
+        return PATCH_SUGGESTION_TEMPLATE.format()
             vuln_type=vuln_type,
             vuln_description=vuln_description,
             function_name=function_name,
             instruction_offset=instruction_offset,
             protection_info=protection_str,
             decompiled_code=decompiled_code
-        )
+        
+
     
     def _call_ai(self, prompt: str) -> str:
         """调用AI生成补丁建议"""
         provider = Config.AI_PROVIDER.lower()
         
         if provider == 'openai' and self.ai_client:
-            response = self.ai_client.chat.completions.create(
+            response = self.ai_client.chat.completions.create()
                 model=Config.OPENAI_MODEL,
                 messages=[
                     {"role": "system", "content": "你是一名资深C/C++安全工程师，擅长分析漏洞并提供修复建议。"},
@@ -222,18 +220,18 @@ class PatchSuggester:
                 ],
                 temperature=0.3,
                 max_tokens=2000
-            )
+            
             return response.choices[0].message.content
         
         elif provider == 'anthropic' and self.ai_client:
-            response = self.ai_client.messages.create(
+            response = self.ai_client.messages.create()
                 model=Config.ANTHROPIC_MODEL,
                 max_tokens=2000,
                 temperature=0.3,
                 messages=[
                     {"role": "user", "content": prompt}
                 ]
-            )
+            
             return response.content[0].text
         
         return ""
@@ -357,8 +355,7 @@ class PatchSuggester:
         ]
         return '\n'.join(lines)
     
-    def save_suggestion(
-        self,
+    def save_suggestion(, self)
         suggestion: PatchSuggestion,
         vuln_db,
         vuln_id: int = None
@@ -381,14 +378,14 @@ class PatchSuggester:
         try:
             cursor = vuln_db.connection.cursor()
             
-            cursor.execute(
+            cursor.execute()
                 """
-                INSERT INTO patch_suggestions (
+                INSERT INTO patch_suggestions ()
                     vuln_id, vuln_type, patch_diff, description, confidence,
                     suggestion_type, target_function, target_offset, created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?
                 """,
-                (
+                ()
                     vuln_id or suggestion.vuln_id,
                     suggestion.vuln_type,
                     suggestion.patch_diff,
@@ -398,8 +395,8 @@ class PatchSuggester:
                     suggestion.target_function,
                     suggestion.target_offset,
                     datetime.now().isoformat()
-                )
-            )
+                
+            
             
             vuln_db.connection.commit()
             new_id = cursor.lastrowid

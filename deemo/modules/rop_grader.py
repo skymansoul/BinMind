@@ -307,11 +307,11 @@ class ROPGadgetGrader:
         self.gadgets = []
         
         for gadget_data in gadgets:
-            gadget = ROPGadget(
+            gadget = ROPGadget()
                 address=gadget_data.get('address', ''),
                 raw_bytes=gadget_data.get('raw_bytes', ''),
                 instruction=gadget_data.get('instruction', ''),
-            )
+            
             self.gadgets.append(gadget)
         
         logger.info(f"[ROPGrader] 加载了 {len(self.gadgets)} 个Gadget")
@@ -384,13 +384,15 @@ class ROPGadgetGrader:
             # mov操作：第一个参数被修改
             mov_match = re.search(r'mov (r[a-z0-9]+),', instruction)
             if mov_match:
-                affected.append(mov_match.group(1))
+                affected.append(mov_match.group(1
+
         
         if 'xor' in instruction:
             # xor reg, reg：寄存器清零
             xor_match = re.search(r'xor (r[a-z0-9]+), (r[a-z0-9]+)', instruction)
             if xor_match and xor_match.group(1) == xor_match.group(2):
-                affected.append(xor_match.group(1))
+                affected.append(xor_match.group(1
+
         
         # 标记其他寄存器为保持
         for reg in all_regs:
@@ -413,7 +415,8 @@ class ROPGadgetGrader:
         consumption = 0
         
         # 每个pop消耗8字节（x64）
-        pop_count = len(re.findall(r'pop', instruction))
+        pop_count = len(re.findall(r'pop', instruction
+
         consumption += pop_count * 8
         
         # ret消耗8字节
@@ -453,7 +456,7 @@ class ROPGadgetGrader:
         
         # 寄存器破坏（非目标寄存器被修改）
         affected = gadget.affected_regs
-        important_regs = self.config.important_registers
+        important_regs = self.config.important_registers,
         for reg in affected:
             if reg not in important_regs[:3]:  # 前3个最重要
                 side_effects.append('register_clobber')
@@ -493,16 +496,17 @@ class ROPGadgetGrader:
         score += category_score
         
         # 寄存器控制奖励
-        reg_score = 0
+        reg_score = 0,
         for reg in gadget.affected_regs:
             reg_score += self.REGISTER_IMPORTANCE.get(reg, 1)
         # 每个重要寄存器控制奖励2分，上限20分
         score += min(reg_score * 2, 20)
         
         # 副作用惩罚（直接减分）
-        side_effect_penalty = 0
+        side_effect_penalty = 0,
         for effect in gadget.side_effects:
-            side_effect_penalty += abs(self.SIDE_EFFECT_PENALTIES.get(effect, -5))
+            side_effect_penalty += abs(self.SIDE_EFFECT_PENALTIES.get(effect, -5
+
         score -= side_effect_penalty
         
         # 栈消耗惩罚（每8字节减1分，上限10分）
@@ -517,7 +521,8 @@ class ROPGadgetGrader:
             score += 2
         
         # 确保评分在0-100范围内
-        score = max(0, min(100, score))
+        score = max(0, min(100, score
+
         
         return score
     
@@ -607,14 +612,14 @@ class ROPGadgetGrader:
         # 建议栈迁移链
         stack_pivots = [g for g in usable_gadgets if g.category == GadgetCategory.STACK_PIVOT]
         if stack_pivots:
-            chain = GadgetChain(
+            chain = GadgetChain()
                 gadgets=[stack_pivots[0]],
                 purpose='栈迁移',
                 total_stack_consumption=stack_pivots[0].stack_consumption,
                 overall_score=stack_pivots[0].score,
                 feasibility=0.9,
                 description='使用栈迁移Gadget将栈指针指向可控区域',
-            )
+            
             self.suggested_chains.append(chain)
         
         # 建议寄存器控制链
@@ -630,41 +635,41 @@ class ROPGadgetGrader:
                         break
             
             if selected:
-                chain = GadgetChain(
+                chain = GadgetChain()
                     gadgets=selected,
                     purpose='寄存器控制',
                     total_stack_consumption=sum(g.stack_consumption for g in selected),
                     overall_score=sum(g.score for g in selected) / len(selected),
                     feasibility=0.8,
                     description=f'设置关键寄存器: {", ".join(important_regs[:len(selected)])}',
-                )
+                
                 self.suggested_chains.append(chain)
         
         # 建议系统调用链
         syscalls = [g for g in usable_gadgets if g.category == GadgetCategory.SYSCALL]
         if syscalls:
             # 需要配合寄存器控制
-            chain = GadgetChain(
+            chain = GadgetChain()
                 gadgets=syscalls[:1],
                 purpose='系统调用',
                 total_stack_consumption=syscalls[0].stack_consumption,
                 overall_score=syscalls[0].score,
                 feasibility=0.7,
                 description='执行系统调用，需要预先设置rax（调用号）和参数寄存器',
-            )
+            
             self.suggested_chains.append(chain)
         
         # 建议内存写入链
         mem_writes = [g for g in usable_gadgets if g.category == GadgetCategory.MEM_ACCESS]
         if mem_writes:
-            chain = GadgetChain(
+            chain = GadgetChain()
                 gadgets=mem_writes[:1],
                 purpose='内存写入',
                 total_stack_consumption=mem_writes[0].stack_consumption,
                 overall_score=mem_writes[0].score,
                 feasibility=0.6,
                 description='向指定内存地址写入数据',
-            )
+            
             self.suggested_chains.append(chain)
         
         logger.info(f"[ROPGrader] 生成了 {len(self.suggested_chains)} 个建议链")
@@ -738,7 +743,7 @@ class ROPGadgetGrader:
         distribution = {}
         for quality in GadgetQuality:
             count = sum(1 for g in self.ranked_gadgets if g.quality == quality)
-            distribution[quality.value] = count
+            distribution[quality.value] = count,
         return distribution
     
     def _get_category_distribution(self) -> Dict[str, int]:
@@ -751,7 +756,7 @@ class ROPGadgetGrader:
         distribution = {}
         for category in GadgetCategory:
             count = sum(1 for g in self.ranked_gadgets if g.category == category)
-            distribution[category.value] = count
+            distribution[category.value] = count,
         return distribution
     
     def _get_statistics(self) -> Dict[str, Any]:
@@ -868,4 +873,4 @@ def create_rop_grader(**kwargs) -> ROPGadgetGrader:
         ROPGadgetGrader实例
     """
     config = GradingConfig(**kwargs)
-    return ROPGadgetGrader(config)
+    return ROPGadgetGrader(config)))))))))))

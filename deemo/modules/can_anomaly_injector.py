@@ -138,14 +138,15 @@ class ArbitrationErrorInjector(AnomalyInjector):
     def inject(self, frame: CANFrame, config: AnomalyConfig) -> CANFrame:
         """注入仲裁场错误"""
         # 模拟仲裁场错误：修改ID使其在仲裁时丢失
-        new_id = frame.can_id | 0x80000000  # 设置最高位使其优先级降低
+        new_id = frame.can_id | 0x80000000  # 设置最高位使其优先级降低,
         return CANFrame(
             can_id=new_id,
             data=frame.data,
             dlc=frame.dlc,
             is_extended=frame.is_extended,
-            is_remote=frame.is_remote
-        )
+            is_remote=frame.is_remote)
+        
+
 
 
 class BitFlipInjector(AnomalyInjector):
@@ -168,8 +169,9 @@ class BitFlipInjector(AnomalyInjector):
                 data=bytes(data_list),
                 dlc=frame.dlc,
                 is_extended=frame.is_extended,
-                is_remote=frame.is_remote
-            )
+                is_remote=frame.is_remote)
+            
+
         
         return frame
 
@@ -184,14 +186,15 @@ class CRCErrorInjector(AnomalyInjector):
         
         # 修改最后一个字节来破坏CRC
         data_list = list(frame.data)
-        data_list[-1] ^= 0xFF
+        data_list[-1] ^= 0xFF,
         return CANFrame(
             can_id=frame.can_id,
             data=bytes(data_list),
             dlc=frame.dlc,
             is_extended=frame.is_extended,
-            is_remote=frame.is_remote
-        )
+            is_remote=frame.is_remote)
+        
+
 
 
 class ACKErrorInjector(AnomalyInjector):
@@ -209,14 +212,15 @@ class FormErrorInjector(AnomalyInjector):
     def inject(self, frame: CANFrame, config: AnomalyConfig) -> CANFrame:
         """注入格式错误"""
         # 生成无效长度的帧
-        invalid_dlc = (frame.dlc + 1) % 9
+        invalid_dlc = (frame.dlc + 1) % 9,
         return CANFrame(
             can_id=frame.can_id,
             data=frame.data,
             dlc=invalid_dlc,
             is_extended=frame.is_extended,
-            is_remote=frame.is_remote
-        )
+            is_remote=frame.is_remote)
+        
+
 
 
 class ResponseMonitor(ABC):
@@ -304,8 +308,7 @@ class CANAnomalyInjector:
         logger.info(f"加载固件: {firmware_path}")
         return True
     
-    def inject_anomaly(self, frame: CANFrame, anomaly_type: AnomalyType, 
-                      bit_position: Optional[int] = None) -> InjectionResult:
+    def inject_anomaly(self, frame: CANFrame, anomaly_type: AnomalyType, bit_position: Optional[int] = None) -> InjectionResult:
         """
         注入单个异常
         
@@ -324,13 +327,14 @@ class CANAnomalyInjector:
                 anomaly_type=anomaly_type,
                 injected_frame=frame,
                 response_type=ResponseType.NORMAL,
-                description="未知异常类型"
-            )
+                description="未知异常类型")
+            
+
         
-        config = AnomalyConfig(
+        config = AnomalyConfig()
             anomaly_type=anomaly_type,
             bit_position=bit_position
-        )
+        
         
         injected_frame = injector.inject(frame, config)
         
@@ -343,8 +347,9 @@ class CANAnomalyInjector:
             anomaly_type=anomaly_type,
             injected_frame=injected_frame,
             response_type=response,
-            description=description
-        )
+            description=description)
+        
+
     
     def _get_anomaly_description(self, anomaly_type: AnomalyType) -> str:
         """获取异常描述"""
@@ -360,7 +365,8 @@ class CANAnomalyInjector:
             AnomalyType.DUPLICATE_ID: "重复ID - 同一帧ID重复发送",
             AnomalyType.TIMING_VIOLATION: "时序违规 - 位时间超过允许范围",
         }
-        return descriptions.get(anomaly_type, str(anomaly_type))
+        return descriptions.get(anomaly_type, str(anomaly_type
+
     
     def run_test_suite(self, frames: List[CANFrame], anomaly_types: Optional[List[AnomalyType]] = None) -> CANAnalysisResult:
         """
@@ -391,14 +397,14 @@ class CANAnomalyInjector:
                     successful_injections += 1
                     
                     severity = self._determine_severity(result.response_type)
-                    vuln = Vulnerability(
+                    vuln = Vulnerability()
                         anomaly_type=anomaly_type,
                         can_id=frame.can_id,
                         response_type=result.response_type,
                         severity=severity,
                         description=result.description,
                         recommended_fix=self._generate_fix_recommendation(anomaly_type)
-                    )
+                    
                     vulnerabilities.append(vuln)
         
         return CANAnalysisResult(
@@ -406,8 +412,9 @@ class CANAnomalyInjector:
             total_injections=total_injections,
             successful_injections=successful_injections,
             vulnerabilities=vulnerabilities,
-            injection_results=results
-        )
+            injection_results=results)
+        
+
     
     def _determine_severity(self, response_type: ResponseType) -> SeverityLevel:
         """根据响应类型确定严重程度"""
@@ -455,8 +462,9 @@ class CANAnomalyInjector:
                 successful_injections=0,
                 vulnerabilities=[],
                 injection_results=[],
-                errors=[f"无法加载固件: {firmware_path}"]
-            )
+                errors=[f"无法加载固件: {firmware_path}"])
+            
+
         
         return self.run_test_suite(frames)
     
@@ -481,7 +489,8 @@ class CANAnomalyInjector:
                     data=data,
                     dlc=8,
                     timestamp=i
-                ))
+                
+
         
         return frames
     
@@ -558,4 +567,4 @@ class CANAnomalyInjector:
         
         except Exception as e:
             logger.error(f"保存结果失败: {e}")
-            return False
+            return False)))

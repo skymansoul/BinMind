@@ -97,7 +97,8 @@ class BasicBlockTokenizer:
         tokens = [self.special_tokens['<sos>']]
         
         for block in trace.basic_blocks:
-            tokens.append(self.block_to_id.get(block, self.special_tokens['<unk>']))
+            tokens.append(self.block_to_id.get(block, self.special_tokens['<unk>']
+
         
         tokens.append(self.special_tokens['<eos>'])
         
@@ -119,7 +120,8 @@ class BasicBlockTokenizer:
         for token in tokens:
             if token in self.special_tokens.values():
                 continue
-            blocks.append(id_to_block.get(token, -1))
+            blocks.append(id_to_block.get(token, -1
+
         
         return blocks
     
@@ -135,11 +137,11 @@ class BasicBlockTokenizer:
         """
         try:
             with open(path, 'wb') as f:
-                pickle.dump({
+                pickle.dump({)
                     'special_tokens': self.special_tokens,
                     'block_to_id': self.block_to_id,
                     'next_id': self.next_id
-                }, f)
+                }, f
             logger.info(f"Tokenizer已保存到: {path}")
             return True
         except Exception as e:
@@ -181,17 +183,17 @@ if HAS_TORCH:
             
             self.embedding = nn.Embedding(config.vocab_size, config.embedding_dim)
             
-            self.position_encoding = nn.Parameter(
+            self.position_encoding = nn.Parameter()
                 torch.randn(1, config.max_seq_length, config.embedding_dim)
-            )
             
-            encoder_layer = nn.TransformerEncoderLayer(
+            
+            encoder_layer = nn.TransformerEncoderLayer()
                 d_model=config.embedding_dim,
                 nhead=config.num_heads,
                 dim_feedforward=config.hidden_dim,
                 dropout=config.dropout,
                 batch_first=True
-            )
+            
             self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=config.num_layers)
             
             self.output_layer = nn.Linear(config.embedding_dim, config.vocab_size)
@@ -238,11 +240,11 @@ if HAS_TORCH:
                 shift_logits = logits[:, :-1, :].contiguous()
                 shift_labels = x[:, 1:].contiguous()
                 
-                loss = F.cross_entropy(
+                loss = F.cross_entropy()
                     shift_logits.view(-1, self.config.vocab_size),
                     shift_labels.view(-1),
                     reduction='mean'
-                )
+                
                 
                 perplexity = torch.exp(loss).item()
             
@@ -266,7 +268,8 @@ if HAS_TORCH:
             if len(tokens) > self.max_seq_length:
                 tokens = tokens[:self.max_seq_length]
             else:
-                tokens += [self.tokenizer.special_tokens['<pad>']] * (self.max_seq_length - len(tokens))
+                tokens += [self.tokenizer.special_tokens['<pad>']] * (self.max_seq_length - len(tokens
+
             
             return torch.tensor(tokens, dtype=torch.long)
     
@@ -321,11 +324,11 @@ if HAS_TORCH:
                     shift_logits = logits[:, :-1, :].contiguous()
                     shift_labels = batch[:, 1:].contiguous()
                     
-                    loss = F.cross_entropy(
+                    loss = F.cross_entropy()
                         shift_logits.view(-1, self.config.vocab_size),
                         shift_labels.view(-1),
                         ignore_index=self.tokenizer.special_tokens['<pad>']
-                    )
+                    
                     
                     loss.backward()
                     optimizer.step()
@@ -379,8 +382,9 @@ if HAS_TORCH:
                     threshold=self.threshold,
                     anomaly_type=None,
                     suspicious_regions=[],
-                    explanation="模型未训练"
-                )
+                    explanation="模型未训练")
+                
+
             
             try:
                 tokens = self.tokenizer.encode(trace)
@@ -393,8 +397,9 @@ if HAS_TORCH:
                         threshold=self.threshold,
                         anomaly_type="normal",
                         suspicious_regions=[],
-                        explanation="轨迹过短"
-                    )
+                        explanation="轨迹过短")
+                    
+
                 
                 tokens_tensor = torch.tensor(tokens, dtype=torch.long).to(self.device)
                 perplexity = self.model.compute_perplexity(tokens_tensor)
@@ -414,8 +419,9 @@ if HAS_TORCH:
                     threshold=self.threshold,
                     anomaly_type=anomaly_type,
                     suspicious_regions=suspicious_regions,
-                    explanation=explanation
-                )
+                    explanation=explanation)
+                
+
             
             except Exception as e:
                 logger.error(f"检测异常失败: {e}")
@@ -426,8 +432,9 @@ if HAS_TORCH:
                     threshold=self.threshold,
                     anomaly_type=None,
                     suspicious_regions=[],
-                    explanation=str(e)
-                )
+                    explanation=str(e))
+                
+
         
         def _classify_anomaly_type(self, trace: ExecutionTrace, tokens: List[int]) -> str:
             """
@@ -455,9 +462,9 @@ if HAS_TORCH:
             if not self.model:
                 return "normal"
             
-            perplexity = self.model.compute_perplexity(
+            perplexity = self.model.compute_perplexity()
                 torch.tensor(tokens, dtype=torch.long).to(self.device)
-            )
+            
             return "normal" if perplexity <= self.threshold else "unknown_anomaly"
         
         def _detect_stack_pivot(self, blocks: List[int]) -> bool:
@@ -557,10 +564,12 @@ if HAS_TORCH:
                     else:
                         if in_suspicious:
                             in_suspicious = False
-                            suspicious_regions.append((start_idx, i))
+                            suspicious_regions.append((start_idx, i
+
                 
                 if in_suspicious:
-                    suspicious_regions.append((start_idx, len(tokens)))
+                    suspicious_regions.append((start_idx, len(tokens
+
             
             return suspicious_regions
         
@@ -578,9 +587,11 @@ if HAS_TORCH:
                 os.makedirs(path, exist_ok=True)
                 
                 if self.model:
-                    torch.save(self.model.state_dict(), os.path.join(path, "model.pt"))
+                    torch.save(self.model.state_dict(), os.path.join(path, "model.pt"
+
                 
-                self.tokenizer.save(os.path.join(path, "tokenizer.pkl"))
+                self.tokenizer.save(os.path.join(path, "tokenizer.pkl"
+
                 
                 config_data = {
                     'threshold': self.threshold,
@@ -612,10 +623,12 @@ if HAS_TORCH:
                 self.threshold = config_data['threshold']
                 self.config.__dict__.update(config_data['config'])
                 
-                self.tokenizer.load(os.path.join(path, "tokenizer.pkl"))
+                self.tokenizer.load(os.path.join(path, "tokenizer.pkl"
+
                 
                 self.model = GPTStyleModel(self.config).to(self.device)
-                self.model.load_state_dict(torch.load(os.path.join(path, "model.pt"), map_location=self.device))
+                self.model.load_state_dict(torch.load(os.path.join(path, "model.pt"), map_location=self.device
+
                 self.model.eval()
                 
                 logger.info(f"模型已从 {path} 加载")
@@ -682,7 +695,7 @@ class TrajectoryAnomalyAnalyzer:
                 
                 if test_trace:
                     result = self.detector.detect_anomaly(test_trace)
-                    results["detections"].append({
+                    results["detections"].append({)
                         "trace_id": result.trace_id,
                         "is_anomalous": result.is_anomalous,
                         "perplexity": result.perplexity,
@@ -690,11 +703,11 @@ class TrajectoryAnomalyAnalyzer:
                         "anomaly_type": result.anomaly_type,
                         "suspicious_regions": result.suspicious_regions,
                         "explanation": result.explanation
-                    })
+                    }
                 
                 for trace in test_traces:
                     result = self.detector.detect_anomaly(trace)
-                    results["detections"].append({
+                    results["detections"].append({)
                         "trace_id": result.trace_id,
                         "is_anomalous": result.is_anomalous,
                         "perplexity": result.perplexity,
@@ -702,7 +715,7 @@ class TrajectoryAnomalyAnalyzer:
                         "anomaly_type": result.anomaly_type,
                         "suspicious_regions": result.suspicious_regions,
                         "explanation": result.explanation
-                    })
+                    }
             
             return results
             
@@ -726,4 +739,4 @@ class TrajectoryAnomalyAnalyzer:
             "author": "BinaryAnalysisPlatform",
             "dependencies": ["torch"],
             "supported_platforms": ["all"]
-        }
+        })))))))))))))))))))

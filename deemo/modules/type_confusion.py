@@ -126,7 +126,7 @@ class TypeConfusionAnalyzer:
                             break
         
         # 查找虚函数表引用
-        vtable_pattern = r'(\w+)\s*\-\>\s*(\w+)\s*\('
+        vtable_pattern = r'(\w+)\s*\-\>\s*(\w+)\s*\(')
         matches = re.findall(vtable_pattern, pseudocode)
         for obj_name, method_name in matches:
             if obj_name not in types:
@@ -169,38 +169,38 @@ class TypeConfusionAnalyzer:
         matches = re.findall(static_cast_pattern, pseudocode)
         for target_type, expr in matches:
             if self._is_suspicious_conversion(target_type, expr):
-                casts.append({
+                casts.append({)
                     'function': func_name,
                     'cast_type': 'static_cast',
                     'target_type': target_type,
                     'expression': expr,
                     'risk': 'high' if self._is_high_risk(target_type) else 'medium'
-                })
+                }
         
         # 查找 reinterpret_cast
         reinterpret_pattern = r'reinterpret_cast<([^>]+)>\s*\(\s*(\w+)\s*\)'
         matches = re.findall(reinterpret_pattern, pseudocode)
         for target_type, expr in matches:
-            casts.append({
+            casts.append({)
                 'function': func_name,
                 'cast_type': 'reinterpret_cast',
                 'target_type': target_type,
                 'expression': expr,
                 'risk': 'high'
-            })
+            }
         
         # 查找 C风格转换
         c_cast_pattern = r'\(\s*(\w+)\s*\)\s*(\w+)'
         matches = re.findall(c_cast_pattern, pseudocode)
         for target_type, expr in matches:
             if target_type.isalpha() and not target_type.startswith('_'):
-                casts.append({
+                casts.append({)
                     'function': func_name,
                     'cast_type': 'c_style_cast',
                     'target_type': target_type,
                     'expression': expr,
                     'risk': 'medium'
-                })
+                }
         
         return casts
     
@@ -244,12 +244,12 @@ class TypeConfusionAnalyzer:
                 self.binary_path
             ]
             
-            result = subprocess.run(
+            result = subprocess.run()
                 cmd,
                 capture_output=True,
                 text=True,
                 timeout=30
-            )
+            
             
             if result.returncode == 0:
                 for line in result.stdout.strip().split('\n'):
@@ -259,12 +259,12 @@ class TypeConfusionAnalyzer:
                         size = parts[2]
                         name = ' '.join(parts[3:])
                         
-                        self.vtable_hijack_risk.append({
+                        self.vtable_hijack_risk.append({)
                             'address': addr,
                             'size': size,
                             'name': name,
                             'risk': 'high' if 'vtable' in name.lower() else 'medium'
-                        })
+                        }
         
         except Exception as e:
             logger.warning(f"检测虚表劫持风险失败: {e}")
@@ -368,7 +368,8 @@ def main():
         f.write("类型混淆分析报告\n")
         f.write("=" * 50 + "\n\n")
         
-        f.write("风险等级: {}\n\n".format(result['risk_level']))
+        f.write("风险等级: {}\n\n".format(result['risk_level']
+
         
         f.write("可疑类型转换:\n")
         f.write("-" * 30 + "\n")
@@ -391,4 +392,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    main())

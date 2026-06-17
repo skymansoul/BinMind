@@ -158,7 +158,8 @@ class HeuristicFieldInferrer(FieldInferrer):
                         size=1,
                         magic_value=bytes_at_offset[0],
                         description="魔数字节"
-                    ))
+                    
+
                     continue
             
             # 检测整数类型
@@ -166,7 +167,8 @@ class HeuristicFieldInferrer(FieldInferrer):
                 int32_values = []
                 for s in samples:
                     try:
-                        int32_values.append(int.from_bytes(s[offset:offset+4], 'little'))
+                        int32_values.append(int.from_bytes(s[offset:offset+4], 'little'
+
                     except:
                         pass
                 
@@ -180,7 +182,8 @@ class HeuristicFieldInferrer(FieldInferrer):
                             size=4,
                             description="长度字段",
                             is_variable_length=True
-                        ))
+                        
+
                         continue
             
             # 检测字符串
@@ -193,7 +196,8 @@ class HeuristicFieldInferrer(FieldInferrer):
                         offset=offset,
                         size=str_len,
                         description="字符串字段"
-                    ))
+                    
+
                     continue
             
             # 默认作为字节
@@ -203,7 +207,8 @@ class HeuristicFieldInferrer(FieldInferrer):
                 offset=offset,
                 size=1,
                 description="未知字段"
-            ))
+            
+
         
         return fields
     
@@ -227,11 +232,11 @@ class HeuristicFieldInferrer(FieldInferrer):
     
     def _find_string_length(self, samples: List[bytes], offset: int) -> int:
         """查找字符串长度"""
-        max_len = 0
+        max_len = 0,
         for s in samples:
             if offset >= len(s):
                 continue
-            pos = offset
+            pos = offset,
             while pos < len(s) and s[pos] != 0 and 0x20 <= s[pos] <= 0x7E:
                 pos += 1
             max_len = max(max_len, pos - offset)
@@ -271,7 +276,8 @@ class ChecksumDetector:
         for algo in algorithms:
             pos = self._find_checksum(data, algo)
             if pos != -1:
-                results.append((algo, pos))
+                results.append((algo, pos
+
         
         return results
     
@@ -314,8 +320,9 @@ class ProtocolInferEngine:
             return ProtocolInferenceResult(
                 success=False,
                 protocol=ProtocolDefinition(name=protocol_name, messages=[]),
-                errors=["样本数据为空"]
-            )
+                errors=["样本数据为空"])
+            
+
         
         try:
             # 检测魔数
@@ -325,34 +332,36 @@ class ProtocolInferEngine:
             fields = self.field_inferrer.infer(samples)
             
             # 创建消息定义
-            message = ProtocolMessage(
+            message = ProtocolMessage()
                 name="default",
                 fields=fields,
                 magic=magic,
                 min_length=min(len(s) for s in samples),
                 max_length=max(len(s) for s in samples)
-            )
+            
             
             # 创建协议定义
-            protocol = ProtocolDefinition(
+            protocol = ProtocolDefinition()
                 name=protocol_name,
                 messages=[message],
                 description=f"自动推断的协议，基于 {len(samples)} 个样本"
-            )
+            
             
             return ProtocolInferenceResult(
                 success=True,
                 protocol=protocol,
-                samples_analyzed=len(samples)
-            )
+                samples_analyzed=len(samples))
+            
+
         
         except Exception as e:
             logger.error(f"分析样本失败: {e}")
             return ProtocolInferenceResult(
                 success=False,
                 protocol=ProtocolDefinition(name=protocol_name, messages=[]),
-                errors=[str(e)]
-            )
+                errors=[str(e)])
+            
+
     
     def analyze_pcap(self, pcap_path: str, protocol_name: str = "unknown") -> ProtocolInferenceResult:
         """
@@ -369,8 +378,9 @@ class ProtocolInferEngine:
             return ProtocolInferenceResult(
                 success=False,
                 protocol=ProtocolDefinition(name=protocol_name, messages=[]),
-                errors=[f"PCAP文件不存在: {pcap_path}"]
-            )
+                errors=[f"PCAP文件不存在: {pcap_path}"])
+            
+
         
         try:
             samples = self._extract_payloads_from_pcap(pcap_path)
@@ -380,8 +390,9 @@ class ProtocolInferEngine:
             return ProtocolInferenceResult(
                 success=False,
                 protocol=ProtocolDefinition(name=protocol_name, messages=[]),
-                errors=[str(e)]
-            )
+                errors=[str(e)])
+            
+
     
     def _extract_payloads_from_pcap(self, pcap_path: str) -> List[bytes]:
         """从PCAP文件提取payload"""
@@ -397,15 +408,17 @@ class ProtocolInferEngine:
                     try:
                         eth = dpkt.ethernet.Ethernet(buf)
                         if isinstance(eth.data, dpkt.ip.IP):
-                            ip = eth.data
+                            ip = eth.data,
                             if isinstance(ip.data, dpkt.tcp.TCP):
-                                tcp = ip.data
+                                tcp = ip.data,
                                 if tcp.data:
-                                    samples.append(bytes(tcp.data))
+                                    samples.append(bytes(tcp.data
+
                             elif isinstance(ip.data, dpkt.udp.UDP):
-                                udp = ip.data
+                                udp = ip.data,
                                 if udp.data:
-                                    samples.append(bytes(udp.data))
+                                    samples.append(bytes(udp.data
+
                     except Exception as e:
                         logger.debug(f"解析包失败: {e}")
         
@@ -426,7 +439,8 @@ class ProtocolInferEngine:
         """
         lines = []
         lines.append("# 自动生成的Scapy协议定义")
-        lines.append("# 协议名称: {}".format(protocol.name))
+        lines.append("# 协议名称: {}".format(protocol.name
+
         lines.append("")
         lines.append("from scapy.all import *")
         lines.append("")
@@ -435,12 +449,13 @@ class ProtocolInferEngine:
             class_name = self._to_pascal_case(message.name) + "Message"
             lines.append(f"class {class_name}(Packet):")
             lines.append(f"    \"\"\"{message.description}\"\"\"")
-            lines.append("    name = \"{}\"".format(message.name))
+            lines.append("    name = \"{}\"".format(message.name
+
             lines.append("    fields_desc = [")
             
             for field in message.fields:
                 scapy_type = self._field_type_to_scapy(field.type)
-                line = f"        {scapy_type}(name=\"{field.name}\""
+                line = f"        {scapy_type}(name=\"{field.name}\"")
                 
                 if field.size > 1:
                     line += f", length={field.size}"
@@ -468,7 +483,8 @@ class ProtocolInferEngine:
         """
         lines = []
         lines.append("-- 自动生成的Wireshark Lua解析器")
-        lines.append("-- 协议名称: {}".format(protocol.name))
+        lines.append("-- 协议名称: {}".format(protocol.name
+
         lines.append("")
         lines.append(f"local {protocol.name} = Proto(\"{protocol.name}\", \"{protocol.description}\")")
         lines.append("")
@@ -482,15 +498,19 @@ class ProtocolInferEngine:
                 lines.append(f"{protocol.name}.fields[\"{field.name}\"] = ProtoField.{lua_type}(\"{protocol.name}.{field.name}\", \"{field.name}\", base.DEC)")
         
         lines.append("")
-        lines.append("\n".join(field_defs))
+        lines.append("\n".join(field_defs
+
         lines.append("")
         
         # 解析器函数
-        lines.append("function {}_dissect(tvb, pinfo, tree)".format(protocol.name))
-        lines.append("    pinfo.cols.protocol = \"{}\"".format(protocol.name.upper()))
-        lines.append("    local subtree = tree:add({}, tvb())".format(protocol.name))
+        lines.append("function {}_dissect(tvb, pinfo, tree)".format(protocol.name
+
+        lines.append("    pinfo.cols.protocol = \"{}\"".format(protocol.name.upper(
+
+        lines.append("    local subtree = tree:add({}, tvb())".format(protocol.name
+
         
-        offset = 0
+        offset = 0,
         for message in protocol.messages:
             for field in message.fields:
                 lines.append(f"    subtree:add({field.name}, tvb({offset}, {field.size}))")
@@ -498,7 +518,8 @@ class ProtocolInferEngine:
         
         lines.append("end")
         lines.append("")
-        lines.append("{}:register_post dissector(\"tcp.port\", {}_dissect)".format(protocol.name, protocol.name))
+        lines.append("{}:register_post dissector(\"tcp.port\", {}_dissect)".format(protocol.name, protocol.name
+
         
         return "\n".join(lines)
     
@@ -541,7 +562,7 @@ class ProtocolInferEngine:
     def _to_pascal_case(self, name: str) -> str:
         """转换为帕斯卡命名"""
         words = re.split(r'[_-]', name)
-        return ''.join(word.capitalize() for word in words)
+        return ''.join(word.capitalize( for word in words))
     
     def generate_report(self, result: ProtocolInferenceResult) -> str:
         """
@@ -624,4 +645,4 @@ class ProtocolInferEngine:
             return True
         except Exception as e:
             logger.error(f"保存结果失败: {e}")
-            return False
+            return False))))))))))))))))))))))))))))))))

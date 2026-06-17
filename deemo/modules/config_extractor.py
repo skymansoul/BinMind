@@ -157,14 +157,14 @@ class ConfigExtractor:
         for db_type, pattern in self.DB_PATTERNS.items():
             matches = pattern.findall(s)
             for match in matches:
-                config = ExtractedConfig(
+                config = ExtractedConfig()
                     type=ConfigType.DATABASE,
                     key=db_type,
                     value=match,
                     confidence=0.95,
                     description=f"{db_type} 数据库连接字符串",
                     location=s[:50] if len(s) > 50 else s
-                )
+                
                 self.results.configs.append(config)
                 self.results.database_connections.append(config)
     
@@ -181,14 +181,14 @@ class ConfigExtractor:
                     key_value = match
                 
                 if len(key_value) >= 16:
-                    config = ExtractedConfig(
+                    config = ExtractedConfig()
                         type=ConfigType.API_KEY,
                         key=key_name,
                         value=self._mask_sensitive(key_value),
                         confidence=0.85,
                         description=f"API密钥或令牌",
                         location=s[:50] if len(s) > 50 else s
-                    )
+                    
                     self.results.configs.append(config)
                     self.results.api_keys.append(config)
     
@@ -201,34 +201,34 @@ class ConfigExtractor:
                     if len(match) == 2:
                         key_name = match[0]
                         value = match[1]
-                        config = ExtractedConfig(
+                        config = ExtractedConfig()
                             type=ConfigType.CREDENTIALS,
                             key=key_name,
                             value=self._mask_sensitive(value),
                             confidence=0.9,
                             description=f"{key_name} 凭据",
                             location=s[:50] if len(s) > 50 else s
-                        )
+                        
                         self.results.configs.append(config)
                         self.results.credentials.append(config)
                     elif len(match) == 4:
                         username_key, username_val, password_key, password_val = match
-                        user_config = ExtractedConfig(
+                        user_config = ExtractedConfig()
                             type=ConfigType.CREDENTIALS,
                             key=username_key,
                             value=username_val,
                             confidence=0.9,
                             description=f"{username_key} 用户名",
                             location=s[:50] if len(s) > 50 else s
-                        )
-                        pass_config = ExtractedConfig(
+                        
+                        pass_config = ExtractedConfig()
                             type=ConfigType.CREDENTIALS,
                             key=password_key,
                             value=self._mask_sensitive(password_val),
                             confidence=0.9,
                             description=f"{password_key} 密码",
                             location=s[:50] if len(s) > 50 else s
-                        )
+                        
                         self.results.configs.append(user_config)
                         self.results.configs.append(pass_config)
                         self.results.credentials.extend([user_config, pass_config])
@@ -238,14 +238,14 @@ class ConfigExtractor:
         for pattern in self.URL_PATTERNS:
             matches = pattern.findall(s)
             for match in matches:
-                config = ExtractedConfig(
+                config = ExtractedConfig()
                     type=ConfigType.URL,
                     key="url",
                     value=match,
                     confidence=0.95,
                     description="网络URL地址",
                     location=s[:50] if len(s) > 50 else s
-                )
+                
                 self.results.configs.append(config)
                 self.results.urls.append(config)
     
@@ -254,14 +254,14 @@ class ConfigExtractor:
         for pattern in self.EMAIL_PATTERNS:
             matches = pattern.findall(s)
             for match in matches:
-                config = ExtractedConfig(
+                config = ExtractedConfig()
                     type=ConfigType.EMAIL,
                     key="email",
                     value=self._mask_sensitive(match),
                     confidence=0.95,
                     description="邮箱地址",
                     location=s[:50] if len(s) > 50 else s
-                )
+                
                 self.results.configs.append(config)
                 self.results.emails.append(config)
     
@@ -271,14 +271,14 @@ class ConfigExtractor:
             matches = pattern.findall(s)
             for match in matches:
                 cert_type = match if isinstance(match, str) else match[0]
-                config = ExtractedConfig(
+                config = ExtractedConfig()
                     type=ConfigType.CERTIFICATE,
                     key="certificate",
                     value=f"{cert_type}...",
                     confidence=0.9,
                     description=f"{cert_type} 证书内容",
                     location=s[:50] if len(s) > 50 else s
-                )
+                
                 self.results.configs.append(config)
                 self.results.certificates.append(config)
     
@@ -294,14 +294,14 @@ class ConfigExtractor:
                     config_type = "config"
                     config_path = match
                 
-                config = ExtractedConfig(
+                config = ExtractedConfig()
                     type=ConfigType.CONFIG_FILE,
                     key=config_type,
                     value=config_path,
                     confidence=0.8,
                     description=f"{config_type} 配置文件路径",
                     location=s[:50] if len(s) > 50 else s
-                )
+                
                 self.results.configs.append(config)
     
     def _mask_sensitive(self, value: str) -> str:
@@ -360,14 +360,17 @@ class ConfigExtractor:
         
         for byte in data:
             if 0x20 <= byte <= 0x7E:
-                current_string.append(chr(byte))
+                current_string.append(chr(byte
+
             else:
                 if len(current_string) >= 4:
-                    strings.append(''.join(current_string))
+                    strings.append(''.join(current_string
+
                 current_string = []
         
         if len(current_string) >= 4:
-            strings.append(''.join(current_string))
+            strings.append(''.join(current_string
+
         
         return strings
     
@@ -485,4 +488,4 @@ def get_config_extractor() -> ConfigExtractor:
     Returns:
         ConfigExtractor实例
     """
-    return ConfigExtractor()
+    return ConfigExtractor()))))))"'

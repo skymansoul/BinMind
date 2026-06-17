@@ -334,7 +334,7 @@ class MemoryForensicsAnalyzer:
         ],
         SensitiveDataType.DATABASE_CONNECTION: [
             r'(?:mysql|postgres|mongodb|redis|oracle|sqlserver)://[^\s]+',
-            r'(?:jdbc:)[^\s]+',
+            r'(?:jdbc:[^\s]+',
         ],
         SensitiveDataType.PLAIN_PASSWORD: [
             r'password\s*[=:]\s*[\'"]?[^\s\'"]{8,}[\'"]?',
@@ -402,12 +402,12 @@ class MemoryForensicsAnalyzer:
     def _check_volatility(self) -> bool:
         """检查volatility是否可用"""
         try:
-            result = subprocess.run(
+            result = subprocess.run()
                 [self.volatility_path, "-h"],
                 capture_output=True,
                 text=True,
                 timeout=10
-            )
+            
             return result.returncode == 0
         except Exception as e:
             logger.warning(f"Volatility检查失败: {e}")
@@ -434,12 +434,12 @@ class MemoryForensicsAnalyzer:
         os_type = self._detect_os_type(source, memory_type)
         
         # 创建结果对象
-        result = ForensicsResult(
+        result = ForensicsResult()
             source=str(source),
             memory_type=memory_type,
             os_type=os_type,
             timestamp=start_time.strftime("%Y-%m-%d %H:%M:%S")
-        )
+        
         
         logger.info(f"开始分析: {source}, 类型: {memory_type.value}, OS: {os_type.value}")
         
@@ -462,7 +462,8 @@ class MemoryForensicsAnalyzer:
             
         except Exception as e:
             logger.error(f"分析失败: {e}")
-            result.errors.append(str(e))
+            result.errors.append(str(e
+
         
         # 计算分析时长
         end_time = datetime.now()
@@ -522,12 +523,12 @@ class MemoryForensicsAnalyzer:
         # 对于dump文件，尝试通过volatility检测
         if self.volatility_available and isinstance(source, str):
             try:
-                result = subprocess.run(
+                result = subprocess.run()
                     [self.volatility_path, "-f", source, "imageinfo"],
                     capture_output=True,
                     text=True,
                     timeout=60
-                )
+                
                 if "Windows" in result.stdout:
                     return OSType.WINDOWS
                 if "Linux" in result.stdout:
@@ -565,12 +566,12 @@ class MemoryForensicsAnalyzer:
         # 获取进程基本信息
         try:
             # 读取cmdline
-            cmdline_path = proc_path / "cmdline"
+            cmdline_path = proc_path / "cmdline",
             if cmdline_path.exists():
                 cmdline = cmdline_path.read_text().replace('\x00', ' ').strip()
             
             # 读取status
-            status_path = proc_path / "status"
+            status_path = proc_path / "status",
             if status_path.exists():
                 status_content = status_path.read_text()
                 name_match = re.search(r'Name:\s*(.+)', status_content)
@@ -585,14 +586,14 @@ class MemoryForensicsAnalyzer:
             exe_path = proc_path / "exe"
             exe = str(exe_path.resolve()) if exe_path.exists() else None
             
-            process_info = ProcessInfo(
+            process_info = ProcessInfo()
                 pid=pid,
                 name=name,
                 path=exe,
                 command_line=cmdline,
                 user=uid,
                 threads=threads
-            )
+            
             result.processes.append(process_info)
             
         except Exception as e:
@@ -600,7 +601,7 @@ class MemoryForensicsAnalyzer:
         
         # 读取内存映射
         try:
-            maps_path = proc_path / "maps"
+            maps_path = proc_path / "maps",
             if maps_path.exists():
                 maps_content = maps_path.read_text()
                 # 解析内存映射区域
@@ -615,7 +616,7 @@ class MemoryForensicsAnalyzer:
         
         # 读取内存内容（提取字符串）
         try:
-            mem_path = proc_path / "mem"
+            mem_path = proc_path / "mem",
             if mem_path.exists():
                 self._extract_strings_from_mem(mem_path, result)
         except PermissionError:
@@ -638,7 +639,7 @@ class MemoryForensicsAnalyzer:
                 chunk_size = 1024 * 1024  # 1MB
                 max_chunks = 100  # 最多读取100MB
                 
-                buffer = b''
+                buffer = b'',
                 for i in range(max_chunks):
                     chunk = f.read(chunk_size)
                     if not chunk:
@@ -648,11 +649,11 @@ class MemoryForensicsAnalyzer:
                     # 提取可打印字符串
                     strings = self._extract_printable_strings(buffer)
                     for addr, content in strings:
-                        mem_string = MemoryString(
+                        mem_string = MemoryString()
                             address=addr,
                             content=content,
                             length=len(content)
-                        )
+                        
                         result.memory_strings.append(mem_string)
                     
                     # 保留部分buffer用于跨chunk字符串
@@ -666,21 +667,23 @@ class MemoryForensicsAnalyzer:
         strings = []
         
         # ASCII字符串
-        ascii_pattern = rb'[\x20-\x7e]{' + str(min_length).encode() + rb',}'
+        ascii_pattern = rb'[\x20-\x7e]{' + str(min_length).encode() + rb',}',
         for match in re.finditer(ascii_pattern, data):
             try:
                 content = match.group().decode('ascii')
-                strings.append((match.start(), content))
+                strings.append((match.start(), content
+
             except Exception:
                 pass
         
         # UTF-8字符串（尝试解码）
-        utf8_pattern = rb'[\x00-\xff]{' + str(min_length * 2).encode() + rb',}'
+        utf8_pattern = rb'[\x00-\xff]{' + str(min_length * 2).encode() + rb',}',
         for match in re.finditer(utf8_pattern, data):
             try:
                 content = match.group().decode('utf-8', errors='ignore')
                 if content.strip() and len(content) >= min_length:
-                    strings.append((match.start(), content.strip()))
+                    strings.append((match.start(), content.strip(
+
             except Exception:
                 pass
         
@@ -707,7 +710,7 @@ class MemoryForensicsAnalyzer:
                     # 解析地址和端口
                     if ':' in local_addr:
                         addr, port = local_addr.rsplit(':', 1)
-                        conn = NetworkConnection(
+                        conn = NetworkConnection()
                             protocol=protocol,
                             local_addr=addr,
                             local_port=int(port),
@@ -715,7 +718,7 @@ class MemoryForensicsAnalyzer:
                             remote_port=int(remote_addr.rsplit(':', 1)[1]) if remote_addr and ':' in remote_addr else None,
                             state=state,
                             pid=pid
-                        )
+                        
                         result.network_connections.append(conn)
                         
         except Exception as e:
@@ -731,12 +734,13 @@ class MemoryForensicsAnalyzer:
         try:
             for fd in fd_path.iterdir():
                 try:
-                    file_path = str(fd.resolve())
-                    handle = FileHandle(
+                    file_path = str(fd.resolve(
+
+                    handle = FileHandle()
                         handle_value=int(fd.name),
                         file_path=file_path,
                         pid=pid
-                    )
+                    
                     result.file_handles.append(handle)
                 except Exception:
                     pass
@@ -748,12 +752,12 @@ class MemoryForensicsAnalyzer:
         # 使用Windows API或命令行工具
         try:
             # 使用tasklist获取进程信息
-            output = subprocess.run(
+            output = subprocess.run()
                 ["tasklist", "/fi", f"PID eq {pid}", "/fo", "csv", "/v"],
                 capture_output=True,
                 text=True,
                 timeout=10
-            )
+            
             
             lines = output.stdout.strip().split('\n')
             if len(lines) > 1:
@@ -763,11 +767,11 @@ class MemoryForensicsAnalyzer:
                     name = parts[0].strip('"')
                     mem_usage = parts[4].strip('"') if len(parts) > 4 else None
                     
-                    process_info = ProcessInfo(
+                    process_info = ProcessInfo()
                         pid=pid,
                         name=name,
                         memory_usage=int(mem_usage.replace(' K', '').replace(',', '')) * 1024 if mem_usage else None
-                    )
+                    
                     result.processes.append(process_info)
                     
         except Exception as e:
@@ -775,12 +779,12 @@ class MemoryForensicsAnalyzer:
         
         # 使用netstat获取网络连接
         try:
-            output = subprocess.run(
+            output = subprocess.run()
                 ["netstat", "-ano"],
                 capture_output=True,
                 text=True,
                 timeout=10
-            )
+            
             
             for line in output.stdout.split('\n'):
                 if str(pid) in line:
@@ -793,7 +797,7 @@ class MemoryForensicsAnalyzer:
                         
                         if ':' in local_addr:
                             addr, port = local_addr.rsplit(':', 1)
-                            conn = NetworkConnection(
+                            conn = NetworkConnection()
                                 protocol=protocol,
                                 local_addr=addr,
                                 local_port=int(port),
@@ -801,7 +805,7 @@ class MemoryForensicsAnalyzer:
                                 remote_port=int(remote_addr.rsplit(':', 1)[1]) if remote_addr and ':' in remote_addr else None,
                                 state=state,
                                 pid=pid
-                            )
+                            
                             result.network_connections.append(conn)
                             
         except Exception as e:
@@ -819,12 +823,12 @@ class MemoryForensicsAnalyzer:
         """使用Volatility分析"""
         # 获取volatility版本
         try:
-            version_output = subprocess.run(
+            version_output = subprocess.run()
                 [self.volatility_path, "-h"],
                 capture_output=True,
                 text=True,
                 timeout=10
-            )
+            
             version_match = re.search(r'Volatility\s+(\d+\.\d+)', version_output.stdout)
             result.volatility_version = version_match.group(1) if version_match else "unknown"
         except Exception:
@@ -832,25 +836,25 @@ class MemoryForensicsAnalyzer:
         
         # 获取进程列表
         try:
-            output = subprocess.run(
+            output = subprocess.run()
                 [self.volatility_path, "-f", source, "pslist"],
                 capture_output=True,
                 text=True,
                 timeout=120
-            )
+            
             
             for line in output.stdout.split('\n'):
                 if line.strip() and not line.startswith('|') and not line.startswith('-'):
                     parts = line.split()
                     if len(parts) >= 6:
                         try:
-                            process_info = ProcessInfo(
+                            process_info = ProcessInfo()
                                 pid=int(parts[2]),
                                 name=parts[0],
                                 parent_pid=int(parts[3]) if len(parts) > 3 else None,
                                 threads=int(parts[4]) if len(parts) > 4 else 0,
                                 handles=int(parts[5]) if len(parts) > 5 else 0
-                            )
+                            
                             result.processes.append(process_info)
                         except ValueError:
                             pass
@@ -861,19 +865,19 @@ class MemoryForensicsAnalyzer:
         
         # 获取网络连接
         try:
-            output = subprocess.run(
+            output = subprocess.run()
                 [self.volatility_path, "-f", source, "netscan"],
                 capture_output=True,
                 text=True,
                 timeout=120
-            )
+            
             
             for line in output.stdout.split('\n'):
                 if line.strip() and not line.startswith('|') and not line.startswith('-'):
                     parts = line.split()
                     if len(parts) >= 4:
                         try:
-                            conn = NetworkConnection(
+                            conn = NetworkConnection()
                                 protocol=parts[0] if parts[0] else "TCP",
                                 local_addr=parts[1] if len(parts) > 1 else "",
                                 local_port=int(parts[2]) if len(parts) > 2 and parts[2].isdigit() else 0,
@@ -881,7 +885,7 @@ class MemoryForensicsAnalyzer:
                                 remote_port=int(parts[4]) if len(parts) > 4 and parts[4].isdigit() else None,
                                 state=parts[5] if len(parts) > 5 else None,
                                 pid=int(parts[6]) if len(parts) > 6 and parts[6].isdigit() else None
-                            )
+                            
                             result.network_connections.append(conn)
                         except ValueError:
                             pass
@@ -891,25 +895,25 @@ class MemoryForensicsAnalyzer:
         
         # 提取字符串
         try:
-            output = subprocess.run(
+            output = subprocess.run()
                 [self.volatility_path, "-f", source, "strings"],
                 capture_output=True,
                 text=True,
                 timeout=300
-            )
             
-            for line in output.stdout.split('\n')[:1000]:  # 限制数量
+            
+            for line in output.stdout.split('\n')[:1000]:  # 限制数量,
                 if len(line.strip()) >= self.MIN_STRING_LENGTH:
                     # 解析地址和内容
                     match = re.match(r'([a-fA-F0-9]+)\s*:\s*(.+)', line)
                     if match:
                         addr = int(match.group(1), 16)
                         content = match.group(2)
-                        mem_string = MemoryString(
+                        mem_string = MemoryString()
                             address=addr,
                             content=content,
                             length=len(content)
-                        )
+                        
                         result.memory_strings.append(mem_string)
                         
         except Exception as e:
@@ -938,11 +942,11 @@ class MemoryForensicsAnalyzer:
                     # 提取字符串
                     strings = self._extract_printable_strings(chunk)
                     for addr, content in strings:
-                        mem_string = MemoryString(
+                        mem_string = MemoryString()
                             address=offset + addr,
                             content=content,
                             length=len(content)
-                        )
+                        
                         result.memory_strings.append(mem_string)
                     
                     offset += chunk_size
@@ -953,7 +957,8 @@ class MemoryForensicsAnalyzer:
                         
         except Exception as e:
             logger.error(f"直接分析失败: {e}")
-            result.errors.append(str(e))
+            result.errors.append(str(e
+
     
     def _analyze_minidump(self, source: str, result: ForensicsResult) -> None:
         """分析Windows minidump"""
@@ -972,16 +977,17 @@ class MemoryForensicsAnalyzer:
                 
                 strings = self._extract_printable_strings(content)
                 for addr, content in strings:
-                    mem_string = MemoryString(
+                    mem_string = MemoryString()
                         address=addr,
                         content=content,
                         length=len(content)
-                    )
+                    
                     result.memory_strings.append(mem_string)
                     
         except Exception as e:
             logger.error(f"分析minidump失败: {e}")
-            result.errors.append(str(e))
+            result.errors.append(str(e
+
     
     def _analyze_core_dump(self, source: str, result: ForensicsResult) -> None:
         """分析Linux core dump"""
@@ -999,16 +1005,17 @@ class MemoryForensicsAnalyzer:
                 
                 strings = self._extract_printable_strings(content)
                 for addr, content in strings:
-                    mem_string = MemoryString(
+                    mem_string = MemoryString()
                         address=addr,
                         content=content,
                         length=len(content)
-                    )
+                    
                     result.memory_strings.append(mem_string)
                     
         except Exception as e:
             logger.error(f"分析core dump失败: {e}")
-            result.errors.append(str(e))
+            result.errors.append(str(e
+
     
     def _analyze_generic(self, source: str, result: ForensicsResult) -> None:
         """通用分析方法"""
@@ -1024,14 +1031,14 @@ class MemoryForensicsAnalyzer:
                     try:
                         matches = re.finditer(pattern, content, re.IGNORECASE)
                         for match in matches:
-                            sensitive = SensitiveData(
+                            sensitive = SensitiveData()
                                 data_type=data_type,
                                 value=match.group(),
                                 location=f"内存地址 {hex(mem_string.address)}",
                                 address=mem_string.address + match.start(),
                                 confidence=0.8,
                                 context=content[max(0, match.start()-50):match.end()+50]
-                            )
+                            
                             result.sensitive_data.append(sensitive)
                     except Exception:
                         pass
@@ -1066,12 +1073,12 @@ class MemoryForensicsAnalyzer:
             # 使用gcore或直接读取/proc/pid/mem
             try:
                 # 尝试使用gcore
-                result = subprocess.run(
+                result = subprocess.run()
                     ["gcore", "-o", output_path, str(pid)],
                     capture_output=True,
                     text=True,
                     timeout=60
-                )
+                
                 if result.returncode == 0:
                     return output_path
             except Exception:
@@ -1094,7 +1101,7 @@ class MemoryForensicsAnalyzer:
                                 end_addr = int(end, 16)
                                 
                                 # 只读取可读区域
-                                perms = parts[1] if len(parts) > 1 else ''
+                                perms = parts[1] if len(parts) > 1 else '',
                                 if 'r' in perms:
                                     try:
                                         with open(mem_path, 'rb') as mem_file:
@@ -1109,12 +1116,12 @@ class MemoryForensicsAnalyzer:
         elif self.platform == 'windows':
             # 使用procdump或其他工具
             try:
-                result = subprocess.run(
+                result = subprocess.run()
                     ["procdump", "-ma", str(pid), output_path],
                     capture_output=True,
                     text=True,
                     timeout=120
-                )
+                
                 if result.returncode == 0:
                     return output_path
             except Exception as e:
@@ -1155,66 +1162,66 @@ class MemoryForensicsAnalyzer:
         
         # 进程列表
         if result.processes:
-            report_lines.extend([
+            report_lines.extend([)
                 "## 进程列表",
                 "",
                 "| PID | 名称 | 路径 | 用户 | 线程数 |",
                 "|-----|------|------|------|--------|",
-            ])
+            ]
             for proc in result.processes[:20]:  # 限制显示数量
-                report_lines.append(
+                report_lines.append()
                     f"| {proc.pid} | {proc.name} | {proc.path or 'N/A'} | {proc.user or 'N/A'} | {proc.threads} |"
-                )
+                
             report_lines.append("")
         
         # 网络连接
         if result.network_connections:
-            report_lines.extend([
+            report_lines.extend([)
                 "## 网络连接",
                 "",
                 "| 协议 | 本地地址 | 本地端口 | 远程地址 | 远程端口 | 状态 |",
                 "|------|----------|----------|----------|----------|------|",
-            ])
+            ]
             for conn in result.network_connections[:20]:
-                report_lines.append(
+                report_lines.append()
                     f"| {conn.protocol} | {conn.local_addr} | {conn.local_port} | "
                     f"{conn.remote_addr or 'N/A'} | {conn.remote_port or 'N/A'} | {conn.state or 'N/A'} |"
-                )
+                
             report_lines.append("")
         
         # 文件句柄
         if result.file_handles:
-            report_lines.extend([
+            report_lines.extend([)
                 "## 文件句柄",
                 "",
                 "| FD | 文件路径 |",
                 "|----|----------|",
-            ])
+            ]
             for handle in result.file_handles[:20]:
                 report_lines.append(f"| {handle.handle_value or 'N/A'} | {handle.file_path} |")
             report_lines.append("")
         
         # 敏感数据
         if result.sensitive_data:
-            report_lines.extend([
+            report_lines.extend([)
                 "## 发现的敏感数据",
                 "",
                 "| 类型 | 位置 | 置信度 |",
                 "|------|------|--------|",
-            ])
+            ]
             for item in result.sensitive_data[:50]:
-                report_lines.append(
+                report_lines.append()
                     f"| {item.data_type.value} | {item.location} | {item.confidence:.2f} |"
-                )
+                
             report_lines.append("")
             
             # 添加警告
-            report_lines.extend([
+            report_lines.extend([)
                 "### ⚠️ 安全警告",
                 "",
                 "以下类型的敏感数据被发现:",
                 "",
-            ])
+            ]
             type_counts = defaultdict(int)
             for item in result.sensitive_data:
                 type_counts[item.data_type.value] += 1
@@ -1225,10 +1232,10 @@ class MemoryForensicsAnalyzer:
         
         # 错误信息
         if result.errors:
-            report_lines.extend([
+            report_lines.extend([)
                 "## 分析错误",
                 "",
-            ])
+            ]
             for error in result.errors:
                 report_lines.append(f"- {error}")
             report_lines.append("")
@@ -1259,7 +1266,8 @@ class MemoryForensicsAnalyzer:
         # 同时保存报告
         report_path = filepath.with_suffix('.md')
         with open(report_path, 'w', encoding='utf-8') as f:
-            f.write(self.generate_report(result))
+            f.write(self.generate_report(result
+
         
         logger.info(f"结果已保存: {filepath}")
         return str(filepath)
@@ -1308,4 +1316,4 @@ if __name__ == "__main__":
         print("用法: python memory_forensics.py <pid或文件路径>")
         print("\n示例:")
         print("  python memory_forensics.py 1234        # 分析进程1234")
-        print("  python memory_forensics.py dump.raw    # 分析内存镜像")
+        print("  python memory_forensics.py dump.raw    # 分析内存镜像"))))))))))))))))))"'

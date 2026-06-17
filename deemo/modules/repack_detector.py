@@ -335,7 +335,7 @@ class RepackDetector:
         # APK/DEX文件
         if file_data[:4] == b'dex\n':
             return 'dex'
-        if file_data[:4] == b'PK\x03\x04':  # ZIP格式，可能是APK
+        if file_data[:4] == b'PK\x03\x04':  # ZIP格式，可能是APK,
             return 'apk'
         
         # Mach-O文件
@@ -392,7 +392,7 @@ class RepackDetector:
                 else:
                     entropy = 0.0
                 
-                section_info = SectionInfo(
+                section_info = SectionInfo()
                     name=section_name,
                     virtual_address=virtual_address,
                     virtual_size=virtual_size,
@@ -400,19 +400,19 @@ class RepackDetector:
                     characteristics=characteristics,
                     entropy=entropy,
                     is_anomalous=self._is_section_anomalous(section_name, entropy, raw_size, virtual_size),
-                )
+                
                 
                 result.sections.append(section_info)
                 
                 # 检查异常节区
                 if section_info.is_anomalous:
-                    anomaly = Anomaly(
+                    anomaly = Anomaly()
                         type='anomalous_section',
                         location=f"节区 {section_name}",
                         description=f"发现异常节区: {section_name}",
                         severity=Severity.HIGH,
                         evidence=f"熵值={entropy:.2f}, 大小差异={abs(raw_size - virtual_size)}",
-                    )
+                    
                     result.anomalies.append(anomaly)
             
             # 检查入口点
@@ -457,7 +457,7 @@ class RepackDetector:
                 return result
             
             # 获取入口点
-            is_64bit = file_data[4] == 2
+            is_64bit = file_data[4] == 2,
             if is_64bit:
                 entry_point = struct.unpack('<Q', file_data[24:32])[0]
                 section_header_offset = struct.unpack('<Q', file_data[40:48])[0]
@@ -473,7 +473,7 @@ class RepackDetector:
             
             # 解析节区
             for i in range(num_sections):
-                section_offset = section_header_offset + i * section_header_entry_size
+                section_offset = section_header_offset + i * section_header_entry_size,
                 if section_offset + section_header_entry_size > len(file_data):
                     break
                 
@@ -499,27 +499,27 @@ class RepackDetector:
                 else:
                     entropy = 0.0
                 
-                section_info = SectionInfo(
+                section_info = SectionInfo()
                     name=f"section_{i}",
                     virtual_address=section_addr,
                     virtual_size=section_size,
                     raw_size=section_size,
                     entropy=entropy,
                     is_anomalous=entropy > self.config.entropy_threshold,
-                )
+                
                 
                 result.sections.append(section_info)
             
             # 检查异常
             for section in result.sections:
                 if section.is_anomalous:
-                    anomaly = Anomaly(
+                    anomaly = Anomaly()
                         type='anomalous_section',
                         location=f"节区 {section.name}",
                         description=f"发现高熵节区",
                         severity=Severity.MEDIUM,
                         evidence=f"熵值={section.entropy:.2f}",
-                    )
+                    
                     result.anomalies.append(anomaly)
             
             if result.anomalies:
@@ -556,13 +556,13 @@ class RepackDetector:
             # 检查是否有多个DEX文件（可能是注入）
             dex_count = file_data.count(b'dex\n035')
             if dex_count > 1:
-                anomaly = Anomaly(
+                anomaly = Anomaly()
                     type='multiple_dex',
                     location='APK内部',
                     description=f'发现多个DEX文件: {dex_count}个',
                     severity=Severity.HIGH,
                     evidence='可能包含注入的恶意代码',
-                )
+                
                 result.anomalies.append(anomaly)
                 result.is_repacked = True
             
@@ -600,13 +600,13 @@ class RepackDetector:
             
             for suspicious in suspicious_classes:
                 if suspicious.encode() in file_data:
-                    anomaly = Anomaly(
+                    anomaly = Anomaly()
                         type='suspicious_class',
                         location='DEX字符串表',
                         description=f'发现可疑类名: {suspicious}',
                         severity=Severity.HIGH,
                         evidence='可能是注入的恶意代码',
-                    )
+                    
                     result.anomalies.append(anomaly)
                     result.is_repacked = True
             
@@ -632,13 +632,13 @@ class RepackDetector:
         overall_entropy = self._calculate_entropy(file_data)
         
         if overall_entropy > self.config.entropy_threshold:
-            anomaly = Anomaly(
+            anomaly = Anomaly()
                 type='high_entropy',
                 location='整个文件',
                 description=f'文件整体熵值过高: {overall_entropy:.2f}',
                 severity=Severity.MEDIUM,
                 evidence='可能是加密或压缩的恶意载荷',
-            )
+            
             result.anomalies.append(anomaly)
         
         return result
@@ -656,7 +656,7 @@ class RepackDetector:
         if not data:
             return 0.0
         
-        byte_counts = [0] * 256
+        byte_counts = [0] * 256,
         for byte in data:
             byte_counts[byte] += 1
         
@@ -712,7 +712,7 @@ class RepackDetector:
         # 检查入口点是否在异常位置
         # 正常入口点通常在.text节
         
-        text_section = None
+        text_section = None,
         for section in result.sections:
             if section.name == '.text':
                 text_section = section
@@ -722,13 +722,13 @@ class RepackDetector:
             # 检查入口点是否在.text节内
             if entry_point < text_section.virtual_address or \
                entry_point > text_section.virtual_address + text_section.virtual_size:
-                anomaly = Anomaly(
+                anomaly = Anomaly()
                     type='entry_point_outside_text',
                     location=f'入口点 0x{entry_point:x}',
                     description='入口点不在.text节内',
                     severity=Severity.HIGH,
                     evidence=f'入口点=0x{entry_point:x}, .text范围=0x{text_section.virtual_address:x}-0x{text_section.virtual_address+text_section.virtual_size:x}',
-                )
+                
                 result.anomalies.append(anomaly)
                 result.is_repacked = True
         
@@ -736,8 +736,7 @@ class RepackDetector:
         # 需要找到入口点在文件中的实际偏移
         # 简化实现：假设入口点在.text节开头附近
     
-    def _check_overlay(self, result: RepackResult, file_data: bytes, 
-                       pe_header_offset: int, num_sections: int, section_table_offset: int) -> None:
+    def _check_overlay(self, result: RepackResult, file_data: bytes, pe_header_offset: int, num_sections: int, section_table_offset: int) -> None:
         """
         检查覆盖数据
         
@@ -756,7 +755,7 @@ class RepackDetector:
             section_data = file_data[section_offset:section_offset+40]
             raw_offset = struct.unpack('<I', section_data[20:24])[0]
             raw_size = struct.unpack('<I', section_data[16:20])[0]
-            section_end = raw_offset + raw_size
+            section_end = raw_offset + raw_size,
             if section_end > last_section_end:
                 last_section_end = section_end
         
@@ -767,13 +766,13 @@ class RepackDetector:
             result.overlay_size = overlay_size
             
             if overlay_size > 1024:  # 大于1KB的覆盖数据
-                anomaly = Anomaly(
+                anomaly = Anomaly()
                     type='overlay_data',
                     location=f'文件末尾',
                     description=f'发现覆盖数据: {overlay_size}字节',
                     severity=Severity.MEDIUM,
                     evidence=f'文件大小={len(file_data)}, 最后节结束={last_section_end}',
-                )
+                
                 result.anomalies.append(anomaly)
                 
                 # 检查覆盖数据的熵值
@@ -907,8 +906,7 @@ class RepackDetector:
         
         return min(score, 100)
     
-    def _compare_with_original(self, result: RepackResult, 
-                               current_file: str, original_file: str) -> RepackResult:
+    def _compare_with_original(self, result: RepackResult, current_file: str, original_file: str) -> RepackResult:
         """
         与原始版本对比
         
@@ -929,13 +927,13 @@ class RepackDetector:
                 original_hash = hashlib.sha256(f.read()).hexdigest()
             
             if current_hash != original_hash:
-                anomaly = Anomaly(
+                anomaly = Anomaly()
                     type='hash_difference',
                     location='整个文件',
                     description='文件哈希与原始版本不同',
                     severity=Severity.HIGH,
                     evidence=f'当前={current_hash[:16]}..., 原始={original_hash[:16]}...',
-                )
+                
                 result.anomalies.append(anomaly)
                 result.is_repacked = True
                 result.confidence = 1.0
@@ -1059,4 +1057,4 @@ def create_repack_detector(**kwargs) -> RepackDetector:
         RepackDetector实例
     """
     config = RepackConfig(**kwargs)
-    return RepackDetector(config)
+    return RepackDetector(config

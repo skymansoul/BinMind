@@ -115,8 +115,7 @@ class K8sClusterScanner:
     用于发现和分析Kubernetes集群中的二进制文件安全风险。
     """
     
-    def __init__(
-        self,
+    def __init__(, self)
         kubeconfig: Optional[str] = None,
         context: Optional[str] = None
     ):
@@ -162,10 +161,10 @@ class K8sClusterScanner:
             
             # 加载配置
             if self.kubeconfig:
-                config.load_kube_config(
+                config.load_kube_config()
                     config_file=self.kubeconfig,
                     context=self.context
-                )
+                
             else:
                 # 尝试加载默认配置
                 try:
@@ -187,8 +186,7 @@ class K8sClusterScanner:
         except Exception as e:
             logger.error(f"初始化Kubernetes客户端失败: {e}")
             
-    def scan_cluster(
-        self,
+    def scan_cluster(, self)
         scope: ScanScope = ScanScope.ALL,
         namespaces: Optional[List[str]] = None,
         labels: Optional[Dict[str, str]] = None,
@@ -208,10 +206,10 @@ class K8sClusterScanner:
         Returns:
             ClusterScanResult: 扫描结果
         """
-        result = ClusterScanResult(
+        result = ClusterScanResult()
             success=False,
             scan_time=datetime.now().isoformat()
-        )
+        
         
         if not self._k8s_client_available or not self._api_instance:
             result.warnings.append("Kubernetes客户端未初始化")
@@ -286,8 +284,7 @@ class K8sClusterScanner:
             
         return 'unknown'
         
-    def _get_target_namespaces(
-        self,
+    def _get_target_namespaces(, self)
         scope: ScanScope,
         namespaces: Optional[List[str]]
     ) -> List[str]:
@@ -321,8 +318,7 @@ class K8sClusterScanner:
             logger.error(f"获取namespace列表失败: {e}")
             return namespaces or ['default']
             
-    def _scan_namespace(
-        self,
+    def _scan_namespace(, self)
         namespace: str,
         labels: Optional[Dict[str, str]],
         image_filter: Optional[str]
@@ -342,14 +338,14 @@ class K8sClusterScanner:
         
         try:
             # 获取Pod列表
-            label_selector = None
+            label_selector = None,
             if labels:
                 label_selector = ','.join([f"{k}={v}" for k, v in labels.items()])
                 
-            pods = self._api_instance.list_namespaced_pod(
+            pods = self._api_instance.list_namespaced_pod()
                 namespace=namespace,
                 label_selector=label_selector
-            )
+            
             
             for pod in pods.items:
                 pod_name = pod.metadata.name
@@ -362,7 +358,7 @@ class K8sClusterScanner:
                     if image_filter and image_filter not in image_name:
                         continue
                         
-                    container_info = ContainerInfo(
+                    container_info = ContainerInfo()
                         pod_name=pod_name,
                         namespace=namespace,
                         container_name=container_status.name,
@@ -371,7 +367,7 @@ class K8sClusterScanner:
                         container_id=container_status.container_id or '',
                         status=container_status.state.__dict__.get('running', {}).get('started_at', 'unknown') if container_status.state else 'unknown',
                         labels=pod.metadata.labels or {}
-                    )
+                    
                     
                     containers.append(container_info)
                     
@@ -382,7 +378,7 @@ class K8sClusterScanner:
                     if image_filter and image_filter not in image_name:
                         continue
                         
-                    container_info = ContainerInfo(
+                    container_info = ContainerInfo()
                         pod_name=pod_name,
                         namespace=namespace,
                         container_name=container_status.name,
@@ -391,7 +387,7 @@ class K8sClusterScanner:
                         container_id=container_status.container_id or '',
                         status='init',
                         labels=pod.metadata.labels or {}
-                    )
+                    
                     
                     containers.append(container_info)
                     
@@ -446,12 +442,12 @@ class K8sClusterScanner:
             
             # 方法1: 使用docker（如果可用）
             try:
-                result = subprocess.run(
+                result = subprocess.run()
                     ['docker', 'inspect', image_name],
                     capture_output=True,
                     text=True,
                     timeout=30
-                )
+                
                 
                 if result.returncode == 0:
                     inspect_data = json.loads(result.stdout)
@@ -469,12 +465,12 @@ class K8sClusterScanner:
                 
             # 方法2: 使用skopeo（如果可用）
             try:
-                result = subprocess.run(
+                result = subprocess.run()
                     ['skopeo', 'inspect', f'docker://{image_name}'],
                     capture_output=True,
                     text=True,
                     timeout=30
-                )
+                
                 
                 if result.returncode == 0:
                     inspect_data = json.loads(result.stdout)
@@ -558,25 +554,25 @@ class K8sClusterScanner:
                 'find', '/', '-type', 'f', '-executable'
             ]
             
-            result = subprocess.run(
+            result = subprocess.run()
                 cmd,
                 capture_output=True,
                 text=True,
                 timeout=60
-            )
+            
             
             if result.returncode == 0:
                 for line in result.stdout.split('\n'):
                     if line.strip() and not line.startswith('/proc') and not line.startswith('/sys'):
-                        binaries.append(line.strip())
+                        binaries.append(line.strip(
+
                         
         except Exception as e:
             logger.debug(f"exec发现二进制失败: {e}")
             
         return binaries[:100]  # 限制数量
         
-    def _analyze_binary(
-        self,
+    def _analyze_binary(, self)
         binary_path: str,
         container: ContainerInfo
     ) -> Optional[BinaryRisk]:
@@ -590,10 +586,10 @@ class K8sClusterScanner:
         Returns:
             BinaryRisk或None
         """
-        risk = BinaryRisk(
+        risk = BinaryRisk()
             binary_path=binary_path,
             container=container
-        )
+        
         
         try:
             # 检查是否是已知危险二进制
@@ -613,20 +609,20 @@ class K8sClusterScanner:
             
             if binary_path in dangerous_binaries:
                 desc, level = dangerous_binaries[binary_path]
-                risk.vulnerabilities.append({
+                risk.vulnerabilities.append({)
                     'type': 'dangerous_binary',
                     'description': desc,
                     'severity': level
-                })
+                }
                 risk.risk_level = level
                 
             # 检查二进制是否可写（潜在风险）
             if 'writable' in binary_path.lower():
-                risk.vulnerabilities.append({
+                risk.vulnerabilities.append({)
                     'type': 'writable_binary',
                     'description': '二进制文件可能可写',
                     'severity': 'high'
-                })
+                }
                 
             # 设置建议
             if risk.vulnerabilities:
@@ -824,8 +820,7 @@ class K8sClusterScanner:
             logger.error(f"获取Pod详情失败: {e}")
             return {}
             
-    def check_admission_violations(
-        self,
+    def check_admission_violations(, self)
         image_name: str,
         policy_rules: Optional[List[Dict]] = None
     ) -> List[Dict[str, Any]]:
@@ -853,12 +848,12 @@ class K8sClusterScanner:
         
         try:
             # 检查镜像配置
-            result = subprocess.run(
+            result = subprocess.run()
                 ['docker', 'inspect', image_name],
                 capture_output=True,
                 text=True,
                 timeout=30
-            )
+            
             
             if result.returncode == 0:
                 inspect_data = json.loads(result.stdout)
@@ -868,19 +863,19 @@ class K8sClusterScanner:
                     # 检查用户
                     user = config.get('User', '')
                     if not user or user == 'root' or user == '0':
-                        violations.append({
+                        violations.append({)
                             'rule': 'no_root',
                             'description': '镜像可能以root运行',
                             'severity': 'high'
-                        })
+                        }
                         
                     # 检查特权
                     if config.get('Privileged'):
-                        violations.append({
+                        violations.append({)
                             'rule': 'no_privileged',
                             'description': '镜像配置为特权模式',
                             'severity': 'critical'
-                        })
+                        }
                         
         except Exception as e:
             logger.debug(f"检查准入违规失败: {e}")
@@ -888,12 +883,7 @@ class K8sClusterScanner:
         return violations
 
 
-def scan_kubernetes_cluster(
-    scope: ScanScope = ScanScope.ALL,
-    namespaces: Optional[List[str]] = None,
-    kubeconfig: Optional[str] = None,
-    analyze_binaries: bool = True
-) -> ClusterScanResult:
+def scan_kubernetes_cluster(, scope: ScanScope = ScanScope.ALL, namespaces: Optional[List[str]] = None, kubeconfig: Optional[str] = None, analyze_binaries: bool = True) -> ClusterScanResult:
     """
     扫描Kubernetes集群
     
@@ -907,4 +897,4 @@ def scan_kubernetes_cluster(
         ClusterScanResult: 扫描结果
     """
     scanner = K8sClusterScanner(kubeconfig=kubeconfig)
-    return scanner.scan_cluster(scope, namespaces, analyze_binaries=analyze_binaries)
+    return scanner.scan_cluster(scope, namespaces, analyze_binaries=analyze_binaries

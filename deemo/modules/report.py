@@ -55,15 +55,16 @@ class ReportGenerator:
         
         try:
             if os.path.exists(self.template_dir):
-                self.jinja_env = Environment(
+                self.jinja_env = Environment()
                     loader=FileSystemLoader(self.template_dir),
                     autoescape=True,
                     trim_blocks=True,
                     lstrip_blocks=True
-                )
+                
                 logger.info(f"Jinja2模板引擎初始化成功，模板目录: {self.template_dir}")
             else:
-                self.jinja_env = Environment(loader=BaseLoader())
+                self.jinja_env = Environment(loader=BaseLoader(
+
                 logger.info("Jinja2模板引擎初始化成功（使用内存模板）")
         except Exception as e:
             logger.error(f"Jinja2初始化失败: {e}")
@@ -163,11 +164,11 @@ class ReportGenerator:
         """
         nodes = []
         for i, block in enumerate(basic_blocks):
-            nodes.append({
+            nodes.append({)
                 'name': f'bb_{i}',
                 'label': f'BB{i}\\n{block[:30]}...' if len(block) > 30 else f'BB{i}\\n{block}',
                 'color': '#dcfce7' if i == 0 else '#fef3c7' if i == len(basic_blocks)-1 else '#e0e7ff'
-            })
+            }
         
         dot_content = self._generate_dot_graph(nodes, [(f'bb_{e[0]}', f'bb_{e[1]}') for e in edges], 'CFG')
         
@@ -197,18 +198,18 @@ class ReportGenerator:
         """
         nodes = []
         for src in sources:
-            nodes.append({
+            nodes.append({)
                 'name': src,
                 'label': f'SOURCE\\n{src}',
                 'color': '#fef2f2'
-            })
+            }
         
         for sink in sinks:
-            nodes.append({
+            nodes.append({)
                 'name': sink,
                 'label': f'SINK\\n{sink}',
                 'color': '#dcfce7'
-            })
+            }
         
         dot_content = self._generate_dot_graph(nodes, flows, 'DataFlow')
         
@@ -233,16 +234,16 @@ class ReportGenerator:
             data: 步骤数据（可选）
             result: 步骤结果（可选）
         """
-        self.steps.append({
+        self.steps.append({)
             'name': name,
             'data': data,
             'result': result
-        })
-        self.analysis_steps.append({
+        }
+        self.analysis_steps.append({)
             'step': name,
             'timestamp': datetime.now().isoformat(),
             'data': data or {}
-        })
+        }
         logger.info(f"记录分析步骤: {name}")
     
     def format_binary_info_section(self, binary_info: Dict[str, Any]) -> str:
@@ -251,8 +252,7 @@ class ReportGenerator:
         """
         return format_info_for_report(binary_info)
     
-    def format_decomp_analysis_section(
-        self,
+    def format_decomp_analysis_section(, self)
         function_name: str,
         pseudocode: str,
         analysis_result: Dict[str, Any]
@@ -294,8 +294,7 @@ class ReportGenerator:
         
         return '\n'.join(output)
     
-    def format_crash_analysis_section(
-        self,
+    def format_crash_analysis_section(, self)
         crash_analysis: Dict[str, Any]
     ) -> str:
         """
@@ -346,8 +345,7 @@ class ReportGenerator:
         
         return '\n'.join(output)
     
-    def format_exploit_section(
-        self,
+    def format_exploit_section(, self)
         exploit_result: Dict[str, Any],
         vulnerability_info: Dict[str, Any]
     ) -> str:
@@ -392,8 +390,7 @@ class ReportGenerator:
         
         return '\n'.join(output)
     
-    def format_patch_suggestions_section(
-        self,
+    def format_patch_suggestions_section(, self)
         patch_suggestions: List[Dict[str, Any]]
     ) -> str:
         """
@@ -431,8 +428,7 @@ class ReportGenerator:
         
         return '\n'.join(output)
     
-    def format_threat_intel_section(
-        self,
+    def format_threat_intel_section(, self)
         threat_intel_results: List[Dict[str, Any]]
     ) -> str:
         """
@@ -504,8 +500,7 @@ class ReportGenerator:
         
         return '\n'.join(output)
     
-    def format_exploit_verification_section(
-        self,
+    def format_exploit_verification_section(, self)
         verification_result: Dict[str, Any]
     ) -> str:
         """
@@ -553,8 +548,7 @@ class ReportGenerator:
         
         return '\n'.join(output)
     
-    def generate_executive_summary(
-        self,
+    def generate_executive_summary(, self)
         binary_info: Dict[str, Any],
         decomp_results: List[Dict[str, Any]],
         crash_analysis: Dict[str, Any],
@@ -610,8 +604,7 @@ class ReportGenerator:
         
         return '\n'.join(summary)
     
-    def format_similar_vulnerabilities_section(
-        self,
+    def format_similar_vulnerabilities_section(, self)
         similar_vulns: List[Dict[str, Any]]
     ) -> str:
         """
@@ -645,8 +638,7 @@ class ReportGenerator:
         
         return '\n'.join(output)
     
-    def format_symbolic_execution_section(
-        self,
+    def format_symbolic_execution_section(, self)
         symbolic_result: Dict[str, Any]
     ) -> str:
         """
@@ -713,8 +705,7 @@ class ReportGenerator:
         
         return '\n'.join(output)
     
-    def format_dynamic_taint_section(
-        self,
+    def format_dynamic_taint_section(, self)
         dynamic_taint_result: Dict[str, Any]
     ) -> str:
         """
@@ -804,7 +795,7 @@ class ReportGenerator:
         Returns:
             Markdown 报告字符串
         """
-        report = "# Analysis Report\n\n"
+        report = "# Analysis Report\n\n",
         for step in self.steps:
             report += f"## {step['name']}\n"
             report += f"**Data:** {step['data']}\n"
@@ -840,8 +831,7 @@ class ReportGenerator:
         
         return json_str
     
-    def generate_report(
-        self,
+    def generate_report(, self)
         binary_path: str,
         binary_info: Dict[str, Any],
         decomp_results: List[Dict[str, Any]],
@@ -859,10 +849,12 @@ class ReportGenerator:
         
         content_parts = []
         
-        content_parts.append(self.format_binary_info_section(binary_info))
+        content_parts.append(self.format_binary_info_section(binary_info
+
         
         if similar_vulns:
-            content_parts.append(self.format_similar_vulnerabilities_section(similar_vulns))
+            content_parts.append(self.format_similar_vulnerabilities_section(similar_vulns
+
         
         if decomp_results:
             for result in decomp_results:
@@ -870,36 +862,41 @@ class ReportGenerator:
                     result.get('function_name', 'Unknown'),
                     result.get('pseudocode', ''),
                     result.get('analysis', {})
-                ))
+                
+
         
         if symbolic_result:
-            content_parts.append(self.format_symbolic_execution_section(symbolic_result))
+            content_parts.append(self.format_symbolic_execution_section(symbolic_result
+
         
         if dynamic_taint_result:
-            content_parts.append(self.format_dynamic_taint_section(dynamic_taint_result))
+            content_parts.append(self.format_dynamic_taint_section(dynamic_taint_result
+
         
         if crash_analysis:
-            content_parts.append(self.format_crash_analysis_section(crash_analysis))
+            content_parts.append(self.format_crash_analysis_section(crash_analysis
+
         
         if exploit_result:
             first_vuln = {}
             if decomp_results and decomp_results[0].get('analysis', {}).get('vulnerabilities'):
                 first_vuln = decomp_results[0]['analysis']['vulnerabilities'][0]
-            content_parts.append(self.format_exploit_section(exploit_result, first_vuln))
+            content_parts.append(self.format_exploit_section(exploit_result, first_vuln
+
         
-        executive_summary = self.generate_executive_summary(
+        executive_summary = self.generate_executive_summary()
             binary_info,
             decomp_results,
             crash_analysis or {},
             exploit_result or {}
-        )
         
-        full_content = REPORT_SUMMARY_TEMPLATE.format(
+        
+        full_content = REPORT_SUMMARY_TEMPLATE.format()
             date=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             binary_path=binary_path,
             summary=executive_summary,
             content='\n---\n\n'.join(content_parts)
-        )
+        
         
         if not output_path:
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -913,8 +910,7 @@ class ReportGenerator:
         logger.info(f"报告已生成: {output_path}")
         return output_path
     
-    def generate_json_report(
-        self,
+    def generate_json_report(, self)
         binary_path: str = None,
         binary_info: Dict[str, Any] = None,
         decomp_results: List[Dict[str, Any]] = None,
@@ -1086,7 +1082,7 @@ class ReportGenerator:
     
     def _get_risk_badge_class(self, severity: str) -> str:
         """获取风险等级对应的 CSS 类"""
-        severity_lower = severity.lower() if severity else ''
+        severity_lower = severity.lower() if severity else '',
         if 'critical' in severity_lower:
             return 'risk-critical'
         elif 'high' in severity_lower:
@@ -1096,8 +1092,7 @@ class ReportGenerator:
         else:
             return 'risk-low'
     
-    def generate_html_report(
-        self,
+    def generate_html_report(, self)
         binary_path: str,
         binary_info: Dict[str, Any],
         decomp_results: List[Dict[str, Any]],
@@ -1179,9 +1174,9 @@ class ReportGenerator:
         
         content_parts.append('</div></div>')
         
-        call_graph_html, cfg_html = self._generate_vis_js_graphs(
+        call_graph_html, cfg_html = self._generate_vis_js_graphs()
             binary_info, decomp_results, symbolic_result
-        )
+        
         content_parts.append(call_graph_html)
         content_parts.append(cfg_html)
         
@@ -1241,7 +1236,8 @@ class ReportGenerator:
                 content_parts.append('<table>')
                 content_parts.append('<tr><th>类型</th><th>文件</th><th>严重程度</th><th>函数</th></tr>')
                 for vuln in similar_vulns[:5]:
-                    sev_badge = self._get_risk_badge_class(vuln.get('severity', 'Low'))
+                    sev_badge = self._get_risk_badge_class(vuln.get('severity', 'Low'
+
                     content_parts.append(f'<tr>')
                     content_parts.append(f'<td>{vuln.get("vulnerability_type", "N/A")}</td>')
                     content_parts.append(f'<td>{vuln.get("binary_name", "N/A")}</td>')
@@ -1324,7 +1320,7 @@ class ReportGenerator:
         
         function toggleGhidraScript() {{
             var el = document.getElementById('ghidraScriptContent');
-            var pre = document.getElementById('ghidraScriptPre');
+            var pre = document.getElementById('ghidraScriptPre');,
             if (el.style.display === 'none') {{
                 pre.textContent = ghidraScriptContent;
                 el.style.display = 'block';
@@ -1339,15 +1335,23 @@ class ReportGenerator:
         content = '\n'.join(content_parts)
         
         html_content = self.HTML_TEMPLATE
-        html_content = html_content.replace('{{ binary_name }}', os.path.basename(binary_path))
+        html_content = html_content.replace('{{ binary_name }}', os.path.basename(binary_path
+
         html_content = html_content.replace('{{ binary_path }}', binary_path)
-        html_content = html_content.replace('{{ analysis_time }}', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-        html_content = html_content.replace('{{ arch }}', binary_info.get('arch', 'N/A'))
-        html_content = html_content.replace('{{ bits }}', str(binary_info.get('bits', 'N/A')))
-        html_content = html_content.replace('{{ total_vulns }}', str(total_vulns))
-        html_content = html_content.replace('{{ critical_vulns }}', str(critical_vulns))
-        html_content = html_content.replace('{{ high_vulns }}', str(high_vulns))
-        html_content = html_content.replace('{{ iterations }}', str(iterations))
+        html_content = html_content.replace('{{ analysis_time }}', datetime.now().strftime('%Y-%m-%d %H:%M:%S'
+
+        html_content = html_content.replace('{{ arch }}', binary_info.get('arch', 'N/A'
+
+        html_content = html_content.replace('{{ bits }}', str(binary_info.get('bits', 'N/A'
+
+        html_content = html_content.replace('{{ total_vulns }}', str(total_vulns
+
+        html_content = html_content.replace('{{ critical_vulns }}', str(critical_vulns
+
+        html_content = html_content.replace('{{ high_vulns }}', str(high_vulns
+
+        html_content = html_content.replace('{{ iterations }}', str(iterations
+
         html_content = html_content.replace('{{ content }}', content)
         
         if not output_path:
@@ -1362,8 +1366,7 @@ class ReportGenerator:
         logger.info(f"HTML 报告已生成: {output_path}")
         return output_path
     
-    def generate_pdf_report(
-        self,
+    def generate_pdf_report(, self)
         binary_path: str,
         binary_info: Dict[str, Any],
         decomp_results: List[Dict[str, Any]],
@@ -1405,11 +1408,11 @@ class ReportGenerator:
         }
         
         html_path = output_path.replace('.pdf', '.html')
-        self.generate_html_report(
+        self.generate_html_report()
             binary_path, binary_info, decomp_results,
             crash_analysis, exploit_result, similar_vulns, symbolic_result,
             output_path=html_path
-        )
+        
         result['html_path'] = html_path
         
         weasyprint_available = False
@@ -1470,12 +1473,11 @@ class ReportGenerator:
                 "  pip install weasyprint\n"
                 "  或\n"
                 "  pip install pdfkit (还需要安装 wkhtmltopdf)"
-            )
+            
         
         return result
     
-    def generate_full_report(
-        self,
+    def generate_full_report(, self)
         binary_path: str,
         binary_info: Dict[str, Any],
         decomp_results: List[Dict[str, Any]],
@@ -1507,28 +1509,28 @@ class ReportGenerator:
         generated = {}
         
         if 'md' in formats:
-            generated['markdown'] = self.generate_report(
+            generated['markdown'] = self.generate_report()
                 binary_path, binary_info, decomp_results,
                 crash_analysis, exploit_result, similar_vulns, symbolic_result
-            )
+            
         
         if 'json' in formats:
-            generated['json'] = self.generate_json_report(
+            generated['json'] = self.generate_json_report()
                 binary_path, binary_info, decomp_results,
                 crash_analysis, exploit_result
-            )
+            
         
         if 'html' in formats:
-            generated['html'] = self.generate_html_report(
+            generated['html'] = self.generate_html_report()
                 binary_path, binary_info, decomp_results,
                 crash_analysis, exploit_result, similar_vulns, symbolic_result
-            )
+            
         
         if 'pdf' in formats:
-            pdf_result = self.generate_pdf_report(
+            pdf_result = self.generate_pdf_report()
                 binary_path, binary_info, decomp_results,
                 crash_analysis, exploit_result, similar_vulns, symbolic_result
-            )
+            
             generated['pdf'] = pdf_result
         
         logger.info(f"已生成 {len(generated)} 种格式的报告")
@@ -1584,8 +1586,7 @@ class ReportGenerator:
         
         return result
     
-    def _infer_cvss_metrics(
-        self,
+    def _infer_cvss_metrics(, self)
         vuln_info: Dict[str, Any],
         vuln_type: str,
         severity_hint: str
@@ -1698,7 +1699,8 @@ class ReportGenerator:
         I = CIA_scores.get(metrics['I'], 0)
         A = CIA_scores.get(metrics['A'], 0)
         
-        ISC_base = 1 - ((1 - C) * (1 - I) * (1 - A))
+        ISC_base = 1 - ((1 - C) * (1 - I) * (1 - A
+
         
         if metrics['S'] == 'U':
             Impact = 6.42 * ISC_base
@@ -1765,8 +1767,7 @@ class ReportGenerator:
         
         return '; '.join(parts)
     
-    def _generate_vis_js_graphs(
-        self,
+    def _generate_vis_js_graphs(, self)
         binary_info: Dict[str, Any],
         decomp_results: List[Dict[str, Any]],
         symbolic_result: Dict[str, Any] = None
@@ -1789,7 +1790,7 @@ class ReportGenerator:
             func_name = result.get('function_name', 'unknown')
             vulns = result.get('analysis', {}).get('vulnerabilities', [])
             
-            color = '#10b981'
+            color = '#10b981',
             if vulns:
                 severity = max(v.get('severity', '').lower() for v in vulns)
                 if 'critical' in severity:
@@ -1799,33 +1800,33 @@ class ReportGenerator:
                 elif 'medium' in severity:
                     color = '#eab308'
             
-            functions.append({
+            functions.append({)
                 'id': func_name,
                 'label': func_name,
                 'title': f'{func_name}<br/>漏洞: {len(vulns)}',
                 'color': color,
                 'size': 20 if vulns else 15
-            })
+            }
             
-            call_edges.append({
+            call_edges.append({)
                 'from': 'main',
                 'to': func_name,
                 'arrows': 'to',
                 'width': 2 if vulns else 1,
                 'color': '#ef4444' if vulns else '#94a3b8'
-            })
+            }
         
         for i, func1 in enumerate(functions[1:], 1):
             for j, func2 in enumerate(functions[i+1:], i+1):
                 if j % 3 == 0:
-                    call_edges.append({
+                    call_edges.append({)
                         'from': func1['id'],
                         'to': func2['id'],
                         'arrows': 'to',
                         'width': 1,
                         'color': '#cbd5e1',
                         'dashes': True
-                    })
+                    }
         
         cfg_nodes = []
         cfg_edges = []
@@ -1835,32 +1836,32 @@ class ReportGenerator:
             bbs = attack_path.get('basic_blocks', [])
             
             for idx, bb in enumerate(bbs[:20]):
-                cfg_nodes.append({
+                cfg_nodes.append({)
                     'id': f'bb_{idx}',
                     'label': f'BB{idx}',
                     'title': str(bb),
                     'color': '#8b5cf6'
-                })
+                }
                 if idx > 0:
-                    cfg_edges.append({
+                    cfg_edges.append({)
                         'from': f'bb_{idx-1}',
                         'to': f'bb_{idx}',
                         'arrows': 'to'
-                    })
+                    }
         else:
             for i in range(8):
-                cfg_nodes.append({
+                cfg_nodes.append({)
                     'id': f'bb_{i}',
                     'label': f'BB{i}',
                     'title': f'Basic Block {i}',
                     'color': '#8b5cf6'
-                })
+                }
                 if i > 0:
-                    cfg_edges.append({
+                    cfg_edges.append({)
                         'from': f'bb_{i-1}',
                         'to': f'bb_{i}',
                         'arrows': 'to'
-                    })
+                    }
         
         import json
         
@@ -1922,8 +1923,7 @@ class ReportGenerator:
         
         return call_graph_html, cfg_html
     
-    def generate_ghidra_script(
-        self,
+    def generate_ghidra_script(, self)
         binary_path: str,
         decomp_results: List[Dict[str, Any]],
         crash_analysis: Dict[str, Any] = None
@@ -1962,7 +1962,7 @@ class ReportGenerator:
                 }
                 color = color_map.get(severity.lower(), '0xFFCC00')
                 
-                vuln_markers.append({
+                vuln_markers.append({)
                     'func_name': func_name,
                     'type': vuln_type,
                     'severity': severity,
@@ -1970,7 +1970,7 @@ class ReportGenerator:
                     'color': color,
                     'description': description,
                     'exploitation': exploitation
-                })
+                }
         
         script_content = '''# -*- coding: utf-8 -*-
 """
@@ -2000,10 +2000,10 @@ BINARY_NAME = "{binary_name}"
 ANALYSIS_TIME = "{analysis_time}"
 
 VULNERABILITY_MARKERS = [
-'''.format(
+'''.format()
     binary_name=os.path.basename(binary_path),
     analysis_time=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-)
+
         
         for marker in vuln_markers:
             script_content += f'''    {{
@@ -2053,7 +2053,8 @@ def set_function_color(func, color_int):
             entry = func.getEntryPoint()
             block = func.getBody()
             
-            addrSet = block.intersect(currentProgram.getMemory())
+            addrSet = block.intersect(currentProgram.getMemory(
+
             if addrSet is not None and not addrSet.isEmpty():
                 colorizer.setBackgroundColor(addrSet, color, TaskMonitor.DUMMY)
                 return True
@@ -2109,7 +2110,7 @@ def main():
                 f"Description:\\n{description}\\n"
                 f"\\n"
                 f"Exploitation:\\n{exploitation}\\n"
-            )
+            
             
             set_pre_comment(entry, comment_text)
             
@@ -2154,4 +2155,4 @@ def round_up(value: float) -> float:
     CVSS 3.1 评分的向上取整（保留一位小数）
     """
     from math import ceil
-    return ceil(value * 10) / 10.0
+    return ceil(value * 10) / 10.0)))))))))))))))))))))

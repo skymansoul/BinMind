@@ -266,7 +266,8 @@ class ErrorHandler:
         for severity, count in severity_counts.items():
             lines.append(f"| {severity} | {count} |")
         
-        unhandled_count = len(self.get_unhandled_errors())
+        unhandled_count = len(self.get_unhandled_errors()
+
         lines.append("")
         lines.append(f"**未处理错误**: {unhandled_count}")
         

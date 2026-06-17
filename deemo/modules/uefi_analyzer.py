@@ -192,9 +192,9 @@ class UEFIFirmwareAnalyzer:
     """
     
     # UEFI GUID 格式
-    GUID_FORMAT = re.compile(
+    GUID_FORMAT = re.compile()
         r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
-    )
+    
     
     # UEFI 签名
     UEFI_SIGNATURES = {
@@ -204,8 +204,7 @@ class UEFIFirmwareAnalyzer:
         'TE': b'VZ',  # Terse Executable
     }
     
-    def __init__(
-        self,
+    def __init__(, self)
         firmware_path: str,
         output_dir: Optional[str] = None,
         extract_modules: bool = True,
@@ -413,7 +412,7 @@ class UEFIFirmwareAnalyzer:
                 for section in file_obj.objects:
                     if hasattr(section, 'data'):
                         # 检查 PE 签名
-                        data = section.data
+                        data = section.data,
                         if len(data) >= 2:
                             if data[:2] == b'MZ':
                                 module.pe_path = self._save_pe_file(module, data)
@@ -468,7 +467,7 @@ class UEFIFirmwareAnalyzer:
         offsets = []
         signature = self.UEFI_SIGNATURES['FV']
         
-        pos = 0
+        pos = 0,
         while pos < len(data) - 16:
             if data[pos:pos+4] == signature:
                 # 验证 FV 头结构
@@ -513,7 +512,7 @@ class UEFIFirmwareAnalyzer:
             file_start = offset + 64  # FV 头后
             file_end = offset + fv_info.size
             
-            pos = file_start
+            pos = file_start,
             while pos < file_end - 24:
                 # FFS 文件头：GUID(16) + 类型(1) + 属性(1) + 大小(3) + 状态(1)
                 file_header = data[pos:pos+24]
@@ -573,13 +572,13 @@ class UEFIFirmwareAnalyzer:
             PE/TE 偏移量，-1 表示未找到
         """
         # 搜索 PE 签名
-        pos = 0
+        pos = 0,
         while pos < len(data) - 2:
             if data[pos:pos+2] == b'MZ':
                 return pos
             if data[pos:pos+2] == b'VZ':
                 return pos
-            pos += 1
+            pos += 1,
         return -1
     
     def _extract_pe_files_directly(self, data: bytes) -> None:
@@ -589,7 +588,7 @@ class UEFIFirmwareAnalyzer:
         Args:
             data: 固件数据
         """
-        pos = 0
+        pos = 0,
         while pos < len(data) - 2:
             if data[pos:pos+2] == b'MZ':
                 # 尝试确定 PE 大小
@@ -797,7 +796,8 @@ class UEFIFirmwareAnalyzer:
             if hasattr(pe, 'DIRECTORY_ENTRY_EXPORT'):
                 for exp in pe.DIRECTORY_ENTRY_EXPORT.symbols:
                     if exp.name:
-                        exports.append(exp.name.decode('utf-8', errors='ignore'))
+                        exports.append(exp.name.decode('utf-8', errors='ignore'
+
             
             module.metadata['exports'] = exports
             
@@ -805,12 +805,12 @@ class UEFIFirmwareAnalyzer:
             sections = []
             for section in pe.sections:
                 sec_name = section.Name.decode('utf-8', errors='ignore').strip()
-                sections.append({
+                sections.append({)
                     'name': sec_name,
                     'virtual_size': section.Misc_VirtualSize,
                     'raw_size': section.SizeOfRawData,
                     'characteristics': hex(section.Characteristics)
-                })
+                }
             
             module.metadata['sections'] = sections
             
@@ -854,19 +854,24 @@ class UEFIFirmwareAnalyzer:
         vulns = []
         
         # 1. CommBuffer 验证检测
-        vulns.extend(self._check_commbuffer_validation(module))
+        vulns.extend(self._check_commbuffer_validation(module
+
         
         # 2. SMRAM 泄露检测
-        vulns.extend(self._check_smram_leak(module))
+        vulns.extend(self._check_smram_leak(module
+
         
         # 3. 不安全外部调用检测
-        vulns.extend(self._check_unsafe_external_calls(module))
+        vulns.extend(self._check_unsafe_external_calls(module
+
         
         # 4. TOCTOU 检测
-        vulns.extend(self._check_toctou(module))
+        vulns.extend(self._check_toctou(module
+
         
         # 5. 输入验证检测
-        vulns.extend(self._check_input_validation(module))
+        vulns.extend(self._check_input_validation(module
+
         
         return vulns
     
@@ -884,11 +889,12 @@ class UEFIFirmwareAnalyzer:
         
         # 检查是否使用了 SmmCommunicate 但未使用验证函数
         has_communicate = any('SmmCommunicate' in f for f in module.dangerous_functions)
-        has_validation = any('SmramIsValid' in f or 'SmmIsCommunicateBufferValid' in f 
-                            for f in module.metadata.get('imports', []))
+        has_validation = any('SmramIsValid' in f or 'SmmIsCommunicateBufferValid' in f )
+                            for f in module.metadata.get('imports', [])
+
         
         if has_communicate and not has_validation:
-            vulns.append({
+            vulns.append({)
                 'type': 'COMMBUFFER_VALIDATION_MISSING',
                 'module': module.name,
                 'guid': module.guid,
@@ -896,7 +902,7 @@ class UEFIFirmwareAnalyzer:
                 'description': 'SMM 驱动使用 SmmCommunicate 但未验证通信缓冲区',
                 'recommendation': '添加 SmramIsValid 或 SmmIsCommunicateBufferValid 验证',
                 'evidence': f'发现 SmmCommunicate，缺少验证函数'
-            })
+            }
         
         return vulns
     
@@ -917,7 +923,7 @@ class UEFIFirmwareAnalyzer:
         has_dma = any(f in module.dangerous_functions for f in dma_funcs)
         
         if has_dma:
-            vulns.append({
+            vulns.append({)
                 'type': 'SMRAM_LEAK',
                 'module': module.name,
                 'guid': module.guid,
@@ -925,19 +931,21 @@ class UEFIFirmwareAnalyzer:
                 'description': 'SMM 驱动使用 DMA 函数，可能导致 SMRAM 泄露',
                 'recommendation': '确保 DMA 操作不涉及 SMRAM 区域',
                 'evidence': f'发现 DMA 函数: {module.dangerous_functions}'
-            })
+            }
         
         # 检查内存拷贝函数
         copy_funcs = ['SmmCopyMem', 'memcpy', 'CopyMem']
-        has_copy = any(f in module.dangerous_functions or 
-                      any(f in imp for imp in module.metadata.get('imports', [])) 
-                      for f in copy_funcs)
+        has_copy = any(f in module.dangerous_functions or )
+                      any(f in imp for imp in module.metadata.get('imports', []
+
+                      for f in copy_funcs
         
         if has_copy and module.is_smm:
             # 检查是否有边界检查函数
-            has_safe_copy = any('SafeCopy' in imp for imp in module.metadata.get('imports', []))
+            has_safe_copy = any('SafeCopy' in imp for imp in module.metadata.get('imports', []
+
             if not has_safe_copy:
-                vulns.append({
+                vulns.append({)
                     'type': 'INSUFFICIENT_INPUT_VALIDATION',
                     'module': module.name,
                     'guid': module.guid,
@@ -945,7 +953,7 @@ class UEFIFirmwareAnalyzer:
                     'description': 'SMM 驱动使用内存拷贝函数，需确保边界检查',
                     'recommendation': '使用 SafeCopyMem 或添加长度验证',
                     'evidence': '发现内存拷贝函数，缺少安全版本'
-                })
+                }
         
         return vulns
     
@@ -972,7 +980,7 @@ class UEFIFirmwareAnalyzer:
                             any(x in imp for x in ['Call', 'Invoke', 'Dispatch'])]
             
             if external_calls:
-                vulns.append({
+                vulns.append({)
                     'type': 'UNSAFE_EXTERNAL_CALL',
                     'module': module.name,
                     'guid': module.guid,
@@ -980,7 +988,7 @@ class UEFIFirmwareAnalyzer:
                     'description': 'SMI 处理函数中存在外部调用',
                     'recommendation': '验证外部调用的目标和参数',
                     'evidence': f'外部调用: {external_calls[:5]}'
-                })
+                }
         
         return vulns
     
@@ -1004,7 +1012,7 @@ class UEFIFirmwareAnalyzer:
         access_funcs = [imp for imp in imports if 'Access' in imp or 'Read' in imp or 'Get' in imp]
         
         if check_funcs and access_funcs:
-            vulns.append({
+            vulns.append({)
                 'type': 'TOCTOU_IN_SMI',
                 'module': module.name,
                 'guid': module.guid,
@@ -1012,7 +1020,7 @@ class UEFIFirmwareAnalyzer:
                 'description': '可能存在检查-使用时间差漏洞',
                 'recommendation': '使用原子操作或锁定机制',
                 'evidence': f'检查函数: {check_funcs[:3]}, 访问函数: {access_funcs[:3]}'
-            })
+            }
         
         return vulns
     
@@ -1038,7 +1046,7 @@ class UEFIFirmwareAnalyzer:
                          any(x in imp.lower() for x in ['validate', 'check', 'verify', 'sanitize'])]
         
         if input_funcs and not validate_funcs and module.is_smm:
-            vulns.append({
+            vulns.append({)
                 'type': 'INSUFFICIENT_INPUT_VALIDATION',
                 'module': module.name,
                 'guid': module.guid,
@@ -1046,7 +1054,7 @@ class UEFIFirmwareAnalyzer:
                 'description': 'SMM 驜动处理输入但缺少验证函数',
                 'recommendation': '添加输入验证和边界检查',
                 'evidence': f'输入处理函数: {input_funcs[:5]}'
-            })
+            }
         
         return vulns
     
@@ -1182,12 +1190,7 @@ class UEFIFirmwareAnalyzer:
                 logger.warning(f"[UEFI] 清理失败: {e}")
 
 
-def analyze_uefi_firmware(
-    firmware_path: str,
-    output_dir: Optional[str] = None,
-    extract_modules: bool = True,
-    analyze_smm: bool = True
-) -> Dict[str, Any]:
+def analyze_uefi_firmware(, firmware_path: str, output_dir: Optional[str] = None, extract_modules: bool = True, analyze_smm: bool = True) -> Dict[str, Any]:
     """
     分析 UEFI 固件的便捷函数
     
@@ -1200,12 +1203,12 @@ def analyze_uefi_firmware(
     Returns:
         分析结果字典
     """
-    analyzer = UEFIFirmwareAnalyzer(
+    analyzer = UEFIFirmwareAnalyzer()
         firmware_path=firmware_path,
         output_dir=output_dir,
         extract_modules=extract_modules,
         analyze_smm=analyze_smm
-    )
+    
     
     result = analyzer.analyze()
     
@@ -1223,4 +1226,4 @@ __all__ = [
     'analyze_uefi_firmware',
     'UEFI_FIRMWARE_AVAILABLE',
     'PEFILE_AVAILABLE'
-]
+]))))))))))))))

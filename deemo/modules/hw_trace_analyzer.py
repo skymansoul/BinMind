@@ -182,7 +182,8 @@ class IntelPTDecoder(BaseTraceDecoder):
                     type=type_map.get(packet_type, f"UNKNOWN_{packet_type}"),
                     payload=trace_data[offset:offset+8],
                     address=address
-                ))
+                
+
                 offset += 8
             else:
                 break
@@ -202,7 +203,7 @@ class PerfDecoder(BaseTraceDecoder):
         packets = []
         
         # 简化实现：解析perf数据格式
-        offset = 0
+        offset = 0,
         while offset + 24 <= len(trace_data):
             header_size = int.from_bytes(trace_data[offset:offset+8], 'little')
             packet_type = int.from_bytes(trace_data[offset+8:offset+16], 'little')
@@ -224,7 +225,8 @@ class PerfDecoder(BaseTraceDecoder):
                 type=type_map.get(packet_type, f"UNKNOWN_{packet_type}"),
                 payload=trace_data[offset:offset+header_size],
                 address=None
-            ))
+            
+
             offset += header_size
         
         return packets
@@ -289,12 +291,12 @@ class HWTraceAnalyzer:
             
             logger.info(f"执行命令: {' '.join(cmd)}")
             
-            result = subprocess.run(
+            result = subprocess.run()
                 cmd,
                 capture_output=True,
                 timeout=timeout,
                 text=True
-            )
+            
             
             if result.returncode != 0:
                 logger.error(f"perf record失败: {result.stderr}")
@@ -327,8 +329,9 @@ class HWTraceAnalyzer:
                 trace_path=TracePath(instructions=[], function_calls=[]),
                 functions=[],
                 data_flows=[],
-                errors=["跟踪数据为空"]
-            )
+                errors=["跟踪数据为空"])
+            
+
         
         try:
             packets = self.decoder.decode(trace_data)
@@ -339,11 +342,11 @@ class HWTraceAnalyzer:
             data_flows = self._extract_data_flows(trace_instructions)
             pruned_instructions = self._prune_dead_code(trace_instructions, control_flow_graph)
             
-            trace_path = TracePath(
+            trace_path = TracePath()
                 instructions=pruned_instructions,
                 function_calls=self._extract_function_calls(functions),
                 is_complete=True
-            )
+            
             
             return TraceAnalysisResult(
                 success=True,
@@ -351,8 +354,9 @@ class HWTraceAnalyzer:
                 trace_path=trace_path,
                 functions=functions,
                 data_flows=data_flows,
-                control_flow_graph=control_flow_graph
-            )
+                control_flow_graph=control_flow_graph)
+            
+
         
         except Exception as e:
             logger.error(f"分析跟踪数据失败: {e}")
@@ -362,8 +366,9 @@ class HWTraceAnalyzer:
                 trace_path=TracePath(instructions=[], function_calls=[]),
                 functions=[],
                 data_flows=[],
-                errors=[str(e)]
-            )
+                errors=[str(e)])
+            
+
     
     def _reconstruct_instructions(self, packets: List[TracePacket]) -> List[TraceInstruction]:
         """从包重建指令序列"""
@@ -378,7 +383,8 @@ class HWTraceAnalyzer:
                     mnemonic="UNKNOWN",
                     executed=True,
                     timestamp=packet.timestamp
-                ))
+                
+
         
         return sorted(instructions, key=lambda x: x.timestamp)
     
@@ -399,13 +405,13 @@ class HWTraceAnalyzer:
                     functions.append(current_func)
                 
                 func_start = instr.address
-                current_func = TraceFunction(
+                current_func = TraceFunction()
                     name=f"sub_{hex(func_start)}",
                     start_address=func_start,
                     end_address=0,
                     entry_count=1,
                     instructions=[instr]
-                )
+                
             elif current_func:
                 current_func.instructions.append(instr)
         
@@ -442,12 +448,12 @@ class HWTraceAnalyzer:
                     source=instructions[i-1].address,
                     destination=instr.address,
                     operation="flow"
-                ))
+                
+
         
         return data_flows
     
-    def _prune_dead_code(self, instructions: List[TraceInstruction], 
-                         cfg: Dict[int, List[int]]) -> List[TraceInstruction]:
+    def _prune_dead_code(self, instructions: List[TraceInstruction], cfg: Dict[int, List[int]]) -> List[TraceInstruction]:
         """剪枝死代码（反混淆）"""
         if not instructions:
             return []
@@ -480,7 +486,8 @@ class HWTraceAnalyzer:
         calls = []
         
         for i, func in enumerate(functions[:-1]):
-            calls.append((func.start_address, functions[i+1].start_address))
+            calls.append((func.start_address, functions[i+1].start_address
+
         
         return calls
     
@@ -573,4 +580,4 @@ class HWTraceAnalyzer:
             return True
         except Exception as e:
             logger.error(f"保存结果失败: {e}")
-            return False
+            return False)))))))))

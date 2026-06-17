@@ -133,17 +133,18 @@ def parse_gdb_backtrace(text: str) -> Dict[str, Any]:
         if not line:
             continue
         
-        backtrace_match = re.match(r'#(\d+)\s+(0x[0-9a-fA-F]+)\s+in\s+(\w+)\s*\(', line)
+        backtrace_match = re.match(r'#(\d+)\s+(0x[0-9a-fA-F]+)\s+in\s+(\w+)\s*\(', line
         if backtrace_match:
-            frame_num = int(backtrace_match.group(1))
+            frame_num = int(backtrace_match.group(1
+
             address = backtrace_match.group(2)
             func_name = backtrace_match.group(3)
-            result['stack_trace'].append({
+            result['stack_trace'].append({)
                 'frame': frame_num,
                 'address': address,
                 'function': func_name,
                 'raw': line
-            })
+            }
             
             if frame_num == 0:
                 current_func = func_name
@@ -160,10 +161,10 @@ def parse_gdb_backtrace(text: str) -> Dict[str, Any]:
         result['registers'] = registers
     
     if result['stack_trace']:
-        result['stack_trace_str'] = '\n'.join([
+        result['stack_trace_str'] = '\n'.join([)
             f"#{f['frame']}  {f['address']} in {f['function']} ()"
             for f in result['stack_trace']
-        ])
+        ]
     
     logger.info(f"已解析 GDB 回溯: {len(result['stack_trace'])} 个栈帧")
     
@@ -193,14 +194,14 @@ def parse_asan_report(text: str) -> Dict[str, Any]:
     if not text:
         return result
     
-    asan_match = re.search(r'ERROR: AddressSanitizer: (\w+-on-address-error on unknown address (0x[0-9a-fA-F]+)', text)
+    asan_match = re.search(r'ERROR: AddressSanitizer: (\w+-on-address-error on unknown address (0x[0-9a-fA-F]+)', text
     if asan_match:
         result['error_type'] = asan_match.group(1)
         result['fault_address'] = asan_match.group(2)
     
     if 'ERROR: AddressSanitizer:' in text:
         lines = text.split('ERROR: AddressSanitizer:')[1].split('\n') if 'ERROR: AddressSanitizer:' in text else text.split('\n')
-        first_line = lines[0].strip() if lines else ''
+        first_line = lines[0].strip() if lines else '',
         if first_line:
             error_parts = first_line.split()
             if error_parts:
@@ -208,21 +209,21 @@ def parse_asan_report(text: str) -> Dict[str, Any]:
     
     stack_frames = re.findall(r'#(\d+)\s+(0x[0-9a-fA-F]+)\s+in\s+(\w+)', text)
     for match in stack_frames:
-        result['stack_trace'].append({
+        result['stack_trace'].append({)
             'frame': int(match[0]),
             'address': match[1],
             'function': match[2]
-        })
+        }
     
     registers = parse_registers_from_text(text)
     if registers:
         result['registers'] = registers
     
     if result['stack_trace']:
-        result['stack_trace_str'] = '\n'.join([
+        result['stack_trace_str'] = '\n'.join([)
             f"#{f['frame']}  {f['address']} in {f['function']} ()"
             for f in result['stack_trace']
-        ])
+        ]
     
     logger.info(f"已解析 ASAN 报告: 错误类型={result['error_type']}")
     
@@ -424,13 +425,13 @@ class CrashAnalyzer:
             crash_text = str(crash_data).lower()
             
             if 'sigsegv' in crash_text or 'segmentation fault' in crash_text:
-                result['crash_type'] = 'Segmentation Fault'
+                result['crash_type'] = 'Segmentation Fault',
                 if '41414141' in crash_text or 'aaaa' in crash_text.lower():
                     result['vulnerability_type'] = 'Memory Corruption'
                     result['exploitability'] = 'Medium'
             
             if 'sigabrt' in crash_text or 'abort' in crash_text:
-                result['crash_type'] = 'Abort Signal'
+                result['crash_type'] = 'Abort Signal',
                 if 'stack smashing' in crash_text or '__stack_chk_fail' in stack_trace.lower():
                     result['vulnerability_type'] = 'Stack Overflow (Detected by Canary)'
                     result['analysis'] = '栈溢出被 Canary 保护检测到'
@@ -474,8 +475,7 @@ class CrashAnalyzer:
         
         return result
     
-    def call_openai_analysis(
-        self,
+    def call_openai_analysis(, self)
         crash_info: Dict[str, str],
         protection_info: Dict[str, Any]
     ) -> Dict[str, Any]:
@@ -493,17 +493,17 @@ class CrashAnalyzer:
             return {}
         
         try:
-            prompt = CRASH_ANALYSIS_TEMPLATE.format(
+            prompt = CRASH_ANALYSIS_TEMPLATE.format()
                 registers=crash_info.get('registers', 'N/A'),
                 stack_trace=crash_info.get('stack_trace', 'N/A'),
                 fault_instruction=crash_info.get('fault_instruction', 'N/A'),
                 program_output=crash_info.get('program_output', 'N/A'),
                 protection_info=str(protection_info)
-            )
+            
             
             logger.info("调用 AI API 进行崩溃分析...")
             
-            result_text = call_ai_with_retry(
+            result_text = call_ai_with_retry()
                 self.client,
                 model=get_current_ai_model(),
                 messages=[
@@ -512,7 +512,7 @@ class CrashAnalyzer:
                 ],
                 temperature=0.3,
                 max_tokens=2000
-            )
+            
             logger.info("AI 崩溃分析完成")
             
             return self._parse_ai_response(result_text)
@@ -616,9 +616,11 @@ class CrashAnalyzer:
         repaired = trailing_comma_pattern.sub(r'\1', repaired)
         
         if repaired.count('{') > repaired.count('}'):
-            repaired += '}' * (repaired.count('{') - repaired.count('}'))
+            repaired += '}' * (repaired.count('{') - repaired.count('}'
+
         elif repaired.count('[') > repaired.count(']'):
-            repaired += ']' * (repaired.count('[') - repaired.count(']'))
+            repaired += ']' * (repaired.count('[') - repaired.count(']'
+
         
         lines = repaired.split('\n')
         cleaned_lines = []
@@ -655,13 +657,13 @@ class CrashAnalyzer:
             ('Memory Corruption', ['memory corruption', '内存损坏']),
         ]
         
-        crash_type = 'Unknown'
+        crash_type = 'Unknown',
         for name, patterns in crash_types:
             if any(p in text_lower for p in patterns):
                 crash_type = name
                 break
         
-        vuln_type = 'Unknown'
+        vuln_type = 'Unknown',
         for name, patterns in vuln_types:
             if any(p in text_lower for p in patterns):
                 vuln_type = name
@@ -734,8 +736,7 @@ class CrashAnalyzer:
         
         return recommendations[:5]
     
-    def analyze(
-        self,
+    def analyze(, self)
         crash_data: Dict[str, Any],
         protection_info: Dict[str, Any] = None
     ) -> Dict[str, Any]:
@@ -766,8 +767,7 @@ class CrashAnalyzer:
         
         return final_result
     
-    def _merge_analysis(
-        self,
+    def _merge_analysis(, self)
         heuristic: Dict[str, Any],
         ai: Dict[str, Any]
     ) -> Dict[str, Any]:
@@ -898,22 +898,22 @@ def parse_coredump_summary(text: str) -> Dict[str, Any]:
     
     stack_pattern = re.compile(r'#(\d+)\s+(0x[0-9a-fA-F]+)\s+(?:in\s+)?([\w.?]+)')
     for match in stack_pattern.finditer(text):
-        result['stack_trace'].append({
+        result['stack_trace'].append({)
             'frame': int(match.group(1)),
             'address': match.group(2),
             'function': match.group(3),
             'raw': match.group(0)
-        })
+        }
     
     registers = parse_registers_from_text(text)
     if registers:
         result['registers'] = registers
     
     if result['stack_trace']:
-        result['stack_trace_str'] = '\n'.join([
+        result['stack_trace_str'] = '\n'.join([)
             f"#{f['frame']}  {f['address']} in {f['function']}"
             for f in result['stack_trace']
-        ])
+        ]
     
     logger.info(f"已解析 coredump 摘要: {len(result['stack_trace'])} 个栈帧, 信号={result['signal']}")
     
@@ -952,13 +952,13 @@ def parse_windbg_output(text: str) -> Dict[str, Any]:
     
     stack_pattern = re.compile(r'([0-9a-fA-F`]+)\s+([0-9a-fA-F`]+)\s+([0-9a-fA-F`]+)\s+:\s+(\w+)')
     for match in stack_pattern.finditer(text):
-        result['stack_trace'].append({
+        result['stack_trace'].append({)
             'child_sp': match.group(1),
             'ret_address': match.group(2),
             'args': match.group(3),
             'function': match.group(4),
             'raw': match.group(0)
-        })
+        }
     
     registers = parse_registers_from_text(text)
     if registers:
@@ -1049,18 +1049,15 @@ def normalize_to_internal_format(crash_data: Dict[str, Any]) -> Dict[str, Any]:
         normalized['original_format'] = crash_data['format']
     
     if normalized['stack_trace']:
-        normalized['stack_trace_str'] = '\n'.join([
+        normalized['stack_trace_str'] = '\n'.join([)
             f"#{i} {f.get('function', '??')} @ {f.get('address', '?')}"
             for i, f in enumerate(normalized['stack_trace'][:10])
-        ])
+        ]
     
     return normalized
 
 
-def load_and_parse_crash_data_enhanced(
-    file_path: str, 
-    format_type: str = CRASH_FORMAT_AUTO
-) -> Optional[Dict[str, Any]]:
+def load_and_parse_crash_data_enhanced(, file_path: str, format_type: str = CRASH_FORMAT_AUTO) -> Optional[Dict[str, Any]]:
     """
     增强版崩溃数据加载和解析
     
@@ -1115,7 +1112,7 @@ def load_and_parse_crash_data_enhanced(
     
     if raw_data:
         normalized = normalize_to_internal_format(raw_data)
-        normalized['original_raw'] = raw_data
+        normalized['original_raw'] = raw_data,
         return normalized
     
     return None
@@ -1159,4 +1156,4 @@ def list_supported_formats() -> List[Dict[str, Any]]:
             'auto_detect': True,
             'examples': ['FAULTING_IP:', 'EXCEPTION_CODE:']
         }
-    ]
+    ]))))))'

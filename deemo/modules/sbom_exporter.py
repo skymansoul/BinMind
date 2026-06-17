@@ -50,7 +50,8 @@ class SBOMDocument:
     author: str = "deemo-analyzer"
     tool: str = "LLM-Assisted Binary Vulnerability Analysis Tool"
     tool_version: str = "1.3.1"
-    created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat(
+
     components: List[SBOMComponent] = field(default_factory=list)
     relationships: List[Dict[str, Any]] = field(default_factory=list)
     vulnerabilities: List[Dict[str, Any]] = field(default_factory=list)
@@ -140,7 +141,8 @@ class SBOMExporter:
         Returns:
             bom-ref 字符串（UUID 格式）
         """
-        return str(uuid.uuid4())
+        return str(uuid.uuid4(
+
     
     def _normalize_license(self, license_str: str) -> str:
         """
@@ -212,8 +214,7 @@ class SBOMExporter:
         
         return hashes
     
-    def build_sbom_document(
-        self,
+    def build_sbom_document(, self)
         binary_path: str,
         binary_info: Dict[str, Any],
         supply_chain_result: Dict[str, Any] = None,
@@ -237,7 +238,7 @@ class SBOMExporter:
         hashes = self._calculate_file_hashes(binary_path)
         
         # 创建主包组件
-        main_component = SBOMComponent(
+        main_component = SBOMComponent()
             name=binary_name,
             version=binary_info.get('version', ''),
             supplier=binary_info.get('vendor', 'Unknown'),
@@ -252,7 +253,7 @@ class SBOMExporter:
                 'format': binary_info.get('format', 'unknown'),
                 'language': binary_info.get('language', 'unknown'),
             }
-        )
+        
         
         # 从供应链分析结果提取组件
         components = [main_component]
@@ -263,7 +264,7 @@ class SBOMExporter:
             
             for comp in sbom_components:
                 if isinstance(comp, dict):
-                    component = SBOMComponent(
+                    component = SBOMComponent()
                         name=comp.get('name', 'Unknown'),
                         version=comp.get('version', ''),
                         purl=comp.get('purl', ''),
@@ -275,12 +276,12 @@ class SBOMExporter:
                             'confidence': comp.get('confidence', 0),
                             'detected_by': comp.get('detected_by', ''),
                         }
-                    )
+                    
                     components.append(component)
                 else:
                     # 处理 LibraryComponent 数据类
                     try:
-                        component = SBOMComponent(
+                        component = SBOMComponent()
                             name=comp.name,
                             version=comp.version,
                             purl=comp.purl,
@@ -289,7 +290,7 @@ class SBOMExporter:
                                 'confidence': comp.confidence,
                                 'detected_by': comp.detected_by,
                             }
-                        )
+                        
                         components.append(component)
                     except:
                         pass
@@ -301,20 +302,20 @@ class SBOMExporter:
                     if comp.name == comp_name:
                         for vuln in vuln_list:
                             if isinstance(vuln, dict):
-                                comp.vulnerabilities.append({
+                                comp.vulnerabilities.append({)
                                     'cve_id': vuln.get('cve_id', ''),
                                     'severity': vuln.get('severity', 'Unknown'),
                                     'description': vuln.get('description', ''),
                                     'source': vuln.get('source', ''),
-                                })
+                                }
                             else:
                                 try:
-                                    comp.vulnerabilities.append({
+                                    comp.vulnerabilities.append({)
                                         'cve_id': vuln.cve_id,
                                         'severity': vuln.severity,
                                         'description': vuln.description,
                                         'source': vuln.source,
-                                    })
+                                    }
                                 except:
                                     pass
         
@@ -324,18 +325,18 @@ class SBOMExporter:
                 location = vuln.get('location', '')
                 for comp in components:
                     if location and comp.name in location:
-                        comp.vulnerabilities.append({
+                        comp.vulnerabilities.append({)
                             'cve_id': vuln.get('cve_id', vuln.get('id', '')),
                             'severity': vuln.get('severity', 'Unknown'),
                             'description': vuln.get('description', ''),
                             'source': vuln.get('source', 'internal'),
-                        })
+                        }
         
         # 构建文档
-        document = SBOMDocument(
+        document = SBOMDocument()
             name=binary_name,
             components=components
-        )
+        
         
         # 构建关系
         document.relationships = self._build_relationships(components)
@@ -343,8 +344,7 @@ class SBOMExporter:
         logger.info(f"SBOM 文档构建完成，包含 {len(components)} 个组件")
         return document
     
-    def _build_relationships(
-        self,
+    def _build_relationships(, self)
         components: List[SBOMComponent]
     ) -> List[Dict[str, Any]]:
         """
@@ -365,17 +365,16 @@ class SBOMExporter:
         main_component = components[0]
         
         for i, comp in enumerate(components[1:], 1):
-            relationships.append({
+            relationships.append({)
                 'type': 'DEPENDS_ON',
                 'source': main_component.name,
                 'target': comp.name,
                 'relationship': f"{main_component.name} depends on {comp.name}"
-            })
+            }
         
         return relationships
     
-    def export_spdx_json(
-        self,
+    def export_spdx_json(, self)
         document: SBOMDocument,
         output_path: str = None
     ) -> str:
@@ -430,20 +429,20 @@ class SBOMExporter:
             if comp.sha256:
                 package['checksums'] = []
                 if comp.sha256:
-                    package['checksums'].append({
+                    package['checksums'].append({)
                         'algorithm': 'SHA256',
                         'checksumValue': comp.sha256
-                    })
+                    }
                 if comp.sha1:
-                    package['checksums'].append({
+                    package['checksums'].append({)
                         'algorithm': 'SHA1',
                         'checksumValue': comp.sha1
-                    })
+                    }
                 if comp.md5:
-                    package['checksums'].append({
+                    package['checksums'].append({)
                         'algorithm': 'MD5',
                         'checksumValue': comp.md5
-                    })
+                    }
             
             # 添加外部引用
             if comp.purl:
@@ -475,14 +474,14 @@ class SBOMExporter:
         for comp in document.components:
             for vuln in comp.vulnerabilities:
                 if vuln.get('cve_id'):
-                    spdx_doc['externalDocumentRefs'].append({
+                    spdx_doc['externalDocumentRefs'].append({)
                         'externalDocumentId': f"SPDXRef-{vuln['cve_id']}",
                         'spdxDocument': f"https://nvd.nist.gov/vuln/detail/{vuln['cve_id']}",
                         'checksum': {
                             'algorithm': 'SHA256',
                             'checksumValue': 'NOASSERTION'
                         }
-                    })
+                    }
         
         json_str = json.dumps(spdx_doc, ensure_ascii=False, indent=2)
         
@@ -498,8 +497,7 @@ class SBOMExporter:
         
         return json_str
     
-    def export_cyclonedx_json(
-        self,
+    def export_cyclonedx_json(, self)
         document: SBOMDocument,
         output_path: str = None
     ) -> str:
@@ -590,10 +588,10 @@ class SBOMExporter:
             # 添加属性
             for key, value in comp.properties.items():
                 if value:
-                    component['properties'].append({
+                    component['properties'].append({)
                         'name': f"deemo.{key}",
                         'value': str(value)
-                    })
+                    }
             
             cyclonedx_doc['components'].append(component)
         
@@ -610,7 +608,7 @@ class SBOMExporter:
             ]
         
         # 添加漏洞信息
-        vuln_id = 1
+        vuln_id = 1,
         for comp in document.components:
             for vuln in comp.vulnerabilities:
                 if vuln.get('cve_id'):
@@ -626,7 +624,8 @@ class SBOMExporter:
                                 'source': {
                                     'name': vuln.get('source', 'NVD')
                                 },
-                                'severity': self._normalize_severity(vuln.get('severity', 'unknown'))
+                                'severity': self._normalize_severity(vuln.get('severity', 'unknown'
+
                             }
                         ],
                         'description': vuln.get('description', ''),
@@ -653,8 +652,7 @@ class SBOMExporter:
         
         return json_str
     
-    def export_sbom(
-        self,
+    def export_sbom(, self)
         binary_path: str,
         binary_info: Dict[str, Any],
         supply_chain_result: Dict[str, Any] = None,
@@ -679,12 +677,12 @@ class SBOMExporter:
         output_dir = output_dir or self.output_dir
         
         # 构建 SBOM 文档
-        document = self.build_sbom_document(
+        document = self.build_sbom_document()
             binary_path=binary_path,
             binary_info=binary_info,
             supply_chain_result=supply_chain_result,
             vulnerabilities=vulnerabilities
-        )
+        
         
         results = {}
         
@@ -806,8 +804,7 @@ class SBOMExporter:
         
         return result
     
-    def get_sbom_summary(
-        self,
+    def get_sbom_summary(, self)
         document: SBOMDocument
     ) -> Dict[str, Any]:
         """
@@ -825,7 +822,8 @@ class SBOMExporter:
         for comp in document.components:
             for vuln in comp.vulnerabilities:
                 total_vulns += 1
-                severity = self._normalize_severity(vuln.get('severity', 'unknown'))
+                severity = self._normalize_severity(vuln.get('severity', 'unknown'
+
                 if severity in severity_counts:
                     severity_counts[severity] += 1
         
@@ -843,14 +841,7 @@ class SBOMExporter:
         }
 
 
-def export_sbom_from_analysis(
-    binary_path: str,
-    binary_info: Dict[str, Any],
-    supply_chain_result: Dict[str, Any] = None,
-    vulnerabilities: List[Dict[str, Any]] = None,
-    format: str = 'both',
-    output_dir: str = None
-) -> Dict[str, str]:
+def export_sbom_from_analysis(, binary_path: str, binary_info: Dict[str, Any], supply_chain_result: Dict[str, Any] = None, vulnerabilities: List[Dict[str, Any]] = None, format: str = 'both', output_dir: str = None) -> Dict[str, str]:
     """
     从分析结果导出 SBOM 的便捷函数
     
@@ -866,10 +857,9 @@ def export_sbom_from_analysis(
         包含导出文件路径的字典
     """
     exporter = SBOMExporter(output_dir=output_dir)
-    return exporter.export_sbom(
+    return exporter.export_sbom()
         binary_path=binary_path,
         binary_info=binary_info,
         supply_chain_result=supply_chain_result,
         vulnerabilities=vulnerabilities,
-        format=format
-    )
+        format=format)

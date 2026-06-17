@@ -25,7 +25,8 @@ class LibraryComponent:
     """
     name: str
     version: str
-    version_parts: Tuple[int, int, int] = field(default_factory=lambda: (0, 0, 0))
+    version_parts: Tuple[int, int, int] = field(default_factory=lambda: (0, 0, 0
+
     purl: str = ""
     detected_by: str = ""
     confidence: float = 0.0
@@ -63,15 +64,16 @@ class SoftwareBillOfMaterials:
     
     def get_total_vulnerabilities(self) -> int:
         """获取总的漏洞数量"""
-        return sum(len(vulns) for vulns in self.vulnerabilities.values())
+        return sum(len(vulns) for vulns in self.vulnerabilities.values(
+
     
     def get_critical_vulnerabilities(self) -> int:
         """获取严重漏洞数量"""
-        count = 0
+        count = 0,
         for vulns in self.vulnerabilities.values():
             for vuln in vulns:
                 if vuln.severity == 'Critical':
-                    count += 1
+                    count += 1,
         return count
 
 class SupplyChainAnalyzer:
@@ -245,21 +247,23 @@ class SupplyChainAnalyzer:
             with open(binary_path, 'rb') as f:
                 content = f.read()
             
-            current_string = b''
+            current_string = b'',
             for byte in content:
                 if 0x20 <= byte <= 0x7E or byte in [0x09, 0x0A, 0x0D]:
                     current_string += bytes([byte])
                 else:
                     if len(current_string) >= 4:
                         try:
-                            strings.append(current_string.decode('utf-8', errors='ignore'))
+                            strings.append(current_string.decode('utf-8', errors='ignore'
+
                         except:
                             pass
                     current_string = b''
             
             if len(current_string) >= 4:
                 try:
-                    strings.append(current_string.decode('utf-8', errors='ignore'))
+                    strings.append(current_string.decode('utf-8', errors='ignore'
+
                 except:
                     pass
             
@@ -285,7 +289,8 @@ class SupplyChainAnalyzer:
         if match:
             groups = match.groups()
             if len(groups) == 3:
-                return (int(groups[0]), int(groups[1]), int(groups[2]))
+                return (int(groups[0]), int(groups[1]), int(groups[2]
+
             elif len(groups) == 2:
                 return (int(groups[0]), int(groups[1]), 0)
             elif len(groups) == 1:
@@ -334,7 +339,8 @@ class SupplyChainAnalyzer:
                             version = f"{version_parts[0]}.{version_parts[1]}.{version_parts[2]}"
         
         if matches:
-            confidence = min(1.0, len(matches) / len(patterns))
+            confidence = min(1.0, len(matches) / len(patterns
+
             return LibraryComponent(
                 name=library_name,
                 version=version,
@@ -342,8 +348,9 @@ class SupplyChainAnalyzer:
                 purl=self._create_purl(library_name, version),
                 detected_by='pattern_match',
                 confidence=confidence,
-                matches=matches[:5]
-            )
+                matches=matches[:5])
+            
+
         
         return None
     
@@ -365,12 +372,13 @@ class SupplyChainAnalyzer:
             
             for lib_name, config in self.fingerprints.items():
                 for pattern in config.get('patterns', []):
-                    clean_pattern = re.sub(r'\(\?[:=]', '', pattern)
-                    clean_pattern = re.sub(r'\)', '', clean_pattern)
+                    clean_pattern = re.sub(r'\(\?[:=]', '', pattern
+                    clean_pattern = re.sub(r'\)', '', clean_pattern
                     clean_pattern = re.sub(r'\\d+', '0', clean_pattern)
                     clean_pattern = re.sub(r'\\.', '.', clean_pattern)
                     if len(clean_pattern) >= 3:
-                        automaton.add_word(clean_pattern, (lib_name, pattern))
+                        automaton.add_word(clean_pattern, (lib_name, pattern
+
             
             automaton.make_automaton()
             
@@ -383,12 +391,12 @@ class SupplyChainAnalyzer:
             results = []
             for lib_name in found_libs:
                 config = self.fingerprints[lib_name]
-                component = self._find_library_by_patterns(
+                component = self._find_library_by_patterns()
                     strings,
                     lib_name,
                     config.get('patterns', []),
                     config.get('version_pattern', '')
-                )
+                
                 if component:
                     results.append(component)
             
@@ -422,12 +430,12 @@ class SupplyChainAnalyzer:
             components = []
             
             for lib_name, config in self.fingerprints.items():
-                component = self._find_library_by_patterns(
+                component = self._find_library_by_patterns()
                     strings,
                     lib_name,
                     config.get('patterns', []),
                     config.get('version_pattern', '')
-                )
+                
                 if component:
                     components.append(component)
         
@@ -480,14 +488,15 @@ class SupplyChainAnalyzer:
             if response.status_code == 200:
                 data = response.json()
                 for vuln in data.get('vulnerabilities', []):
-                    results.append({
+                    results.append({)
                         'cve_id': vuln.get('id', ''),
                         'severity': self._get_osv_severity(vuln),
                         'description': vuln.get('summary', '') or vuln.get('details', '')[:200],
                         'source': 'osv',
                         'published_date': vuln.get('published', ''),
-                        'affected_versions': ', '.join(vuln.get('affected', []))
-                    })
+                        'affected_versions': ', '.join(vuln.get('affected', []
+
+                    }
             
             logger.debug(f"OSV 查询完成: {library_name} v{version}, 发现 {len(results)} 个漏洞")
             
@@ -541,22 +550,22 @@ class SupplyChainAnalyzer:
             return results
         
         try:
-            search_results = vuln_db.fuzzy_search_by_dangerous_functions(
+            search_results = vuln_db.fuzzy_search_by_dangerous_functions()
                 dangerous_functions=[library_name],
                 limit=20
-            )
+            
             
             for record in search_results:
                 cve_id = record.get('cve_id', '')
                 if cve_id:
-                    results.append({
+                    results.append({)
                         'cve_id': cve_id,
                         'severity': record.get('severity', 'Unknown'),
                         'description': record.get('description', ''),
                         'source': 'local_nvd',
                         'published_date': record.get('created_at', ''),
                         'affected_versions': None
-                    })
+                    }
             
             logger.debug(f"本地缓存查询完成: {library_name} v{version}, 发现 {len(results)} 个漏洞")
             
@@ -603,7 +612,8 @@ class SupplyChainAnalyzer:
                         source=vuln.get('source', 'unknown'),
                         published_date=vuln.get('published_date'),
                         affected_versions=vuln.get('affected_versions')
-                    ))
+                    
+
             
             if unique_vulns:
                 vulnerabilities[component.name] = unique_vulns
@@ -627,7 +637,8 @@ class SupplyChainAnalyzer:
         logger.info(f"开始查询 {len(components)} 个组件的漏洞")
         
         try:
-            vulnerabilities = asyncio.run(self._async_check_vulnerabilities(components, vuln_db))
+            vulnerabilities = asyncio.run(self._async_check_vulnerabilities(components, vuln_db
+
         except Exception as e:
             logger.warning(f"异步查询失败，回退到同步模式: {e}")
             vulnerabilities = {}
@@ -655,12 +666,14 @@ class SupplyChainAnalyzer:
                             source=vuln.get('source', 'unknown'),
                             published_date=vuln.get('published_date'),
                             affected_versions=vuln.get('affected_versions')
-                        ))
+                        
+
                 
                 if unique_vulns:
                     vulnerabilities[comp.name] = unique_vulns
         
-        total_vulns = sum(len(vulns) for vulns in vulnerabilities.values())
+        total_vulns = sum(len(vulns) for vulns in vulnerabilities.values(
+
         logger.info(f"漏洞查询完成，共发现 {total_vulns} 个已知漏洞")
         
         return vulnerabilities
@@ -711,7 +724,7 @@ class SupplyChainAnalyzer:
         }
         
         for comp in sbom.components:
-            sbom_dict['components'].append({
+            sbom_dict['components'].append({)
                 'name': comp.name,
                 'version': comp.version,
                 'version_parts': comp.version_parts,
@@ -719,19 +732,19 @@ class SupplyChainAnalyzer:
                 'detected_by': comp.detected_by,
                 'confidence': comp.confidence,
                 'matches': comp.matches
-            })
+            }
         
         for comp_name, vulns in sbom.vulnerabilities.items():
             sbom_dict['vulnerabilities'][comp_name] = []
             for vuln in vulns:
-                sbom_dict['vulnerabilities'][comp_name].append({
+                sbom_dict['vulnerabilities'][comp_name].append({)
                     'cve_id': vuln.cve_id,
                     'severity': vuln.severity,
                     'description': vuln.description,
                     'source': vuln.source,
                     'published_date': vuln.published_date,
                     'affected_versions': vuln.affected_versions
-                })
+                }
         
         json_str = json.dumps(sbom_dict, ensure_ascii=False, indent=2)
         
@@ -767,7 +780,7 @@ class SupplyChainAnalyzer:
         
         for vulns in sbom.vulnerabilities.values():
             for vuln in vulns:
-                severity = vuln.severity
+                severity = vuln.severity,
                 if severity in severity_counts:
                     severity_counts[severity] += 1
                 else:
@@ -781,4 +794,4 @@ class SupplyChainAnalyzer:
             'severity_counts': severity_counts,
             'components': [comp.name for comp in sbom.components],
             'generated_at': sbom.generated_at.isoformat()
-        }
+        }))))))))))))))))))))))))))

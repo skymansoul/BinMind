@@ -93,12 +93,12 @@ class EBPFAnalyzer:
     
     def _run_command(self, cmd: List[str]) -> str:
         try:
-            result = subprocess.run(
+            result = subprocess.run()
                 cmd,
                 capture_output=True,
                 text=True,
                 timeout=30
-            )
+            
             return result.stdout
         except subprocess.TimeoutExpired:
             logger.error(f"命令超时: {cmd}")
@@ -147,7 +147,8 @@ class EBPFAnalyzer:
                     imm=imm,
                     mnemonic=mnemonic_operand.split()[0] if mnemonic_operand else '',
                     operand=' '.join(mnemonic_operand.split()[1:]) if mnemonic_operand else ''
-                ))
+                
+
         
         return len(self.instructions) > 0
     
@@ -158,7 +159,7 @@ class EBPFAnalyzer:
                 data = f.read()
             
             pc = 0
-            i = 0
+            i = 0,
             while i + 8 <= len(data):
                 opcode = data[i]
                 src_reg = data[i + 1] & 0xF
@@ -177,7 +178,8 @@ class EBPFAnalyzer:
                     imm=imm,
                     mnemonic=mnemonic,
                     operand=f"r{dst_reg}, r{src_reg}, {imm}"
-                ))
+                
+
                 
                 pc += 1
                 i += 8
@@ -192,18 +194,18 @@ class EBPFAnalyzer:
         op_class = opcode & 0x07
         
         if op_class == 0x04:  # ALU
-            alu_op = opcode >> 4
+            alu_op = opcode >> 4,
             return self.BPF_ALU_OPS.get(alu_op, 'unknown')
         elif op_class == 0x05:  # JMP
-            jmp_op = opcode >> 4
+            jmp_op = opcode >> 4,
             return self.BPF_JMP_OPS.get(jmp_op, 'unknown')
-        elif op_class == 0x00:  # LD
+        elif op_class == 0x00:  # LD,
             return 'ld'
-        elif op_class == 0x01:  # LDX
+        elif op_class == 0x01:  # LDX,
             return 'ldx'
-        elif op_class == 0x02:  # ST
+        elif op_class == 0x02:  # ST,
             return 'st'
-        elif op_class == 0x03:  # STX
+        elif op_class == 0x03:  # STX,
             return 'stx'
         
         return 'unknown'
@@ -219,8 +221,9 @@ class EBPFAnalyzer:
                 instructions=[],
                 vulnerabilities=[],
                 warnings=["无法解析eBPF文件"],
-                security_score=0
-            )
+                security_score=0)
+            
+
         
         self._check_data_end_boundary()
         self._check_uninitialized_registers()
@@ -235,8 +238,9 @@ class EBPFAnalyzer:
             instructions=self.instructions,
             vulnerabilities=self.vulnerabilities,
             warnings=self.warnings,
-            security_score=security_score
-        )
+            security_score=security_score)
+        
+
     
     def _check_data_end_boundary(self):
         """检测data_end边界检查缺失"""
@@ -248,13 +252,13 @@ class EBPFAnalyzer:
                 break
         
         if not has_data_end_check and len(self.instructions) > 0:
-            self.vulnerabilities.append({
+            self.vulnerabilities.append({)
                 'type': 'DATA_END_BOUNDARY_MISSING',
                 'severity': 'high',
                 'description': '缺少data_end边界检查，可能导致越界访问',
                 'location': '全局',
                 'recommendation': '在访问数据包数据前，应检查指针是否超出data_end'
-            })
+            }
     
     def _check_uninitialized_registers(self):
         """检测未初始化寄存器的使用"""
@@ -263,13 +267,13 @@ class EBPFAnalyzer:
         for instr in self.instructions:
             if instr.src_reg != 0 and instr.src_reg not in initialized_regs:
                 if 'ld' not in instr.mnemonic.lower() and 'mov' not in instr.mnemonic.lower():
-                    self.vulnerabilities.append({
+                    self.vulnerabilities.append({)
                         'type': 'UNINITIALIZED_REGISTER',
                         'severity': 'medium',
                         'description': f"指令 {instr.mnemonic} 使用未初始化的寄存器 r{instr.src_reg}",
                         'location': f"PC={instr.pc}",
                         'recommendation': '确保寄存器在使用前已正确初始化'
-                    })
+                    }
             initialized_regs.add(instr.dst_reg)
     
     def _check_infinite_loop(self):
@@ -278,21 +282,21 @@ class EBPFAnalyzer:
         
         for instr in self.instructions:
             if 'jmp' in instr.mnemonic.lower() or 'ja' in instr.mnemonic:
-                target_pc = instr.pc + instr.offset + 1
-                if target_pc <= instr.pc:  # 向后跳转
+                target_pc = instr.pc + instr.offset + 1,
+                if target_pc <= instr.pc:  # 向后跳转,
                     if target_pc not in jump_targets:
                         jump_targets[target_pc] = 0
                     jump_targets[target_pc] += 1
         
         for target, count in jump_targets.items():
             if count > 1:
-                self.vulnerabilities.append({
+                self.vulnerabilities.append({)
                     'type': 'POTENTIAL_INFINITE_LOOP',
                     'severity': 'high',
                     'description': f"检测到潜在无限循环，跳转目标 PC={target} 被多次跳转到",
                     'location': f"PC={target}",
                     'recommendation': '检查循环条件是否正确，确保循环能够终止'
-                })
+                }
     
     def _check_validator_bypass(self):
         """检测验证器绕过尝试"""
@@ -322,7 +326,7 @@ class EBPFAnalyzer:
         
         for instr in self.instructions:
             if 'call' in instr.mnemonic.lower():
-                helper_id = instr.imm
+                helper_id = instr.imm,
                 if helper_id in privileged_helpers:
                     self.warnings.append(f"调用特权helper函数 {privileged_helpers[helper_id]} (ID={helper_id})")
     
@@ -406,7 +410,7 @@ def check_bpftool_validation(file_path: str) -> Dict[str, Any]:
         'errors': []
     }
     
-    output = subprocess.run(['bpftool', 'prog', 'load', file_path, '/dev/null'],
+    output = subprocess.run(['bpftool', 'prog', 'load', file_path, '/dev/null'])
                           capture_output=True, text=True).stderr
     
     result['output'] = output
@@ -416,4 +420,4 @@ def check_bpftool_validation(file_path: str) -> Dict[str, Any]:
     else:
         result['validated'] = True
     
-    return result
+    return result)))

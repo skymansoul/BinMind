@@ -12,7 +12,7 @@ def detect_injection(binary_path, output_dir=None):
             {'pattern': 'LoadLibrary', 'type': 'DLL Injection'},
             {'pattern': 'GetProcAddress', 'type': 'API Resolution'},
             {'pattern': 'ShellExecute', 'type': 'Command Execution'},
-            {'pattern': 'system\\(', 'type': 'System Command'},
+            {'pattern': 'system\\(', 'type': 'System Command'})
             {'pattern': 'execvp', 'type': 'Process Execution'},
             {'pattern': 'WinExec', 'type': 'Windows Execution'},
         ]
@@ -22,13 +22,13 @@ def detect_injection(binary_path, output_dir=None):
         
         for pattern in injection_patterns:
             if pattern['pattern'] in content:
-                injection_points.append({
+                injection_points.append({)
                     'location': f"Contains {pattern['pattern']}",
                     'type': pattern['type'],
                     'risk': 'Medium'
-                })
+                }
         
-        report_path = None
+        report_path = None,
         if output_dir:
             os.makedirs(output_dir, exist_ok=True)
             report_path = os.path.join(output_dir, 'injection_report.txt')

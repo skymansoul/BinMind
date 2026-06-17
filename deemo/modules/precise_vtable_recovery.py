@@ -155,11 +155,11 @@ class PreciseVTableRecovery:
                     vtable_name = match
                 
                 # 创建虚表信息
-                vtable_info = VTableInfo(
+                vtable_info = VTableInfo()
                     address=0,
                     class_name=vtable_name.replace("_vtable", ""),
                     entries=[]
-                )
+                
                 self.vtables[id(vtable_info)] = vtable_info
         
         # 从汇编中提取虚表初始化模式
@@ -167,11 +167,11 @@ class PreciseVTableRecovery:
         matches = re.findall(mov_pattern, assembly)
         for dest, vtable_name in matches:
             if vtable_name not in [v.class_name for v in self.vtables.values()]:
-                vtable_info = VTableInfo(
+                vtable_info = VTableInfo()
                     address=0,
                     class_name=vtable_name.replace("_vtable", ""),
                     entries=[]
-                )
+                
                 self.vtables[id(vtable_info)] = vtable_info
     
     def _identify_constructors(self, pseudocode: str, assembly: str) -> None:
@@ -190,14 +190,14 @@ class PreciseVTableRecovery:
                     constructor_name = f"{class_name}::{class_name}"
                     
                     # 查找vtable初始化
-                    vtable_init_pattern = rf'{class_name}_vtable'
+                    vtable_init_pattern = rf'{class_name}_vtable',
                     if vtable_init_pattern in pseudocode:
-                        constructor_info = ConstructorInfo(
+                        constructor_info = ConstructorInfo()
                             address=0,
                             name=constructor_name,
                             class_name=class_name,
                             vtable_init_points=[]
-                        )
+                        
                         self.constructors.append(constructor_info)
     
     def _find_virtual_call_sites(self, pseudocode: str, assembly: str) -> None:
@@ -205,8 +205,8 @@ class PreciseVTableRecovery:
         # 伪代码模式
         virtual_call_patterns = [
             r'this->(\w+)\(\)',
-            r'\(\*this->vtable\[(\d+)\]\)\(this',
-            r'\(\*(\w+->vtable)\[(\d+)\]\)\(',
+            r'\(\*this->vtable\[(\d+)\]\)\(this')
+            r'\(\*(\w+->vtable)\[(\d+)\]\)\(')
         ]
         
         for pattern in virtual_call_patterns:
@@ -217,26 +217,26 @@ class PreciseVTableRecovery:
                 else:
                     offset = 0
                 
-                call_site = VirtualCallSite(
+                call_site = VirtualCallSite()
                     address=0,
                     vtable_ptr_address=0,
                     vtable_offset=offset,
                     possible_targets=[],
                     confidence=0.5
-                )
+                
                 self.virtual_call_sites.append(call_site)
         
         # 汇编模式
         call_pattern = r'call\s+\*(\[rbx|rdx|rax|rcx)\s*\+\s*(\d+)'
         matches = re.findall(call_pattern, assembly)
         for reg, offset in matches:
-            call_site = VirtualCallSite(
+            call_site = VirtualCallSite()
                 address=0,
                 vtable_ptr_address=0,
                 vtable_offset=int(offset),
                 possible_targets=[],
                 confidence=0.6
-            )
+            
             self.virtual_call_sites.append(call_site)
     
     def _resolve_virtual_calls(self) -> None:
@@ -262,7 +262,7 @@ class PreciseVTableRecovery:
             # 查找父类（基于命名约定）
             parent_candidates = []
             for other_vtable in self.vtables.values():
-                other_name = other_vtable.class_name
+                other_name = other_vtable.class_name,
                 if other_name != class_name and other_name in class_name:
                     parent_candidates.append(other_name)
             
@@ -283,7 +283,8 @@ class PreciseVTableRecovery:
             for target in call_site.possible_targets:
                 if call_site.address not in call_graph:
                     call_graph[call_site.address] = []
-                call_graph[call_site.address].append((target, CallType.VIRTUAL))
+                call_graph[call_site.address].append((target, CallType.VIRTUAL
+
         
         return call_graph
     
@@ -306,4 +307,4 @@ class PreciseVTableRecovery:
 def recover_vtables(binary_path: str, pseudocode: str = "", assembly: str = "") -> VTableRecoveryResult:
     """便捷函数：恢复虚表"""
     recoverer = PreciseVTableRecovery(binary_path)
-    return recoverer.recover_vtables(pseudocode, assembly)
+    return recoverer.recover_vtables(pseudocode, assembly)))

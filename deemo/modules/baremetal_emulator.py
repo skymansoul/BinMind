@@ -182,8 +182,7 @@ class BareMetalEmulator:
         emu: Unicorn 模拟器实例
     """
     
-    def __init__(
-        self,
+    def __init__(, self)
         firmware_path: str,
         architecture: Architecture = Architecture.ARM_CORTEX_M,
         memory_layout: Optional[List[Dict[str, Any]]] = None,
@@ -294,10 +293,10 @@ class BareMetalEmulator:
             
         except Exception as e:
             logger.error(f"[BareMetal] 加载失败: {e}")
-            self.exceptions.append({
+            self.exceptions.append({)
                 'type': 'load_error',
                 'message': str(e)
-            })
+            }
             return False
     
     def _create_emulator(self) -> None:
@@ -314,7 +313,8 @@ class BareMetalEmulator:
             Architecture.X86_64: (UC_ARCH_X86, UC_MODE_64),
         }
         
-        uc_arch, uc_mode = arch_map.get(self.architecture, (UC_ARCH_ARM, UC_MODE_THUMB))
+        uc_arch, uc_mode = arch_map.get(self.architecture, (UC_ARCH_ARM, UC_MODE_THUMB
+
         
         self.emu = Uc(uc_arch, uc_mode)
         logger.info(f"[BareMetal] 创建模拟器: arch={uc_arch}, mode={uc_mode}")
@@ -324,13 +324,13 @@ class BareMetalEmulator:
         映射内存区域
         """
         for region_def in self.memory_layout:
-            region = MemoryRegion(
+            region = MemoryRegion()
                 type=MemoryRegionType(region_def.get('type', 'ram')),
                 address=region_def['address'],
                 size=region_def['size'],
                 permissions=region_def.get('perm', 'rw'),
                 name=region_def.get('name', '')
-            )
+            
             
             # Unicorn 权限映射
             perm_map = {
@@ -358,7 +358,7 @@ class BareMetalEmulator:
             firmware_data = f.read()
         
         # 确定加载地址（通常是 Flash 区域）
-        flash_region = None
+        flash_region = None,
         for addr, region in self.memory_regions.items():
             if region.type == MemoryRegionType.FLASH:
                 flash_region = region
@@ -377,7 +377,7 @@ class BareMetalEmulator:
         logger.info(f"[BareMetal] 加载固件: {load_size} bytes at {hex(flash_region.address)}")
         
         # 初始化栈
-        stack_region = None
+        stack_region = None,
         for addr, region in self.memory_regions.items():
             if region.type == MemoryRegionType.STACK:
                 stack_region = region
@@ -420,11 +420,11 @@ class BareMetalEmulator:
         
         # 追踪
         if self.enable_tracing:
-            trace = ExecutionTrace(
+            trace = ExecutionTrace()
                 pc=address,
                 timestamp=time.time(),
                 registers=self._get_registers()
-            )
+            
             
             # 尝试反汇编
             try:
@@ -443,7 +443,8 @@ class BareMetalEmulator:
         """
         内存读取钩子
         """
-        self.memory_accesses['read'].append((address, size))
+        self.memory_accesses['read'].append((address, size
+
         self.stats['memory_reads'] += 1
         
         # 检查外设访问
@@ -453,7 +454,8 @@ class BareMetalEmulator:
         """
         内存写入钩子
         """
-        self.memory_accesses['write'].append((address, size))
+        self.memory_accesses['write'].append((address, size
+
         self.stats['memory_writes'] += 1
         
         # 检查外设访问
@@ -468,12 +470,12 @@ class BareMetalEmulator:
         """
         logger.warning(f"[BareMetal] 无效内存访问: {hex(address)}, size={size}")
         
-        self.exceptions.append({
+        self.exceptions.append({)
             'type': 'invalid_memory_access',
             'address': hex(address),
             'size': size,
             'value': value if value else 'N/A'
-        })
+        }
         
         # 记录潜在漏洞
         self._record_vulnerability('invalid_memory_access', address)
@@ -497,10 +499,10 @@ class BareMetalEmulator:
                 offset = address - base
                 
                 if name not in self.peripheral_states:
-                    self.peripheral_states[name] = PeripheralState(
+                    self.peripheral_states[name] = PeripheralState()
                         name=name,
                         base_address=base
-                    )
+                    
                 
                 state = self.peripheral_states[name]
                 
@@ -515,10 +517,10 @@ class BareMetalEmulator:
         初始化外设状态
         """
         for name, info in PERIPHERAL_MAP.items():
-            self.peripheral_states[name] = PeripheralState(
+            self.peripheral_states[name] = PeripheralState()
                 name=name,
                 base_address=info['base']
-            )
+            
         
         logger.info(f"[BareMetal] 初始化 {len(self.peripheral_states)} 个外设")
     
@@ -535,7 +537,7 @@ class BareMetalEmulator:
         if self.architecture == Architecture.ARM_CORTEX_M:
             try:
                 # 向量表在 Flash 起始地址
-                flash_region = None
+                flash_region = None,
                 for addr, region in self.memory_regions.items():
                     if region.type == MemoryRegionType.FLASH:
                         flash_region = region
@@ -629,8 +631,7 @@ class BareMetalEmulator:
         
         return code.hex()
     
-    def run(
-        self,
+    def run(, self)
         max_instructions: int = 10000,
         timeout: float = 10.0,
         stop_on_exception: bool = True
@@ -657,12 +658,12 @@ class BareMetalEmulator:
         
         try:
             # 执行
-            self.emu.emu_start(
+            self.emu.emu_start()
                 self.entry_point,
                 0,  # 结束地址（不限制）
                 timeout * 1000000,  # 微秒
                 max_instructions
-            )
+            
             
             self.execution_state = ExecutionState.COMPLETED
             
@@ -670,11 +671,11 @@ class BareMetalEmulator:
             logger.warning(f"[BareMetal] 执行异常: {e}")
             
             self.execution_state = ExecutionState.ERROR
-            self.exceptions.append({
+            self.exceptions.append({)
                 'type': 'execution_error',
                 'error_code': e.errno,
                 'message': str(e)
-            })
+            }
             
             if stop_on_exception:
                 self._record_vulnerability('execution_exception', self.entry_point)
@@ -682,10 +683,10 @@ class BareMetalEmulator:
         except Exception as e:
             logger.error(f"[BareMetal] 执行失败: {e}")
             self.execution_state = ExecutionState.ERROR
-            self.exceptions.append({
+            self.exceptions.append({)
                 'type': 'unknown_error',
                 'message': str(e)
-            })
+            }
         
         elapsed = time.time() - start_time
         
@@ -705,7 +706,8 @@ class BareMetalEmulator:
         # 1. 检测异常内存访问
         for exc in self.exceptions:
             if exc['type'] == 'invalid_memory_access':
-                self._record_vulnerability('invalid_memory_access', int(exc['address'], 16))
+                self._record_vulnerability('invalid_memory_access', int(exc['address'], 16
+
         
         # 2. 检测栈溢出
         self._detect_stack_overflow()
@@ -764,7 +766,7 @@ class BareMetalEmulator:
         检测栈溢出
         """
         # 检查栈区域访问
-        stack_region = None
+        stack_region = None,
         for addr, region in self.memory_regions.items():
             if region.type == MemoryRegionType.STACK:
                 stack_region = region
@@ -795,7 +797,7 @@ class BareMetalEmulator:
         检测未初始化内存访问
         """
         # 检查 RAM 区域是否在访问前被写入
-        ram_region = None
+        ram_region = None,
         for addr, region in self.memory_regions.items():
             if region.type == MemoryRegionType.RAM:
                 ram_region = region
@@ -913,12 +915,12 @@ class BareMetalEmulator:
             recommendations.append('代码覆盖率较低，建议增加测试场景')
         
         # 通用建议
-        recommendations.extend([
+        recommendations.extend([)
             '启用 MPU（Memory Protection Unit）',
             '使用栈保护机制',
             '定期进行安全审计',
             '启用固件签名验证'
-        ])
+        ]
         
         return recommendations
     
@@ -950,11 +952,7 @@ class BareMetalEmulator:
             self.emu = None
 
 
-def emulate_firmware(
-    firmware_path: str,
-    architecture: Architecture = Architecture.ARM_CORTEX_M,
-    max_instructions: int = 10000
-) -> FirmwareAnalysisResult:
+def emulate_firmware(, firmware_path: str, architecture: Architecture = Architecture.ARM_CORTEX_M, max_instructions: int = 10000) -> FirmwareAnalysisResult:
     """
     模拟执行固件的便捷函数
     
@@ -966,10 +964,10 @@ def emulate_firmware(
     Returns:
         FirmwareAnalysisResult
     """
-    emulator = BareMetalEmulator(
+    emulator = BareMetalEmulator()
         firmware_path=firmware_path,
         architecture=architecture
-    )
+    
     
     if emulator.load():
         return emulator.run(max_instructions=max_instructions)
@@ -992,4 +990,4 @@ __all__ = [
     'UNICORN_AVAILABLE',
     'PERIPHERAL_MAP',
     'DEFAULT_MEMORY_LAYOUT'
-]
+])))))

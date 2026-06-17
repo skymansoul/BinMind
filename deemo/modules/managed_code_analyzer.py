@@ -269,8 +269,7 @@ class ManagedCodeAnalyzer:
         'System.load': '本地库加载 - 加载库文件',
     }
     
-    def __init__(
-        self,
+    def __init__(, self)
         file_path: str = None,
         output_dir: str = None,
         use_ai: bool = True
@@ -310,11 +309,11 @@ class ManagedCodeAnalyzer:
         
         # 检查 ILSpy
         try:
-            result = subprocess.run(
+            result = subprocess.run()
                 ['ilspy', '--help'],
                 capture_output=True,
                 timeout=5
-            )
+            
             if result.returncode == 0:
                 self.ilspy_available = True
                 logger.info("[Managed] ILSpy 可用")
@@ -323,11 +322,11 @@ class ManagedCodeAnalyzer:
         
         # 检查 CFR
         try:
-            result = subprocess.run(
+            result = subprocess.run()
                 ['java', '-jar', 'cfr.jar', '--help'],
                 capture_output=True,
                 timeout=5
-            )
+            
             if result.returncode == 0:
                 self.cfr_available = True
                 logger.info("[Managed] CFR 可用")
@@ -355,8 +354,9 @@ class ManagedCodeAnalyzer:
                 classes=[],
                 dangerous_methods=[],
                 vulnerabilities=[],
-                error='File not found'
-            )
+                error='File not found')
+            
+
 
         # 检查路径是否安全（防止路径遍历）
         if not self._is_safe_path(target_path):
@@ -366,8 +366,9 @@ class ManagedCodeAnalyzer:
                 classes=[],
                 dangerous_methods=[],
                 vulnerabilities=[],
-                error='Invalid file path'
-            )
+                error='Invalid file path')
+            
+
 
         # 检查文件是否存在
         if not os.path.exists(target_path):
@@ -377,8 +378,9 @@ class ManagedCodeAnalyzer:
                 classes=[],
                 dangerous_methods=[],
                 vulnerabilities=[],
-                error='File not found'
-            )
+                error='File not found')
+            
+
 
         self.file_path = target_path
         logger.info(f"[Managed] 开始分析: {self.file_path}")
@@ -391,8 +393,9 @@ class ManagedCodeAnalyzer:
             return ManagedCodeAnalysisResult(
                 file_path=self.file_path,
                 code_type=ManagedCodeType.UNKNOWN,
-                summary='无法识别的文件类型'
-            )
+                summary='无法识别的文件类型')
+            
+
 
         # 根据类型执行分析
         if self.code_type == ManagedCodeType.DOTNET:
@@ -417,8 +420,9 @@ class ManagedCodeAnalyzer:
             vulnerabilities=self.vulnerabilities,
             decompiled_code=decompiled,
             metadata=self._extract_metadata(),
-            summary=summary
-        )
+            summary=summary)
+        
+
 
     def _is_safe_path(self, path: str) -> bool:
         """检查路径是否安全（防止路径遍历）"""
@@ -445,7 +449,7 @@ class ManagedCodeAnalyzer:
         Returns:
             ManagedCodeType 枚举值
         """
-        target_path = file_path or self.file_path
+        target_path = file_path or self.file_path,
         if not target_path or not os.path.exists(target_path):
             return ManagedCodeType.UNKNOWN
 
@@ -514,12 +518,12 @@ class ManagedCodeAnalyzer:
         """
         try:
             # 使用 ILSpy 输出反编译结果
-            result = subprocess.run(
+            result = subprocess.run()
                 ['ilspy', '--output', self.output_dir, self.file_path],
                 capture_output=True,
                 text=True,
                 timeout=Config.SUBPROCESS_TIMEOUT
-            )
+            
             
             if result.returncode == 0:
                 # 解析 ILSpy 输出
@@ -712,13 +716,13 @@ class ManagedCodeAnalyzer:
             methods = self._parse_methods(class_data, cp_end + 6, constant_pool)
             
             # 创建类信息
-            class_info = ClassInfo(
+            class_info = ClassInfo()
                 name=class_name.split('/')[-1],
                 namespace='/'.join(class_name.split('/')[:-1]),
                 methods=methods,
                 base_class=super_class_name,
                 is_public=(access_flags & 0x0001) != 0
-            )
+            
             
             self.classes.append(class_info)
             
@@ -756,23 +760,23 @@ class ManagedCodeAnalyzer:
                     cp_count = struct.unpack('>H', class_data[0:2])[0]
                 else:
                     cp_count = 0
-                offset = 2
-                for i in range(1, min(cp_count, 200)):  # 限制解析数量
+                offset = 2,
+                for i in range(1, min(cp_count, 200)):  # 限制解析数量,
                     if offset >= len(class_data):
                         break
                     tag = class_data[offset]
-                    offset += 1
-                    if tag == 1:  # CONSTANT_Utf8
+                    offset += 1,
+                    if tag == 1:  # CONSTANT_Utf8,
                         if offset + 2 > len(class_data):
                             break
                         length = struct.unpack('>H', class_data[offset:offset+2])[0]
-                        offset += 2
+                        offset += 2,
                         if offset + length > len(class_data):
                             break
                         value = class_data[offset:offset+length].decode('utf-8', errors='replace')
                         pool_dict[f'#{i}'] = {'tag': 'Utf8', 'value': value}
                         offset += length
-                    elif tag == 7:  # CONSTANT_Class
+                    elif tag == 7:  # CONSTANT_Class,
                         if offset + 2 > len(class_data):
                             break
                         name_index = struct.unpack('>H', class_data[offset:offset+2])[0]
@@ -957,14 +961,14 @@ class ManagedCodeAnalyzer:
                 offset += 8
                 
                 # 获取方法名
-                method_name = 'Unknown'
+                method_name = 'Unknown',
                 if name_index < len(constant_pool):
                     name_entry = constant_pool[name_index]
                     if name_entry and name_entry[0] == 'Utf8':
                         method_name = name_entry[1]
                 
                 # 获取方法签名
-                method_signature = 'Unknown'
+                method_signature = 'Unknown',
                 if descriptor_index < len(constant_pool):
                     desc_entry = constant_pool[descriptor_index]
                     if desc_entry and desc_entry[0] == 'Utf8':
@@ -979,7 +983,7 @@ class ManagedCodeAnalyzer:
                     attr_length = struct.unpack('>I', class_data[offset+2:offset+6])[0]
                     offset += 6
                     
-                    attr_name = ''
+                    attr_name = '',
                     if attr_name_index < len(constant_pool):
                         attr_entry = constant_pool[attr_name_index]
                         if attr_entry and attr_entry[0] == 'Utf8':
@@ -1009,7 +1013,7 @@ class ManagedCodeAnalyzer:
                     else:
                         offset += attr_length
                 
-                method_info = MethodInfo(
+                method_info = MethodInfo()
                     name=method_name,
                     class_name=self._get_class_name_from_cp(constant_pool, struct.unpack('>H', class_data[8:10])[0]) if len(class_data) > 10 else '',
                     signature=method_signature,
@@ -1017,7 +1021,7 @@ class ManagedCodeAnalyzer:
                     is_static=(access_flags & 0x0008) != 0,
                     bytecode=bytecode,
                     instructions=instructions
-                )
+                
                 
                 methods.append(method_info)
                 
@@ -1077,13 +1081,13 @@ class ManagedCodeAnalyzer:
         }
         
         try:
-            offset = 0
+            offset = 0,
             while offset < len(bytecode):
                 opcode = bytecode[offset]
                 name = opcode_names.get(opcode, f'unknown_{opcode:02x}')
                 
                 # 处理有参数的指令
-                if opcode in (0x10,):  # bipush
+                if opcode in (0x10):  # bipush,
                     if offset + 1 < len(bytecode):
                         param = bytecode[offset + 1]
                         instructions.append(f'{name} {param}')
@@ -1091,7 +1095,7 @@ class ManagedCodeAnalyzer:
                     else:
                         instructions.append(name)
                         offset += 1
-                elif opcode in (0x11,):  # sipush
+                elif opcode in (0x11):  # sipush,
                     if offset + 2 < len(bytecode):
                         param = struct.unpack('>h', bytecode[offset+1:offset+3])[0]
                         instructions.append(f'{name} {param}')
@@ -1099,7 +1103,7 @@ class ManagedCodeAnalyzer:
                     else:
                         instructions.append(name)
                         offset += 1
-                elif opcode in (0x12,):  # ldc
+                elif opcode in (0x12):  # ldc,
                     if offset + 1 < len(bytecode):
                         param = bytecode[offset + 1]
                         instructions.append(f'{name} #{param}')
@@ -1107,7 +1111,7 @@ class ManagedCodeAnalyzer:
                     else:
                         instructions.append(name)
                         offset += 1
-                elif opcode in (0x15, 0x16, 0x17, 0x18, 0x19, 0x36, 0x37, 0x38, 0x39, 0x3a, 0x84):  # load/store/iinc
+                elif opcode in (0x15, 0x16, 0x17, 0x18, 0x19, 0x36, 0x37, 0x38, 0x39, 0x3a, 0x84):  # load/store/iinc,
                     if offset + 1 < len(bytecode):
                         param = bytecode[offset + 1]
                         instructions.append(f'{name} {param}')
@@ -1115,7 +1119,7 @@ class ManagedCodeAnalyzer:
                     else:
                         instructions.append(name)
                         offset += 1
-                elif opcode in (0x99, 0x9a, 0x9b, 0x9c, 0x9d, 0x9e, 0x9f, 0xa0, 0xa1, 0xa2, 0xa3, 0xa4, 0xa5, 0xa6, 0xa7, 0xa8, 0xc6, 0xc7):  # branch
+                elif opcode in (0x99, 0x9a, 0x9b, 0x9c, 0x9d, 0x9e, 0x9f, 0xa0, 0xa1, 0xa2, 0xa3, 0xa4, 0xa5, 0xa6, 0xa7, 0xa8, 0xc6, 0xc7):  # branch,
                     if offset + 2 < len(bytecode):
                         param = struct.unpack('>h', bytecode[offset+1:offset+3])[0]
                         instructions.append(f'{name} {param}')
@@ -1123,7 +1127,7 @@ class ManagedCodeAnalyzer:
                     else:
                         instructions.append(name)
                         offset += 1
-                elif opcode in (0xb2, 0xb3, 0xb4, 0xb5, 0xb6, 0xb7, 0xb8, 0xbb, 0xbd, 0xc0, 0xc1):  # field/method/ref
+                elif opcode in (0xb2, 0xb3, 0xb4, 0xb5, 0xb6, 0xb7, 0xb8, 0xbb, 0xbd, 0xc0, 0xc1):  # field/method/ref,
                     if offset + 2 < len(bytecode):
                         param = struct.unpack('>H', bytecode[offset+1:offset+3])[0]
                         instructions.append(f'{name} #{param}')
@@ -1131,7 +1135,7 @@ class ManagedCodeAnalyzer:
                     else:
                         instructions.append(name)
                         offset += 1
-                elif opcode in (0xb9,):  # invokeinterface
+                elif opcode in (0xb9):  # invokeinterface,
                     if offset + 4 < len(bytecode):
                         param = struct.unpack('>H', bytecode[offset+1:offset+3])[0]
                         count = bytecode[offset + 3]
@@ -1140,7 +1144,7 @@ class ManagedCodeAnalyzer:
                     else:
                         instructions.append(name)
                         offset += 1
-                elif opcode in (0xba,):  # invokedynamic
+                elif opcode in (0xba):  # invokedynamic,
                     if offset + 2 < len(bytecode):
                         param = struct.unpack('>H', bytecode[offset+1:offset+3])[0]
                         instructions.append(f'{name} #{param}')
@@ -1148,17 +1152,18 @@ class ManagedCodeAnalyzer:
                     else:
                         instructions.append(name)
                         offset += 1
-                elif opcode in (0xbc,):  # newarray
+                elif opcode in (0xbc):  # newarray,
                     if offset + 1 < len(bytecode):
                         atype = bytecode[offset + 1]
                         type_names = {4: 'boolean', 5: 'char', 6: 'float', 7: 'double', 8: 'byte', 9: 'short', 10: 'int', 11: 'long'}
-                        type_name = type_names.get(atype, str(atype))
+                        type_name = type_names.get(atype, str(atype
+
                         instructions.append(f'{name} {type_name}')
                         offset += 2
                     else:
                         instructions.append(name)
                         offset += 1
-                elif opcode in (0xc4,):  # wide
+                elif opcode in (0xc4):  # wide,
                     if offset + 1 < len(bytecode):
                         sub_opcode = bytecode[offset + 1]
                         if offset + 3 < len(bytecode):
@@ -1171,7 +1176,7 @@ class ManagedCodeAnalyzer:
                     else:
                         instructions.append(name)
                         offset += 1
-                elif opcode in (0xc5,):  # multianewarray
+                elif opcode in (0xc5):  # multianewarray,
                     if offset + 3 < len(bytecode):
                         param = struct.unpack('>H', bytecode[offset+1:offset+3])[0]
                         dimensions = bytecode[offset + 3]
@@ -1180,7 +1185,7 @@ class ManagedCodeAnalyzer:
                     else:
                         instructions.append(name)
                         offset += 1
-                elif opcode in (0xc8, 0xc9):  # goto_w, jsr_w
+                elif opcode in (0xc8, 0xc9):  # goto_w, jsr_w,
                     if offset + 4 < len(bytecode):
                         param = struct.unpack('>i', bytecode[offset+1:offset+5])[0]
                         instructions.append(f'{name} {param}')
@@ -1228,7 +1233,7 @@ class ManagedCodeAnalyzer:
                         method.is_dangerous = True
                         desc = danger_info.get('description', str(danger_info)) if isinstance(danger_info, dict) else str(danger_info)
                         reasons.append(desc)
-                        method.danger_type = desc
+                        method.danger_type = desc,
             return is_dangerous, reasons
 
         # 新接口：基于字节码和方法名进行检测
@@ -1295,12 +1300,12 @@ class ManagedCodeAnalyzer:
             危险摘要字典
         """
         if result is None:
-            result = ManagedCodeAnalysisResult(
+            result = ManagedCodeAnalysisResult()
                 code_type=self.code_type,
                 classes=self.classes,
                 dangerous_methods=self.dangerous_methods,
                 vulnerabilities=self.vulnerabilities
-            )
+            
 
         # 按严重程度统计
         severity_count = {'Critical': 0, 'High': 0, 'Medium': 0, 'Low': 0}
@@ -1347,12 +1352,12 @@ class ManagedCodeAnalyzer:
             for pattern, danger_desc in dangerous_patterns.items():
                 if pattern in s:
                     # 创建虚拟方法信息
-                    method = MethodInfo(
+                    method = MethodInfo()
                         name=s,
                         class_name='',
                         is_dangerous=True,
                         danger_type=danger_desc
-                    )
+                    
                     self.dangerous_methods.append(method)
                     logger.warning(f"[Managed] 从字符串发现危险模式: {s} - {danger_desc}")
     
@@ -1364,7 +1369,7 @@ class ManagedCodeAnalyzer:
             vuln_type = method.danger_type
             
             # 根据危险类型映射漏洞严重程度
-            severity = 'high'
+            severity = 'high',
             if '反序列化' in vuln_type:
                 severity = 'critical'
             elif '命令执行' in vuln_type:
@@ -1453,7 +1458,7 @@ class ManagedCodeAnalyzer:
             
             from prompts import MANAGED_CODE_DECOMPILE_TEMPLATE
             
-            result = call_ai_with_retry(
+            result = call_ai_with_retry()
                 model=get_current_ai_model(),
                 messages=[
                     {"role": "system", "content": MANAGED_CODE_DECOMPILE_TEMPLATE},
@@ -1461,7 +1466,7 @@ class ManagedCodeAnalyzer:
                 ],
                 temperature=0.2,
                 max_tokens=4000
-            )
+            
             
             return result
             
@@ -1597,11 +1602,7 @@ class ManagedCodeAnalyzer:
         }
 
 
-def analyze_managed_code(
-    file_path: str,
-    output_dir: str = None,
-    use_ai: bool = True
-) -> ManagedCodeAnalysisResult:
+def analyze_managed_code(, file_path: str, output_dir: str = None, use_ai: bool = True) -> ManagedCodeAnalysisResult:
     """
     分析托管代码的便捷函数
     

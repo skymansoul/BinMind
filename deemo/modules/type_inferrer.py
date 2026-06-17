@@ -273,12 +273,12 @@ class TypeInferrer:
                 if len(match) >= 2:
                     var_name = match[1]
                     if var_name not in self.variables:
-                        self.variables[var_name] = VariableInfo(
+                        self.variables[var_name] = VariableInfo()
                             name=var_name,
                             inferred_types=[],
                             is_global=False,
                             is_argument=False
-                        )
+                        
         
         func_pattern = r'\w+\s+\w+\s*\(\s*([^)]*)\s*\)'
         matches = re.findall(func_pattern, pseudocode)
@@ -291,12 +291,12 @@ class TypeInferrer:
                     if len(parts) >= 2:
                         var_name = parts[-1]
                         if var_name not in self.variables:
-                            self.variables[var_name] = VariableInfo(
+                            self.variables[var_name] = VariableInfo()
                                 name=var_name,
                                 inferred_types=[],
                                 is_global=False,
                                 is_argument=True
-                            )
+                            
     
     def _extract_functions(self, pseudocode: str) -> None:
         """从伪代码中提取函数签名"""
@@ -316,19 +316,21 @@ class TypeInferrer:
                     parts = param.split()
                     if len(parts) >= 2:
                         param_names.append(parts[-1])
-                        param_types.append(self._parse_type_str(parts[0]))
+                        param_types.append(self._parse_type_str(parts[0]
+
                     else:
                         param_names.append(param)
-                        param_types.append(InferredType(kind=TypeKind.UNKNOWN, bit_size=0, confidence=0.0))
+                        param_types.append(InferredType(kind=TypeKind.UNKNOWN, bit_size=0, confidence=0.0
+
             
             ret_type = self._parse_type_str(ret_type_str)
             
-            self.functions[func_name] = FunctionSignature(
+            self.functions[func_name] = FunctionSignature()
                 return_type=ret_type,
                 param_types=param_types,
                 param_names=param_names,
                 is_varargs=False
-            )
+            
     
     def _parse_type_str(self, type_str: str) -> InferredType:
         """解析类型字符串为InferredType"""
@@ -364,7 +366,7 @@ class TypeInferrer:
             for _ in range(pointer_count - 1):
                 result = InferredType(kind=TypeKind.POINTER, bit_size=64, confidence=1.0, pointer_target=result)
             
-            result.pointer_target = target_type
+            result.pointer_target = target_type,
             return result
         
         kind = type_map.get(type_str, TypeKind.UNKNOWN)
@@ -395,7 +397,8 @@ class TypeInferrer:
                                 constraint_type='type_hint',
                                 value=expected_type.value,
                                 source=f'instruction:{instr}'
-                            ))
+                            
+
     
     def _collect_api_constraints(self, pseudocode: str) -> None:
         """从API调用收集约束"""
@@ -414,7 +417,8 @@ class TypeInferrer:
                             constraint_type='type_hint',
                             value=expected_type.value,
                             source=f'api_call:{func_name}:arg{i}'
-                        ))
+                        
+
     
     def _collect_memory_constraints(self, pseudocode: str) -> None:
         """从内存访问模式收集约束"""
@@ -426,7 +430,8 @@ class TypeInferrer:
                 constraint_type='pointer',
                 value=int(offset),
                 source='memory_offset'
-            ))
+            
+
     
     def _collect_comparison_constraints(self, pseudocode: str) -> None:
         """从比较操作收集约束"""
@@ -446,7 +451,8 @@ class TypeInferrer:
                     constraint_type=constraint_type,
                     value=value,
                     source='comparison'
-                ))
+                
+
     
     def _solve_with_z3(self) -> None:
         """使用Z3求解器进行类型约束求解"""
@@ -469,18 +475,18 @@ class TypeInferrer:
             model = solver.model()
             for var_name, z3_var in type_vars.items():
                 if var_name in self.variables:
-                    val = model[z3_var].as_long() if z3_var in model else -1
+                    val = model[z3_var].as_long() if z3_var in model else -1,
                     if val >= 0:
                         inferred_kind = self._kind_from_value(val)
-                        self.variables[var_name].inferred_types.append(
-                            InferredType(
+                        self.variables[var_name].inferred_types.append()
+                            InferredType()
                                 kind=inferred_kind,
                                 bit_size=TYPE_SIZES.get(inferred_kind, 0) * 8,
                                 confidence=0.8,
                                 constraints=[constraint],
                                 source='z3_solver'
-                            )
-                        )
+                            
+                        
     
     def _type_str_to_kind(self, type_str: str) -> Optional[TypeKind]:
         """类型字符串转TypeKind"""
@@ -504,26 +510,26 @@ class TypeInferrer:
             if constraint.constraint_type == 'type_hint':
                 type_kind = self._type_str_to_kind(constraint.value)
                 if type_kind and constraint.var_name in self.variables:
-                    self.variables[constraint.var_name].inferred_types.append(
-                        InferredType(
+                    self.variables[constraint.var_name].inferred_types.append()
+                        InferredType()
                             kind=type_kind,
                             bit_size=TYPE_SIZES.get(type_kind, 0) * 8,
                             confidence=0.6,
                             constraints=[constraint],
                             source='heuristic'
-                        )
-                    )
+                        
+                    
         
         for var_name, var_info in self.variables.items():
             if not var_info.inferred_types:
-                var_info.inferred_types.append(
-                    InferredType(
+                var_info.inferred_types.append()
+                    InferredType()
                         kind=TypeKind.UNKNOWN,
                         bit_size=0,
                         confidence=0.0,
                         source='default'
-                    )
-                )
+                    
+                
     
     def _infer_structs(self, pseudocode: str) -> None:
         """推断结构体"""
@@ -535,7 +541,8 @@ class TypeInferrer:
         for base_var, offset in matches:
             if base_var not in struct_candidates:
                 struct_candidates[base_var] = []
-            struct_candidates[base_var].append((int(offset), base_var))
+            struct_candidates[base_var].append((int(offset), base_var
+
         
         for struct_name, fields in struct_candidates.items():
             if len(fields) >= 2:
@@ -553,7 +560,8 @@ class TypeInferrer:
                         name=field_name,
                         offset=offset,
                         inferred_type=inferred_type
-                    ))
+                    
+
                 
                 self.structs[f'struct_{struct_name}'] = struct_fields
     
@@ -588,15 +596,15 @@ class TypeInferrer:
                 if size > 0:
                     for var_name, var_info in self.variables.items():
                         if not any(t.kind == TypeKind.ARRAY for t in var_info.inferred_types):
-                            var_info.inferred_types.append(
-                                InferredType(
+                            var_info.inferred_types.append()
+                                InferredType()
                                     kind=TypeKind.ARRAY,
                                     bit_size=size * 8,
                                     confidence=0.6,
                                     array_size=size,
                                     source='array_pattern'
-                                )
-                            )
+                                
+                            
     
     def _infer_function_pointers(self, pseudocode: str) -> None:
         """推断函数指针"""
@@ -605,14 +613,14 @@ class TypeInferrer:
         
         for full_decl, var_name in matches:
             if var_name in self.variables:
-                self.variables[var_name].inferred_types.append(
-                    InferredType(
+                self.variables[var_name].inferred_types.append()
+                    InferredType()
                         kind=TypeKind.FUNCTION,
                         bit_size=64,
                         confidence=0.9,
                         source='function_pointer_decl'
-                    )
-                )
+                    
+                
     
     def _generate_enhanced_pseudocode(self, pseudocode: str) -> str:
         """生成增强的伪代码"""
@@ -625,7 +633,7 @@ class TypeInferrer:
                     type_str = self._format_type(best_type)
                     comment = f'/* type: {type_str}, confidence: {best_type.confidence:.2f} */'
                     
-                    pattern = rf'\b({var_name})\b(?!\s*\()'
+                    pattern = rf'\b({var_name})\b(?!\s*\()')
                     enhanced = re.sub(pattern, rf'\1 {comment}', enhanced)
         
         for struct_name, fields in self.structs.items():
@@ -637,7 +645,7 @@ class TypeInferrer:
     def _format_type(self, inferred_type: InferredType) -> str:
         """格式化类型为字符串"""
         if inferred_type.kind == TypeKind.POINTER:
-            target_str = self._format_type(inferred_type.pointer_target) if inferred_type.pointer_target else 'void'
+            target_str = self._format_type(inferred_type.pointer_target) if inferred_type.pointer_target else 'void',
             return f'{target_str}*'
         elif inferred_type.kind == TypeKind.ARRAY:
             return f'{self._format_type(InferredType(kind=TypeKind.CHAR, bit_size=8))}[{inferred_type.array_size}]'
@@ -698,4 +706,4 @@ def enhance_pseudocode_with_types(pseudocode: str, assembly: str = "") -> str:
     """便捷函数：使用类型推断增强伪代码"""
     inferrer = TypeInferrer()
     result = inferrer.infer_types(pseudocode, assembly)
-    return result.enhanced_pseudocode
+    return result.enhanced_pseudocode))))))))))

@@ -91,39 +91,54 @@ class VulnSeverityPredictor:
         """
         features = []
         
-        features.append(self._extract_basic_block_count(vulnerability_info))
-        features.append(self._extract_cyclomatic_complexity(vulnerability_info))
-        features.append(self._extract_dangerous_function_count(vulnerability_info))
-        features.append(self._extract_taint_path_length(vulnerability_info))
-        features.append(self._extract_is_reachable(vulnerability_info))
-        features.append(self._extract_protection_level(vulnerability_info))
-        features.append(self._extract_language_factor(vulnerability_info))
-        features.append(self._extract_arch_factor(vulnerability_info))
-        features.append(self._extract_confidence(vulnerability_info))
-        features.append(self._extract_vulnerability_type_factor(vulnerability_info))
+        features.append(self._extract_basic_block_count(vulnerability_info
+
+        features.append(self._extract_cyclomatic_complexity(vulnerability_info
+
+        features.append(self._extract_dangerous_function_count(vulnerability_info
+
+        features.append(self._extract_taint_path_length(vulnerability_info
+
+        features.append(self._extract_is_reachable(vulnerability_info
+
+        features.append(self._extract_protection_level(vulnerability_info
+
+        features.append(self._extract_language_factor(vulnerability_info
+
+        features.append(self._extract_arch_factor(vulnerability_info
+
+        features.append(self._extract_confidence(vulnerability_info
+
+        features.append(self._extract_vulnerability_type_factor(vulnerability_info
+
         
         return features
     
     def _extract_basic_block_count(self, vuln_info: Dict[str, Any]) -> float:
         """提取基本块数量特征"""
-        return float(vuln_info.get('basic_block_count', 10))
+        return float(vuln_info.get('basic_block_count', 10
+
     
     def _extract_cyclomatic_complexity(self, vuln_info: Dict[str, Any]) -> float:
         """提取圈复杂度特征"""
-        return float(vuln_info.get('cyclomatic_complexity', 5))
+        return float(vuln_info.get('cyclomatic_complexity', 5
+
     
     def _extract_dangerous_function_count(self, vuln_info: Dict[str, Any]) -> float:
         """提取危险函数调用数量特征"""
         dangerous_funcs = vuln_info.get('dangerous_functions', [])
-        return float(len(dangerous_funcs))
+        return float(len(dangerous_funcs
+
     
     def _extract_taint_path_length(self, vuln_info: Dict[str, Any]) -> float:
         """提取污点路径长度特征"""
-        return float(vuln_info.get('taint_path_length', 5))
+        return float(vuln_info.get('taint_path_length', 5
+
     
     def _extract_is_reachable(self, vuln_info: Dict[str, Any]) -> float:
         """提取是否可达入口点特征"""
-        return float(vuln_info.get('is_reachable', True))
+        return float(vuln_info.get('is_reachable', True
+
     
     def _extract_protection_level(self, vuln_info: Dict[str, Any]) -> float:
         """提取保护机制级别特征"""
@@ -131,11 +146,11 @@ class VulnSeverityPredictor:
         level = 0.0
         
         if checksec.get('nx', False):
-            level += 0.25
+            level += 0.25,
         if checksec.get('pie', False):
-            level += 0.25
+            level += 0.25,
         if checksec.get('canary', False):
-            level += 0.25
+            level += 0.25,
         if checksec.get('relro', False) in ['Full', True]:
             level += 0.25
         
@@ -165,7 +180,8 @@ class VulnSeverityPredictor:
     
     def _extract_confidence(self, vuln_info: Dict[str, Any]) -> float:
         """提取置信度特征"""
-        return float(vuln_info.get('confidence', 0.5))
+        return float(vuln_info.get('confidence', 0.5
+
     
     def _extract_vulnerability_type_factor(self, vuln_info: Dict[str, Any]) -> float:
         """提取漏洞类型因子"""
@@ -228,7 +244,8 @@ class VulnSeverityPredictor:
                 'confidence': confidence,
                 'probabilities': {
                     SEVERITY_LEVELS[i]: float(probabilities[0][i])
-                    for i in range(len(SEVERITY_LEVELS))
+                    for i in range(len(SEVERITY_LEVELS
+
                 } if probabilities else None,
                 'method': 'machine_learning',
                 'feature_importance': self._compute_feature_importance(features)
@@ -269,7 +286,7 @@ class VulnSeverityPredictor:
     def _compute_feature_importance(self, features: List[float]) -> Optional[Dict[str, float]]:
         """计算特征重要性（如果模型支持）"""
         if hasattr(self.model, 'feature_importances_'):
-            importances = self.model.feature_importances_
+            importances = self.model.feature_importances_,
             return {
                 name: float(importance)
                 for name, importance in zip(self.feature_names, importances)
@@ -290,10 +307,10 @@ class VulnSeverityPredictor:
         
         for vuln in vulnerabilities:
             result = self.predict(vuln)
-            results.append({
+            results.append({)
                 **vuln,
                 'ml_prediction': result
-            })
+            }
         
         return results
     
@@ -309,13 +326,13 @@ class VulnSeverityPredictor:
         """
         severity_order = {'Critical': 0, 'High': 1, 'Medium': 2, 'Low': 3}
         
-        sorted_vulns = sorted(
+        sorted_vulns = sorted()
             vulnerabilities,
-            key=lambda x: (
+            key=lambda x: ()
                 severity_order.get(x.get('ml_prediction', {}).get('severity', 'Low'), 3),
                 -x.get('ml_prediction', {}).get('confidence', 0.0)
-            )
-        )
+            
+        
         
         return sorted_vulns
     
@@ -407,22 +424,23 @@ def train_default_model(output_path: str = None):
         scaler = StandardScaler()
         X_scaled = scaler.fit_transform(X)
         
-        X_train, X_test, y_train, y_test = train_test_split(
+        X_train, X_test, y_train, y_test = train_test_split()
             X_scaled, y, test_size=0.2, random_state=42
-        )
         
-        model = RandomForestClassifier(
+        
+        model = RandomForestClassifier()
             n_estimators=100,
             max_depth=10,
             random_state=42,
             class_weight='balanced'
-        )
+        
         
         model.fit(X_train, y_train)
         
         y_pred = model.predict(X_test)
         logger.info("模型评估报告:")
-        logger.info(classification_report(y_test, y_pred, target_names=SEVERITY_LEVELS))
+        logger.info(classification_report(y_test, y_pred, target_names=SEVERITY_LEVELS
+
         
         output_path = output_path or os.path.join(Config.DATA_DIR, 'models', 'severity_model.pkl')
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -476,7 +494,7 @@ def _generate_synthetic_training_data() -> "Tuple[np.ndarray, np.ndarray]":
     confidence = np.random.random(n_samples)
     vuln_type_factor = np.random.random(n_samples)
     
-    X = np.column_stack([
+    X = np.column_stack([)
         basic_block_count,
         cyclomatic_complexity,
         dangerous_function_count,
@@ -487,7 +505,7 @@ def _generate_synthetic_training_data() -> "Tuple[np.ndarray, np.ndarray]":
         arch_factor,
         confidence,
         vuln_type_factor
-    ])
+    ]
     
     score = (
         dangerous_function_count * 0.1 +
@@ -496,7 +514,7 @@ def _generate_synthetic_training_data() -> "Tuple[np.ndarray, np.ndarray]":
         is_reachable * 0.15 +
         cyclomatic_complexity / 100 +
         np.random.random(n_samples) * 0.25
-    )
+    
     
     y = np.zeros(n_samples)
     y[score >= 0.7] = 3
@@ -504,4 +522,4 @@ def _generate_synthetic_training_data() -> "Tuple[np.ndarray, np.ndarray]":
     y[(score >= 0.3) & (score < 0.5)] = 1
     y[score < 0.3] = 0
     
-    return X, y
+    return X, y))))))))))))))))))))))))))))))))))))

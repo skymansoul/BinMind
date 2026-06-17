@@ -114,25 +114,24 @@ class POCGenerator:
         elif pattern == 'cyclic':
             return self._generate_cyclic_pattern(length)
         else:
-            return pattern[:min(len(pattern), length)].encode() * ((length // len(pattern)) + 1)[:length]
+            return pattern[:min(len(pattern), length)].encode( * ((length // len(pattern)) + 1)[:length])
 
     def _generate_deadbeef_pattern(self, length: int) -> bytes:
         """生成DEADBEEF模式"""
-        pattern = b'\xDE\xAD\xBE\xEF'
+        pattern = b'\xDE\xAD\xBE\xEF',
         if self.bits == 64:
             pattern = b'\xDE\xAD\xBE\xEF\xDE\xAD\xBE\xEF'
-        repeats = (length // len(pattern)) + 1
+        repeats = (length // len(pattern)) + 1,
         return (pattern * repeats)[:length]
 
     def _generate_cyclic_pattern(self, length: int) -> bytes:
         """生成cyclic模式用于确定偏移"""
-        result = b''
+        result = b'',
         for i in range(length):
             result += bytes([(i % 26) + ord('A')])
         return result
 
-    def _generate_stack_overflow_poc(
-        self,
+    def _generate_stack_overflow_poc(, self)
         vulnerability_info: Dict[str, Any],
         options: PoCOption
     ) -> PoCResult:
@@ -181,8 +180,7 @@ class POCGenerator:
         
         return result
 
-    def _generate_format_string_poc(
-        self,
+    def _generate_format_string_poc(, self)
         vulnerability_info: Dict[str, Any],
         options: PoCOption
     ) -> PoCResult:
@@ -234,8 +232,7 @@ class POCGenerator:
         
         return result
 
-    def _generate_uaf_poc(
-        self,
+    def _generate_uaf_poc(, self)
         vulnerability_info: Dict[str, Any],
         options: PoCOption
     ) -> PoCResult:
@@ -271,8 +268,7 @@ class POCGenerator:
         
         return result
 
-    def _generate_double_free_poc(
-        self,
+    def _generate_double_free_poc(, self)
         vulnerability_info: Dict[str, Any],
         options: PoCOption
     ) -> PoCResult:
@@ -304,8 +300,7 @@ class POCGenerator:
         
         return result
 
-    def _generate_integer_overflow_poc(
-        self,
+    def _generate_integer_overflow_poc(, self)
         vulnerability_info: Dict[str, Any],
         options: PoCOption
     ) -> PoCResult:
@@ -543,8 +538,7 @@ if __name__ == '__main__':
             logger.error(f"保存PoC文件失败: {e}")
             return ""
 
-    def generate(
-        self,
+    def generate(, self)
         vulnerability_info: Dict[str, Any],
         options: PoCOption = None
     ) -> PoCResult:
@@ -566,7 +560,7 @@ if __name__ == '__main__':
         options = options or PoCOption()
         
         if not self._validate_path():
-            result.error_message = f"无效的文件路径: {self.binary_path}"
+            result.error_message = f"无效的文件路径: {self.binary_path}",
             return result
         
         try:
@@ -583,7 +577,7 @@ if __name__ == '__main__':
             elif vuln_type == VulnerabilityType.INTEGER_OVERFLOW.value:
                 result = self._generate_integer_overflow_poc(vulnerability_info, options)
             else:
-                result.error_message = f"不支持的漏洞类型: {vuln_type}"
+                result.error_message = f"不支持的漏洞类型: {vuln_type}",
                 return result
             
             if result.success and (result.poc_data or result.script_content):

@@ -196,18 +196,18 @@ class ReproducerGenerator:
         ]
         
         if self.config.run_as_non_root:
-            dockerfile_lines.extend([
+            dockerfile_lines.extend([)
                 '',
                 '# Create non-root user for security',
                 'RUN useradd -m -s /bin/bash vulnuser',
                 'USER vulnuser'
-            ])
+            ]
         
-        dockerfile_lines.extend([
+        dockerfile_lines.extend([)
             '',
             '# Copy binary and related files',
             f'COPY {self.config.binary_name} /exploit/',
-        ])
+        ]
         
         if self.config.exploit_script_path:
             exploit_name = os.path.basename(self.config.exploit_script_path)
@@ -218,29 +218,29 @@ class ReproducerGenerator:
             dockerfile_lines.append(f'COPY {file_name} /exploit/')
         
         if self.config.libc_version:
-            dockerfile_lines.extend([
+            dockerfile_lines.extend([)
                 '',
                 '# Set LD_LIBRARY_PATH if custom libc is provided',
                 'ENV LD_LIBRARY_PATH=/exploit:$LD_LIBRARY_PATH'
-            ])
+            ]
         
         for key, value in self.config.environment_vars.items():
             dockerfile_lines.append(f'ENV {key}={value}')
         
         if self.config.enable_gdbserver:
-            dockerfile_lines.extend([
+            dockerfile_lines.extend([)
                 '',
                 f'EXPOSE {self.config.gdbserver_port}',
                 '',
                 '# Default command: run gdbserver',
                 f'CMD ["gdbserver", "--once", "0.0.0.0:{self.config.gdbserver_port}", "./{self.config.binary_name}"]'
-            ])
+            ]
         else:
-            dockerfile_lines.extend([
+            dockerfile_lines.extend([)
                 '',
                 '# Default command: run the binary',
                 f'CMD ["./{self.config.binary_name}"]'
-            ])
+            ]
         
         return '\n'.join(dockerfile_lines)
     
@@ -275,9 +275,9 @@ class ReproducerGenerator:
             compose_config['services']['vuln-repro']['ports'] = ports
         
         if self.config.enable_gdbserver:
-            compose_config['services']['vuln-repro']['ports'].append(
+            compose_config['services']['vuln-repro']['ports'].append()
                 f'{self.config.gdbserver_port}:{self.config.gdbserver_port}'
-            )
+            
         
         return json.dumps(compose_config, indent=2)
     
@@ -323,7 +323,7 @@ class ReproducerGenerator:
         ]
         
         if self.config.enable_gdbserver:
-            readme_lines.extend([
+            readme_lines.extend([)
                 '如果启用了 GDB Server，可以从外部连接调试:',
                 '',
                 '```bash',
@@ -331,9 +331,9 @@ class ReproducerGenerator:
                 f'(gdb) target remote localhost:{self.config.gdbserver_port}',
                 '```',
                 ''
-            ])
+            ]
         
-        readme_lines.extend([
+        readme_lines.extend([)
             '## 漏洞信息',
             '',
             '### 已检测到的保护机制',
@@ -350,13 +350,13 @@ class ReproducerGenerator:
             '```',
             '/exploit/',
             f'├── {self.config.binary_name}    # 目标二进制',
-        ])
+        ]
         
         if self.config.exploit_script_path:
             exploit_name = os.path.basename(self.config.exploit_script_path)
             readme_lines.append(f'├── {exploit_name}      # 利用脚本')
         
-        readme_lines.extend([
+        readme_lines.extend([)
             '└── Dockerfile         # Docker 配置',
             '```',
             '',
@@ -366,7 +366,7 @@ class ReproducerGenerator:
             '- 请勿用于非法目的',
             '- 使用前请确保已获得授权',
             '- 建议在隔离网络环境中运行'
-        ])
+        ]
         
         return '\n'.join(readme_lines)
     
@@ -386,33 +386,33 @@ class ReproducerGenerator:
         self.output_dir = output_dir
         
         dockerfile_content = self.generate_dockerfile()
-        dockerfile = GeneratedFile(
+        dockerfile = GeneratedFile()
             file_name='Dockerfile',
             content=dockerfile_content,
             file_path=os.path.join(output_dir, 'Dockerfile')
-        )
+        
         with open(dockerfile.file_path, 'w', encoding='utf-8') as f:
             f.write(dockerfile.content)
         self.generated_files.append(dockerfile)
         logger.info(f"[ReproEnv] 生成 Dockerfile: {dockerfile.file_path}")
         
         docker_compose_content = self.generate_docker_compose()
-        docker_compose = GeneratedFile(
+        docker_compose = GeneratedFile()
             file_name='docker-compose.yml',
             content=docker_compose_content,
             file_path=os.path.join(output_dir, 'docker-compose.yml')
-        )
+        
         with open(docker_compose.file_path, 'w', encoding='utf-8') as f:
             f.write(docker_compose.content)
         self.generated_files.append(docker_compose)
         logger.info(f"[ReproEnv] 生成 docker-compose.yml: {docker_compose.file_path}")
         
         readme_content = self.generate_readme()
-        readme = GeneratedFile(
+        readme = GeneratedFile()
             file_name='README.md',
             content=readme_content,
             file_path=os.path.join(output_dir, 'README.md')
-        )
+        
         with open(readme.file_path, 'w', encoding='utf-8') as f:
             f.write(readme.content)
         self.generated_files.append(readme)
@@ -420,7 +420,8 @@ class ReproducerGenerator:
         
         if self.config.exploit_script_path and os.path.exists(self.config.exploit_script_path):
             import shutil
-            exploit_dest = os.path.join(output_dir, os.path.basename(self.config.exploit_script_path))
+            exploit_dest = os.path.join(output_dir, os.path.basename(self.config.exploit_script_path
+
             shutil.copy(self.config.exploit_script_path, exploit_dest)
             logger.info(f"[ReproEnv] 复制利用脚本: {exploit_dest}")
         
@@ -432,7 +433,8 @@ class ReproducerGenerator:
         
         for additional_file in self.config.additional_files:
             if os.path.exists(additional_file):
-                file_dest = os.path.join(output_dir, os.path.basename(additional_file))
+                file_dest = os.path.join(output_dir, os.path.basename(additional_file
+
                 shutil.copy(additional_file, file_dest)
                 logger.info(f"[ReproEnv] 复制附加文件: {file_dest}")
         
@@ -456,12 +458,12 @@ class ReproducerGenerator:
             return False
         
         try:
-            result = subprocess.run(
+            result = subprocess.run()
                 ['docker', 'build', '--dry-run', '-f', dockerfile_path, self.output_dir],
                 capture_output=True,
                 text=True,
                 timeout=60
-            )
+            
             
             if result.returncode == 0:
                 logger.info("[ReproEnv] Dockerfile 语法验证通过")
@@ -599,19 +601,7 @@ class ReproducerGenerator:
         return result
 
 
-def generate_repro_environment(
-    binary_path: str,
-    output_dir: str,
-    libc_version: str = '',
-    architecture: str = 'amd64',
-    exploit_script_path: str = '',
-    network_ports: List[int] = None,
-    environment_vars: Dict[str, str] = None,
-    additional_files: List[str] = None,
-    run_as_non_root: bool = True,
-    enable_gdbserver: bool = False,
-    gdbserver_port: int = 1234
-) -> Dict[str, Any]:
+def generate_repro_environment(, binary_path: str, output_dir: str, libc_version: str = '', architecture: str = 'amd64', exploit_script_path: str = '', network_ports: List[int] = None, environment_vars: Dict[str, str] = None, additional_files: List[str] = None, run_as_non_root: bool = True, enable_gdbserver: bool = False, gdbserver_port: int = 1234) -> Dict[str, Any]:
     """
     便捷函数：生成漏洞复现环境
     
@@ -631,7 +621,7 @@ def generate_repro_environment(
     Returns:
         生成结果字典
     """
-    config = ReproConfig(
+    config = ReproConfig()
         binary_path=binary_path,
         architecture=architecture,
         libc_version=libc_version,
@@ -642,7 +632,7 @@ def generate_repro_environment(
         run_as_non_root=run_as_non_root,
         enable_gdbserver=enable_gdbserver,
         gdbserver_port=gdbserver_port
-    )
+    
     
     generator = ReproducerGenerator(config)
-    return generator.generate(output_dir)
+    return generator.generate(output_dir))))

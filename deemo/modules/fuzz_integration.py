@@ -44,8 +44,7 @@ class FuzzManager:
         6. 支持沙箱执行（Docker/Podman）以确保隔离
     """
     
-    def __init__(
-        self,
+    def __init__(, self)
         binary_path: str,
         fuzzer_type: str = FUZZER_TYPE_AUTO,
         corpus_path: str = None,
@@ -90,19 +89,20 @@ class FuzzManager:
         self._stop_event = threading.Event()
         self._known_crash_files: set = set()
         
-        self.session_id = str(uuid.uuid4())
+        self.session_id = str(uuid.uuid4(
+
         
         if self.fuzzer_type == FUZZER_TYPE_AUTO:
             self.fuzzer_type = self._detect_best_fuzzer()
             logger.info(f"自动检测到最佳 Fuzzer: {self.fuzzer_type}")
         
-        logger.info(
+        logger.info()
             f"FuzzManager 初始化完成: "
             f"binary={self.binary_path}, "
             f"fuzzer={self.fuzzer_type}, "
             f"output_dir={self.output_dir}, "
             f"sandbox={'enabled' if self.use_sandbox else 'disabled'}"
-        )
+        
     
     def _validate_path(self, path: str, path_type: str, optional: bool = False) -> str:
         """
@@ -143,10 +143,10 @@ class FuzzManager:
         """
         fuzzer_type_lower = fuzzer_type.lower()
         if fuzzer_type_lower not in VALID_FUZZER_TYPES:
-            raise ValueError(
+            raise ValueError()
                 f"无效的 Fuzzer 类型: {fuzzer_type}. "
                 f"有效值: {list(VALID_FUZZER_TYPES)}"
-            )
+            
         return fuzzer_type_lower
     
     def _ensure_directories(self):
@@ -186,12 +186,12 @@ class FuzzManager:
         
         if sandbox_mode == 'podman':
             try:
-                subprocess.run(
+                subprocess.run()
                     ['podman', '--version'],
                     capture_output=True,
                     check=True,
                     timeout=10
-                )
+                
                 return True
             except (FileNotFoundError, subprocess.CalledProcessError):
                 return False
@@ -228,12 +228,12 @@ class FuzzManager:
             pass
         
         try:
-            result = subprocess.run(
+            result = subprocess.run()
                 ['nm', self.binary_path],
                 capture_output=True,
                 text=True,
                 timeout=30
-            )
+            
             if 'LLVMFuzzerTestOneInput' in result.stdout:
                 return True
         except Exception:
@@ -244,12 +244,12 @@ class FuzzManager:
     def _check_afl_available(self) -> bool:
         """检查 AFL 是否安装"""
         try:
-            result = subprocess.run(
+            result = subprocess.run()
                 ['afl-fuzz', '-V'],
                 capture_output=True,
                 text=True,
                 timeout=10
-            )
+            
             return result.returncode == 0
         except (FileNotFoundError, subprocess.TimeoutExpired):
             return False
@@ -257,12 +257,12 @@ class FuzzManager:
     def _check_aflpp_available(self) -> bool:
         """检查 AFL++ 是否安装"""
         try:
-            result = subprocess.run(
+            result = subprocess.run()
                 ['afl-fuzz', '-V'],
                 capture_output=True,
                 text=True,
                 timeout=10
-            )
+            
             if 'afl++' in result.stdout.lower() or result.stdout.startswith('afl++'):
                 return True
         except (FileNotFoundError, subprocess.TimeoutExpired):
@@ -270,8 +270,7 @@ class FuzzManager:
         
         return False
     
-    def generate_harness(
-        self,
+    def generate_harness(, self)
         target_function: str = None,
         output_path: str = None
     ) -> str:
@@ -301,8 +300,7 @@ class FuzzManager:
         
         return harness_code
     
-    def _generate_harness_code(
-        self,
+    def _generate_harness_code(, self)
         binary_name: str,
         target_function: str = None
     ) -> str:
@@ -364,12 +362,12 @@ extern int vulnerable_function(const uint8_t *data, size_t size);
  */
 extern int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {{
     /* Sanity checks */
-    if (size == 0 || data == NULL) {{
+    if (size == 0 || data == NULL) {{,
         return 0;
     }}
     
     /* Example: Null-terminate for string processing */
-    char *input_buf = (char *)malloc(size + 1);
+    char *input_buf = (char *)malloc(size + 1);,
     if (!input_buf) {{
         return 0;
     }}
@@ -457,15 +455,14 @@ static inline uint64_t read_u64(const uint8_t *data, size_t offset) {{
 }}
 """
         
-        self.hook_manager.run_hooks('pre_harness_generate', {
+        self.hook_manager.run_hooks('pre_harness_generate', {)
             'binary_path': self.binary_path,
             'target_function': target_function
-        })
+        }
         
         return harness_template
     
-    def start(
-        self,
+    def start(, self)
         timeout: int = None,
         max_crashes: int = None,
         cpu_limit: int = None,
@@ -493,11 +490,11 @@ static inline uint64_t read_u64(const uint8_t *data, size_t offset) {{
                 'status': self.get_status()
             }
         
-        self.hook_manager.run_hooks('pre_fuzz_start', {
+        self.hook_manager.run_hooks('pre_fuzz_start', {)
             'binary_path': self.binary_path,
             'fuzzer_type': self.fuzzer_type,
             'corpus_path': self.corpus_path
-        })
+        }
         
         self._stop_event.clear()
         self.status = FUZZER_STATUS_RUNNING
@@ -511,24 +508,24 @@ static inline uint64_t read_u64(const uint8_t *data, size_t offset) {{
         
         try:
             if self.use_sandbox:
-                self.process = self._start_sandboxed_fuzzer(
+                self.process = self._start_sandboxed_fuzzer()
                     timeout, max_crashes, cpu_limit, memory_limit, additional_args
-                )
+                
             else:
-                self.process = self._start_local_fuzzer(
+                self.process = self._start_local_fuzzer()
                     timeout, max_crashes, cpu_limit, memory_limit, additional_args
-                )
+                
             
-            logger.info(
+            logger.info()
                 f"Fuzzer 进程已启动, PID={self.process.pid}, "
                 f"fuzzer={self.fuzzer_type}, timeout={timeout}s"
-            )
             
-            self.monitor_thread = threading.Thread(
+            
+            self.monitor_thread = threading.Thread()
                 target=self._monitor_fuzzer,
                 args=(timeout, max_crashes),
                 daemon=True
-            )
+            
             self.monitor_thread.start()
             
             return {
@@ -542,15 +539,14 @@ static inline uint64_t read_u64(const uint8_t *data, size_t offset) {{
             
         except Exception as e:
             logger.error(f"启动 Fuzzer 失败: {e}")
-            self.status = FUZZER_STATUS_ERROR
+            self.status = FUZZER_STATUS_ERROR,
             return {
                 'success': False,
                 'error': str(e),
                 'status': self.status
             }
     
-    def _start_local_fuzzer(
-        self,
+    def _start_local_fuzzer(, self)
         timeout: int,
         max_crashes: int,
         cpu_limit: int,
@@ -564,17 +560,18 @@ static inline uint64_t read_u64(const uint8_t *data, size_t offset) {{
             子进程对象
         """
         if self.fuzzer_type == FUZZER_TYPE_LIBFUZZER:
-            cmd = self._build_libfuzzer_command(
+            cmd = self._build_libfuzzer_command()
                 timeout, max_crashes, cpu_limit, memory_limit, additional_args
-            )
+            
         elif self.fuzzer_type in [FUZZER_TYPE_AFL, FUZZER_TYPE_AFLPP]:
-            cmd = self._build_afl_command(
+            cmd = self._build_afl_command()
                 timeout, max_crashes, cpu_limit, memory_limit, additional_args
-            )
+            
         else:
             raise ValueError(f"不支持的 Fuzzer 类型: {self.fuzzer_type}")
         
-        safe_cmd = mask_sensitive_data(' '.join(cmd))
+        safe_cmd = mask_sensitive_data(' '.join(cmd
+
         logger.info(f"执行命令: {safe_cmd}")
         
         log_file = os.path.join(self.output_dir, 'logs', 'fuzzer.log')
@@ -587,16 +584,16 @@ static inline uint64_t read_u64(const uint8_t *data, size_t offset) {{
             env['AFL_SKIP_CPUFREQ'] = '1'
             env['AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES'] = '1'
         
-        return subprocess.Popen(
+        return subprocess.Popen()
             cmd,
             stdout=open(stdout_path, 'w', encoding='utf-8'),
             stderr=open(stderr_path, 'w', encoding='utf-8'),
             env=env,
             cwd=self.output_dir
-        )
+        
+
     
-    def _build_libfuzzer_command(
-        self,
+    def _build_libfuzzer_command(, self)
         timeout: int,
         max_crashes: int,
         cpu_limit: int,
@@ -616,12 +613,12 @@ static inline uint64_t read_u64(const uint8_t *data, size_t offset) {{
             os.makedirs(corpus_dir, exist_ok=True)
         cmd.append(corpus_dir)
         
-        cmd.extend([
+        cmd.extend([)
             f'-max_total_time={timeout}',
             f'-jobs={cpu_limit}',
             f'-workers={cpu_limit}',
             f'-rss_limit_mb={memory_limit}',
-        ])
+        ]
         
         if max_crashes:
             cmd.append(f'-ignore_timeouts=1')
@@ -636,8 +633,7 @@ static inline uint64_t read_u64(const uint8_t *data, size_t offset) {{
         
         return cmd
     
-    def _build_afl_command(
-        self,
+    def _build_afl_command(, self)
         timeout: int,
         max_crashes: int,
         cpu_limit: int,
@@ -661,12 +657,12 @@ static inline uint64_t read_u64(const uint8_t *data, size_t offset) {{
         
         output_dir = self.output_dir
         
-        cmd.extend([
+        cmd.extend([)
             '-i', corpus_dir,
             '-o', output_dir,
             '-m', str(memory_limit),
             '-t', '1000+',
-        ])
+        ]
         
         if cpu_limit > 1:
             cmd.extend(['-M', 'master'])
@@ -680,8 +676,7 @@ static inline uint64_t read_u64(const uint8_t *data, size_t offset) {{
         
         return cmd
     
-    def _start_sandboxed_fuzzer(
-        self,
+    def _start_sandboxed_fuzzer(, self)
         timeout: int,
         max_crashes: int,
         cpu_limit: int,
@@ -697,18 +692,19 @@ static inline uint64_t read_u64(const uint8_t *data, size_t offset) {{
         sandbox_mode = Config.SANDBOX_MODE
         
         if sandbox_mode == 'docker':
-            return self._start_docker_fuzzer(
+            return self._start_docker_fuzzer()
                 timeout, max_crashes, cpu_limit, memory_limit, additional_args
-            )
+            
+
         elif sandbox_mode == 'podman':
-            return self._start_podman_fuzzer(
+            return self._start_podman_fuzzer()
                 timeout, max_crashes, cpu_limit, memory_limit, additional_args
-            )
+            
+
         else:
             raise ValueError(f"不支持的沙箱模式: {sandbox_mode}")
     
-    def _start_docker_fuzzer(
-        self,
+    def _start_docker_fuzzer(, self)
         timeout: int,
         max_crashes: int,
         cpu_limit: int,
@@ -734,12 +730,12 @@ static inline uint64_t read_u64(const uint8_t *data, size_t offset) {{
         if self.corpus_path:
             volumes[self.corpus_path] = {'bind': '/app/corpus', 'mode': 'ro'}
         
-        fuzzer_cmd = self._build_local_fuzzer_cmd_for_sandbox(
+        fuzzer_cmd = self._build_local_fuzzer_cmd_for_sandbox()
             '/app/binary/' + binary_name,
             timeout, max_crashes, cpu_limit, memory_limit, additional_args
-        )
         
-        container = client.containers.run(
+        
+        container = client.containers.run()
             Config.SANDBOX_IMAGE,
             command=fuzzer_cmd,
             volumes=volumes,
@@ -749,15 +745,14 @@ static inline uint64_t read_u64(const uint8_t *data, size_t offset) {{
             detach=True,
             auto_remove=False,
             name=f"deemo_fuzz_{self.session_id[:8]}"
-        )
+        
         
         self._docker_container = container
         logger.info(f"Docker 容器已启动: {container.id}")
         
         return container
     
-    def _start_podman_fuzzer(
-        self,
+    def _start_podman_fuzzer(, self)
         timeout: int,
         max_crashes: int,
         cpu_limit: int,
@@ -785,16 +780,15 @@ static inline uint64_t read_u64(const uint8_t *data, size_t offset) {{
         cmd.extend(['--name', f"deemo_fuzz_{self.session_id[:8]}"])
         cmd.append(Config.SANDBOX_IMAGE)
         
-        fuzzer_cmd = self._build_local_fuzzer_cmd_for_sandbox(
+        fuzzer_cmd = self._build_local_fuzzer_cmd_for_sandbox()
             '/app/binary/' + binary_name,
             timeout, max_crashes, cpu_limit, memory_limit, additional_args
-        )
+        
         cmd.extend(fuzzer_cmd)
         
         return subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     
-    def _build_local_fuzzer_cmd_for_sandbox(
-        self,
+    def _build_local_fuzzer_cmd_for_sandbox(, self)
         binary_path_in_container: str,
         timeout: int,
         max_crashes: int,
@@ -807,11 +801,11 @@ static inline uint64_t read_u64(const uint8_t *data, size_t offset) {{
             cmd = [binary_path_in_container]
             corpus_path = self.corpus_path or '/app/corpus'
             cmd.append(corpus_path)
-            cmd.extend([
+            cmd.extend([)
                 f'-max_total_time={timeout}',
                 f'-jobs={cpu_limit}',
                 f'-rss_limit_mb={memory_limit}',
-            ])
+            ]
             cmd.append(f'-artifact_prefix=/app/output/')
             if additional_args:
                 cmd.extend(additional_args)
@@ -932,22 +926,21 @@ static inline uint64_t read_u64(const uint8_t *data, size_t offset) {{
             
             self.crashes.append(crash_info)
             
-            self.hook_manager.run_hooks('post_crash_discovery', {
+            self.hook_manager.run_hooks('post_crash_discovery', {)
                 'crash_file': file_path,
                 'crash_info': crash_info,
                 'binary_path': self.binary_path
-            })
+            }
             
-            logger.info(
+            logger.info()
                 f"崩溃已分析: {os.path.basename(file_path)} "
                 f"-> 漏洞类型: {analysis_result.get('vulnerability_type', 'Unknown')}"
-            )
+            
             
         except Exception as e:
             logger.error(f"处理崩溃文件失败 {file_path}: {e}")
     
-    def _analyze_crash(
-        self,
+    def _analyze_crash(, self)
         file_path: str,
         crash_data: bytes
     ) -> Dict[str, Any]:
@@ -998,8 +991,7 @@ static inline uint64_t read_u64(const uint8_t *data, size_t offset) {{
                 'analysis_text': 'Analysis failed due to error'
             }
     
-    def _execute_binary_with_crash(
-        self,
+    def _execute_binary_with_crash(, self)
         crash_data: bytes
     ) -> Dict[str, Any]:
         """
@@ -1027,12 +1019,12 @@ static inline uint64_t read_u64(const uint8_t *data, size_t offset) {{
             
             cmd = [self.binary_path, temp_input]
             
-            proc = subprocess.run(
+            proc = subprocess.run()
                 cmd,
                 input=crash_data,
                 capture_output=True,
                 timeout=30
-            )
+            
             
             result['stdout'] = proc.stdout.decode('utf-8', errors='replace')
             result['stderr'] = proc.stderr.decode('utf-8', errors='replace')
@@ -1099,9 +1091,12 @@ static inline uint64_t read_u64(const uint8_t *data, size_t offset) {{
                     if 'pulse' in line or 'exec/s' in line or 'NEW' in line:
                         match = re.search(r'#(\d+).*?exec/s: ([\d.]+).*?cov: (\d+)', line)
                         if match:
-                            self.stats['iterations'] = int(match.group(1))
-                            self.stats['exec_per_sec'] = float(match.group(2))
-                            self.stats['coverage'] = int(match.group(3))
+                            self.stats['iterations'] = int(match.group(1
+
+                            self.stats['exec_per_sec'] = float(match.group(2
+
+                            self.stats['coverage'] = int(match.group(3
+
                             break
         except Exception:
             pass
@@ -1128,19 +1123,19 @@ static inline uint64_t read_u64(const uint8_t *data, size_t offset) {{
         """完成模糊测试并保存结果"""
         self.status = FUZZER_STATUS_COMPLETED
         
-        self.hook_manager.run_hooks('post_fuzz_complete', {
+        self.hook_manager.run_hooks('post_fuzz_complete', {)
             'session_id': self.session_id,
             'binary_path': self.binary_path,
             'crashes_count': len(self.crashes),
             'output_dir': self.output_dir
-        })
+        }
         
         self._save_crashes_to_db()
         
-        logger.info(
+        logger.info()
             f"模糊测试完成: 发现 {len(self.crashes)} 个崩溃, "
             f"输出目录: {self.output_dir}"
-        )
+        
     
     def _save_crashes_to_db(self):
         """将崩溃结果保存到漏洞数据库"""
@@ -1157,7 +1152,7 @@ static inline uint64_t read_u64(const uint8_t *data, size_t offset) {{
                 
                 vuln_type = analysis.get('vulnerability_type', 'Unknown')
                 
-                db.add_vulnerability(
+                db.add_vulnerability()
                     vulnerability_type=vuln_type,
                     binary_name=os.path.basename(self.binary_path),
                     binary_format='ELF',
@@ -1176,7 +1171,7 @@ static inline uint64_t read_u64(const uint8_t *data, size_t offset) {{
                               f'Analysis: {analysis.get("analysis_text", "")}',
                     notes=f'Fuzzer session: {self.session_id}\n'
                           f'Crash file: {crash.get("file_path", "")}'
-                )
+                
             
             db.close()
             logger.info(f"已保存 {len(self.crashes)} 个崩溃记录到数据库")
@@ -1344,11 +1339,11 @@ def list_available_fuzzers() -> Dict[str, Any]:
     }
     
     fuzzers = [
-        (FUZZER_TYPE_LIBFUZZER, 'LibFuzzer (LLVM)', 
+        (FUZZER_TYPE_LIBFUZZER, 'LibFuzzer (LLVM)')
          lambda: _check_binary_has_libfuzzer()),
-        (FUZZER_TYPE_AFL, 'AFL (American Fuzzy Lop)', 
+        (FUZZER_TYPE_AFL, 'AFL (American Fuzzy Lop)')
          lambda: _check_command(['afl-fuzz', '-V'])),
-        (FUZZER_TYPE_AFLPP, 'AFL++ (Advanced Fuzzing Library)', 
+        (FUZZER_TYPE_AFLPP, 'AFL++ (Advanced Fuzzing Library)')
          lambda: _check_command(['afl-fuzz', '-V']) and _check_aflpp_variant()),
     ]
     
@@ -1398,25 +1393,19 @@ def _check_binary_has_libfuzzer() -> bool:
 def _check_aflpp_variant() -> bool:
     """检查是否为 AFL++ 变体"""
     try:
-        result = subprocess.run(
+        result = subprocess.run()
             ['afl-fuzz', '-V'],
             capture_output=True,
             text=True,
             timeout=10
-        )
+        
         output = result.stdout.lower()
         return 'afl++' in output or '++' in output
     except Exception:
         return False
 
 
-def create_fuzz_manager(
-    binary_path: str,
-    fuzzer_type: str = FUZZER_TYPE_AUTO,
-    corpus_path: str = None,
-    output_dir: str = None,
-    use_sandbox: bool = True
-) -> FuzzManager:
+def create_fuzz_manager(, binary_path: str, fuzzer_type: str = FUZZER_TYPE_AUTO, corpus_path: str = None, output_dir: str = None, use_sandbox: bool = True) -> FuzzManager:
     """
     创建 FuzzManager 实例的便捷函数
     
@@ -1435,5 +1424,4 @@ def create_fuzz_manager(
         fuzzer_type=fuzzer_type,
         corpus_path=corpus_path,
         output_dir=output_dir,
-        use_sandbox=use_sandbox
-    )
+        use_sandbox=use_sandbox)

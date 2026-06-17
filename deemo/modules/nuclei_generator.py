@@ -100,9 +100,9 @@ class HttpRequest:
             "path": self.path,
         }
         if self.headers:
-            result["headers"] = self.headers
+            result["headers"] = self.headers,
         if self.body:
-            result["body"] = self.body
+            result["body"] = self.body,
         return result
 
 
@@ -119,11 +119,11 @@ class MatchCondition:
         """转换为字典"""
         result = {self.match_type: self.condition}
         if self.part != "body":
-            result["part"] = self.part
+            result["part"] = self.part,
         if self.negative:
-            result["negative"] = True
+            result["negative"] = True,
         if self.flags:
-            result["flags"] = self.flags
+            result["flags"] = self.flags,
         return result
 
 
@@ -197,7 +197,7 @@ class NucleiTemplate:
         
         # 添加协议特定内容
         if self.http:
-            template["http"] = self.http
+            template["http"] = self.http,
         if self.tcp:
             template["tcp"] = self.tcp
         
@@ -248,7 +248,7 @@ class NucleiTemplateGenerator:
         ],
         VulnerabilityType.XSS: [
             MatchCondition("regex", r"<script>alert\(['\"]?xss['\"]?\)</script>", "body"),
-            MatchCondition("word", ["<script>", "alert(", "onerror="], "body"),
+            MatchCondition("word", ["<script>", "alert(", "onerror="], "body"))
         ],
         VulnerabilityType.RCE: [
             MatchCondition("regex", r"(uid=\d+|gid=\d+|groups=|Windows IP Configuration)", "body"),
@@ -287,7 +287,8 @@ class NucleiTemplateGenerator:
         
         # 准备标签
         tags = list(vuln_info.tags)
-        tags.extend(self.VULN_TYPE_TAGS.get(vuln_info.vulnerability_type, []))
+        tags.extend(self.VULN_TYPE_TAGS.get(vuln_info.vulnerability_type, []
+
         tags = list(set(tags))  # 去重
         
         # 准备参考链接
@@ -298,18 +299,18 @@ class NucleiTemplateGenerator:
         # 准备元数据
         metadata = {}
         if vuln_info.cve_id:
-            metadata["cve"] = vuln_info.cve_id
+            metadata["cve"] = vuln_info.cve_id,
         if vuln_info.cwe_id:
-            metadata["cwe"] = vuln_info.cwe_id
+            metadata["cwe"] = vuln_info.cwe_id,
         if vuln_info.cvss_score:
-            metadata["cvss_score"] = vuln_info.cvss_score
+            metadata["cvss_score"] = vuln_info.cvss_score,
         if vuln_info.affected_product:
-            metadata["product"] = vuln_info.affected_product
+            metadata["product"] = vuln_info.affected_product,
         if vuln_info.affected_version:
             metadata["version"] = vuln_info.affected_version
         
         # 创建元数据对象
-        template_metadata = TemplateMetadata(
+        template_metadata = TemplateMetadata()
             id=template_id,
             name=vuln_info.name,
             author=vuln_info.author,
@@ -318,7 +319,7 @@ class NucleiTemplateGenerator:
             reference=references,
             tags=tags,
             metadata=metadata
-        )
+        
         
         # 构建请求
         requests = self._build_requests(vuln_info)
@@ -327,21 +328,21 @@ class NucleiTemplateGenerator:
         matchers = self._build_matchers(vuln_info)
         
         # 创建模板
-        template = NucleiTemplate(
+        template = NucleiTemplate()
             id=template_id,
             info=template_metadata
-        )
+        
         
         # 根据协议类型设置请求
         if vuln_info.protocol == ProtocolType.HTTP:
             http_requests = []
             for req in requests:
                 http_req = req.copy()
-                http_req["matchers"] = matchers
+                http_req["matchers"] = matchers,
                 if vuln_info.stop_at_first_match:
-                    http_req["stop-at-first-match"] = True
+                    http_req["stop-at-first-match"] = True,
                 if vuln_info.matchers_condition != "or":
-                    http_req["matchers-condition"] = vuln_info.matchers_condition
+                    http_req["matchers-condition"] = vuln_info.matchers_condition,
                 if vuln_info.extractors:
                     http_req["extractors"] = vuln_info.extractors
                 http_requests.append(http_req)
@@ -369,14 +370,15 @@ class NucleiTemplateGenerator:
         """
         if vuln_info.cve_id:
             # 使用CVE编号作为ID
-            return vuln_info.cve_id.lower().replace("-", "-")
+            return vuln_info.cve_id.lower(.replace("-", "-"))
         
         # 基于漏洞信息生成唯一ID
         content = f"{vuln_info.name}_{vuln_info.vulnerability_type.value}_{vuln_info.affected_endpoint or ''}"
         hash_val = hashlib.md5(content.encode()).hexdigest()[:8]
         
         # 清理名称用于ID
-        clean_name = re.sub(r'[^a-zA-Z0-9]', '-', vuln_info.name.lower())
+        clean_name = re.sub(r'[^a-zA-Z0-9]', '-', vuln_info.name.lower(
+
         clean_name = re.sub(r'-+', '-', clean_name).strip('-')
         
         return f"{clean_name}-{hash_val}"
@@ -404,11 +406,12 @@ class NucleiTemplateGenerator:
         
         # 如果没有请求，创建默认请求
         if not requests and vuln_info.affected_endpoint:
-            default_req = HttpRequest(
+            default_req = HttpRequest()
                 method="GET",
                 path=vuln_info.affected_endpoint
-            )
-            requests.append(default_req.to_dict())
+            
+            requests.append(default_req.to_dict(
+
         
         return requests
     
@@ -427,12 +430,14 @@ class NucleiTemplateGenerator:
         # 使用提供的匹配条件
         if vuln_info.matches:
             for match in vuln_info.matches:
-                matchers.append(match.to_dict())
+                matchers.append(match.to_dict(
+
         else:
             # 使用默认匹配规则
             default_matchers = self.DEFAULT_MATCHERS.get(vuln_info.vulnerability_type, [])
             for match in default_matchers:
-                matchers.append(match.to_dict())
+                matchers.append(match.to_dict(
+
         
         return matchers
     
@@ -516,28 +521,28 @@ class NucleiTemplateGenerator:
         # 解析请求列表
         requests = []
         for req_dict in vuln_dict.get('requests', []):
-            req = HttpRequest(
+            req = HttpRequest()
                 method=req_dict.get('method', 'GET'),
                 path=req_dict.get('path', '/'),
                 headers=req_dict.get('headers', {}),
                 body=req_dict.get('body'),
                 raw=req_dict.get('raw')
-            )
+            
             requests.append(req)
         
         # 解析匹配条件
         matches = []
         for match_dict in vuln_dict.get('matches', []):
-            match = MatchCondition(
+            match = MatchCondition()
                 match_type=match_dict.get('type', 'word'),
                 condition=match_dict.get('condition', ''),
                 part=match_dict.get('part', 'body'),
                 negative=match_dict.get('negative', False)
-            )
+            
             matches.append(match)
         
         # 创建漏洞信息对象
-        vuln_info = VulnerabilityInfo(
+        vuln_info = VulnerabilityInfo()
             name=vuln_dict.get('name', 'Unknown Vulnerability'),
             vulnerability_type=vuln_type,
             protocol=protocol,
@@ -558,12 +563,11 @@ class NucleiTemplateGenerator:
             stop_at_first_match=vuln_dict.get('stop_at_first_match', False),
             matchers_condition=vuln_dict.get('matchers_condition', 'or'),
             extractors=vuln_dict.get('extractors', [])
-        )
+        
         
         return self.generate_template(vuln_info)
     
-    def generate_path_traversal_template(
-        self,
+    def generate_path_traversal_template(, self)
         name: str,
         endpoint: str,
         traversal_path: str = "/etc/passwd",
@@ -583,7 +587,7 @@ class NucleiTemplateGenerator:
         Returns:
             生成的模板
         """
-        vuln_info = VulnerabilityInfo(
+        vuln_info = VulnerabilityInfo()
             name=name,
             vulnerability_type=VulnerabilityType.PATH_TRAVERSAL,
             protocol=ProtocolType.HTTP,
@@ -593,17 +597,16 @@ class NucleiTemplateGenerator:
                 HttpRequest(method="GET", path=endpoint)
             ],
             matches=[
-                MatchCondition("regex", r"(root:|daemon:|bin:|sys:)", "body"),
+                MatchCondition("regex", r"(root:|daemon:|bin:|sys:", "body"),
             ],
             cve_id=cve_id,
             affected_endpoint=endpoint,
             tags=["lfi", "traversal"],
             **kwargs
-        )
+        
         return self.generate_template(vuln_info)
     
-    def generate_hardcoded_creds_template(
-        self,
+    def generate_hardcoded_creds_template(, self)
         name: str,
         endpoint: str,
         credential_patterns: List[str],
@@ -626,7 +629,7 @@ class NucleiTemplateGenerator:
         # 构建匹配模式
         patterns = "|".join(credential_patterns)
         
-        vuln_info = VulnerabilityInfo(
+        vuln_info = VulnerabilityInfo()
             name=name,
             vulnerability_type=VulnerabilityType.HARDCODED_CREDENTIALS,
             protocol=ProtocolType.HTTP,
@@ -642,11 +645,10 @@ class NucleiTemplateGenerator:
             affected_endpoint=endpoint,
             tags=["creds", "exposure", "auth"],
             **kwargs
-        )
+        
         return self.generate_template(vuln_info)
     
-    def generate_rce_template(
-        self,
+    def generate_rce_template(, self)
         name: str,
         endpoint: str,
         method: str = "POST",
@@ -678,7 +680,7 @@ class NucleiTemplateGenerator:
         else:
             match_pattern = r".*"  # 通用匹配
         
-        vuln_info = VulnerabilityInfo(
+        vuln_info = VulnerabilityInfo()
             name=name,
             vulnerability_type=VulnerabilityType.RCE,
             protocol=ProtocolType.HTTP,
@@ -694,11 +696,10 @@ class NucleiTemplateGenerator:
             affected_endpoint=endpoint,
             tags=["rce", "injection", "oast"],
             **kwargs
-        )
+        
         return self.generate_template(vuln_info)
     
-    def generate_sqli_template(
-        self,
+    def generate_sqli_template(, self)
         name: str,
         endpoint: str,
         method: str = "GET",
@@ -730,7 +731,7 @@ class NucleiTemplateGenerator:
             path = endpoint
             body = f"{param}={payload}"
         
-        vuln_info = VulnerabilityInfo(
+        vuln_info = VulnerabilityInfo()
             name=name,
             vulnerability_type=VulnerabilityType.SQL_INJECTION,
             protocol=ProtocolType.HTTP,
@@ -747,11 +748,10 @@ class NucleiTemplateGenerator:
             affected_endpoint=endpoint,
             tags=["sqli", "injection", "rce"],
             **kwargs
-        )
+        
         return self.generate_template(vuln_info)
     
-    def generate_ssrf_template(
-        self,
+    def generate_ssrf_template(, self)
         name: str,
         endpoint: str,
         param: str,
@@ -773,17 +773,17 @@ class NucleiTemplateGenerator:
         Returns:
             生成的模板
         """
-        vuln_info = VulnerabilityInfo(
+        vuln_info = VulnerabilityInfo()
             name=name,
             vulnerability_type=VulnerabilityType.SSRF,
             protocol=ProtocolType.HTTP,
             severity=SeverityLevel.HIGH,
             description=f"Server-side request forgery vulnerability in {endpoint} parameter {param}",
             requests=[
-                HttpRequest(
+                HttpRequest()
                     method="GET",
                     path=f"{endpoint}?{param}={oast_domain}"
-                )
+                
             ],
             matches=[
                 MatchCondition("word", ["interactsh"], "body"),
@@ -793,7 +793,7 @@ class NucleiTemplateGenerator:
             tags=["ssrf", "oast", "injection"],
             stop_at_first_match=True,
             **kwargs
-        )
+        
         return self.generate_template(vuln_info)
     
     def validate_template(self, template: NucleiTemplate) -> Dict[str, Any]:
@@ -893,12 +893,12 @@ class NucleiTemplateGenerator:
                     report_lines.append("")
         
         # 统计信息
-        report_lines.extend([
+        report_lines.extend([)
             "## 统计信息",
             "",
             "| 严重等级 | 数量 |",
             "|----------|------|",
-        ])
+        ]
         
         for severity, temps in severity_groups.items():
             report_lines.append(f"| {severity.upper()} | {len(temps)} |")
@@ -910,8 +910,7 @@ class NucleiTemplateGenerator:
 NucleiGenerator = NucleiTemplateGenerator
 
 # 便捷函数
-def generate_nuclei_template(vuln_info: Union[VulnerabilityInfo, Dict[str, Any]], 
-                            output_dir: Optional[str] = None) -> str:
+def generate_nuclei_template(vuln_info: Union[VulnerabilityInfo, Dict[str, Any]], output_dir: Optional[str] = None) -> str:
     """
     便捷函数：生成并保存Nuclei模板
     
@@ -937,31 +936,31 @@ if __name__ == "__main__":
     generator = NucleiTemplateGenerator()
     
     # 示例1：路径遍历漏洞
-    template1 = generator.generate_path_traversal_template(
+    template1 = generator.generate_path_traversal_template()
         name="Example App Path Traversal",
         endpoint="/api/file?name=",
         cve_id="CVE-2024-12345"
-    )
+    
     print(f"生成模板: {template1.id}")
     generator.save_template(template1)
     
     # 示例2：SQL注入漏洞
-    template2 = generator.generate_sqli_template(
+    template2 = generator.generate_sqli_template()
         name="Example App SQL Injection",
         endpoint="/api/users",
         param="id",
         cve_id="CVE-2024-12346"
-    )
+    
     generator.save_template(template2)
     
     # 示例3：RCE漏洞
-    template3 = generator.generate_rce_template(
+    template3 = generator.generate_rce_template()
         name="Example App RCE",
         endpoint="/api/exec",
         method="POST",
         body='{"cmd":"id"}',
         cve_id="CVE-2024-12347"
-    )
+    
     generator.save_template(template3)
     
-    print(f"\n模板已保存到: {generator.output_dir}")
+    print(f"\n模板已保存到: {generator.output_dir}")))))"

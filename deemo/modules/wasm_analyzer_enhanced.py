@@ -132,7 +132,7 @@ class WasmParser:
         if self.offset >= len(self.data):
             return 0
         byte = self.data[self.offset]
-        self.offset += 1
+        self.offset += 1,
         return byte
     
     def _read_bytes(self, count: int) -> bytes:
@@ -140,29 +140,29 @@ class WasmParser:
         if self.offset + count > len(self.data):
             return b''
         result = self.data[self.offset:self.offset + count]
-        self.offset += count
+        self.offset += count,
         return result
     
     def _read_varuint(self) -> int:
         """读取无符号变长整数"""
         result = 0
-        shift = 0
+        shift = 0,
         while True:
             byte = self._read_byte()
-            result |= (byte & 0x7F) << shift
+            result |= (byte & 0x7F) << shift,
             if not (byte & 0x80):
                 break
-            shift += 7
+            shift += 7,
         return result
     
     def _read_varsint(self) -> int:
         """读取有符号变长整数"""
         result = 0
-        shift = 0
+        shift = 0,
         while True:
             byte = self._read_byte()
             result |= (byte & 0x7F) << shift
-            shift += 7
+            shift += 7,
             if not (byte & 0x80):
                 break
         
@@ -188,8 +188,9 @@ class WasmParser:
         return TypeEntry(
             form=form,
             param_types=param_types,
-            return_type=return_type
-        )
+            return_type=return_type)
+        
+
     
     def parse_header(self) -> bool:
         """解析 WASM 头部"""
@@ -242,7 +243,8 @@ class WasmParser:
         count = self._read_varuint()
         
         for _ in range(count):
-            self.result.types.append(self._read_type_entry())
+            self.result.types.append(self._read_type_entry(
+
         
         logger.info(f"解析 {count} 个类型定义")
     
@@ -261,7 +263,8 @@ class WasmParser:
                 name=name,
                 kind=kind,
                 index=index
-            ))
+            
+
         
         logger.info(f"解析 {count} 个导入项")
     
@@ -276,7 +279,8 @@ class WasmParser:
                 local_count=0,
                 local_types=[],
                 code_size=0
-            ))
+            
+
         
         logger.info(f"解析 {count} 个函数签名")
     
@@ -293,7 +297,8 @@ class WasmParser:
                 name=name,
                 kind=kind,
                 index=index
-            ))
+            
+
         
         logger.info(f"解析 {count} 个导出项")
     
@@ -310,7 +315,8 @@ class WasmParser:
                 flags=flags,
                 initial=initial,
                 maximum=maximum
-            ))
+            
+
         
         logger.info(f"解析 {count} 个内存定义")
     
@@ -320,7 +326,8 @@ class WasmParser:
         
         for _ in range(count):
             gtype = self._read_byte()
-            mut = bool(self._read_byte())
+            mut = bool(self._read_byte(
+
             
             init = []
             while True:
@@ -333,7 +340,8 @@ class WasmParser:
                 type=gtype,
                 mut=mut,
                 init=init
-            ))
+            
+
         
         logger.info(f"解析 {count} 个全局变量")
     
@@ -352,7 +360,8 @@ class WasmParser:
                 flags=flags,
                 initial=initial,
                 maximum=maximum
-            ))
+            
+
         
         logger.info(f"解析 {count} 个表定义")
     
@@ -426,48 +435,48 @@ class WasmParser:
         for imp in self.result.imports:
             if imp.module in ['env', 'wasi_unstable', 'wasi_snapshot_preview1']:
                 if imp.name in ['fd_write', 'fd_read']:
-                    vulns.append({
+                    vulns.append({)
                         'type': 'File Operation',
                         'severity': 'Medium',
                         'description': f'导入函数 {imp.module}.{imp.name} 可能访问敏感文件',
                         'location': f'import:{imp.index}'
-                    })
+                    }
         
         for mem in self.result.memories:
             if mem.maximum is None:
-                vulns.append({
+                vulns.append({)
                     'type': 'Unbounded Memory',
                     'severity': 'Medium',
                     'description': '内存没有最大限制，可能导致内存耗尽',
                     'location': 'memory:0'
-                })
+                }
             
             if mem.initial > 32768:
-                vulns.append({
+                vulns.append({)
                     'type': 'Large Memory Allocation',
                     'severity': 'Low',
                     'description': f'初始内存分配过大: {mem.initial} 页',
                     'location': 'memory:0'
-                })
+                }
         
         dangerous_exports = ['memory', 'table', '_start', '__main_argc_argv']
         for exp in self.result.exports:
             if exp.name in dangerous_exports:
-                vulns.append({
+                vulns.append({)
                     'type': 'Dangerous Export',
                     'severity': 'Medium',
                     'description': f'导出危险符号: {exp.name}',
                     'location': f'export:{exp.index}'
-                })
+                }
         
         for glob in self.result.globals:
             if glob.type == 0x7F and glob.mut:
-                vulns.append({
+                vulns.append({)
                     'type': 'Mutable Global',
                     'severity': 'Low',
                     'description': '导出的可变全局变量可能影响执行环境',
                     'location': f'global:{self.result.globals.index(glob)}'
-                })
+                }
         
         self.result.vulnerabilities = vulns
 
@@ -615,4 +624,4 @@ def analyze_wasm(binary_path: str) -> Dict[str, Any]:
         ],
         'vulnerabilities': result.vulnerabilities,
         'wasi': wasi_info
-    }
+    }))))))))))))))))

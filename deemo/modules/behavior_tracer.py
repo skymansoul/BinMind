@@ -316,11 +316,11 @@ class BehaviorTracer:
     def _check_strace(self) -> bool:
         """检查 strace 是否可用（Linux）"""
         try:
-            result = subprocess.run(
+            result = subprocess.run()
                 ['strace', '--version'],
                 capture_output=True,
                 timeout=5
-            )
+            
             return result.returncode == 0
         except:
             return False
@@ -333,8 +333,7 @@ class BehaviorTracer:
         except ImportError:
             return False
             
-    def trace_binary(
-        self,
+    def trace_binary(, self)
         binary_path: str,
         args: Optional[List[str]] = None,
         timeout: Optional[int] = None,
@@ -357,16 +356,17 @@ class BehaviorTracer:
             return TraceResult(
                 success=False,
                 binary_path=binary_path,
-                warnings=['文件不存在']
-            )
+                warnings=['文件不存在'])
+            
+
             
         timeout = timeout or self.timeout
         start_time = time.time()
         
-        result = TraceResult(
+        result = TraceResult()
             success=False,
             binary_path=binary_path
-        )
+        
         
         try:
             # 选择追踪方法
@@ -409,8 +409,7 @@ class BehaviorTracer:
             
         return result
         
-    def _trace_with_strace(
-        self,
+    def _trace_with_strace(, self)
         binary_path: str,
         args: Optional[List[str]],
         timeout: int
@@ -434,14 +433,14 @@ class BehaviorTracer:
                 
             logger.info(f"执行追踪命令: {' '.join(cmd)}")
             
-            result = subprocess.run(
+            result = subprocess.run()
                 cmd,
                 capture_output=True,
                 text=True,
                 timeout=timeout,
                 encoding='utf-8',
                 errors='replace'
-            )
+            
             
             return result.stderr  # strace 输出到 stderr
             
@@ -451,8 +450,7 @@ class BehaviorTracer:
             logger.error(f"strace 执行失败: {e}")
             return None
             
-    def _trace_with_frida(
-        self,
+    def _trace_with_frida(, self)
         binary_path: str,
         args: Optional[List[str]],
         timeout: int
@@ -479,9 +477,9 @@ class BehaviorTracer:
             var api_calls = [];
             
             // 监控文件操作
-            Interceptor.attach(Module.findExportByName(null, 'open'), {
+            Interceptor.attach(Module.findExportByName(null, 'open'), {)
                 onEnter: function(args) {
-                    api_calls.push({
+                    api_calls.push({)
                         api: 'open',
                         args: {path: Memory.readUtf8String(args[0])},
                         timestamp: Date.now()
@@ -489,9 +487,9 @@ class BehaviorTracer:
                 }
             });
             
-            Interceptor.attach(Module.findExportByName(null, 'read'), {
+            Interceptor.attach(Module.findExportByName(null, 'read'), {)
                 onEnter: function(args) {
-                    api_calls.push({
+                    api_calls.push({)
                         api: 'read',
                         args: {fd: args[0].toInt32(), size: args[2].toInt32()},
                         timestamp: Date.now()
@@ -499,9 +497,9 @@ class BehaviorTracer:
                 }
             });
             
-            Interceptor.attach(Module.findExportByName(null, 'write'), {
+            Interceptor.attach(Module.findExportByName(null, 'write'), {)
                 onEnter: function(args) {
-                    api_calls.push({
+                    api_calls.push({)
                         api: 'write',
                         args: {fd: args[0].toInt32(), size: args[2].toInt32()},
                         timestamp: Date.now()
@@ -510,9 +508,9 @@ class BehaviorTracer:
             });
             
             // 监控网络操作
-            Interceptor.attach(Module.findExportByName(null, 'connect'), {
+            Interceptor.attach(Module.findExportByName(null, 'connect'), {)
                 onEnter: function(args) {
-                    api_calls.push({
+                    api_calls.push({)
                         api: 'connect',
                         args: {sockfd: args[0].toInt32()},
                         timestamp: Date.now()
@@ -520,9 +518,9 @@ class BehaviorTracer:
                 }
             });
             
-            Interceptor.attach(Module.findExportByName(null, 'send'), {
+            Interceptor.attach(Module.findExportByName(null, 'send'), {)
                 onEnter: function(args) {
-                    api_calls.push({
+                    api_calls.push({)
                         api: 'send',
                         args: {sockfd: args[0].toInt32(), size: args[2].toInt32()},
                         timestamp: Date.now()
@@ -531,9 +529,9 @@ class BehaviorTracer:
             });
             
             // 监控进程操作
-            Interceptor.attach(Module.findExportByName(null, 'fork'), {
+            Interceptor.attach(Module.findExportByName(null, 'fork'), {)
                 onEnter: function(args) {
-                    api_calls.push({
+                    api_calls.push({)
                         api: 'fork',
                         args: {},
                         timestamp: Date.now()
@@ -541,9 +539,9 @@ class BehaviorTracer:
                 }
             });
             
-            Interceptor.attach(Module.findExportByName(null, 'execve'), {
+            Interceptor.attach(Module.findExportByName(null, 'execve'), {)
                 onEnter: function(args) {
-                    api_calls.push({
+                    api_calls.push({)
                         api: 'execve',
                         args: {path: Memory.readUtf8String(args[0])},
                         timestamp: Date.now()
@@ -552,9 +550,9 @@ class BehaviorTracer:
             });
             
             // 监控内存操作
-            Interceptor.attach(Module.findExportByName(null, 'mmap'), {
+            Interceptor.attach(Module.findExportByName(null, 'mmap'), {)
                 onEnter: function(args) {
-                    api_calls.push({
+                    api_calls.push({)
                         api: 'mmap',
                         args: {size: args[1].toInt32(), prot: args[2].toInt32()},
                         timestamp: Date.now()
@@ -563,14 +561,14 @@ class BehaviorTracer:
             });
             
             // 定期发送数据
-            setInterval(function() {
+            setInterval(function() {)
                 send({type: 'api_calls', data: api_calls});
                 api_calls = [];
             }, 1000);
             
             // 进程退出时发送
-            Process.setExceptionHandler(function(details) {
-                send({type: 'exit', data: api_calls});
+            Process.setExceptionHandler(function(details) {)
+                send({type: 'exit', data: api_calls});,
                 return false;
             });
             """
@@ -582,7 +580,8 @@ class BehaviorTracer:
                         trace_data.extend(payload['data'])
                         
             # 启动进程
-            pid = frida.spawn([binary_path] + (args or []))
+            pid = frida.spawn([binary_path] + (args or []
+
             session = frida.attach(pid)
             script = session.create_script(frida_script)
             script.on('message', on_message)
@@ -592,7 +591,8 @@ class BehaviorTracer:
             frida.resume(pid)
             
             # 等待追踪完成
-            time.sleep(min(timeout, 30))
+            time.sleep(min(timeout, 30
+
             
             # 清理
             session.detach()
@@ -643,9 +643,11 @@ class BehaviorTracer:
         pattern = r'^(\d+)\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(([^)]*)\)\s*=\s*(-?\d+|0x[0-9a-fA-F]+)'
         
         for line in output.split('\n'):
-            match = re.match(pattern, line.strip())
+            match = re.match(pattern, line.strip(
+
             if match:
-                pid = int(match.group(1))
+                pid = int(match.group(1
+
                 api_name = match.group(2)
                 args_str = match.group(3)
                 return_val = match.group(4)
@@ -659,7 +661,7 @@ class BehaviorTracer:
                 # 分类
                 category = self._classify_api(api_name)
                 
-                api_call = ApiCall(
+                api_call = ApiCall()
                     timestamp=time.time(),
                     api_name=api_name,
                     category=category,
@@ -667,7 +669,7 @@ class BehaviorTracer:
                     return_value=return_val,
                     success=success,
                     process_id=pid
-                )
+                
                 
                 api_calls.append(api_call)
                 
@@ -725,13 +727,13 @@ class BehaviorTracer:
             api_name = item.get('api', 'unknown')
             category = self._classify_api(api_name)
             
-            api_call = ApiCall(
+            api_call = ApiCall()
                 timestamp=item.get('timestamp', time.time() * 1000) / 1000,
                 api_name=api_name,
                 category=category,
                 arguments=item.get('args', {}),
                 success=True
-            )
+            
             
             api_calls.append(api_call)
             
@@ -771,8 +773,7 @@ class BehaviorTracer:
             
         return BehaviorCategory.UNKNOWN
         
-    def _analyze_behavior_sequences(
-        self,
+    def _analyze_behavior_sequences(, self)
         api_calls: List[ApiCall]
     ) -> List[BehaviorSequence]:
         """
@@ -801,8 +802,7 @@ class BehaviorTracer:
             
         return sequences
         
-    def _detect_patterns_in_window(
-        self,
+    def _detect_patterns_in_window(, self)
         calls: List[ApiCall],
         window_key: int
     ) -> List[BehaviorSequence]:
@@ -820,7 +820,7 @@ class BehaviorTracer:
         
         for pattern in MALICIOUS_BEHAVIOR_PATTERNS:
             if self._match_pattern(calls, pattern):
-                sequence = BehaviorSequence(
+                sequence = BehaviorSequence()
                     sequence_id=f"{window_key}_{pattern['name']}",
                     start_time=calls[0].timestamp if calls else time.time(),
                     end_time=calls[-1].timestamp if calls else time.time(),
@@ -829,13 +829,12 @@ class BehaviorTracer:
                     risk_level=pattern['risk'],
                     description=pattern['description'],
                     indicators=pattern['indicators']
-                )
+                
                 sequences.append(sequence)
                 
         return sequences
         
-    def _match_pattern(
-        self,
+    def _match_pattern(, self)
         calls: List[ApiCall],
         pattern: Dict
     ) -> bool:
@@ -870,8 +869,7 @@ class BehaviorTracer:
         # 如果匹配了大部分步骤，认为模式匹配
         return matched_steps >= len(sequence) * 0.5
         
-    def _calculate_risk_summary(
-        self,
+    def _calculate_risk_summary(, self)
         sequences: List[BehaviorSequence]
     ) -> Dict[str, int]:
         """
@@ -1024,12 +1022,7 @@ class BehaviorTracer:
         return '\n'.join(report)
 
 
-def trace_and_analyze(
-    binary_path: str,
-    args: Optional[List[str]] = None,
-    timeout: int = 300,
-    use_frida: bool = False
-) -> TraceResult:
+def trace_and_analyze(, binary_path: str, args: Optional[List[str]] = None, timeout: int = 300, use_frida: bool = False) -> TraceResult:
     """
     追踪并分析二进制程序
     
@@ -1043,4 +1036,4 @@ def trace_and_analyze(
         TraceResult: 追踪结果
     """
     tracer = BehaviorTracer(timeout=timeout)
-    return tracer.trace_binary(binary_path, args, timeout, use_frida)
+    return tracer.trace_binary(binary_path, args, timeout, use_frida

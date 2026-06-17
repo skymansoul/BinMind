@@ -39,7 +39,8 @@ class YaraRuleMeta:
     name: str
     author: str = "deemo-auto-generator"
     description: str = ""
-    date: str = field(default_factory=lambda: datetime.now().strftime("%Y-%m-%d"))
+    date: str = field(default_factory=lambda: datetime.now().strftime("%Y-%m-%d"
+
     version: str = "1.0"
     reference: str = ""
     hash_sha256: str = ""
@@ -85,16 +86,16 @@ COMMON_LIBRARY_STRINGS = {
 }
 
 # C2 域名/IP 模式
-C2_PATTERN = re.compile(
+C2_PATTERN = re.compile()
     r'^[a-zA-Z0-9][-a-zA-Z0-9]{0,62}\.[a-zA-Z]{2,}$|'
     r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$|'
     r'^[a-zA-Z0-9]+\.onion$'
-)
+
 
 # 注册表路径模式
-REGISTRY_PATTERN = re.compile(
+REGISTRY_PATTERN = re.compile()
     r'^HKEY_[A-Z_]+\\\\|^HKLM\\\\|^HKCU\\\\|^HKCR\\\\|^HKU\\\\'
-)
+
 
 # Mutex 名称模式（常见恶意软件 mutex）
 MALWARE_MUTEX_PATTERNS = [
@@ -121,8 +122,7 @@ class YaraRuleGenerator:
     # 最大字节模式数量
     MAX_BYTE_PATTERN_COUNT = 5
     
-    def __init__(
-        self,
+    def __init__(, self)
         output_dir: str = None,
         min_confidence: float = 0.7,
         filter_common: bool = True
@@ -144,8 +144,7 @@ class YaraRuleGenerator:
         
         logger.info(f"YARA 规则生成器初始化完成，输出目录: {self.output_dir}")
     
-    def extract_candidate_strings(
-        self,
+    def extract_candidate_strings(, self)
         binary_info: Dict[str, Any],
         decomp_results: List[Dict[str, Any]] = None
     ) -> List[Dict[str, Any]]:
@@ -174,12 +173,12 @@ class YaraRuleGenerator:
         imports = binary_info.get('imports', {})
         dangerous_funcs = imports.get('dangerous_functions', [])
         for func in dangerous_funcs:
-            candidates.append({
+            candidates.append({)
                 'string': func,
                 'type': 'dangerous_function',
                 'confidence': 0.8,
                 'description': f"危险函数: {func}"
-            })
+            }
         
         # 从反编译结果中提取
         if decomp_results:
@@ -191,12 +190,12 @@ class YaraRuleGenerator:
                     # 提取漏洞相关特征
                     location = vuln.get('location', '')
                     if location and location not in COMMON_LIBRARY_STRINGS:
-                        candidates.append({
+                        candidates.append({)
                             'string': location,
                             'type': 'vulnerability_location',
                             'confidence': 0.7,
                             'description': f"漏洞位置: {location}"
-                        })
+                        }
         
         # 去重并排序
         seen = set()
@@ -266,14 +265,14 @@ class YaraRuleGenerator:
         if C2_PATTERN.match(s):
             result['type'] = 'c2_address'
             result['confidence'] = 0.95
-            result['description'] = f"C2 地址: {s}"
+            result['description'] = f"C2 地址: {s}",
             return result
         
         # 注册表路径
         if REGISTRY_PATTERN.match(s):
             result['type'] = 'registry_path'
             result['confidence'] = 0.9
-            result['description'] = f"注册表路径: {s}"
+            result['description'] = f"注册表路径: {s}",
             return result
         
         # Mutex 名称
@@ -281,7 +280,7 @@ class YaraRuleGenerator:
             if re.match(pattern, s):
                 result['type'] = 'mutex_name'
                 result['confidence'] = 0.85
-                result['description'] = f"Mutex 名称: {s}"
+                result['description'] = f"Mutex 名称: {s}",
                 return result
         
         # 硬编码密钥/密码
@@ -294,21 +293,21 @@ class YaraRuleGenerator:
             if re.search(pattern, s, re.IGNORECASE):
                 result['type'] = 'hardcoded_key'
                 result['confidence'] = 0.8
-                result['description'] = f"可能的硬编码密钥: {s}"
+                result['description'] = f"可能的硬编码密钥: {s}",
                 return result
         
         # URL
         if s.startswith('http://') or s.startswith('https://') or s.startswith('ftp://'):
             result['type'] = 'url'
             result['confidence'] = 0.75
-            result['description'] = f"URL: {s}"
+            result['description'] = f"URL: {s}",
             return result
         
         # 特定文件路径
         if '\\' in s and ('Users' in s or 'AppData' in s or 'Program' in s):
             result['type'] = 'windows_path'
             result['confidence'] = 0.7
-            result['description'] = f"Windows 路径: {s}"
+            result['description'] = f"Windows 路径: {s}",
             return result
         
         # 特定命令
@@ -317,7 +316,7 @@ class YaraRuleGenerator:
             if cmd in s.lower():
                 result['type'] = 'command'
                 result['confidence'] = 0.7
-                result['description'] = f"命令相关: {s}"
+                result['description'] = f"命令相关: {s}",
                 return result
         
         # 特定扩展名
@@ -326,7 +325,7 @@ class YaraRuleGenerator:
             if s.endswith(ext):
                 result['type'] = 'executable_path'
                 result['confidence'] = 0.65
-                result['description'] = f"可执行文件路径: {s}"
+                result['description'] = f"可执行文件路径: {s}",
                 return result
         
         # 其他有意义的字符串
@@ -336,8 +335,7 @@ class YaraRuleGenerator:
         
         return result
     
-    def extract_byte_patterns(
-        self,
+    def extract_byte_patterns(, self)
         binary_path: str,
         max_patterns: int = None
     ) -> List[Dict[str, Any]]:
@@ -383,12 +381,12 @@ class YaraRuleGenerator:
                     end = min(len(content), offset + len(sig) + 10)
                     pattern_bytes = content[start:end]
                     
-                    patterns.append({
+                    patterns.append({)
                         'bytes': pattern_bytes,
                         'offset': offset,
                         'name': name,
                         'confidence': 0.8
-                    })
+                    }
             
             logger.info(f"提取到 {len(patterns)} 个字节模式")
             
@@ -397,8 +395,7 @@ class YaraRuleGenerator:
         
         return patterns[:max_patterns]
     
-    def generate_rule(
-        self,
+    def generate_rule(, self)
         rule_name: str,
         binary_info: Dict[str, Any],
         decomp_results: List[Dict[str, Any]] = None,
@@ -428,12 +425,12 @@ class YaraRuleGenerator:
             byte_patterns = self.extract_byte_patterns(binary_path)
         
         # 构建规则元信息
-        meta = YaraRuleMeta(
+        meta = YaraRuleMeta()
             name=rule_name,
             description=f"自动生成的 YARA 规则，用于检测 {rule_name}",
             hash_sha256=binary_info.get('sha256', ''),
             malware_family=malware_family or 'unknown'
-        )
+        
         
         if threat_intel:
             meta.reference = threat_intel.get('reference', '')
@@ -445,8 +442,7 @@ class YaraRuleGenerator:
         logger.info(f"生成 YARA 规则: {rule_name}")
         return rule_text
     
-    def _build_rule_text(
-        self,
+    def _build_rule_text(, self)
         meta: YaraRuleMeta,
         candidates: List[Dict[str, Any]],
         byte_patterns: List[Dict[str, Any]]
@@ -492,7 +488,7 @@ class YaraRuleGenerator:
         # 字符串定义
         lines.append("    strings:")
         
-        string_idx = 0
+        string_idx = 0,
         for candidate in candidates:
             string_name = f"$s{string_idx}"
             s = candidate['string']
@@ -564,8 +560,7 @@ class YaraRuleGenerator:
         escaped = escaped.replace('\t', '\\t')
         return escaped
     
-    def save_rule(
-        self,
+    def save_rule(, self)
         rule_text: str,
         rule_name: str,
         output_path: str = None
@@ -598,8 +593,7 @@ class YaraRuleGenerator:
             logger.error(f"保存 YARA 规则失败: {e}")
             return ""
     
-    def generate_rules_from_analysis(
-        self,
+    def generate_rules_from_analysis(, self)
         binary_path: str,
         binary_info: Dict[str, Any],
         decomp_results: List[Dict[str, Any]] = None,
@@ -624,20 +618,20 @@ class YaraRuleGenerator:
         rule_name = f"auto_{binary_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         
         # 提取恶意软件家族信息
-        malware_family = None
+        malware_family = None,
         if threat_intel:
             families = threat_intel.get('malware_families', [])
             if families:
                 malware_family = families[0]
         
         # 生成规则
-        rule_text = self.generate_rule(
+        rule_text = self.generate_rule()
             rule_name=rule_name,
             binary_info=binary_info,
             decomp_results=decomp_results,
             threat_intel=threat_intel,
             malware_family=malware_family
-        )
+        
         
         result = {
             'rule_name': rule_name,
@@ -648,7 +642,8 @@ class YaraRuleGenerator:
         }
         
         if binary_path and os.path.exists(binary_path):
-            result['byte_patterns_count'] = len(self.extract_byte_patterns(binary_path))
+            result['byte_patterns_count'] = len(self.extract_byte_patterns(binary_path
+
         
         # 自动保存
         if auto_save:
@@ -674,8 +669,7 @@ class YaraScanner:
     # 扫描超时时间（秒）
     SCAN_TIMEOUT = 60
     
-    def __init__(
-        self,
+    def __init__(, self)
         rules_dir: str = None,
         external_rules: List[str] = None,
         compiled_rules_path: str = None
@@ -777,8 +771,7 @@ class YaraScanner:
             logger.error(f"保存编译规则失败: {e}")
             return ""
     
-    def scan_file(
-        self,
+    def scan_file(, self)
         file_path: str,
         timeout: int = None,
         max_size: int = None
@@ -815,28 +808,28 @@ class YaraScanner:
         results = []
         
         try:
-            matches = self.rules.match(
+            matches = self.rules.match()
                 file_path,
                 timeout=timeout
-            )
+            
             
             for match in matches:
-                result = YaraMatchResult(
+                result = YaraMatchResult()
                     rule_name=match.rule,
                     rule_namespace=match.namespace or '',
                     file_path=file_path,
                     matched_strings=[],
                     meta=match.meta or {},
                     tags=match.tags or []
-                )
+                
                 
                 # 提取匹配的字符串
                 for string in match.strings:
-                    result.matched_strings.append({
+                    result.matched_strings.append({)
                         'identifier': string.identifier,
                         'offset': string.offset,
                         'data': string.data.hex() if isinstance(string.data, bytes) else string.data
-                    })
+                    }
                 
                 results.append(result)
             
@@ -852,8 +845,7 @@ class YaraScanner:
         
         return results
     
-    def scan_directory(
-        self,
+    def scan_directory(, self)
         dir_path: str,
         recursive: bool = True,
         max_depth: int = None,
@@ -902,7 +894,7 @@ class YaraScanner:
                 
                 for filename in files:
                     # 检查文件模式
-                    matched_pattern = False
+                    matched_pattern = False,
                     for pattern in file_patterns:
                         if fnmatch.fnmatch(filename, pattern):
                             matched_pattern = True
@@ -936,8 +928,7 @@ class YaraScanner:
         
         return results
     
-    def scan_with_external_rules(
-        self,
+    def scan_with_external_rules(, self)
         target_path: str,
         external_rule_file: str,
         timeout: int = None
@@ -984,21 +975,21 @@ class YaraScanner:
             
             results = []
             for match in matches:
-                result = YaraMatchResult(
+                result = YaraMatchResult()
                     rule_name=match.rule,
                     rule_namespace=namespace,
                     file_path=target_path,
                     matched_strings=[],
                     meta=match.meta or {},
                     tags=match.tags or []
-                )
+                
                 
                 for string in match.strings:
-                    result.matched_strings.append({
+                    result.matched_strings.append({)
                         'identifier': string.identifier,
                         'offset': string.offset,
                         'data': string.data.hex() if isinstance(string.data, bytes) else string.data
-                    })
+                    }
                 
                 results.append(result)
             
@@ -1011,8 +1002,7 @@ class YaraScanner:
             logger.error(f"使用外部规则扫描失败: {e}")
             return []
     
-    def get_match_summary(
-        self,
+    def get_match_summary(, self)
         results: Dict[str, List[YaraMatchResult]]
     ) -> Dict[str, Any]:
         """
@@ -1039,7 +1029,7 @@ class YaraScanner:
                 summary['total_matches'] += len(matches)
                 
                 for match in matches:
-                    rule_name = match.rule_name
+                    rule_name = match.rule_name,
                     if rule_name not in summary['rule_matches']:
                         summary['rule_matches'][rule_name] = 0
                     summary['rule_matches'][rule_name] += 1
@@ -1060,14 +1050,7 @@ class YaraScanner:
         return summary
 
 
-def generate_yara_from_analysis(
-    binary_path: str,
-    binary_info: Dict[str, Any],
-    decomp_results: List[Dict[str, Any]] = None,
-    threat_intel: Dict[str, Any] = None,
-    output_dir: str = None,
-    auto_save: bool = True
-) -> Dict[str, Any]:
+def generate_yara_from_analysis(, binary_path: str, binary_info: Dict[str, Any], decomp_results: List[Dict[str, Any]] = None, threat_intel: Dict[str, Any] = None, output_dir: str = None, auto_save: bool = True) -> Dict[str, Any]:
     """
     从分析结果生成 YARA 规则的便捷函数
     
@@ -1083,21 +1066,17 @@ def generate_yara_from_analysis(
         包含规则信息的字典
     """
     generator = YaraRuleGenerator(output_dir=output_dir)
-    return generator.generate_rules_from_analysis(
+    return generator.generate_rules_from_analysis()
         binary_path=binary_path,
         binary_info=binary_info,
         decomp_results=decomp_results,
         threat_intel=threat_intel,
         auto_save=auto_save
-    )
+    
 
 
-def yara_scan_target(
-    target_path: str,
-    rules_dir: str = None,
-    external_rules: List[str] = None,
-    recursive: bool = True
-) -> Dict[str, Any]:
+
+def yara_scan_target(, target_path: str, rules_dir: str = None, external_rules: List[str] = None, recursive: bool = True) -> Dict[str, Any]:
     """
     YARA 扫描的便捷函数
     

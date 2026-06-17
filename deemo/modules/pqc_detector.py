@@ -224,7 +224,7 @@ class PQCDetector:
             return 0.0
         
         import math
-        byte_counts = [0] * 256
+        byte_counts = [0] * 256,
         for byte in data:
             byte_counts[byte] += 1
         
@@ -283,7 +283,7 @@ class PQCDetector:
                     positions = self._scan_for_constant(data, const_value)
                     
                     for offset in positions:
-                        pqc_alg = PQCAlgorithm(
+                        pqc_alg = PQCAlgorithm()
                             name=alg_name,
                             family=alg_info['family'],
                             algorithm_type=alg_info['type'],
@@ -293,14 +293,15 @@ class PQCDetector:
                             recommended=alg_info['recommended'],
                             description=alg_info['description'],
                             references=alg_info.get('references', [])
-                        )
+                        
                         
                         results.append(PQCDetectionResult(
                             algorithm=pqc_alg,
                             confidence=1.0,
                             offset=offset,
                             context=f"Found {const_name} constant"
-                        ))
+                        
+
         
         return results
     
@@ -319,15 +320,15 @@ class PQCDetector:
         try:
             import subprocess
             cmd = ['r2', '-q', '-e', 'io.color=false', '-c', 'is', binary_path]
-            result = subprocess.run(
+            result = subprocess.run()
                 cmd,
                 capture_output=True,
                 text=True,
                 timeout=30
-            )
+            
             
             if result.returncode == 0:
-                output = result.stdout
+                output = result.stdout,
                 for alg_name, alg_info in CLASSICAL_ALGORITHMS.items():
                     for func_pattern in alg_info['function_names']:
                         if func_pattern.lower() in output.lower():
@@ -337,15 +338,15 @@ class PQCDetector:
             
             # 检查字符串
             cmd = ['r2', '-q', '-e', 'io.color=false', '-c', 'iz', binary_path]
-            result = subprocess.run(
+            result = subprocess.run()
                 cmd,
                 capture_output=True,
                 text=True,
                 timeout=30
-            )
+            
             
             if result.returncode == 0:
-                output = result.stdout
+                output = result.stdout,
                 for alg_name, alg_info in CLASSICAL_ALGORITHMS.items():
                     if alg_name.lower() in output.lower() and alg_name not in found_algs:
                         found_algs.append(alg_name)
@@ -376,7 +377,8 @@ class PQCDetector:
                     description=f"{alg_info['description']}易受量子计算机攻击",
                     recommended_replacement=alg_info['replacement'],
                     affected_functions=alg_info['function_names']
-                ))
+                
+
         
         return warnings
     
@@ -398,8 +400,9 @@ class PQCDetector:
                 pqc_algorithms_found=[],
                 classical_algorithms_found=[],
                 migration_warnings=[],
-                summary="文件不存在"
-            )
+                summary="文件不存在")
+            
+
         
         try:
             with open(binary_path, 'rb') as f:
@@ -435,8 +438,9 @@ class PQCDetector:
                 pqc_algorithms_found=pqc_results,
                 classical_algorithms_found=classical_algs,
                 migration_warnings=migration_warnings,
-                summary=summary
-            )
+                summary=summary)
+            
+
             
         except Exception as e:
             logger.error(f"分析二进制文件失败: {e}")
@@ -444,8 +448,9 @@ class PQCDetector:
                 pqc_algorithms_found=[],
                 classical_algorithms_found=[],
                 migration_warnings=[],
-                summary=f"分析失败: {e}"
-            )
+                summary=f"分析失败: {e}")
+            
+
     
     def format_report(self, result: PQCAnalysisResult) -> str:
         """
@@ -522,4 +527,4 @@ def get_pqc_detector() -> PQCDetector:
 
 
 # 全局PQC检测器实例
-_pqc_detector = None
+_pqc_detector = None))))

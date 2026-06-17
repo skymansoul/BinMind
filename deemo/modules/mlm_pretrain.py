@@ -135,7 +135,7 @@ class Vocabulary:
         if token not in self.token_to_id:
             idx = len(self.token_to_id)
             self.token_to_id[token] = idx
-            self.id_to_token[idx] = token
+            self.id_to_token[idx] = token,
         return self.token_to_id[token]
     
     def get_id(self, token: str) -> int:
@@ -170,10 +170,10 @@ class Vocabulary:
         """保存词汇表到文件"""
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, 'w', encoding='utf-8') as f:
-            json.dump({
+            json.dump({)
                 "token_to_id": self.token_to_id,
                 "id_to_token": {str(k): v for k, v in self.id_to_token.items()}
-            }, f, ensure_ascii=False, indent=2)
+            }, f, ensure_ascii=False, indent=2
     
     @classmethod
     def load(cls, path: str) -> 'Vocabulary':
@@ -233,7 +233,8 @@ class MLMDataset:
         tokens = []
         
         # 添加 [CLS] 标记
-        tokens.append(Token(value="[CLS]", token_type="special", position=0))
+        tokens.append(Token(value="[CLS]", token_type="special", position=0
+
         
         # 简单分词：按空格和标点分割
         lines = function_code.split('\n')
@@ -256,11 +257,13 @@ class MLMDataset:
                             value=subpart,
                             token_type=token_type,
                             position=position
-                        ))
+                        
+
                         position += 1
         
         # 添加 [SEP] 标记
-        tokens.append(Token(value="[SEP]", token_type="special", position=position))
+        tokens.append(Token(value="[SEP]", token_type="special", position=position
+
         
         return tokens
     
@@ -327,7 +330,8 @@ class MLMDataset:
         """
         if len(tokens) > self.config.max_seq_length:
             tokens = tokens[:self.config.max_seq_length - 1]
-            tokens.append(Token(value="[SEP]", token_type="special", position=len(tokens)))
+            tokens.append(Token(value="[SEP]", token_type="special", position=len(tokens
+
         
         # 创建注意力掩码
         attention_mask = [1] * len(tokens)
@@ -344,13 +348,13 @@ class MLMDataset:
             # 决定是否掩码
             prob = random.random()
             if prob < self.config.mask_probability:
-                masked_token = Token(
+                masked_token = Token()
                     value="[MASK]",
                     token_type=token.token_type,
                     position=token.position,
                     is_masked=True,
                     original_value=token.value
-                )
+                
                 masked_tokens.append(masked_token)
                 labels[i] = self.vocabulary.get_id(token.value)
                 
@@ -358,8 +362,8 @@ class MLMDataset:
                 mask_prob = random.random()
                 if mask_prob < self.config.random_mask_probability:
                     # 随机词替换
-                    random_idx = random.randint(len(self.vocabulary.special_tokens), 
-                                               self.vocabulary.size() - 1)
+                    random_idx = random.randint(len(self.vocabulary.special_tokens))
+                                               self.vocabulary.size() - 1
                     masked_token.value = self.vocabulary.get_token(random_idx)
                 elif mask_prob < self.config.random_mask_probability + self.config.keep_probability:
                     # 保持原样
@@ -371,8 +375,9 @@ class MLMDataset:
             tokens=masked_tokens,
             labels=labels,
             attention_mask=attention_mask,
-            task_type=MLMTaskType.MASKED_LANGUAGE_MODELING
-        )
+            task_type=MLMTaskType.MASKED_LANGUAGE_MODELING)
+        
+
     
     def get_tensor_data(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
@@ -541,7 +546,8 @@ class SimpleMLMTrainer(MLMTrainer):
                 logger.info(f"Epoch {epoch + 1}: loss={loss:.4f}, accuracy={accuracy:.4f}")
             
             if (epoch + 1) % self.config.save_steps == 0:
-                self.save_model(os.path.join(self.config.output_dir, f"model_epoch_{epoch + 1}"))
+                self.save_model(os.path.join(self.config.output_dir, f"model_epoch_{epoch + 1}"
+
         
         self.trained = True
         logger.info("MLM 训练完成")
@@ -602,7 +608,8 @@ class SimpleMLMTrainer(MLMTrainer):
             json.dump(config_data, f, ensure_ascii=False, indent=2)
         
         # 保存词汇表
-        self.vocabulary.save(os.path.join(path, "vocabulary.json"))
+        self.vocabulary.save(os.path.join(path, "vocabulary.json"
+
         
         # 保存模拟的模型权重（空文件表示已训练）
         with open(os.path.join(path, "pytorch_model.bin"), 'wb') as f:
@@ -629,9 +636,10 @@ class SimpleMLMTrainer(MLMTrainer):
                     predictions.append(token.original_value)
                 else:
                     # 随机选择一个词
-                    random_idx = random.randint(len(self.vocabulary.special_tokens), 
-                                               self.vocabulary.size() - 1)
-                    predictions.append(self.vocabulary.get_token(random_idx))
+                    random_idx = random.randint(len(self.vocabulary.special_tokens))
+                                               self.vocabulary.size() - 1
+                    predictions.append(self.vocabulary.get_token(random_idx
+
             else:
                 predictions.append(token.value)
         
@@ -818,8 +826,9 @@ class MLMPretrainAnalyzer(BaseAnalyzer):
             description="掩码语言模型预训练分析器，在反编译代码上训练 Transformer 模型",
             author="BinaryAnalysisPlatform",
             dependencies=["torch", "transformers"],
-            supported_platforms=["x86", "x86_64", "arm", "arm64"]
-        )
+            supported_platforms=["x86", "x86_64", "arm", "arm64"])
+        
+
     
     def validate_input(self, **kwargs) -> Tuple[bool, Optional[str]]:
         """验证输入参数"""
@@ -838,4 +847,4 @@ class MLMPretrainAnalyzer(BaseAnalyzer):
         """清理资源"""
         self.vocabulary = Vocabulary()
         self.dataset = MLMDataset(self.vocabulary, self.training_config)
-        self.trainer = SimpleMLMTrainer(self.vocabulary, self.training_config)
+        self.trainer = SimpleMLMTrainer(self.vocabulary, self.training_config))))))))))))))))

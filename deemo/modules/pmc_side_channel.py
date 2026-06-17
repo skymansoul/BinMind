@@ -100,7 +100,8 @@ class PMCSideChannelEvaluator:
             
         try:
             with open('/proc/sys/kernel/perf_event_paranoid', 'r') as f:
-                value = int(f.read().strip())
+                value = int(f.read().strip(
+
                 if value > 1:
                     logger.info(f"perf_event_paranoid设置为{value}，可能需要root权限")
                     return False
@@ -169,7 +170,8 @@ class PMCSideChannelEvaluator:
                     value=int(hit_time * 1000),  # 转换为皮秒
                     timestamp=time.time(),
                     iteration=i
-                ))
+                
+
                 
                 # 模拟缓存未命中
                 miss_time = self._estimate_cache_access_time(addr, False)
@@ -178,7 +180,8 @@ class PMCSideChannelEvaluator:
                     value=int(miss_time * 1000),
                     timestamp=time.time(),
                     iteration=i
-                ))
+                
+
         
         result.measurements = measurements
         result.signal_detected = self._analyze_cache_timing(measurements, result)
@@ -304,7 +307,8 @@ class PMCSideChannelEvaluator:
                     value=1,
                     timestamp=time.time(),
                     iteration=i
-                ))
+                
+
             else:
                 # 预测成功
                 measurements.append(PMCMeasurement(
@@ -312,7 +316,8 @@ class PMCSideChannelEvaluator:
                     value=1,
                     timestamp=time.time(),
                     iteration=i
-                ))
+                
+
                 
             # 添加一些CPU周期测量
             cycles = 100 + (i % 50)
@@ -321,7 +326,8 @@ class PMCSideChannelEvaluator:
                 value=cycles,
                 timestamp=time.time(),
                 iteration=i
-            ))
+            
+
             
         result.measurements = measurements
         
@@ -511,4 +517,4 @@ def measure_cache_timing(addresses: List[int]) -> TestResult:
         测试结果
     """
     evaluator = PMCSideChannelEvaluator()
-    return evaluator.measure_cache_timing(addresses)
+    return evaluator.measure_cache_timing(addresses)))))))))))))

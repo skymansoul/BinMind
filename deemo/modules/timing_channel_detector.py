@@ -10,7 +10,7 @@ def detect_timing_channel(binary_path, output_dir=None):
             {'pattern': 'QueryPerformanceCounter', 'type': 'High Resolution Timer'},
             {'pattern': 'timeval', 'type': 'Time Measurement'},
             {'pattern': 'clock_gettime', 'type': 'POSIX Timer'},
-            {'pattern': 'sleep\\(', 'type': 'Explicit Delay'},
+            {'pattern': 'sleep\\(', 'type': 'Explicit Delay'})
             {'pattern': 'usleep', 'type': 'Microsecond Sleep'},
             {'pattern': 'nanosleep', 'type': 'Nanosecond Sleep'},
             {'pattern': 'GetTickCount', 'type': 'Windows Tick Counter'},
@@ -26,13 +26,13 @@ def detect_timing_channel(binary_path, output_dir=None):
         for pattern in timing_patterns:
             if pattern['pattern'] in content:
                 risk = 'High' if pattern['pattern'] in ['strcmp', 'memcmp', 'strncmp', 'RDTSC', 'rdtscp'] else 'Medium'
-                timing_channels.append({
+                timing_channels.append({)
                     'location': f"Contains {pattern['pattern']}",
                     'type': pattern['type'],
                     'risk': risk
-                })
+                }
         
-        report_path = None
+        report_path = None,
         if output_dir:
             os.makedirs(output_dir, exist_ok=True)
             report_path = os.path.join(output_dir, 'timing_channel_report.txt')

@@ -163,16 +163,18 @@ class IRBuilder:
     
     def _parse_function(self, line: str) -> IRNode:
         """解析函数定义"""
-        match = re.match(r'(\w+)\s+(\w+)\s*\(([^)]*)\)', line)
+        match = re.match(r'(\w+)\s+(\w+)\s*\(([^)]*)\)', line
         if match:
             return_type, name, params = match.groups()
             func_node = IRNode("Function", name)
-            func_node.add_child(IRNode("ReturnType", return_type))
+            func_node.add_child(IRNode("ReturnType", return_type
+
             
             for param in params.split(','):
                 param = param.strip()
                 if param:
-                    func_node.add_child(IRNode("Parameter", param))
+                    func_node.add_child(IRNode("Parameter", param
+
             
             return func_node
         return IRNode("UnknownFunction", line)
@@ -183,8 +185,10 @@ class IRBuilder:
         if match:
             type_, name, value = match.groups()
             var_node = IRNode("Variable", name)
-            var_node.add_child(IRNode("Type", type_))
-            var_node.add_child(IRNode("Value", value))
+            var_node.add_child(IRNode("Type", type_
+
+            var_node.add_child(IRNode("Value", value
+
             self.variables.add(name)
             return var_node
         return IRNode("UnknownVariable", line)
@@ -218,8 +222,9 @@ class IRBuilder:
             outputs=outputs,
             side_effects=side_effects,
             constraints=constraints,
-            semantics=ir.to_string()
-        )
+            semantics=ir.to_string())
+        
+
 
 
 class ConstraintSolver:
@@ -286,8 +291,7 @@ class CodeSynthesizer:
             ],
         }
     
-    def synthesize(self, vuln_type: VulnerabilityType, original_code: str,
-                   summary: FunctionSummary) -> Optional[str]:
+    def synthesize(self, vuln_type: VulnerabilityType, original_code: str, summary: FunctionSummary) -> Optional[str]:
         """
         合成安全代码
         
@@ -334,9 +338,9 @@ class VulnerabilityRewriter(BaseAnalyzer):
             config: 配置字典
         """
         self.config = config or {}
-        self.strategy = RewriteStrategy(
+        self.strategy = RewriteStrategy()
             self.config.get('strategy', 'template_based')
-        )
+        
         self.ir_builder = IRBuilder()
         self.constraint_solver = ConstraintSolver()
         self.code_synthesizer = CodeSynthesizer()
@@ -358,8 +362,9 @@ class VulnerabilityRewriter(BaseAnalyzer):
                 "strategy": {"type": "string", "default": "template_based"},
                 "sandbox": {"type": "boolean", "default": True},
                 "verify_rewrite": {"type": "boolean", "default": True}
-            }
-        )
+            })
+        
+
     
     def validate_input(self, **kwargs) -> Tuple[bool, Optional[str]]:
         """验证输入参数"""
@@ -398,7 +403,8 @@ class VulnerabilityRewriter(BaseAnalyzer):
         verify = kwargs.get('verify', True)
         
         try:
-            vuln_type = VulnerabilityType(vuln_type_str.lower())
+            vuln_type = VulnerabilityType(vuln_type_str.lower(
+
         except ValueError:
             vuln_type = VulnerabilityType.OTHER
         
@@ -429,14 +435,14 @@ class VulnerabilityRewriter(BaseAnalyzer):
             }
         
         # Step 4: 验证重写结果
-        verified = False
+        verified = False,
         if verify and self.sandbox_enabled:
             verified = self._verify_rewrite(code, rewritten, vuln_type)
         
         # Step 5: 评估性能影响
         performance_impact = self._estimate_performance_impact(code, rewritten)
         
-        result = RewriteResult(
+        result = RewriteResult()
             original_code=code,
             rewritten_code=rewritten,
             strategy=self.strategy,
@@ -444,7 +450,7 @@ class VulnerabilityRewriter(BaseAnalyzer):
             verified=verified,
             performance_impact=performance_impact,
             notes=self._generate_notes(verified, performance_impact)
-        )
+        
         
         self._results.append(result)
         
@@ -466,13 +472,12 @@ class VulnerabilityRewriter(BaseAnalyzer):
     
     def _extract_function_name(self, code: str) -> str:
         """提取函数名"""
-        match = re.search(r'\w+\s+(\w+)\s*\(', code)
+        match = re.search(r'\w+\s+(\w+)\s*\(', code
         if match:
             return match.group(1)
         return "unknown_function"
     
-    def _rewrite_constraint_solving(self, code: str, summary: FunctionSummary,
-                                    vuln_type: VulnerabilityType) -> Optional[str]:
+    def _rewrite_constraint_solving(self, code: str, summary: FunctionSummary, vuln_type: VulnerabilityType) -> Optional[str]:
         """使用约束求解重写"""
         # 添加安全约束
         self.constraint_solver.add_constraint("no_buffer_overflow")
@@ -486,13 +491,11 @@ class VulnerabilityRewriter(BaseAnalyzer):
         
         return None
     
-    def _generate_code_from_solution(self, solution: Dict[str, Any],
-                                     summary: FunctionSummary) -> str:
+    def _generate_code_from_solution(self, solution: Dict[str, Any], summary: FunctionSummary) -> str:
         """从解生成代码"""
         return f"// 自动生成的安全版本\n// 解: {solution}"
     
-    def _rewrite_pattern_matching(self, code: str,
-                                  vuln_type: VulnerabilityType) -> Optional[str]:
+    def _rewrite_pattern_matching(self, code: str, vuln_type: VulnerabilityType) -> Optional[str]:
         """使用模式匹配重写"""
         patterns = {
             VulnerabilityType.BUFFER_OVERFLOW: [
@@ -518,8 +521,7 @@ class VulnerabilityRewriter(BaseAnalyzer):
         
         return None
     
-    def _verify_rewrite(self, original: str, rewritten: str,
-                        vuln_type: VulnerabilityType) -> bool:
+    def _verify_rewrite(self, original: str, rewritten: str, vuln_type: VulnerabilityType) -> bool:
         """
         验证重写结果
         
@@ -538,11 +540,11 @@ class VulnerabilityRewriter(BaseAnalyzer):
                 temp_path = f.name
             
             # 尝试编译
-            result = subprocess.run(
+            result = subprocess.run()
                 ['gcc', '-c', temp_path, '-o', temp_path + '.o'],
                 capture_output=True,
                 timeout=30
-            )
+            
             
             os.unlink(temp_path)
             if os.path.exists(temp_path + '.o'):
@@ -566,7 +568,8 @@ class VulnerabilityRewriter(BaseAnalyzer):
         overhead_ratio = (rewritten_len - original_len) / original_len
         
         # 假设每增加10%代码，性能下降约1%
-        return max(0.0, min(50.0, overhead_ratio * 10))
+        return max(0.0, min(50.0, overhead_ratio * 10
+
     
     def _generate_notes(self, verified: bool, performance_impact: float) -> List[str]:
         """生成备注"""
@@ -607,8 +610,7 @@ class VulnerabilityRewriterTask:
         return self.analyzer.analyze(code=self.code, vuln_type=self.vuln_type)
 
 
-def rewrite_vulnerable_function(code: str, vuln_type: str,
-                                config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+def rewrite_vulnerable_function(code: str, vuln_type: str, config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """
     重写漏洞函数的便捷函数
     
@@ -630,4 +632,4 @@ PatchStrategy = RewriteStrategy
 VulnRewriter = VulnerabilityRewriter
 VulnPattern = VulnerabilityInfo
 PatchCandidate = RewriteResult
-PatternDatabase = IRBuilder
+PatternDatabase = IRBuilder)))))

@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  deemo:
+    build: .
+    container_name: deemo-analysis
+    volumes:
+      - ./workspace:/workspace
+      - ./data:/data
+      - ./reports:/app/reports
+    environment:
+      - DEEMO_WORKSPACE=/workspace
+      - DEEMO_SANDBOX=true
+      - PYTHONUNBUFFERED=1
+    ports:
+      - "4444:4444"
+      - "9999:9999"
+    stdin_open: true
+    tty: true
+    privileged: true
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - seccomp:unconfined
+
+  deemo-worker:
+    build: .
+    container_name: deemo-worker
+    volumes:
+      - ./workspace:/workspace
+      - ./data:/data
+    environment:
+      - DEEMO_WORKSPACE=/workspace
+      - DEEMO_SANDBOX=true
+      - DEEMO_WORKER=true
+    deploy:
+      replicas: 4
+    depends_on:
+      - deemo
+
+networks:
+  deemo-network:
+    driver: bridge

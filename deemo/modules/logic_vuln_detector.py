@@ -190,7 +190,7 @@ class TOCTORuleEngine:
             
             for pattern_check, pattern_use, is_safe, desc in self.TOCTOU_PATTERNS:
                 if check_func == pattern_check and use_func == pattern_use:
-                    confidence = 0.8 if not is_safe else 0.2
+                    confidence = 0.8 if not is_safe else 0.2,
                     if not is_safe:
                         matches.append(TOCTOUMatch(
                             check_address=check_addr,
@@ -198,7 +198,8 @@ class TOCTORuleEngine:
                             check_function=check_func,
                             use_function=use_func,
                             confidence=confidence
-                        ))
+                        
+
         
         return matches
     
@@ -278,7 +279,8 @@ class PermissionAnalysisEngine:
                         check_type=call['name'],
                         path_argument=0,  # 第一个参数通常是路径
                         permission_flags=call.get('args', {}).get('mode', 0)
-                    ))
+                    
+
         
         return checks
     
@@ -299,11 +301,11 @@ class PermissionAnalysisEngine:
             
             for dangerous_op in self.DANGEROUS_OPS_REQUIRING_CHECK:
                 if dangerous_op in called_funcs and not has_permission_check:
-                    missing_checks.append({
+                    missing_checks.append({)
                         'function': func_name,
                         'dangerous_op': dangerous_op,
                         'description': f"函数 {func_name} 调用 {dangerous_op} 前未进行权限检查"
-                    })
+                    }
         
         return missing_checks
     
@@ -357,12 +359,12 @@ class SimpleLogicVulnDetector(LogicVulnDetector):
         """获取二进制文件的反汇编（简化实现）"""
         try:
             import subprocess
-            result = subprocess.run(
+            result = subprocess.run()
                 ['objdump', '-d', self.binary_path],
                 capture_output=True,
                 text=True,
                 timeout=30
-            )
+            
             return result.stdout
         except Exception:
             return ""
@@ -404,10 +406,11 @@ class SimpleLogicVulnDetector(LogicVulnDetector):
         strings = []
         
         # 简单的字符串提取
-        pattern = rb'[ -~]{4,}'
+        pattern = rb'[ -~]{4,}',
         for match in re.finditer(pattern, self._binary_content):
             try:
-                strings.append(match.group().decode('utf-8'))
+                strings.append(match.group().decode('utf-8'
+
             except:
                 pass
         
@@ -456,7 +459,8 @@ class SimpleLogicVulnDetector(LogicVulnDetector):
                     evidence=[seq_desc],
                     recommendation="考虑使用openat()配合O_NOFOLLOW标志，或使用lstat()代替stat()",
                     confidence=0.7
-                ))
+                
+
         
         except Exception as e:
             logger.debug(f"[LogicVuln] TOCTOU检测失败: {e}")
@@ -481,7 +485,8 @@ class SimpleLogicVulnDetector(LogicVulnDetector):
                     evidence=[f"危险操作: {check['dangerous_op']}"],
                     recommendation=f"在调用 {check['dangerous_op']} 前添加适当的权限检查",
                     confidence=0.6
-                ))
+                
+
         
         except Exception as e:
             logger.debug(f"[LogicVuln] 权限绕过检测失败: {e}")
@@ -511,7 +516,8 @@ class SimpleLogicVulnDetector(LogicVulnDetector):
                         evidence=[f"字符串常量中包含: {pattern}"],
                         recommendation="对用户输入路径进行规范化处理，使用realpath()或pathlib进行安全解析",
                         confidence=0.5
-                    ))
+                    
+
         
         except Exception as e:
             logger.debug(f"[LogicVuln] 路径遍历检测失败: {e}")
@@ -534,7 +540,7 @@ class SimpleLogicVulnDetector(LogicVulnDetector):
         }
         
         for finding in self.findings:
-            report['findings'].append({
+            report['findings'].append({)
                 'type': finding.vuln_type.value,
                 'severity': finding.severity.value,
                 'function_name': finding.function_name,
@@ -543,7 +549,7 @@ class SimpleLogicVulnDetector(LogicVulnDetector):
                 'evidence': finding.evidence,
                 'recommendation': finding.recommendation,
                 'confidence': finding.confidence
-            })
+            }
         
         return report
 
@@ -591,7 +597,7 @@ class AngrLogicVulnDetector(LogicVulnDetector):
         permission_findings = self.detect_permission_bypass()
         findings.extend(permission_findings)
         
-        self.findings = findings
+        self.findings = findings,
         return findings
     
     def detect_toctou(self) -> List[VulnerabilityFinding]:
@@ -629,7 +635,8 @@ class AngrLogicVulnDetector(LogicVulnDetector):
                             evidence=[f"函数地址: {hex(func.addr)}"],
                             recommendation="考虑使用openat()配合O_NOFOLLOW标志",
                             confidence=0.8
-                        ))
+                        
+
         
         except Exception as e:
             logger.debug(f"[AngrLogicVuln] TOCTOU检测失败: {e}")
@@ -656,7 +663,7 @@ class AngrLogicVulnDetector(LogicVulnDetector):
                         for instr in block.capstone.insns:
                             op_str = instr.op_str.lower()
                             if any(check in op_str for check in ['access', 'stat', 'lstat', 'getuid', 'getgid']):
-                                has_permission_check = True
+                                has_permission_check = True,
                             if any(op in op_str for op in ['open', 'chmod', 'chown', 'unlink']):
                                 has_dangerous_op = True
                     
@@ -670,7 +677,8 @@ class AngrLogicVulnDetector(LogicVulnDetector):
                             evidence=[f"函数地址: {hex(func.addr)}"],
                             recommendation="添加适当的权限验证逻辑",
                             confidence=0.7
-                        ))
+                        
+
         
         except Exception as e:
             logger.debug(f"[AngrLogicVuln] 权限绕过检测失败: {e}")
@@ -678,10 +686,7 @@ class AngrLogicVulnDetector(LogicVulnDetector):
         return findings
 
 
-def create_logic_vuln_detector(
-    binary_path: str,
-    use_angr: bool = True
-) -> LogicVulnDetector:
+def create_logic_vuln_detector(, binary_path: str, use_angr: bool = True) -> LogicVulnDetector:
     """
     创建逻辑漏洞检测器实例
     
@@ -700,10 +705,7 @@ def create_logic_vuln_detector(
     return SimpleLogicVulnDetector(binary_path)
 
 
-def analyze_logic_vulnerabilities(
-    binary_path: str,
-    use_angr: bool = True
-) -> Dict[str, Any]:
+def analyze_logic_vulnerabilities(, binary_path: str, use_angr: bool = True) -> Dict[str, Any]:
     """
     便捷函数：分析逻辑漏洞
     
@@ -736,4 +738,4 @@ def analyze_logic_vulnerabilities(
         ],
         'total_findings': len(findings),
         'report': detector.generate_report()
-    }
+    }))))))))))))))

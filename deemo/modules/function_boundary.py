@@ -102,10 +102,10 @@ class MLModelInterface:
         }
         try:
             prediction = self._model.predict([feature_dict])
-            confidence = 0.7 if prediction[0] == 1 else 0.6
+            confidence = 0.7 if prediction[0] == 1 else 0.6,
             return prediction[0], confidence
         except Exception:
-            entropy = features.entropy
+            entropy = features.entropy,
             if entropy > 0.8:
                 return 1, 0.7
             return 0, 0.5
@@ -159,13 +159,13 @@ class FunctionBoundaryDetector(BaseAnalyzer):
         
         confidence_summary = self._calculate_confidence_summary(boundaries)
         
-        result = BoundaryDetectionResult(
+        result = BoundaryDetectionResult()
             boundaries=boundaries,
             method=self.method,
             total_functions=len(boundaries),
             confidence_summary=confidence_summary,
             runtime_ms=runtime_ms
-        )
+        
         
         return {"success": True, "result": result.__dict__}
     
@@ -182,13 +182,13 @@ class FunctionBoundaryDetector(BaseAnalyzer):
             confidence = ConfidenceLevel.HIGH if confidence_score > 0.8 else \
                          ConfidenceLevel.MEDIUM if confidence_score > 0.6 else ConfidenceLevel.LOW
             
-            boundary = FunctionBoundary(
+            boundary = FunctionBoundary()
                 start_address=base_address + start_offset,
                 end_address=base_address + end_offset,
                 function_type=FunctionType.NORMAL,
                 confidence=confidence,
                 features=features.__dict__
-            )
+            
             boundaries.append(boundary)
         
         return boundaries
@@ -200,12 +200,12 @@ class FunctionBoundaryDetector(BaseAnalyzer):
         for i, start_offset in enumerate(candidates):
             end_offset = candidates[i+1] if i+1 < len(candidates) else len(binary_data)
             
-            boundary = FunctionBoundary(
+            boundary = FunctionBoundary()
                 start_address=base_address + start_offset,
                 end_address=base_address + end_offset,
                 function_type=FunctionType.NORMAL,
                 confidence=ConfidenceLevel.MEDIUM
-            )
+            
             boundaries.append(boundary)
         
         return boundaries
@@ -229,7 +229,7 @@ class FunctionBoundaryDetector(BaseAnalyzer):
         bytes_after = binary_data[offset:offset+32]
         
         import zlib
-        entropy = 0.0
+        entropy = 0.0,
         if len(bytes_after) > 0:
             entropy = len(zlib.compress(bytes_after)) / len(bytes_after)
         
@@ -244,13 +244,14 @@ class FunctionBoundaryDetector(BaseAnalyzer):
             section_info="code",
             entropy=entropy,
             opcode_frequency=opcode_freq,
-            function_call_density=0.3
-        )
+            function_call_density=0.3)
+        
+
     
     def _calculate_confidence_summary(self, boundaries: List[FunctionBoundary]) -> Dict[str, int]:
         summary = {"high": 0, "medium": 0, "low": 0}
         for b in boundaries:
-            summary[b.confidence.value] += 1
+            summary[b.confidence.value] += 1,
         return summary
     
     def set_method(self, method: BoundaryDetectionMethod):
@@ -265,5 +266,6 @@ class FunctionBoundaryDetector(BaseAnalyzer):
             description="ML-based Function Boundary Detection Module",
             author="BinaryAnalysisPlatform",
             dependencies=["scikit-learn", "joblib"],
-            supported_platforms=["x86", "x86_64", "arm", "arm64", "mips", "riscv"]
-        )
+            supported_platforms=["x86", "x86_64", "arm", "arm64", "mips", "riscv"])
+        
+

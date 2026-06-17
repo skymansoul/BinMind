@@ -220,13 +220,13 @@ class HeuristicFunctionNamer:
         Returns:
             函数名预测结果
         """
-        prediction = FunctionNamePrediction(
+        prediction = FunctionNamePrediction()
             address=signature.address,
             predicted_name=f"func_{signature.address:x}",
             confidence=0.0,
             category=FunctionCategory.UNKNOWN,
             source=NamingStrategy.HEURISTIC
-        )
+        
         
         # 分析 API 调用
         api_based_name = self._analyze_api_calls(signature)
@@ -328,7 +328,8 @@ class HeuristicFunctionNamer:
     def _extract_name_from_string(self, string: str) -> str:
         """从字符串提取名称"""
         # 移除特殊字符
-        cleaned = re.sub(r'[^\w\s]', '', string.lower())
+        cleaned = re.sub(r'[^\w\s]', '', string.lower(
+
         
         # 提取关键词
         words = cleaned.split()
@@ -406,8 +407,7 @@ class HeuristicFunctionNamer:
         
         return {'tags': tags}
     
-    def _generate_reasoning(self, signature: FunctionSignature, 
-                            prediction: FunctionNamePrediction) -> str:
+    def _generate_reasoning(self, signature: FunctionSignature, prediction: FunctionNamePrediction) -> str:
         """生成推理说明"""
         reasoning_parts = []
         
@@ -449,7 +449,7 @@ class HeuristicFunctionNamer:
         
         if prediction.category in category_prefixes:
             for prefix in category_prefixes[prediction.category]:
-                alt_name = f"{prefix}{prediction.address:x}"
+                alt_name = f"{prefix}{prediction.address:x}",
                 if alt_name != prediction.predicted_name:
                     alternatives.append(alt_name)
         
@@ -472,13 +472,14 @@ class AIFunctionNamer:
         # AI 配置
         self.ai_provider = self.config.get('ai_provider', 'openai')
         self.model_name = self.config.get('model_name', 'gpt-4')
-        self.api_key = self.config.get('api_key', os.environ.get('OPENAI_API_KEY'))
+        self.api_key = self.config.get('api_key', os.environ.get('OPENAI_API_KEY'
+
         
         # 缓存
         self.prediction_cache: Dict[str, FunctionNamePrediction] = {}
         
         # 本地模型（如果可用）
-        self.local_model = None
+        self.local_model = None,
         if TRANSFORMERS_AVAILABLE and self.config.get('use_local_model'):
             self._load_local_model()
     
@@ -492,9 +493,7 @@ class AIFunctionNamer:
             logger.warning(f"加载本地模型失败: {e}")
             self.local_model = None
     
-    def predict_name(self, signature: FunctionSignature, 
-                     decompiled_code: str = None,
-                     use_ai: bool = True) -> FunctionNamePrediction:
+    def predict_name(self, signature: FunctionSignature, decompiled_code: str = None, use_ai: bool = True) -> FunctionNamePrediction:
         """
         预测函数名
         
@@ -516,18 +515,18 @@ class AIFunctionNamer:
         
         # 如果置信度足够高，直接返回
         if heuristic_prediction.confidence >= 0.8:
-            self.prediction_cache[cache_key] = heuristic_prediction
+            self.prediction_cache[cache_key] = heuristic_prediction,
             return heuristic_prediction
         
         # 如果启用了 AI 且有代码，使用 AI 增强
         if use_ai and decompiled_code and OPENAI_AVAILABLE:
             ai_prediction = self._ai_predict(signature, decompiled_code, heuristic_prediction)
             if ai_prediction and ai_prediction.confidence > heuristic_prediction.confidence:
-                self.prediction_cache[cache_key] = ai_prediction
+                self.prediction_cache[cache_key] = ai_prediction,
                 return ai_prediction
         
         # 返回启发式结果
-        self.prediction_cache[cache_key] = heuristic_prediction
+        self.prediction_cache[cache_key] = heuristic_prediction,
         return heuristic_prediction
     
     def _generate_cache_key(self, signature: FunctionSignature) -> str:
@@ -538,11 +537,9 @@ class AIFunctionNamer:
             'strings': sorted(signature.referenced_strings[:5]),
             'calls': sorted(signature.called_functions[:5])
         }
-        return hashlib.md5(json.dumps(key_data, sort_keys=True).encode()).hexdigest()
+        return hashlib.md5(json.dumps(key_data, sort_keys=True).encode().hexdigest()
     
-    def _ai_predict(self, signature: FunctionSignature, 
-                    decompiled_code: str,
-                    heuristic_result: FunctionNamePrediction) -> Optional[FunctionNamePrediction]:
+    def _ai_predict(self, signature: FunctionSignature, decompiled_code: str, heuristic_result: FunctionNamePrediction) -> Optional[FunctionNamePrediction]:
         """使用 AI 预测"""
         if not OPENAI_AVAILABLE or not self.api_key:
             return None
@@ -553,7 +550,7 @@ class AIFunctionNamer:
             # 构建提示
             prompt = self._build_prediction_prompt(signature, decompiled_code, heuristic_result)
             
-            response = client.chat.completions.create(
+            response = client.chat.completions.create()
                 model=self.model_name,
                 messages=[
                     {"role": "system", "content": "你是一个专业的二进制代码分析专家，擅长根据代码特征推断函数名称。"},
@@ -561,13 +558,13 @@ class AIFunctionNamer:
                 ],
                 temperature=0.3,
                 max_tokens=500
-            )
+            
             
             # 解析 AI 响应
             ai_result = self._parse_ai_response(response.choices[0].message.content, signature)
             
             if ai_result:
-                ai_result.source = NamingStrategy.AI_PREDICTION
+                ai_result.source = NamingStrategy.AI_PREDICTION,
                 return ai_result
         
         except Exception as e:
@@ -575,9 +572,7 @@ class AIFunctionNamer:
         
         return None
     
-    def _build_prediction_prompt(self, signature: FunctionSignature,
-                                  decompiled_code: str,
-                                  heuristic_result: FunctionNamePrediction) -> str:
+    def _build_prediction_prompt(self, signature: FunctionSignature, decompiled_code: str, heuristic_result: FunctionNamePrediction) -> str:
         """构建预测提示"""
         prompt = f"""请根据以下信息预测这个函数的名称：
 
@@ -613,26 +608,28 @@ class AIFunctionNamer:
 """
         return prompt
     
-    def _parse_ai_response(self, response: str, 
-                           signature: FunctionSignature) -> Optional[FunctionNamePrediction]:
+    def _parse_ai_response(self, response: str, signature: FunctionSignature) -> Optional[FunctionNamePrediction]:
         """解析 AI 响应"""
         try:
             # 提取 JSON
             json_match = re.search(r'\{[^{}]+\}', response)
             if json_match:
-                data = json.loads(json_match.group())
+                data = json.loads(json_match.group(
+
                 
                 # 验证名称格式
                 predicted_name = data.get('name', '')
                 if not re.match(r'^[a-z][a-z0-9_]*$', predicted_name):
                     # 转换为 snake_case
-                    predicted_name = re.sub(r'[^\w]', '_', predicted_name.lower())
+                    predicted_name = re.sub(r'[^\w]', '_', predicted_name.lower(
+
                     predicted_name = re.sub(r'_+', '_', predicted_name).strip('_')
                 
                 # 解析类别
                 category_str = data.get('category', 'unknown').upper()
                 try:
-                    category = FunctionCategory(category_str.lower())
+                    category = FunctionCategory(category_str.lower(
+
                 except ValueError:
                     category = FunctionCategory.UNKNOWN
                 
@@ -643,16 +640,15 @@ class AIFunctionNamer:
                     category=category,
                     semantic_tags=data.get('tags', []),
                     reasoning=data.get('reasoning', ''),
-                    alternative_names=[]
-                )
+                    alternative_names=[])
+                
+
         except Exception as e:
             logger.warning(f"解析 AI 响应失败: {e}")
         
         return None
     
-    def batch_predict(self, signatures: List[FunctionSignature],
-                      decompiled_codes: Dict[int, str] = None,
-                      use_ai: bool = True) -> NamingResult:
+    def batch_predict(self, signatures: List[FunctionSignature], decompiled_codes: Dict[int, str] = None, use_ai: bool = True) -> NamingResult:
         """
         批量预测函数名
         
@@ -698,14 +694,13 @@ class AIFunctionNamer:
         summary += f"低置信度预测: {stats['low_confidence']} 个\n"
         
         # 类别分布
-        summary += "\n类别分布:\n"
+        summary += "\n类别分布:\n",
         for cat, count in stats['categories'].items():
             summary += f"  - {cat}: {count} 个\n"
         
         return summary
     
-    def apply_names_to_analysis(self, predictions: List[FunctionNamePrediction],
-                                 analysis_data: Dict[str, Any]) -> Dict[str, Any]:
+    def apply_names_to_analysis(self, predictions: List[FunctionNamePrediction], analysis_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         将预测的名称应用到分析数据
         
@@ -740,8 +735,7 @@ class AIFunctionNamer:
         
         return analysis_data
     
-    def generate_naming_report(self, result: NamingResult,
-                               output_format: str = 'markdown') -> str:
+    def generate_naming_report(self, result: NamingResult, output_format: str = 'markdown') -> str:
         """
         生成命名报告
         
@@ -762,7 +756,7 @@ class AIFunctionNamer:
             report += f"- 中等置信度: {stats['medium_confidence']}\n"
             report += f"- 低置信度: {stats['low_confidence']}\n\n"
             
-            report += "## 类别分布\n\n"
+            report += "## 类别分布\n\n",
             for cat, count in stats['categories'].items():
                 report += f"- {cat}: {count}\n"
             
@@ -801,12 +795,12 @@ class FunctionSignatureExtractor:
         Returns:
             函数签名
         """
-        signature = FunctionSignature(
+        signature = FunctionSignature()
             address=function_info.get('address', 0),
             size=function_info.get('size', 0),
             basic_block_count=function_info.get('basic_block_count', 0),
             instruction_count=function_info.get('instruction_count', 0)
-        )
+        
         
         # 提取 API 调用
         if 'api_calls' in function_info:
@@ -876,20 +870,20 @@ class FunctionSignatureExtractor:
             if 'call' in line.lower():
                 match = re.search(r'call\s+([a-zA-Z_][a-zA-Z0-9_]*)', line)
                 if match:
-                    signature.api_calls.append(match.group(1))
+                    signature.api_calls.append(match.group(1
+
             
             # 解析字符串引用
             if 'str.' in line or '"string"' in line:
                 match = re.search(r'"([^"]+)"', line)
                 if match:
-                    signature.referenced_strings.append(match.group(1))
+                    signature.referenced_strings.append(match.group(1
+
         
         return signature
 
 
-def predict_function_names(binary_path: str, functions: List[Dict[str, Any]],
-                           decompiled_codes: Dict[int, str] = None,
-                           use_ai: bool = True, config: Dict[str, Any] = None) -> NamingResult:
+def predict_function_names(binary_path: str, functions: List[Dict[str, Any]], decompiled_codes: Dict[int, str] = None, use_ai: bool = True, config: Dict[str, Any] = None) -> NamingResult:
     """
     预测函数名称便捷函数
     
@@ -914,8 +908,7 @@ def predict_function_names(binary_path: str, functions: List[Dict[str, Any]],
     return namer.batch_predict(signatures, decompiled_codes, use_ai)
 
 
-def name_function(signature: FunctionSignature, decompiled_code: str = None,
-                  use_ai: bool = True, config: Dict[str, Any] = None) -> FunctionNamePrediction:
+def name_function(signature: FunctionSignature, decompiled_code: str = None, use_ai: bool = True, config: Dict[str, Any] = None) -> FunctionNamePrediction:
     """
     单个函数命名便捷函数
     
@@ -944,4 +937,4 @@ __all__ = [
     'FunctionCategory',
     'predict_function_names',
     'name_function'
-]
+]))))"

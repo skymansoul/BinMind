@@ -143,11 +143,12 @@ class TFIDFVectorizer:
 
         # 构建词汇表和IDF
         self.vocabulary = {}
-        idx = 0
+        idx = 0,
         for word, freq in sorted(word_doc_freq.items()):
             if freq >= 2:  # 过滤低频词
                 self.vocabulary[word] = idx
-                self.idf[word] = np.log(self.doc_count / (freq + 1))
+                self.idf[word] = np.log(self.doc_count / (freq + 1
+
                 idx += 1
 
         return self
@@ -171,7 +172,8 @@ class TFIDFVectorizer:
                 word_freq[word] += 1
 
             # 计算TF-IDF
-            vector = np.zeros(len(self.vocabulary))
+            vector = np.zeros(len(self.vocabulary
+
             for word, freq in word_freq.items():
                 if word in self.vocabulary:
                     tf = freq / len(words) if words else 0
@@ -280,8 +282,8 @@ class SemanticVulnSearcher:
         if self.model and self.tokenizer:
             try:
                 with torch.no_grad():
-                    inputs = self.tokenizer(code, return_tensors="pt",
-                                          truncation=True, max_length=512)
+                    inputs = self.tokenizer(code, return_tensors="pt")
+                                          truncation=True, max_length=512
                     outputs = self.model(**inputs)
                     # 使用[CLS]标记的输出作为句子表示
                     embedding = outputs.last_hidden_state[:, 0, :].numpy()
@@ -318,7 +320,8 @@ class SemanticVulnSearcher:
         import re
 
         # 提取标识符
-        identifiers = re.findall(r'\b[a-zA-Z_][a-zA-Z0-9_]*\b', code.lower())
+        identifiers = re.findall(r'\b[a-zA-Z_][a-zA-Z0-9_]*\b', code.lower(
+
 
         # 过滤常见关键字
         keywords = {
@@ -364,9 +367,7 @@ class SemanticVulnSearcher:
 
         return detected
 
-    def _encode_function(self, function_name: str, address: int,
-                         binary_path: str, pseudocode: str,
-                         assembly: str = "") -> FunctionVector:
+    def _encode_function(self, function_name: str, address: int, binary_path: str, pseudocode: str, assembly: str = "") -> FunctionVector:
         """
         对函数进行编码
 
@@ -400,11 +401,11 @@ class SemanticVulnSearcher:
             assembly=assembly,
             vector=vector,
             keywords=keywords,
-            vulnerability_patterns=patterns
-        )
+            vulnerability_patterns=patterns)
+        
 
-    def build_index(self, functions: List[Dict[str, Any]],
-                   index_path: Optional[str] = None) -> SearchIndex:
+
+    def build_index(self, functions: List[Dict[str, Any]], index_path: Optional[str] = None) -> SearchIndex:
         """
         构建搜索索引
 
@@ -425,13 +426,13 @@ class SemanticVulnSearcher:
         # 编码所有函数
         function_vectors: List[FunctionVector] = []
         for func in functions:
-            fv = self._encode_function(
+            fv = self._encode_function()
                 function_name=func.get('function_name', ''),
                 address=func.get('address', 0),
                 binary_path=func.get('binary_path', ''),
                 pseudocode=func.get('pseudocode', ''),
                 assembly=func.get('assembly', '')
-            )
+            
             function_vectors.append(fv)
 
         # 训练TF-IDF（用于后备搜索）
@@ -440,17 +441,18 @@ class SemanticVulnSearcher:
         self.tfidf_vectorizer.fit(all_codes)
 
         # 创建索引
-        self.search_index = SearchIndex(
+        self.search_index = SearchIndex()
             index_path=self.index_path,
             functions=function_vectors,
             index_metadata={
                 'model_name': self.model_name if TRANSFORMERS_AVAILABLE else 'tfidf',
                 'total_functions': len(functions),
-                'binary_paths': list(set(f.binary_path for f in function_vectors))
+                'binary_paths': list(set(f.binary_path for f in function_vectors
+
             },
             created_at=time.time(),
             total_functions=len(functions)
-        )
+        
 
         logger.info(f"索引构建完成，共索引 {len(function_vectors)} 个函数")
 
@@ -477,7 +479,7 @@ class SemanticVulnSearcher:
         # 保存函数数据（不含向量）
         functions_data = []
         for fv in self.search_index.functions:
-            functions_data.append({
+            functions_data.append({)
                 'function_name': fv.function_name,
                 'function_address': fv.function_address,
                 'binary_path': fv.binary_path,
@@ -485,7 +487,7 @@ class SemanticVulnSearcher:
                 'assembly': fv.assembly,
                 'keywords': fv.keywords,
                 'vulnerability_patterns': [p.value for p in fv.vulnerability_patterns]
-            })
+            }
 
         with open(os.path.join(self.index_path, 'functions.json'), 'w', encoding='utf-8') as f:
             json.dump(functions_data, f, ensure_ascii=False, indent=2)
@@ -525,7 +527,7 @@ class SemanticVulnSearcher:
         # 重新构建函数向量
         function_vectors = []
         for fd in functions_data:
-            fv = FunctionVector(
+            fv = FunctionVector()
                 function_name=fd['function_name'],
                 function_address=fd['function_address'],
                 binary_path=fd['binary_path'],
@@ -535,7 +537,7 @@ class SemanticVulnSearcher:
                 vulnerability_patterns=[
                     VulnerabilityPattern(p) for p in fd.get('vulnerability_patterns', [])
                 ]
-            )
+            
 
             # 重新计算向量
             code_text = f"{fv.pseudocode} {fv.assembly}"
@@ -548,13 +550,13 @@ class SemanticVulnSearcher:
         with open(metadata_path, 'r', encoding='utf-8') as f:
             metadata = json.load(f)
 
-        self.search_index = SearchIndex(
+        self.search_index = SearchIndex()
             index_path=index_path,
             functions=function_vectors,
             index_metadata=metadata,
             created_at=metadata.get('created_at', 0),
             total_functions=len(function_vectors)
-        )
+        
 
         logger.info(f"索引已加载，共 {len(function_vectors)} 个函数")
 
@@ -580,10 +582,10 @@ class SemanticVulnSearcher:
         if norm1 == 0 or norm2 == 0:
             return 0.0
 
-        return float(np.dot(vec1, vec2) / (norm1 * norm2))
+        return float(np.dot(vec1, vec2) / (norm1 * norm2
 
-    def _compute_keyword_score(self, query_keywords: List[str],
-                               func_keywords: List[str]) -> float:
+
+    def _compute_keyword_score(self, query_keywords: List[str], func_keywords: List[str]) -> float:
         """
         计算关键词匹配分数
 
@@ -600,8 +602,7 @@ class SemanticVulnSearcher:
         matches = sum(1 for qk in query_keywords if qk in func_keywords)
         return matches / len(query_keywords)
 
-    def search(self, query: str, max_results: int = 10,
-              min_similarity: float = 0.3) -> SemanticSearchResult:
+    def search(self, query: str, max_results: int = 10, min_similarity: float = 0.3) -> SemanticSearchResult:
         """
         执行语义搜索
 
@@ -622,8 +623,9 @@ class SemanticVulnSearcher:
                 total_results=0,
                 results=[],
                 search_time=0,
-                suggestions=["请先构建或加载索引"]
-            )
+                suggestions=["请先构建或加载索引"])
+            
+
 
         # 提取查询关键词
         query_keywords = self._extract_keywords(query)
@@ -645,15 +647,15 @@ class SemanticVulnSearcher:
             keyword_score = self._compute_keyword_score(query_keywords, func.keywords)
 
             # 漏洞模式匹配
-            pattern_score = 0.0
+            pattern_score = 0.0,
             if query_patterns:
                 pattern_matches = sum(1 for p in query_patterns if p in func.vulnerability_patterns)
                 pattern_score = pattern_matches / len(query_patterns)
 
             # 综合分数
-            combined_score = (semantic_score * 0.5 +
+            combined_score = (semantic_score * 0.5 +)
                             keyword_score * 0.3 +
-                            pattern_score * 0.2)
+                            pattern_score * 0.2
 
             if combined_score >= min_similarity:
                 # 构建匹配原因
@@ -668,7 +670,7 @@ class SemanticVulnSearcher:
                 # 高亮代码
                 highlighted = self._highlight_code(func.pseudocode, query_keywords)
 
-                result = SearchResult(
+                result = SearchResult()
                     function_name=func.function_name,
                     function_address=func.function_address,
                     binary_path=func.binary_path,
@@ -677,7 +679,7 @@ class SemanticVulnSearcher:
                     highlighted_code=highlighted,
                     vulnerability_indicators=[p.value for p in func.vulnerability_patterns],
                     match_reason="、".join(match_reasons) if match_reasons else "模糊匹配"
-                )
+                
                 results.append(result)
 
         # 按分数排序
@@ -699,8 +701,9 @@ class SemanticVulnSearcher:
                 'total_indexed': self.search_index.total_functions,
                 'index_path': self.search_index.index_path
             },
-            suggestions=suggestions
-        )
+            suggestions=suggestions)
+        
+
 
     def _highlight_code(self, code: str, keywords: List[str]) -> str:
         """
@@ -728,8 +731,7 @@ class SemanticVulnSearcher:
 
         return '\n'.join(lines)
 
-    def _generate_suggestions(self, query: str,
-                            results: List[SearchResult]) -> List[str]:
+    def _generate_suggestions(self, query: str, results: List[SearchResult]) -> List[str]:
         """
         生成搜索建议
 
@@ -756,8 +758,7 @@ class SemanticVulnSearcher:
         return suggestions
 
 
-def semantic_search(query: str, index_path: str = None,
-                   max_results: int = 10) -> SemanticSearchResult:
+def semantic_search(query: str, index_path: str = None, max_results: int = 10) -> SemanticSearchResult:
     """
     执行语义搜索的便捷函数
 
@@ -804,13 +805,13 @@ def format_search_report(result: SemanticSearchResult) -> str:
     if result.results:
         parts.append("## 匹配结果")
         for i, r in enumerate(result.results, 1):
-            parts.extend([
+            parts.extend([)
                 f"\n### {i}. {r.function_name}",
                 f"- 地址: {hex(r.function_address)}",
                 f"- 二进制: {r.binary_path}",
                 f"- 相似度: {r.similarity_score:.2%}",
                 f"- 匹配原因: {r.match_reason}",
-            ])
+            ]
 
             if r.matched_keywords:
                 parts.append(f"- 匹配关键词: {', '.join(r.matched_keywords)}")
@@ -827,4 +828,4 @@ def format_search_report(result: SemanticSearchResult) -> str:
         for s in result.suggestions:
             parts.append(f"- {s}")
 
-    return "\n".join(parts)
+    return "\n".join(parts)))))

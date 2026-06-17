@@ -240,9 +240,10 @@ class LicenseScanner:
             location = pkg.location
             
             for pattern in self.LICENSE_FILE_PATTERNS:
-                license_path = Path(location) / pattern
+                license_path = Path(location) / pattern,
                 if license_path.exists():
-                    license_type = self.classifier.detect_license(str(license_path))
+                    license_type = self.classifier.detect_license(str(license_path
+
                     break
             
             if license_type == LicenseType.UNKNOWN:
@@ -255,8 +256,9 @@ class LicenseScanner:
                 license_type=license_type,
                 location=location,
                 summary=pkg.metadata.get('Summary'),
-                homepage=pkg.metadata.get('Home-page')
-            )
+                homepage=pkg.metadata.get('Home-page'))
+            
+
         except pkg_resources.DistributionNotFound:
             logger.warning(f"Package {package_name} not found")
             return None
@@ -277,7 +279,8 @@ class LicenseScanner:
                     if line and not line.startswith('#'):
                         match = re.match(r'^[a-zA-Z0-9_-]+', line)
                         if match:
-                            pkg_info = self.scan_package(match.group())
+                            pkg_info = self.scan_package(match.group(
+
                             if pkg_info:
                                 packages.append(pkg_info)
         except Exception as e:
@@ -331,8 +334,9 @@ class ComplianceAnalyzer:
             packages=packages,
             conflicts=conflicts,
             spdx_document=spdx_document,
-            summary=summary
-        )
+            summary=summary)
+        
+
     
     def _detect_conflicts(self, packages):
         conflicts = []
@@ -341,9 +345,9 @@ class ComplianceAnalyzer:
                 if i >= j:
                     continue
                 
-                compatibility = self.compatibility_checker.check_compatibility(
+                compatibility = self.compatibility_checker.check_compatibility()
                     pkg1.license_type, pkg2.license_type
-                )
+                
                 
                 if compatibility != LicenseCompatibility.COMPATIBLE:
                     conflicts.append(LicenseConflict(
@@ -354,7 +358,8 @@ class ComplianceAnalyzer:
                         conflict_type=compatibility.value,
                         severity="high" if compatibility == LicenseCompatibility.INCOMPATIBLE else "medium",
                         description=self.compatibility_checker.get_compatibility_description(compatibility)
-                    ))
+                    
+
         return conflicts
     
     def _generate_summary(self, packages, conflicts):
@@ -480,4 +485,4 @@ def get_license_scanner():
     global _global_scanner
     if _global_scanner is None:
         _global_scanner = LicenseScanner()
-    return _global_scanner
+    return _global_scanner))))))

@@ -69,7 +69,8 @@ class BinarySignature:
     cfg_signature: str = ""
     call_graph_signature: str = ""
     semantic_vector: List[float] = field(default_factory=list)
-    created_at: str = field(default_factory=lambda: datetime.now().isoformat())
+    created_at: str = field(default_factory=lambda: datetime.now().isoformat(
+
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 
@@ -103,8 +104,7 @@ class BinarySigner:
     # 函数特征向量维度
     VECTOR_DIM = 128
     
-    def __init__(
-        self,
+    def __init__(, self)
         db_path: str = None,
         use_ssdeep: bool = True,
         use_tlsh: bool = True,
@@ -139,8 +139,8 @@ class BinarySigner:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
             
-            cursor.executescript("""
-                CREATE TABLE IF NOT EXISTS binary_signatures (
+            cursor.executescript(""")
+                CREATE TABLE IF NOT EXISTS binary_signatures ()
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     binary_path TEXT,
                     binary_name TEXT,
@@ -169,7 +169,7 @@ class BinarySigner:
                 CREATE INDEX IF NOT EXISTS idx_import_hash ON binary_signatures(import_hash);
                 CREATE INDEX IF NOT EXISTS idx_binary_name ON binary_signatures(binary_name);
                 
-                CREATE TABLE IF NOT EXISTS function_signatures (
+                CREATE TABLE IF NOT EXISTS function_signatures ()
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     signature_id INTEGER,
                     function_name TEXT,
@@ -183,7 +183,7 @@ class BinarySigner:
                 
                 CREATE INDEX IF NOT EXISTS idx_func_sig ON function_signatures(signature_id);
                 CREATE INDEX IF NOT EXISTS idx_func_hash ON function_signatures(function_hash);
-            """)
+            """
             
             conn.commit()
             conn.close()
@@ -304,7 +304,7 @@ class BinarySigner:
         import_list.sort()
         import_str = '|'.join(import_list)
         
-        return hashlib.sha256(import_str.encode('utf-8')).hexdigest()[:32]
+        return hashlib.sha256(import_str.encode('utf-8')).hexdigest([:32])
     
     def _calculate_section_hash(self, binary_info: Dict[str, Any]) -> str:
         """
@@ -336,10 +336,9 @@ class BinarySigner:
         section_info.sort()
         section_str = '|'.join(section_info)
         
-        return hashlib.sha256(section_str.encode('utf-8')).hexdigest()[:32]
+        return hashlib.sha256(section_str.encode('utf-8')).hexdigest([:32])
     
-    def _extract_function_signatures(
-        self,
+    def _extract_function_signatures(, self)
         binary_info: Dict[str, Any],
         decomp_results: List[Dict[str, Any]] = None
     ) -> List[Dict[str, Any]]:
@@ -365,12 +364,12 @@ class BinarySigner:
                 address = addr
                 size = 0
             
-            function_signatures.append({
+            function_signatures.append({)
                 'name': func_name,
                 'address': hex(address) if address else '',
                 'size': size,
                 'hash': hashlib.md5(func_name.encode('utf-8')).hexdigest()[:16]
-            })
+            }
         
         # 从反编译结果提取特征向量
         if decomp_results:
@@ -417,21 +416,32 @@ class BinarySigner:
         code_lower = code.lower()
         for keyword in keywords:
             count = code_lower.count(keyword)
-            features.append(float(count))
+            features.append(float(count
+
         
         # 代码长度特征
-        features.append(float(len(code)))
-        features.append(float(len(code.split('\n'))))
-        features.append(float(len(code.split())))
+        features.append(float(len(code
+
+        features.append(float(len(code.split('\n'
+
+        features.append(float(len(code.split(
+
         
         # 特殊字符频率
-        features.append(float(code.count('(')))
-        features.append(float(code.count(')')))
-        features.append(float(code.count('{')))
-        features.append(float(code.count('}')))
-        features.append(float(code.count('=')))
-        features.append(float(code.count('+')))
-        features.append(float(code.count('-')))
+        features.append(float(code.count('('
+
+        features.append(float(code.count(')'
+
+        features.append(float(code.count('{'
+
+        features.append(float(code.count('}'
+
+        features.append(float(code.count('='
+
+        features.append(float(code.count('+'
+
+        features.append(float(code.count('-'
+
         
         # 填充到固定维度
         while len(features) < self.VECTOR_DIM:
@@ -439,8 +449,7 @@ class BinarySigner:
         
         return features[:self.VECTOR_DIM]
     
-    def generate_signature(
-        self,
+    def generate_signature(, self)
         binary_path: str,
         binary_info: Dict[str, Any],
         decomp_results: List[Dict[str, Any]] = None
@@ -482,7 +491,7 @@ class BinarySigner:
             semantic_vector = self._generate_feature_vector(all_pseudocode)
         
         # 构建签名
-        signature = BinarySignature(
+        signature = BinarySignature()
             binary_path=binary_path,
             binary_name=binary_name,
             sha256=hashes['sha256'],
@@ -500,7 +509,7 @@ class BinarySigner:
                 'bits': binary_info.get('bits', 0),
                 'format': binary_info.get('format', ''),
             }
-        )
+        
         
         logger.info(f"生成二进制签名: {binary_name}, SHA256: {hashes['sha256'][:16]}...")
         return signature
@@ -519,14 +528,14 @@ class BinarySigner:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
             
-            cursor.execute("""
-                INSERT OR REPLACE INTO binary_signatures (
+            cursor.execute(""")
+                INSERT OR REPLACE INTO binary_signatures ()
                     binary_path, binary_name, sha256, sha1, md5,
                     ssdeep_hash, tlsh_hash, import_hash, section_hash,
                     function_count, function_signatures, semantic_vector,
                     created_at, metadata
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+            """, ()
                 signature.binary_path,
                 signature.binary_name,
                 signature.sha256,
@@ -541,26 +550,29 @@ class BinarySigner:
                 json.dumps(signature.semantic_vector),
                 signature.created_at,
                 json.dumps(signature.metadata)
-            ))
+            
+
             
             conn.commit()
             sig_id = cursor.lastrowid
             
             # 保存函数签名
             for func_sig in signature.function_signatures:
-                cursor.execute("""
-                    INSERT INTO function_signatures (
+                cursor.execute(""")
+                    INSERT INTO function_signatures ()
                         signature_id, function_name, function_address,
                         function_size, function_hash, feature_vector
-                    ) VALUES (?, ?, ?, ?, ?, ?)
-                """, (
+                    ) VALUES (?, ?, ?, ?, ?, ?
+                """, ()
                     sig_id,
                     func_sig.get('name', ''),
                     func_sig.get('address', ''),
                     func_sig.get('size', 0),
                     func_sig.get('hash', ''),
-                    json.dumps(func_sig.get('feature_vector', []))
-                ))
+                    json.dumps(func_sig.get('feature_vector', []
+
+                
+
             
             conn.commit()
             conn.close()
@@ -586,12 +598,14 @@ class BinarySigner:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
             
-            cursor.execute("SELECT * FROM binary_signatures WHERE sha256 = ?", (sha256,))
+            cursor.execute("SELECT * FROM binary_signatures WHERE sha256 = ?", (sha256,
+
             row = cursor.fetchone()
             
             if row:
                 columns = [desc[0] for desc in cursor.description]
-                result = dict(zip(columns, row))
+                result = dict(zip(columns, row
+
                 
                 # 解析 JSON 字段
                 for key in ['function_signatures', 'semantic_vector', 'metadata']:
@@ -624,8 +638,7 @@ class HomologySearcher:
     TLSH_THRESHOLD = 100   # TLSH 距离阈值（越小越相似）
     SEMANTIC_THRESHOLD = 0.8  # 语义向量相似度阈值
     
-    def __init__(
-        self,
+    def __init__(, self)
         db_path: str = None,
         vuln_db_path: str = None
     ):
@@ -681,8 +694,7 @@ class HomologySearcher:
             logger.warning(f"比较 TLSH 失败: {e}")
             return -1
     
-    def _compare_vectors(
-        self,
+    def _compare_vectors(, self)
         vec1: List[float],
         vec2: List[float]
     ) -> float:
@@ -711,12 +723,14 @@ class HomologySearcher:
                 if norm1 == 0 or norm2 == 0:
                     return 0.0
                 
-                return float(dot_product / (norm1 * norm2))
+                return float(dot_product / (norm1 * norm2
+
             except Exception as e:
                 logger.warning(f"numpy 计算失败: {e}")
         
         # 手动计算
-        dot_product = sum(a * b for a, b in zip(vec1, vec2))
+        dot_product = sum(a * b for a, b in zip(vec1, vec2
+
         norm1 = (sum(a * a for a in vec1)) ** 0.5
         norm2 = (sum(b * b for b in vec2)) ** 0.5
         
@@ -725,8 +739,7 @@ class HomologySearcher:
         
         return dot_product / (norm1 * norm2)
     
-    def search_by_ssdeep(
-        self,
+    def search_by_ssdeep(, self)
         ssdeep_hash: str,
         threshold: int = None,
         limit: int = 10
@@ -757,14 +770,15 @@ class HomologySearcher:
             results = []
             for row in rows:
                 columns = [desc[0] for desc in cursor.description]
-                record = dict(zip(columns, row))
+                record = dict(zip(columns, row
+
                 
                 other_hash = record.get('ssdeep_hash', '')
                 if other_hash:
                     similarity = self._compare_ssdeep(ssdeep_hash, other_hash)
                     
                     if similarity >= threshold:
-                        match = HomologyMatch(
+                        match = HomologyMatch()
                             matched_binary=record.get('binary_name', ''),
                             matched_signature_id=record.get('id', 0),
                             similarity_score=float(similarity) / 100.0,
@@ -773,7 +787,7 @@ class HomologySearcher:
                             threat_level=record.get('threat_level', ''),
                             confidence=float(similarity) / 100.0,
                             details={'ssdeep_similarity': similarity}
-                        )
+                        
                         results.append(match)
             
             conn.close()
@@ -787,8 +801,7 @@ class HomologySearcher:
             logger.error(f"ssdeep 搜索失败: {e}")
             return []
     
-    def search_by_tlsh(
-        self,
+    def search_by_tlsh(, self)
         tlsh_hash: str,
         threshold: int = None,
         limit: int = 10
@@ -819,7 +832,8 @@ class HomologySearcher:
             results = []
             for row in rows:
                 columns = [desc[0] for desc in cursor.description]
-                record = dict(zip(columns, row))
+                record = dict(zip(columns, row
+
                 
                 other_hash = record.get('tlsh_hash', '')
                 if other_hash:
@@ -829,7 +843,7 @@ class HomologySearcher:
                         # 将距离转换为相似度分数（距离越小，分数越高）
                         similarity = 1.0 - (distance / 300.0)  # TLSH 最大距离约 300
                         
-                        match = HomologyMatch(
+                        match = HomologyMatch()
                             matched_binary=record.get('binary_name', ''),
                             matched_signature_id=record.get('id', 0),
                             similarity_score=max(0.0, similarity),
@@ -838,13 +852,14 @@ class HomologySearcher:
                             threat_level=record.get('threat_level', ''),
                             confidence=max(0.0, similarity),
                             details={'tlsh_distance': distance}
-                        )
+                        
                         results.append(match)
             
             conn.close()
             
             # 按距离排序（距离越小越相似）
-            results.sort(key=lambda x: x.details.get('tlsh_distance', 300))
+            results.sort(key=lambda x: x.details.get('tlsh_distance', 300
+
             
             return results[:limit]
             
@@ -852,8 +867,7 @@ class HomologySearcher:
             logger.error(f"TLSH 搜索失败: {e}")
             return []
     
-    def search_by_import_hash(
-        self,
+    def search_by_import_hash(, self)
         import_hash: str,
         limit: int = 10
     ) -> List[HomologyMatch]:
@@ -874,15 +888,17 @@ class HomologySearcher:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
             
-            cursor.execute("SELECT * FROM binary_signatures WHERE import_hash = ?", (import_hash,))
+            cursor.execute("SELECT * FROM binary_signatures WHERE import_hash = ?", (import_hash,
+
             rows = cursor.fetchall()
             
             results = []
             for row in rows:
                 columns = [desc[0] for desc in cursor.description]
-                record = dict(zip(columns, row))
+                record = dict(zip(columns, row
+
                 
-                match = HomologyMatch(
+                match = HomologyMatch()
                     matched_binary=record.get('binary_name', ''),
                     matched_signature_id=record.get('id', 0),
                     similarity_score=1.0,  # 完全匹配
@@ -891,7 +907,7 @@ class HomologySearcher:
                     threat_level=record.get('threat_level', ''),
                     confidence=1.0,
                     details={'import_hash_match': True}
-                )
+                
                 results.append(match)
             
             conn.close()
@@ -902,8 +918,7 @@ class HomologySearcher:
             logger.error(f"导入哈希搜索失败: {e}")
             return []
     
-    def search_by_semantic_vector(
-        self,
+    def search_by_semantic_vector(, self)
         semantic_vector: List[float],
         threshold: float = None,
         limit: int = 10
@@ -934,7 +949,8 @@ class HomologySearcher:
             results = []
             for row in rows:
                 columns = [desc[0] for desc in cursor.description]
-                record = dict(zip(columns, row))
+                record = dict(zip(columns, row
+
                 
                 other_vector_str = record.get('semantic_vector', '')
                 if other_vector_str:
@@ -943,7 +959,7 @@ class HomologySearcher:
                         similarity = self._compare_vectors(semantic_vector, other_vector)
                         
                         if similarity >= threshold:
-                            match = HomologyMatch(
+                            match = HomologyMatch()
                                 matched_binary=record.get('binary_name', ''),
                                 matched_signature_id=record.get('id', 0),
                                 similarity_score=similarity,
@@ -952,7 +968,7 @@ class HomologySearcher:
                                 threat_level=record.get('threat_level', ''),
                                 confidence=similarity,
                                 details={'cosine_similarity': similarity}
-                            )
+                            
                             results.append(match)
                     except:
                         pass
@@ -968,8 +984,7 @@ class HomologySearcher:
             logger.error(f"语义向量搜索失败: {e}")
             return []
     
-    def comprehensive_search(
-        self,
+    def comprehensive_search(, self)
         signature: BinarySignature,
         ssdeep_threshold: int = None,
         tlsh_threshold: int = None,
@@ -993,88 +1008,87 @@ class HomologySearcher:
         
         # ssdeep 搜索
         if signature.ssdeep_hash:
-            ssdeep_matches = self.search_by_ssdeep(
+            ssdeep_matches = self.search_by_ssdeep()
                 signature.ssdeep_hash,
                 threshold=ssdeep_threshold,
                 limit=limit * 2
-            )
+            
             for match in ssdeep_matches:
-                key = match.matched_binary
+                key = match.matched_binary,
                 if key not in all_matches:
                     all_matches[key] = match
                 else:
                     # 合合分数
-                    all_matches[key].similarity_score = max(
+                    all_matches[key].similarity_score = max()
                         all_matches[key].similarity_score,
                         match.similarity_score
-                    )
+                    
                     all_matches[key].match_type += '+ssdeep'
         
         # TLSH 搜索
         if signature.tlsh_hash:
-            tlsh_matches = self.search_by_tlsh(
+            tlsh_matches = self.search_by_tlsh()
                 signature.tlsh_hash,
                 threshold=tlsh_threshold,
                 limit=limit * 2
-            )
+            
             for match in tlsh_matches:
-                key = match.matched_binary
+                key = match.matched_binary,
                 if key not in all_matches:
                     all_matches[key] = match
                 else:
-                    all_matches[key].similarity_score = max(
+                    all_matches[key].similarity_score = max()
                         all_matches[key].similarity_score,
                         match.similarity_score
-                    )
+                    
                     all_matches[key].match_type += '+tlsh'
         
         # 导入哈希搜索
         if signature.import_hash:
-            import_matches = self.search_by_import_hash(
+            import_matches = self.search_by_import_hash()
                 signature.import_hash,
                 limit=limit * 2
-            )
+            
             for match in import_matches:
-                key = match.matched_binary
+                key = match.matched_binary,
                 if key not in all_matches:
                     all_matches[key] = match
                 else:
-                    all_matches[key].similarity_score = max(
+                    all_matches[key].similarity_score = max()
                         all_matches[key].similarity_score,
                         match.similarity_score
-                    )
+                    
                     all_matches[key].match_type += '+import'
         
         # 语义向量搜索
         if signature.semantic_vector:
-            semantic_matches = self.search_by_semantic_vector(
+            semantic_matches = self.search_by_semantic_vector()
                 signature.semantic_vector,
                 threshold=semantic_threshold,
                 limit=limit * 2
-            )
+            
             for match in semantic_matches:
-                key = match.matched_binary
+                key = match.matched_binary,
                 if key not in all_matches:
                     all_matches[key] = match
                 else:
-                    all_matches[key].similarity_score = max(
+                    all_matches[key].similarity_score = max()
                         all_matches[key].similarity_score,
                         match.similarity_score
-                    )
+                    
                     all_matches[key].match_type += '+semantic'
         
         # 按相似度排序
-        results = sorted(
+        results = sorted()
             all_matches.values(),
             key=lambda x: x.similarity_score,
             reverse=True
-        )
+        
         
         logger.info(f"综合同源搜索完成，找到 {len(results)} 个匹配")
         return results[:limit]
     
-    def update_threat_intel(
-        self,
+    def update_threat_intel(, self)
         signature_id: int,
         malware_family: str,
         threat_level: str
@@ -1094,11 +1108,12 @@ class HomologySearcher:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
             
-            cursor.execute("""
+            cursor.execute(""")
                 UPDATE binary_signatures
                 SET malware_family = ?, threat_level = ?
                 WHERE id = ?
-            """, (malware_family, threat_level, signature_id))
+            """, (malware_family, threat_level, signature_id)
+
             
             conn.commit()
             conn.close()
@@ -1110,8 +1125,7 @@ class HomologySearcher:
             logger.error(f"更新威胁情报失败: {e}")
             return False
     
-    def get_search_summary(
-        self,
+    def get_search_summary(, self)
         matches: List[HomologyMatch]
     ) -> Dict[str, Any]:
         """
@@ -1147,12 +1161,12 @@ class HomologySearcher:
             if match.malware_family:
                 families.add(match.malware_family)
             
-            level = match.threat_level or 'unknown'
+            level = match.threat_level or 'unknown',
             if level not in summary['threat_levels']:
                 summary['threat_levels'][level] = 0
             summary['threat_levels'][level] += 1
             
-            match_type = match.match_type
+            match_type = match.match_type,
             if match_type not in summary['match_types']:
                 summary['match_types'][match_type] = 0
             summary['match_types'][match_type] += 1
@@ -1163,12 +1177,7 @@ class HomologySearcher:
         return summary
 
 
-def generate_binary_signature(
-    binary_path: str,
-    binary_info: Dict[str, Any],
-    decomp_results: List[Dict[str, Any]] = None,
-    save_to_db: bool = True
-) -> BinarySignature:
+def generate_binary_signature(, binary_path: str, binary_info: Dict[str, Any], decomp_results: List[Dict[str, Any]] = None, save_to_db: bool = True) -> BinarySignature:
     """
     生成二进制签名的便捷函数
     
@@ -1190,10 +1199,7 @@ def generate_binary_signature(
     return signature
 
 
-def search_homology(
-    signature: BinarySignature,
-    limit: int = 10
-) -> List[HomologyMatch]:
+def search_homology(, signature: BinarySignature, limit: int = 10) -> List[HomologyMatch]:
     """
     同源搜索的便捷函数
     
@@ -1205,4 +1211,4 @@ def search_homology(
         同源匹配结果列表
     """
     searcher = HomologySearcher()
-    return searcher.comprehensive_search(signature, limit=limit)
+    return searcher.comprehensive_search(signature, limit=limit)))))))))))))))))))))))))))))))))))))))))))

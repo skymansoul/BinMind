@@ -190,8 +190,9 @@ FALSE_PRIORITY: <high/medium/low>
                 true_branch_reason=true_reason,
                 false_branch_reason=false_reason,
                 true_branch_priority=true_priority,
-                false_branch_priority=false_priority
-            )
+                false_branch_priority=false_priority)
+            
+
         except Exception as e:
             logger.error(f"解析 LLM 响应失败: {e}")
             return self._create_default_score()
@@ -202,7 +203,8 @@ FALSE_PRIORITY: <high/medium/low>
         for line in lines:
             if line.startswith(key):
                 try:
-                    return float(line.split(':')[1].strip())
+                    return float(line.split(':')[1].strip(
+
                 except:
                     return 50.0
         return 50.0
@@ -239,8 +241,9 @@ FALSE_PRIORITY: <high/medium/low>
             true_branch_reason="使用默认评分（LLM 不可用）",
             false_branch_reason="使用默认评分（LLM 不可用）",
             true_branch_priority=BranchPriority.MEDIUM,
-            false_branch_priority=BranchPriority.MEDIUM
-        )
+            false_branch_priority=BranchPriority.MEDIUM)
+        
+
     
     def score_branch(self, path_summary: PathSummary) -> LLMBranchScore:
         """
@@ -255,7 +258,7 @@ FALSE_PRIORITY: <high/medium/low>
         if not self.ai:
             logger.warning("AI 客户端不可用，使用默认评分")
             score = self._create_default_score()
-            score.branch_address = path_summary.branch_info.address
+            score.branch_address = path_summary.branch_info.address,
             return score
         
         try:
@@ -265,18 +268,18 @@ FALSE_PRIORITY: <high/medium/low>
             if response:
                 score = self._parse_response(response)
                 score.branch_address = path_summary.branch_info.address
-                logger.debug(f"LLM 评分完成: 地址=0x{path_summary.branch_info.address:x}, "
-                          f"true_score={score.true_branch_score}, false_score={score.false_branch_score}")
+                logger.debug(f"LLM 评分完成: 地址=0x{path_summary.branch_info.address:x}, ")
+                          f"true_score={score.true_branch_score}, false_score={score.false_branch_score}"
                 return score
             else:
                 score = self._create_default_score()
-                score.branch_address = path_summary.branch_info.address
+                score.branch_address = path_summary.branch_info.address,
                 return score
                 
         except Exception as e:
             logger.error(f"LLM 评分失败: {e}")
             score = self._create_default_score()
-            score.branch_address = path_summary.branch_info.address
+            score.branch_address = path_summary.branch_info.address,
             return score
 
 
@@ -323,9 +326,9 @@ class LLMGuidedSymbolicExecutor(BaseAnalyzer):
         
         try:
             # 模拟符号执行过程
-            result = self._run_guided_symbolic_execution(
+            result = self._run_guided_symbolic_execution()
                 binary_path, max_paths, max_depth
-            )
+            
             
             return {
                 "success": True,
@@ -341,8 +344,7 @@ class LLMGuidedSymbolicExecutor(BaseAnalyzer):
             logger.error(f"LLM 引导的符号执行失败: {e}")
             return {"success": False, "error": str(e)}
     
-    def _run_guided_symbolic_execution(
-        self, 
+    def _run_guided_symbolic_execution(, self)
         binary_path: str, 
         max_paths: int, 
         max_depth: int
@@ -372,28 +374,28 @@ class LLMGuidedSymbolicExecutor(BaseAnalyzer):
             # 根据优先级决定是否深入探索
             if score.true_branch_priority == BranchPriority.HIGH:
                 high_priority_count += 1
-                interesting_branches.append({
+                interesting_branches.append({)
                     "address": hex(branch_info.address),
                     "condition": branch_info.condition,
                     "priority": "high",
                     "reason": score.true_branch_reason
-                })
+                }
             
             if score.false_branch_priority == BranchPriority.HIGH:
                 high_priority_count += 1
-                interesting_branches.append({
+                interesting_branches.append({)
                     "address": hex(branch_info.address),
                     "condition": branch_info.condition,
                     "priority": "high",
                     "reason": score.false_branch_reason
-                })
+                }
             
-            self.explored_paths.append({
+            self.explored_paths.append({)
                 "branch_address": branch_info.address,
                 "true_score": score.true_branch_score,
                 "false_score": score.false_branch_score,
                 "depth": branch_info.depth
-            })
+            }
         
         summary = f"""
 LLM 引导的符号执行分析完成:
@@ -441,8 +443,9 @@ LLM 引导的符号执行分析完成:
             false_branch_target=0x403000 + index * 0x100,
             path_history=[f"path_{i}" for i in range(min(index, 5))],
             depth=min(index // 2, max_depth),
-            constraint_count=index
-        )
+            constraint_count=index)
+        
+
     
     def _build_path_summary(self, branch_info: BranchInfo) -> PathSummary:
         """
@@ -480,8 +483,9 @@ LLM 引导的符号执行分析完成:
             call_stack=[
                 "main",
                 f"sub_{branch_info.address:x}"
-            ]
-        )
+            ])
+        
+
     
     @classmethod
     def get_metadata(cls) -> AnalyzerMetadata:
@@ -493,8 +497,9 @@ LLM 引导的符号执行分析完成:
             description="LLM 引导的符号执行分支选择器，智能探索高价值路径",
             author="BinaryAnalysisPlatform",
             dependencies=["openai", "angr", "claripy"],
-            supported_platforms=["x86", "x86_64", "arm", "arm64"]
-        )
+            supported_platforms=["x86", "x86_64", "arm", "arm64"])
+        
+
     
     def validate_input(self, **kwargs) -> Tuple[bool, Optional[str]]:
         """验证输入参数"""
@@ -510,4 +515,4 @@ LLM 引导的符号执行分析完成:
     def cleanup(self) -> None:
         """清理资源"""
         self.explored_paths.clear()
-        self.current_path.clear()
+        self.current_path.clear())

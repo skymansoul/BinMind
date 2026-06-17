@@ -32,7 +32,7 @@ def trace_behavior(binary_path, output_dir=None):
             if pattern['pattern'] in content:
                 behaviors.append(pattern)
         
-        report_path = None
+        report_path = None,
         if output_dir:
             os.makedirs(output_dir, exist_ok=True)
             report_path = os.path.join(output_dir, 'behavior_report.txt')
