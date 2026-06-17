@@ -519,6 +519,125 @@ TIMING_SIDECHANNEL_TEMPLATE = """
 """
 
 
+# ==================== 移动平台漏洞分析提示模板 ====================
+
+MOBILE_VULN_ANALYSIS_TEMPLATE = """
+你是一名移动安全专家，请分析以下移动平台二进制文件的安全漏洞。
+
+平台类型: {platform}
+二进制类型: {binary_type}
+
+分析数据:
+- JNI函数列表: {jni_functions}
+- Objective-C类结构: {objc_classes}
+- 敏感字符串: {sensitive_strings}
+- 危险API调用: {dangerous_calls}
+
+请识别以下移动平台特有的漏洞模式:
+
+1. **JNI相关漏洞**:
+   - JNI参数验证不足
+   - 从不受信任来源获取Java对象
+   - 类型转换不安全
+   - 数组越界访问
+
+2. **Android特有漏洞**:
+   - Intent劫持/欺骗
+   - Binder事务校验绕过
+   - IPC通信滥用
+   - URL Scheme劫持
+   - 硬编码密钥/证书
+   - 不安全的WebView配置
+   - 外部存储敏感数据泄露
+
+3. **iOS特有漏洞**:
+   - 不安全的NSUserDefaults使用
+   - 明文SQLite数据库
+   - 越狱检测绕过（可被攻击者利用）
+   - 私有API调用
+   - 钥匙串访问控制不当
+   - 应用间通信漏洞
+
+4. **通用移动端漏洞**:
+   - SSL/TLS证书验证缺失
+   - 不安全的加密实现
+   - C2服务器域名硬编码
+   - 调试接口暴露
+
+请输出详细的JSON格式分析结果:
+{
+    "mobile_vulnerabilities": [
+        {
+            "type": "漏洞类型",
+            "severity": "Critical/High/Medium/Low",
+            "description": "漏洞详细描述",
+            "location": "代码位置/函数名",
+            "platform_specific": "android/ios/both",
+            "attack_vector": "攻击向量描述",
+            "recommendation": "修复建议"
+        }
+    ],
+    "sensitive_data_found": [
+        {
+            "type": "数据类型（如hardcoded_key/c2_domain/password）",
+            "value": "脱敏后的值",
+            "location": "发现位置"
+        }
+    ],
+    "overall_risk": "整体风险评估",
+    "security_summary": "安全总结"
+}
+"""
+
+
+# ==================== 漏洞利用链分析提示模板 ====================
+
+EXPLOIT_CHAIN_ANALYSIS_TEMPLATE = """
+你是一名漏洞利用开发专家，请分析以下漏洞集合，评估它们能否组合成攻击链。
+
+漏洞列表:
+{vulnerabilities}
+
+攻击目标: {target}
+
+每个漏洞的能力标签说明:
+- info_leak:stack - 可泄露栈内存信息
+- info_leak:heap - 可泄露堆内存信息
+- info_leak:libc - 可泄露libc基址
+- arbitrary_write:stack - 可任意写栈
+- arbitrary_write:heap - 可任意写堆
+- arbitrary_write:global - 可任意写全局变量
+- control_pc - 可控制程序计数器
+- bypass_aslr - 可绕过ASLR
+- bypass_dep - 可绕过DEP
+- privilege_escalation - 可提权
+
+请分析:
+1. 这些漏洞能否按顺序组合形成完整攻击链？
+2. 组合顺序是什么？说明每个漏洞的作用
+3. 攻击链的最终效果是什么？
+4. 是否存在缺失的环节？
+5. 攻击链的可行性评估（高/中/低）
+
+输出JSON格式:
+{
+    "chain_possible": true/false,
+    "chains": [
+        {
+            "path": ["漏洞ID1", "漏洞ID2", "漏洞ID3"],
+            "capabilities_chain": ["info_leak:libc", "arbitrary_write:got", "control_pc"],
+            "final_effect": "攻击效果描述（如代码执行、提权等）",
+            "feasibility": "High/Medium/Low",
+            "risk_score": 0-10,
+            "description": "攻击链描述"
+        }
+    ],
+    "missing_links": ["缺失的能力/前置条件"],
+    "recommendations": ["加固建议"]
+}
+"""
+
+
 # 注册所有默认模板
 def _register_default_templates():
     """注册默认提示模板"""
@@ -536,6 +655,8 @@ def _register_default_templates():
         'concurrency_repro_script': CONCURRENCY_REPRO_SCRIPT_TEMPLATE,
         'sandbox_policy_analysis': SANDBOX_POLICY_ANALYSIS_TEMPLATE,
         'timing_sidechannel': TIMING_SIDECHANNEL_TEMPLATE,
+        'mobile_vuln_analysis': MOBILE_VULN_ANALYSIS_TEMPLATE,
+        'exploit_chain_analysis': EXPLOIT_CHAIN_ANALYSIS_TEMPLATE,
     }
     
     for name, template in templates.items():

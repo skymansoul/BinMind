@@ -157,8 +157,8 @@ class PTXParser:
                 ))
             
             # 解析全局内存存储
-            match = self.ST_GLOBAL.search(line)
-            if match:
+            match_st = self.ST_GLOBAL.search(line)
+            if match_st:
                 accesses.append(MemoryAccess(
                     address_expr=line,
                     access_type="write",

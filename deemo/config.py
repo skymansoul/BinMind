@@ -58,6 +58,9 @@ class Config:
     EXPLOITDB_CACHE_DIR = os.path.expanduser('~/.exploitdb')
     DEEP_SEARCH_INDEX_DIR = os.path.expanduser('~/.deep_binary_search')
     
+    # 漏洞数据库类型
+    DB_TYPE = 'sqlite'
+    
     # 外部工具路径
     QEMU_PATH = os.environ.get('QEMU_PATH', 'qemu-system-x86_64')
     GCC_PATH = os.environ.get('GCC_PATH', 'gcc')
@@ -454,6 +457,39 @@ class Config:
         'output_dir': os.path.join(RESULTS_DIR, 'cheri')
     }
 
+    # ==================== 多视图图神经网络配置 ====================
+    MULTI_VIEW_GNN = {
+        'enabled': True,
+        'model_path': None,
+        'embedding_dim': 512,
+        'hidden_dim': 256,
+        'num_layers': 3,
+        'device': 'auto',
+        'output_dir': os.path.join(RESULTS_DIR, 'multi_view_gnn')
+    }
+
+    # ==================== 知识蒸馏漏洞检测配置 ====================
+    DISTILLED_VULN_DETECTOR = {
+        'enabled': True,
+        'model_path': None,
+        'quantized': True,
+        'confidence_threshold': 0.8,
+        'batch_size': 32,
+        'output_dir': os.path.join(RESULTS_DIR, 'distilled_vuln_detector')
+    }
+
+    # ==================== 执行轨迹异常检测配置 ====================
+    TRAJECTORY_ANOMALY = {
+        'enabled': True,
+        'model_path': None,
+        'max_seq_length': 512,
+        'perplexity_threshold': 100.0,
+        'detect_rop': True,
+        'detect_jop': True,
+        'detect_stack_pivot': True,
+        'output_dir': os.path.join(RESULTS_DIR, 'trajectory_anomaly')
+    }
+
     # ==================== AI 服务配置 ====================
     # AI提供商 (openai, azure, ollama, llamacpp, custom)
     AI_PROVIDER = os.environ.get('AI_PROVIDER', 'openai')
@@ -559,7 +595,48 @@ class Config:
     CODE_VISUALIZER_ENABLED = os.environ.get('CODE_VISUALIZER_ENABLED', 'true').lower() == 'true'
     CODE_VISUALIZER_OUTPUT_DIR = os.environ.get('CODE_VISUALIZER_OUTPUT_DIR', os.path.join(RESULTS_DIR, 'visualizations'))
     CODE_VISUALIZER_DEFAULT_FORMAT = os.environ.get('CODE_VISUALIZER_DEFAULT_FORMAT', 'mermaid')
-    
+
+    # ==================== 六项高级安全功能配置（第四轮）====================
+
+    # 功能1：虚拟机自省（VMI）辅助内存分析配置
+    VMI_ENABLED = os.environ.get('VMI_ENABLED', 'false').lower() == 'true'
+    VMI_OUTPUT_DIR = os.environ.get('VMI_OUTPUT_DIR', os.path.join(RESULTS_DIR, 'vmi_dumps'))
+    VMI_HYPERVISOR = os.environ.get('VMI_HYPERVISOR', 'kvm')
+    VMI_TIMEOUT = int(os.environ.get('VMI_TIMEOUT', '60'))
+    VMI_MAX_PROCESSES = int(os.environ.get('VMI_MAX_PROCESSES', '100'))
+    VMI_DUMP_CODE_ONLY = os.environ.get('VMI_DUMP_CODE_ONLY', 'true').lower() == 'true'
+
+    # 功能2：自动生成二进制文档与函数注释配置
+    BINARY_DOCUMENTER_ENABLED = os.environ.get('BINARY_DOCUMENTER_ENABLED', 'true').lower() == 'true'
+    BINARY_DOCUMENTER_OUTPUT_DIR = os.environ.get('BINARY_DOCUMENTER_OUTPUT_DIR', os.path.join(RESULTS_DIR, 'docs'))
+    BINARY_DOCUMENTER_FORMAT = os.environ.get('BINARY_DOCUMENTER_FORMAT', 'markdown')
+    BINARY_DOCUMENTER_INCLUDE_RISK = os.environ.get('BINARY_DOCUMENTER_INCLUDE_RISK', 'true').lower() == 'true'
+    BINARY_DOCUMENTER_MAX_FUNCTIONS = int(os.environ.get('BINARY_DOCUMENTER_MAX_FUNCTIONS', '100'))
+
+    # 功能3：代码签名证书验证与滥用检测配置
+    CODE_SIGNING_CHECK_ENABLED = os.environ.get('CODE_SIGNING_CHECK_ENABLED', 'true').lower() == 'true'
+    CODE_SIGNING_CHECK_REVOCATION = os.environ.get('CODE_SIGNING_CHECK_REVOCATION', 'true').lower() == 'true'
+    CODE_SIGNING_CHECK_LEAKED_DB = os.environ.get('CODE_SIGNING_CHECK_LEAKED_DB', 'true').lower() == 'true'
+    CODE_SIGNING_LEAKED_DB_PATH = os.environ.get('CODE_SIGNING_LEAKED_DB_PATH', os.path.join(DATA_DIR, 'leaked_certs.json'))
+    CODE_SIGNING_TRUSTED_ROOT_PATH = os.environ.get('CODE_SIGNING_TRUSTED_ROOT_PATH', '')
+
+    # 功能4：基于符号执行的自动去虚拟化分析配置
+    ANTI_VM_BYPASS_ENABLED = os.environ.get('ANTI_VM_BYPASS_ENABLED', 'true').lower() == 'true'
+    ANTI_VM_BYPASS_OUTPUT_DIR = os.environ.get('ANTI_VM_BYPASS_OUTPUT_DIR', os.path.join(RESULTS_DIR, 'bypass'))
+    ANTI_VM_BYPASS_MAX_ANALYSIS_TIME = int(os.environ.get('ANTI_VM_BYPASS_MAX_ANALYSIS_TIME', '300'))
+    ANTI_VM_BYPASS_USE_UNICORN = os.environ.get('ANTI_VM_BYPASS_USE_UNICORN', 'true').lower() == 'true'
+
+    # 功能5：二进制重打包/捆绑包检测配置
+    REPACK_DETECTOR_ENABLED = os.environ.get('REPACK_DETECTOR_ENABLED', 'true').lower() == 'true'
+    REPACK_DETECTOR_ENTROPY_THRESHOLD = float(os.environ.get('REPACK_DETECTOR_ENTROPY_THRESHOLD', '7.5'))
+    REPACK_DETECTOR_SUSPICIOUS_SECTION_SCORE = int(os.environ.get('REPACK_DETECTOR_SUSPICIOUS_SECTION_SCORE', '50'))
+
+    # 功能6：ROP Gadget自动分级与利用潜力评估配置
+    ROP_GRADER_ENABLED = os.environ.get('ROP_GRADER_ENABLED', 'true').lower() == 'true'
+    ROP_GRADER_OUTPUT_DIR = os.environ.get('ROP_GRADER_OUTPUT_DIR', os.path.join(RESULTS_DIR, 'rop_grading'))
+    ROP_GRADER_MIN_SCORE_THRESHOLD = int(os.environ.get('ROP_GRADER_MIN_SCORE_THRESHOLD', '30'))
+    ROP_GRADER_MAX_GADGETS = int(os.environ.get('ROP_GRADER_MAX_GADGETS', '1000'))
+
     @classmethod
     def get(cls, key: str, default: Any = None) -> Any:
         """获取配置值"""
@@ -814,6 +891,77 @@ def test_api_connection() -> bool:
             return False
     
     return False
+
+
+# ==================== Celery 配置函数 ====================
+def get_celery_broker_url() -> str:
+    """获取 Celery 消息队列 URL"""
+    return os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379/0')
+
+
+def get_celery_result_backend() -> str:
+    """获取 Celery 结果后端 URL"""
+    return os.environ.get('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
+
+
+def mask_redis_url(url: str) -> str:
+    """屏蔽 Redis URL 中的密码信息"""
+    if '://' in url:
+        parts = url.split('://')
+        scheme = parts[0]
+        rest = parts[1]
+        if '@' in rest:
+            credentials, host = rest.split('@', 1)
+            if ':' in credentials:
+                username, password = credentials.split(':', 1)
+                return f"{scheme}://{username}:***@{host}"
+            return f"{scheme}://***@{host}"
+    return url
+
+
+def get_task_cache_key(task_type: str, binary_hash: str) -> str:
+    """生成任务缓存键"""
+    return f"task:{task_type}:{binary_hash}"
+
+
+def ensure_directories() -> None:
+    """确保所有必要的目录存在"""
+    dirs_to_create = [
+        Config.LOGS_DIR,
+        Config.REPORTS_DIR,
+        Config.EXPLOITS_DIR,
+        Config.DB_DIR,
+        Config.CACHE_DIR,
+        Config.CORPUS_DIR,
+        Config.DATA_DIR,
+        Config.TEMP_DIR,
+        Config.RESULTS_DIR,
+    ]
+    
+    for dir_path in dirs_to_create:
+        os.makedirs(dir_path, exist_ok=True)
+
+
+class SensitiveFilter:
+    """敏感信息过滤器"""
+    
+    SENSITIVE_PATTERNS = [
+        r'(?i)api[_-]?key',
+        r'(?i)secret',
+        r'(?i)password',
+        r'(?i)token',
+        r'(?i)credential',
+        r'(?i)private[_-]?key',
+    ]
+    
+    @staticmethod
+    def filter(text: str) -> str:
+        """过滤文本中的敏感信息"""
+        import re
+        result = text
+        for pattern in SensitiveFilter.SENSITIVE_PATTERNS:
+            result = re.sub(pattern, '[REDACTED]', result, flags=re.IGNORECASE)
+        return result
 
 # AI 提供商常量
 AI_PROVIDER_OPENAI = 'openai'

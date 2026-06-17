@@ -1,0 +1,14 @@
+{
+  "file_path": "test.bin",
+  "analysis_time": "2026-06-17T08:47:22.808913",
+  "is_repacked": false,
+  "repack_type": "none",
+  "severity": "safe",
+  "risk_score": 0.0,
+  "confidence": 0.0,
+  "sections": [],
+  "anomalies": [],
+  "overlay_size": 0,
+  "entry_point": 0,
+  "recommendation": "文件未被检测到重打包迹象，可信度较高"
+}

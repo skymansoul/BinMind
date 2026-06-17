@@ -4,16 +4,20 @@ import unittest
 import tempfile
 import zipfile
 import gzip
+import importlib.util
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from modules.ota_diff_analyzer import (
-    OTADiffAnalyzer,
-    OTADiffResult,
-    OTAFormat,
-    ChangeType,
-    RiskLevel
-)
+module_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'modules', 'ota_diff_analyzer.py')
+spec = importlib.util.spec_from_file_location('ota_diff_analyzer', module_path)
+ota_diff_analyzer = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(ota_diff_analyzer)
+
+OTADiffAnalyzer = ota_diff_analyzer.OTADiffAnalyzer
+OTADiffResult = ota_diff_analyzer.OTADiffResult
+OTAFormat = ota_diff_analyzer.OTAFormat
+ChangeType = ota_diff_analyzer.ChangeType
+RiskLevel = ota_diff_analyzer.RiskLevel
 
 
 class TestOTADiffAnalyzer(unittest.TestCase):

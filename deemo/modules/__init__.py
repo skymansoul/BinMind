@@ -192,6 +192,39 @@ from .information_flow_verifier import (
     FlowViolation,
     FlowVerificationResult
 )
+
+# 移动平台分析模块
+from .mobile_analysis import (
+    MobileBinaryAnalyzer,
+    MobilePlatform,
+    MobileAnalysisResult,
+    JNIFunction,
+    ObjectiveCClass,
+    SensitiveString,
+    MobileVulnerability
+)
+
+# Unicorn 混合分析模块
+from .unicorn_hybrid import (
+    UnicornHybridAnalyzer,
+    HybridAnalysisResult,
+    MemoryRegion as UnicornMemoryRegion,
+    ExecutionResult,
+    UNICORN_AVAILABLE
+)
+
+# 漏洞利用链分析模块
+from .exploit_chaining import (
+    ExploitChainComposer,
+    AttackTarget,
+    VulnerabilityCapability,
+    VulnerabilityNode,
+    ExploitChain,
+    AttackGraph,
+    ChainAnalysisResult,
+    NETWORKX_AVAILABLE
+)
+
 # 协议模型检查模块
 from .protocol_model_checker import (
     ProtocolModelChecker,
@@ -269,6 +302,122 @@ from .logic_vuln_detector import (
     PermissionCheck,
     create_logic_vuln_detector,
     analyze_logic_vulnerabilities
+)
+
+# Concolic执行模块
+from .concolic_execution import (
+    ConcolicExecutor,
+    ConcolicMode,
+    ConcolicStatus,
+    ConcolicSeed,
+    ConcolicPath,
+    ConcolicResult,
+    create_concolic_executor,
+    run_concolic_analysis
+)
+
+# 协作与Git版本管理模块
+from .collaboration import (
+    CollaborationManager,
+    UserRole,
+    User,
+    ProjectMember,
+    AuditLogEntry,
+    Comment,
+    VulnerabilityStatus,
+    GitRepository,
+    BinaryVersion,
+    VersionDiff,
+    get_collaboration_manager
+)
+
+# CLI模块
+from .cli import (
+    app,
+    analyze_command,
+    batch_command,
+    health_command,
+    test_command,
+    server_command,
+    version_command
+)
+
+# 代码匿名化模块
+from .anonymizer import (
+    CodeAnonymizer,
+    Anonymizer,
+    AnonymizationLevel,
+    AnonymizationRule,
+    AnonymizationResult,
+    AnonymizationContextManager,
+    get_anonymizer,
+    anonymize_code,
+    is_sensitive_content
+)
+
+# LLM管理器模块
+from .llm_manager import (
+    LLMManager,
+    LLMBackend,
+    LLMBackendType,
+    LLMConfig,
+    LLMResponse,
+    EmbeddingResult,
+    OpenAIBackend,
+    AnthropicBackend,
+    GoogleBackend,
+    OllamaBackend,
+    TransformersBackend,
+    MockBackend,
+    get_llm_manager,
+    generate_text,
+    generate_embedding
+)
+
+# Payload混淆模块
+from .payload_obfuscator import (
+    PayloadObfuscator,
+    XOREncryptionEngine,
+    Base64EncodingEngine,
+    CompressionEngine,
+    PolymorphicEngine,
+    AntiDebugEngine,
+    ObfuscationTechnique,
+    AntiDetectionType,
+    obfuscate_payload
+)
+
+# 后渗透模板模块
+from .post_exploit_templates import (
+    PostExploitTemplates,
+    PostExploitTemplate,
+    PostExploitModuleType,
+    PlatformType,
+    get_post_exploit_templates
+)
+
+# 可靠性预测模块
+from .reliability_predictor import (
+    ReliabilityPredictor,
+    RuleBasedModel,
+    MachineLearningModel,
+    ReliabilityLevel,
+    FeatureVector,
+    predict_reliability
+)
+
+# 多阶段利用链编排模块
+from .multi_stage_orchestrator import (
+    MultiStageOrchestrator,
+    VulnerabilityType,
+    Capability,
+    TargetType,
+    ChainStatus,
+    VulnerabilityNode,
+    ExploitChainStep,
+    ExploitChain,
+    ChainAnalysisResult,
+    orchestrate_exploit_chain
 )
 
 __all__ = [
@@ -500,6 +649,104 @@ __all__ = [
     'InterfaceAnalyzer',
     'SideChannelAnalyzer',
     'MemoryLayoutAnalyzer',
+
+    # Concolic执行模块
+    'ConcolicExecutor',
+    'ConcolicMode',
+    'ConcolicStatus',
+    'ConcolicSeed',
+    'ConcolicPath',
+    'ConcolicResult',
+    'create_concolic_executor',
+    'run_concolic_analysis',
+
+    # 协作与Git版本管理模块
+    'CollaborationManager',
+    'UserRole',
+    'User',
+    'ProjectMember',
+    'AuditLogEntry',
+    'Comment',
+    'VulnerabilityStatus',
+    'GitRepository',
+    'BinaryVersion',
+    'VersionDiff',
+    'get_collaboration_manager',
+
+    # CLI模块
+    'app',
+    'analyze_command',
+    'batch_command',
+    'health_command',
+    'test_command',
+    'server_command',
+    'version_command',
+
+    # 代码匿名化模块
+    'CodeAnonymizer',
+    'Anonymizer',
+    'AnonymizationLevel',
+    'AnonymizationRule',
+    'AnonymizationResult',
+    'AnonymizationContextManager',
+    'get_anonymizer',
+    'anonymize_code',
+    'is_sensitive_content',
+
+    # LLM管理器模块
+    'LLMManager',
+    'LLMBackend',
+    'LLMBackendType',
+    'LLMConfig',
+    'LLMResponse',
+    'EmbeddingResult',
+    'OpenAIBackend',
+    'AnthropicBackend',
+    'GoogleBackend',
+    'OllamaBackend',
+    'TransformersBackend',
+    'MockBackend',
+    'get_llm_manager',
+    'generate_text',
+    'generate_embedding',
+    
+    # Payload混淆模块
+    'PayloadObfuscator',
+    'XOREncryptionEngine',
+    'Base64EncodingEngine',
+    'CompressionEngine',
+    'PolymorphicEngine',
+    'AntiDebugEngine',
+    'ObfuscationTechnique',
+    'AntiDetectionType',
+    'obfuscate_payload',
+    
+    # 后渗透模板模块
+    'PostExploitTemplates',
+    'PostExploitTemplate',
+    'PostExploitModuleType',
+    'PlatformType',
+    'get_post_exploit_templates',
+    
+    # 可靠性预测模块
+    'ReliabilityPredictor',
+    'RuleBasedModel',
+    'MachineLearningModel',
+    'ReliabilityLevel',
+    'FeatureVector',
+    'predict_reliability',
+    
+    # 多阶段利用链编排模块
+    'MultiStageOrchestrator',
+    'VulnerabilityType',
+    'Capability',
+    'TargetType',
+    'ChainStatus',
+    'VulnerabilityNode',
+    'ExploitChainStep',
+    'ExploitChain',
+    'ChainAnalysisResult',
+    'orchestrate_exploit_chain',
 ]
 
 # 保留旧版兼容性别名

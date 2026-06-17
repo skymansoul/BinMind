@@ -2,15 +2,19 @@ import os
 import sys
 import unittest
 import tempfile
+import importlib.util
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from modules.pii_scanner import (
-    PIIScanner,
-    PIIScanResult,
-    PIIType,
-    RiskLevel
-)
+module_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'modules', 'pii_scanner.py')
+spec = importlib.util.spec_from_file_location('pii_scanner', module_path)
+pii_scanner = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(pii_scanner)
+
+PIIScanner = pii_scanner.PIIScanner
+PIIScanResult = pii_scanner.PIIScanResult
+PIIType = pii_scanner.PIIType
+RiskLevel = pii_scanner.RiskLevel
 
 
 class TestPIIScanner(unittest.TestCase):

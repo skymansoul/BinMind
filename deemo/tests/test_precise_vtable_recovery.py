@@ -5,6 +5,7 @@
 import unittest
 import sys
 import os
+import importlib.util
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
@@ -14,16 +15,22 @@ class TestPreciseVTableRecovery(unittest.TestCase):
     
     def test_recoverer_initialization(self):
         """测试恢复器初始化"""
-        from modules.precise_vtable_recovery import PreciseVTableRecovery
+        module_path = os.path.join(os.path.dirname(__file__), '..', 'modules', 'precise_vtable_recovery.py')
+        spec = importlib.util.spec_from_file_location('precise_vtable_recovery', module_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
         
-        recoverer = PreciseVTableRecovery('/path/to/binary')
+        recoverer = module.PreciseVTableRecovery('/path/to/binary')
         self.assertIsNotNone(recoverer)
     
     def test_recover_vtables(self):
         """测试虚表恢复"""
-        from modules.precise_vtable_recovery import PreciseVTableRecovery
+        module_path = os.path.join(os.path.dirname(__file__), '..', 'modules', 'precise_vtable_recovery.py')
+        spec = importlib.util.spec_from_file_location('precise_vtable_recovery', module_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
         
-        recoverer = PreciseVTableRecovery('/path/to/binary')
+        recoverer = module.PreciseVTableRecovery('/path/to/binary')
         result = recoverer.recover_vtables()
         
         self.assertIsNotNone(result)

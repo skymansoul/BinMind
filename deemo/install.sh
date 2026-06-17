@@ -82,10 +82,6 @@ install_python_dependencies() {
             rm -rf "$VENV_DIR"
         fi
         python3 -m venv "$VENV_DIR"
-        if [ $? -ne 0 ]; then
-            echo "Error: Failed to create virtual environment." >&2
-            exit 1
-        fi
     fi
 
     echo "[+] Installing Python dependencies..."
@@ -106,8 +102,8 @@ verify_installation() {
         return 1
     fi
     
-    if [ ! -f "$PROJECT_DIR/main.py" ]; then
-        echo "Error: main.py not found." >&2
+    if [ ! -x "$PROJECT_DIR/main.py" ]; then
+        echo "Error: main.py not found or not executable." >&2
         return 1
     fi
     
@@ -173,9 +169,7 @@ if [ ! -x "$PYTHON_BIN" ]; then
     echo "[!] Using system Python: $PYTHON_BIN"
 fi
 
-# Ensure binmind script has execute permissions
-chmod +x "$PROJECT_DIR/binmind" 2>/dev/null || true
-
+chmod +x "$PROJECT_DIR/binmind"
 TARGET="$TARGET_DIR/$COMMAND_NAME"
 TMP_LAUNCHER="$(mktemp)"
 trap 'rm -f "$TMP_LAUNCHER"' EXIT

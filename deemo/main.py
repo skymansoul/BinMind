@@ -755,15 +755,31 @@ def run_pipeline(
     enable_unpack: bool = True,
     unpack_tool_path: str = None,
     enable_crypto_scan: bool = True,
-    enable_mobile: bool = False,
-    mobile_platform: str = 'auto',
-    enable_unicorn_hybrid: bool = False,
-    enable_exploit_chain: bool = False,
-    exploit_chain_goal: str = 'shell',
+    patch_binary: bool = False,
+    patch_output: str = None,
+    enable_compiler_opt_analysis: bool = True,
+    compiler_opt_output: str = None,
+    # RL 利用策略探索参数
+    enable_rl_exploit: bool = False,
+    rl_vuln_type: str = 'heap_overflow',
+    rl_target_address: int = 0x401000,
+    rl_training_steps: int = 10000,
+    rl_episodes: int = 10,
+    rl_algorithm: str = 'ppo',
+    rl_max_steps: int = 500,
+    # CVE 报告参数
+    generate_cve_report: bool = False,
+    cve_output: str = None,
+    cve_title: str = None,
+    cve_description: str = None,
+    submitter_name: str = None,
+    submitter_email: str = None,
+    submitter_org: str = None,
+    submit_cve: bool = False
 ) -> Dict[str, Any]:
     """
     运行完整的分析流水线
-
+    
     Args:
         binary_path: 二进制文件路径
         functions_to_analyze: 要分析的函数列表
@@ -795,13 +811,12 @@ def run_pipeline(
         project_new: 是否强制新建项目
         language: 编程语言 (auto, c/c++, go, rust)
         enable_unpack: 是否启用自动脱壳预处理
+        patch_binary: 是否启用二进制自动修补
+        patch_output: 修补后二进制文件的输出路径
         unpack_tool_path: 指定脱壳工具路径
         enable_crypto_scan: 是否启用密码学常量扫描和弱算法检测
-        enable_mobile: 是否启用移动平台二进制深度分析 (Android .so / iOS Mach-O)
-        mobile_platform: 移动平台标识 (android/ios/auto)
-        enable_unicorn_hybrid: 是否启用 Unicorn Engine + angr 混合分析
-        enable_exploit_chain: 是否启用漏洞利用链自动组合与攻击图生成
-        exploit_chain_goal: 利用链目标 (shell, code_execution, file_read, privilege_escalation)
+        enable_compiler_opt_analysis: 是否启用编译器优化与安全影响分析
+        compiler_opt_output: 编译器优化分析报告输出路径
     """
     logger = logging.getLogger(__name__)
     
@@ -936,6 +951,35 @@ def run_pipeline(
         return {'error': 'Failed to collect binary info'}
     
     report_gen.add_step('Info Collection Complete', binary_info)
+    
+    # ==================== 编译器优化分析 ====================
+    compiler_opt_result = None
+    if enable_compiler_opt_analysis:
+        try:
+            from modules.compiler_opt_analyzer import analyze_compiler_opt, format_compiler_opt_report
+            
+            logger.info("步骤 1.5/6: 编译器优化与安全影响分析...")
+            compiler_opt_result = analyze_compiler_opt(validated_path)
+            
+            if compiler_opt_result.analysis_success:
+                logger.info(f"编译器优化分析完成: {compiler_opt_result.compiler.value} {compiler_opt_result.optimization_level.value}")
+                logger.info(f"整体安全风险: {compiler_opt_result.overall_risk.value}")
+                
+                # 将结果添加到 binary_info
+                binary_info['compiler_optimization'] = compiler_opt_result.to_dict()
+                
+                # 如果指定了输出路径，保存报告
+                if compiler_opt_output:
+                    report_content = format_compiler_opt_report(compiler_opt_result)
+                    with open(compiler_opt_output, 'w', encoding='utf-8') as f:
+                        f.write(report_content)
+                    logger.info(f"编译器优化分析报告已保存到: {compiler_opt_output}")
+            else:
+                logger.warning(f"编译器优化分析失败: {compiler_opt_result.error_message}")
+        except ImportError:
+            logger.warning("CompilerOptAnalyzer 模块未找到，跳过编译器优化分析")
+        except Exception as e:
+            logger.warning(f"编译器优化分析失败: {e}")
     
     if project_manager and project_id:
         project_state = project_state or ProjectState()
@@ -1186,103 +1230,9 @@ def run_pipeline(
     
     logger.info("步骤 6/6: 生成分析报告...")
     report_gen.add_step('Report Generation Started')
-
-    # ==================== 移动平台深度分析 ====================
-    mobile_info = None
-    if enable_mobile:
-        try:
-            from modules.info_collect import collect_mobile_info
-            logger.info("步骤 6a/6: 移动平台二进制深度分析 (Android .so / iOS Mach-O)...")
-            mobile_info = collect_mobile_info(
-                binary_path=validated_path,
-                platform=mobile_platform,
-                enable_mobile=True,
-            )
-            if mobile_info:
-                logger.info(
-                    f"移动分析完成: 平台={mobile_info.get('detected_platform', 'unknown')}, "
-                    f"JNI={len(mobile_info.get('jni_functions', []))}, "
-                    f"ObjC类={len(mobile_info.get('objc_classes', []))}"
-                )
-        except Exception as e:
-            logger.warning(f"移动平台深度分析失败: {e}")
-
-    # ==================== Unicorn Engine 混合分析 ====================
-    hybrid_result = None
-    if enable_unicorn_hybrid and enable_symbolic_execution and symbolic_result is not None:
-        try:
-            from modules.symbolic_exe import SymbolicExecutor
-            logger.info("步骤 6b/6: Unicorn Engine 混合分析...")
-            sym_exec = SymbolicExecutor(validated_path)
-            target_func = functions_to_analyze[0] if functions_to_analyze else 'main'
-            hybrid_result = sym_exec.hybrid_analysis(
-                function_name=target_func,
-                enable_unicorn=True,
-            )
-            if hybrid_result.get('use_unicorn'):
-                logger.info("Unicorn 混合分析完成")
-            else:
-                logger.info(f"Unicorn 混合分析跳过: {hybrid_result.get('note', '')}")
-        except Exception as e:
-            logger.warning(f"Unicorn 混合分析失败: {e}")
-
-    # ==================== 漏洞利用链组合 ====================
-    attack_graph = None
-    if enable_exploit_chain:
-        try:
-            from config import validate_exploit_chain_goal
-            from modules.exploit_chaining import ExploitChainComposer
-            if not validate_exploit_chain_goal(exploit_chain_goal):
-                logger.warning(f"非法的 exploit_chain_goal: {exploit_chain_goal}, 回退到 shell")
-                exploit_chain_goal = "shell"
-            logger.info(f"步骤 6c/6: 漏洞利用链自动组合 (目标: {exploit_chain_goal})...")
-            composer = ExploitChainComposer(
-                max_chain_length=Config.EXPLOIT_CHAIN_MAX_LENGTH,
-            )
-            added = composer.add_vulns_from_results(decomp_results)
-            logger.info(f"组合器共接收 {added} 个漏洞")
-            if added > 0:
-                attack_graph = composer.compose(target_goal=exploit_chain_goal)
-                if Config.EXPLOIT_CHAIN_GEN_SKELETON and attack_graph.get("chains"):
-                    best_chain = attack_graph["chains"][0]
-                    skeleton = composer.generate_cooperative_exploit_skeleton(best_chain)
-                    attack_graph["skeleton"] = skeleton
-                # 输出 JSON / DOT
-                try:
-                    os.makedirs(Config.EXPLOIT_CHAIN_OUTPUT_DIR, exist_ok=True)
-                    if attack_graph.get("graph_json"):
-                        with open(
-                            os.path.join(Config.EXPLOIT_CHAIN_OUTPUT_DIR, "attack_graph.json"),
-                            "w", encoding="utf-8",
-                        ) as f:
-                            import json as _json
-                            _json.dump(attack_graph["graph_json"], f, ensure_ascii=False, indent=2)
-                    if attack_graph.get("graph_dot"):
-                        with open(
-                            os.path.join(Config.EXPLOIT_CHAIN_OUTPUT_DIR, "attack_graph.dot"),
-                            "w", encoding="utf-8",
-                        ) as f:
-                            f.write(attack_graph["graph_dot"])
-                    if attack_graph.get("skeleton"):
-                        with open(
-                            os.path.join(Config.EXPLOIT_CHAIN_OUTPUT_DIR, "cooperative_exploit.py"),
-                            "w", encoding="utf-8",
-                        ) as f:
-                            f.write(attack_graph["skeleton"])
-                except Exception as e:
-                    logger.warning(f"保存攻击图文件失败: {e}")
-            else:
-                attack_graph = {
-                    "success": False,
-                    "error": "无可用漏洞输入",
-                    "goal": exploit_chain_goal,
-                    "chains": [],
-                }
-        except Exception as e:
-            logger.warning(f"漏洞利用链组合失败: {e}")
-
+    
     reports = {}
-
+    
     reports['markdown'] = report_gen.generate_report(
         validated_path,
         binary_info,
@@ -1291,11 +1241,9 @@ def run_pipeline(
         exploit_result,
         similar_vulns,
         symbolic_result,
-        dynamic_taint_result,
-        mobile_info=mobile_info,
-        attack_graph=attack_graph,
+        dynamic_taint_result
     )
-
+    
     reports['json'] = report_gen.generate_json_report(
         validated_path,
         binary_info,
@@ -1303,7 +1251,7 @@ def run_pipeline(
         crash_analysis,
         exploit_result
     )
-
+    
     if output_format == 'html' or output_format == 'all':
         reports['html'] = report_gen.generate_html_report(
             validated_path,
@@ -1390,9 +1338,6 @@ def run_pipeline(
         'dynamic_taint': dynamic_taint_result,
         'crash_analysis': crash_analysis,
         'exploit_result': exploit_result,
-        'mobile_info': mobile_info,
-        'unicorn_hybrid': hybrid_result,
-        'attack_graph': attack_graph,
         'reports': {
             'markdown': reports.get('markdown'),
             'json': reports.get('json'),
@@ -1406,6 +1351,203 @@ def run_pipeline(
     if corpus_files:
         result_dict['corpus_files'] = corpus_files
     
+    if patch_binary:
+        logger.info("步骤 7/6: 执行二进制自动修补...")
+        try:
+            from modules.binary_rewriter import BinaryRewriter, PatchSuggestion, PatchType
+            
+            rewriter = BinaryRewriter(validated_path)
+            
+            analysis_result = BinaryRewriter.analyze_binary(validated_path)
+            patch_suggestions = analysis_result.get('patch_suggestions', [])
+            
+            if patch_suggestions:
+                logger.info(f"发现 {len(patch_suggestions)} 个可修补的危险函数调用")
+                
+                if not patch_output:
+                    base_name = os.path.basename(validated_path)
+                    name_parts = base_name.rsplit('.', 1)
+                    if len(name_parts) == 2:
+                        patch_output = f"{name_parts[0]}_patched.{name_parts[1]}"
+                    else:
+                        patch_output = f"{base_name}_patched"
+                    patch_output = os.path.join(os.path.dirname(validated_path), patch_output)
+                
+                results = rewriter.apply_patches(patch_suggestions)
+                success_count = sum(1 for r in results if r.success)
+                
+                if success_count > 0:
+                    rewriter.save(patch_output)
+                    report = rewriter.generate_patch_report()
+                    logger.warning("[BinaryRewriter] 安全警告: 自动修补仅建议用于非生产环境测试")
+                    logger.info(f"[BinaryRewriter] 修补完成，输出文件: {patch_output}")
+                    
+                    result_dict['patch_result'] = {
+                        'success': True,
+                        'output_path': patch_output,
+                        'modified_functions': [f for r in results for f in r.modified_functions],
+                        'modified_instructions': sum(r.modified_instructions for r in results),
+                        'security_warning': report.get('security_warning'),
+                        'disclaimer': report.get('disclaimer')
+                    }
+                else:
+                    logger.warning("[BinaryRewriter] 未能应用任何补丁")
+                    result_dict['patch_result'] = {'success': False, 'message': '未能应用任何补丁'}
+            else:
+                logger.info("[BinaryRewriter] 未发现需要修补的危险函数调用")
+                result_dict['patch_result'] = {'success': False, 'message': '未发现需要修补的危险函数调用'}
+        except ImportError:
+            logger.error("[BinaryRewriter] 无法导入 BinaryRewriter 模块，请安装 lief: pip install lief")
+            result_dict['patch_result'] = {'success': False, 'message': 'BinaryRewriter 模块不可用'}
+        except Exception as e:
+            logger.error(f"[BinaryRewriter] 修补失败: {e}")
+            result_dict['patch_result'] = {'success': False, 'message': str(e)}
+
+    # ==================== CVE 报告生成 ====================
+    if generate_cve_report:
+        logger.info("步骤 8/6: 生成 CVE 报告...")
+        report_gen.add_step('CVE Report Generation Started')
+        
+        try:
+            from modules.cve_reporter import CVEReporter
+            
+            reporter = CVEReporter()
+            
+            highest_vuln = find_highest_risk_vulnerability(decomp_results)
+            
+            if highest_vuln:
+                vulnerability_info = {
+                    'title': cve_title or highest_vuln.get('type', '未命名漏洞'),
+                    'description': cve_description or highest_vuln.get('description', ''),
+                    'type': highest_vuln.get('type', 'unknown'),
+                    'cwe_id': highest_vuln.get('cwe', 'CWE-000'),
+                    'attack_vector': highest_vuln.get('attack_vector', 'local'),
+                    'exploitability': highest_vuln.get('exploitation', '未评估'),
+                    'requires_authentication': False,
+                    'user_interaction': False,
+                    'privilege_escalation': highest_vuln.get('privilege_escalation', False),
+                    'affected_versions': [],
+                    'affected_products': [
+                        {'vendor': 'Unknown', 'product': os.path.basename(validated_path), 'version': 'unknown'}
+                    ],
+                    'vulnerable_code': highest_vuln.get('code_snippet', ''),
+                    'remediation': highest_vuln.get('remediation', ''),
+                    'references': [],
+                    'technical_details': {}
+                }
+                
+                reporter_info = {
+                    'name': submitter_name or 'Anonymous',
+                    'email': submitter_email or '',
+                    'organization': submitter_org or 'Unknown'
+                }
+                
+                vuln_report = reporter.generate_vulnerability_report(vulnerability_info, reporter_info)
+                
+                if cve_output:
+                    if cve_output.endswith('.json'):
+                        reporter.export_report_to_json(vuln_report, cve_output)
+                    else:
+                        reporter.export_report_to_text(vuln_report, cve_output)
+                    logger.info(f"CVE 报告已保存到: {cve_output}")
+                
+                if submit_cve:
+                    form_data = reporter.generate_cve_application_form(vuln_report)
+                    submit_result = reporter.submit_cve_request(form_data)
+                    
+                    if submit_result.get('success'):
+                        logger.info(f"CVE 请求提交成功，CVE ID: {submit_result.get('cve_id')}")
+                        vuln_report.cve_details.cve_id = submit_result.get('cve_id')
+                        vuln_report.cve_details.cve_status = 'RESERVED'
+                        vuln_report.cve_details.requested_at = submit_result.get('submitted_at')
+                        
+                        result_dict['cve_result'] = {
+                            'success': True,
+                            'cve_id': submit_result.get('cve_id'),
+                            'status': submit_result.get('status'),
+                            'submitted_at': submit_result.get('submitted_at'),
+                            'next_steps': submit_result.get('next_steps')
+                        }
+                    else:
+                        logger.error(f"CVE 请求提交失败: {submit_result.get('errors')}")
+                        result_dict['cve_result'] = {'success': False, 'errors': submit_result.get('errors')}
+                
+                result_dict['cve_report'] = {
+                    'success': True,
+                    'report_id': vuln_report.report_id,
+                    'severity': vuln_report.severity.value,
+                    'cvss_score': vuln_report.cvss_score,
+                    'cwe_id': vuln_report.cwe_id,
+                    'generated_at': vuln_report.created_at
+                }
+            else:
+                logger.warning("未找到可报告的漏洞，跳过 CVE 报告生成")
+                result_dict['cve_report'] = {'success': False, 'message': '未找到可报告的漏洞'}
+                
+        except ImportError:
+            logger.error("[CVEReporter] 无法导入 CVEReporter 模块")
+            result_dict['cve_report'] = {'success': False, 'message': 'CVE 报告模块不可用'}
+        except Exception as e:
+            logger.error(f"[CVEReporter] 生成报告失败: {e}")
+            result_dict['cve_report'] = {'success': False, 'message': str(e)}
+
+    # ==================== 强化学习利用策略探索 ====================
+    if enable_rl_exploit:
+        logger.info("步骤 8/6: 强化学习利用策略探索...")
+        report_gen.add_step('RL Exploit Exploration Started', {
+            'vulnerability_type': rl_vuln_type,
+            'target_address': hex(rl_target_address),
+            'training_steps': rl_training_steps,
+            'episodes': rl_episodes,
+            'algorithm': rl_algorithm
+        })
+        
+        try:
+            from modules.rl_exploit_agent import run_rl_exploit_analysis
+            
+            logger.info(f"启动 RL 利用探索，漏洞类型: {rl_vuln_type}, 目标地址: {hex(rl_target_address)}")
+            
+            rl_result = run_rl_exploit_analysis(
+                vulnerability_type=rl_vuln_type,
+                target_address=rl_target_address,
+                training_steps=rl_training_steps,
+                num_episodes=rl_episodes,
+                verbose=logger.level <= logging.DEBUG
+            )
+            
+            if rl_result.get('success'):
+                logger.info(f"RL 利用探索完成，成功率: {rl_result.get('success_count', 0)}/{rl_result.get('episodes', 0)}")
+                report_gen.add_step('RL Exploit Exploration Complete', {
+                    'success': True,
+                    'success_count': rl_result.get('success_count', 0),
+                    'episodes': rl_result.get('episodes', 0),
+                    'best_strategy_length': len(rl_result.get('best_strategy', [])),
+                    'has_exploit_code': bool(rl_result.get('best_exploit_code', ''))
+                })
+                
+                result_dict['rl_exploit_result'] = {
+                    'success': True,
+                    'vulnerability_type': rl_vuln_type,
+                    'target_address': hex(rl_target_address),
+                    'success_count': rl_result.get('success_count', 0),
+                    'episodes': rl_result.get('episodes', 0),
+                    'best_strategy': rl_result.get('best_strategy', []),
+                    'best_exploit_code': rl_result.get('best_exploit_code', ''),
+                    'analysis': rl_result.get('analysis', {})
+                }
+            else:
+                logger.warning(f"RL 利用探索失败: {rl_result.get('error', 'unknown')}")
+                report_gen.add_step('RL Exploit Exploration Failed', {'error': rl_result.get('error')})
+                result_dict['rl_exploit_result'] = {'success': False, 'error': rl_result.get('error')}
+                
+        except ImportError as e:
+            logger.error(f"[RLExploitAgent] 无法导入模块: {e}")
+            logger.error("请安装依赖: pip install gym stable-baselines3 numpy")
+            result_dict['rl_exploit_result'] = {'success': False, 'error': 'RL 模块不可用，需安装 gym、stable-baselines3、numpy'}
+        except Exception as e:
+            logger.error(f"[RLExploitAgent] 执行失败: {e}")
+            result_dict['rl_exploit_result'] = {'success': False, 'error': str(e)}
+
     return result_dict
 
 
@@ -1722,6 +1864,18 @@ AI 服务配置:
         help='手动指定 libc 版本（如 2.31, 2.27），用于获取准确的内部结构偏移。不指定则自动检测'
     )
     
+    # ==================== 二进制重写配置 ====================
+    rewrite_group = parser.add_argument_group('二进制重写')
+    rewrite_group.add_argument(
+        '--patch-binary',
+        action='store_true',
+        help='启用自动二进制修补功能，将危险函数调用替换为安全版本（如 strcpy -> strncpy）'
+    )
+    rewrite_group.add_argument(
+        '--patch-output',
+        help='修补后二进制文件的输出路径。不指定则在原目录生成 <filename>_patched 后缀的文件'
+    )
+    
     # ==================== 漏洞利用验证配置 ====================
     exploit_verify_group = parser.add_argument_group('漏洞利用验证')
     exploit_verify_group.add_argument(
@@ -1763,6 +1917,43 @@ AI 服务配置:
         help='匿名查询，仅发送哈希值，不发送二进制文件名'
     )
     
+    # ==================== CVE 报告配置 ====================
+    cve_group = parser.add_argument_group('CVE 报告与申请')
+    cve_group.add_argument(
+        '--generate-cve-report',
+        action='store_true',
+        help='生成标准化的漏洞报告，包含 CVE 申请所需的所有信息'
+    )
+    cve_group.add_argument(
+        '--cve-output',
+        help='CVE 报告输出路径（支持 JSON 和文本格式，根据扩展名自动选择）'
+    )
+    cve_group.add_argument(
+        '--cve-title',
+        help='漏洞标题，用于 CVE 申请（默认自动生成）'
+    )
+    cve_group.add_argument(
+        '--cve-description',
+        help='漏洞详细描述，用于 CVE 申请（默认自动生成）'
+    )
+    cve_group.add_argument(
+        '--submitter-name',
+        help='CVE 申请人姓名'
+    )
+    cve_group.add_argument(
+        '--submitter-email',
+        help='CVE 申请人邮箱'
+    )
+    cve_group.add_argument(
+        '--submitter-org',
+        help='CVE 申请人所属组织'
+    )
+    cve_group.add_argument(
+        '--submit-cve',
+        action='store_true',
+        help='自动提交 CVE 请求（模拟提交，非真实提交到 MITRE）'
+    )
+    
     parser.add_argument(
         '--sandbox',
         choices=['none', 'docker', 'podman'],
@@ -1787,10 +1978,264 @@ AI 服务配置:
         help='生成 Ghidra 标注脚本的输出路径'
     )
     
+    # ==================== 补丁差异分析配置 ====================
+    patch_group = parser.add_argument_group('补丁差异分析')
+    patch_group.add_argument(
+        '--patch-diff',
+        nargs=2,
+        metavar=('PATCHED_BIN', 'ORIGINAL_BIN'),
+        help='补丁差异定位：分析补丁前后的二进制差异，精确定位漏洞点和补丁逻辑'
+    )
+    
+    # ==================== 密码学误用检测配置 ====================
+    crypto_group = parser.add_argument_group('密码学误用检测')
+    crypto_group.add_argument(
+        '--detect-crypto-misuse',
+        action='store_true',
+        help='启用密码学误用检测，识别弱随机数生成器、硬编码密钥、弱哈希算法等问题'
+    )
+    
+    # ==================== eBPF安全分析配置 ====================
+    ebpf_group = parser.add_argument_group('eBPF安全分析')
+    ebpf_group.add_argument(
+        '--ebpf',
+        action='store_true',
+        help='启用eBPF程序安全分析模式，自动识别.eBPF文件并分析'
+    )
+    
+    # ==================== 漏洞传播分析配置 ====================
+    vuln_propagation_group = parser.add_argument_group('漏洞传播分析')
+    vuln_propagation_group.add_argument(
+        '--vuln-propagation',
+        action='store_true',
+        help='启用漏洞传播路径分析，基于程序依赖图分析漏洞影响范围'
+    )
+    
+    # ==================== 安全评估模块配置 ====================
+    security_group = parser.add_argument_group('安全评估')
+    security_group.add_argument(
+        '--attack-surface',
+        action='store_true',
+        help='启用攻击面识别与风险排序分析'
+    )
+    security_group.add_argument(
+        '--pii-scan',
+        action='store_true',
+        help='启用PII与敏感数据泄露扫描'
+    )
+    security_group.add_argument(
+        '--enclave-analyze',
+        action='store_true',
+        help='启用安全飞地二进制分析'
+    )
+    security_group.add_argument(
+        '--timing-channel',
+        action='store_true',
+        help='启⽤时间侧信道检测分析'
+    )
+    security_group.add_argument(
+        '--ota-diff',
+        metavar='ORIGINAL_FIRMWARE',
+        help='启用固件OTA差分更新分析，指定原始固件路径'
+    )
+    
+    # ==================== 逆向增强模块配置 ====================
+    reverse_group = parser.add_argument_group('逆向增强')
+    reverse_group.add_argument(
+        '--reverse-report',
+        action='store_true',
+        help='启用LLM逆向报告生成'
+    )
+    reverse_group.add_argument(
+        '--string-decode',
+        action='store_true',
+        help='启⽤字符串解码与解混淆'
+    )
+    reverse_group.add_argument(
+        '--deadlock-detect',
+        action='store_true',
+        help='启⽤多线程死锁检测'
+    )
+    reverse_group.add_argument(
+        '--config-extract',
+        action='store_true',
+        help='启⽤配置凭据提取'
+    )
+    reverse_group.add_argument(
+        '--corruption-classify',
+        action='store_true',
+        help='启⽤内存损坏分类'
+    )
+    reverse_group.add_argument(
+        '--code-visualize',
+        action='store_true',
+        help='启⽤代码可视化'
+    )
+    
+    # ==================== 漏洞利用验证与修复配置 ====================
+    verify_group = parser.add_argument_group('漏洞验证与修复')
+    verify_group.add_argument(
+        '--exploit-verify',
+        action='store_true',
+        help='启⽤漏洞利用验证器'
+    )
+    verify_group.add_argument(
+        '--patch-suggest',
+        action='store_true',
+        help='启⽤智能补丁建议'
+    )
+    
     parser.add_argument(
         '--print-report',
         action='store_true',
         help='将崩溃分析的关键信息打印到控制台（寄存器值、漏洞类型、偏移量等）'
+    )
+
+    parser.add_argument(
+        '--explain-pseudocode',
+        nargs='?',
+        const=True,
+        default=None,
+        help='使用AI解释函数伪代码。可指定函数名，如 --explain-pseudocode main，不指定则解释所有分析的函数'
+    )
+
+    parser.add_argument(
+        '--exploit-transpile',
+        metavar='EXPLOIT_FILE',
+        help='跨架构漏洞利用移植，将利用脚本转换为目标架构。配合 --target-arch 使用'
+    )
+
+    parser.add_argument(
+        '--target-arch',
+        choices=['arm', 'arm64', 'mips', 'mips64', 'riscv', 'riscv64', 'x86', 'x86_64'],
+        default='arm64',
+        help='目标架构，用于跨架构利用移植（默认: arm64）'
+    )
+
+    parser.add_argument(
+        '--generate-msf',
+        action='store_true',
+        help='生成Metasploit模块'
+    )
+
+    parser.add_argument(
+        '--kernel-exploit',
+        action='store_true',
+        help='启用内核漏洞利用生成模式'
+    )
+
+    parser.add_argument(
+        '--vuln-type',
+        choices=['heap_overflow', 'use_after_free', 'stack_overflow', 'format_string', 'type_confusion', 'integer_overflow'],
+        default='heap_overflow',
+        help='指定漏洞类型，用于内核漏洞利用生成（默认: heap_overflow）'
+    )
+
+    parser.add_argument(
+        '--type-confusion',
+        action='store_true',
+        help='启用C++类型混淆漏洞检测'
+    )
+
+    parser.add_argument(
+        '--exploitdb-match',
+        metavar='CVE_ID',
+        help='根据CVE ID匹配Exploit-DB中的相关漏洞'
+    )
+
+    parser.add_argument(
+        '--adapt-exploit',
+        metavar='EXPLOIT_FILE',
+        help='自适应修复利用脚本，使其适配目标环境'
+    )
+
+    parser.add_argument(
+        '--target-env',
+        help='目标环境描述，如 "Linux x64"，用于利用脚本自适应修复'
+    )
+
+    parser.add_argument(
+        '--generate-poc',
+        action='store_true',
+        help='生成漏洞PoC（Proof of Concept）'
+    )
+
+    parser.add_argument(
+        '--vuln-id',
+        help='漏洞ID，如 CVE-2024-1234，用于生成PoC'
+    )
+
+    parser.add_argument(
+        '--concurrency-fuzz',
+        action='store_true',
+        help='启用并发模糊测试模式'
+    )
+
+    parser.add_argument(
+        '--differential-fuzz',
+        action='store_true',
+        help='启用差异模糊测试模式'
+    )
+
+    parser.add_argument(
+        '--differential-mode',
+        choices=['cross-compiler', 'cross-version', 'cross-architecture'],
+        default='cross-compiler',
+        help='差异模糊测试模式（默认: cross-compiler）'
+    )
+
+    parser.add_argument(
+        '--detect-dse-bypass',
+        action='store_true',
+        help='启用DSE（Driver Signature Enforcement）绕过检测'
+    )
+
+    parser.add_argument(
+        '--malware-cluster',
+        metavar='SAMPLES_DIR',
+        help='对目录中的恶意软件样本进行家族聚类分析'
+    )
+
+    parser.add_argument(
+        '--bypass-anti-vm',
+        action='store_true',
+        help='启用反VM绕过分析'
+    )
+
+    parser.add_argument(
+        '--logic-bomb',
+        action='store_true',
+        help='启用逻辑炸弹检测'
+    )
+
+    parser.add_argument(
+        '--behavior-trace',
+        action='store_true',
+        help='启用动态行为追踪'
+    )
+
+    parser.add_argument(
+        '--classify-syscalls',
+        action='store_true',
+        help='启用系统调用恶意性分类'
+    )
+
+    parser.add_argument(
+        '--detect-injection',
+        action='store_true',
+        help='启用内存注入检测'
+    )
+
+    parser.add_argument(
+        '--detect-timing',
+        action='store_true',
+        help='启用时间侧信道检测'
+    )
+
+    parser.add_argument(
+        '--analyze-compiler-opt',
+        action='store_true',
+        help='分析编译器优化选项及其安全影响'
     )
 
     parser.add_argument(
@@ -1903,46 +2348,6 @@ AI 服务配置:
         help='提交任务到分布式队列并返回任务 ID，不等待完成'
     )
 
-    cve_group = parser.add_argument_group('CVE 查询')
-    cve_group.add_argument(
-        '--cve-query',
-        action='store_true',
-        help='执行外部 CVE 数据库查询，需配合 --cve-id、--cve-package 或 --cve-binary 使用'
-    )
-    cve_group.add_argument(
-        '--cve-id',
-        help='按 CVE ID 查询 (如: CVE-2024-12345)'
-    )
-    cve_group.add_argument(
-        '--cve-package',
-        help='按软件包名查询 (如: openssl, linux)'
-    )
-    cve_group.add_argument(
-        '--cve-binary',
-        help='按二进制文件名查询 (如: libc.so.6)'
-    )
-    cve_group.add_argument(
-        '--cve-source',
-        choices=['nvd', 'exploit_db', 'osv', 'ghadvisory', 'all'],
-        default='all',
-        help='指定查询的数据源 (默认: all，综合所有数据源)'
-    )
-    cve_group.add_argument(
-        '--cve-no-cache',
-        action='store_true',
-        help='不使用缓存，强制重新查询'
-    )
-    cve_group.add_argument(
-        '--cve-json',
-        help='将 CVE 查询结果导出为 JSON 文件'
-    )
-    cve_group.add_argument(
-        '--cve-limit',
-        type=int,
-        default=20,
-        help='每个数据源返回的最大结果数 (默认: 20)'
-    )
-
     # ==================== 固件分析配置 ====================
     firmware_group = parser.add_argument_group('固件分析')
     firmware_group.add_argument(
@@ -2001,42 +2406,6 @@ AI 服务配置:
     ml_group.add_argument(
         '--ml-model-output',
         help='训练模型时指定输出路径'
-    )
-
-    # ==================== 移动平台深度分析 ====================
-    mobile_group = parser.add_argument_group('移动平台深度分析')
-    mobile_group.add_argument(
-        '--mobile',
-        action='store_true',
-        help='启用移动平台二进制深度分析 (Android .so / iOS Mach-O)。自动检测平台, 解析 JNI/ObjC/Swift, 检测敏感字符串与危险规则'
-    )
-    mobile_group.add_argument(
-        '--mobile-platform',
-        choices=['android', 'ios', 'auto'],
-        default='auto',
-        help='指定移动平台, 覆盖自动检测 (默认: auto)'
-    )
-
-    # ==================== Unicorn Engine 混合分析 ====================
-    unicorn_group = parser.add_argument_group('Unicorn Engine 混合分析')
-    unicorn_group.add_argument(
-        '--unicorn-hybrid',
-        action='store_true',
-        help='启用 Unicorn Engine + angr 混合分析。在符号执行遇到路径爆炸时, 切换到 Unicorn concrete 执行'
-    )
-
-    # ==================== 漏洞利用链组合 ====================
-    chain_group = parser.add_argument_group('漏洞利用链组合')
-    chain_group.add_argument(
-        '--exploit-chain',
-        action='store_true',
-        help='启用漏洞利用链自动组合与攻击图生成'
-    )
-    chain_group.add_argument(
-        '--exploit-chain-goal',
-        choices=['shell', 'code_execution', 'file_read', 'file_write', 'privilege_escalation'],
-        default='shell',
-        help='最终攻击目标 (默认: shell)'
     )
 
     # ==================== WebAssembly 分析配置 ====================
@@ -2134,6 +2503,24 @@ AI 服务配置:
         help='绕过脚本输出目录（默认: ./bypass）'
     )
 
+    # ==================== 编译器优化分析配置 ====================
+    compiler_opt_group = parser.add_argument_group('编译器优化分析')
+    compiler_opt_group.add_argument(
+        '--compiler-opt',
+        action='store_true',
+        default=True,
+        help='启用编译器优化与安全影响分析（默认启用），检测二进制编译时使用的优化级别和安全标志'
+    )
+    compiler_opt_group.add_argument(
+        '--no-compiler-opt',
+        action='store_true',
+        help='禁用编译器优化分析'
+    )
+    compiler_opt_group.add_argument(
+        '--compiler-opt-output',
+        help='编译器优化分析报告输出路径'
+    )
+
     # ==================== 漏洞复现环境配置 ====================
     repro_env_group = parser.add_argument_group('漏洞复现环境')
     repro_env_group.add_argument(
@@ -2156,191 +2543,129 @@ AI 服务配置:
         help='指定目标 libc 版本（如 2.31），用于精确匹配基础镜像'
     )
 
-    # ==================== Core Dump 取证分析配置 ====================
-    core_forensics_group = parser.add_argument_group('Core Dump 取证分析')
-    core_forensics_group.add_argument(
-        '--core-forensics',
+    # ==================== 强化学习利用策略探索配置 ====================
+    rl_group = parser.add_argument_group('强化学习利用策略探索')
+    rl_group.add_argument(
+        '--rl-exploit',
         action='store_true',
-        help='对 core dump 文件进行取证分析，提取敏感数据和进程信息'
+        help='启用强化学习利用策略探索（耗时较长，建议在传统方法失败时使用）'
     )
-    core_forensics_group.add_argument(
-        '--core-forensics-timeout',
+    rl_group.add_argument(
+        '--rl-vuln-type',
+        choices=['heap_overflow', 'use_after_free', 'stack_overflow', 'format_string'],
+        default='heap_overflow',
+        help='指定漏洞类型，用于初始化 RL 环境（默认: heap_overflow）'
+    )
+    rl_group.add_argument(
+        '--rl-target-address',
+        help='指定目标地址（十六进制，如 0x401000），用于设置利用目标'
+    )
+    rl_group.add_argument(
+        '--rl-training-steps',
         type=int,
-        default=300,
-        help='Core Dump 取证分析超时时间（秒），默认 300 秒'
+        default=10000,
+        help='RL 训练步数（默认: 10000）'
+    )
+    rl_group.add_argument(
+        '--rl-episodes',
+        type=int,
+        default=10,
+        help='测试 episode 数量（默认: 10）'
+    )
+    rl_group.add_argument(
+        '--rl-algorithm',
+        choices=['ppo', 'dqn'],
+        default='ppo',
+        help='RL 算法选择（默认: ppo）'
+    )
+    rl_group.add_argument(
+        '--rl-max-steps',
+        type=int,
+        default=500,
+        help='每个 episode 的最大步数限制（默认: 500）'
     )
 
-    # ==================== 二进制安全加固审计配置 ====================
-    hardening_audit_group = parser.add_argument_group('二进制安全加固审计')
-    hardening_audit_group.add_argument(
-        '--audit-hardening',
-        action='store_true',
-        help='对二进制文件进行安全加固审计，检查 NX/RELRO/Canary/PIE 等防御机制'
-    )
-    hardening_audit_group.add_argument(
-        '--audit-hardening-timeout',
-        type=int,
-        default=120,
-        help='加固审计超时时间（秒），默认 120 秒'
-    )
-    hardening_audit_group.add_argument(
-        '--audit-hardening-ci',
-        action='store_true',
-        help='CI 模式审计，门控禁止未启用关键加固的二进制通过'
-    )
-    hardening_audit_group.add_argument(
-        '--audit-hardening-min-score',
-        type=int,
-        default=60,
-        help='CI 模式最低通过分数（0-100），默认 60'
-    )
-
-    # ==================== 硬件辅助安全评估配置 ====================
-    hw_security_group = parser.add_argument_group('硬件辅助安全评估')
-    hw_security_group.add_argument(
-        '--hw-security-eval',
+    # ==================== 符号执行优化配置 ====================
+    symexec_group = parser.add_argument_group('符号执行优化')
+    symexec_group.add_argument(
+        '--symexec-cache',
         action='store_true',
         default=True,
-        help='评估硬件安全特性（ARM PAC/BTI、Intel CET IBT/SHSTK）对漏洞利用的影响（默认启用）'
+        help='启用符号执行约束求解结果缓存（默认启用）'
     )
-    hw_security_group.add_argument(
-        '--no-hw-security-eval',
+    symexec_group.add_argument(
+        '--symexec-no-cache',
         action='store_true',
-        help='禁用硬件安全评估'
+        help='禁用符号执行约束求解结果缓存'
     )
-    hw_security_group.add_argument(
-        '--hw-security-eval-detail',
-        action='store_true',
-        help='输出详细的硬件安全特性影响分析'
-    )
-
-    # ==================== 漏洞利用策略推荐配置 ====================
-    strategy_group = parser.add_argument_group('漏洞利用策略推荐')
-    strategy_group.add_argument(
-        '--strategy-advisor',
-        action='store_true',
-        help='启用漏洞利用策略推荐，根据二进制分析结果生成最优利用方案'
-    )
-    strategy_group.add_argument(
-        '--strategy-output',
-        default='./strategy_output',
-        help='策略输出目录（默认: ./strategy_output）'
-    )
-    strategy_group.add_argument(
-        '--strategy-vuln-type',
-        choices=['buffer_overflow', 'use_after_free', 'format_string', 'integer_overflow'],
-        help='指定漏洞类型，用于针对性策略推荐'
-    )
-    strategy_group.add_argument(
-        '--strategy-arch',
-        choices=['x86', 'x86_64', 'arm', 'arm64'],
-        help='指定目标架构（默认自动检测）'
-    )
-
-    # ==================== C++虚表恢复配置 ====================
-    vtbl_group = parser.add_argument_group('C++虚表恢复')
-    vtbl_group.add_argument(
-        '--recover-cpp-vtbl',
-        action='store_true',
-        help='启用 C++ 虚函数表恢复，识别类继承关系和虚函数调用'
-    )
-    vtbl_group.add_argument(
-        '--vtbl-output',
-        default='./vtbl_output',
-        help='虚表分析结果输出目录（默认: ./vtbl_output）'
-    )
-    vtbl_group.add_argument(
-        '--vtbl-generate-dot',
-        action='store_true',
-        help='生成 DOT 格式的类继承关系图'
-    )
-
-    # ==================== 保护机制绕过配置 ====================
-    bypass_group = parser.add_argument_group('保护机制绕过')
-    bypass_group.add_argument(
-        '--bypass-advisor',
-        action='store_true',
-        help='启用保护机制绕过策略分析，生成 ASLR/DEP/CFG/CANARY 等绕过方案'
-    )
-    bypass_group.add_argument(
-        '--bypass-output',
-        default='./bypass_output',
-        help='绕过策略输出目录（默认: ./bypass_output）'
-    )
-    bypass_group.add_argument(
-        '--bypass-info-leak',
-        help='指定已知的信息泄露点地址或函数名，辅助绕过分析'
-    )
-
-    # ==================== 测试生成配置 ====================
-    testgen_group = parser.add_argument_group('测试生成')
-    testgen_group.add_argument(
-        '--gen-tests',
-        action='store_true',
-        help='为二进制文件生成测试用例'
-    )
-    testgen_group.add_argument(
-        '--test-output',
-        default='./test_output',
-        help='测试用例输出目录（默认: ./test_output）'
-    )
-    testgen_group.add_argument(
-        '--test-language',
-        choices=['c', 'python', 'fuzzer'],
-        default='python',
-        help='测试用例语言（默认: python）'
-    )
-    testgen_group.add_argument(
-        '--test-cases',
+    symexec_group.add_argument(
+        '--symexec-cache-size',
         type=int,
-        default=5,
-        help='每个函数生成的测试用例数量（默认: 5）'
+        default=10000,
+        help='符号执行缓存大小（默认: 10000）'
+    )
+    symexec_group.add_argument(
+        '--symexec-prune',
+        action='store_true',
+        default=True,
+        help='启用路径剪枝优化（默认启用）'
+    )
+    symexec_group.add_argument(
+        '--symexec-prune-strategy',
+        choices=['none', 'loop_bound', 'dangerous_function', 'state_dedup', 'heuristic', 'all'],
+        default='heuristic',
+        help='路径剪枝策略（默认: heuristic，综合多种策略）'
+    )
+    symexec_group.add_argument(
+        '--symexec-max-loop',
+        type=int,
+        default=100,
+        help='符号执行最大循环次数限制（默认: 100）'
     )
 
-    # ==================== 增量分析配置 ====================
-    incremental_group = parser.add_argument_group('增量分析')
-    incremental_group.add_argument(
-        '--incremental',
+    # ==================== 裸机固件模拟配置 ====================
+    baremetal_group = parser.add_argument_group('裸机固件模拟')
+    baremetal_group.add_argument(
+        '--baremetal-emulate',
         action='store_true',
-        help='启用增量分析缓存，加速重复分析'
+        help='启用裸机固件模拟执行模式，用于 ARM Cortex-M 等嵌入式固件'
     )
-    incremental_group.add_argument(
-        '--no-cache',
+    baremetal_group.add_argument(
+        '--baremetal-mcu',
+        choices=['STM32F103', 'STM32F407', 'STM32F429', 'STM32F746', 'generic'],
+        default='STM32F407',
+        help='指定 MCU 型号（默认: STM32F407）'
+    )
+    baremetal_group.add_argument(
+        '--baremetal-svd',
+        help='指定 SVD 外设描述文件路径'
+    )
+    baremetal_group.add_argument(
+        '--baremetal-ram-start',
+        help='指定 RAM 起始地址（十六进制，如 0x20000000）'
+    )
+    baremetal_group.add_argument(
+        '--baremetal-ram-size',
+        help='指定 RAM 大小（十六进制，如 0x20000）'
+    )
+    baremetal_group.add_argument(
+        '--baremetal-flash-start',
+        help='指定 Flash 起始地址（十六进制，如 0x08000000）'
+    )
+    baremetal_group.add_argument(
+        '--baremetal-flash-size',
+        help='指定 Flash 大小（十六进制，如 0x100000）'
+    )
+    baremetal_group.add_argument(
+        '--baremetal-timeout',
+        type=int,
+        default=60000,
+        help='固件模拟执行超时时间（毫秒，默认: 60000）'
+    )
+    baremetal_group.add_argument(
+        '--baremetal-no-semihosting',
         action='store_true',
-        help='禁用缓存（配合 --incremental 使用）'
-    )
-    incremental_group.add_argument(
-        '--cache-invalidate',
-        action='store_true',
-        help='失效现有缓存'
-    )
-    incremental_group.add_argument(
-        '--cache-dir',
-        default='./.cache',
-        help='缓存目录（默认: ./.cache）'
-    )
-
-    # ==================== ML函数边界检测配置 ====================
-    ml_boundary_group = parser.add_argument_group('ML函数边界检测')
-    ml_boundary_group.add_argument(
-        '--ml-boundary',
-        action='store_true',
-        help='启用 ML 函数边界检测，使用机器学习模型识别函数边界'
-    )
-    ml_boundary_group.add_argument(
-        '--boundary-model',
-        help='指定自定义 ML 模型路径'
-    )
-    ml_boundary_group.add_argument(
-        '--boundary-output',
-        default='./boundary_output',
-        help='边界检测结果输出目录（默认: ./boundary_output）'
-    )
-    ml_boundary_group.add_argument(
-        '--boundary-confidence',
-        type=float,
-        default=0.5,
-        help='检测置信度阈值（默认: 0.5）'
+        help='禁用半主机支持'
     )
 
     return parser.parse_args()
@@ -2883,6 +3208,1314 @@ def main():
 
         return 0
     
+    if args.generate_cve_report or args.cve_submit:
+        if not args.binary:
+            logger.error("错误: 生成CVE报告需要提供二进制文件路径")
+            sys.exit(1)
+        
+        logger.info("=" * 60)
+        logger.info("CVE报告生成")
+        logger.info("=" * 60)
+        
+        try:
+            from modules.cve_reporter import create_cve_report, submit_cve_draft
+            from modules.info_collect import get_binary_info
+            
+            binary_info = get_binary_info(args.binary)
+            if not binary_info:
+                logger.error("无法获取二进制文件信息")
+                sys.exit(1)
+            
+            vuln_info = {
+                'vulnerability_type': 'Buffer Overflow',
+                'severity': 'High',
+                'cwe_id': 'CWE-120',
+                'cvss_score': 7.8,
+                'cvss_vector': 'CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H',
+                'description': f"A buffer overflow vulnerability exists in {binary_info.get('binary_name', 'the binary')}. "
+                              f"This vulnerability allows an attacker to execute arbitrary code "
+                              f"by supplying a specially crafted input that exceeds the buffer size.",
+                'location': 'main function',
+                'attack_vector': 'Local',
+                'affected_functions': ['main'],
+                'exploitation_status': 'Unconfirmed',
+                'attck_techniques': ['T1190', 'T1566']
+            }
+            
+            product_name = args.cve_product if args.cve_product else binary_info.get('binary_name', 'TBD')
+            
+            product_info = {
+                'vendor': args.cve_vendor,
+                'product': product_name,
+                'version': args.cve_version,
+                'versions_affected': ['TBD'],
+                'versions_fixed': []
+            }
+            
+            threat_intel = {
+                'references': [
+                    {'url': 'https://example.com/advisory', 'tags': ['Vendor Advisory']}
+                ],
+                'related_cves': []
+            }
+            
+            if args.generate_cve_report:
+                result = create_cve_report(
+                    binary_info=binary_info,
+                    vuln_info=vuln_info,
+                    product_info=product_info,
+                    threat_intel=threat_intel,
+                    output_dir=args.output
+                )
+                
+                if result.get('success'):
+                    logger.info("CVE报告生成成功")
+                    for fmt, path in result.get('reports', {}).items():
+                        logger.info(f"{fmt.upper()} 报告: {path}")
+                    
+                    summary = result.get('summary', {})
+                    logger.info("\n报告摘要:")
+                    logger.info(f"  漏洞类型: {summary.get('vulnerability_type')}")
+                    logger.info(f"  严重程度: {summary.get('severity')}")
+                    logger.info(f"  CWE编号: {summary.get('cwe_id')}")
+                    logger.info(f"  CVSS评分: {summary.get('cvss_score')}")
+                    logger.info(f"  产品信息: {summary.get('vendor')} - {summary.get('product')} v{summary.get('version')}")
+                else:
+                    logger.error(f"CVE报告生成失败: {result.get('error')}")
+                    sys.exit(1)
+            
+            if args.cve_submit:
+                logger.info("\n提交CVE报告草稿...")
+                
+                api_key = Config.CVE_API_KEY
+                if not api_key:
+                    logger.warning("未配置CVE_API_KEY，将以模拟模式提交")
+                
+                result = submit_cve_draft(
+                    binary_info=binary_info,
+                    vuln_info=vuln_info,
+                    product_info=product_info,
+                    threat_intel=threat_intel,
+                    api_key=api_key,
+                    dry_run=not api_key  # 如果没有API密钥则使用模拟模式
+                )
+                
+                if result.get('success'):
+                    if result.get('dry_run'):
+                        logger.info("✓ 模拟提交成功（不会实际发送请求）")
+                        logger.info(f"数据预览: {result.get('data_preview', {})}")
+                    else:
+                        logger.info(f"✓ CVE报告提交成功! CVE ID: {result.get('cve_id')}")
+                else:
+                    logger.error(f"提交失败: {result.get('error')}")
+                    logger.error(f"详情: {result.get('message')}")
+                    sys.exit(1)
+            
+            return 0
+            
+        except ImportError as e:
+            logger.error(f"导入CVE报告生成器失败: {e}")
+            sys.exit(1)
+        except Exception as e:
+            logger.error(f"CVE报告处理失败: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            sys.exit(1)
+    
+    # ==================== 补丁差异分析 ====================
+    if args.patch_diff:
+        patched_bin, original_bin = args.patch_diff
+        logger.info("=" * 60)
+        logger.info(f"补丁差异分析")
+        logger.info("=" * 60)
+        logger.info(f"  补丁后文件: {patched_bin}")
+        logger.info(f"  原始文件:   {original_bin}")
+        
+        try:
+            from modules.patch_diff_locator import analyze_patch_difference
+            
+            result = analyze_patch_difference(
+                patched_path=patched_bin,
+                original_path=original_bin,
+                output_dir=args.output
+            )
+            
+            if result.get('success'):
+                logger.info("\n✓ 补丁差异分析完成")
+                logger.info(f"  差异函数数量: {len(result.get('changed_functions', []))}")
+                logger.info(f"  新增函数数量: {len(result.get('added_functions', []))}")
+                logger.info(f"  删除函数数量: {len(result.get('removed_functions', []))}")
+                
+                if result.get('vulnerability_candidates'):
+                    logger.info("\n🔍 漏洞候选点:")
+                    for candidate in result['vulnerability_candidates']:
+                        logger.info(f"  - {candidate.get('function', 'Unknown')}: {candidate.get('description', '')}")
+                
+                if result.get('report_path'):
+                    logger.info(f"\n📄 分析报告已保存: {result['report_path']}")
+            else:
+                logger.error(f"✗ 补丁差异分析失败: {result.get('error')}")
+                sys.exit(1)
+                
+        except ImportError as e:
+            logger.error(f"导入补丁差异分析模块失败: {e}")
+            sys.exit(1)
+        except Exception as e:
+            logger.error(f"补丁差异分析失败: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            sys.exit(1)
+        return 0
+    
+    # ==================== 密码学误用检测 ====================
+    if args.detect_crypto_misuse:
+        logger.info("=" * 60)
+        logger.info("密码学误用检测")
+        logger.info("=" * 60)
+        
+        if not args.binary:
+            logger.error("错误: 密码学误用检测需要提供二进制文件路径")
+            sys.exit(1)
+        
+        try:
+            from modules.crypto_misuse import detect_crypto_misuse
+            
+            result = detect_crypto_misuse(
+                binary_path=args.binary,
+                output_dir=args.output
+            )
+            
+            if result.get('success'):
+                logger.info("\n✓ 密码学误用检测完成")
+                
+                issues = result.get('issues', [])
+                if issues:
+                    logger.info(f"\n🔍 发现 {len(issues)} 个密码学误用问题:")
+                    for issue in issues:
+                        severity = issue.get('severity', 'Unknown')
+                        logger.info(f"  [{severity}] {issue.get('type', '')}: {issue.get('description', '')}")
+                else:
+                    logger.info("\n✅ 未发现密码学误用问题")
+                
+                if result.get('report_path'):
+                    logger.info(f"\n📄 检测报告已保存: {result['report_path']}")
+            else:
+                logger.error(f"✗ 密码学误用检测失败: {result.get('error')}")
+                sys.exit(1)
+                
+        except ImportError as e:
+            logger.error(f"导入密码学误用检测模块失败: {e}")
+            sys.exit(1)
+        except Exception as e:
+            logger.error(f"密码学误用检测失败: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            sys.exit(1)
+        return 0
+    
+    # ==================== eBPF安全分析 ====================
+    if args.ebpf:
+        logger.info("=" * 60)
+        logger.info("eBPF 安全分析")
+        logger.info("=" * 60)
+        
+        if not args.binary:
+            logger.error("错误: eBPF安全分析需要提供二进制文件路径")
+            sys.exit(1)
+        
+        try:
+            from modules.ebpf_analyzer import analyze_ebpf_program
+            
+            result = analyze_ebpf_program(
+                ebpf_path=args.binary,
+                output_dir=args.output
+            )
+            
+            if result.get('success'):
+                logger.info("\n✓ eBPF安全分析完成")
+                
+                findings = result.get('findings', [])
+                if findings:
+                    logger.info(f"\n🔍 发现 {len(findings)} 个安全问题:")
+                    for finding in findings:
+                        severity = finding.get('severity', 'Unknown')
+                        logger.info(f"  [{severity}] {finding.get('type', '')}: {finding.get('description', '')}")
+                else:
+                    logger.info("\n✅ 未发现安全问题")
+                
+                if result.get('report_path'):
+                    logger.info(f"\n📄 分析报告已保存: {result['report_path']}")
+            else:
+                logger.error(f"✗ eBPF安全分析失败: {result.get('error')}")
+                sys.exit(1)
+                
+        except ImportError as e:
+            logger.error(f"导入eBPF分析模块失败: {e}")
+            sys.exit(1)
+        except Exception as e:
+            logger.error(f"eBPF安全分析失败: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            sys.exit(1)
+        return 0
+    
+    # ==================== 漏洞传播分析 ====================
+    if args.vuln_propagation:
+        logger.info("=" * 60)
+        logger.info("漏洞传播路径分析")
+        logger.info("=" * 60)
+        
+        if not args.binary:
+            logger.error("错误: 漏洞传播分析需要提供二进制文件路径")
+            sys.exit(1)
+        
+        try:
+            from modules.vuln_propagation import analyze_vulnerability_propagation
+            
+            result = analyze_vulnerability_propagation(
+                binary_path=args.binary,
+                output_dir=args.output
+            )
+            
+            if result.get('success'):
+                logger.info("\n✓ 漏洞传播分析完成")
+                
+                propagation_paths = result.get('propagation_paths', [])
+                if propagation_paths:
+                    logger.info(f"\n🔍 发现 {len(propagation_paths)} 条传播路径:")
+                    for path in propagation_paths:
+                        logger.info(f"  - {path.get('description', '')}")
+                else:
+                    logger.info("\n✅ 未发现漏洞传播路径")
+                
+                if result.get('report_path'):
+                    logger.info(f"\n📄 分析报告已保存: {result['report_path']}")
+            else:
+                logger.error(f"✗ 漏洞传播分析失败: {result.get('error')}")
+                sys.exit(1)
+                
+        except ImportError as e:
+            logger.error(f"导入漏洞传播分析模块失败: {e}")
+            sys.exit(1)
+        except Exception as e:
+            logger.error(f"漏洞传播分析失败: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            sys.exit(1)
+        return 0
+    
+    # ==================== Ghidra脚本生成 ====================
+    if args.ghidra_script:
+        logger.info("=" * 60)
+        logger.info("生成 Ghidra 标注脚本")
+        logger.info("=" * 60)
+        logger.info(f"  输出路径: {args.ghidra_script}")
+        
+        if not args.binary:
+            logger.error("错误: 生成Ghidra脚本需要提供二进制文件路径")
+            sys.exit(1)
+        
+        try:
+            from modules.ghidra_script_generator import generate_ghidra_script
+            
+            result = generate_ghidra_script(
+                binary_path=args.binary,
+                output_path=args.ghidra_script
+            )
+            
+            if result.get('success'):
+                logger.info(f"\n✓ Ghidra脚本生成成功")
+                logger.info(f"  输出文件: {result.get('output_path', args.ghidra_script)}")
+            else:
+                logger.error(f"Ghidra脚本生成失败: {result.get('error')}")
+                sys.exit(1)
+                
+        except ImportError as e:
+            logger.error(f"导入Ghidra脚本生成模块失败: {e}")
+            sys.exit(1)
+        except Exception as e:
+            logger.error(f"Ghidra脚本生成失败: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            sys.exit(1)
+        return 0
+    
+    # ==================== 攻击面识别与风险排序 ====================
+    if args.attack_surface:
+        logger.info("=" * 60)
+        logger.info("攻击面识别与风险排序")
+        logger.info("=" * 60)
+        
+        if not args.binary:
+            logger.error("错误: 攻击面分析需要提供二进制文件路径")
+            sys.exit(1)
+        
+        try:
+            from modules.attack_surface import AttackSurfaceMapper
+            
+            mapper = AttackSurfaceMapper(args.binary)
+            result = mapper.analyze()
+            
+            if result.analysis_success:
+                logger.info("\n✓ 攻击面分析完成")
+                logger.info(f"  高危攻击面: {result.high_risk_count}")
+                logger.info(f"  中危攻击面: {result.medium_risk_count}")
+                logger.info(f"  低危攻击面: {result.low_risk_count}")
+                logger.info(f"  总计: {len(result.surface_points)}")
+                
+                if result.surface_points:
+                    logger.info("\n🔍 高风险攻击面点:")
+                    for point in result.surface_points[:10]:
+                        if point.risk_level.value in ['Critical', 'High']:
+                            logger.info(f"  [{point.risk_level.value}] {point.name}: {point.description}")
+                
+                report_path = os.path.join(args.output, 'attack_surface_report.md') if args.output else None
+                report_content = mapper.generate_report(report_path)
+                if report_path and report_content:
+                    logger.info(f"\n📄 分析报告已保存: {report_path}")
+            else:
+                logger.error(f"✗ 攻击面分析失败: {result.error_message}")
+                sys.exit(1)
+                
+        except ImportError as e:
+            logger.error(f"导入攻击面分析模块失败: {e}")
+            sys.exit(1)
+        except Exception as e:
+            logger.error(f"攻击面分析失败: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            sys.exit(1)
+        return 0
+    
+    # ==================== PII与敏感数据泄露扫描 ====================
+    if args.pii_scan:
+        logger.info("=" * 60)
+        logger.info("PII与敏感数据泄露扫描")
+        logger.info("=" * 60)
+        
+        if not args.binary:
+            logger.error("错误: PII扫描需要提供二进制文件路径")
+            sys.exit(1)
+        
+        try:
+            from modules.pii_scanner import PIIScanner
+            
+            scanner = PIIScanner(args.binary)
+            result = scanner.scan()
+            
+            if result.analysis_success:
+                logger.info("\n✓ PII扫描完成")
+                logger.info(f"  发现敏感数据: {result.total_detections} 个")
+                
+                if result.detections:
+                    logger.info("\n🔍 检测到的敏感数据:")
+                    for det in result.detections[:10]:
+                        logger.info(f"  [{det.risk_level.value}] {det.type.value}: {det.value}")
+                
+                report_path = os.path.join(args.output, 'pii_scan_report.md') if args.output else None
+                report_content = scanner.generate_report(report_path)
+                if report_path and report_content:
+                    logger.info(f"\n📄 扫描报告已保存: {report_path}")
+            else:
+                logger.error(f"✗ PII扫描失败: {result.error_message}")
+                sys.exit(1)
+                
+        except ImportError as e:
+            logger.error(f"导入PII扫描模块失败: {e}")
+            sys.exit(1)
+        except Exception as e:
+            logger.error(f"PII扫描失败: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            sys.exit(1)
+        return 0
+    
+    # ==================== 安全飞地二进制分析 ====================
+    if args.enclave_analyze:
+        logger.info("=" * 60)
+        logger.info("安全飞地二进制分析")
+        logger.info("=" * 60)
+        
+        if not args.binary:
+            logger.error("错误: 安全飞地分析需要提供二进制文件路径")
+            sys.exit(1)
+        
+        try:
+            from modules.enclave_analyzer import analyze_enclave_binary
+            
+            result = analyze_enclave_binary(
+                binary_path=args.binary,
+                output_dir=args.output
+            )
+            
+            if result.get('success'):
+                logger.info("\n✓ 安全飞地分析完成")
+                logger.info(f"  飞地类型: {result.get('enclave_type', 'Unknown')}")
+                logger.info(f"  安全属性: {result.get('security_properties', {})}")
+                
+                if result.get('report_path'):
+                    logger.info(f"\n📄 分析报告已保存: {result['report_path']}")
+            else:
+                logger.error(f"✗ 安全飞地分析失败: {result.get('error')}")
+                sys.exit(1)
+                
+        except ImportError as e:
+            logger.error(f"导入安全飞地分析模块失败: {e}")
+            sys.exit(1)
+        except Exception as e:
+            logger.error(f"安全飞地分析失败: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            sys.exit(1)
+        return 0
+    
+    # ==================== 时间侧信道检测 ====================
+    if args.timing_channel:
+        logger.info("=" * 60)
+        logger.info("时间侧信道检测")
+        logger.info("=" * 60)
+        
+        if not args.binary:
+            logger.error("错误: 时间侧信道检测需要提供二进制文件路径")
+            sys.exit(1)
+        
+        try:
+            from modules.timing_side_channel import detect_timing_side_channel
+            
+            result = detect_timing_side_channel(
+                binary_path=args.binary,
+                output_dir=args.output
+            )
+            
+            if result.get('success'):
+                logger.info("\n✓ 时间侧信道检测完成")
+                
+                vulnerabilities = result.get('vulnerabilities', [])
+                if vulnerabilities:
+                    logger.info(f"\n🔍 发现 {len(vulnerabilities)} 个时间侧信道漏洞:")
+                    for vuln in vulnerabilities:
+                        logger.info(f"  [{vuln.get('severity', 'Unknown')}] {vuln.get('type', '')}: {vuln.get('description', '')}")
+                else:
+                    logger.info("\n✅ 未发现时间侧信道漏洞")
+                
+                if result.get('report_path'):
+                    logger.info(f"\n📄 检测报告已保存: {result['report_path']}")
+            else:
+                logger.error(f"✗ 时间侧信道检测失败: {result.get('error')}")
+                sys.exit(1)
+                
+        except ImportError as e:
+            logger.error(f"导入时间侧信道检测模块失败: {e}")
+            sys.exit(1)
+        except Exception as e:
+            logger.error(f"时间侧信道检测失败: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            sys.exit(1)
+        return 0
+    
+    # ==================== 固件OTA差分更新分析 ====================
+    if args.ota_diff:
+        logger.info("=" * 60)
+        logger.info("固件OTA差分更新分析")
+        logger.info("=" * 60)
+        logger.info(f"  更新后固件: {args.binary}")
+        logger.info(f"  原始固件: {args.ota_diff}")
+        
+        if not args.binary:
+            logger.error("错误: OTA差分分析需要提供更新后固件路径")
+            sys.exit(1)
+        
+        try:
+            from modules.ota_diff_analyzer import analyze_ota_diff
+            
+            result = analyze_ota_diff(
+                updated_path=args.binary,
+                original_path=args.ota_diff,
+                output_dir=args.output
+            )
+            
+            if result.get('success'):
+                logger.info("\n✓ OTA差分分析完成")
+                logger.info(f"  修改的文件数: {len(result.get('modified_files', []))}")
+                logger.info(f"  新增的文件数: {len(result.get('added_files', []))}")
+                logger.info(f"  删除的文件数: {len(result.get('removed_files', []))}")
+                
+                if result.get('security_changes'):
+                    logger.info("\n🔍 安全相关变更:")
+                    for change in result['security_changes']:
+                        logger.info(f"  - {change}")
+                
+                if result.get('report_path'):
+                    logger.info(f"\n📄 分析报告已保存: {result['report_path']}")
+            else:
+                logger.error(f"✗ OTA差分分析失败: {result.get('error')}")
+                sys.exit(1)
+                
+        except ImportError as e:
+            logger.error(f"导入OTA差分分析模块失败: {e}")
+            sys.exit(1)
+        except Exception as e:
+            logger.error(f"OTA差分分析失败: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            sys.exit(1)
+        return 0
+    
+    # ==================== LLM逆向报告生成 ====================
+    if args.reverse_report:
+        logger.info("=" * 60)
+        logger.info("LLM逆向报告生成")
+        logger.info("=" * 60)
+        
+        if not args.binary:
+            logger.error("错误: 逆向报告生成需要提供二进制文件路径")
+            sys.exit(1)
+        
+        try:
+            from modules.reverse_report import generate_reverse_report
+            
+            result = generate_reverse_report(
+                binary_path=args.binary,
+                output_dir=args.output
+            )
+            
+            if result.get('success'):
+                logger.info("\n✓ 逆向报告生成完成")
+                
+                if result.get('report_path'):
+                    logger.info(f"\n📄 逆向报告已保存: {result['report_path']}")
+            else:
+                logger.error(f"✗ 逆向报告生成失败: {result.get('error')}")
+                sys.exit(1)
+                
+        except ImportError as e:
+            logger.error(f"导入逆向报告生成模块失败: {e}")
+            sys.exit(1)
+        except Exception as e:
+            logger.error(f"逆向报告生成失败: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            sys.exit(1)
+        return 0
+    
+    # ==================== AI解释函数伪代码 ====================
+    if args.explain_pseudocode is not None:
+        logger.info("=" * 60)
+        logger.info("AI 解释函数伪代码")
+        logger.info("=" * 60)
+        
+        if not args.binary:
+            logger.error("错误: AI解释函数伪代码需要提供二进制文件路径")
+            sys.exit(1)
+        
+        try:
+            from modules.pseudocode_explainer import PseudocodeExplainer
+            
+            explainer = PseudocodeExplainer(
+                binary_path=args.binary,
+                decompiler=args.decompiler
+            )
+            
+            if args.explain_pseudocode is True:
+                logger.info("分析所有函数的伪代码...")
+                result = explainer.explain_all_functions()
+            else:
+                target_func = args.explain_pseudocode
+                logger.info(f"分析目标函数: {target_func}")
+                result = explainer.explain_function(target_func)
+            
+            if result.get('success'):
+                logger.info("\n✓ 伪代码解释完成")
+                explanations = result.get('explanations', [])
+                for func_name, explanation in explanations.items():
+                    logger.info(f"\n函数: {func_name}")
+                    logger.info("-" * 40)
+                    logger.info(explanation)
+            else:
+                logger.error(f"✗ 伪代码解释失败: {result.get('error')}")
+                sys.exit(1)
+                
+        except ImportError as e:
+            logger.error(f"导入伪代码解释器模块失败: {e}")
+            sys.exit(1)
+        except Exception as e:
+            logger.error(f"伪代码解释失败: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            sys.exit(1)
+        return 0
+    
+    # ==================== 跨架构利用移植 ====================
+    if args.exploit_transpile:
+        logger.info("=" * 60)
+        logger.info("跨架构漏洞利用移植")
+        logger.info("=" * 60)
+        logger.info(f"  源利用文件: {args.exploit_transpile}")
+        logger.info(f"  目标架构: {args.target_arch}")
+        
+        try:
+            from modules.exploit_transpiler import ExploitTranspiler
+            
+            transpiler = ExploitTranspiler()
+            result = transpiler.transpile(
+                source_exploit=args.exploit_transpile,
+                target_arch=args.target_arch
+            )
+            
+            if result.get('success'):
+                logger.info("\n✓ 跨架构利用移植完成")
+                logger.info(f"  输出文件: {result.get('output_file')}")
+                if result.get('changes'):
+                    logger.info("\n主要修改:")
+                    for change in result['changes']:
+                        logger.info(f"  - {change}")
+            else:
+                logger.error(f"✗ 跨架构利用移植失败: {result.get('error')}")
+                sys.exit(1)
+                
+        except ImportError as e:
+            logger.error(f"导入利用移植模块失败: {e}")
+            sys.exit(1)
+        except Exception as e:
+            logger.error(f"跨架构利用移植失败: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            sys.exit(1)
+        return 0
+    
+    # ==================== 生成Metasploit模块 ====================
+    if args.generate_msf:
+        logger.info("=" * 60)
+        logger.info("生成 Metasploit 模块")
+        logger.info("=" * 60)
+        
+        if not args.binary:
+            logger.error("错误: 生成Metasploit模块需要提供漏洞报告或二进制文件路径")
+            sys.exit(1)
+        
+        try:
+            from modules.msf_module_generator import generate_msf_module
+            
+            result = generate_msf_module(
+                input_path=args.binary,
+                output_dir=args.output
+            )
+            
+            if result.get('success'):
+                logger.info("\n✓ Metasploit模块生成成功")
+                logger.info(f"  输出文件: {result.get('output_path')}")
+            else:
+                logger.error(f"✗ Metasploit模块生成失败: {result.get('error')}")
+                sys.exit(1)
+                
+        except ImportError as e:
+            logger.error(f"导入Metasploit模块生成器失败: {e}")
+            sys.exit(1)
+        except Exception as e:
+            logger.error(f"生成Metasploit模块失败: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            sys.exit(1)
+        return 0
+    
+    # ==================== 内核漏洞利用生成 ====================
+    if args.kernel_exploit:
+        logger.info("=" * 60)
+        logger.info("内核漏洞利用生成")
+        logger.info("=" * 60)
+        logger.info(f"  漏洞类型: {args.vuln_type}")
+        
+        if not args.binary:
+            logger.error("错误: 内核漏洞利用生成需要提供二进制文件路径")
+            sys.exit(1)
+        
+        try:
+            from modules.kernel_exploit_generator import generate_kernel_exploit
+            
+            result = generate_kernel_exploit(
+                binary_path=args.binary,
+                vuln_type=args.vuln_type,
+                output_dir=args.output
+            )
+            
+            if result.get('success'):
+                logger.info("\n✓ 内核漏洞利用生成完成")
+                logger.info(f"  输出文件: {result.get('output_path')}")
+                logger.info(f"  利用类型: {result.get('exploit_type')}")
+            else:
+                logger.error(f"✗ 内核漏洞利用生成失败: {result.get('error')}")
+                sys.exit(1)
+                
+        except ImportError as e:
+            logger.error(f"导入内核漏洞利用生成模块失败: {e}")
+            sys.exit(1)
+        except Exception as e:
+            logger.error(f"内核漏洞利用生成失败: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            sys.exit(1)
+        return 0
+    
+    # ==================== C++类型混淆检测 ====================
+    if args.type_confusion:
+        logger.info("=" * 60)
+        logger.info("C++ 类型混淆检测")
+        logger.info("=" * 60)
+        
+        if not args.binary:
+            logger.error("错误: 类型混淆检测需要提供二进制文件路径")
+            sys.exit(1)
+        
+        try:
+            from modules.type_confusion import detect_type_confusion
+            
+            result = detect_type_confusion(
+                binary_path=args.binary,
+                output_dir=args.output
+            )
+            
+            if result.get('success'):
+                logger.info("\n✓ 类型混淆检测完成")
+                issues = result.get('issues', [])
+                if issues:
+                    logger.info(f"\n🔍 发现 {len(issues)} 个类型混淆漏洞:")
+                    for issue in issues:
+                        logger.info(f"  - {issue.get('function', 'Unknown')}: {issue.get('description', '')}")
+                else:
+                    logger.info("\n✅ 未发现类型混淆漏洞")
+                    
+                if result.get('report_path'):
+                    logger.info(f"\n📄 检测报告已保存: {result['report_path']}")
+            else:
+                logger.error(f"✗ 类型混淆检测失败: {result.get('error')}")
+                sys.exit(1)
+                
+        except ImportError as e:
+            logger.error(f"导入类型混淆检测模块失败: {e}")
+            sys.exit(1)
+        except Exception as e:
+            logger.error(f"类型混淆检测失败: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            sys.exit(1)
+        return 0
+    
+    # ==================== Exploit-DB漏洞匹配 ====================
+    if args.exploitdb_match:
+        logger.info("=" * 60)
+        logger.info(f"Exploit-DB 漏洞匹配: {args.exploitdb_match}")
+        logger.info("=" * 60)
+        
+        try:
+            from modules.exploitdb_matcher import match_exploitdb
+            
+            result = match_exploitdb(
+                cve_id=args.exploitdb_match,
+                output_dir=args.output
+            )
+            
+            if result.get('success'):
+                logger.info("\n✓ Exploit-DB漏洞匹配完成")
+                matches = result.get('matches', [])
+                if matches:
+                    logger.info(f"\n🔍 找到 {len(matches)} 个匹配的漏洞利用:")
+                    for match in matches:
+                        logger.info(f"  - {match.get('title', 'Unknown')}")
+                        logger.info(f"    URL: {match.get('url', '')}")
+                else:
+                    logger.info("\n未找到匹配的漏洞利用")
+            else:
+                logger.error(f"✗ Exploit-DB漏洞匹配失败: {result.get('error')}")
+                sys.exit(1)
+                
+        except ImportError as e:
+            logger.error(f"导入Exploit-DB匹配模块失败: {e}")
+            sys.exit(1)
+        except Exception as e:
+            logger.error(f"Exploit-DB漏洞匹配失败: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            sys.exit(1)
+        return 0
+    
+    # ==================== 利用脚本自适应修复 ====================
+    if args.adapt_exploit:
+        logger.info("=" * 60)
+        logger.info("利用脚本自适应修复")
+        logger.info("=" * 60)
+        logger.info(f"  源利用文件: {args.adapt_exploit}")
+        logger.info(f"  目标环境: {args.target_env}")
+        
+        try:
+            from modules.exploit_adapter import adapt_exploit
+            
+            result = adapt_exploit(
+                exploit_path=args.adapt_exploit,
+                target_env=args.target_env,
+                output_dir=args.output
+            )
+            
+            if result.get('success'):
+                logger.info("\n✓ 利用脚本自适应修复完成")
+                logger.info(f"  输出文件: {result.get('output_path')}")
+                if result.get('adaptations'):
+                    logger.info("\n自适应修改:")
+                    for adaptation in result['adaptations']:
+                        logger.info(f"  - {adaptation}")
+            else:
+                logger.error(f"✗ 利用脚本自适应修复失败: {result.get('error')}")
+                sys.exit(1)
+                
+        except ImportError as e:
+            logger.error(f"导入利用脚本自适应模块失败: {e}")
+            sys.exit(1)
+        except Exception as e:
+            logger.error(f"利用脚本自适应修复失败: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            sys.exit(1)
+        return 0
+    
+    # ==================== 生成漏洞PoC ====================
+    if args.generate_poc:
+        logger.info("=" * 60)
+        logger.info("生成漏洞 PoC")
+        logger.info("=" * 60)
+        if args.vuln_id:
+            logger.info(f"  漏洞ID: {args.vuln_id}")
+        
+        if not args.binary:
+            logger.error("错误: 生成漏洞PoC需要提供二进制文件路径")
+            sys.exit(1)
+        
+        try:
+            from modules.poc_generator import generate_poc
+            
+            result = generate_poc(
+                binary_path=args.binary,
+                vuln_id=args.vuln_id,
+                output_dir=args.output
+            )
+            
+            if result.get('success'):
+                logger.info("\n✓ 漏洞PoC生成成功")
+                logger.info(f"  输出文件: {result.get('output_path')}")
+            else:
+                logger.error(f"✗ 漏洞PoC生成失败: {result.get('error')}")
+                sys.exit(1)
+                
+        except ImportError as e:
+            logger.error(f"导入PoC生成模块失败: {e}")
+            sys.exit(1)
+        except Exception as e:
+            logger.error(f"漏洞PoC生成失败: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            sys.exit(1)
+        return 0
+    
+    # ==================== 并发模糊测试 ====================
+    if args.concurrency_fuzz:
+        logger.info("=" * 60)
+        logger.info("并发模糊测试")
+        logger.info("=" * 60)
+        
+        if not args.binary:
+            logger.error("错误: 并发模糊测试需要提供二进制文件路径")
+            sys.exit(1)
+        
+        try:
+            from modules.concurrency_fuzzer import ConcurrencyFuzzer
+            
+            fuzzer = ConcurrencyFuzzer(
+                binary_path=args.binary,
+                output_dir=args.output
+            )
+            
+            result = fuzzer.run()
+            
+            if result.get('success'):
+                logger.info("\n✓ 并发模糊测试完成")
+                logger.info(f"  发现崩溃数: {result.get('crashes_found', 0)}")
+                logger.info(f"  执行时间: {result.get('execution_time', 0)} 秒")
+            else:
+                logger.error(f"✗ 并发模糊测试失败: {result.get('error')}")
+                sys.exit(1)
+                
+        except ImportError as e:
+            logger.error(f"导入并发模糊测试模块失败: {e}")
+            sys.exit(1)
+        except Exception as e:
+            logger.error(f"并发模糊测试失败: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            sys.exit(1)
+        return 0
+    
+    # ==================== 差异模糊测试 ====================
+    if args.differential_fuzz:
+        logger.info("=" * 60)
+        logger.info(f"差异模糊测试 (模式: {args.differential_mode})")
+        logger.info("=" * 60)
+        
+        if not args.binary:
+            logger.error("错误: 差异模糊测试需要提供二进制文件路径")
+            sys.exit(1)
+        
+        try:
+            from modules.differential_fuzzer import DifferentialFuzzer
+            
+            fuzzer = DifferentialFuzzer(
+                binary_path=args.binary,
+                mode=args.differential_mode,
+                output_dir=args.output
+            )
+            
+            result = fuzzer.run()
+            
+            if result.get('success'):
+                logger.info("\n✓ 差异模糊测试完成")
+                logger.info(f"  发现差异数: {result.get('differences_found', 0)}")
+            else:
+                logger.error(f"✗ 差异模糊测试失败: {result.get('error')}")
+                sys.exit(1)
+                
+        except ImportError as e:
+            logger.error(f"导入差异模糊测试模块失败: {e}")
+            sys.exit(1)
+        except Exception as e:
+            logger.error(f"差异模糊测试失败: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            sys.exit(1)
+        return 0
+    
+    # ==================== DSE绕过检测 ====================
+    if args.detect_dse_bypass:
+        logger.info("=" * 60)
+        logger.info("DSE 绕过检测")
+        logger.info("=" * 60)
+        
+        if not args.binary:
+            logger.error("错误: DSE绕过检测需要提供驱动文件路径")
+            sys.exit(1)
+        
+        try:
+            from modules.dse_bypass_detector import detect_dse_bypass
+            
+            result = detect_dse_bypass(
+                driver_path=args.binary,
+                output_dir=args.output
+            )
+            
+            if result.get('success'):
+                logger.info("\n✓ DSE绕过检测完成")
+                if result.get('has_bypass'):
+                    logger.warning("\n⚠️ 发现DSE绕过技术:")
+                    for bypass in result.get('bypass_methods', []):
+                        logger.warning(f"  - {bypass}")
+                else:
+                    logger.info("\n✅ 未发现DSE绕过技术")
+            else:
+                logger.error(f"✗ DSE绕过检测失败: {result.get('error')}")
+                sys.exit(1)
+                
+        except ImportError as e:
+            logger.error(f"导入DSE绕过检测模块失败: {e}")
+            sys.exit(1)
+        except Exception as e:
+            logger.error(f"DSE绕过检测失败: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            sys.exit(1)
+        return 0
+    
+    # ==================== 恶意软件家族聚类 ====================
+    if args.malware_cluster:
+        logger.info("=" * 60)
+        logger.info("恶意软件家族聚类")
+        logger.info("=" * 60)
+        logger.info(f"  样本目录: {args.malware_cluster}")
+        
+        try:
+            from modules.malware_clustering import cluster_malware
+            
+            result = cluster_malware(
+                samples_dir=args.malware_cluster,
+                output_dir=args.output
+            )
+            
+            if result.get('success'):
+                logger.info("\n✓ 恶意软件家族聚类完成")
+                clusters = result.get('clusters', {})
+                logger.info(f"\n发现 {len(clusters)} 个家族聚类:")
+                for family, members in clusters.items():
+                    logger.info(f"  {family}: {len(members)} 个样本")
+            else:
+                logger.error(f"✗ 恶意软件家族聚类失败: {result.get('error')}")
+                sys.exit(1)
+                
+        except ImportError as e:
+            logger.error(f"导入恶意软件聚类模块失败: {e}")
+            sys.exit(1)
+        except Exception as e:
+            logger.error(f"恶意软件家族聚类失败: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            sys.exit(1)
+        return 0
+    
+    # ==================== 反VM绕过分析 ====================
+    if args.bypass_anti_vm:
+        logger.info("=" * 60)
+        logger.info("反VM 绕过分析")
+        logger.info("=" * 60)
+        
+        if not args.binary:
+            logger.error("错误: 反VM绕过分析需要提供二进制文件路径")
+            sys.exit(1)
+        
+        try:
+            from modules.anti_vm_bypass import analyze_anti_vm_bypass
+            
+            result = analyze_anti_vm_bypass(
+                binary_path=args.binary,
+                output_dir=args.output
+            )
+            
+            if result.get('success'):
+                logger.info("\n✓ 反VM绕过分析完成")
+                techniques = result.get('detection_techniques', [])
+                if techniques:
+                    logger.info("\n发现的VM检测技术:")
+                    for tech in techniques:
+                        logger.info(f"  - {tech}")
+                bypass_methods = result.get('bypass_methods', [])
+                if bypass_methods:
+                    logger.info("\n建议的绕过方法:")
+                    for method in bypass_methods:
+                        logger.info(f"  - {method}")
+            else:
+                logger.error(f"✗ 反VM绕过分析失败: {result.get('error')}")
+                sys.exit(1)
+                
+        except ImportError as e:
+            logger.error(f"导入反VM绕过分析模块失败: {e}")
+            sys.exit(1)
+        except Exception as e:
+            logger.error(f"反VM绕过分析失败: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            sys.exit(1)
+        return 0
+    
+    # ==================== 逻辑炸弹检测 ====================
+    if args.logic_bomb:
+        logger.info("=" * 60)
+        logger.info("逻辑炸弹检测")
+        logger.info("=" * 60)
+        
+        if not args.binary:
+            logger.error("错误: 逻辑炸弹检测需要提供二进制文件路径")
+            sys.exit(1)
+        
+        try:
+            from modules.logic_bomb_detector import detect_logic_bomb
+            
+            result = detect_logic_bomb(
+                binary_path=args.binary,
+                output_dir=args.output
+            )
+            
+            if result.get('success'):
+                logger.info("\n✓ 逻辑炸弹检测完成")
+                bombs = result.get('logic_bombs', [])
+                if bombs:
+                    logger.warning(f"\n⚠️ 发现 {len(bombs)} 个逻辑炸弹:")
+                    for bomb in bombs:
+                        logger.warning(f"  - 触发条件: {bomb.get('condition', 'Unknown')}")
+                        logger.warning(f"    执行动作: {bomb.get('action', 'Unknown')}")
+                else:
+                    logger.info("\n✅ 未发现逻辑炸弹")
+            else:
+                logger.error(f"✗ 逻辑炸弹检测失败: {result.get('error')}")
+                sys.exit(1)
+                
+        except ImportError as e:
+            logger.error(f"导入逻辑炸弹检测模块失败: {e}")
+            sys.exit(1)
+        except Exception as e:
+            logger.error(f"逻辑炸弹检测失败: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            sys.exit(1)
+        return 0
+    
+    # ==================== 动态行为追踪 ====================
+    if args.behavior_trace:
+        logger.info("=" * 60)
+        logger.info("动态行为追踪")
+        logger.info("=" * 60)
+        
+        if not args.binary:
+            logger.error("错误: 动态行为追踪需要提供二进制文件路径")
+            sys.exit(1)
+        
+        try:
+            from modules.behavior_tracing import trace_behavior
+            
+            result = trace_behavior(
+                binary_path=args.binary,
+                output_dir=args.output
+            )
+            
+            if result.get('success'):
+                logger.info("\n✓ 动态行为追踪完成")
+                behaviors = result.get('behaviors', [])
+                if behaviors:
+                    logger.info("\n检测到的行为:")
+                    for behavior in behaviors:
+                        logger.info(f"  - [{behavior.get('type', 'Unknown')}] {behavior.get('description', '')}")
+                if result.get('report_path'):
+                    logger.info(f"\n📄 行为报告已保存: {result['report_path']}")
+            else:
+                logger.error(f"✗ 动态行为追踪失败: {result.get('error')}")
+                sys.exit(1)
+                
+        except ImportError as e:
+            logger.error(f"导入动态行为追踪模块失败: {e}")
+            sys.exit(1)
+        except Exception as e:
+            logger.error(f"动态行为追踪失败: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            sys.exit(1)
+        return 0
+    
+    # ==================== 系统调用恶意性分类 ====================
+    if args.classify_syscalls:
+        logger.info("=" * 60)
+        logger.info("系统调用恶意性分类")
+        logger.info("=" * 60)
+        
+        if not args.binary:
+            logger.error("错误: 系统调用恶意性分类需要提供二进制文件路径")
+            sys.exit(1)
+        
+        try:
+            from modules.syscall_classifier import classify_syscalls
+            
+            result = classify_syscalls(
+                binary_path=args.binary,
+                output_dir=args.output
+            )
+            
+            if result.get('success'):
+                logger.info("\n✓ 系统调用分类完成")
+                suspicious = result.get('suspicious_syscalls', [])
+                if suspicious:
+                    logger.warning(f"\n⚠️ 发现 {len(suspicious)} 个可疑系统调用:")
+                    for syscall in suspicious:
+                        logger.warning(f"  - {syscall.get('name', 'Unknown')}: {syscall.get('risk', 'Unknown')}")
+                else:
+                    logger.info("\n✅ 未发现可疑系统调用")
+            else:
+                logger.error(f"✗ 系统调用分类失败: {result.get('error')}")
+                sys.exit(1)
+                
+        except ImportError as e:
+            logger.error(f"导入系统调用分类模块失败: {e}")
+            sys.exit(1)
+        except Exception as e:
+            logger.error(f"系统调用分类失败: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            sys.exit(1)
+        return 0
+    
+    # ==================== 内存注入检测 ====================
+    if args.detect_injection:
+        logger.info("=" * 60)
+        logger.info("内存注入检测")
+        logger.info("=" * 60)
+        
+        if not args.binary:
+            logger.error("错误: 内存注入检测需要提供二进制文件路径")
+            sys.exit(1)
+        
+        try:
+            from modules.injection_detector import detect_injection
+            
+            result = detect_injection(
+                binary_path=args.binary,
+                output_dir=args.output
+            )
+            
+            if result.get('success'):
+                logger.info("\n✓ 内存注入检测完成")
+                injections = result.get('injection_points', [])
+                if injections:
+                    logger.warning(f"\n⚠️ 发现 {len(injections)} 个潜在注入点:")
+                    for injection in injections:
+                        logger.warning(f"  - {injection.get('location', 'Unknown')}: {injection.get('type', 'Unknown')}")
+                else:
+                    logger.info("\n✅ 未发现内存注入风险")
+            else:
+                logger.error(f"✗ 内存注入检测失败: {result.get('error')}")
+                sys.exit(1)
+                
+        except ImportError as e:
+            logger.error(f"导入内存注入检测模块失败: {e}")
+            sys.exit(1)
+        except Exception as e:
+            logger.error(f"内存注入检测失败: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            sys.exit(1)
+        return 0
+    
+    # ==================== 时间侧信道检测 ====================
+    if args.detect_timing:
+        logger.info("=" * 60)
+        logger.info("时间侧信道检测")
+        logger.info("=" * 60)
+        
+        if not args.binary:
+            logger.error("错误: 时间侧信道检测需要提供二进制文件路径")
+            sys.exit(1)
+        
+        try:
+            from modules.timing_channel_detector import detect_timing_channel
+            
+            result = detect_timing_channel(
+                binary_path=args.binary,
+                output_dir=args.output
+            )
+            
+            if result.get('success'):
+                logger.info("\n✓ 时间侧信道检测完成")
+                channels = result.get('timing_channels', [])
+                if channels:
+                    logger.warning(f"\n⚠️ 发现 {len(channels)} 个时间侧信道:")
+                    for channel in channels:
+                        logger.warning(f"  - {channel.get('location', 'Unknown')}: {channel.get('type', 'Unknown')}")
+                else:
+                    logger.info("\n✅ 未发现时间侧信道")
+            else:
+                logger.error(f"✗ 时间侧信道检测失败: {result.get('error')}")
+                sys.exit(1)
+                
+        except ImportError as e:
+            logger.error(f"导入时间侧信道检测模块失败: {e}")
+            sys.exit(1)
+        except Exception as e:
+            logger.error(f"时间侧信道检测失败: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            sys.exit(1)
+        return 0
+    
     if args.fuzz:
         engine, corpus_path = args.fuzz
         logger.info("=" * 60)
@@ -3033,24 +4666,6 @@ def main():
             logger.info(f"已加载污点输入数据: {len(taint_input_data)} 字节")
         except Exception as e:
             logger.warning(f"加载污点输入数据失败: {e}")
-
-    if args.strategy_advisor:
-        logger.info("漏洞利用策略推荐: 已启用")
-
-    if args.recover_cpp_vtbl:
-        logger.info("C++虚表恢复: 已启用")
-
-    if args.bypass_advisor:
-        logger.info("保护机制绕过策略: 已启用")
-
-    if args.gen_tests:
-        logger.info("测试用例生成: 已启用")
-
-    if args.incremental:
-        logger.info("增量分析缓存: 已启用")
-
-    if args.ml_boundary:
-        logger.info("ML函数边界检测: 已启用")
     
     result = run_pipeline(
         binary_path=args.binary,
@@ -3086,11 +4701,27 @@ def main():
         enable_unpack=not args.no_unpack,
         unpack_tool_path=args.unpack_tool,
         enable_crypto_scan=not args.no_crypto_scan,
-        enable_mobile=args.mobile,
-        mobile_platform=args.mobile_platform,
-        enable_unicorn_hybrid=args.unicorn_hybrid,
-        enable_exploit_chain=args.exploit_chain,
-        exploit_chain_goal=args.exploit_chain_goal,
+        patch_binary=args.patch_binary,
+        patch_output=args.patch_output,
+        enable_compiler_opt_analysis=args.compiler_opt and not args.no_compiler_opt,
+        compiler_opt_output=args.compiler_opt_output,
+        # RL 利用策略探索参数
+        enable_rl_exploit=args.rl_exploit,
+        rl_vuln_type=args.rl_vuln_type,
+        rl_target_address=int(args.rl_target_address, 16) if args.rl_target_address else 0x401000,
+        rl_training_steps=args.rl_training_steps,
+        rl_episodes=args.rl_episodes,
+        rl_algorithm=args.rl_algorithm,
+        rl_max_steps=args.rl_max_steps,
+        # CVE 报告参数
+        generate_cve_report=args.generate_cve_report,
+        cve_output=args.cve_output,
+        cve_title=args.cve_title,
+        cve_description=args.cve_description,
+        submitter_name=args.submitter_name,
+        submitter_email=args.submitter_email,
+        submitter_org=args.submitter_org,
+        submit_cve=args.submit_cve
     )
     
     if 'error' in result:
@@ -3130,136 +4761,6 @@ def main():
         logger.info(f"利用脚本状态: {status}")
         if exploit_result.get('script_path'):
             logger.info(f"利用脚本: {exploit_result['script_path']}")
-
-    if args.strategy_advisor:
-        try:
-            from modules.exploit_strategy import ExploitStrategyAdvisor
-            logger.info("\n运行漏洞利用策略推荐...")
-            advisor = ExploitStrategyAdvisor()
-            strategy_result = advisor.analyze(
-                binary_path=args.binary,
-                vuln_type=args.strategy_vuln_type,
-                arch=args.strategy_arch,
-                output_dir=args.strategy_output
-            )
-            if strategy_result.get('success'):
-                logger.info(f"策略分析完成，输出目录: {args.strategy_output}")
-                if strategy_result.get('strategy_file'):
-                    logger.info(f"策略文件: {strategy_result['strategy_file']}")
-            else:
-                logger.warning(f"策略分析失败: {strategy_result.get('error')}")
-        except Exception as e:
-            logger.warning(f"漏洞利用策略推荐失败: {e}")
-
-    if args.recover_cpp_vtbl:
-        try:
-            from modules.cpp_vtbl_recovery import VtblRecovery
-            logger.info("\n运行C++虚表恢复...")
-            vtbl_recovery = VtblRecovery()
-            vtbl_result = vtbl_recovery.recover(
-                binary_path=args.binary,
-                output_dir=args.vtbl_output,
-                generate_dot=args.vtbl_generate_dot
-            )
-            if vtbl_result.get('success'):
-                logger.info(f"虚表恢复完成，输出目录: {args.vtbl_output}")
-                logger.info(f"恢复的虚表数量: {vtbl_result.get('vtbl_count', 0)}")
-            else:
-                logger.warning(f"虚表恢复失败: {vtbl_result.get('error')}")
-        except Exception as e:
-            logger.warning(f"C++虚表恢复失败: {e}")
-
-    if args.bypass_advisor:
-        try:
-            from modules.bypass_advisor import BypassAdvisor
-            logger.info("\n运行保护机制绕过分析...")
-            bypass_advisor = BypassAdvisor()
-            bypass_result = bypass_advisor.analyze(
-                binary_path=args.binary,
-                output_dir=args.bypass_output,
-                info_leak=args.bypass_info_leak
-            )
-            if bypass_result.get('success'):
-                logger.info(f"绕过分析完成，输出目录: {args.bypass_output}")
-            else:
-                logger.warning(f"绕过分析失败: {bypass_result.get('error')}")
-        except Exception as e:
-            logger.warning(f"保护机制绕过分析失败: {e}")
-
-    if args.gen_tests:
-        try:
-            from modules.test_generator import TestGenerator
-            logger.info("\n生成测试用例...")
-            test_gen = TestGenerator()
-            
-            decomp_results = result.get('decomp_analysis', [])
-            functions = [r.get('function_name') for r in decomp_results if r.get('function_name')]
-            if not functions:
-                functions = ['main']
-            
-            suite = test_gen.generate_test_suite(
-                target_binary=args.binary,
-                functions=functions,
-                test_count=args.test_cases
-            )
-            
-            os.makedirs(args.test_output, exist_ok=True)
-            if args.test_language == 'python':
-                output_file = os.path.join(args.test_output, 'test_cases.py')
-                test_gen.export_to_pytest(suite, output_file)
-            elif args.test_language == 'c':
-                output_file = os.path.join(args.test_output, 'test_cases.c')
-                logger.info("C语言测试用例生成功能开发中，暂输出JSON格式")
-                output_file = os.path.join(args.test_output, 'test_cases.json')
-                test_gen.export_to_json(suite, output_file)
-            else:
-                output_file = os.path.join(args.test_output, 'fuzz_corpus.json')
-                test_gen.export_to_json(suite, output_file)
-            
-            logger.info(f"测试用例生成完成，输出文件: {output_file}")
-            logger.info(f"生成的测试用例数量: {len(suite.test_cases)}")
-        except Exception as e:
-            logger.warning(f"测试用例生成失败: {e}")
-
-    if args.ml_boundary:
-        try:
-            from modules.function_boundary import FunctionBoundaryDetector
-            logger.info("\n运行ML函数边界检测...")
-            detector = FunctionBoundaryDetector()
-            
-            with open(args.binary, 'rb') as f:
-                binary_data = f.read()
-            
-            boundary_result = detector.analyze(
-                binary_data=binary_data,
-                base_address=0
-            )
-            
-            if boundary_result.get('success'):
-                os.makedirs(args.boundary_output, exist_ok=True)
-                result_data = boundary_result.get('result', {})
-                
-                import json
-                output_file = os.path.join(args.boundary_output, 'boundaries.json')
-                with open(output_file, 'w', encoding='utf-8') as f:
-                    json.dump(result_data, f, indent=2)
-                
-                logger.info(f"边界检测完成，输出文件: {output_file}")
-                logger.info(f"检测到的函数边界数量: {result_data.get('total_functions', 0)}")
-            else:
-                logger.warning(f"边界检测失败: {boundary_result.get('error')}")
-        except Exception as e:
-            logger.warning(f"ML函数边界检测失败: {e}")
-
-    if args.incremental:
-        if args.cache_invalidate:
-            try:
-                from modules.incremental_analysis import IncrementalAnalyzer
-                analyzer = IncrementalAnalyzer()
-                analyzer.invalidate_cache()
-                logger.info("\n增量分析缓存已失效")
-            except Exception as e:
-                logger.warning(f"失效缓存失败: {e}")
     
     logger.info("=" * 60)
     

@@ -23,6 +23,7 @@ import threading
 import time
 from typing import Dict, Any, List, Optional, Tuple, Set, Union
 from dataclasses import dataclass, field
+from enum import Enum
 from datetime import datetime
 from pathlib import Path
 from collections import defaultdict

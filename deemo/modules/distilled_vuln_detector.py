@@ -16,6 +16,7 @@ try:
     HAS_TRANSFORMERS = True
 except ImportError:
     HAS_TRANSFORMERS = False
+    Dataset = None
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +50,7 @@ class DistillationConfig:
     student_model_name: str = "distilbert-base-uncased"
     num_labels: int = 2
     temperature: float = 5.0
-    alpha: float = 0.5  # 蒸馏损失权重
+    alpha: float = 0.5
     batch_size: int = 32
     epochs: int = 10
     learning_rate: float = 2e-5
@@ -58,55 +59,17 @@ class DistillationConfig:
 @dataclass
 class ActiveLearningConfig:
     """主动学习配置"""
-    enabled: bool = True
-    sample_count: int = 100
-    uncertainty_threshold: float = 0.7
+    enabled: bool = False
     strategy: str = "least_confidence"  # least_confidence, margin, entropy
+    sample_count: int = 10
+    query_batch_size: int = 32
 
 
 class VulnerabilityDataGenerator:
     """漏洞数据生成器"""
     
-    def __init__(self, llm_provider: str = "openai", api_key: Optional[str] = None):
-        """
-        初始化数据生成器
-        
-        Args:
-            llm_provider: LLM提供商
-            api_key: API密钥（可从环境变量读取）
-        """
-        self.llm_provider = llm_provider
-        self.api_key = api_key or os.environ.get("LLM_API_KEY")
-    
-    def _generate_prompt(self, vulnerability_type: str, count: int = 10) -> str:
-        """
-        生成数据生成提示词
-        
-        Args:
-            vulnerability_type: 漏洞类型（如 CWE-121）
-            count: 生成样本数量
-        
-        Returns:
-            提示词字符串
-        """
-        prompt = f"""
-你是一个资深的安全研究员。请生成 {count} 个包含{vulnerability_type}漏洞的C/C++代码样本。
-
-每个样本格式：
----
-代码:
-<代码>
-漏洞描述: <简短描述>
----
-
-{vulnerability_type}漏洞的特征：
-- 典型的代码模式
-- 常见的触发条件
-- 可能的利用方式
-
-请确保生成的代码真实可编译，漏洞确实存在。
-"""
-        return prompt.strip()
+    def __init__(self):
+        pass
     
     def generate_samples(self, vulnerability_types: List[str], count_per_type: int = 10) -> List[VulnerabilitySample]:
         """
@@ -125,7 +88,6 @@ class VulnerabilityDataGenerator:
             logger.info(f"生成 {count_per_type} 个 {vuln_type} 漏洞样本")
             
             for i in range(count_per_type):
-                # 模拟生成（实际应调用LLM）
                 sample_code = self._generate_sample_code(vuln_type, i)
                 
                 sample = VulnerabilitySample(
@@ -194,17 +156,17 @@ class VulnerabilityDataGenerator:
             """void safe_function(char *input, size_t size) {
     char buffer[16];
     strncpy(buffer, input, sizeof(buffer)-1);
-    buffer[sizeof(buffer)-1] = '\\0';
+    buffer[sizeof(buffer)-1] = '\0';
 }""",
             """int safe_add(int a, int b) {
     return a + b;
 }""",
             """void safe_log(const char *message) {
-    printf("[LOG] %s\\n", message);
+    printf("[LOG] %s\n", message);
 }""",
             """size_t safe_strlen(const char *str) {
     size_t len = 0;
-    while (str[len] != '\\0') {
+    while (str[len] != '\0') {
         len++;
     }
     return len;
@@ -225,357 +187,333 @@ class VulnerabilityDataGenerator:
         return samples
 
 
-class DistilledVulnerabilityDetector:
-    """知识蒸馏漏洞检测器"""
-    
-    def __init__(self, config: Optional[DistillationConfig] = None):
-        """
-        初始化检测器
+if HAS_TRANSFORMERS:
+    class DistilledVulnerabilityDetector:
+        """知识蒸馏漏洞检测器"""
         
-        Args:
-            config: 蒸馏配置
-        """
-        if not HAS_TRANSFORMERS:
-            raise ImportError("transformers library is required")
-        
-        self.config = config or DistillationConfig()
-        self.tokenizer = BertTokenizer.from_pretrained(self.config.student_model_name)
-        self.model: Optional[nn.Module] = None
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
-    def _prepare_dataset(self, samples: List[VulnerabilitySample]) -> Dataset:
-        """
-        准备训练数据集
-        
-        Args:
-            samples: 样本列表
-        
-        Returns:
-            Hugging Face Dataset
-        """
-        texts = [sample.code for sample in samples]
-        labels = [sample.label for sample in samples]
-        
-        dataset = Dataset.from_dict({"text": texts, "label": labels})
-        
-        def tokenize_function(examples):
-            return self.tokenizer(
-                examples["text"],
-                padding="max_length",
-                truncation=True,
-                max_length=512
-            )
-        
-        return dataset.map(tokenize_function, batched=True)
-    
-    def train_with_distillation(self, train_samples: List[VulnerabilitySample],
-                                val_samples: List[VulnerabilitySample]) -> None:
-        """
-        使用知识蒸馏训练模型
-        
-        Args:
-            train_samples: 训练样本
-            val_samples: 验证样本
-        """
-        # 加载教师模型
-        teacher_model = BertForSequenceClassification.from_pretrained(
-            self.config.teacher_model_name,
-            num_labels=self.config.num_labels
-        ).to(self.device)
-        teacher_model.eval()
-        
-        # 加载学生模型
-        self.model = DistilBertForSequenceClassification.from_pretrained(
-            self.config.student_model_name,
-            num_labels=self.config.num_labels
-        ).to(self.device)
-        
-        # 准备数据集
-        train_dataset = self._prepare_dataset(train_samples)
-        val_dataset = self._prepare_dataset(val_samples)
-        
-        # 训练参数
-        training_args = TrainingArguments(
-            output_dir="./distilled_model",
-            per_device_train_batch_size=self.config.batch_size,
-            per_device_eval_batch_size=self.config.batch_size,
-            num_train_epochs=self.config.epochs,
-            learning_rate=self.config.learning_rate,
-            evaluation_strategy="epoch",
-            save_strategy="epoch",
-            load_best_model_at_end=True,
-            metric_for_best_model="accuracy",
-            logging_dir="./logs",
-            logging_steps=10,
-        )
-        
-        # 蒸馏损失计算
-        def compute_loss(model, inputs, return_outputs=False):
-            labels = inputs.pop("labels")
+        def __init__(self, config: Optional[DistillationConfig] = None):
+            """
+            初始化检测器
             
-            # 学生模型输出
-            student_outputs = model(**inputs)
-            student_logits = student_outputs.logits
+            Args:
+                config: 蒸馏配置
+            """
+            self.config = config or DistillationConfig()
+            self.tokenizer = BertTokenizer.from_pretrained(self.config.student_model_name)
+            self.model: Optional[nn.Module] = None
+            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        
+        def _prepare_dataset(self, samples: List[VulnerabilitySample]):
+            """
+            准备训练数据集
             
-            # 教师模型输出（蒸馏温度）
-            with torch.no_grad():
-                teacher_outputs = teacher_model(**inputs)
-                teacher_logits = teacher_outputs.logits / self.config.temperature
+            Args:
+                samples: 样本列表
             
-            # 蒸馏损失
-            distillation_loss = F.kl_div(
-                F.log_softmax(student_logits / self.config.temperature, dim=-1),
-                F.softmax(teacher_logits, dim=-1),
-                reduction="batchmean"
-            ) * (self.config.temperature ** 2)
+            Returns:
+                Hugging Face Dataset
+            """
+            texts = [sample.code for sample in samples]
+            labels = [sample.label for sample in samples]
             
-            # 分类损失
-            classification_loss = F.cross_entropy(student_logits, labels)
+            dataset = Dataset.from_dict({"text": texts, "label": labels})
             
-            # 总损失
-            loss = self.config.alpha * distillation_loss + (1 - self.config.alpha) * classification_loss
+            def tokenize_function(examples):
+                return self.tokenizer(
+                    examples["text"],
+                    padding="max_length",
+                    truncation=True,
+                    max_length=512
+                )
             
-            return (loss, student_outputs) if return_outputs else loss
+            return dataset.map(tokenize_function, batched=True)
         
-        # 创建Trainer
-        trainer = Trainer(
-            model=self.model,
-            args=training_args,
-            train_dataset=train_dataset,
-            eval_dataset=val_dataset,
-            compute_loss=compute_loss,
-            callbacks=[EarlyStoppingCallback(early_stopping_patience=3)]
-        )
-        
-        # 开始训练
-        logger.info("开始知识蒸馏训练...")
-        trainer.train()
-        
-        logger.info("训练完成")
-    
-    def quantize_model(self, output_path: str) -> bool:
-        """
-        量化模型以减小体积和加速推理
-        
-        Args:
-            output_path: 量化模型保存路径
-        
-        Returns:
-            是否成功
-        """
-        if not self.model:
-            logger.error("模型未训练")
-            return False
-        
-        try:
-            # 动态量化（INT8）
-            self.model = torch.ao.quantization.quantize_dynamic(
-                self.model,
-                {nn.Linear},
-                dtype=torch.qint8
-            )
+        def train_with_distillation(self, train_samples: List[VulnerabilitySample],
+                                    val_samples: List[VulnerabilitySample]) -> None:
+            """
+            使用知识蒸馏训练模型
             
-            # 保存量化模型
-            os.makedirs(output_path, exist_ok=True)
-            torch.save(self.model.state_dict(), os.path.join(output_path, "quantized_model.pt"))
-            self.tokenizer.save_pretrained(output_path)
+            Args:
+                train_samples: 训练样本
+                val_samples: 验证样本
+            """
+            teacher_model = BertForSequenceClassification.from_pretrained(
+                self.config.teacher_model_name,
+                num_labels=self.config.num_labels
+            ).to(self.device)
+            teacher_model.eval()
             
-            logger.info(f"量化模型已保存到: {output_path}")
-            return True
-        except Exception as e:
-            logger.error(f"量化失败: {e}")
-            return False
-    
-    def load_model(self, model_path: str) -> bool:
-        """
-        加载预训练模型
-        
-        Args:
-            model_path: 模型路径
-        
-        Returns:
-            是否成功
-        """
-        try:
             self.model = DistilBertForSequenceClassification.from_pretrained(
                 self.config.student_model_name,
                 num_labels=self.config.num_labels
-            )
-            
-            # 尝试加载量化模型
-            quantized_path = os.path.join(model_path, "quantized_model.pt")
-            if os.path.exists(quantized_path):
-                self.model.load_state_dict(torch.load(quantized_path, map_location=self.device))
-                logger.info("加载量化模型")
-            else:
-                self.model.load_state_dict(torch.load(model_path, map_location=self.device))
-                logger.info("加载普通模型")
-            
-            self.model = self.model.to(self.device)
-            self.model.eval()
-            logger.info(f"模型已加载: {model_path}")
-            return True
-        except Exception as e:
-            logger.error(f"加载模型失败: {e}")
-            return False
-    
-    def detect(self, code: str) -> DetectionResult:
-        """
-        检测代码中的漏洞
-        
-        Args:
-            code: 代码字符串
-        
-        Returns:
-            检测结果
-        """
-        if not self.model:
-            logger.error("模型未加载")
-            return DetectionResult(
-                function_name="unknown",
-                function_address=0,
-                is_vulnerable=False,
-                confidence=0.0,
-                vulnerability_type=None,
-                explanation="模型未加载"
-            )
-        
-        try:
-            # 预处理
-            inputs = self.tokenizer(
-                code,
-                padding="max_length",
-                truncation=True,
-                max_length=512,
-                return_tensors="pt"
             ).to(self.device)
             
-            # 推理
-            with torch.no_grad():
-                outputs = self.model(**inputs)
-                logits = outputs.logits
-                probabilities = F.softmax(logits, dim=-1)
+            train_dataset = self._prepare_dataset(train_samples)
+            val_dataset = self._prepare_dataset(val_samples)
             
-            # 解析结果
-            predicted_label = torch.argmax(probabilities, dim=-1).item()
-            confidence = probabilities[0][predicted_label].item()
-            
-            return DetectionResult(
-                function_name="unknown",
-                function_address=0,
-                is_vulnerable=bool(predicted_label),
-                confidence=confidence,
-                vulnerability_type=self._predict_vulnerability_type(code) if predicted_label else None,
-                explanation=f"模型预测置信度: {confidence:.4f}"
+            training_args = TrainingArguments(
+                output_dir="./distilled_model",
+                per_device_train_batch_size=self.config.batch_size,
+                per_device_eval_batch_size=self.config.batch_size,
+                num_train_epochs=self.config.epochs,
+                learning_rate=self.config.learning_rate,
+                evaluation_strategy="epoch",
+                save_strategy="epoch",
+                load_best_model_at_end=True,
+                metric_for_best_model="accuracy",
+                logging_dir="./logs",
+                logging_steps=10,
             )
-        
-        except Exception as e:
-            logger.error(f"检测失败: {e}")
-            return DetectionResult(
-                function_name="unknown",
-                function_address=0,
-                is_vulnerable=False,
-                confidence=0.0,
-                vulnerability_type=None,
-                explanation=str(e)
-            )
-    
-    def _predict_vulnerability_type(self, code: str) -> Optional[str]:
-        """
-        预测漏洞类型（简单规则匹配）
-        
-        Args:
-            code: 代码字符串
-        
-        Returns:
-            漏洞类型
-        """
-        if "strcpy" in code and "buffer" in code:
-            return "CWE-121"
-        elif "malloc" in code and "strcpy" in code:
-            return "CWE-122"
-        elif "system(" in code:
-            return "CWE-78"
-        elif "sprintf" in code:
-            return "CWE-20"
-        elif "free(" in code and "return" in code:
-            return "CWE-416"
-        else:
-            return "CWE-Unknown"
-
-
-class ActiveLearningManager:
-    """主动学习管理器"""
-    
-    def __init__(self, detector: DistilledVulnerabilityDetector, config: Optional[ActiveLearningConfig] = None):
-        """
-        初始化主动学习管理器
-        
-        Args:
-            detector: 漏洞检测器
-            config: 主动学习配置
-        """
-        self.detector = detector
-        self.config = config or ActiveLearningConfig()
-    
-    def select_samples(self, unlabeled_samples: List[VulnerabilitySample]) -> List[VulnerabilitySample]:
-        """
-        选择最有信息量的样本进行标注
-        
-        Args:
-            unlabeled_samples: 未标注样本
-        
-        Returns:
-            选中的样本列表
-        """
-        if not self.config.enabled:
-            return []
-        
-        scored_samples = []
-        
-        for sample in unlabeled_samples:
-            result = self.detector.detect(sample.code)
             
-            # 根据策略计算不确定性分数
-            uncertainty = self._calculate_uncertainty(result.confidence)
-            scored_samples.append((sample, uncertainty))
+            def compute_loss(model, inputs, return_outputs=False):
+                labels = inputs.pop("labels")
+                
+                student_outputs = model(**inputs)
+                student_logits = student_outputs.logits
+                
+                with torch.no_grad():
+                    teacher_outputs = teacher_model(**inputs)
+                    teacher_logits = teacher_outputs.logits / self.config.temperature
+                
+                distillation_loss = F.kl_div(
+                    F.log_softmax(student_logits / self.config.temperature, dim=-1),
+                    F.softmax(teacher_logits, dim=-1),
+                    reduction="batchmean"
+                ) * (self.config.temperature ** 2)
+                
+                classification_loss = F.cross_entropy(student_logits, labels)
+                
+                loss = self.config.alpha * distillation_loss + (1 - self.config.alpha) * classification_loss
+                
+                return (loss, student_outputs) if return_outputs else loss
+            
+            trainer = Trainer(
+                model=self.model,
+                args=training_args,
+                train_dataset=train_dataset,
+                eval_dataset=val_dataset,
+                compute_loss=compute_loss,
+                callbacks=[EarlyStoppingCallback(early_stopping_patience=3)]
+            )
+            
+            logger.info("开始知识蒸馏训练...")
+            trainer.train()
+            
+            logger.info("训练完成")
         
-        # 按不确定性排序，选择前N个
-        scored_samples.sort(key=lambda x: -x[1])
-        selected = [sample for sample, _ in scored_samples[:self.config.sample_count]]
+        def quantize_model(self, output_path: str) -> bool:
+            """
+            量化模型以减小体积和加速推理
+            
+            Args:
+                output_path: 量化模型保存路径
+            
+            Returns:
+                是否成功
+            """
+            if not self.model:
+                logger.error("模型未训练")
+                return False
+            
+            try:
+                self.model = torch.ao.quantization.quantize_dynamic(
+                    self.model,
+                    {nn.Linear},
+                    dtype=torch.qint8
+                )
+                
+                os.makedirs(output_path, exist_ok=True)
+                torch.save(self.model.state_dict(), os.path.join(output_path, "quantized_model.pt"))
+                self.tokenizer.save_pretrained(output_path)
+                
+                logger.info(f"量化模型已保存到: {output_path}")
+                return True
+            except Exception as e:
+                logger.error(f"量化失败: {e}")
+                return False
         
-        logger.info(f"主动学习选择了 {len(selected)} 个样本")
-        return selected
+        def load_model(self, model_path: str) -> bool:
+            """
+            加载预训练模型
+            
+            Args:
+                model_path: 模型路径
+            
+            Returns:
+                是否成功
+            """
+            try:
+                self.model = DistilBertForSequenceClassification.from_pretrained(
+                    self.config.student_model_name,
+                    num_labels=self.config.num_labels
+                )
+                
+                quantized_path = os.path.join(model_path, "quantized_model.pt")
+                if os.path.exists(quantized_path):
+                    self.model.load_state_dict(torch.load(quantized_path, map_location=self.device))
+                    logger.info("加载量化模型")
+                else:
+                    self.model.load_state_dict(torch.load(model_path, map_location=self.device))
+                    logger.info("加载普通模型")
+                
+                self.model = self.model.to(self.device)
+                self.model.eval()
+                logger.info(f"模型已加载: {model_path}")
+                return True
+            except Exception as e:
+                logger.error(f"加载模型失败: {e}")
+                return False
+        
+        def detect(self, code: str) -> DetectionResult:
+            """
+            检测代码中的漏洞
+            
+            Args:
+                code: 代码字符串
+            
+            Returns:
+                检测结果
+            """
+            if not self.model:
+                logger.error("模型未加载")
+                return DetectionResult(
+                    function_name="unknown",
+                    function_address=0,
+                    is_vulnerable=False,
+                    confidence=0.0,
+                    vulnerability_type=None,
+                    explanation="模型未加载"
+                )
+            
+            try:
+                inputs = self.tokenizer(
+                    code,
+                    padding="max_length",
+                    truncation=True,
+                    max_length=512,
+                    return_tensors="pt"
+                ).to(self.device)
+                
+                with torch.no_grad():
+                    outputs = self.model(**inputs)
+                    logits = outputs.logits
+                    probabilities = F.softmax(logits, dim=-1)
+                
+                predicted_label = torch.argmax(probabilities, dim=-1).item()
+                confidence = probabilities[0][predicted_label].item()
+                
+                return DetectionResult(
+                    function_name="unknown",
+                    function_address=0,
+                    is_vulnerable=bool(predicted_label),
+                    confidence=confidence,
+                    vulnerability_type=self._predict_vulnerability_type(code) if predicted_label else None,
+                    explanation=f"模型预测置信度: {confidence:.4f}"
+                )
+            
+            except Exception as e:
+                logger.error(f"检测失败: {e}")
+                return DetectionResult(
+                    function_name="unknown",
+                    function_address=0,
+                    is_vulnerable=False,
+                    confidence=0.0,
+                    vulnerability_type=None,
+                    explanation=str(e)
+                )
+        
+        def _predict_vulnerability_type(self, code: str) -> Optional[str]:
+            """
+            预测漏洞类型（简单规则匹配）
+            
+            Args:
+                code: 代码字符串
+            
+            Returns:
+                漏洞类型
+            """
+            if "strcpy" in code and "buffer" in code:
+                return "CWE-121"
+            elif "malloc" in code and "strcpy" in code:
+                return "CWE-122"
+            elif "system(" in code:
+                return "CWE-78"
+            elif "sprintf" in code:
+                return "CWE-20"
+            elif "free(" in code and "return" in code:
+                return "CWE-416"
+            else:
+                return "CWE-Unknown"
     
-    def _calculate_uncertainty(self, confidence: float) -> float:
-        """
-        根据策略计算不确定性
+    class ActiveLearningManager:
+        """主动学习管理器"""
         
-        Args:
-            confidence: 模型预测置信度
+        def __init__(self, detector, config: Optional[ActiveLearningConfig] = None):
+            """
+            初始化主动学习管理器
+            
+            Args:
+                detector: 漏洞检测器
+                config: 主动学习配置
+            """
+            self.detector = detector
+            self.config = config or ActiveLearningConfig()
         
-        Returns:
-            不确定性分数
-        """
-        if self.config.strategy == "least_confidence":
-            return 1.0 - confidence
-        elif self.config.strategy == "margin":
-            # 简化的margin计算
-            return min(confidence, 1.0 - confidence) * 2
-        elif self.config.strategy == "entropy":
-            if confidence == 0 or confidence == 1:
-                return 0.0
-            return -confidence * np.log2(confidence) - (1 - confidence) * np.log2(1 - confidence)
-        else:
-            return 1.0 - confidence
+        def select_samples(self, unlabeled_samples: List[VulnerabilitySample]) -> List[VulnerabilitySample]:
+            """
+            选择最有信息量的样本进行标注
+            
+            Args:
+                unlabeled_samples: 未标注样本
+            
+            Returns:
+                选中的样本列表
+            """
+            if not self.config.enabled:
+                return []
+            
+            scored_samples = []
+            
+            for sample in unlabeled_samples:
+                result = self.detector.detect(sample.code)
+                
+                uncertainty = self._calculate_uncertainty(result.confidence)
+                scored_samples.append((sample, uncertainty))
+            
+            scored_samples.sort(key=lambda x: -x[1])
+            selected = [sample for sample, _ in scored_samples[:self.config.sample_count]]
+            
+            logger.info(f"主动学习选择了 {len(selected)} 个样本")
+            return selected
+        
+        def _calculate_uncertainty(self, confidence: float) -> float:
+            """
+            根据策略计算不确定性
+            
+            Args:
+                confidence: 模型预测置信度
+            
+            Returns:
+                不确定性分数
+            """
+            if self.config.strategy == "least_confidence":
+                return 1.0 - confidence
+            elif self.config.strategy == "margin":
+                return min(confidence, 1.0 - confidence) * 2
+            elif self.config.strategy == "entropy":
+                if confidence == 0 or confidence == 1:
+                    return 0.0
+                return -confidence * np.log2(confidence) - (1 - confidence) * np.log2(1 - confidence)
+            else:
+                return 1.0 - confidence
 
 
 class DistilledVulnDetectorAnalyzer:
     """知识蒸馏漏洞检测器分析器（BaseAnalyzer包装）"""
     
     def __init__(self):
-        self.detector: Optional[DistilledVulnerabilityDetector] = None
-        self.active_learning_manager: Optional[ActiveLearningManager] = None
+        self.detector = None
+        self.active_learning_manager = None
     
     def analyze(self, **kwargs) -> Dict[str, Any]:
         """
@@ -601,24 +539,28 @@ class DistilledVulnDetectorAnalyzer:
         mode = kwargs.get("mode", "detect")
         
         try:
+            if not HAS_TRANSFORMERS:
+                return {
+                    "success": False,
+                    "error": "transformers library is required",
+                    "message": "请安装 transformers、torch 和 datasets 库以使用此功能"
+                }
+            
             results = {"success": True, "detections": [], "training_result": None}
             
             if mode == "train":
-                # 训练模式
                 if not train_samples or not val_samples:
                     return {"success": False, "error": "训练需要 train_samples 和 val_samples"}
                 
                 self.detector = DistilledVulnerabilityDetector()
                 self.detector.train_with_distillation(train_samples, val_samples)
                 
-                # 保存模型
                 if model_path:
                     self.detector.quantize_model(model_path)
                 
                 results["training_result"] = "训练完成"
             
             elif mode == "quantize":
-                # 量化模式
                 if not self.detector:
                     self.detector = DistilledVulnerabilityDetector()
                 
@@ -627,13 +569,11 @@ class DistilledVulnDetectorAnalyzer:
                     results["quantization_result"] = "成功" if success else "失败"
             
             else:
-                # 检测模式
                 if not self.detector:
                     self.detector = DistilledVulnerabilityDetector()
                     if model_path:
                         self.detector.load_model(model_path)
                 
-                # 检测单个代码
                 if code:
                     result = self.detector.detect(code)
                     results["detections"].append({
@@ -644,7 +584,6 @@ class DistilledVulnDetectorAnalyzer:
                         "explanation": result.explanation
                     })
                 
-                # 批量检测
                 for code_item in code_list:
                     result = self.detector.detect(code_item)
                     results["detections"].append({
@@ -678,36 +617,3 @@ class DistilledVulnDetectorAnalyzer:
             "dependencies": ["transformers", "torch", "datasets"],
             "supported_platforms": ["all"]
         }
-    
-    def validate_input(self, **kwargs) -> Tuple[bool, Optional[str]]:
-        """
-        验证输入参数
-        
-        Args:
-            **kwargs: 输入参数
-        
-        Returns:
-            (是否有效, 错误信息)
-        """
-        mode = kwargs.get("mode", "detect")
-        
-        if mode == "train":
-            train_samples = kwargs.get("train_samples")
-            val_samples = kwargs.get("val_samples")
-            if not train_samples or not isinstance(train_samples, list):
-                return False, "训练模式需要 train_samples 列表"
-            if not val_samples or not isinstance(val_samples, list):
-                return False, "训练模式需要 val_samples 列表"
-        
-        elif mode == "detect":
-            code = kwargs.get("code")
-            code_list = kwargs.get("code_list")
-            if not code and not code_list:
-                return False, "检测模式需要 code 或 code_list"
-        
-        return True, None
-    
-    def cleanup(self) -> None:
-        """清理资源"""
-        self.detector = None
-        self.active_learning_manager = None

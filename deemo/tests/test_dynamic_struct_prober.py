@@ -5,6 +5,7 @@
 import unittest
 import sys
 import os
+import importlib.util
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
@@ -14,16 +15,22 @@ class TestDynamicStructProber(unittest.TestCase):
     
     def test_prober_initialization(self):
         """测试探测器初始化"""
-        from modules.dynamic_struct_prober import DynamicStructProber
+        module_path = os.path.join(os.path.dirname(__file__), '..', 'modules', 'dynamic_struct_prober.py')
+        spec = importlib.util.spec_from_file_location('dynamic_struct_prober', module_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
         
-        prober = DynamicStructProber('/path/to/binary')
+        prober = module.DynamicStructProber('/path/to/binary')
         self.assertIsNotNone(prober)
     
     def test_probe_struct_layout(self):
         """测试结构体布局探测"""
-        from modules.dynamic_struct_prober import DynamicStructProber
+        module_path = os.path.join(os.path.dirname(__file__), '..', 'modules', 'dynamic_struct_prober.py')
+        spec = importlib.util.spec_from_file_location('dynamic_struct_prober', module_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
         
-        prober = DynamicStructProber('/path/to/binary')
+        prober = module.DynamicStructProber('/path/to/binary')
         result = prober.probe_struct_layout(max_struct_size=64)
         
         self.assertIsNotNone(result)

@@ -2,16 +2,20 @@ import os
 import sys
 import unittest
 import tempfile
+import importlib.util
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from modules.poc_generator import (
-    POCGenerator,
-    PoCOption,
-    PoCResult,
-    VulnerabilityType,
-    PoCOutputFormat
-)
+module_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'modules', 'poc_generator.py')
+spec = importlib.util.spec_from_file_location('poc_generator', module_path)
+poc_generator = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(poc_generator)
+
+POCGenerator = poc_generator.POCGenerator
+PoCOption = poc_generator.PoCOption
+PoCResult = poc_generator.PoCResult
+VulnerabilityType = poc_generator.VulnerabilityType
+PoCOutputFormat = poc_generator.PoCOutputFormat
 
 
 class TestPOCGenerator(unittest.TestCase):

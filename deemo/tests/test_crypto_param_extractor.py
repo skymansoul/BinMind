@@ -5,6 +5,7 @@
 import unittest
 import sys
 import os
+import importlib.util
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
@@ -14,16 +15,22 @@ class TestCryptoParamExtractor(unittest.TestCase):
     
     def test_extractor_initialization(self):
         """测试提取器初始化"""
-        from modules.crypto_param_extractor import CryptoParamExtractor
+        module_path = os.path.join(os.path.dirname(__file__), '..', 'modules', 'crypto_param_extractor.py')
+        spec = importlib.util.spec_from_file_location('crypto_param_extractor', module_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
         
-        extractor = CryptoParamExtractor('/path/to/binary')
+        extractor = module.CryptoParamExtractor('/path/to/binary')
         self.assertIsNotNone(extractor)
     
     def test_extract_parameters(self):
         """测试参数提取"""
-        from modules.crypto_param_extractor import CryptoParamExtractor
+        module_path = os.path.join(os.path.dirname(__file__), '..', 'modules', 'crypto_param_extractor.py')
+        spec = importlib.util.spec_from_file_location('crypto_param_extractor', module_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
         
-        extractor = CryptoParamExtractor('/path/to/binary')
+        extractor = module.CryptoParamExtractor('/path/to/binary')
         result = extractor.extract_parameters('AES_encrypt(key, data);')
         
         self.assertIsNotNone(result)

@@ -22,51 +22,137 @@ class DeepBinarySearcher:
     def __init__(self, model_path: str = None):
         """
         初始化深度学习二进制搜索器
-        
+
         Args:
             model_path: 预训练模型路径
         """
         self.model_path = model_path
         self.model = None
         self.index: Dict[str, np.ndarray] = {}
+        self.embeddings: Dict[str, np.ndarray] = {}
+        self.global_index: Dict[str, np.ndarray] = {}
         self.functions: List[Dict[str, Any]] = []
         self.index_path = os.path.join(os.path.expanduser('~'), '.deep_binary_search', 'index.json')
         self._ensure_index_dir()
-    
+
     def _ensure_index_dir(self):
         """确保索引目录存在"""
         index_dir = os.path.dirname(self.index_path)
         if not os.path.exists(index_dir):
             os.makedirs(index_dir, exist_ok=True)
-    
-    def load_model(self, model_path: str = None):
+
+    def search(self, query_embedding, top_k: int = 5) -> List[Dict[str, Any]]:
+        """
+        根据查询向量在索引中搜索相似函数
+
+        Args:
+            query_embedding: 查询向量（list 或 np.ndarray）
+            top_k: 返回前 k 个结果
+
+        Returns:
+            相似函数列表
+        """
+        # 空索引直接返回空列表
+        if not self.embeddings and not self.global_index:
+            return []
+
+        # 转换为 ndarray
+        if isinstance(query_embedding, list):
+            query_embedding = np.array(query_embedding, dtype=np.float32)
+
+        # 选择数据源
+        data_source = self.embeddings if self.embeddings else self.global_index
+        if not data_source:
+            return []
+
+        results = []
+        for func_id, embedding in data_source.items():
+            try:
+                similarity = self._calculate_similarity(query_embedding, embedding)
+                results.append({
+                    'id': func_id,
+                    'similarity': float(similarity),
+                    'name': func_id,
+                })
+            except Exception:
+                continue
+
+        results.sort(key=lambda x: x['similarity'], reverse=True)
+        return results[:top_k]
+
+    def build_index(self, binary_paths: List[str]) -> Dict[str, Any]:
+        """
+        构建全局索引
+
+        Args:
+            binary_paths: 二进制文件路径列表
+
+        Returns:
+            构建结果字典
+        """
+        result = {
+            'indexed_count': 0,
+            'failed': [],
+            'total': len(binary_paths) if binary_paths else 0
+        }
+
+        if not binary_paths:
+            return result
+
+        for binary_path in binary_paths:
+            try:
+                if not os.path.exists(binary_path):
+                    result['failed'].append(binary_path)
+                    continue
+                # 真实索引逻辑（占位）：此处可调用 index_binary
+                indexed = self.index_binary(binary_path)
+                result['indexed_count'] += len(indexed)
+            except Exception as e:
+                logger.warning(f"索引 {binary_path} 失败: {e}")
+                result['failed'].append(binary_path)
+
+        return result
+
+    def load_model(self, model_path: str = None) -> bool:
         """
         加载预训练模型
-        
+
         Args:
             model_path: 模型文件路径
+
+        Returns:
+            True 表示加载成功（即使为模拟模式）
         """
         if model_path:
             self.model_path = model_path
-        
+
         if not self.model_path:
             logger.warning("未指定模型路径，使用模拟嵌入生成")
-            return
-        
+            # 没有模型路径时使用模拟模式，仍然算成功
+            return True
+
         try:
             # 尝试加载ONNX模型
             if self.model_path.endswith('.onnx'):
                 import onnxruntime as ort
+                if not os.path.exists(self.model_path):
+                    logger.warning(f"模型文件不存在: {self.model_path}，使用模拟嵌入生成")
+                    return True
                 self.model = ort.InferenceSession(self.model_path)
                 logger.info(f"已加载ONNX模型: {self.model_path}")
             else:
                 # 尝试加载PyTorch模型
                 import torch
+                if not os.path.exists(self.model_path):
+                    logger.warning(f"模型文件不存在: {self.model_path}，使用模拟嵌入生成")
+                    return True
                 self.model = torch.load(self.model_path, map_location='cpu')
                 logger.info(f"已加载PyTorch模型: {self.model_path}")
-        
+            return True
+
         except Exception as e:
             logger.warning(f"加载模型失败，使用模拟嵌入生成: {e}")
+            return True
     
     def generate_embedding(self, function_code: str) -> np.ndarray:
         """

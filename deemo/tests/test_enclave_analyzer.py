@@ -2,16 +2,20 @@ import os
 import sys
 import unittest
 import tempfile
+import importlib.util
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from modules.enclave_analyzer import (
-    EnclaveAnalyzer,
-    EnclaveAnalysisResult,
-    EnclaveType,
-    EnclaveIssueType,
-    RiskLevel
-)
+module_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'modules', 'enclave_analyzer.py')
+spec = importlib.util.spec_from_file_location('enclave_analyzer', module_path)
+enclave_analyzer = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(enclave_analyzer)
+
+EnclaveAnalyzer = enclave_analyzer.EnclaveAnalyzer
+EnclaveAnalysisResult = enclave_analyzer.EnclaveAnalysisResult
+EnclaveType = enclave_analyzer.EnclaveType
+EnclaveIssueType = enclave_analyzer.EnclaveIssueType
+RiskLevel = enclave_analyzer.RiskLevel
 
 
 class TestEnclaveAnalyzer(unittest.TestCase):

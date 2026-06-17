@@ -1,0 +1,13 @@
+{
+  "file_path": "test.bin",
+  "file_hash": "",
+  "signature_status": "unsigned",
+  "algorithm_strength": "medium",
+  "is_abused": false,
+  "certificates": [],
+  "warnings": [],
+  "abuse_indicators": [],
+  "timestamp": {},
+  "analysis_time": "2026-06-17T11:16:17.884497",
+  "recommendation": "文件未签名，建议验证来源可信度"
+}

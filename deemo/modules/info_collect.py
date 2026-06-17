@@ -1284,6 +1284,27 @@ def get_binary_info(binary_path: str, force_kernel: bool = False) -> Dict[str, A
             }
         
         logger.info("二进制信息收集完成")
+        
+        try:
+            mobile_platform = detect_mobile_platform(binary_path)
+            if mobile_platform in ['android', 'ios']:
+                from .mobile_analysis import MobileBinaryAnalyzer
+                mobile_analyzer = MobileBinaryAnalyzer(binary_path, platform=mobile_platform)
+                mobile_result = mobile_analyzer.analyze()
+                info['mobile_analysis'] = {
+                    'platform': mobile_platform,
+                    'jni_functions': mobile_result.jni_functions,
+                    'objective_c_classes': mobile_result.objective_c_classes,
+                    'sensitive_strings': mobile_result.sensitive_strings,
+                    'vulnerabilities': mobile_result.vulnerabilities,
+                    'android_specific': mobile_result.android_specific,
+                    'ios_specific': mobile_result.ios_specific
+                }
+        except ImportError:
+            logger.warning("MobileBinaryAnalyzer 模块未找到，跳过移动平台分析")
+        except Exception as e:
+            logger.error(f"移动平台分析失败: {e}")
+        
         return info
         
     except Exception as e:

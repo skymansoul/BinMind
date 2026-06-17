@@ -5,6 +5,7 @@
 import unittest
 import sys
 import os
+import importlib.util
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
@@ -14,16 +15,22 @@ class TestTypeInferrer(unittest.TestCase):
     
     def test_inferrer_initialization(self):
         """测试推断器初始化"""
-        from modules.type_inferrer import TypeInferrer
+        module_path = os.path.join(os.path.dirname(__file__), '..', 'modules', 'type_inferrer.py')
+        spec = importlib.util.spec_from_file_location('type_inferrer', module_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
         
-        inferrer = TypeInferrer(use_z3=False)
+        inferrer = module.TypeInferrer(use_z3=False)
         self.assertIsNotNone(inferrer)
     
     def test_infer_types(self):
         """测试类型推断"""
-        from modules.type_inferrer import TypeInferrer
+        module_path = os.path.join(os.path.dirname(__file__), '..', 'modules', 'type_inferrer.py')
+        spec = importlib.util.spec_from_file_location('type_inferrer', module_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
         
-        inferrer = TypeInferrer(use_z3=False)
+        inferrer = module.TypeInferrer(use_z3=False)
         result = inferrer.infer_types('int add(int a, int b) { return a + b; }')
         
         self.assertIsNotNone(result)

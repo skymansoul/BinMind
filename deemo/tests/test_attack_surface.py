@@ -2,15 +2,21 @@ import os
 import sys
 import unittest
 import tempfile
+import importlib.util
 
+# 直接导入模块，避免通过 __init__.py
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from modules.attack_surface import (
-    AttackSurfaceMapper,
-    AttackSurfaceReport,
-    AttackSurfaceType,
-    RiskLevel
-)
+# 直接加载模块
+module_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'modules', 'attack_surface.py')
+spec = importlib.util.spec_from_file_location('attack_surface', module_path)
+attack_surface = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(attack_surface)
+
+AttackSurfaceMapper = attack_surface.AttackSurfaceMapper
+AttackSurfaceReport = attack_surface.AttackSurfaceReport
+AttackSurfaceType = attack_surface.AttackSurfaceType
+RiskLevel = attack_surface.RiskLevel
 
 
 class TestAttackSurfaceMapper(unittest.TestCase):

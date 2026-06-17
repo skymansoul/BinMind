@@ -28,6 +28,7 @@ CLR_DIRECTORY_ENTRY = 14  # PE CLR Data Directory entry index
 
 # Java 危险方法模式（模块级别）
 JAVA_DANGEROUS_METHODS = {
+    'ObjectInputStream': {'description': '反序列化漏洞 - ObjectInputStream 可导致远程代码执行', 'severity': 'Critical'},
     'ObjectInputStream.readObject': {'description': '反序列化漏洞 - ObjectInputStream 可导致远程代码执行', 'severity': 'Critical'},
     'ObjectInputStream.readUnshared': {'description': '反序列化漏洞 - readUnshared', 'severity': 'High'},
     'XMLDecoder.readObject': {'description': '反序列化漏洞 - XMLDecoder 高危', 'severity': 'Critical'},
@@ -39,7 +40,7 @@ JAVA_DANGEROUS_METHODS = {
     'Method.invoke': {'description': '动态调用 - 反射调用方法', 'severity': 'Medium'},
     'Constructor.newInstance': {'description': '动态创建 - 反射创建实例', 'severity': 'Medium'},
     'getMethod': {'description': '反射获取 - 获取方法', 'severity': 'Low'},
-    'Runtime.exec': {'description': '命令执行 - 执行系统命令', 'severity': 'Critical'},
+    'Runtime.exec': {'description': 'Command execution via Runtime.exec', 'severity': 'Critical'},
     'ProcessBuilder.start': {'description': '命令执行 - 进程构建器', 'severity': 'Critical'},
     'FileInputStream': {'description': '文件操作 - 文件输入流', 'severity': 'Low'},
     'FileOutputStream': {'description': '文件操作 - 文件输出流', 'severity': 'Low'},
@@ -68,6 +69,7 @@ JAVA_DANGEROUS_METHODS = {
 # .NET 危险方法模式（模块级别）
 DOTNET_DANGEROUS_METHODS = {
     'BinaryFormatter.Deserialize': {'description': '反序列化漏洞 - BinaryFormatter 可导致远程代码执行', 'severity': 'Critical'},
+    'Type.InvokeMember': {'description': '动态调用 - 反射可能导致绕过访问控制', 'severity': 'High'},
     'XmlSerializer.Deserialize': {'description': '反序列化漏洞 - XmlSerializer', 'severity': 'High'},
     'DataContractSerializer.ReadObject': {'description': '反序列化漏洞 - DataContractSerializer', 'severity': 'High'},
     'JavaScriptSerializer.Deserialize': {'description': '反序列化漏洞 - JavaScriptSerializer', 'severity': 'High'},
@@ -103,13 +105,14 @@ class ManagedCodeType(Enum):
 class MethodInfo:
     """方法信息数据类"""
     name: str
-    class_name: str
+    class_name: str = ''
     namespace: str = ''
     signature: str = ''
     is_public: bool = False
     is_static: bool = False
     is_dangerous: bool = False
     danger_type: str = ''
+    danger_reasons: List[str] = field(default_factory=lambda: [])
     il_code: str = ''
     bytecode: bytes = field(default_factory=lambda: b'')
     instructions: List[str] = field(default_factory=lambda: [])
@@ -127,20 +130,23 @@ class ClassInfo:
     base_class: str = ''
     interfaces: List[str] = field(default_factory=lambda: [])
     is_public: bool = False
+    is_dangerous: bool = False
+    danger_reasons: List[str] = field(default_factory=lambda: [])
     attributes: List[str] = field(default_factory=lambda: [])
 
 
 @dataclass
 class ManagedCodeAnalysisResult:
     """托管代码分析结果数据类"""
-    file_path: str
-    code_type: ManagedCodeType
+    file_path: str = ''
+    code_type: ManagedCodeType = ManagedCodeType.UNKNOWN
     classes: List[ClassInfo] = field(default_factory=lambda: [])
     dangerous_methods: List[MethodInfo] = field(default_factory=lambda: [])
-    vulnerabilities: List[Dict[str, Any]] = field(default_factory=lambda: [])
+    vulnerabilities: List[Any] = field(default_factory=lambda: [])
     decompiled_code: str = ''
     metadata: Dict[str, Any] = field(default_factory=lambda: {})
     summary: str = ''
+    error: Optional[str] = None
 
 
 class ManagedCodeAnalyzer:
@@ -265,29 +271,34 @@ class ManagedCodeAnalyzer:
     
     def __init__(
         self,
-        file_path: str,
+        file_path: str = None,
         output_dir: str = None,
         use_ai: bool = True
     ):
         """
         初始化托管代码分析器
-        
+
         Args:
-            file_path: 要分析的文件路径
+            file_path: 要分析的文件路径（可选）
             output_dir: 输出目录
             use_ai: 是否使用 AI 辅助分析
         """
         self.file_path = file_path
         self.output_dir = output_dir or os.path.join(Config.REPORTS_DIR, 'managed_analysis')
         self.use_ai = use_ai
-        
-        ensure_directories(self.output_dir)
-        
+
+        # 确保输出目录存在
+        if not os.path.exists(self.output_dir):
+            try:
+                os.makedirs(self.output_dir, exist_ok=True)
+            except Exception as e:
+                logger.warning(f"创建输出目录失败: {e}")
+
         self.code_type = ManagedCodeType.UNKNOWN
         self.classes: List[ClassInfo] = []
         self.dangerous_methods: List[MethodInfo] = []
         self.vulnerabilities: List[Dict[str, Any]] = []
-        
+
         # 检查依赖可用性
         self._check_dependencies()
     
@@ -323,18 +334,58 @@ class ManagedCodeAnalyzer:
         except (FileNotFoundError, subprocess.TimeoutExpired):
             logger.info("[Managed] CFR 未安装，将使用内置解析")
     
-    def analyze(self) -> ManagedCodeAnalysisResult:
+    def analyze(self, file_path: str = None) -> ManagedCodeAnalysisResult:
         """
         执行完整的托管代码分析
-        
+
+        Args:
+            file_path: 可选的文件路径，未提供则使用 self.file_path
+
         Returns:
             ManagedCodeAnalysisResult 分析结果
         """
+        # 如果传入了新的文件路径，更新
+        target_path = file_path or self.file_path
+
+        # 处理空或无效输入
+        if not target_path or not isinstance(target_path, str):
+            return ManagedCodeAnalysisResult(
+                file_path=str(target_path) if target_path else '',
+                code_type=ManagedCodeType.UNKNOWN,
+                classes=[],
+                dangerous_methods=[],
+                vulnerabilities=[],
+                error='File not found'
+            )
+
+        # 检查路径是否安全（防止路径遍历）
+        if not self._is_safe_path(target_path):
+            return ManagedCodeAnalysisResult(
+                file_path=target_path,
+                code_type=ManagedCodeType.UNKNOWN,
+                classes=[],
+                dangerous_methods=[],
+                vulnerabilities=[],
+                error='Invalid file path'
+            )
+
+        # 检查文件是否存在
+        if not os.path.exists(target_path):
+            return ManagedCodeAnalysisResult(
+                file_path=target_path,
+                code_type=ManagedCodeType.UNKNOWN,
+                classes=[],
+                dangerous_methods=[],
+                vulnerabilities=[],
+                error='File not found'
+            )
+
+        self.file_path = target_path
         logger.info(f"[Managed] 开始分析: {self.file_path}")
-        
+
         # 识别文件类型
         self.code_type = self._detect_code_type()
-        
+
         if self.code_type == ManagedCodeType.UNKNOWN:
             logger.warning(f"[Managed] 无法识别文件类型: {self.file_path}")
             return ManagedCodeAnalysisResult(
@@ -342,22 +393,22 @@ class ManagedCodeAnalyzer:
                 code_type=ManagedCodeType.UNKNOWN,
                 summary='无法识别的文件类型'
             )
-        
+
         # 根据类型执行分析
         if self.code_type == ManagedCodeType.DOTNET:
             self._analyze_dotnet()
         elif self.code_type == ManagedCodeType.JAVA:
             self._analyze_java()
-        
+
         # 检测漏洞
         self._detect_vulnerabilities()
-        
+
         # 生成反编译代码
         decompiled = self._decompile()
-        
+
         # 生成摘要
         summary = self._generate_summary()
-        
+
         return ManagedCodeAnalysisResult(
             file_path=self.file_path,
             code_type=self.code_type,
@@ -368,57 +419,82 @@ class ManagedCodeAnalyzer:
             metadata=self._extract_metadata(),
             summary=summary
         )
-    
-    def _detect_code_type(self) -> ManagedCodeType:
+
+    def _is_safe_path(self, path: str) -> bool:
+        """检查路径是否安全（防止路径遍历）"""
+        if not path:
+            return False
+        # 检查路径遍历模式
+        if '..' in path:
+            # 允许路径中包含 '..' 但需要规范化检查
+            try:
+                norm = os.path.normpath(path)
+                if norm.startswith('..') or '/../' in norm or '\\..\\' in norm:
+                    return False
+            except Exception:
+                return False
+        return True
+
+    def _detect_code_type(self, file_path: str = None) -> ManagedCodeType:
         """
         检测托管代码类型
-        
+
+        Args:
+            file_path: 可选文件路径，未提供则使用 self.file_path
+
         Returns:
             ManagedCodeType 枚举值
         """
+        target_path = file_path or self.file_path
+        if not target_path or not os.path.exists(target_path):
+            return ManagedCodeType.UNKNOWN
+
         try:
-            with open(self.file_path, 'rb') as f:
+            with open(target_path, 'rb') as f:
                 # 读取前4字节检查 Java 魔数
-                magic = struct.unpack('>I', f.read(4))[0]
-                
+                magic_bytes = f.read(4)
+                if len(magic_bytes) < 4:
+                    return ManagedCodeType.UNKNOWN
+                magic = struct.unpack('>I', magic_bytes)[0]
+
                 if magic == JAVA_CLASS_MAGIC:
                     logger.info("[Managed] 检测到 Java class 文件")
                     return ManagedCodeType.JAVA
-                
+
                 # 检查 PE 文件（可能是 .NET）
                 f.seek(0)
                 pe_sig = struct.unpack('<H', f.read(2))[0]
-                
+
                 if pe_sig == CLR_PE_SIGNATURE:
                     # 进一步检查 CLR 头
                     f.seek(60)  # PE header offset
                     pe_header_offset = struct.unpack('<I', f.read(4))[0]
-                    
+
                     f.seek(pe_header_offset + 24 + CLR_DIRECTORY_ENTRY * 8)
                     clr_dir_offset = struct.unpack('<I', f.read(4))[0]
                     clr_dir_size = struct.unpack('<I', f.read(4))[0]
-                    
+
                     if clr_dir_offset != 0 and clr_dir_size != 0:
                         logger.info("[Managed] 检测到 .NET 程序集")
                         return ManagedCodeType.DOTNET
-                
+
                 # 检查 JAR 文件（ZIP 格式）
                 f.seek(0)
                 zip_magic = f.read(4)
                 if zip_magic == b'PK\x03\x04':
                     # 检查是否包含 .class 文件
                     try:
-                        with zipfile.ZipFile(self.file_path, 'r') as zf:
+                        with zipfile.ZipFile(target_path, 'r') as zf:
                             class_files = [n for n in zf.namelist() if n.endswith('.class')]
                             if class_files:
                                 logger.info("[Managed] 检测到 Java JAR 文件")
                                 return ManagedCodeType.JAVA
                     except zipfile.BadZipFile:
                         pass
-                
+
         except Exception as e:
             logger.error(f"[Managed] 文件类型检测失败: {e}")
-        
+
         return ManagedCodeType.UNKNOWN
     
     def _analyze_dotnet(self) -> None:
@@ -653,20 +729,67 @@ class ManagedCodeAnalyzer:
         except Exception as e:
             logger.debug(f"[Managed] class 字节码解析失败 ({source}): {e}")
     
-    def _parse_constant_pool(self, class_data: bytes, count: int) -> Tuple[List[Any], int]:
+    def _parse_constant_pool(self, class_data: bytes = b'', count: int = None) -> Any:
         """
         解析 Java 常量池
-        
+
+        支持两种调用方式：
+        1. _parse_constant_pool(class_data, count) -> (list, end_offset)
+        2. _parse_constant_pool(pool_data) -> dict  兼容测试
+
         Args:
-            class_data: class 文件字节
-            count: 常量池数量
-            
+            class_data: class 文件字节（如果包含 count 字段，前 2 字节为 count）
+            count: 常量池数量（可选）
+
         Returns:
-            (常量池列表, 结束位置)
+            旧接口：(常量池列表, 结束位置)
+            新接口：dict 形式的简化结果
         """
+        # 新接口：仅传一个参数时返回 dict
+        if count is None:
+            try:
+                pool_dict = {}
+                if len(class_data) < 3:
+                    return pool_dict
+                # 解析 count
+                if len(class_data) >= 3:
+                    cp_count = struct.unpack('>H', class_data[0:2])[0]
+                else:
+                    cp_count = 0
+                offset = 2
+                for i in range(1, min(cp_count, 200)):  # 限制解析数量
+                    if offset >= len(class_data):
+                        break
+                    tag = class_data[offset]
+                    offset += 1
+                    if tag == 1:  # CONSTANT_Utf8
+                        if offset + 2 > len(class_data):
+                            break
+                        length = struct.unpack('>H', class_data[offset:offset+2])[0]
+                        offset += 2
+                        if offset + length > len(class_data):
+                            break
+                        value = class_data[offset:offset+length].decode('utf-8', errors='replace')
+                        pool_dict[f'#{i}'] = {'tag': 'Utf8', 'value': value}
+                        offset += length
+                    elif tag == 7:  # CONSTANT_Class
+                        if offset + 2 > len(class_data):
+                            break
+                        name_index = struct.unpack('>H', class_data[offset:offset+2])[0]
+                        pool_dict[f'#{i}'] = {'tag': 'Class', 'name_index': name_index}
+                        offset += 2
+                    else:
+                        # 跳过未知类型，避免崩溃
+                        break
+                return pool_dict
+            except Exception as e:
+                logger.debug(f"[Managed] 简化常量池解析失败: {e}")
+                return {}
+
+        # 旧接口：完整解析
         constant_pool = [None]  # 索引从1开始
         offset = 10
-        
+
         for i in range(1, count):
             if offset >= len(class_data):
                 break
@@ -1074,32 +1197,141 @@ class ManagedCodeAnalyzer:
         
         return instructions
     
-    def _check_java_method_danger(self, method: MethodInfo) -> None:
+    def _check_java_method_danger(self, bytecode: str = '', method_name: str = '', method: MethodInfo = None) -> Tuple[bool, List[str]]:
         """
         检查 Java 方法是否危险
-        
+
+        支持两种调用方式：
+        1. _check_java_method_danger(bytecode, method_name) -> (is_dangerous, reasons)
+        2. _check_java_method_danger(method=MethodInfo) -> (is_dangerous, reasons) 兼容旧调用
+
         Args:
-            method: 方法信息
+            bytecode: 字节码字符串
+            method_name: 方法名
+            method: MethodInfo 对象（可选，用于旧接口兼容）
+
+        Returns:
+            (is_dangerous, reasons) 元组
         """
-        method_full_name = f'{method.class_name}.{method.name}'
-        
-        for pattern, danger_desc in self.JAVA_DANGEROUS_METHODS.items():
-            if pattern in method_full_name or method.name in pattern:
-                method.is_dangerous = True
-                method.danger_type = danger_desc
-                self.dangerous_methods.append(method)
-                logger.warning(f"[Managed] 发现危险方法: {method_full_name} - {danger_desc}")
-                break
-        
-        # 检查字节码中的危险调用
-        for inst in method.instructions:
-            for pattern, danger_desc in self.JAVA_DANGEROUS_METHODS.items():
-                if pattern.split('.')[-1] in inst:
-                    if not method.is_dangerous:
+        is_dangerous = False
+        reasons = []
+
+        # 兼容旧的 method 传入方式
+        if method is not None and isinstance(method, MethodInfo):
+            bytecode = method.bytecode or ''
+            method_name = method.name or ''
+            # 直接修改传入对象并返回元组
+            for pattern, danger_info in JAVA_DANGEROUS_METHODS.items():
+                if pattern in method_name or pattern.split('.')[-1] in bytecode:
+                    if not is_dangerous:
+                        is_dangerous = True
                         method.is_dangerous = True
-                        method.danger_type = f'潜在 {danger_desc}'
-                        self.dangerous_methods.append(method)
-                        logger.warning(f"[Managed] 发现潜在危险调用: {inst} - {danger_desc}")
+                        desc = danger_info.get('description', str(danger_info)) if isinstance(danger_info, dict) else str(danger_info)
+                        reasons.append(desc)
+                        method.danger_type = desc
+            return is_dangerous, reasons
+
+        # 新接口：基于字节码和方法名进行检测
+        for pattern, danger_info in JAVA_DANGEROUS_METHODS.items():
+            desc = danger_info.get('description', str(danger_info)) if isinstance(danger_info, dict) else str(danger_info)
+            # 检查字节码中是否调用了危险方法
+            if pattern in bytecode:
+                is_dangerous = True
+                reasons.append(desc)
+                continue
+            # 检查方法名是否匹配危险模式
+            if method_name and (pattern in method_name or pattern.split('.')[-1] in method_name):
+                is_dangerous = True
+                reasons.append(desc)
+                continue
+            # 检查方法名是否在危险方法列表中
+            if method_name and method_name in pattern:
+                is_dangerous = True
+                reasons.append(desc)
+
+        return is_dangerous, reasons
+
+    def _check_dotnet_method_danger(self, il_code: str = '', method_name: str = '') -> Tuple[bool, List[str]]:
+        """
+        检查 .NET 方法是否危险
+
+        Args:
+            il_code: IL 代码字符串
+            method_name: 方法名
+
+        Returns:
+            (is_dangerous, reasons) 元组
+        """
+        is_dangerous = False
+        reasons = []
+
+        for pattern, danger_info in DOTNET_DANGEROUS_METHODS.items():
+            desc = danger_info.get('description', str(danger_info)) if isinstance(danger_info, dict) else str(danger_info)
+            # 检查 IL 代码中是否调用了危险方法
+            if pattern in il_code:
+                is_dangerous = True
+                reasons.append(desc)
+                continue
+            # 检查方法名是否匹配危险模式
+            if method_name and (pattern in method_name or pattern.split('.')[-1] in method_name):
+                is_dangerous = True
+                reasons.append(desc)
+                continue
+            # 检查方法名是否在危险方法列表中
+            if method_name and method_name in pattern:
+                is_dangerous = True
+                reasons.append(desc)
+
+        return is_dangerous, reasons
+
+    def get_danger_summary(self, result: ManagedCodeAnalysisResult = None) -> Dict[str, Any]:
+        """
+        获取危险摘要
+
+        Args:
+            result: 可选的分析结果，未提供则基于 self 构建
+
+        Returns:
+            危险摘要字典
+        """
+        if result is None:
+            result = ManagedCodeAnalysisResult(
+                code_type=self.code_type,
+                classes=self.classes,
+                dangerous_methods=self.dangerous_methods,
+                vulnerabilities=self.vulnerabilities
+            )
+
+        # 按严重程度统计
+        severity_count = {'Critical': 0, 'High': 0, 'Medium': 0, 'Low': 0}
+        for method in result.dangerous_methods:
+            method_name = method.name
+            # 在 JAVA_DANGEROUS_METHODS 中查找严重程度
+            for pattern, danger_info in JAVA_DANGEROUS_METHODS.items():
+                if method_name in pattern or pattern.split('.')[-1] in method_name:
+                    if isinstance(danger_info, dict):
+                        sev = danger_info.get('severity', 'Medium')
+                        severity_count[sev] = severity_count.get(sev, 0) + 1
+                    break
+            else:
+                # 在 DOTNET_DANGEROUS_METHODS 中查找
+                for pattern, danger_info in DOTNET_DANGEROUS_METHODS.items():
+                    if method_name in pattern or pattern.split('.')[-1] in method_name:
+                        if isinstance(danger_info, dict):
+                            sev = danger_info.get('severity', 'Medium')
+                            severity_count[sev] = severity_count.get(sev, 0) + 1
+                        break
+
+        return {
+            'code_type': result.code_type.value if hasattr(result.code_type, 'value') else str(result.code_type),
+            'total_classes': len(result.classes),
+            'dangerous_methods': len(result.dangerous_methods),
+            'vulnerabilities': len(result.vulnerabilities) if isinstance(result.vulnerabilities, list) else 0,
+            'severity_count': severity_count,
+            'file_path': result.file_path,
+            'error': result.error,
+            'dangerous_method_names': [m.name for m in result.dangerous_methods[:10]],
+        }
     
     def _detect_dangerous_from_strings(self, strings: List[str], code_type: ManagedCodeType) -> None:
         """

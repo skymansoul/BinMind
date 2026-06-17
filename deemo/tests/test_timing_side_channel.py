@@ -2,15 +2,19 @@ import os
 import sys
 import unittest
 import tempfile
+import importlib.util
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from modules.timing_side_channel import (
-    TimingSideChannelDetector,
-    TimingAnalysisResult,
-    TimingIssueType,
-    TimingIssueSeverity
-)
+module_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'modules', 'timing_side_channel.py')
+spec = importlib.util.spec_from_file_location('timing_side_channel', module_path)
+timing_side_channel = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(timing_side_channel)
+
+TimingSideChannelDetector = timing_side_channel.TimingSideChannelDetector
+TimingAnalysisResult = timing_side_channel.TimingAnalysisResult
+TimingIssueType = timing_side_channel.TimingIssueType
+TimingIssueSeverity = timing_side_channel.TimingIssueSeverity
 
 
 class TestTimingSideChannelDetector(unittest.TestCase):

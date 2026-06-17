@@ -11,6 +11,13 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 
+class Config:
+    """协作模块配置类"""
+    USER_DB_PATH = None  # 将在 __init__ 中设置
+    AUDIT_LOG_PATH = None
+    REPO_BASE_PATH = None
+
+
 class UserRole(str, Enum):
     ADMIN = "admin"
     ANALYST = "analyst"
@@ -132,13 +139,14 @@ class CollaborationManager:
             audit_log_path: 审计日志文件路径
             repo_base_path: Git仓库基础路径
         """
-        self.user_db_path = user_db_path or os.path.join(
+        # 使用 Config 类的路径（如果有的话），否则使用默认值
+        self.user_db_path = user_db_path or Config.USER_DB_PATH or os.path.join(
             os.path.dirname(__file__), '..', 'data', 'users.json'
         )
-        self.audit_log_path = audit_log_path or os.path.join(
+        self.audit_log_path = audit_log_path or Config.AUDIT_LOG_PATH or os.path.join(
             os.path.dirname(__file__), '..', 'data', 'audit.log'
         )
-        self.repo_base_path = repo_base_path or os.path.join(
+        self.repo_base_path = repo_base_path or Config.REPO_BASE_PATH or os.path.join(
             os.path.dirname(__file__), '..', 'data', 'repos'
         )
         

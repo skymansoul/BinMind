@@ -721,3 +721,14 @@ class BinaryFormatLoader(BaseAnalyzer):
             "base_address": info.base_address,
             "sections": len(info.sections),
         }
+    
+    @classmethod
+    def get_metadata(cls) -> AnalyzerMetadata:
+        return AnalyzerMetadata(
+            name="BinaryFormatLoader",
+            type=AnalyzerType.OTHER,
+            version="1.0.0",
+            description="插件化二进制文件格式解析器，支持 ELF/PE/Mach-O/OMF/COFF/Flat binary",
+            author="BinaryAnalysisPlatform",
+            supported_platforms=["all"]
+        )

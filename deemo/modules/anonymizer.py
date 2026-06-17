@@ -25,10 +25,10 @@ from abc import ABC, abstractmethod
 
 class AnonymizationLevel(Enum):
     """匿名化级别"""
-    LOW = "low"       # 仅替换明显的敏感信息（API密钥、密码）
-    MEDIUM = "medium" # 中等匿名化（添加标识符混淆）
-    HIGH = "high"     # 高级匿名化（模糊化大部分字符串）
-    EXTREME = "extreme" # 极端匿名化（移除所有可能的敏感信息）
+    LOW = 1       # 仅替换明显的敏感信息（API密钥、密码）
+    MEDIUM = 2    # 中等匿名化（添加标识符混淆）
+    HIGH = 3      # 高级匿名化（模糊化大部分字符串）
+    EXTREME = 4   # 极端匿名化（移除所有可能的敏感信息）
 
 
 @dataclass
@@ -94,7 +94,7 @@ class CodeAnonymizer(Anonymizer):
         # API密钥模式
         rules.append(AnonymizationRule(
             name="openai_api_key",
-            pattern=re.compile(r'sk-[a-zA-Z0-9]{48}', re.IGNORECASE),
+            pattern=re.compile(r'sk-[a-zA-Z0-9-]{8,}', re.IGNORECASE),
             replacement='sk-REDACTED_API_KEY',
             description="OpenAI API密钥",
             priority=10
@@ -171,16 +171,16 @@ class CodeAnonymizer(Anonymizer):
         # 密码关键字
         rules.append(AnonymizationRule(
             name="password_literal",
-            pattern=re.compile(r'["\']password["\']\s*[=:]\s*["\'][^"\']+["\']'),
+            pattern=re.compile(r'(?:["\'])?password(?:["\'])?\s*[=:]\s*["\'][^"\']+["\']'),
             replacement='password="REDACTED"',
             description="密码字面量赋值",
             priority=10
         ))
         
-        # 私钥检测
+        # 私钥检测 - 简化版本
         rules.append(AnonymizationRule(
             name="private_key",
-            pattern=re.compile(r'-----BEGIN (?:RSA|EC|DSA|OPENSSH) PRIVATE KEY-----.+?-----END \1 PRIVATE KEY-----', re.DOTALL),
+            pattern=re.compile(r'-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----[\s\S]+?-----END'),
             replacement='-----BEGIN PRIVATE KEY-----REDACTED-----END PRIVATE KEY-----',
             description="私钥内容",
             priority=10
@@ -233,15 +233,15 @@ class CodeAnonymizer(Anonymizer):
                         })
         
         # 根据级别应用额外的匿名化
-        if level >= AnonymizationLevel.MEDIUM:
+        if level.value >= AnonymizationLevel.MEDIUM.value:
             anonymized, id_replacements = self._anonymize_identifiers(anonymized)
             replacements.extend(id_replacements)
         
-        if level >= AnonymizationLevel.HIGH:
+        if level.value >= AnonymizationLevel.HIGH.value:
             anonymized, str_replacements = self._anonymize_strings(anonymized)
             replacements.extend(str_replacements)
         
-        if level == AnonymizationLevel.EXTREME:
+        if level.value == AnonymizationLevel.EXTREME.value:
             anonymized, comment_replacements = self._remove_comments(anonymized)
             replacements.extend(comment_replacements)
         
@@ -487,9 +487,9 @@ def is_sensitive_content(text: str) -> bool:
         True 如果包含敏感内容
     """
     sensitive_patterns = [
-        r'sk-[a-zA-Z0-9]{48}',           # OpenAI API密钥
+        r'sk-[a-zA-Z0-9-]{8,}',          # OpenAI API密钥
         r'AKIA[0-9A-Z]{16}',             # AWS Access Key
-        r'-----BEGIN .* PRIVATE KEY-----', # 私钥
+        r'-----BEGIN .*PRIVATE KEY-----', # 私钥
         r'password\s*[=:]\s*["\']',       # 密码赋值
         r'["\']password["\']',            # 密码字符串
     ]
