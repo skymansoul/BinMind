@@ -44,14 +44,7 @@ class FuzzManager:
         6. 支持沙箱执行（Docker/Podman）以确保隔离
     """
     
-    def __init__(, self)
-        binary_path: str,
-        fuzzer_type: str = FUZZER_TYPE_AUTO,
-        corpus_path: str = None,
-        output_dir: str = None,
-        use_sandbox: bool = True,
-        hooks_dir: str = './hooks'
-    ):
+    def __init__(, self, binary_path: str, fuzzer_type: str = FUZZER_TYPE_AUTO, corpus_path: str = None, output_dir: str = None, use_sandbox: bool = True, hooks_dir: str = './hooks'):
         """
         初始化模糊测试管理器
         
@@ -270,10 +263,7 @@ class FuzzManager:
         
         return False
     
-    def generate_harness(, self)
-        target_function: str = None,
-        output_path: str = None
-    ) -> str:
+    def generate_harness(, self, target_function: str = None, output_path: str = None) -> str:
         """
         生成模糊测试 Harness 代码
         
@@ -300,10 +290,7 @@ class FuzzManager:
         
         return harness_code
     
-    def _generate_harness_code(, self)
-        binary_name: str,
-        target_function: str = None
-    ) -> str:
+    def _generate_harness_code(, self, binary_name: str, target_function: str = None) -> str:
         """
         生成 LLVMFuzzerTestOneInput 风格的 Harness 代码
         
@@ -462,13 +449,7 @@ static inline uint64_t read_u64(const uint8_t *data, size_t offset) {{
         
         return harness_template
     
-    def start(, self)
-        timeout: int = None,
-        max_crashes: int = None,
-        cpu_limit: int = None,
-        memory_limit: int = None,
-        additional_args: List[str] = None
-    ) -> Dict[str, Any]:
+    def start(, self, timeout: int = None, max_crashes: int = None, cpu_limit: int = None, memory_limit: int = None, additional_args: List[str] = None) -> Dict[str, Any]:
         """
         启动模糊测试
         
@@ -546,13 +527,7 @@ static inline uint64_t read_u64(const uint8_t *data, size_t offset) {{
                 'status': self.status
             }
     
-    def _start_local_fuzzer(, self)
-        timeout: int,
-        max_crashes: int,
-        cpu_limit: int,
-        memory_limit: int,
-        additional_args: List[str]
-    ) -> subprocess.Popen:
+    def _start_local_fuzzer(, self, timeout: int, max_crashes: int, cpu_limit: int, memory_limit: int, additional_args: List[str]) -> subprocess.Popen:
         """
         启动本地 Fuzzer 进程
         
@@ -593,13 +568,7 @@ static inline uint64_t read_u64(const uint8_t *data, size_t offset) {{
         
 
     
-    def _build_libfuzzer_command(, self)
-        timeout: int,
-        max_crashes: int,
-        cpu_limit: int,
-        memory_limit: int,
-        additional_args: List[str]
-    ) -> List[str]:
+    def _build_libfuzzer_command(, self, timeout: int, max_crashes: int, cpu_limit: int, memory_limit: int, additional_args: List[str]) -> List[str]:
         """
         构建 LibFuzzer 命令
         
@@ -633,13 +602,7 @@ static inline uint64_t read_u64(const uint8_t *data, size_t offset) {{
         
         return cmd
     
-    def _build_afl_command(, self)
-        timeout: int,
-        max_crashes: int,
-        cpu_limit: int,
-        memory_limit: int,
-        additional_args: List[str]
-    ) -> List[str]:
+    def _build_afl_command(, self, timeout: int, max_crashes: int, cpu_limit: int, memory_limit: int, additional_args: List[str]) -> List[str]:
         """
         构建 AFL/AFL++ 命令
         
@@ -676,13 +639,7 @@ static inline uint64_t read_u64(const uint8_t *data, size_t offset) {{
         
         return cmd
     
-    def _start_sandboxed_fuzzer(, self)
-        timeout: int,
-        max_crashes: int,
-        cpu_limit: int,
-        memory_limit: int,
-        additional_args: List[str]
-    ) -> subprocess.Popen:
+    def _start_sandboxed_fuzzer(, self, timeout: int, max_crashes: int, cpu_limit: int, memory_limit: int, additional_args: List[str]) -> subprocess.Popen:
         """
         在沙箱中启动 Fuzzer
         
@@ -704,13 +661,7 @@ static inline uint64_t read_u64(const uint8_t *data, size_t offset) {{
         else:
             raise ValueError(f"不支持的沙箱模式: {sandbox_mode}")
     
-    def _start_docker_fuzzer(, self)
-        timeout: int,
-        max_crashes: int,
-        cpu_limit: int,
-        memory_limit: int,
-        additional_args: List[str]
-    ) -> subprocess.Popen:
+    def _start_docker_fuzzer(, self, timeout: int, max_crashes: int, cpu_limit: int, memory_limit: int, additional_args: List[str]) -> subprocess.Popen:
         """在 Docker 容器中启动 Fuzzer"""
         try:
             import docker
@@ -752,13 +703,7 @@ static inline uint64_t read_u64(const uint8_t *data, size_t offset) {{
         
         return container
     
-    def _start_podman_fuzzer(, self)
-        timeout: int,
-        max_crashes: int,
-        cpu_limit: int,
-        memory_limit: int,
-        additional_args: List[str]
-    ) -> subprocess.Popen:
+    def _start_podman_fuzzer(, self, timeout: int, max_crashes: int, cpu_limit: int, memory_limit: int, additional_args: List[str]) -> subprocess.Popen:
         """在 Podman 容器中启动 Fuzzer"""
         binary_dir = os.path.dirname(self.binary_path)
         binary_name = os.path.basename(self.binary_path)
@@ -788,14 +733,7 @@ static inline uint64_t read_u64(const uint8_t *data, size_t offset) {{
         
         return subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     
-    def _build_local_fuzzer_cmd_for_sandbox(, self)
-        binary_path_in_container: str,
-        timeout: int,
-        max_crashes: int,
-        cpu_limit: int,
-        memory_limit: int,
-        additional_args: List[str]
-    ) -> List[str]:
+    def _build_local_fuzzer_cmd_for_sandbox(, self, binary_path_in_container: str, timeout: int, max_crashes: int, cpu_limit: int, memory_limit: int, additional_args: List[str]) -> List[str]:
         """为沙箱环境构建 Fuzzer 命令"""
         if self.fuzzer_type == FUZZER_TYPE_LIBFUZZER:
             cmd = [binary_path_in_container]
@@ -940,10 +878,7 @@ static inline uint64_t read_u64(const uint8_t *data, size_t offset) {{
         except Exception as e:
             logger.error(f"处理崩溃文件失败 {file_path}: {e}")
     
-    def _analyze_crash(, self)
-        file_path: str,
-        crash_data: bytes
-    ) -> Dict[str, Any]:
+    def _analyze_crash(, self, file_path: str, crash_data: bytes) -> Dict[str, Any]:
         """
         分析崩溃，调用 crash_analysis 模块
         
@@ -991,9 +926,7 @@ static inline uint64_t read_u64(const uint8_t *data, size_t offset) {{
                 'analysis_text': 'Analysis failed due to error'
             }
     
-    def _execute_binary_with_crash(, self)
-        crash_data: bytes
-    ) -> Dict[str, Any]:
+    def _execute_binary_with_crash(, self, crash_data: bytes) -> Dict[str, Any]:
         """
         使用崩溃输入执行二进制以获取崩溃信息
         

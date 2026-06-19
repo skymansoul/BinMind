@@ -795,7 +795,7 @@ class ConcolicExecutor:
             路径ID字符串
         """
         import uuid
-        return str(uuid.uuid4())[:8]
+        return str(uuid.uuid4()[:8])
     
     def export_seeds(self, output_dir: str = './seeds') -> List[str]:
         """

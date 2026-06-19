@@ -410,4 +410,4 @@ def analyze_crash(crash_data: Dict[str, Any]) -> CrashAnalysisResult:
 def generate_exploit_from_crash(crash_data: Dict[str, Any]) -> Optional[ExploitPrototype]:
     classifier = CrashClassifier()
     analysis = classifier.classify_crash(crash_data)
-    return classifier.generate_exploit_prototype(analysis)
+    return classifier.generate_exploit_prototype(analysis)'

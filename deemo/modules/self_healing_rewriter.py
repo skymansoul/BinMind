@@ -205,8 +205,7 @@ canary = __stack_chk_guard;
         
         return rules
     
-    def generate_custom_strategy(self, functions: List[str],)
-                                 protection_type: ProtectionType) -> List[ProtectionRule]:
+    def generate_custom_strategy(self, functions: List[str], protection_type: ProtectionType) -> List[ProtectionRule]:
         """
         生成自定义保护策略
         
@@ -264,8 +263,7 @@ if (targetModule) {
 }
 """
     
-    def generate_script(self, module_name: str, function_name: str,)
-                        check_code: str) -> str:
+    def generate_script(self, module_name: str, function_name: str, check_code: str) -> str:
         """
         生成Frida脚本
         
@@ -336,7 +334,7 @@ class DynamoRioInstrumenter:
 
 #include "dr_api.h"
 
-static void event_bb_insert(void *drcontext, void *tag, instrlist_t *bb,)
+static void event_bb_insert(void *drcontext, void *tag, instrlist_t *bb)
                             instr_t *instr, bool for_trace, bool translating,
                             void *user_data) {
     // 插入保护检查
@@ -401,8 +399,7 @@ class PerformanceValidator:
     def __init__(self):
         self.benchmark_iterations = 100
     
-    def estimate_overhead(self, original_time: float, )
-                          instrumented_time: float) -> float:
+    def estimate_overhead(self, original_time: float, instrumented_time: float) -> float:
         """
         估算性能开销
         
@@ -418,8 +415,7 @@ class PerformanceValidator:
         
         return ((instrumented_time - original_time) / original_time) * 100
     
-    def validate_acceptable(self, overhead: float, )
-                            threshold: float = 10.0) -> bool:
+    def validate_acceptable(self, overhead: float, threshold: float = 10.0) -> bool:
         """
         验证开销是否可接受
         
@@ -606,10 +602,7 @@ class SelfHealingRewriterTask:
         return self.analyzer.analyze(**kwargs)
 
 
-def apply_self_healing_protection(binary_path: str, )
-                                  cve_id: Optional[str] = None,
-                                  framework: str = 'frida',
-                                  config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+def apply_self_healing_protection(binary_path: str, cve_id: Optional[str] = None, framework: str = 'frida', config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """
     应用自愈性保护的便捷函数
     

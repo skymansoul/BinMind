@@ -213,8 +213,7 @@ class CallbackRegistryExtractor:
                     routines.append(CallbackRoutine(
                         callback_type=cb_type,
                         address=0,
-                        name=imp,
-                    ))
+                        name=imp))
                     break
         return routines
 
@@ -227,8 +226,7 @@ class CallbackRegistryExtractor:
                     routines.append(CallbackRoutine(
                         callback_type=cb_type,
                         address=0,
-                        name=s,
-                    ))
+                        name=s))
                     break
         return routines
 
@@ -244,8 +242,7 @@ class CallbackRegistryExtractor:
                     callback_type=cb_type,
                     address=0,
                     name=func_name,
-                    raw_data={"callees": callees},
-                )
+                    raw_data={"callees": callees})
         return None
 
 
@@ -284,7 +281,7 @@ class CallbackRiskScorer:
             # 回调类型加权
             if callback_type in (CallbackType.OBJECT_CALLBACK, CallbackType.CREATE_PROCESS):
                 score *= 1.2
-            elif callback_type in (CallbackType.IMAGE_LOAD,):
+            elif callback_type in (CallbackType.IMAGE_LOAD):
                 score *= 1.1
 
             score = min(1.0, score)
@@ -379,8 +376,7 @@ class CallbackAuditor:
                     risk_score=score,
                     risk_level=level,
                     rationale=rationale,
-                    recommendations=recs,
-                ))
+                    recommendations=recs))
 
             # 整体风险
             if report.findings:

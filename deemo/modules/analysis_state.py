@@ -232,8 +232,7 @@ class StateManager:
         
         logger.info(f"状态管理器初始化完成，存储路径: {self.storage_path}")
     
-    def create_snapshot()
-        self,
+    def create_snapshot(, self)
         state_type: StateType,
         checkpoint_data: Any,
         metadata: Dict[str, Any] = None,
@@ -471,7 +470,7 @@ class StateManager:
         """生成唯一快照ID"""
         timestamp = datetime.now().isoformat()
         import hashlib
-        return hashlib.sha256(f"{timestamp}_{os.urandom(16).hex()}".encode()).hexdigest()[:24]
+        return hashlib.sha256(f"{timestamp}_{os.urandom(16).hex(}".encode().hexdigest([:24])
     
     def _get_snapshot_path(self, snapshot_id: str) -> Path:
         """获取快照文件路径"""
@@ -527,8 +526,7 @@ class AnalysisStateTracker:
         """检查是否暂停"""
         return self._paused
     
-    def save_checkpoint()
-        self,
+    def save_checkpoint(, self)
         state_type: StateType,
         checkpoint_data: Any,
         metadata: Dict[str, Any] = None
@@ -602,8 +600,7 @@ class AnalysisStateTracker:
         
         return data
     
-    def update_progress()
-        self,
+    def update_progress(, self)
         current_stage: str = None,
         stage_progress: int = None,
         total_progress: int = None,

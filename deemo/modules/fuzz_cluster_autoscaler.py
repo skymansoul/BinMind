@@ -141,7 +141,7 @@ class TaskQueue:
 
     def list_by_status(self, status: str) -> List[FuzzTask]:
         with self._lock:
-            return [t for t in self._tasks.values() if t.status == status]
+            return [t for t in self._tasks.values( if t.status == status])
 
     def stats(self) -> Dict[str, int]:
         with self._lock:
@@ -237,7 +237,7 @@ class FuzzClusterAutoscaler:
             return
         self._stop.clear()
         self._thread = threading.Thread(
-            target=self._loop, args=(interval,), daemon=True
+            target=self._loop, args=(interval), daemon=True
         )
         self._thread.start()
         logger.info("[autoscaler] 启动")

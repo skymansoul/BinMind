@@ -91,13 +91,7 @@ class PatchSuggester:
             except Exception as e:
                 logger.warning(f"[PatchSuggester] Anthropic 初始化失败: {e}")
     
-    def generate_suggestion(, self)
-        decompiled_code: str,
-        vuln_type: str,
-        function_name: str = "",
-        instruction_offset: int = 0,
-        protection_info: Dict[str, Any] = None
-    ) -> PatchSuggestion:
+    def generate_suggestion(, self, decompiled_code: str, vuln_type: str, function_name: str = "", instruction_offset: int = 0, protection_info: Dict[str, Any] = None) -> PatchSuggestion:
         """
         为单个漏洞生成补丁建议
         
@@ -144,10 +138,7 @@ class PatchSuggester:
         
         return result
     
-    def generate_batch_suggestions(, self)
-        vulnerabilities: List[Dict[str, Any]],
-        decompiled_code: str
-    ) -> List[PatchSuggestion]:
+    def generate_batch_suggestions(, self, vulnerabilities: List[Dict[str, Any]], decompiled_code: str) -> List[PatchSuggestion]:
         """
         为多个漏洞批量生成补丁建议
         
@@ -175,13 +166,7 @@ class PatchSuggester:
         logger.info(f"[PatchSuggester] 批量生成完成，共 {len(suggestions)} 个补丁建议")
         return suggestions
     
-    def _build_prompt(, self)
-        decompiled_code: str,
-        vuln_type: str,
-        function_name: str,
-        instruction_offset: int,
-        protection_info: Dict[str, Any]
-    ) -> str:
+    def _build_prompt(, self, decompiled_code: str, vuln_type: str, function_name: str, instruction_offset: int, protection_info: Dict[str, Any]) -> str:
         """构建AI提示词"""
         vuln_description = {
             'stack_overflow': '栈缓冲区溢出漏洞',
@@ -355,9 +340,7 @@ class PatchSuggester:
         ]
         return '\n'.join(lines)
     
-    def save_suggestion(, self)
-        suggestion: PatchSuggestion,
-        vuln_db,
+    def save_suggestion(, self, suggestion: PatchSuggestion,, vuln_db)
         vuln_id: int = None
     ) -> Optional[int]:
         """

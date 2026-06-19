@@ -77,7 +77,7 @@ class ProtocolAnalyzer:
         if data.startswith(b"\x16\x03"):
             return {"protocol": ProtocolType.TLS.value, "version": "TLS 1.2/1.3"}
         elif data.startswith(b"GET ") or data.startswith(b"POST "):
-            return {"protocol": "http", "method": data.split(b" ")[0].decode()}
+            return {"protocol": "http", "method": data.split(b" ")[0].decode(})
         return {"protocol": "unknown"}
 
 

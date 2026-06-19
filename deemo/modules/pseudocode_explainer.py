@@ -261,13 +261,7 @@ class PseudocodeExplainer:
         except Exception as e:
             logger.error(f"初始化LLM客户端失败: {e}")
             
-    def explain_code(, self)
-        pseudocode: str,
-        filename: str = '',
-        function_name: str = '',
-        architecture: str = '',
-        level: ExplanationLevel = ExplanationLevel.TECHNICAL
-    ) -> CodeExplanation:
+    def explain_code(, self, pseudocode: str, filename: str = '', function_name: str = '', architecture: str = '', level: ExplanationLevel = ExplanationLevel.TECHNICAL) -> CodeExplanation:
         """
         解释伪代码
         
@@ -316,13 +310,7 @@ class PseudocodeExplainer:
             
         return result
         
-    def _explain_with_llm(, self)
-        pseudocode: str,
-        filename: str,
-        function_name: str,
-        architecture: str,
-        level: ExplanationLevel
-    ) -> Optional[str]:
+    def _explain_with_llm(, self, pseudocode: str, filename: str, function_name: str, architecture: str, level: ExplanationLevel) -> Optional[str]:
         """
         使用LLM解释伪代码
         
@@ -371,10 +359,7 @@ class PseudocodeExplainer:
             logger.error(f"LLM调用失败: {e}")
             return None
             
-    def _parse_explanation(, self)
-        explanation: str,
-        original_code: str
-    ) -> CodeExplanation:
+    def _parse_explanation(, self, explanation: str, original_code: str) -> CodeExplanation:
         """
         解析LLM返回的解释
         
@@ -547,11 +532,7 @@ class PseudocodeExplainer:
             
         return "通用变量"
         
-    def analyze_function(, self)
-        pseudocode: str,
-        function_name: str,
-        address: str = ''
-    ) -> FunctionAnalysis:
+    def analyze_function(, self, pseudocode: str, function_name: str, address: str = '') -> FunctionAnalysis:
         """
         分析单个函数
         
@@ -615,10 +596,7 @@ class PseudocodeExplainer:
                 
         return analysis
         
-    def batch_explain(, self)
-        code_blocks: List[Dict[str, str]],
-        level: ExplanationLevel = ExplanationLevel.TECHNICAL
-    ) -> List[CodeExplanation]:
+    def batch_explain(, self, code_blocks: List[Dict[str, str]], level: ExplanationLevel = ExplanationLevel.TECHNICAL) -> List[CodeExplanation]:
         """
         批量解释多个代码块
         
@@ -643,10 +621,7 @@ class PseudocodeExplainer:
             
         return results
         
-    def generate_commented_code(, self)
-        pseudocode: str,
-        comments: Dict[int, str]
-    ) -> str:
+    def generate_commented_code(, self, pseudocode: str, comments: Dict[int, str]) -> str:
         """
         生成带注释的代码
         

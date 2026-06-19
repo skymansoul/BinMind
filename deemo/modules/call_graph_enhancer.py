@@ -249,10 +249,7 @@ class CallGraphEnhancer:
         r'__vptr',
     ]
     
-    def __init__(, self)
-        binary_path: str = "",
-        min_confidence: float = 0.5
-    ):
+    def __init__(, self, binary_path: str = "", min_confidence: float = 0.5):
         """
         初始化调用图增强器
         
@@ -276,12 +273,7 @@ class CallGraphEnhancer:
         self._function_by_addr: Dict[int, str] = {}
         self._analyzed_memory: Dict[int, bytes] = {}
     
-    def enhance(, self)
-        functions: Optional[List[Dict[str, Any]]] = None,
-        call_graph: Optional[Dict[str, List[str]]] = None,
-        decomp_data: Optional[Dict[str, Any]] = None,
-        assembly_data: Optional[Dict[str, Any]] = None
-    ) -> EnhancedCallGraph:
+    def enhance(, self, functions: Optional[List[Dict[str, Any]]] = None, call_graph: Optional[Dict[str, List[str]]] = None, decomp_data: Optional[Dict[str, Any]] = None, assembly_data: Optional[Dict[str, Any]] = None) -> EnhancedCallGraph:
         """
         增强调用图
         
@@ -339,9 +331,7 @@ class CallGraphEnhancer:
         
         return result
     
-    def _analyze_indirect_calls_decomp(, self)
-        decomp_data: Dict[str, Any]
-    ) -> None:
+    def _analyze_indirect_calls_decomp(, self, decomp_data: Dict[str, Any]) -> None:
         """
         从反编译数据分析间接调用
         
@@ -365,10 +355,7 @@ class CallGraphEnhancer:
             # 检测回调函数
             self._detect_callback_patterns(func_name, pseudocode)
     
-    def _detect_vtable_calls(, self)
-        func_name: str,
-        pseudocode: str
-    ) -> None:
+    def _detect_vtable_calls(, self, func_name: str, pseudocode: str) -> None:
         """
         检测虚函数表调用
         
@@ -404,10 +391,7 @@ class CallGraphEnhancer:
                 self.indirect_calls.append(call_site)
                 self.logger.debug(f"发现虚函数调用: {match.group(0)}")
     
-    def _detect_function_pointer_calls(, self)
-        func_name: str,
-        pseudocode: str
-    ) -> None:
+    def _detect_function_pointer_calls(, self, func_name: str, pseudocode: str) -> None:
         """
         检测函数指针调用
         
@@ -440,10 +424,7 @@ class CallGraphEnhancer:
                 
                 self.indirect_calls.append(call_site)
     
-    def _detect_callback_patterns(, self)
-        func_name: str,
-        pseudocode: str
-    ) -> None:
+    def _detect_callback_patterns(, self, func_name: str, pseudocode: str) -> None:
         """
         检测回调函数模式
         
@@ -478,9 +459,7 @@ class CallGraphEnhancer:
                 
                 self.indirect_calls.append(call_site)
     
-    def _analyze_indirect_calls_asm(, self)
-        assembly_data: Dict[str, Any]
-    ) -> None:
+    def _analyze_indirect_calls_asm(, self, assembly_data: Dict[str, Any]) -> None:
         """
         从汇编数据分析间接调用
         
@@ -638,9 +617,7 @@ class CallGraphEnhancer:
         # 这里只是示例，实际需要更复杂的分析
         self.logger.debug(f"尝试解析寄存器调用: {register}")
     
-    def _build_enhanced_call_graph(, self)
-        original_graph: Optional[Dict[str, List[str]]]
-    ) -> EnhancedCallGraph:
+    def _build_enhanced_call_graph(, self, original_graph: Optional[Dict[str, List[str]]]) -> EnhancedCallGraph:
         """
         构建增强后的调用图
         
@@ -690,11 +667,7 @@ class CallGraphEnhancer:
         
         return result
     
-    def add_vtable(, self)
-        address: int,
-        class_name: str = "",
-        methods: Optional[List[Tuple[int, str]]] = None
-    ) -> VTableInfo:
+    def add_vtable(, self, address: int, class_name: str = "", methods: Optional[List[Tuple[int, str]]] = None) -> VTableInfo:
         """
         添加虚函数表信息
         
@@ -716,12 +689,7 @@ class CallGraphEnhancer:
         self.vtables[address] = vtable,
         return vtable
     
-    def add_fp_array(, self)
-        address: int,
-        array_name: str = "",
-        element_size: int = 8,
-        elements: Optional[List[Tuple[int, str]]] = None
-    ) -> FunctionPointerArray:
+    def add_fp_array(, self, address: int, array_name: str = "", element_size: int = 8, elements: Optional[List[Tuple[int, str]]] = None) -> FunctionPointerArray:
         """
         添加函数指针数组信息
         

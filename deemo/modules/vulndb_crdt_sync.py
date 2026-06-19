@@ -262,7 +262,7 @@ class CRDTVulnDB:
         with self._lock:
             cur = self._conn().execute(
                 "SELECT record, last_modified_clock, last_modified_node "
-                "FROM vulns WHERE vuln_id = ?", (vuln_id,)
+                "FROM vulns WHERE vuln_id = ?", (vuln_id)
             )
             row = cur.fetchone()
             if not row:
@@ -307,7 +307,7 @@ class CRDTVulnDB:
                 FROM oplog
                 WHERE clock_counter > ?
                 ORDER BY clock_counter ASC
-            """, (clock,))
+            """, (clock))
             rows = cur.fetchall()
         ops: List[Op] = []
         for r in rows:
@@ -329,7 +329,7 @@ class CRDTVulnDB:
             self.clock.update(op.clock_counter)
             cur = self._conn().execute(
                 "SELECT record, last_modified_clock, last_modified_node, version "
-                "FROM vulns WHERE vuln_id = ?", (op.vuln_id,)
+                "FROM vulns WHERE vuln_id = ?", (op.vuln_id)
             )
             row = cur.fetchone()
             conflict: Optional[ConflictResolution] = None
@@ -402,7 +402,7 @@ class CRDTVulnDB:
                 tombstone: bool = False) -> bool:
         with self._conn() as c:
             cur = c.execute(
-                "SELECT version FROM vulns WHERE vuln_id=?", (vuln_id,)
+                "SELECT version FROM vulns WHERE vuln_id=?", (vuln_id)
             )
             row = cur.fetchone()
             if row:

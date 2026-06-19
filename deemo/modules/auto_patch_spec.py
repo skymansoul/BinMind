@@ -100,9 +100,7 @@ class PatchSpecGenerator(ABC):
     """补丁规范生成器基类"""
     
     @abstractmethod
-    def generate_specification(, self)
-        vulnerability_context: VulnerabilityContext
-    ) -> PatchSpecification:
+    def generate_specification(, self, vulnerability_context: VulnerabilityContext) -> PatchSpecification:
         """
         生成补丁规范
         
@@ -361,9 +359,7 @@ VERIFICATION_CHECKS: <验证检查项列表，用逗号分隔>
         
 
     
-    def generate_specification(, self)
-        vulnerability_context: VulnerabilityContext
-    ) -> PatchSpecification:
+    def generate_specification(, self, vulnerability_context: VulnerabilityContext) -> PatchSpecification:
         """
         生成补丁规范
         
@@ -496,9 +492,7 @@ class AutoPatchSpecAnalyzer(BaseAnalyzer):
             logger.error(f"补丁规范生成失败: {e}")
             return {"success": False, "error": str(e)}
     
-    def generate_multiple_specs(, self)
-        vulnerability_contexts: List[VulnerabilityContext]
-    ) -> List[PatchSpecification]:
+    def generate_multiple_specs(, self, vulnerability_contexts: List[VulnerabilityContext]) -> List[PatchSpecification]:
         """
         批量生成补丁规范
         

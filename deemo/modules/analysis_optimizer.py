@@ -211,15 +211,7 @@ class BayesianOptimizer:
 class QLearningAgent:
     """Q学习代理"""
     
-    def __init__(, self)
-        state_dim: int,
-        action_dim: int,
-        learning_rate: float = 0.1,
-        discount_factor: float = 0.95,
-        exploration_strategy: ExplorationStrategy = ExplorationStrategy.EPSILON_GREEDY,
-        epsilon: float = 0.1,
-        temperature: float = 1.0
-    ):
+    def __init__(, self, state_dim: int, action_dim: int, learning_rate: float = 0.1, discount_factor: float = 0.95, exploration_strategy: ExplorationStrategy = ExplorationStrategy.EPSILON_GREEDY, epsilon: float = 0.1, temperature: float = 1.0):
         """
         初始化Q学习代理
         
@@ -381,10 +373,7 @@ class AnalysisOptimizer:
         
     ]
     
-    def __init__(, self)
-        strategy: OptimizationStrategy = OptimizationStrategy.BAYESIAN,
-        params: List[OptimizationParameter] = None
-    ):
+    def __init__(, self, strategy: OptimizationStrategy = OptimizationStrategy.BAYESIAN, params: List[OptimizationParameter] = None):
         """
         初始化分析优化器
         

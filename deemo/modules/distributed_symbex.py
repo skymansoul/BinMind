@@ -156,8 +156,7 @@ class RayExecutor:
         return self._ray_initialized
     
     @staticmethod
-    def execute_symbolic_state(state: SymbolicState, binary_path: str, )
-                              entry_point: int, timeout: int) -> Tuple[List[SymbolicState], List[Dict[str, Any]]]:
+    def execute_symbolic_state(state: SymbolicState, binary_path: str, entry_point: int, timeout: int) -> Tuple[List[SymbolicState], List[Dict[str, Any]]]:
         """执行单个符号状态"""
         results = []
         bugs = []
@@ -465,10 +464,7 @@ def create_distributed_engine(backend: str = "ray") -> DistributedSymbolicExecut
     return DistributedSymbolicExecutionEngine(backend)
 
 
-def distribute_symbolic_execution(binary_path: str, entry_point: int, )
-                                 initial_states: List[SymbolicState],
-                                 backend: str = "ray",
-                                 timeout: int = 300) -> TaskResult:
+def distribute_symbolic_execution(binary_path: str, entry_point: int, initial_states: List[SymbolicState], backend: str = "ray", timeout: int = 300) -> TaskResult:
     """执行分布式符号执行"""
     engine = create_distributed_engine(backend)
     engine.initialize()

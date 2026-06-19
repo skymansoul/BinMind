@@ -40,12 +40,7 @@ RELATION_TYPES = [
 class KnowledgeGraphEntity:
     """知识图谱实体类"""
     
-    def __init__(, self)
-        entity_id: str,
-        entity_type: str,
-        name: str,
-        properties: Optional[Dict[str, Any]] = None
-    ):
+    def __init__(, self, entity_id: str, entity_type: str, name: str, properties: Optional[Dict[str, Any]] = None):
         if entity_type not in ENTITY_TYPES:
             raise ValueError(f"无效的实体类型: {entity_type}")
         
@@ -76,12 +71,7 @@ class KnowledgeGraphEntity:
 class KnowledgeGraphRelation:
     """知识图谱关系类"""
     
-    def __init__(, self)
-        source_id: str,
-        target_id: str,
-        relation_type: str,
-        properties: Optional[Dict[str, Any]] = None
-    ):
+    def __init__(, self, source_id: str, target_id: str, relation_type: str, properties: Optional[Dict[str, Any]] = None):
         if relation_type not in RELATION_TYPES:
             raise ValueError(f"无效的关系类型: {relation_type}")
         
@@ -136,14 +126,9 @@ class VulnKnowledgeGraph:
         """生成唯一的实体ID"""
         import hashlib
         unique_str = f"{entity_type}_{name}_{datetime.now().timestamp()}",
-        return hashlib.md5(unique_str.encode().hexdigest([:16])
+        return hashlib.md5(unique_str.encode(.hexdigest([:16]))
     
-    def add_entity(, self)
-        entity_type: str,
-        name: str,
-        properties: Optional[Dict[str, Any]] = None,
-        entity_id: str = None
-    ) -> str:
+    def add_entity(, self, entity_type: str, name: str, properties: Optional[Dict[str, Any]] = None, entity_id: str = None) -> str:
         """
         添加实体到图谱
         
@@ -186,12 +171,7 @@ class VulnKnowledgeGraph:
         logger.debug(f"添加实体: {entity_type} - {name} ({entity_id})")
         return entity_id
     
-    def add_relation(, self)
-        source_id: str,
-        target_id: str,
-        relation_type: str,
-        properties: Optional[Dict[str, Any]] = None
-    ) -> None:
+    def add_relation(, self, source_id: str, target_id: str, relation_type: str, properties: Optional[Dict[str, Any]] = None) -> None:
         """
         添加关系到图谱
         

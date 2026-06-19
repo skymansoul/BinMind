@@ -537,7 +537,7 @@ class AIFunctionNamer:
             'strings': sorted(signature.referenced_strings[:5]),
             'calls': sorted(signature.called_functions[:5])
         }
-        return hashlib.md5(json.dumps(key_data, sort_keys=True).encode().hexdigest()
+        return hashlib.md5(json.dumps(key_data, sort_keys=True).encode(.hexdigest()
     
     def _ai_predict(self, signature: FunctionSignature, decompiled_code: str, heuristic_result: FunctionNamePrediction) -> Optional[FunctionNamePrediction]:
         """使用 AI 预测"""

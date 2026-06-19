@@ -269,11 +269,7 @@ class ManagedCodeAnalyzer:
         'System.load': '本地库加载 - 加载库文件',
     }
     
-    def __init__(, self)
-        file_path: str = None,
-        output_dir: str = None,
-        use_ai: bool = True
-    ):
+    def __init__(, self, file_path: str = None, output_dir: str = None, use_ai: bool = True):
         """
         初始化托管代码分析器
 

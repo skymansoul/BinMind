@@ -131,10 +131,7 @@ class POCGenerator:
             result += bytes([(i % 26) + ord('A')])
         return result
 
-    def _generate_stack_overflow_poc(, self)
-        vulnerability_info: Dict[str, Any],
-        options: PoCOption
-    ) -> PoCResult:
+    def _generate_stack_overflow_poc(, self, vulnerability_info: Dict[str, Any], options: PoCOption) -> PoCResult:
         """
         生成栈溢出PoC
         
@@ -180,10 +177,7 @@ class POCGenerator:
         
         return result
 
-    def _generate_format_string_poc(, self)
-        vulnerability_info: Dict[str, Any],
-        options: PoCOption
-    ) -> PoCResult:
+    def _generate_format_string_poc(, self, vulnerability_info: Dict[str, Any], options: PoCOption) -> PoCResult:
         """
         生成格式化字符串漏洞PoC
         
@@ -232,10 +226,7 @@ class POCGenerator:
         
         return result
 
-    def _generate_uaf_poc(, self)
-        vulnerability_info: Dict[str, Any],
-        options: PoCOption
-    ) -> PoCResult:
+    def _generate_uaf_poc(, self, vulnerability_info: Dict[str, Any], options: PoCOption) -> PoCResult:
         """
         生成Use-After-Free漏洞PoC
         
@@ -268,10 +259,7 @@ class POCGenerator:
         
         return result
 
-    def _generate_double_free_poc(, self)
-        vulnerability_info: Dict[str, Any],
-        options: PoCOption
-    ) -> PoCResult:
+    def _generate_double_free_poc(, self, vulnerability_info: Dict[str, Any], options: PoCOption) -> PoCResult:
         """
         生成Double Free漏洞PoC
         
@@ -300,10 +288,7 @@ class POCGenerator:
         
         return result
 
-    def _generate_integer_overflow_poc(, self)
-        vulnerability_info: Dict[str, Any],
-        options: PoCOption
-    ) -> PoCResult:
+    def _generate_integer_overflow_poc(, self, vulnerability_info: Dict[str, Any], options: PoCOption) -> PoCResult:
         """
         生成整数溢出漏洞PoC
         
@@ -538,10 +523,7 @@ if __name__ == '__main__':
             logger.error(f"保存PoC文件失败: {e}")
             return ""
 
-    def generate(, self)
-        vulnerability_info: Dict[str, Any],
-        options: PoCOption = None
-    ) -> PoCResult:
+    def generate(, self, vulnerability_info: Dict[str, Any], options: PoCOption = None) -> PoCResult:
         """
         生成PoC
         

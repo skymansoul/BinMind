@@ -70,13 +70,7 @@ FIRMWARE_EXTENSIONS = {
 class FirmwareFormat:
     """固件格式识别结果"""
     
-    def __init__(, self)
-        name: str,
-        offset: int = 0,
-        size: int = 0,
-        compression: str = None,
-        confidence: float = 0.0
-    ):
+    def __init__(, self, name: str, offset: int = 0, size: int = 0, compression: str = None, confidence: float = 0.0):
         self.name = name
         self.offset = offset
         self.size = size
@@ -98,12 +92,7 @@ class FirmwareExtractor:
     4. 支持 binwalk、jefferson 等工具，以及纯 Python 回退方案
     """
     
-    def __init__(, self)
-        firmware_path: str,
-        output_base_dir: str = None,
-        use_binwalk: bool = True,
-        use_jefferson: bool = True
-    ):
+    def __init__(, self, firmware_path: str, output_base_dir: str = None, use_binwalk: bool = True, use_jefferson: bool = True):
         """
         初始化固件提取器
         

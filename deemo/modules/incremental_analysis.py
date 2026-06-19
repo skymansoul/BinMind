@@ -57,8 +57,7 @@ class IncrementalUpdate:
 
 
 class IncrementalAnalysisCache:
-    def __init__()
-        self,
+    def __init__(, self)
         cache_dir: str = ".cache",
         strategy: CacheStrategy = CacheStrategy.LRU,
         max_entries: int = 1000,

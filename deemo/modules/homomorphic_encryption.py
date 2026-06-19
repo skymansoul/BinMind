@@ -274,10 +274,7 @@ class HECore:
     def _decrypt_simulated(self, encrypted_data: EncryptedData) -> List[int]:
         return [~x & 0xFF for x in encrypted_data.ciphertext]
     
-    def homomorphic_add(, self)
-        encrypted_a: EncryptedData,
-        encrypted_b: EncryptedData
-    ) -> EncryptedData:
+    def homomorphic_add(, self, encrypted_a: EncryptedData, encrypted_b: EncryptedData) -> EncryptedData:
         if not self._initialized:
             raise RuntimeError("加密核心未初始化")
         
@@ -328,10 +325,7 @@ class HECore:
         
 
     
-    def homomorphic_multiply(, self)
-        encrypted_a: EncryptedData,
-        encrypted_b: EncryptedData
-    ) -> EncryptedData:
+    def homomorphic_multiply(, self, encrypted_a: EncryptedData, encrypted_b: EncryptedData) -> EncryptedData:
         if not self._initialized:
             raise RuntimeError("加密核心未初始化")
         
@@ -407,10 +401,7 @@ class VulnerabilityFeatureMatcher:
         results.sort(key=lambda x: x.confidence, reverse=True)
         return results
     
-    def _match_single_signature(, self)
-        encrypted_binary: EncryptedData,
-        encrypted_signature: EncryptedData
-    ) -> HEMatchResult:
+    def _match_single_signature(, self, encrypted_binary: EncryptedData, encrypted_signature: EncryptedData) -> HEMatchResult:
         try:
             product = self.he_core.homomorphic_multiply(encrypted_binary, encrypted_signature)
             score = self._compute_similarity_score(product)

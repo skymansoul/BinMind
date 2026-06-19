@@ -87,7 +87,7 @@ class FunctionDoc:
         h.update(self.func_name.encode("utf-8"))
         h.update(b"\x00")
         h.update(str(self.func_offset).encode("utf-8"))
-        return h.hexdigest()[:32]
+        return h.hexdigest([:32])
 
 
 class ESBackend:
@@ -254,19 +254,19 @@ class SQLiteBackend:
             if regex:
                 # FTS5 不支持正则, 用 LIKE 兜底
                 sql = "SELECT * FROM functions WHERE decomp_text LIKE ?"
-                params: Tuple = (f"%{query}%",)
+                params: Tuple = (f"%{query}%")
             else:
                 sql = """
                     SELECT f.* FROM functions f
                     JOIN functions_fts fts ON fts.rowid = f.rowid
                     WHERE functions_fts MATCH ?
                 """
-                params = (query,)
+                params = (query)
             if project:
                 sql += " AND project = ?"
-                params = params + (project,)
+                params = params + (project)
             sql += " LIMIT ?"
-            params = params + (limit,)
+            params = params + (limit)
             try:
                 cur = c.execute(sql, params)
             except sqlite3.OperationalError:
@@ -365,8 +365,7 @@ def build_function_doc(
     arch: str = "",
     file_path: str = "",
     func_offset: int = 0,
-    constants: Optional[List[str]] = None,
-) -> FunctionDoc:
+    constants: Optional[List[str]] = None) -> FunctionDoc:
     return FunctionDoc(
         func_name=func_name,
         binary_id=binary_id,

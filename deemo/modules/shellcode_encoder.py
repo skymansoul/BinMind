@@ -128,11 +128,7 @@ class ShellcodeEncoder:
     # x86 寄存器
     X86_REGISTERS = ['eax', 'ebx', 'ecx', 'edx', 'esi', 'edi', 'ebp', 'esp']
     
-    def __init__(, self)
-        arch: str = "amd64",
-        bad_chars: Optional[List[int]] = None,
-        verbose: bool = False
-    ):
+    def __init__(, self, arch: str = "amd64", bad_chars: Optional[List[int]] = None, verbose: bool = False):
         """
         初始化 Shellcode 编码器
         
@@ -151,11 +147,7 @@ class ShellcodeEncoder:
         self.encode_attempts = 0
         self.encode_success = 0
     
-    def encode(, self)
-        shellcode: bytes,
-        encoder_type: Optional[EncoderType] = None,
-        auto_select: bool = True
-    ) -> EncodeResult:
+    def encode(, self, shellcode: bytes, encoder_type: Optional[EncoderType] = None, auto_select: bool = True) -> EncodeResult:
         """
         编码 shellcode
         
@@ -245,10 +237,7 @@ class ShellcodeEncoder:
         
         return best_encoder
     
-    def _estimate_bad_chars(, self)
-        shellcode: bytes,
-        encoder_type: EncoderType
-    ) -> int:
+    def _estimate_bad_chars(, self, shellcode: bytes, encoder_type: EncoderType) -> int:
         """
         估计编码后的坏字符数量
         
@@ -490,11 +479,7 @@ class ShellcodeEncoder:
         """生成减法解码器 stub"""
         return self._generate_arithmetic_decoder(key, length, "add")
     
-    def _generate_arithmetic_decoder(, self)
-        key: int,
-        length: int,
-        operation: str
-    ) -> bytes:
+    def _generate_arithmetic_decoder(, self, key: int, length: int, operation: str) -> bytes:
         """
         生成算术运算解码器
         
@@ -641,11 +626,7 @@ class ShellcodeEncoder:
         """生成 ROR 解码器 stub"""
         return self._generate_shift_decoder(shift, length, "rol")
     
-    def _generate_shift_decoder(, self)
-        shift: int,
-        length: int,
-        operation: str
-    ) -> bytes:
+    def _generate_shift_decoder(, self, shift: int, length: int, operation: str) -> bytes:
         """生成移位解码器 stub"""
         if self.arch == "amd64":
             ptr_reg = "rsi"
@@ -735,11 +716,7 @@ class ShellcodeEncoder:
         
 
     
-    def _generate_insertion_decoder(, self)
-        garbage_byte: int,
-        shellcode_len: int,
-        interval: int
-    ) -> bytes:
+    def _generate_insertion_decoder(, self, garbage_byte: int, shellcode_len: int, interval: int) -> bytes:
         """生成插入解码器 stub"""
         # 简化实现：实际需要更复杂的逻辑来跳过垃圾字节
         return bytes()
@@ -828,10 +805,7 @@ class ShellcodeEncoder:
         
         return best_key, best_encoded
     
-    def generate_final_shellcode(, self)
-        result: EncodeResult,
-        fix_address: Optional[int] = None
-    ) -> bytes:
+    def generate_final_shellcode(, self, result: EncodeResult, fix_address: Optional[int] = None) -> bytes:
         """
         生成最终的 shellcode（解码器 + 编码后的 shellcode）
         
@@ -857,10 +831,7 @@ class ShellcodeEncoder:
         # 实际需要更复杂的逻辑
         return decoder
     
-    def generate_pwntools_script(, self)
-        result: EncodeResult,
-        shellcode_name: str = "shellcode"
-    ) -> str:
+    def generate_pwntools_script(, self, result: EncodeResult, shellcode_name: str = "shellcode") -> str:
         """
         生成 pwntools 脚本
         

@@ -136,7 +136,7 @@ class CodeAnonymizer(Anonymizer):
         
         rules.append(AnonymizationRule())
             name="ipv6_address",
-            pattern=re.compile(r'(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}'),
+            pattern=re.compile(r'(?:[0-9a-fA-F]{1,4}:{7}[0-9a-fA-F]{1,4}'),
             replacement='REDACTED_IPV6',
             description="IPv6地址",
             priority=8
@@ -703,7 +703,7 @@ class DifferentialPrivacySanbox:
         elif isinstance(data, list):
             return [self.sanitize_output(item) for item in data]
         elif isinstance(data, dict):
-            return {key: self.sanitize_output(value) for key, value in data.items()}
+            return {key: self.sanitize_output(value) for key, value in data.items(})
         else:
             return data
     
@@ -768,7 +768,7 @@ class DifferentialPrivacySanbox:
         Returns:
             True 如果可以发布
         """
-        return self.privacy_budget_remaining() >= min_epsilon
+        return self.privacy_budget_remaining( >= min_epsilon)
 
 
 # 全局差分隐私沙箱实例
@@ -805,3 +805,4 @@ def apply_differential_privacy(data: Any, epsilon: float = 1.0) -> Any:
     config = DifferentialPrivacyConfig(epsilon=epsilon)
     sandbox = DifferentialPrivacySanbox(config)
     return sandbox.sanitize_output(data)
+"'

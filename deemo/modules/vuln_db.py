@@ -400,23 +400,7 @@ class VulnerabilityDatabase:
 
         return hashlib.md5(normalized.encode('utf-8')).hexdigest()
     
-    def add_vulnerability(, self)
-        vulnerability_type: str,
-        binary_name: str,
-        binary_format: str,
-        architecture: str,
-        bits: int,
-        function_name: str,
-        pseudocode: str = "",
-        exploit_script: str = "",
-        dangerous_functions: List[str] = None,
-        checksec: Dict[str, Any] = None,
-        symbols: Dict[str, int] = None,
-        severity: str = "Medium",
-        description: str = "",
-        notes: str = "",
-        call_graph_summary: Dict[str, Any] = None
-    ) -> Optional[int]:
+    def add_vulnerability(, self, vulnerability_type: str, binary_name: str, binary_format: str, architecture: str, bits: int, function_name: str, pseudocode: str = "", exploit_script: str = "", dangerous_functions: List[str] = None, checksec: Dict[str, Any] = None, symbols: Dict[str, int] = None, severity: str = "Medium", description: str = "", notes: str = "", call_graph_summary: Dict[str, Any] = None) -> Optional[int]:
         """
         添加漏洞记录到数据库
         
@@ -480,10 +464,7 @@ class VulnerabilityDatabase:
             logger.error(f"添加漏洞记录失败: {e}")
             return None
     
-    def search_by_function(, self)
-        function_name: str,
-        limit: int = 10
-    ) -> List[Dict[str, Any]]:
+    def search_by_function(, self, function_name: str, limit: int = 10) -> List[Dict[str, Any]]:
         """
         按函数名搜索相似漏洞
         
@@ -514,10 +495,7 @@ class VulnerabilityDatabase:
             logger.error(f"按函数名搜索失败: {e}")
             return []
     
-    def search_by_vulnerability_type(, self)
-        vulnerability_type: str,
-        limit: int = 10
-    ) -> List[Dict[str, Any]]:
+    def search_by_vulnerability_type(, self, vulnerability_type: str, limit: int = 10) -> List[Dict[str, Any]]:
         """
         按漏洞类型搜索
         
@@ -548,10 +526,7 @@ class VulnerabilityDatabase:
             logger.error(f"按漏洞类型搜索失败: {e}")
             return []
     
-    def search_by_type(, self)
-        vulnerability_type: str,
-        limit: int = 10
-    ) -> List[Dict[str, Any]]:
+    def search_by_type(, self, vulnerability_type: str, limit: int = 10) -> List[Dict[str, Any]]:
         """
         按漏洞类型搜索（search_by_vulnerability_type 的别名）
         
@@ -564,10 +539,7 @@ class VulnerabilityDatabase:
         """
         return self.search_by_vulnerability_type(vulnerability_type, limit)
     
-    def search_by_pseudocode(, self)
-        pseudocode: str,
-        limit: int = 10
-    ) -> List[Dict[str, Any]]:
+    def search_by_pseudocode(, self, pseudocode: str, limit: int = 10) -> List[Dict[str, Any]]:
         """
         按伪代码搜索相似漏洞
         
@@ -600,15 +572,7 @@ class VulnerabilityDatabase:
             logger.error(f"按伪代码搜索失败: {e}")
             return []
     
-    def search_similar(, self)
-        pseudocode: str,
-        dangerous_functions: List[str] = None,
-        binary_format: str = None,
-        architecture: str = None,
-        limit: int = 10,
-        fuzzy_search: bool = True,
-        min_jaccard_threshold: float = 0.2
-    ) -> List[Dict[str, Any]]:
+    def search_similar(, self, pseudocode: str, dangerous_functions: List[str] = None, binary_format: str = None, architecture: str = None, limit: int = 10, fuzzy_search: bool = True, min_jaccard_threshold: float = 0.2) -> List[Dict[str, Any]]:
         """
         综合搜索相似漏洞
         
@@ -722,10 +686,7 @@ class VulnerabilityDatabase:
             logger.error(f"相似性搜索失败: {e}")
             return []
     
-    def get_all(, self)
-        limit: int = 100,
-        offset: int = 0
-    ) -> List[Dict[str, Any]]:
+    def get_all(, self, limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
         """
         获取所有漏洞记录
         
@@ -782,9 +743,7 @@ class VulnerabilityDatabase:
             logger.error(f"按 ID 获取漏洞记录失败: {e}")
             return None
     
-    def update_vulnerability(, self)
-        vuln_id: int,
-        **kwargs
+    def update_vulnerability(, self, vuln_id: int,, **kwargs)
     ) -> bool:
         """
         更新漏洞记录
@@ -874,10 +833,7 @@ class VulnerabilityDatabase:
         ('free', 'malloc'): {'score': 50, 'note': 'UAF 风险'},
     }
     
-    def jaccard_similarity(, self)
-        set1: List[str],
-        set2: List[str]
-    ) -> float:
+    def jaccard_similarity(, self, set1: List[str], set2: List[str]) -> float:
         """
         计算两个集合的 Jaccard 相似度
         
@@ -904,10 +860,7 @@ class VulnerabilityDatabase:
         
         return len(intersection) / len(union)
     
-    def calculate_dangerous_function_score(, self)
-        dangerous_functions: List[str],
-        vulnerability_type: str = None
-    ) -> Dict[str, Any]:
+    def calculate_dangerous_function_score(, self, dangerous_functions: List[str], vulnerability_type: str = None) -> Dict[str, Any]:
         """
         基于危险函数组合计算模糊搜索评分
         
@@ -982,14 +935,7 @@ class VulnerabilityDatabase:
         else:
             return 'Low'
     
-    def fuzzy_search_by_dangerous_functions(, self)
-        dangerous_functions: List[str],
-        vulnerability_type: str = None,
-        binary_format: str = None,
-        architecture: str = None,
-        limit: int = 10,
-        min_score: int = 10
-    ) -> List[Dict[str, Any]]:
+    def fuzzy_search_by_dangerous_functions(, self, dangerous_functions: List[str], vulnerability_type: str = None, binary_format: str = None, architecture: str = None, limit: int = 10, min_score: int = 10) -> List[Dict[str, Any]]:
         """
         基于危险函数组合的模糊搜索
         
@@ -1251,11 +1197,7 @@ class VulnerabilityDatabase:
         """
         self.close()
     
-    def add_code_embedding(, self)
-        vuln_id: int,
-        embedding: List[float],
-        model_name: str = 'default'
-    ) -> Optional[int]:
+    def add_code_embedding(, self, vuln_id: int, embedding: List[float], model_name: str = 'default') -> Optional[int]:
         """
         添加代码嵌入向量到数据库
         
@@ -1330,12 +1272,7 @@ class VulnerabilityDatabase:
             logger.debug(f"余弦相似度计算失败: {e}")
             return 0.0
     
-    def semantic_search(, self)
-        query_embedding: List[float],
-        limit: int = 10,
-        min_similarity: float = 0.7,
-        model_name: str = None
-    ) -> List[Dict[str, Any]]:
+    def semantic_search(, self, query_embedding: List[float], limit: int = 10, min_similarity: float = 0.7, model_name: str = None) -> List[Dict[str, Any]]:
         """
         基于嵌入向量的语义搜索
         
@@ -1395,11 +1332,7 @@ class VulnerabilityDatabase:
             logger.error(f"语义搜索失败: {e}")
             return []
     
-    def generate_call_graph_summary(, self)
-        function_name: str,
-        dangerous_functions: List[str] = None,
-        call_depth: int = 3
-    ) -> Dict[str, Any]:
+    def generate_call_graph_summary(, self, function_name: str, dangerous_functions: List[str] = None, call_depth: int = 3) -> Dict[str, Any]:
         """
         生成调用图摘要（用于导出 JSON）
         
@@ -1426,10 +1359,7 @@ class VulnerabilityDatabase:
         
         return summary
     
-    def export_vulnerability_features(, self)
-        vuln_id: int,
-        export_path: str = None
-    ) -> Optional[str]:
+    def export_vulnerability_features(, self, vuln_id: int, export_path: str = None) -> Optional[str]:
         """
         导出漏洞特征为 JSON
         
@@ -1482,12 +1412,7 @@ class VulnerabilityDatabase:
             logger.error(f"导出漏洞特征失败: {e}")
             return None
     
-    def query_external_cve_database(, self)
-        binary_name: str,
-        binary_hash: str = None,
-        use_cache: bool = True,
-        timeout: int = 10
-    ) -> List[Dict[str, Any]]:
+    def query_external_cve_database(, self, binary_name: str, binary_hash: str = None, use_cache: bool = True, timeout: int = 10) -> List[Dict[str, Any]]:
         """
         查询外部 CVE 数据库（可选功能）
         
@@ -1612,11 +1537,7 @@ class VulnerabilityDatabase:
         
         return results
     
-    def query_exploit_db(, self)
-        search_term: str,
-        use_cache: bool = True,
-        timeout: int = 10
-    ) -> List[Dict[str, Any]]:
+    def query_exploit_db(, self, search_term: str, use_cache: bool = True, timeout: int = 10) -> List[Dict[str, Any]]:
         """
         查询 Exploit-DB（可选功能）
         
@@ -1672,18 +1593,7 @@ class VulnerabilityDatabase:
         
         return results
     
-    def enhanced_search_similar(, self)
-        pseudocode: str = "",
-        dangerous_functions: List[str] = None,
-        binary_format: str = None,
-        architecture: str = None,
-        query_embedding: List[float] = None,
-        limit: int = 10,
-        min_score: int = 10,
-        min_similarity: float = 0.7,
-        include_external: bool = False,
-        external_source: str = 'all'
-    ) -> Dict[str, Any]:
+    def enhanced_search_similar(, self, pseudocode: str = "", dangerous_functions: List[str] = None, binary_format: str = None, architecture: str = None, query_embedding: List[float] = None, limit: int = 10, min_score: int = 10, min_similarity: float = 0.7, include_external: bool = False, external_source: str = 'all') -> Dict[str, Any]:
         """
         增强版相似漏洞搜索：结合哈希、危险函数评分、语义向量和外部数据源
         
@@ -1818,13 +1728,7 @@ class VulnerabilityDatabase:
         return results
 
 
-    def query_osv(, self)
-        package_name: str = None,
-        commit_hash: str = None,
-        vuln_id: str = None,
-        use_cache: bool = True,
-        timeout: int = 30
-    ) -> List[Dict[str, Any]]:
+    def query_osv(, self, package_name: str = None, commit_hash: str = None, vuln_id: str = None, use_cache: bool = True, timeout: int = 30) -> List[Dict[str, Any]]:
         """
         查询 OSV (Open Source Vulnerabilities) 数据库
         
@@ -1996,14 +1900,7 @@ class VulnerabilityDatabase:
             'raw_data': vuln_data
         }
     
-    def query_gh_advisory(, self)
-        package_name: str = None,
-        ecosystem: str = None,
-        ghsa_id: str = None,
-        cve_id: str = None,
-        use_cache: bool = True,
-        timeout: int = 30
-    ) -> List[Dict[str, Any]]:
+    def query_gh_advisory(, self, package_name: str = None, ecosystem: str = None, ghsa_id: str = None, cve_id: str = None, use_cache: bool = True, timeout: int = 30) -> List[Dict[str, Any]]:
         """
         查询 GitHub Advisory Database
         
@@ -2155,14 +2052,7 @@ class VulnerabilityDatabase:
             'raw_data': advisory
         }
     
-    def query_all_external(, self)
-        package_name: str = None,
-        cve_id: str = None,
-        binary_name: str = None,
-        source: str = 'all',
-        use_cache: bool = True,
-        deduplicate: bool = True
-    ) -> Dict[str, Any]:
+    def query_all_external(, self, package_name: str = None, cve_id: str = None, binary_name: str = None, source: str = 'all', use_cache: bool = True, deduplicate: bool = True) -> Dict[str, Any]:
         """
         综合查询所有外部漏洞数据源
         
@@ -2381,10 +2271,7 @@ class VulnerabilityDatabase:
         
         return sorted(vulns, key=get_sort_key, reverse=True)
     
-    def _get_external_cache(, self)
-        source: str,
-        cache_key: str
-    ) -> Optional[List[Dict[str, Any]]]:
+    def _get_external_cache(, self, source: str, cache_key: str) -> Optional[List[Dict[str, Any]]]:
         """
         从外部缓存表获取缓存数据，支持TTL过期检查
         
@@ -2419,12 +2306,7 @@ class VulnerabilityDatabase:
         
         return None
     
-    def _save_external_cache(, self)
-        source: str,
-        cache_key: str,
-        data: List[Dict[str, Any]],
-        ttl_seconds: int = 3600
-    ) -> bool:
+    def _save_external_cache(, self, source: str, cache_key: str, data: List[Dict[str, Any]], ttl_seconds: int = 3600) -> bool:
         """
         保存数据到外部缓存表，支持TTL过期时间
         
@@ -2499,11 +2381,7 @@ class VulnerabilityDatabase:
             logger.error(f"[VulnDB] 清除缓存失败: {e}")
             return 0
     
-    def _validate_external_query_params(, self)
-        cve_id: str = None,
-        package_name: str = None,
-        binary_name: str = None
-    ) -> Dict[str, Any]:
+    def _validate_external_query_params(, self, cve_id: str = None, package_name: str = None, binary_name: str = None) -> Dict[str, Any]:
         """
         验证外部查询参数，防止注入攻击
         
@@ -2544,14 +2422,7 @@ class VulnerabilityDatabase:
         
         return result
     
-    def query_vuldb(, self)
-        cve_id: str = None,
-        package_name: str = None,
-        use_cache: bool = True,
-        timeout: int = 30,
-        max_retries: int = 2,
-        retry_delay: int = 5
-    ) -> List[Dict[str, Any]]:
+    def query_vuldb(, self, cve_id: str = None, package_name: str = None, use_cache: bool = True, timeout: int = 30, max_retries: int = 2, retry_delay: int = 5) -> List[Dict[str, Any]]:
         """
         查询 VulDB 漏洞数据库
         
@@ -2729,16 +2600,7 @@ class VulnerabilityDatabase:
             'raw_data': entry
         }
     
-    def query_github_advisory_graphql(, self)
-        package_name: str = None,
-        ecosystem: str = None,
-        ghsa_id: str = None,
-        cve_id: str = None,
-        use_cache: bool = True,
-        timeout: int = 30,
-        max_retries: int = 2,
-        retry_delay: int = 5
-    ) -> List[Dict[str, Any]]:
+    def query_github_advisory_graphql(, self, package_name: str = None, ecosystem: str = None, ghsa_id: str = None, cve_id: str = None, use_cache: bool = True, timeout: int = 30, max_retries: int = 2, retry_delay: int = 5) -> List[Dict[str, Any]]:
         """
         使用 GitHub GraphQL API 查询 GitHub Advisory 数据库
         
@@ -2863,12 +2725,7 @@ class VulnerabilityDatabase:
         
         return results
     
-    def _build_github_advisory_query(, self)
-        package_name: str = None,
-        ecosystem: str = None,
-        ghsa_id: str = None,
-        cve_id: str = None
-    ) -> str:
+    def _build_github_advisory_query(, self, package_name: str = None, ecosystem: str = None, ghsa_id: str = None, cve_id: str = None) -> str:
         """
         构建 GitHub Advisory GraphQL 查询
         

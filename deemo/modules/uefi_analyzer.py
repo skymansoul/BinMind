@@ -204,12 +204,7 @@ class UEFIFirmwareAnalyzer:
         'TE': b'VZ',  # Terse Executable
     }
     
-    def __init__(, self)
-        firmware_path: str,
-        output_dir: Optional[str] = None,
-        extract_modules: bool = True,
-        analyze_smm: bool = True
-    ):
+    def __init__(, self, firmware_path: str, output_dir: Optional[str] = None, extract_modules: bool = True, analyze_smm: bool = True):
         """
         初始化 UEFI 固件分析器
         

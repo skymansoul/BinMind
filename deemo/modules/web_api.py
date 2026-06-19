@@ -914,8 +914,7 @@ if FASTAPI_AVAILABLE:
 
             
             @app.put("/api/users/{user_id}/role", response_model=APIResponse)
-            async def update_user_role(, user_id: str)
-                role: str,
+            async def update_user_role(, user_id: str, role: str)
                 current_user = Depends(require_admin)
             ):
                 """
@@ -966,8 +965,7 @@ if FASTAPI_AVAILABLE:
                 role: str = Field("viewer", description="角色: admin, analyst, viewer")
             
             @app.post("/api/projects/{project_id}/invite", response_model=APIResponse)
-            async def invite_user_to_project(, project_id: str)
-                request: ProjectInviteRequest,
+            async def invite_user_to_project(, project_id: str, request: ProjectInviteRequest)
                 user = Depends(get_current_user)
             ):
                 """
@@ -1019,8 +1017,7 @@ if FASTAPI_AVAILABLE:
 
             
             @app.get("/api/projects/{project_id}/members", response_model=APIResponse)
-            async def get_project_members(, project_id: str)
-                user = Depends(get_current_user)
+            async def get_project_members(, project_id: str, user = Depends(get_current_user))
             ):
                 """
                 获取项目成员列表
@@ -1064,8 +1061,7 @@ if FASTAPI_AVAILABLE:
                 target_id: str = Field(..., description="目标 ID")
             
             @app.post("/api/comments", response_model=APIResponse)
-            async def add_comment(, request: CommentRequest)
-                user = Depends(get_current_user)
+            async def add_comment(, request: CommentRequest, user = Depends(get_current_user))
             ):
                 """
                 添加注释
@@ -1149,8 +1145,7 @@ if FASTAPI_AVAILABLE:
                 status: str = Field(..., description="新状态: confirmed, false_positive, fixed")
             
             @app.put("/api/vulnerabilities/{vuln_id}/status", response_model=APIResponse)
-            async def update_vulnerability_status(, vuln_id: int)
-                request: VulnerabilityStatusRequest,
+            async def update_vulnerability_status(, vuln_id: int, request: VulnerabilityStatusRequest)
                 user = Depends(get_current_user)
             ):
                 """
@@ -1201,8 +1196,7 @@ if FASTAPI_AVAILABLE:
             # ==================== 审计日志端点 ====================
             
             @app.get("/api/audit/logs", response_model=APIResponse)
-            async def get_audit_logs(, page: int = 0)
-                limit: int = 100,
+            async def get_audit_logs(, page: int = 0, limit: int = 100)
                 user = Depends(require_admin)
             ):
                 """
@@ -1260,8 +1254,7 @@ if FASTAPI_AVAILABLE:
                 }
             
             @app.post("/api/analyze", response_model=APIResponse)
-            async def submit_analysis(, request: AnalysisRequest)
-                background_tasks: BackgroundTasks
+            async def submit_analysis(, request: AnalysisRequest, background_tasks: BackgroundTasks)
             ):
                 """
                 提交分析任务
@@ -1606,8 +1599,7 @@ if FASTAPI_AVAILABLE:
 
             
             @app.post("/api/vulnerabilities/external")
-            async def query_external_vulnerabilities(, package_name: str = None)
-                cve_id: str = None,
+            async def query_external_vulnerabilities(, package_name: str = None, cve_id: str = None)
                 binary_name: str = None,
                 source: str = 'all'
             ):
@@ -2307,8 +2299,7 @@ if FASTAPI_AVAILABLE:
             # ==================== 漏洞利用验证端点 ====================
 
             @app.post("/api/tasks/{task_id}/verify")
-            async def trigger_exploit_verification(, task_id: str)
-                verify_count: int = 5,
+            async def trigger_exploit_verification(, task_id: str, verify_count: int = 5)
                 background_tasks: BackgroundTasks = None
             ):
                 """
@@ -2419,8 +2410,7 @@ if FASTAPI_AVAILABLE:
                 anonymize: bool = Field(False, description="是否匿名查询")
 
             @app.post("/api/threat_intel/query")
-            async def query_threat_intel(, request: ThreatIntelQuery)
-                background_tasks: BackgroundTasks = None
+            async def query_threat_intel(, request: ThreatIntelQuery, background_tasks: BackgroundTasks = None)
             ):
                 """
                 提交威胁情报查询
@@ -2601,8 +2591,7 @@ if FASTAPI_AVAILABLE:
 
 
             @app.post("/api/agents/results")
-            async def submit_agent_results(, agent_id: str)
-                token: str,
+            async def submit_agent_results(, agent_id: str, token: str)
                 task_id: str,
                 result: Dict[str, Any]
             ):
@@ -2647,8 +2636,7 @@ if FASTAPI_AVAILABLE:
 
 
             @app.post("/api/agents/heartbeat")
-            async def agent_heartbeat(, agent_id: str)
-                token: str,
+            async def agent_heartbeat(, agent_id: str, token: str)
                 timestamp: Optional[str] = None,
                 status: Optional[str] = "online"
             ):
@@ -2805,8 +2793,7 @@ if FASTAPI_AVAILABLE:
 
 
             @app.post("/api/agents/{agent_id}/command", response_model=APIResponse)
-            async def send_command_to_agent(, agent_id: str)
-                request: AgentCommandRequest,
+            async def send_command_to_agent(, agent_id: str, request: AgentCommandRequest)
                 admin_user = Depends(require_admin)
             ):
                 """
@@ -2857,8 +2844,7 @@ if FASTAPI_AVAILABLE:
 
 
             @app.post("/api/agents/task/create", response_model=APIResponse)
-            async def create_agent_task(, request: AgentTaskRequest)
-                admin_user = Depends(require_admin)
+            async def create_agent_task(, request: AgentTaskRequest, admin_user = Depends(require_admin))
             ):
                 """
                 创建代理任务（管理员权限）
@@ -2895,8 +2881,7 @@ if FASTAPI_AVAILABLE:
 
 
             @app.post("/api/agents/task/{task_id}/assign/{agent_id}", response_model=APIResponse)
-            async def assign_task_to_agent(, task_id: str)
-                agent_id: str,
+            async def assign_task_to_agent(, task_id: str, agent_id: str)
                 admin_user = Depends(require_admin)
             ):
                 """

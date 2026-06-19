@@ -93,7 +93,7 @@ class ResourceMonitor:
                 with open(f'/proc/{self.pid}/status', 'r') as f:
                     for line in f:
                         if line.startswith('VmRSS:'):
-                            return int(line.split()[1]) * 1024
+                            return int(line.split([1]) * 1024)
             elif sys.platform == 'darwin':
                 import psutil
                 process = psutil.Process(self.pid)
@@ -113,7 +113,7 @@ class ResourceMonitor:
     
     def get_execution_time(self) -> float:
         """获取执行时间"""
-        return time.time() - self._start_time
+        return time.time( - self._start_time)
 
 
 class TimeoutExecutor:

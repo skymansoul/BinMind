@@ -344,11 +344,7 @@ class LLMGuidedSymbolicExecutor(BaseAnalyzer):
             logger.error(f"LLM 引导的符号执行失败: {e}")
             return {"success": False, "error": str(e)}
     
-    def _run_guided_symbolic_execution(, self)
-        binary_path: str, 
-        max_paths: int, 
-        max_depth: int
-    ) -> Dict[str, Any]:
+    def _run_guided_symbolic_execution(, self, binary_path: str, max_paths: int, max_depth: int) -> Dict[str, Any]:
         """
         执行引导式符号执行
         

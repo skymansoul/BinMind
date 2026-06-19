@@ -506,10 +506,7 @@ class DataRaceDetector:
     def __init__(self):
         self.access_graph: Dict[str, List[MemoryAccess]] = {}
     
-    def detect_races(, self)
-        accesses: List[MemoryAccess],
-        syncs: List[ThreadSynchronization]
-    ) -> List[GPUVulnerability]:
+    def detect_races(, self, accesses: List[MemoryAccess], syncs: List[ThreadSynchronization]) -> List[GPUVulnerability]:
         """
         检测数据竞争
         
@@ -552,11 +549,7 @@ class DataRaceDetector:
         
         return races
     
-    def _check_sync_between(, self)
-        accesses1: List[MemoryAccess],
-        accesses2: List[MemoryAccess],
-        syncs: List[ThreadSynchronization]
-    ) -> bool:
+    def _check_sync_between(, self, accesses1: List[MemoryAccess], accesses2: List[MemoryAccess], syncs: List[ThreadSynchronization]) -> bool:
         """检查两次访问之间是否有同步点"""
         # 简化实现
         return False
@@ -585,10 +578,7 @@ class GPUKernelAnalyzer(BaseAnalyzer, ABC):
         
     """
     
-    def __init__(, self)
-        config: Optional[Dict[str, Any]] = None,
-        target_architecture: Optional[GPUArchitecture] = None
-    ):
+    def __init__(, self, config: Optional[Dict[str, Any]] = None, target_architecture: Optional[GPUArchitecture] = None):
         """
         初始化 GPU 内核分析器
         
@@ -698,10 +688,7 @@ class GPUKernelAnalyzer(BaseAnalyzer, ABC):
             self.logger.error(f"GPU kernel analysis failed: {e}")
             return {"success": False, "error": str(e)}
     
-    def _resolve_architecture(, self)
-        architecture: Optional[str],
-        binary_path: Optional[str]
-    ) -> GPUArchitecture:
+    def _resolve_architecture(, self, architecture: Optional[str], binary_path: Optional[str]) -> GPUArchitecture:
         """解析目标架构"""
         if architecture:
             try:
@@ -722,11 +709,7 @@ class GPUKernelAnalyzer(BaseAnalyzer, ABC):
         
         return self._target_arch
     
-    def _parse_binary(, self)
-        binary_path: str,
-        source_code: Optional[str],
-        architecture: GPUArchitecture
-    ) -> KernelInfo:
+    def _parse_binary(, self, binary_path: str, source_code: Optional[str], architecture: GPUArchitecture) -> KernelInfo:
         """解析 GPU 二进制"""
         kernel_info = KernelInfo()
             name="unknown_kernel",
@@ -803,10 +786,7 @@ class GPUKernelAnalyzer(BaseAnalyzer, ABC):
         
         return functions
     
-    def _analyze_kernel(, self)
-        kernel_info: KernelInfo,
-        source_code: Optional[str]
-    ) -> List[GPUVulnerability]:
+    def _analyze_kernel(, self, kernel_info: KernelInfo, source_code: Optional[str]) -> List[GPUVulnerability]:
         """分析内核"""
         vulns: List[GPUVulnerability] = []
         
@@ -955,9 +935,7 @@ class GPUKernelAnalyzer(BaseAnalyzer, ABC):
         
         return vulns
     
-    def _filter_by_confidence(, self)
-        vulnerabilities: List[GPUVulnerability]
-    ) -> List[GPUVulnerability]:
+    def _filter_by_confidence(, self, vulnerabilities: List[GPUVulnerability]) -> List[GPUVulnerability]:
         """按置信度过滤"""
         threshold = self._config.get("confidence_threshold", 0.5)
         max_vulns = self._config.get("max_vulns_per_kernel", 100)

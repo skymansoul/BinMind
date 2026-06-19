@@ -443,10 +443,7 @@ class SerializationAttackDetector:
             "joblib": ["__reduce__", "__setstate__"]
         }
     
-    def detect_malicious_deserialization(, self)
-        model_format: ModelFormat,
-        metadata: Dict[str, Any]
-    ) -> List[SecurityFinding]:
+    def detect_malicious_deserialization(, self, model_format: ModelFormat, metadata: Dict[str, Any]) -> List[SecurityFinding]:
         """检测恶意反序列化"""
         findings = []
         
@@ -461,9 +458,7 @@ class SerializationAttackDetector:
         
         return findings
     
-    def _check_pickle_vulnerabilities(, self)
-        metadata: Dict[str, Any]
-    ) -> List[SecurityFinding]:
+    def _check_pickle_vulnerabilities(, self, metadata: Dict[str, Any]) -> List[SecurityFinding]:
         """检查 pickle 漏洞"""
         findings = []
         
@@ -471,9 +466,7 @@ class SerializationAttackDetector:
         # 简化实现
         return findings
     
-    def _check_yaml_vulnerabilities(, self)
-        metadata: Dict[str, Any]
-    ) -> List[SecurityFinding]:
+    def _check_yaml_vulnerabilities(, self, metadata: Dict[str, Any]) -> List[SecurityFinding]:
         """检查 YAML 漏洞"""
         findings = []
         
@@ -625,10 +618,7 @@ class NNModelScanner(BaseAnalyzer, ABC):
             self.logger.error(f"Model scan failed: {e}")
             return {"success": False, "error": str(e)}
     
-    def _detect_format(, self)
-        data: bytes,
-        specified_format: Optional[str]
-    ) -> ModelFormat:
+    def _detect_format(, self, data: bytes, specified_format: Optional[str]) -> ModelFormat:
         """检测模型格式"""
         if specified_format:
             try:
@@ -646,10 +636,7 @@ class NNModelScanner(BaseAnalyzer, ABC):
         
         return ModelFormat.UNKNOWN
     
-    def _extract_metadata(, self)
-        data: bytes,
-        model_format: ModelFormat
-    ) -> ModelMetadata:
+    def _extract_metadata(, self, data: bytes, model_format: ModelFormat) -> ModelMetadata:
         """提取模型元数据"""
         name = "unknown"
         producer = None
@@ -732,9 +719,7 @@ class NNModelScanner(BaseAnalyzer, ABC):
         
         return findings
     
-    def _check_malicious_subgraphs(, self)
-        metadata: ModelMetadata
-    ) -> List[SecurityFinding]:
+    def _check_malicious_subgraphs(, self, metadata: ModelMetadata) -> List[SecurityFinding]:
         """检查恶意子图"""
         findings = []
         
@@ -743,10 +728,7 @@ class NNModelScanner(BaseAnalyzer, ABC):
         
         return findings
     
-    def _check_serialization_attacks(, self)
-        model_format: ModelFormat,
-        metadata: ModelMetadata
-    ) -> List[SecurityFinding]:
+    def _check_serialization_attacks(, self, model_format: ModelFormat, metadata: ModelMetadata) -> List[SecurityFinding]:
         """检查序列化攻击"""
         findings = []
         
@@ -769,9 +751,7 @@ class NNModelScanner(BaseAnalyzer, ABC):
         
         return findings
     
-    def _filter_by_confidence(, self)
-        findings: List[SecurityFinding]
-    ) -> List[SecurityFinding]:
+    def _filter_by_confidence(, self, findings: List[SecurityFinding]) -> List[SecurityFinding]:
         """按置信度过滤"""
         threshold = self._config.get("confidence_threshold", 0.6)
         return [f for f in findings if f.confidence >= threshold]

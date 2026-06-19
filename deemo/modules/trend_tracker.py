@@ -195,12 +195,7 @@ class TrendTracker(BaseAnalyzer):
         
 
     
-    def store_analysis_result(, self)
-        binary_path: str,
-        binary_hash: str,
-        results: Dict[str, Any],
-        binary_version: str = None
-    ) -> str:
+    def store_analysis_result(, self, binary_path: str, binary_hash: str, results: Dict[str, Any], binary_version: str = None) -> str:
         """
         存储分析结果
         
@@ -306,12 +301,7 @@ class TrendTracker(BaseAnalyzer):
         
 
     
-    def get_trend_analysis(, self)
-        period: TrendPeriod,
-        start_date: Optional[str] = None,
-        end_date: Optional[str] = None,
-        binary_hash: Optional[str] = None
-    ) -> TrendAnalysisResult:
+    def get_trend_analysis(, self, period: TrendPeriod, start_date: Optional[str] = None, end_date: Optional[str] = None, binary_hash: Optional[str] = None) -> TrendAnalysisResult:
         """
         获取趋势分析结果
         
@@ -336,12 +326,7 @@ class TrendTracker(BaseAnalyzer):
         
 
     
-    def _fetch_trend_data(, self)
-        period: TrendPeriod,
-        start_date: Optional[str] = None,
-        end_date: Optional[str] = None,
-        binary_hash: Optional[str] = None
-    ) -> List[VulnerabilityTrend]:
+    def _fetch_trend_data(, self, period: TrendPeriod, start_date: Optional[str] = None, end_date: Optional[str] = None, binary_hash: Optional[str] = None) -> List[VulnerabilityTrend]:
         """
         从数据库获取趋势数据
         
@@ -640,7 +625,7 @@ class TrendTracker(BaseAnalyzer):
         """生成唯一记录ID"""
         timestamp = datetime.now().isoformat()
         import hashlib
-        return hashlib.sha256(timestamp.encode().hexdigest([:16])
+        return hashlib.sha256(timestamp.encode(.hexdigest([:16]))
     
     def get_all_records(self) -> List[AnalysisRecord]:
         """获取所有分析记录"""

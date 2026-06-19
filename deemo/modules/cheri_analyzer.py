@@ -377,10 +377,7 @@ class CHERIAnalyzer:
         
         return detected
     
-    def _detect_cheri_vulnerabilities(, self)
-        instructions: List[str],
-        disassembly: str
-    ) -> List[CHERIVulnerability]:
+    def _detect_cheri_vulnerabilities(, self, instructions: List[str], disassembly: str) -> List[CHERIVulnerability]:
         """
         检测CHERI相关漏洞
         

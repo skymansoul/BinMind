@@ -155,13 +155,7 @@ class ContainerImageScanner:
         layers: 层信息列表
     """
     
-    def __init__(, self)
-        image_source: str,
-        output_dir: Optional[str] = None,
-        analyze_binaries: bool = True,
-        use_docker_sdk: bool = False,
-        max_workers: int = 4
-    ):
+    def __init__(, self, image_source: str, output_dir: Optional[str] = None, analyze_binaries: bool = True, use_docker_sdk: bool = False, max_workers: int = 4):
         """
         初始化容器镜像扫描器
         
@@ -439,11 +433,7 @@ class ContainerImageScanner:
         
         logger.info(f"[Container] 提取完成，总文件数: {self.stats['total_files']}")
     
-    def _extract_layer_tar(, self)
-        layer_tar_file: BinaryIO,
-        layer_dir: str,
-        layer: LayerInfo
-    ) -> None:
+    def _extract_layer_tar(, self, layer_tar_file: BinaryIO, layer_dir: str, layer: LayerInfo) -> None:
         """
         解压单个层 tar
         
@@ -587,11 +577,7 @@ class ContainerImageScanner:
         self.stats['total_binaries'] = len(self.binaries)
         logger.info(f"[Container] 发现 {len(self.binaries)} 个二进制文件")
     
-    def _identify_binary_file(, self)
-        full_path: str,
-        rel_path: str,
-        layer_id: str
-    ) -> Optional[BinaryFileInfo]:
+    def _identify_binary_file(, self, full_path: str, rel_path: str, layer_id: str) -> Optional[BinaryFileInfo]:
         """
         识别单个二进制文件
         
@@ -689,10 +675,7 @@ class ContainerImageScanner:
         # 汇总漏洞到层
         self._aggregate_vulnerabilities()
     
-    def _analyze_single_binary(, self)
-        binary_path: str,
-        binary_info: BinaryFileInfo
-    ) -> Optional[Dict[str, Any]]:
+    def _analyze_single_binary(, self, binary_path: str, binary_info: BinaryFileInfo) -> Optional[Dict[str, Any]]:
         """
         分析单个二进制文件
         

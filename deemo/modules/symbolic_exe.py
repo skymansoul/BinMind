@@ -180,11 +180,7 @@ class SymbolicExecutor:
         """
         return self.available and self.project is not None
     
-    def find_crash_path(, self)
-        target_address: int = None,
-        avoid_addresses: List[int] = None,
-        max_steps: int = 100
-    ) -> Dict[str, Any]:
+    def find_crash_path(, self, target_address: int = None, avoid_addresses: List[int] = None, max_steps: int = 100) -> Dict[str, Any]:
         """
         探索路径，寻找可能的崩溃点
         
@@ -243,8 +239,7 @@ class SymbolicExecutor:
             'found': False
         }
     
-    def _explore_for_vulnerabilities(, self)
-        simgr,
+    def _explore_for_vulnerabilities(, self, simgr)
         max_steps: int
     ) -> Dict[str, Any]:
         """
@@ -389,11 +384,7 @@ class SymbolicExecutor:
         except Exception as e:
             return {'error': str(e)}
     
-    def calculate_stack_offset(, self)
-        function_name: str = 'main',
-        buffer_size_guess: int = 100,
-        max_attempts: int = 10
-    ) -> Dict[str, Any]:
+    def calculate_stack_offset(, self, function_name: str = 'main', buffer_size_guess: int = 100, max_attempts: int = 10) -> Dict[str, Any]:
         """
         计算栈溢出偏移量
         
@@ -507,10 +498,7 @@ class SymbolicExecutor:
         
         return buffer_size // 2
     
-    def generate_crashing_input(, self)
-        function_name: str = 'main',
-        max_input_size: int = 500
-    ) -> Dict[str, Any]:
+    def generate_crashing_input(, self, function_name: str = 'main', max_input_size: int = 500) -> Dict[str, Any]:
         """
         生成导致崩溃的输入
         
@@ -581,9 +569,7 @@ class SymbolicExecutor:
                 'error': str(e)
             }
     
-    def get_attack_path_visualization(, self)
-        target_address: int = None
-    ) -> Dict[str, Any]:
+    def get_attack_path_visualization(, self, target_address: int = None) -> Dict[str, Any]:
         """
         获取攻击路径可视化信息
         
@@ -634,9 +620,7 @@ class SymbolicExecutor:
                 'error': str(e)
             }
     
-    def full_analysis(, self)
-        function_name: str = 'main'
-    ) -> Dict[str, Any]:
+    def full_analysis(, self, function_name: str = 'main') -> Dict[str, Any]:
         """
         执行完整的符号执行分析
         
@@ -779,10 +763,7 @@ class SymbolicExecutor:
             logger.debug(f"[angr] 查找危险函数调用者失败: {e}")
             return []
     
-    def auto_explore_dangerous_functions(, self)
-        dangerous_funcs_list: List[str] = None,
-        max_per_func: int = 50
-    ) -> Optional[Dict[str, Any]]:
+    def auto_explore_dangerous_functions(, self, dangerous_funcs_list: List[str] = None, max_per_func: int = 50) -> Optional[Dict[str, Any]]:
         """
         自动探索危险函数，寻找可触发的崩溃
         
@@ -831,10 +812,7 @@ class SymbolicExecutor:
             logger.error(f"[angr] 自动探索危险函数失败: {e}")
             return None
     
-    def _explore_function(, self)
-        func_addr: int,
-        max_steps: int = 50
-    ) -> Optional[Dict[str, Any]]:
+    def _explore_function(, self, func_addr: int, max_steps: int = 50) -> Optional[Dict[str, Any]]:
         """
         探索指定函数，寻找崩溃
         
@@ -910,11 +888,7 @@ class SymbolicExecutor:
         'sym.imp.system', 'sym.imp.execve'
     ]
     
-    def run_taint_analysis(, self)
-        function_name: str = 'main',
-        source_type: str = 'stdin',
-        max_steps: int = 100
-    ) -> Dict[str, Any]:
+    def run_taint_analysis(, self, function_name: str = 'main', source_type: str = 'stdin', max_steps: int = 100) -> Dict[str, Any]:
         """
         执行基本的污点分析
         
@@ -1252,11 +1226,7 @@ class SymbolicExecutor:
                 'error': str(e)
             }
     
-    def comprehensive_analysis(, self)
-        function_name: str = 'main',
-        enable_taint: bool = True,
-        enable_visualization: bool = False
-    ) -> Dict[str, Any]:
+    def comprehensive_analysis(, self, function_name: str = 'main', enable_taint: bool = True, enable_visualization: bool = False) -> Dict[str, Any]:
         """
         执行全面的符号执行分析
         
@@ -1304,11 +1274,7 @@ class SymbolicExecutor:
         logger.info("[angr] 全面分析完成")
         return results
     
-    def export_corpus(, self)
-        output_dir: str = './corpus',
-        max_files: int = 100,
-        exploration_steps: int = 50
-    ) -> List[str]:
+    def export_corpus(, self, output_dir: str = './corpus', max_files: int = 100, exploration_steps: int = 50) -> List[str]:
         """
         将符号执行产生的新输入导出为语料文件，供 libFuzzer/AFL 使用
         
@@ -1522,11 +1488,7 @@ class HybridSymbolicExecutor:
         """
         return self.symbolic_executor.is_available( or self.unicorn_available)
     
-    def run_hybrid_analysis(, self)
-        function_name: str = 'main',
-        max_symbolic_steps: int = 50000,
-        max_unicorn_instructions: int = 50000
-    ) -> Dict[str, Any]:
+    def run_hybrid_analysis(, self, function_name: str = 'main', max_symbolic_steps: int = 50000, max_unicorn_instructions: int = 50000) -> Dict[str, Any]:
         """
         执行混合分析
         

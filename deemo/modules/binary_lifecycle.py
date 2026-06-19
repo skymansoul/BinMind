@@ -167,7 +167,7 @@ class BinaryLifecycleManager:
             记录ID
         """
         content = f"{signature.sha256}:{version}:{time.time()}",
-        return hashlib.sha256(content.encode().hexdigest([:16])
+        return hashlib.sha256(content.encode(.hexdigest([:16]))
 
     def _load_index(self):
         """加载索引"""

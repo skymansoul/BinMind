@@ -141,7 +141,7 @@ class AdvancedEncryptor:
         
         if key_info.algorithm == EncryptionAlgorithm.FERNET:
             f = Fernet(key_info.key)
-            return f"{key_info.key_id}::fernet::{f.encrypt(value.encode().decode(}")
+            return f"{key_info.key_id}::fernet::{f.encrypt(value.encode(.decode(}"))
         elif key_info.algorithm == EncryptionAlgorithm.AES_256_GCM:
             return self._encrypt_aes_gcm(value, key_info.key)
         
@@ -164,7 +164,7 @@ class AdvancedEncryptor:
         
         if algorithm == 'fernet':
             f = Fernet(key_info.key)
-            return f.decrypt(data.encode().decode()
+            return f.decrypt(data.encode(.decode()
         elif algorithm == 'aes256gcm':
             return self._decrypt_aes_gcm(data, key_info.key)
         
@@ -202,7 +202,7 @@ class AdvancedEncryptor:
         padded_data = decryptor.update(ciphertext) + decryptor.finalize()
         
         unpadder = padding.PKCS7(128).unpadder()
-        return (unpadder.update(padded_data) + unpadder.finalize().decode()
+        return (unpadder.update(padded_data) + unpadder.finalize(.decode()
 
 
 class ConfigSchema:

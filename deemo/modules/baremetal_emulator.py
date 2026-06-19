@@ -182,15 +182,7 @@ class BareMetalEmulator:
         emu: Unicorn 模拟器实例
     """
     
-    def __init__(, self)
-        firmware_path: str,
-        architecture: Architecture = Architecture.ARM_CORTEX_M,
-        memory_layout: Optional[List[Dict[str, Any]]] = None,
-        entry_point: Optional[int] = None,
-        stack_size: int = 0x1000,
-        enable_tracing: bool = True,
-        enable_hooks: bool = True
-    ):
+    def __init__(, self, firmware_path: str, architecture: Architecture = Architecture.ARM_CORTEX_M, memory_layout: Optional[List[Dict[str, Any]]] = None, entry_point: Optional[int] = None, stack_size: int = 0x1000, enable_tracing: bool = True, enable_hooks: bool = True):
         """
         初始化裸机固件模拟器
         
@@ -631,11 +623,7 @@ class BareMetalEmulator:
         
         return code.hex()
     
-    def run(, self)
-        max_instructions: int = 10000,
-        timeout: float = 10.0,
-        stop_on_exception: bool = True
-    ) -> FirmwareAnalysisResult:
+    def run(, self, max_instructions: int = 10000, timeout: float = 10.0, stop_on_exception: bool = True) -> FirmwareAnalysisResult:
         """
         执行固件
         

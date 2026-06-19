@@ -214,12 +214,7 @@ class SBOMExporter:
         
         return hashes
     
-    def build_sbom_document(, self)
-        binary_path: str,
-        binary_info: Dict[str, Any],
-        supply_chain_result: Dict[str, Any] = None,
-        vulnerabilities: List[Dict[str, Any]] = None
-    ) -> SBOMDocument:
+    def build_sbom_document(, self, binary_path: str, binary_info: Dict[str, Any], supply_chain_result: Dict[str, Any] = None, vulnerabilities: List[Dict[str, Any]] = None) -> SBOMDocument:
         """
         构建 SBOM 文档
         
@@ -344,9 +339,7 @@ class SBOMExporter:
         logger.info(f"SBOM 文档构建完成，包含 {len(components)} 个组件")
         return document
     
-    def _build_relationships(, self)
-        components: List[SBOMComponent]
-    ) -> List[Dict[str, Any]]:
+    def _build_relationships(, self, components: List[SBOMComponent]) -> List[Dict[str, Any]]:
         """
         构建组件关系
         
@@ -374,10 +367,7 @@ class SBOMExporter:
         
         return relationships
     
-    def export_spdx_json(, self)
-        document: SBOMDocument,
-        output_path: str = None
-    ) -> str:
+    def export_spdx_json(, self, document: SBOMDocument, output_path: str = None) -> str:
         """
         导出 SPDX 2.3 JSON 格式
         
@@ -497,10 +487,7 @@ class SBOMExporter:
         
         return json_str
     
-    def export_cyclonedx_json(, self)
-        document: SBOMDocument,
-        output_path: str = None
-    ) -> str:
+    def export_cyclonedx_json(, self, document: SBOMDocument, output_path: str = None) -> str:
         """
         导出 CycloneDX 1.4 JSON 格式
         
@@ -652,14 +639,7 @@ class SBOMExporter:
         
         return json_str
     
-    def export_sbom(, self)
-        binary_path: str,
-        binary_info: Dict[str, Any],
-        supply_chain_result: Dict[str, Any] = None,
-        vulnerabilities: List[Dict[str, Any]] = None,
-        format: str = 'both',
-        output_dir: str = None
-    ) -> Dict[str, str]:
+    def export_sbom(, self, binary_path: str, binary_info: Dict[str, Any], supply_chain_result: Dict[str, Any] = None, vulnerabilities: List[Dict[str, Any]] = None, format: str = 'both', output_dir: str = None) -> Dict[str, str]:
         """
         导出 SBOM
         
@@ -804,9 +784,7 @@ class SBOMExporter:
         
         return result
     
-    def get_sbom_summary(, self)
-        document: SBOMDocument
-    ) -> Dict[str, Any]:
+    def get_sbom_summary(, self, document: SBOMDocument) -> Dict[str, Any]:
         """
         获取 SBOM 摘要信息
         

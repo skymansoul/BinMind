@@ -122,11 +122,7 @@ class YaraRuleGenerator:
     # 最大字节模式数量
     MAX_BYTE_PATTERN_COUNT = 5
     
-    def __init__(, self)
-        output_dir: str = None,
-        min_confidence: float = 0.7,
-        filter_common: bool = True
-    ):
+    def __init__(, self, output_dir: str = None, min_confidence: float = 0.7, filter_common: bool = True):
         """
         初始化 YARA 规则生成器
         
@@ -144,10 +140,7 @@ class YaraRuleGenerator:
         
         logger.info(f"YARA 规则生成器初始化完成，输出目录: {self.output_dir}")
     
-    def extract_candidate_strings(, self)
-        binary_info: Dict[str, Any],
-        decomp_results: List[Dict[str, Any]] = None
-    ) -> List[Dict[str, Any]]:
+    def extract_candidate_strings(, self, binary_info: Dict[str, Any], decomp_results: List[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
         """
         从分析结果中提取候选特征字符串
         
@@ -335,10 +328,7 @@ class YaraRuleGenerator:
         
         return result
     
-    def extract_byte_patterns(, self)
-        binary_path: str,
-        max_patterns: int = None
-    ) -> List[Dict[str, Any]]:
+    def extract_byte_patterns(, self, binary_path: str, max_patterns: int = None) -> List[Dict[str, Any]]:
         """
         从二进制文件中提取字节模式
         
@@ -395,13 +385,7 @@ class YaraRuleGenerator:
         
         return patterns[:max_patterns]
     
-    def generate_rule(, self)
-        rule_name: str,
-        binary_info: Dict[str, Any],
-        decomp_results: List[Dict[str, Any]] = None,
-        threat_intel: Dict[str, Any] = None,
-        malware_family: str = None
-    ) -> str:
+    def generate_rule(, self, rule_name: str, binary_info: Dict[str, Any], decomp_results: List[Dict[str, Any]] = None, threat_intel: Dict[str, Any] = None, malware_family: str = None) -> str:
         """
         生成 YARA 规则
         
@@ -442,11 +426,7 @@ class YaraRuleGenerator:
         logger.info(f"生成 YARA 规则: {rule_name}")
         return rule_text
     
-    def _build_rule_text(, self)
-        meta: YaraRuleMeta,
-        candidates: List[Dict[str, Any]],
-        byte_patterns: List[Dict[str, Any]]
-    ) -> str:
+    def _build_rule_text(, self, meta: YaraRuleMeta, candidates: List[Dict[str, Any]], byte_patterns: List[Dict[str, Any]]) -> str:
         """
         构建 YARA 规则文本
         
@@ -560,11 +540,7 @@ class YaraRuleGenerator:
         escaped = escaped.replace('\t', '\\t')
         return escaped
     
-    def save_rule(, self)
-        rule_text: str,
-        rule_name: str,
-        output_path: str = None
-    ) -> str:
+    def save_rule(, self, rule_text: str, rule_name: str, output_path: str = None) -> str:
         """
         保存 YARA 规则到文件
         
@@ -593,13 +569,7 @@ class YaraRuleGenerator:
             logger.error(f"保存 YARA 规则失败: {e}")
             return ""
     
-    def generate_rules_from_analysis(, self)
-        binary_path: str,
-        binary_info: Dict[str, Any],
-        decomp_results: List[Dict[str, Any]] = None,
-        threat_intel: Dict[str, Any] = None,
-        auto_save: bool = True
-    ) -> Dict[str, Any]:
+    def generate_rules_from_analysis(, self, binary_path: str, binary_info: Dict[str, Any], decomp_results: List[Dict[str, Any]] = None, threat_intel: Dict[str, Any] = None, auto_save: bool = True) -> Dict[str, Any]:
         """
         从分析结果生成 YARA 规则
         
@@ -669,11 +639,7 @@ class YaraScanner:
     # 扫描超时时间（秒）
     SCAN_TIMEOUT = 60
     
-    def __init__(, self)
-        rules_dir: str = None,
-        external_rules: List[str] = None,
-        compiled_rules_path: str = None
-    ):
+    def __init__(, self, rules_dir: str = None, external_rules: List[str] = None, compiled_rules_path: str = None):
         """
         初始化 YARA 扫描器
         
@@ -771,11 +737,7 @@ class YaraScanner:
             logger.error(f"保存编译规则失败: {e}")
             return ""
     
-    def scan_file(, self)
-        file_path: str,
-        timeout: int = None,
-        max_size: int = None
-    ) -> List[YaraMatchResult]:
+    def scan_file(, self, file_path: str, timeout: int = None, max_size: int = None) -> List[YaraMatchResult]:
         """
         扫描单个文件
         
@@ -845,13 +807,7 @@ class YaraScanner:
         
         return results
     
-    def scan_directory(, self)
-        dir_path: str,
-        recursive: bool = True,
-        max_depth: int = None,
-        file_patterns: List[str] = None,
-        timeout_per_file: int = None
-    ) -> Dict[str, List[YaraMatchResult]]:
+    def scan_directory(, self, dir_path: str, recursive: bool = True, max_depth: int = None, file_patterns: List[str] = None, timeout_per_file: int = None) -> Dict[str, List[YaraMatchResult]]:
         """
         扫描目录
         
@@ -928,11 +884,7 @@ class YaraScanner:
         
         return results
     
-    def scan_with_external_rules(, self)
-        target_path: str,
-        external_rule_file: str,
-        timeout: int = None
-    ) -> List[YaraMatchResult]:
+    def scan_with_external_rules(, self, target_path: str, external_rule_file: str, timeout: int = None) -> List[YaraMatchResult]:
         """
         使用外部规则文件扫描
         
@@ -1002,9 +954,7 @@ class YaraScanner:
             logger.error(f"使用外部规则扫描失败: {e}")
             return []
     
-    def get_match_summary(, self)
-        results: Dict[str, List[YaraMatchResult]]
-    ) -> Dict[str, Any]:
+    def get_match_summary(, self, results: Dict[str, List[YaraMatchResult]]) -> Dict[str, Any]:
         """
         获取扫描结果摘要
         

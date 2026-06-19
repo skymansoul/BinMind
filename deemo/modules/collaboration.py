@@ -206,7 +206,7 @@ class CollaborationManager:
         """哈希密码"""
         try:
             import bcrypt
-            return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt().decode('utf-8'))
+            return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt(.decode('utf-8')))
         except ImportError:
             logger.warning("bcrypt 未安装，使用简单哈希")
             return hashlib.sha256(password.encode('utf-8')).hexdigest()

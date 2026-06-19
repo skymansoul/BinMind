@@ -159,7 +159,7 @@ class ForensicPathRecorder(BaseAnalyzer):
             },
             sort_keys=True
         
-        return hashlib.sha256(record_data.encode().hexdigest()
+        return hashlib.sha256(record_data.encode(.hexdigest()
     
     def create_new_record(self, metadata: Optional[Dict[str, Any]] = None) -> str:
         """创建新的取证记录"""
@@ -185,14 +185,7 @@ class ForensicPathRecorder(BaseAnalyzer):
         
         logger.info(f"添加快照到记录 {self._current_record.record_id}")
     
-    def capture_symbolic_execution_state(, self)
-        architecture: str,
-        binary_path: str,
-        registers: Dict[str, int],
-        memory_regions: List[Dict[str, Any]],
-        constraints: List[Dict[str, Any]],
-        input_data: Optional[bytes] = None
-    ) -> None:
+    def capture_symbolic_execution_state(, self, architecture: str, binary_path: str, registers: Dict[str, int], memory_regions: List[Dict[str, Any]], constraints: List[Dict[str, Any]], input_data: Optional[bytes] = None) -> None:
         """捕获符号执行状态"""
         register_state = RegisterState()
             registers=registers,
@@ -251,15 +244,7 @@ class ForensicPathRecorder(BaseAnalyzer):
         
         self.add_snapshot(snapshot)
     
-    def capture_crash_state(, self)
-        architecture: str,
-        binary_path: str,
-        crash_input: bytes,
-        registers: Dict[str, int],
-        crash_type: str,
-        cwe_id: Optional[str] = None,
-        cvss_score: float = 0.0
-    ) -> None:
+    def capture_crash_state(, self, architecture: str, binary_path: str, crash_input: bytes, registers: Dict[str, int], crash_type: str, cwe_id: Optional[str] = None, cvss_score: float = 0.0) -> None:
         """捕获崩溃状态"""
         register_state = RegisterState()
             registers=registers,

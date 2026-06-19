@@ -137,7 +137,7 @@ class CoverageTracker:
         h = hashlib.sha256()
         for e in sorted_edges:
             h.update(struct.pack("<Q", e))
-        return h.hexdigest()[:32]
+        return h.hexdigest([:32])
 
     def to_bitmap(self) -> str:
         """压缩为 hex 字符串"""

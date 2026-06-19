@@ -83,8 +83,7 @@ class AnalysisResult:
 
 
 @app.command("analyze", help="分析二进制文件")
-def analyze_command()
-    binary_path: str = typer.Argument(..., help="要分析的二进制文件路径"),
+def analyze_command(, binary_path: str = typer.Argument(..., help="要分析的二进制文件路径"))
     output_dir: str = typer.Option("./results", "--output", "-o", help="输出目录"),
     format: OutputFormat = typer.Option(OutputFormat.MARKDOWN, "--format", "-f", help="输出格式"),
     depth: AnalysisDepth = typer.Option(AnalysisDepth.FULL, "--depth", "-d", help="分析深度预设"),
@@ -127,8 +126,7 @@ def analyze_command()
 
 
 @app.command("batch", help="批量分析多个二进制文件")
-def batch_command()
-    input_dir: str = typer.Argument(..., help="包含二进制文件的目录"),
+def batch_command(, input_dir: str = typer.Argument(..., help="包含二进制文件的目录"))
     output_dir: str = typer.Option("./results", "--output", "-o", help="输出目录"),
     format: OutputFormat = typer.Option(OutputFormat.JSON, "--format", "-f", help="输出格式"),
     depth: AnalysisDepth = typer.Option(AnalysisDepth.QUICK, "--depth", "-d", help="分析深度预设"),
@@ -189,8 +187,7 @@ def batch_command()
 
 
 @app.command("health", help="运行健康检查")
-def health_command()
-    verbose: bool = typer.Option(False, "--verbose", "-v", help="详细输出")
+def health_command(, verbose: bool = typer.Option(False, "--verbose", "-v", help="详细输出"))
 ):
     """检查所有依赖和引擎可用性"""
     console.print("[bold blue]" + "="*60)
@@ -239,8 +236,7 @@ def health_command()
 
 
 @app.command("test", help="运行测试套件")
-def test_command()
-    verbose: bool = typer.Option(False, "--verbose", "-v", help="详细输出")
+def test_command(, verbose: bool = typer.Option(False, "--verbose", "-v", help="详细输出"))
 ):
     """运行测试套件验证核心功能"""
     console.print("[blue]启动测试套件...[/blue]")
@@ -278,8 +274,7 @@ def version_command():
 
 
 @analyze_app.command("managed-code", help="托管代码分析（Java/.NET）")
-def managed_code_command()
-    file_path: str = typer.Argument(..., help="托管代码文件路径（.jar, .dll, .exe）"),
+def managed_code_command(, file_path: str = typer.Argument(..., help="托管代码文件路径（.jar, .dll, .exe）"))
     output_dir: str = typer.Option("./results", "--output", "-o", help="输出目录")
 ):
     """分析Java/.NET托管代码"""
@@ -313,8 +308,7 @@ def managed_code_command()
 
 
 @analyze_app.command("check-signature", help="代码签名验证")
-def check_signature_command()
-    file_path: str = typer.Argument(..., help="要验证的二进制文件路径")
+def check_signature_command(, file_path: str = typer.Argument(..., help="要验证的二进制文件路径"))
 ):
     """验证PE文件的数字签名"""
     init_logging("INFO")
@@ -347,8 +341,7 @@ def check_signature_command()
 
 
 @analyze_app.command("detect-repack", help="重打包检测")
-def detect_repack_command()
-    file_path: str = typer.Argument(..., help="要检测的文件路径（APK/EXE等）")
+def detect_repack_command(, file_path: str = typer.Argument(..., help="要检测的文件路径（APK/EXE等）"))
 ):
     """检测二进制文件是否被重打包"""
     init_logging("INFO")
@@ -383,8 +376,7 @@ def detect_repack_command()
 
 
 @analyze_app.command("grade-rop", help="ROP链分级")
-def grade_rop_command()
-    binary_path: str = typer.Argument(..., help="二进制文件路径")
+def grade_rop_command(, binary_path: str = typer.Argument(..., help="二进制文件路径"))
 ):
     """对二进制文件中的ROP gadgets进行分级评估"""
     init_logging("INFO")
@@ -414,8 +406,7 @@ def grade_rop_command()
 
 
 @analyze_app.command("concurrency", help="并发漏洞检测")
-def concurrency_command()
-    binary_path: str = typer.Argument(..., help="二进制文件路径")
+def concurrency_command(, binary_path: str = typer.Argument(..., help="二进制文件路径"))
 ):
     """检测二进制中的并发漏洞和竞态条件"""
     init_logging("INFO")
@@ -445,8 +436,7 @@ def concurrency_command()
 
 
 @analyze_app.command("document-functions", help="生成函数文档")
-def document_functions_command()
-    binary_path: str = typer.Argument(..., help="二进制文件路径"),
+def document_functions_command(, binary_path: str = typer.Argument(..., help="二进制文件路径"))
     output_dir: str = typer.Option("./docs", "--output", "-o", help="输出目录")
 ):
     """为二进制文件中的函数生成文档"""
@@ -481,8 +471,7 @@ def document_functions_command()
 
 
 @analyze_app.command("unpack-py", help="PyInstaller解包")
-def unpack_py_command()
-    binary_path: str = typer.Argument(..., help="PyInstaller打包的二进制文件"),
+def unpack_py_command(, binary_path: str = typer.Argument(..., help="PyInstaller打包的二进制文件"))
     output_dir: str = typer.Option("./unpacked", "--output", "-o", help="输出目录")
 ):
     """解包PyInstaller打包的Python程序"""
@@ -517,8 +506,7 @@ def unpack_py_command()
 
 
 @analyze_app.command("diff", help="跨版本差异分析")
-def diff_command()
-    binary_v1: str = typer.Argument(..., help="第一个二进制文件"),
+def diff_command(, binary_v1: str = typer.Argument(..., help="第一个二进制文件"))
     binary_v2: str = typer.Argument(..., help="第二个二进制文件"),
     output_dir: str = typer.Option("./diff_result", "--output", "-o", help="输出目录")
 ):
@@ -562,8 +550,7 @@ def diff_command()
 
 
 @analyze_app.command("deobfuscate", help="去混淆")
-def deobfuscate_command()
-    binary_path: str = typer.Argument(..., help="二进制文件路径"),
+def deobfuscate_command(, binary_path: str = typer.Argument(..., help="二进制文件路径"))
     level: str = typer.Option("medium", "--level", "-l", help="去混淆强度: light/medium/aggressive"),
     output_dir: str = typer.Option("./deobfuscated", "--output", "-o", help="输出目录")
 ):
@@ -601,8 +588,7 @@ def deobfuscate_command()
 
 
 @analyze_app.command("wasm", help="WebAssembly分析")
-def wasm_command()
-    wasm_path: str = typer.Argument(..., help="WebAssembly文件路径"),
+def wasm_command(, wasm_path: str = typer.Argument(..., help="WebAssembly文件路径"))
     output_dir: str = typer.Option("./wasm_results", "--output", "-o", help="输出目录")
 ):
     """分析WebAssembly模块"""
@@ -638,8 +624,7 @@ def wasm_command()
 
 
 @analyze_app.command("incremental", help="增量分析")
-def incremental_command()
-    binary_path: str = typer.Argument(..., help="二进制文件路径"),
+def incremental_command(, binary_path: str = typer.Argument(..., help="二进制文件路径"))
     previous_state: str = typer.Option(None, "--previous", "-p", help="上一次分析状态文件")
 ):
     """基于之前的分析结果进行增量分析"""
@@ -674,8 +659,7 @@ def incremental_command()
 
 
 @analyze_app.command("ml-boundary", help="ML函数边界检测")
-def ml_boundary_command()
-    binary_path: str = typer.Argument(..., help="二进制文件路径"),
+def ml_boundary_command(, binary_path: str = typer.Argument(..., help="二进制文件路径"))
     model_path: str = typer.Option(None, "--ml-model", "-m", help="自定义ONNX模型路径")
 ):
     """使用机器学习模型检测函数边界"""
@@ -709,8 +693,7 @@ def ml_boundary_command()
 
 
 @analyze_app.command("attack-surface", help="攻击面分析")
-def attack_surface_command()
-    binary_path: str = typer.Argument(..., help="二进制文件路径"),
+def attack_surface_command(, binary_path: str = typer.Argument(..., help="二进制文件路径"))
     output_dir: str = typer.Option("./attack_surface", "--output", "-o", help="输出目录")
 ):
     """分析二进制文件的攻击面"""
@@ -747,8 +730,7 @@ def attack_surface_command()
 
 
 @analyze_app.command("scan-pii", help="PII扫描")
-def scan_pii_command()
-    file_path: str = typer.Argument(..., help="要扫描的文件路径")
+def scan_pii_command(, file_path: str = typer.Argument(..., help="要扫描的文件路径"))
 ):
     """扫描二进制文件中的个人身份信息"""
     init_logging("INFO")
@@ -781,8 +763,7 @@ def scan_pii_command()
 
 
 @analyze_app.command("enclave", help="安全飞地分析")
-def enclave_command()
-    enclave_path: str = typer.Argument(..., help="安全飞地文件路径")
+def enclave_command(, enclave_path: str = typer.Argument(..., help="安全飞地文件路径"))
 ):
     """分析安全飞地（Enclave）文件"""
     init_logging("INFO")
@@ -812,8 +793,7 @@ def enclave_command()
 
 
 @analyze_app.command("extract-scripts", help="内嵌脚本提取")
-def extract_scripts_command()
-    file_path: str = typer.Argument(..., help="要分析的文件路径"),
+def extract_scripts_command(, file_path: str = typer.Argument(..., help="要分析的文件路径"))
     output_dir: str = typer.Option("./extracted", "--output", "-o", help="输出目录")
 ):
     """提取二进制文件中的内嵌脚本"""
@@ -845,8 +825,7 @@ def extract_scripts_command()
 
 
 @analyze_app.command("recover-structs", help="结构体恢复")
-def recover_structs_command()
-    binary_path: str = typer.Argument(..., help="二进制文件路径")
+def recover_structs_command(, binary_path: str = typer.Argument(..., help="二进制文件路径"))
 ):
     """从二进制文件中恢复结构体定义"""
     init_logging("INFO")
@@ -879,8 +858,7 @@ def recover_structs_command()
 
 
 @analyze_app.command("analyze-seh", help="SEH分析（Windows）")
-def analyze_seh_command()
-    pe_path: str = typer.Argument(..., help="PE文件路径")
+def analyze_seh_command(, pe_path: str = typer.Argument(..., help="PE文件路径"))
 ):
     """分析Windows PE文件的SEH异常处理"""
     init_logging("INFO")
@@ -909,8 +887,7 @@ def analyze_seh_command()
 
 
 @analyze_app.command("load-symbols", help="加载调试符号")
-def load_symbols_command()
-    binary_path: str = typer.Argument(..., help="二进制文件路径"),
+def load_symbols_command(, binary_path: str = typer.Argument(..., help="二进制文件路径"))
     symbol_path: str = typer.Option(None, "--symbols", "-s", help="符号文件路径")
 ):
     """加载调试符号"""
@@ -943,8 +920,7 @@ def load_symbols_command()
 
 
 @analyze_app.command("build-graph", help="构建知识图谱")
-def build_graph_command()
-    binary_path: str = typer.Argument(..., help="二进制文件路径"),
+def build_graph_command(, binary_path: str = typer.Argument(..., help="二进制文件路径"))
     output_dir: str = typer.Option("./graph", "--output", "-o", help="输出目录")
 ):
     """构建二进制文件的知识图谱"""
@@ -980,8 +956,7 @@ def build_graph_command()
 
 
 @analyze_app.command("rewrite", help="二进制重写")
-def rewrite_command()
-    binary_path: str = typer.Argument(..., help="二进制文件路径"),
+def rewrite_command(, binary_path: str = typer.Argument(..., help="二进制文件路径"))
     output_path: str = typer.Option(None, "--output", "-o", help="输出路径"),
     backup: bool = typer.Option(True, "--backup", "-b", help="备份原始文件")
 ):
@@ -1019,8 +994,7 @@ def rewrite_command()
 
 
 @analyze_app.command("vmi", help="虚拟机自省分析")
-def vmi_command()
-    vm_name: str = typer.Argument(..., help="虚拟机名称")
+def vmi_command(, vm_name: str = typer.Argument(..., help="虚拟机名称"))
 ):
     """虚拟机自省分析"""
     init_logging("INFO")
@@ -1046,8 +1020,7 @@ def vmi_command()
 
 
 @analyze_app.command("memory-forensics", help="内存转储取证")
-def memory_forensics_command()
-    dump_path: str = typer.Argument(..., help="内存转储文件路径"),
+def memory_forensics_command(, dump_path: str = typer.Argument(..., help="内存转储文件路径"))
     output_dir: str = typer.Option("./forensics", "--output", "-o", help="输出目录")
 ):
     """分析内存转储文件"""
@@ -1079,8 +1052,7 @@ def memory_forensics_command()
 
 
 @analyze_app.command("core-forensics", help="Core dump取证")
-def core_forensics_command()
-    core_path: str = typer.Argument(..., help="Core dump文件路径")
+def core_forensics_command(, core_path: str = typer.Argument(..., help="Core dump文件路径"))
 ):
     """分析Core dump文件"""
     init_logging("INFO")
@@ -1110,8 +1082,7 @@ def core_forensics_command()
 
 
 @analyze_app.command("hw-security-eval", help="硬件安全评估")
-def hw_security_eval_command()
-    binary_path: str = typer.Argument(..., help="二进制文件路径")
+def hw_security_eval_command(, binary_path: str = typer.Argument(..., help="二进制文件路径"))
 ):
     """评估二进制文件的硬件安全特性"""
     init_logging("INFO")
@@ -1141,8 +1112,7 @@ def hw_security_eval_command()
 
 
 @analyze_app.command("baremetal-emulate", help="裸机模拟")
-def baremetal_emulate_command()
-    firmware_path: str = typer.Argument(..., help="固件文件路径"),
+def baremetal_emulate_command(, firmware_path: str = typer.Argument(..., help="固件文件路径"))
     backend: str = typer.Option("unicorn", "--backend", "-b", help="模拟后端"),
     svd_path: str = typer.Option(None, "--svd", help="SVD文件路径")
 ):
@@ -1174,8 +1144,7 @@ def baremetal_emulate_command()
 
 
 @analyze_app.command("wireless", help="无线协议分析")
-def wireless_command()
-    pcap_path: str = typer.Argument(..., help="PCAP文件路径")
+def wireless_command(, pcap_path: str = typer.Argument(..., help="PCAP文件路径"))
 ):
     """分析无线协议流量"""
     init_logging("INFO")
@@ -1205,8 +1174,7 @@ def wireless_command()
 
 
 @analyze_app.command("ics", help="工控协议分析")
-def ics_command()
-    protocol: str = typer.Option("modbus", "--protocol", "-p", help="ICS协议类型"),
+def ics_command(, protocol: str = typer.Option("modbus", "--protocol", "-p", help="ICS协议类型"))
     generate_packets: int = typer.Option(0, "--generate-packets", help="生成测试数据包数量")
 ):
     """分析工控协议"""
@@ -1236,8 +1204,7 @@ def ics_command()
 
 
 @analyze_app.command("replay-pcap", help="流量重放")
-def replay_pcap_command()
-    pcap_path: str = typer.Argument(..., help="PCAP文件路径"),
+def replay_pcap_command(, pcap_path: str = typer.Argument(..., help="PCAP文件路径"))
     target: str = typer.Option(None, "--target", "-t", help="目标地址")
 ):
     """重放PCAP流量"""
@@ -1270,8 +1237,7 @@ def replay_pcap_command()
 
 
 @analyze_app.command("multi-binary", help="多二进制IPC分析")
-def multi_binary_command()
-    binaries: str = typer.Argument(..., help="二进制文件列表，逗号分隔")
+def multi_binary_command(, binaries: str = typer.Argument(..., help="二进制文件列表，逗号分隔"))
 ):
     """分析多个二进制文件之间的IPC交互"""
     init_logging("INFO")
@@ -1303,8 +1269,7 @@ def multi_binary_command()
 
 
 @analyze_app.command("ci-scan", help="CI/CD流水线安全扫描")
-def ci_scan_command()
-    pipeline_path: str = typer.Argument(..., help="CI/CD配置文件路径")
+def ci_scan_command(, pipeline_path: str = typer.Argument(..., help="CI/CD配置文件路径"))
 ):
     """扫描CI/CD流水线配置"""
     init_logging("INFO")
@@ -1334,8 +1299,7 @@ def ci_scan_command()
 
 
 @analyze_app.command("supply-chain", help="供应链依赖分析")
-def supply_chain_command()
-    requirements_path: str = typer.Argument(..., help="依赖文件路径")
+def supply_chain_command(, requirements_path: str = typer.Argument(..., help="依赖文件路径"))
 ):
     """分析供应链依赖"""
     init_logging("INFO")
@@ -1365,8 +1329,7 @@ def supply_chain_command()
 
 
 @analyze_app.command("k8s-scan", help="K8s部署安全扫描")
-def k8s_scan_command()
-    deployment_path: str = typer.Argument(..., help="Kubernetes部署文件路径")
+def k8s_scan_command(, deployment_path: str = typer.Argument(..., help="Kubernetes部署文件路径"))
 ):
     """扫描Kubernetes部署配置"""
     init_logging("INFO")
@@ -1396,8 +1359,7 @@ def k8s_scan_command()
 
 
 @app.command("cve-query", help="CVE查询")
-def cve_query_command()
-    cve_id: str = typer.Option(None, "--cve-id", help="CVE ID"),
+def cve_query_command(, cve_id: str = typer.Option(None, "--cve-id", help="CVE ID"))
     package: str = typer.Option(None, "--cve-package", help="包名"),
     binary: str = typer.Option(None, "--cve-binary", help="二进制名"),
     source: str = typer.Option("nvd", "--cve-source", help="数据源"),
@@ -1448,8 +1410,7 @@ def cve_query_command()
 
 
 @app.command("vuln-external", help="外部漏洞数据库查询")
-def vuln_external_command()
-    cve_id: str = typer.Argument(..., help="CVE ID"),
+def vuln_external_command(, cve_id: str = typer.Argument(..., help="CVE ID"))
     source: str = typer.Option("vuldb", "--source", help="数据源")
 ):
     """从外部漏洞数据库查询"""
@@ -1479,8 +1440,7 @@ def vuln_external_command()
 
 
 @app.command("deep-search", help="深度学习相似搜索")
-def deep_search_command()
-    query: str = typer.Argument(..., help="搜索关键词")
+def deep_search_command(, query: str = typer.Argument(..., help="搜索关键词"))
 ):
     """使用深度学习进行漏洞相似性搜索"""
     init_logging("INFO")
@@ -1508,8 +1468,7 @@ def deep_search_command()
 
 
 @app.command("semantic-search", help="语义漏洞搜索")
-def semantic_search_command()
-    query: str = typer.Argument(..., help="搜索关键词")
+def semantic_search_command(, query: str = typer.Argument(..., help="搜索关键词"))
 ):
     """使用语义分析进行漏洞搜索"""
     init_logging("INFO")
@@ -1536,8 +1495,7 @@ def semantic_search_command()
 
 
 @app.command("generate-cve-report", help="生成CVE报告")
-def generate_cve_report_command()
-    output: str = typer.Option("./cve_report.md", "--output", "-o", help="输出文件")
+def generate_cve_report_command(, output: str = typer.Option("./cve_report.md", "--output", "-o", help="输出文件"))
 ):
     """生成CVE报告"""
     init_logging("INFO")
@@ -1568,8 +1526,7 @@ def generate_cve_report_command()
 
 
 @app.command("exploitdb-match", help="Exploit-DB漏洞匹配")
-def exploitdb_match_command()
-    cve_id: str = typer.Argument(..., help="CVE ID")
+def exploitdb_match_command(, cve_id: str = typer.Argument(..., help="CVE ID"))
 ):
     """匹配Exploit-DB中的漏洞利用"""
     init_logging("INFO")
@@ -1597,8 +1554,7 @@ def exploitdb_match_command()
 
 
 @app.command("nuclei-generate", help="生成Nuclei模板")
-def nuclei_generate_command()
-    vulnerability_file: str = typer.Argument(..., help="漏洞定义JSON文件")
+def nuclei_generate_command(, vulnerability_file: str = typer.Argument(..., help="漏洞定义JSON文件"))
 ):
     """生成Nuclei扫描模板"""
     init_logging("INFO")
@@ -1634,8 +1590,7 @@ def nuclei_generate_command()
 
 
 @app.command("audit-hardening", help="安全加固审计")
-def audit_hardening_command()
-    ci: bool = typer.Option(False, "--audit-hardening-ci", help="CI模式"),
+def audit_hardening_command(, ci: bool = typer.Option(False, "--audit-hardening-ci", help="CI模式"))
     min_score: int = typer.Option(80, "--audit-hardening-min-score", help="最低分数")
 ):
     """执行安全加固审计"""
@@ -1666,8 +1621,7 @@ def audit_hardening_command()
 
 
 @app.command("analyze-compiler-opt", help="编译器优化安全分析")
-def analyze_compiler_opt_command()
-    binary_path: str = typer.Argument(..., help="二进制文件路径")
+def analyze_compiler_opt_command(, binary_path: str = typer.Argument(..., help="二进制文件路径"))
 ):
     """分析编译器优化选项的安全影响"""
     init_logging("INFO")
@@ -1696,8 +1650,7 @@ def analyze_compiler_opt_command()
 
 
 @app.command("lifecycle", help="生命周期管理")
-def lifecycle_command()
-    binary_path: str = typer.Argument(..., help="二进制文件路径")
+def lifecycle_command(, binary_path: str = typer.Argument(..., help="二进制文件路径"))
 ):
     """管理二进制文件的生命周期"""
     init_logging("INFO")
@@ -1727,8 +1680,7 @@ def lifecycle_command()
 
 
 @app.command("cwe-map", help="CWE分类")
-def cwe_map_command()
-    binary_path: str = typer.Argument(..., help="二进制文件路径"),
+def cwe_map_command(, binary_path: str = typer.Argument(..., help="二进制文件路径"))
     threshold: float = typer.Option(0.6, "--cwe-threshold", help="匹配阈值"),
     output: str = typer.Option("cwe_report.json", "--output", "-o", help="输出文件")
 ):
@@ -1762,8 +1714,7 @@ def cwe_map_command()
 
 
 @app.command("ota-diff", help="OTA差分分析")
-def ota_diff_command()
-    update_path: str = typer.Argument(..., help="OTA更新包路径"),
+def ota_diff_command(, update_path: str = typer.Argument(..., help="OTA更新包路径"))
     baseline: str = typer.Option(None, "--ota-baseline", help="基线固件")
 ):
     """分析OTA更新包与基线的差异"""
@@ -1798,8 +1749,7 @@ def ota_diff_command()
 
 
 @analyze_app.command("sandbox", help="使用沙箱")
-def sandbox_command()
-    binary_path: str = typer.Argument(..., help="二进制文件路径"),
+def sandbox_command(, binary_path: str = typer.Argument(..., help="二进制文件路径"))
     backend: str = typer.Option("docker", "--sandbox", help="沙箱后端")
 ):
     """使用沙箱运行二进制文件"""
@@ -1829,8 +1779,7 @@ def sandbox_command()
 
 
 @analyze_app.command("sandbox-policy", help="生成沙箱策略")
-def sandbox_policy_command()
-    binary_path: str = typer.Argument(..., help="二进制文件路径")
+def sandbox_policy_command(, binary_path: str = typer.Argument(..., help="二进制文件路径"))
 ):
     """为二进制文件生成沙箱策略"""
     init_logging("INFO")
@@ -1862,8 +1811,7 @@ def sandbox_policy_command()
 
 
 @analyze_app.command("plugin", help="加载插件")
-def plugin_command()
-    binary_path: str = typer.Argument(..., help="二进制文件路径"),
+def plugin_command(, binary_path: str = typer.Argument(..., help="二进制文件路径"))
     plugins: Optional[List[str]] = typer.Option(None, "--plugin", "-p", help="插件路径")
 ):
     if plugins is None:
@@ -1904,8 +1852,7 @@ def plugin_command()
 
 
 @analyze_app.command("hooks-dir", help="指定钩子目录")
-def hooks_dir_command()
-    binary_path: str = typer.Argument(..., help="二进制文件路径"),
+def hooks_dir_command(, binary_path: str = typer.Argument(..., help="二进制文件路径"))
     hooks_dir: str = typer.Option("./hooks", "--hooks-dir", help="钩子目录")
 ):
     """指定自定义钩子目录"""
@@ -1943,8 +1890,7 @@ def hooks_dir_command()
 
 
 @analyze_app.command("instrument", help="动态插桩")
-def instrument_command()
-    binary_path: str = typer.Argument(..., help="目标二进制文件"),
+def instrument_command(, binary_path: str = typer.Argument(..., help="目标二进制文件"))
     template: str = typer.Option("anti_debug", "--hook-template", help="钩子模板")
 ):
     """对二进制文件进行动态插桩"""
@@ -1994,8 +1940,7 @@ def shell_command():
 
 
 @analyze_app.command("interactive", help="交互式分析模式")
-def interactive_command()
-    binary_path: str = typer.Argument(..., help="二进制文件路径")
+def interactive_command(, binary_path: str = typer.Argument(..., help="二进制文件路径"))
 ):
     """以交互式模式分析二进制文件"""
     init_logging("INFO")
@@ -2020,8 +1965,7 @@ def interactive_command()
 
 
 @app.command("server", help="启动API服务器")
-def server_command()
-    host: str = typer.Option("0.0.0.0", "--host", help="绑定地址"),
+def server_command(, host: str = typer.Option("0.0.0.0", "--host", help="绑定地址"))
     port: int = typer.Option(9000, "--port", "-p", help="端口"),
     agent: bool = typer.Option(False, "--agent", help="启动远程代理服务器"),
     reload: bool = typer.Option(False, "--reload", help="自动重载")
@@ -2399,8 +2343,7 @@ class BatchInputType(str, Enum):
 
 
 @app.command("batch", help="批量分析二进制文件")
-def batch_command()
-    input_source: str = typer.Argument(..., help="输入源（文件列表路径、目录或glob模式）"),
+def batch_command(, input_source: str = typer.Argument(..., help="输入源（文件列表路径、目录或glob模式）"))
     input_type: BatchInputType = typer.Option(BatchInputType.DIRECTORY, "--input-type", "-t", help="输入类型"),
     output_dir: str = typer.Option("./results", "--output", "-o", help="输出目录"),
     format: OutputFormatExtended = typer.Option(OutputFormatExtended.MARKDOWN, "--format", "-f", help="输出格式"),
@@ -2478,8 +2421,7 @@ def batch_command()
 
 
 @app.command("config", help="配置管理")
-def config_command()
-    action: str = typer.Argument(..., help="配置操作（show/get/set/list）"),
+def config_command(, action: str = typer.Argument(..., help="配置操作（show/get/set/list）"))
     key: Optional[str] = typer.Argument(None, help="配置键"),
     value: Optional[str] = typer.Argument(None, help="配置值"),
     config_file: str = typer.Option("./config/config.yaml", "--config", "-c", help="配置文件路径")
@@ -2514,8 +2456,7 @@ def config_command()
 
 
 @app.command("plugins", help="插件管理")
-def plugins_command()
-    action: str = typer.Argument(..., help="插件操作（list/install/uninstall/reload）"),
+def plugins_command(, action: str = typer.Argument(..., help="插件操作（list/install/uninstall/reload）"))
     plugin_name: Optional[str] = typer.Argument(None, help="插件名称或路径"),
     plugins_dir: str = typer.Option("./plugins", "--dir", "-d", help="插件目录")
 ):
@@ -2561,8 +2502,7 @@ def plugins_command()
 
 
 @app.command("version", help="显示版本信息")
-def version_command()
-    verbose: bool = typer.Option(False, "--verbose", "-v", help="详细版本信息")
+def version_command(, verbose: bool = typer.Option(False, "--verbose", "-v", help="详细版本信息"))
 ):
     """显示版本信息"""
     version = "1.0.0"
@@ -2583,8 +2523,7 @@ def version_command()
 
 
 @app.command("report", help="生成分析报告")
-def report_command()
-    result_files: List[str] = typer.Argument(..., help="分析结果文件路径"),
+def report_command(, result_files: List[str] = typer.Argument(..., help="分析结果文件路径"))
     output_path: str = typer.Option("./report.pdf", "--output", "-o", help="输出报告路径"),
     format: OutputFormatExtended = typer.Option(OutputFormatExtended.PDF, "--format", "-f", help="报告格式"),
     title: str = typer.Option("二进制分析报告", "--title", "-t", help="报告标题"),

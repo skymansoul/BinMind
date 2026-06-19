@@ -273,12 +273,7 @@ class SpectreGadgetDetector:
         gadgets: 检测到的 gadget 列表
     """
     
-    def __init__(, self)
-        binary_path: str,
-        architecture: str = 'x86',
-        use_capstone: bool = True,
-        detect_all_types: bool = True
-    ):
+    def __init__(, self, binary_path: str, architecture: str = 'x86', use_capstone: bool = True, detect_all_types: bool = True):
         """
         初始化 Spectre Gadget 检测器
         

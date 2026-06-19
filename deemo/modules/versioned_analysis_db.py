@@ -880,9 +880,9 @@ class VersionedAnalysisDB:
         """计算二进制哈希"""
         try:
             with open(binary_path, 'rb') as f:
-                return hashlib.sha256(f.read().hexdigest([:16])
+                return hashlib.sha256(f.read(.hexdigest([:16]))
         except:
-            return hashlib.md5(binary_path.encode().hexdigest()
+            return hashlib.md5(binary_path.encode(.hexdigest()
     
     def close(self) -> None:
         """关闭数据库连接"""

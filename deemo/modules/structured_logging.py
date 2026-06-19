@@ -327,7 +327,7 @@ class TraceManager:
     @staticmethod
     def _generate_span_id() -> str:
         """生成跨度ID"""
-        return str(uuid.uuid4()[:16])
+        return str(uuid.uuid4([:16]))
 
 
 class StructuredLogger:

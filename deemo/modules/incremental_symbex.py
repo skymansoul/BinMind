@@ -127,7 +127,7 @@ class SolverCache:
         self._lock = threading.Lock()
 
     def _key(self, constraint: str) -> str:
-        return hashlib.sha256(constraint.encode("utf-8")).hexdigest()[:32]
+        return hashlib.sha256(constraint.encode("utf-8")).hexdigest([:32])
 
     def get(self, constraint: str) -> Optional[Any]:
         key = self._key(constraint)

@@ -92,8 +92,7 @@ class ComplexityEstimator(ABC):
 class FunctionComplexityEstimator(ComplexityEstimator):
     """函数复杂度评估器"""
     
-    def estimate(self, func_size: int = 0, instruction_count: int = 0, )
-                 basic_block_count: int = 0, **kwargs) -> float:
+    def estimate(self, func_size: int = 0, instruction_count: int = 0, basic_block_count: int = 0, **kwargs) -> float:
         """
         评估函数分析任务的复杂度
         
@@ -122,8 +121,7 @@ class FunctionComplexityEstimator(ComplexityEstimator):
 class AnalysisComplexityEstimator(ComplexityEstimator):
     """分析复杂度评估器"""
     
-    def estimate(self, binary_size: int = 0, function_count: int = 0,)
-                 analysis_depth: int = 1, **kwargs) -> float:
+    def estimate(self, binary_size: int = 0, function_count: int = 0, analysis_depth: int = 1, **kwargs) -> float:
         """
         评估分析任务的复杂度
         
@@ -199,8 +197,7 @@ class CostBasedModelSelector(ModelSelector):
             if task_features.task_type in m.task_types
         ]
 
-    def _find_best_model(self, candidates: List[ModelConfig], )
-                         task_features: TaskFeatures) -> ModelConfig:
+    def _find_best_model(self, candidates: List[ModelConfig], task_features: TaskFeatures) -> ModelConfig:
         """找到最优模型"""
         scores = []
         
@@ -212,7 +209,7 @@ class CostBasedModelSelector(ModelSelector):
             urgency_weight = task_features.urgency
             accuracy_weight = task_features.accuracy_requirement
             
-            total_score = ()
+            total_score = (
                 cost_score * (1 - accuracy_weight) +
                 latency_score * urgency_weight +
                 capability_score * accuracy_weight
@@ -224,8 +221,7 @@ class CostBasedModelSelector(ModelSelector):
         scores.sort(key=lambda x: x[1], reverse=True)
         return scores[0][0]
 
-    def _calculate_cost_score(self, model: ModelConfig, )
-                              task_features: TaskFeatures) -> float:
+    def _calculate_cost_score(self, model: ModelConfig, task_features: TaskFeatures) -> float:
         """计算成本分数"""
         estimated_tokens = task_features.input_size + task_features.output_size_estimate
         estimated_cost = estimated_tokens * model.cost_per_token
@@ -246,8 +242,7 @@ class CostBasedModelSelector(ModelSelector):
         else:
             return 0.1
 
-    def _calculate_capability_score(self, model: ModelConfig,)
-                                    task_features: TaskFeatures) -> float:
+    def _calculate_capability_score(self, model: ModelConfig, task_features: TaskFeatures) -> float:
         """计算能力分数"""
         complexity = task_features.complexity_score
         
@@ -258,8 +253,7 @@ class CostBasedModelSelector(ModelSelector):
         else:
             return min(0.8, complexity * 0.8)
 
-    def _create_result(self, model: ModelConfig, )
-                       task_features: TaskFeatures) -> ModelSelectionResult:
+    def _create_result(self, model: ModelConfig, task_features: TaskFeatures) -> ModelSelectionResult:
         """创建选择结果"""
         estimated_tokens = task_features.input_size + task_features.output_size_estimate
         
@@ -273,8 +267,7 @@ class CostBasedModelSelector(ModelSelector):
         
 
 
-    def _calculate_confidence(self, model: ModelConfig, )
-                              task_features: TaskFeatures) -> float:
+    def _calculate_confidence(self, model: ModelConfig, task_features: TaskFeatures) -> float:
         """计算置信度"""
         complexity = task_features.complexity_score
         
@@ -285,8 +278,7 @@ class CostBasedModelSelector(ModelSelector):
         else:
             return min(0.7, 0.4 + complexity * 0.3)
 
-    def _generate_reason(self, model: ModelConfig, )
-                         task_features: TaskFeatures) -> str:
+    def _generate_reason(self, model: ModelConfig, task_features: TaskFeatures) -> str:
         """生成选择理由"""
         reasons = []
         
@@ -339,8 +331,7 @@ class PerformanceBasedModelSelector(ModelSelector):
             if task_features.task_type in m.task_types
         ]
 
-    def _find_best_by_performance(self, candidates: List[ModelConfig],)
-                                  task_features: TaskFeatures) -> ModelConfig:
+    def _find_best_by_performance(self, candidates: List[ModelConfig], task_features: TaskFeatures) -> ModelConfig:
         """根据历史性能找到最优模型"""
         best_score = float('-inf')
         best_model = candidates[0]
@@ -365,8 +356,7 @@ class PerformanceBasedModelSelector(ModelSelector):
                 return 0.5
             return sum(history) / len(history)
 
-    def _get_complexity_factor(self, model: ModelConfig,)
-                               task_features: TaskFeatures) -> float:
+    def _get_complexity_factor(self, model: ModelConfig, task_features: TaskFeatures) -> float:
         """获取复杂度因子"""
         complexity = task_features.complexity_score
         
@@ -387,8 +377,7 @@ class PerformanceBasedModelSelector(ModelSelector):
             if len(self._performance_history[model_name]) > 100:
                 self._performance_history[model_name] = self._performance_history[model_name][-50:]
 
-    def _create_result(self, model: ModelConfig,)
-                       task_features: TaskFeatures) -> ModelSelectionResult:
+    def _create_result(self, model: ModelConfig, task_features: TaskFeatures) -> ModelSelectionResult:
         """创建选择结果"""
         estimated_tokens = task_features.input_size + task_features.output_size_estimate
         
@@ -483,8 +472,7 @@ class AdaptiveModelSelector:
         selector = self._selectors[self._active_selector]
         return selector.select_model(features)
 
-    def _build_task_features(self, task_type: TaskType, )
-                            kwargs: Dict[str, Any]) -> TaskFeatures:
+    def _build_task_features(self, task_type: TaskType, kwargs: Dict[str, Any]) -> TaskFeatures:
         """构建任务特征"""
         complexity_estimator = self._get_estimator(task_type)
         complexity_score = complexity_estimator.estimate(**kwargs)
@@ -569,7 +557,7 @@ class CostManager:
 
     def is_within_budget(self, estimated_cost: float) -> bool:
         """检查是否在预算内"""
-        return self.get_today_cost() + estimated_cost <= self._daily_budget
+        return self.get_today_cost( + estimated_cost <= self._daily_budget)
 
     def get_cost_report(self, days: int = 7) -> Dict[str, Any]:
         """生成成本报告"""
@@ -584,7 +572,7 @@ class CostManager:
             model_costs: Dict[str, float] = {}
             
             for record in recent_records:
-                model_costs[record["model_name"]] = ()
+                model_costs[record["model_name"]] = (
                     model_costs.get(record["model_name"], 0) + record["cost"]
                 
             

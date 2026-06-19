@@ -88,7 +88,7 @@ class InstructionTokenizer:
         # 去除地址和颜色
         s = re.sub(r"0x[0-9a-f]+", "ADDR", instr)
         s = re.sub(r"[^a-zA-Z0-9_\s,]", " ", s)
-        tokens = [t for t in s.split() if t and t not in ("ADDR",)]
+        tokens = [t for t in s.split() if t and t not in ("ADDR")]
         return tokens
 
 

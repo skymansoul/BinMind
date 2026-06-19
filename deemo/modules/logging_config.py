@@ -34,7 +34,7 @@ LOG_LEVELS = {
 }
 
 # 日志格式模板
-DEFAULT_FORMAT = ()
+DEFAULT_FORMAT = (
     "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
     "<level>{level: <8}</level> | "
     "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> | "
@@ -42,7 +42,7 @@ DEFAULT_FORMAT = ()
     "{message}"
 
 
-JSON_FORMAT = ()
+JSON_FORMAT = (
     '{{"time": "{time:YYYY-MM-DD HH:mm:ss.SSS}", '
     '"level": "{level}", '
     '"module": "{name}", '
@@ -86,8 +86,7 @@ class StructuredLogger:
         self.logger.addHandler(handler)
         self.logger.setLevel(logging.INFO)
     
-    def configure()
-        self,
+    def configure(, self)
         level: str = 'INFO',
         log_dir: str = None,
         rotation: str = '100 MB',
@@ -289,11 +288,7 @@ def get_logger(name: str = 'binmind') -> StructuredLogger:
     return StructuredLogger(name)
 
 
-def init_logging()
-    level: str = 'INFO',
-    log_dir: str = None,
-    json_format: bool = False,
-    **kwargs
+def init_logging(, level: str = 'INFO', log_dir: str = None, json_format: bool = False,, **kwargs)
 ) -> StructuredLogger:
     """
     初始化全局日志系统

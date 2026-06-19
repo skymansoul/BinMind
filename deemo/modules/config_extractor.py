@@ -488,4 +488,4 @@ def get_config_extractor() -> ConfigExtractor:
     Returns:
         ConfigExtractor实例
     """
-    return ConfigExtractor()))))))"'
+    return ConfigExtractor())))))"')

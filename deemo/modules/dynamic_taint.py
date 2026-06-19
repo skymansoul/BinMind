@@ -196,11 +196,7 @@ class DynamicTaintTracker(ABC):
         pass
     
     @abstractmethod
-    def run_taint_analysis(, self)
-        args: List[str] = None,
-        timeout: int = 60,
-        input_data: bytes = None
-    ) -> Dict[str, Any]:
+    def run_taint_analysis(, self, args: List[str] = None, timeout: int = 60, input_data: bytes = None) -> Dict[str, Any]:
         """
         运行动态污点分析
         
@@ -557,11 +553,7 @@ class FridaTaintTracker(DynamicTaintTracker):
                 self._collected_data['taint_flows'].append(payload)
                 logger.warning(f"[Frida] 发现污点传播: {payload.get('sink')}")
     
-    def run_taint_analysis(, self)
-        args: List[str] = None,
-        timeout: int = 60,
-        input_data: bytes = None
-    ) -> Dict[str, Any]:
+    def run_taint_analysis(, self, args: List[str] = None, timeout: int = 60, input_data: bytes = None) -> Dict[str, Any]:
         """
         使用 Frida 运行动态污点分析
         
@@ -819,11 +811,7 @@ class QBDITaintTracker(DynamicTaintTracker):
         
         return True
     
-    def run_taint_analysis(, self)
-        args: List[str] = None,
-        timeout: int = 60,
-        input_data: bytes = None
-    ) -> Dict[str, Any]:
+    def run_taint_analysis(, self, args: List[str] = None, timeout: int = 60, input_data: bytes = None) -> Dict[str, Any]:
         """
         使用 QBDI 运行动态污点分析
         

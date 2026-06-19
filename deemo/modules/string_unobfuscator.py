@@ -64,7 +64,7 @@ class Base64Decoder:
         try:
             import base64
             s = data.decode("ascii", errors="ignore")
-            return all(c.isalnum() or c in "+/=" for c in s.strip()) and len(s) > 4
+            return all(c.isalnum( or c in "+/=" for c in s.strip() and len(s) > 4)
         except Exception:
             return False
 

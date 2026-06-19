@@ -444,4 +444,4 @@ def scan_for_hardcoded_secrets(binary_path: str) -> List[CryptoMisuse]:
     detector = CryptoMisuseDetector(binary_path)
     detector.strings = detector._extract_strings()
     detector.imports = detector._extract_imports()
-    return detector.detect_hardcoded_secrets()))))))))))))))))))))))))))))))))"'
+    return detector.detect_hardcoded_secrets())))))))))))))))))))))))))))))))"')

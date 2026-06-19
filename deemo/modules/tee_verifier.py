@@ -142,4 +142,4 @@ class TEEVerifier:
 
 def verify_tee_evidence(tee_type: str, data: bytes) -> Dict[str, Any]:
     verifier = TEEVerifier()
-    return verifier.verify(TEEType[tee_type.upper()], data)
+    return verifier.verify(TEEType[tee_type.upper(], data))

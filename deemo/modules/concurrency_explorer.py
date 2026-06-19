@@ -170,11 +170,7 @@ class ConcurrencyExplorer(BaseAnalyzer):
             'exploration': exploration_result
         }
     
-    def _explore_interleavings(, self)
-        static_result: Dict[str, Any],
-        max_paths: int,
-        detection_mode: str
-    ) -> Dict[str, Any]:
+    def _explore_interleavings(, self, static_result: Dict[str, Any], max_paths: int, detection_mode: str) -> Dict[str, Any]:
         """
         探索线程交错序列
         
@@ -252,11 +248,7 @@ class ConcurrencyExplorer(BaseAnalyzer):
         
         return interleavings
     
-    def _analyze_interleaving(, self)
-        interleaving: List[int],
-        static_result: Dict[str, Any],
-        detection_mode: str
-    ) -> Dict[str, Any]:
+    def _analyze_interleaving(, self, interleaving: List[int], static_result: Dict[str, Any], detection_mode: str) -> Dict[str, Any]:
         """
         分析单个交错序列
         
@@ -335,11 +327,7 @@ class ConcurrencyExplorer(BaseAnalyzer):
         
         return result
     
-    def _check_deadlock(, self)
-        thread_id: int,
-        thread_locks: Dict[int, Set[str]],
-        lock_states: Dict[str, Optional[int]]
-    ) -> bool:
+    def _check_deadlock(, self, thread_id: int, thread_locks: Dict[int, Set[str]], lock_states: Dict[str, Optional[int]]) -> bool:
         """
         检查是否发生死锁
         
@@ -370,10 +358,7 @@ class ConcurrencyExplorer(BaseAnalyzer):
         # 检测循环
         return self._has_cycle(waiting_graph)
     
-    def _find_deadlock_cycle(, self)
-        thread_locks: Dict[int, Set[str]],
-        lock_states: Dict[str, Optional[int]]
-    ) -> Optional[List[Tuple[int, str]]]:
+    def _find_deadlock_cycle(, self, thread_locks: Dict[int, Set[str]], lock_states: Dict[str, Optional[int]]) -> Optional[List[Tuple[int, str]]]:
         """
         查找死锁循环
         

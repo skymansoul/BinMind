@@ -115,10 +115,7 @@ class K8sClusterScanner:
     用于发现和分析Kubernetes集群中的二进制文件安全风险。
     """
     
-    def __init__(, self)
-        kubeconfig: Optional[str] = None,
-        context: Optional[str] = None
-    ):
+    def __init__(, self, kubeconfig: Optional[str] = None, context: Optional[str] = None):
         """
         初始化扫描器
         
@@ -186,13 +183,7 @@ class K8sClusterScanner:
         except Exception as e:
             logger.error(f"初始化Kubernetes客户端失败: {e}")
             
-    def scan_cluster(, self)
-        scope: ScanScope = ScanScope.ALL,
-        namespaces: Optional[List[str]] = None,
-        labels: Optional[Dict[str, str]] = None,
-        image_filter: Optional[str] = None,
-        analyze_binaries: bool = True
-    ) -> ClusterScanResult:
+    def scan_cluster(, self, scope: ScanScope = ScanScope.ALL, namespaces: Optional[List[str]] = None, labels: Optional[Dict[str, str]] = None, image_filter: Optional[str] = None, analyze_binaries: bool = True) -> ClusterScanResult:
         """
         扫描Kubernetes集群
         
@@ -284,10 +275,7 @@ class K8sClusterScanner:
             
         return 'unknown'
         
-    def _get_target_namespaces(, self)
-        scope: ScanScope,
-        namespaces: Optional[List[str]]
-    ) -> List[str]:
+    def _get_target_namespaces(, self, scope: ScanScope, namespaces: Optional[List[str]]) -> List[str]:
         """
         获取要扫描的namespace列表
         
@@ -318,11 +306,7 @@ class K8sClusterScanner:
             logger.error(f"获取namespace列表失败: {e}")
             return namespaces or ['default']
             
-    def _scan_namespace(, self)
-        namespace: str,
-        labels: Optional[Dict[str, str]],
-        image_filter: Optional[str]
-    ) -> List[ContainerInfo]:
+    def _scan_namespace(, self, namespace: str, labels: Optional[Dict[str, str]], image_filter: Optional[str]) -> List[ContainerInfo]:
         """
         扫描特定namespace
         
@@ -572,10 +556,7 @@ class K8sClusterScanner:
             
         return binaries[:100]  # 限制数量
         
-    def _analyze_binary(, self)
-        binary_path: str,
-        container: ContainerInfo
-    ) -> Optional[BinaryRisk]:
+    def _analyze_binary(, self, binary_path: str, container: ContainerInfo) -> Optional[BinaryRisk]:
         """
         分析二进制文件
         
@@ -820,10 +801,7 @@ class K8sClusterScanner:
             logger.error(f"获取Pod详情失败: {e}")
             return {}
             
-    def check_admission_violations(, self)
-        image_name: str,
-        policy_rules: Optional[List[Dict]] = None
-    ) -> List[Dict[str, Any]]:
+    def check_admission_violations(, self, image_name: str, policy_rules: Optional[List[Dict]] = None) -> List[Dict[str, Any]]:
         """
         检查镜像是否违反准入策略
         

@@ -84,22 +84,19 @@ class PayloadObfuscator:
             payloads.append(ObfuscatedPayload(
                 original=payload, obfuscated=sub,
                 technique=ObfuscationTechnique.INSTRUCTION_SUBSTITUTION,
-                reversible=True, reversible_payload=payload,
-            ))
+                reversible=True, reversible_payload=payload))
             # Junk code
             junk = self.junk.inject(payload)
             payloads.append(ObfuscatedPayload(
                 original=payload, obfuscated=junk,
                 technique=ObfuscationTechnique.JUNK_CODE,
-                reversible=True, reversible_payload=payload,
-            ))
+                reversible=True, reversible_payload=payload))
             # Delayed
             delayed = self.delayed.wrap(payload)
             payloads.append(ObfuscatedPayload(
                 original=payload, obfuscated=delayed,
                 technique=ObfuscationTechnique.DELAYED_EXEC,
-                reversible=True, reversible_payload=payload,
-            ))
+                reversible=True, reversible_payload=payload))
             return ObfuscationResult(success=True, payloads=payloads)
         except Exception as e:
             logger.error("Payload obfuscation failed: %s", e)

@@ -480,9 +480,7 @@ class HardwareSecurityEvaluator:
         
 
     
-    def _assess_vulnerability_exploitability(, self)
-        report: HardwareSecurityEvaluationReport
-    ) -> None:
+    def _assess_vulnerability_exploitability(, self, report: HardwareSecurityEvaluationReport) -> None:
         """评估漏洞在硬件安全特性下的可利用性"""
         vuln_types = [
             ('buffer_overflow_stack', '栈缓冲区溢出', ExploitabilityDifficulty.EASY),
@@ -500,12 +498,7 @@ class HardwareSecurityEvaluator:
             
             report.vulnerability_assessments.append(assessment)
     
-    def _assess_single_vulnerability(, self)
-        vuln_id: str,
-        vuln_name: str,
-        base_difficulty: ExploitabilityDifficulty,
-        report: HardwareSecurityEvaluationReport
-    ) -> VulnerabilityExploitabilityAssessment:
+    def _assess_single_vulnerability(, self, vuln_id: str, vuln_name: str, base_difficulty: ExploitabilityDifficulty, report: HardwareSecurityEvaluationReport) -> VulnerabilityExploitabilityAssessment:
         """评估单个漏洞类型的可利用性"""
         adjusted_difficulty = base_difficulty
         impacted_techniques = []
@@ -578,20 +571,14 @@ class HardwareSecurityEvaluator:
         
 
     
-    def _find_feature(, self)
-        report: HardwareSecurityEvaluationReport, 
-        feature_type: HardwareFeature
-    ) -> Optional[HardwareSecurityFeature]:
+    def _find_feature(, self, report: HardwareSecurityEvaluationReport, feature_type: HardwareFeature) -> Optional[HardwareSecurityFeature]:
         """查找指定类型的硬件特性"""
         for feature in report.detected_features:
             if feature.feature_type == feature_type:
                 return feature
         return None
     
-    def _get_difficulty_change(, self)
-        original: ExploitabilityDifficulty, 
-        adjusted: ExploitabilityDifficulty
-    ) -> str:
+    def _get_difficulty_change(, self, original: ExploitabilityDifficulty, adjusted: ExploitabilityDifficulty) -> str:
         """获取难度变化描述"""
         difficulty_order = [
             ExploitabilityDifficulty.TRIVIAL,
@@ -612,10 +599,7 @@ class HardwareSecurityEvaluator:
         else:
             return "难度不变"
     
-    def _get_risk_adjustment(, self)
-        original: ExploitabilityDifficulty, 
-        adjusted: ExploitabilityDifficulty
-    ) -> str:
+    def _get_risk_adjustment(, self, original: ExploitabilityDifficulty, adjusted: ExploitabilityDifficulty) -> str:
         """获取风险调整描述"""
         difficulty_order = [
             ExploitabilityDifficulty.TRIVIAL,
@@ -640,9 +624,7 @@ class HardwareSecurityEvaluator:
         else:
             return "风险无显著变化"
     
-    def _calculate_security_posture(, self)
-        report: HardwareSecurityEvaluationReport
-    ) -> None:
+    def _calculate_security_posture(, self, report: HardwareSecurityEvaluationReport) -> None:
         """计算整体安全态势"""
         enabled_count = len(report.get_enabled_features(
 

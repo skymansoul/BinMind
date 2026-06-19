@@ -202,8 +202,7 @@ class SourceScanner:
                             code_snippet=line.strip()[:200],
                             message=f"使用了危险 API: {api}",
                             cwe=self.CWE_MAPPING.get(kind, ""),
-                            severity=self.SEVERITY.get(kind, "medium"),
-                        ))
+                            severity=self.SEVERITY.get(kind, "medium")))
 
                 # 检测 unchecked return (malloc/alloc)
                 alloc_match = re.search(r"\b(malloc|calloc|realloc|new)\s*\(", line)
@@ -222,8 +221,7 @@ class SourceScanner:
                         code_snippet=line.strip()[:200],
                         message="检测到可能的 SQL 注入",
                         cwe="CWE-89",
-                        severity="critical",
-                    ))
+                        severity="critical"))
         return findings
 
 
@@ -246,8 +244,7 @@ class BuildCoordinator:
                     cmd,
                     capture_output=True,
                     text=True,
-                    timeout=self.timeout,
-                )
+                    timeout=self.timeout)
                 elapsed = time.time() - start
                 if proc.returncode == 0 and os.path.exists(output_path):
                     return CompileResult(
@@ -256,28 +253,24 @@ class BuildCoordinator:
                         stdout=proc.stdout,
                         stderr=proc.stderr,
                         exit_code=proc.returncode,
-                        elapsed=elapsed,
-                    )
+                        elapsed=elapsed)
                 return CompileResult(
                     status=CompileStatus.FAILED,
                     stdout=proc.stdout,
                     stderr=proc.stderr,
                     exit_code=proc.returncode,
                     elapsed=elapsed,
-                    error=proc.stderr[:500] if proc.stderr else "编译失败",
-                )
+                    error=proc.stderr[:500] if proc.stderr else "编译失败")
             except subprocess.TimeoutExpired:
                 return CompileResult(
                     status=CompileStatus.TIMEOUT,
                     elapsed=time.time() - start,
-                    error=f"编译超时 ({self.timeout}s)",
-                )
+                    error=f"编译超时 ({self.timeout}s)")
             except (OSError, FileNotFoundError) as e:
                 return CompileResult(
                     status=CompileStatus.FAILED,
                     elapsed=time.time() - start,
-                    error=f"编译器不可用: {e}",
-                )
+                    error=f"编译器不可用: {e}")
 
     def compile_with_debug_info(
         self,
@@ -321,8 +314,7 @@ class SourceBinaryMapper:
                     function=sym.get("name", ""),
                     binary_addr=addr,
                     binary_size=size,
-                    binary_name=sym.get("name", ""),
-                ))
+                    binary_name=sym.get("name", "")))
 
             if debug_info:
                 for entry in debug_info.get("line_table", []):
@@ -331,8 +323,7 @@ class SourceBinaryMapper:
                         line=int(entry.get("line", 0)),
                         function=entry.get("func", ""),
                         binary_addr=int(entry.get("addr", 0)),
-                        binary_size=0,
-                    ))
+                        binary_size=0))
         return mappings
 
     def find_binary_addr(
@@ -375,8 +366,7 @@ class HybridAnalysisPipeline:
         with self._lock:
             result = HybridAnalysisResult(
                 source_path=source_path,
-                language=language,
-            )
+                language=language)
             self.scanner.language = language
 
             # 1. 源码扫描

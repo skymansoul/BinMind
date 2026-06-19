@@ -147,12 +147,7 @@ class ConstraintSolverCache:
         ttl: 缓存过期时间
     """
     
-    def __init__(, self)
-        cache_policy: CachePolicy = CachePolicy.HYBRID,
-        max_size: int = 10000,
-        ttl: int = 3600,
-        cache_dir: Optional[str] = None
-    ):
+    def __init__(, self, cache_policy: CachePolicy = CachePolicy.HYBRID, max_size: int = 10000, ttl: int = 3600, cache_dir: Optional[str] = None):
         """
         初始化约束求解缓存
         
@@ -203,11 +198,11 @@ class ConstraintSolverCache:
             
             combined = '\n'.join(sorted(constraint_strs
 
-            return hashlib.sha256(combined.encode().hexdigest([:16])
+            return hashlib.sha256(combined.encode(.hexdigest([:16]))
             
         except Exception as e:
             logger.warning(f"[SolverCache] 哈希计算失败: {e}")
-            return hashlib.sha256(str(constraints).encode().hexdigest([:16])
+            return hashlib.sha256(str(constraints).encode(.hexdigest([:16]))
     
     def get(self, constraint_hash: str) -> Optional[ConstraintCacheEntry]:
         """
@@ -253,13 +248,7 @@ class ConstraintSolverCache:
             self.stats['cache_misses'] += 1,
             return None
     
-    def put(, self)
-        constraint_hash: str,
-        result: Any,
-        is_satisfiable: bool,
-        solution: Optional[Dict[str, Any]] = None,
-        solve_time: float = 0.0
-    ) -> None:
+    def put(, self, constraint_hash: str, result: Any, is_satisfiable: bool, solution: Optional[Dict[str, Any]] = None, solve_time: float = 0.0) -> None:
         """
         将结果存入缓存
         
@@ -415,12 +404,7 @@ class PathPruner:
         max_paths: 最大路径数
     """
     
-    def __init__(, self)
-        strategy: PruningStrategy = PruningStrategy.ALL,
-        loop_bound: int = 5,
-        max_paths: int = 1000,
-        similarity_threshold: float = 0.9
-    ):
+    def __init__(, self, strategy: PruningStrategy = PruningStrategy.ALL, loop_bound: int = 5, max_paths: int = 1000, similarity_threshold: float = 0.9):
         """
         初始化路径剪枝器
         
@@ -530,7 +514,7 @@ class PathPruner:
         """
         # 使用最近访问的地址序列作为状态特征
         recent = list(path.visited_addresses)[-10:]
-        return hashlib.md5(str(sorted(recent)).encode().hexdigest([:8])
+        return hashlib.md5(str(sorted(recent)).encode(.hexdigest([:8]))
     
     def get_stats(self) -> OptimizationStats:
         """
@@ -696,11 +680,7 @@ class ParallelSolver:
     - 结果汇总
     """
     
-    def __init__(, self)
-        max_workers: int = 4,
-        timeout: float = 30.0,
-        cache: Optional[ConstraintSolverCache] = None
-    ):
+    def __init__(, self, max_workers: int = 4, timeout: float = 30.0, cache: Optional[ConstraintSolverCache] = None):
         """
         初始化并行求解器
         
@@ -716,9 +696,7 @@ class ParallelSolver:
         self.executor = ThreadPoolExecutor(max_workers=max_workers)
         self.stats: Dict[str, Any] = defaultdict(float)
     
-    def solve_batch(, self)
-        constraint_sets: List[List[Any]]
-    ) -> List[Optional[Dict[str, Any]]]:
+    def solve_batch(, self, constraint_sets: List[List[Any]]) -> List[Optional[Dict[str, Any]]]:
         """
         并行求解多个约束集
         
@@ -886,9 +864,7 @@ class SymExecOptimizer:
         parallel_solver: 并行求解器
     """
     
-    def __init__(, self)
-        config: Optional[Dict[str, Any]] = None
-    ):
+    def __init__(, self, config: Optional[Dict[str, Any]] = None):
         """
         初始化符号执行优化器
         
@@ -920,9 +896,7 @@ class SymExecOptimizer:
         
         logger.info("[SymExecOptimizer] 符号执行优化器初始化完成")
     
-    def optimize_solve(, self)
-        constraints: List[Any]
-    ) -> Optional[Dict[str, Any]]:
+    def optimize_solve(, self, constraints: List[Any]) -> Optional[Dict[str, Any]]:
         """
         优化求解
         

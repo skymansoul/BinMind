@@ -217,8 +217,8 @@ class RaceConditionDetector:
                 continue
             # 检查是否同时有 read+write
             ops = [a[1] for a in accesses]
-            has_read = any(o in ("read",) for o in ops)
-            has_write = any(o in ("write",) for o in ops)
+            has_read = any(o in ("read") for o in ops)
+            has_write = any(o in ("write") for o in ops)
             if has_read and has_write:
                 likelihood = min(1.0, len(accesses) / 20.0)
                 races.append(RaceCondition(
@@ -262,7 +262,7 @@ class ConcurrentDistributedLockAnalyzer:
                     counter[0] = cur + 1
                 if counter[0] != cur + 1:
                     race_count[0] += 1
-        threads = [threading.Thread(target=worker, args=(i,))
+        threads = [threading.Thread(target=worker, args=(i))
                    for i in range(num_threads)]
         for t in threads:
             t.start()

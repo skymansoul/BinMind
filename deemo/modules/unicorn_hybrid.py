@@ -312,11 +312,7 @@ class UnicornHybridAnalyzer:
         data = user_data
         data['branch_targets'].add(address)
 
-    def _run_concrete_execution(, self)
-        start_addr: int, 
-        max_instructions: int = 100000,
-        timeout_ms: int = 30000
-    ) -> ExecutionResult:
+    def _run_concrete_execution(, self, start_addr: int, max_instructions: int = 100000, timeout_ms: int = 30000) -> ExecutionResult:
         """
         运行具体执行
         
@@ -459,11 +455,7 @@ class UnicornHybridAnalyzer:
         
         return hidden_strings
 
-    def hybrid_analysis(, self)
-        symbolic_info: Optional[Dict[str, Any]] = None,
-        timeout: int = 30,
-        max_instructions: int = 100000
-    ) -> HybridAnalysisResult:
+    def hybrid_analysis(, self, symbolic_info: Optional[Dict[str, Any]] = None, timeout: int = 30, max_instructions: int = 100000) -> HybridAnalysisResult:
         """
         执行混合分析
         

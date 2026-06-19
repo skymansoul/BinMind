@@ -443,10 +443,7 @@ class ATTACKMapper:
     将漏洞映射到 MITRE ATT&CK 框架的技术。
     """
     
-    def __init__(, self)
-        mapping_file: str = None,
-        custom_mapping_file: str = None
-    ):
+    def __init__(, self, mapping_file: str = None, custom_mapping_file: str = None):
         """
         初始化 ATT&CK 映射器
         
@@ -518,14 +515,7 @@ class ATTACKMapper:
             except Exception as e:
                 logger.warning(f"加载自定义映射失败: {e}")
     
-    def map_vulnerability(, self)
-        vuln_type: str,
-        vuln_id: str = None,
-        cve_id: str = None,
-        impact_type: str = None,
-        target_type: str = None,
-        severity: str = None
-    ) -> VulnerabilityMapping:
+    def map_vulnerability(, self, vuln_type: str, vuln_id: str = None, cve_id: str = None, impact_type: str = None, target_type: str = None, severity: str = None) -> VulnerabilityMapping:
         """
         映射单个漏洞
         
@@ -633,9 +623,7 @@ class ATTACKMapper:
         
         return result
     
-    def _infer_from_impact(, self)
-        impact_type: str
-    ) -> Optional[Dict[str, Any]]:
+    def _infer_from_impact(, self, impact_type: str) -> Optional[Dict[str, Any]]:
         """
         从影响类型推断映射
         
@@ -667,10 +655,7 @@ class ATTACKMapper:
         
         return None
     
-    def _infer_from_target(, self)
-        target_type: str,
-        vuln_type: str
-    ) -> Optional[Dict[str, Any]]:
+    def _infer_from_target(, self, target_type: str, vuln_type: str) -> Optional[Dict[str, Any]]:
         """
         从目标类型推断映射
         
@@ -702,10 +687,7 @@ class ATTACKMapper:
         
         return None
     
-    def map_vulnerabilities(, self)
-        vulnerabilities: List[Dict[str, Any]],
-        binary_type: str = None
-    ) -> MappingResult:
+    def map_vulnerabilities(, self, vulnerabilities: List[Dict[str, Any]], binary_type: str = None) -> MappingResult:
         """
         映射多个漏洞
         
@@ -754,9 +736,7 @@ class ATTACKMapper:
         
         return result
     
-    def _infer_impact_from_vuln(, self)
-        vuln: Dict[str, Any]
-    ) -> str:
+    def _infer_impact_from_vuln(, self, vuln: Dict[str, Any]) -> str:
         """
         从漏洞信息推断影响类型
         
@@ -798,9 +778,7 @@ class ATTACKMapper:
         
         return ''
     
-    def _infer_target_from_vuln(, self)
-        vuln: Dict[str, Any]
-    ) -> str:
+    def _infer_target_from_vuln(, self, vuln: Dict[str, Any]) -> str:
         """
         从漏洞信息推断目标类型
         
@@ -831,9 +809,7 @@ class ATTACKMapper:
         
         return ''
     
-    def get_technique_details(, self)
-        technique_id: str
-    ) -> Optional[ATTACKTechnique]:
+    def get_technique_details(, self, technique_id: str) -> Optional[ATTACKTechnique]:
         """
         获取技术详细信息
         
@@ -858,13 +834,7 @@ class ATTACKMapper:
         
         return None
     
-    def add_custom_mapping(, self)
-        vuln_type: str,
-        technique_ids: List[str],
-        reasoning: str,
-        tactics: List[str] = None,
-        impact_type: str = None
-    ):
+    def add_custom_mapping(, self, vuln_type: str, technique_ids: List[str], reasoning: str, tactics: List[str] = None, impact_type: str = None):
         """
         添加自定义映射
         
@@ -884,9 +854,7 @@ class ATTACKMapper:
         
         logger.info(f"已添加自定义映射: {vuln_type} -> {technique_ids}")
     
-    def save_mappings(, self)
-        output_path: str = None
-    ):
+    def save_mappings(, self, output_path: str = None):
         """
         保存映射到文件
         

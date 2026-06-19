@@ -253,7 +253,7 @@ class VersionedFuncDB:
             sql += " ORDER BY timestamp DESC"
             cur = c.execute(sql, params)
             cols = [d[0] for d in cur.description]
-            return [dict(zip(cols, r)) for r in cur.fetchall()]
+            return [dict(zip(cols, r)) for r in cur.fetchall(])
 
 
 class FunctionVersionTracker:

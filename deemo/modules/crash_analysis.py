@@ -475,10 +475,7 @@ class CrashAnalyzer:
         
         return result
     
-    def call_openai_analysis(, self)
-        crash_info: Dict[str, str],
-        protection_info: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def call_openai_analysis(, self, crash_info: Dict[str, str], protection_info: Dict[str, Any]) -> Dict[str, Any]:
         """
         调用 OpenAI API 分析崩溃
         
@@ -736,10 +733,7 @@ class CrashAnalyzer:
         
         return recommendations[:5]
     
-    def analyze(, self)
-        crash_data: Dict[str, Any],
-        protection_info: Dict[str, Any] = None
-    ) -> Dict[str, Any]:
+    def analyze(, self, crash_data: Dict[str, Any], protection_info: Dict[str, Any] = None) -> Dict[str, Any]:
         """
         完整的崩溃分析流程
         
@@ -767,10 +761,7 @@ class CrashAnalyzer:
         
         return final_result
     
-    def _merge_analysis(, self)
-        heuristic: Dict[str, Any],
-        ai: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def _merge_analysis(, self, heuristic: Dict[str, Any], ai: Dict[str, Any]) -> Dict[str, Any]:
         """
         合并启发式分析和 AI 分析结果
         """

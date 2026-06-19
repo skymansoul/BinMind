@@ -167,8 +167,7 @@ class MTEState:
                 tag=tag,
                 alloc_type=alloc_type,
                 var_name=var_name,
-                alloc_time=time.time(),
-            )
+                alloc_time=time.time())
             self.allocations.append(a)
             self.active_allocs[addr] = a
             return a
@@ -185,8 +184,7 @@ class MTEState:
                     pc=0,
                     access_size=0,
                     is_write=True,
-                    message=f"尝试释放未追踪地址 0x{addr:x}",
-                )
+                    message=f"尝试释放未追踪地址 0x{addr:x}")
                 self.violations.append(v)
                 return False, v
             if a.freed:
@@ -198,8 +196,7 @@ class MTEState:
                     pc=0,
                     access_size=0,
                     is_write=True,
-                    message=f"双重释放 0x{addr:x}",
-                )
+                    message=f"双重释放 0x{addr:x}")
                 self.violations.append(v)
                 return False, v
             a.freed = True
@@ -228,8 +225,7 @@ class MTEState:
                         pc=pc,
                         access_size=min(self.TAG_GRANULE, size - off),
                         is_write=is_write,
-                        message=f"访问未初始化/无效内存 0x{cur:x}",
-                    )
+                        message=f"访问未初始化/无效内存 0x{cur:x}")
                     violations.append(v)
                 # 检查是否属于已释放的 alloc
                 for a_addr, a in list(self.active_allocs.items()):
@@ -242,8 +238,7 @@ class MTEState:
                             pc=pc,
                             access_size=min(self.TAG_GRANULE, size - off),
                             is_write=is_write,
-                            message=f"UAF 访问 0x{cur:x} (分配 0x{a.addr:x} 已释放)",
-                        )
+                            message=f"UAF 访问 0x{cur:x} (分配 0x{a.addr:x} 已释放)")
                         violations.append(v)
                         break
         for v in violations:
@@ -266,12 +261,10 @@ class UnicornMTEHook:
         try:
             self.uc.hook_add(
                 unicorn.UC_HOOK_MEM_READ | unicorn.UC_HOOK_MEM_WRITE,
-                self._hook_mem_access,
-            )
+                self._hook_mem_access)
             self.uc.hook_add(
                 unicorn.UC_HOOK_MEM_UNMAPPED,
-                self._hook_mem_invalid,
-            )
+                self._hook_mem_invalid)
             self._installed = True
         except Exception as e:
             logger.warning(f"安装 MTE 钩子失败: {e}")
@@ -384,15 +377,13 @@ class MTEAnalyzer:
                     addr=int(data["addr"]),
                     size=int(data["size"]),
                     alloc_type=data.get("type", "heap"),
-                    var_name=data.get("var", ""),
-                )
+                    var_name=data.get("var", ""))
             elif kind == "access":
                 self.record_access(
                     addr=int(data["addr"]),
                     size=int(data.get("size", 1)),
                     is_write=bool(data.get("is_write", False)),
-                    pc=int(data.get("pc", 0)),
-                )
+                    pc=int(data.get("pc", 0)))
             elif kind == "free":
                 self.record_free(addr=int(data["addr"]))
         return self.build_report()
@@ -411,8 +402,7 @@ class MTEAnalyzer:
             violations=list(violations),
             by_type=dict(by_type),
             coverage=min(1.0, total_allocs / 100.0),
-            notes=f"已分配 {total_allocs} 次, 已释放 {total_frees} 次",
-        )
+            notes=f"已分配 {total_allocs} 次, 已释放 {total_frees} 次")
 
     def enable(self, on: bool = True):
         with self._lock:

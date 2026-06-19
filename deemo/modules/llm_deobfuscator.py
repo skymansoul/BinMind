@@ -123,7 +123,7 @@ class OllamaClient(LLMClientBase):
                 timeout=180
             )
             r.raise_for_status()
-            return r.json()["message"]["content"]
+            return r.json(["message"]["content"])
         except Exception as e:
             logger.warning(f"Ollama 调用失败: {e}")
             return ""

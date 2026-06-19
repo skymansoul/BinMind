@@ -259,4 +259,4 @@ def analyze_multilang_binary(binary_path: str) -> Dict[str, Any]:
     """便捷入口"""
     dfa = CrossLanguageDFA()
     result = dfa.analyze(binary_path)
-    return {'success': True, 'result': result.to_dict()}
+    return {'success': True, 'result': result.to_dict(})

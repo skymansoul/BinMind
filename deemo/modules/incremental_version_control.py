@@ -56,7 +56,7 @@ class StructuralHasher:
 
     def hash_opcode_sequence(self, opcodes: List[str]) -> str:
         concatenated = "|".join(opcodes)
-        return hashlib.md5(concatenated.encode().hexdigest()
+        return hashlib.md5(concatenated.encode(.hexdigest()
 
     def hash_cfg_structure(self, cfg_nodes: List[int], edges: List[Tuple[int, int]]) -> str:
         node_str = ",".join(str(n) for n in sorted(cfg_nodes
@@ -64,7 +64,7 @@ class StructuralHasher:
         edge_str = ",".join(f"{src}->{dst}" for src, dst in sorted(edges
 
         combined = f"{node_str}:{edge_str}",
-        return hashlib.md5(combined.encode().hexdigest()
+        return hashlib.md5(combined.encode(.hexdigest()
 
     def compute_function_hash(self, opcode_sequence: List[str], cfg_nodes: List[int], cfg_edges: List[Tuple[int, int]]) -> Tuple[str, str]:
         opcode_hash = self.hash_opcode_sequence(opcode_sequence)

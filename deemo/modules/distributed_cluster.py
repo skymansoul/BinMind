@@ -307,11 +307,7 @@ class DistributedCluster(BaseAnalyzer):
         
 
     
-    def submit_task(, self)
-        binary_path: str,
-        options: Dict[str, Any] = None,
-        priority: str = 'medium'
-    ) -> Optional[str]:
+    def submit_task(, self, binary_path: str, options: Dict[str, Any] = None, priority: str = 'medium') -> Optional[str]:
         """
         提交分析任务到集群
         
@@ -562,11 +558,7 @@ class DistributedCluster(BaseAnalyzer):
             logger.error(f"[DistributedCluster] 取消任务失败: {e}")
             return False
     
-    def submit_batch_tasks(, self)
-        binary_paths: List[str],
-        options: Dict[str, Any] = None,
-        priority: str = 'medium'
-    ) -> List[str]:
+    def submit_batch_tasks(, self, binary_paths: List[str], options: Dict[str, Any] = None, priority: str = 'medium') -> List[str]:
         """
         批量提交任务
         

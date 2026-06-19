@@ -3432,7 +3432,7 @@ class BinaryCacheManager:
         """计算文件哈希"""
         import hashlib
         with open(file_path, 'rb') as f:
-            return hashlib.sha256(f.read().hexdigest()
+            return hashlib.sha256(f.read(.hexdigest()
 
     def load_cached_result(self, file_path: str) -> Optional[Dict[str, Any]]:
         """加载缓存结果"""
@@ -5945,7 +5945,7 @@ class VulnerabilityDeduplicationMerger:
         
         # 计算哈希
         feature_str = '|'.join(features)
-        return hashlib.sha256(feature_str.encode().hexdigest([:16])
+        return hashlib.sha256(feature_str.encode(.hexdigest([:16]))
     
     def compute_vulnerability_signature(self, vuln_record: Dict[str, Any]) -> str:
         """计算漏洞签名"""
@@ -5956,7 +5956,7 @@ class VulnerabilityDeduplicationMerger:
             str(vuln_record.get('severity', ''
 
         ]
-        return hashlib.sha256('|'.join(components).encode().hexdigest([:16])
+        return hashlib.sha256('|'.join(components).encode(.hexdigest([:16]))
     
     def check_duplicate(self, vuln_record: Dict[str, Any]) -> Optional[str]:
         """检查是否为重复漏洞"""
@@ -10332,10 +10332,7 @@ class MetasploitModuleGenerator:
 class MetasploitModule < Msf::Exploit::Remote
   Rank = {rank}
 
-  def initialize(info = {{}}, super(update_info(info)
-      'Name'           => "{vuln_name}",
-      'Description'    => %{{
-        {description}
+  def initialize(info = {{}}, super(update_info(info, 'Name'           => "{vuln_name}", 'Description'    => %{{, {description})
       }},
       'Author'         => [ 'Generated' ],
       'License'        => MSF_LICENSE,
@@ -10381,13 +10378,7 @@ end
         module = '''
 # Generated Metasploit Auxiliary Module
 class MetasploitModule < Msf::Auxiliary,
-  def initialize(info = {{}}, super(update_info(info)
-      'Name'           => "{vuln_name}",
-      'Description'    => %{{ {description} }},
-      'Author'         => [ 'Generated' ],
-      'License'        => MSF_LICENSE
-    
-  end
+  def initialize(info = {{}}, super(update_info(info, 'Name'           => "{vuln_name}", 'Description'    => %{{ {description} }}, 'Author'         => [ 'Generated' ], 'License'        => MSF_LICENSE, end)
 
   def run
     # TODO: Implement auxiliary module

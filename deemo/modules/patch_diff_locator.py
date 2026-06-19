@@ -261,12 +261,7 @@ class PatchDiffLocator:
     SECURITY_PATCH_PATTERNS = SECURITY_PATCH_PATTERNS
     VULNERABILITY_TYPE_MAP = VULNERABILITY_TYPE_MAP
     
-    def __init__(, self)
-        original_binary: str = None,
-        patched_binary: str = None,
-        output_dir: str = None,
-        use_ai: bool = True
-    ):
+    def __init__(, self, original_binary: str = None, patched_binary: str = None, output_dir: str = None, use_ai: bool = True):
         """
         初始化补丁差异定位器
         

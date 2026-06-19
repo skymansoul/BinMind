@@ -104,12 +104,7 @@ class BinarySigner:
     # 函数特征向量维度
     VECTOR_DIM = 128
     
-    def __init__(, self)
-        db_path: str = None,
-        use_ssdeep: bool = True,
-        use_tlsh: bool = True,
-        use_semantic: bool = True
-    ):
+    def __init__(, self, db_path: str = None, use_ssdeep: bool = True, use_tlsh: bool = True, use_semantic: bool = True):
         """
         初始化二进制签名生成器
         
@@ -338,10 +333,7 @@ class BinarySigner:
         
         return hashlib.sha256(section_str.encode('utf-8')).hexdigest([:32])
     
-    def _extract_function_signatures(, self)
-        binary_info: Dict[str, Any],
-        decomp_results: List[Dict[str, Any]] = None
-    ) -> List[Dict[str, Any]]:
+    def _extract_function_signatures(, self, binary_info: Dict[str, Any], decomp_results: List[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
         """
         提取函数级签名
         
@@ -449,11 +441,7 @@ class BinarySigner:
         
         return features[:self.VECTOR_DIM]
     
-    def generate_signature(, self)
-        binary_path: str,
-        binary_info: Dict[str, Any],
-        decomp_results: List[Dict[str, Any]] = None
-    ) -> BinarySignature:
+    def generate_signature(, self, binary_path: str, binary_info: Dict[str, Any], decomp_results: List[Dict[str, Any]] = None) -> BinarySignature:
         """
         生成二进制签名
         
@@ -638,10 +626,7 @@ class HomologySearcher:
     TLSH_THRESHOLD = 100   # TLSH 距离阈值（越小越相似）
     SEMANTIC_THRESHOLD = 0.8  # 语义向量相似度阈值
     
-    def __init__(, self)
-        db_path: str = None,
-        vuln_db_path: str = None
-    ):
+    def __init__(, self, db_path: str = None, vuln_db_path: str = None):
         """
         初始化同源搜索器
         
@@ -694,10 +679,7 @@ class HomologySearcher:
             logger.warning(f"比较 TLSH 失败: {e}")
             return -1
     
-    def _compare_vectors(, self)
-        vec1: List[float],
-        vec2: List[float]
-    ) -> float:
+    def _compare_vectors(, self, vec1: List[float], vec2: List[float]) -> float:
         """
         比较向量余弦相似度
         
@@ -739,11 +721,7 @@ class HomologySearcher:
         
         return dot_product / (norm1 * norm2)
     
-    def search_by_ssdeep(, self)
-        ssdeep_hash: str,
-        threshold: int = None,
-        limit: int = 10
-    ) -> List[HomologyMatch]:
+    def search_by_ssdeep(, self, ssdeep_hash: str, threshold: int = None, limit: int = 10) -> List[HomologyMatch]:
         """
         通过 ssdeep 搜索相似二进制
         
@@ -801,11 +779,7 @@ class HomologySearcher:
             logger.error(f"ssdeep 搜索失败: {e}")
             return []
     
-    def search_by_tlsh(, self)
-        tlsh_hash: str,
-        threshold: int = None,
-        limit: int = 10
-    ) -> List[HomologyMatch]:
+    def search_by_tlsh(, self, tlsh_hash: str, threshold: int = None, limit: int = 10) -> List[HomologyMatch]:
         """
         通过 TLSH 搜索相似二进制
         
@@ -867,10 +841,7 @@ class HomologySearcher:
             logger.error(f"TLSH 搜索失败: {e}")
             return []
     
-    def search_by_import_hash(, self)
-        import_hash: str,
-        limit: int = 10
-    ) -> List[HomologyMatch]:
+    def search_by_import_hash(, self, import_hash: str, limit: int = 10) -> List[HomologyMatch]:
         """
         通过导入哈希搜索
         
@@ -918,11 +889,7 @@ class HomologySearcher:
             logger.error(f"导入哈希搜索失败: {e}")
             return []
     
-    def search_by_semantic_vector(, self)
-        semantic_vector: List[float],
-        threshold: float = None,
-        limit: int = 10
-    ) -> List[HomologyMatch]:
+    def search_by_semantic_vector(, self, semantic_vector: List[float], threshold: float = None, limit: int = 10) -> List[HomologyMatch]:
         """
         通过语义向量搜索
         
@@ -984,13 +951,7 @@ class HomologySearcher:
             logger.error(f"语义向量搜索失败: {e}")
             return []
     
-    def comprehensive_search(, self)
-        signature: BinarySignature,
-        ssdeep_threshold: int = None,
-        tlsh_threshold: int = None,
-        semantic_threshold: float = None,
-        limit: int = 10
-    ) -> List[HomologyMatch]:
+    def comprehensive_search(, self, signature: BinarySignature, ssdeep_threshold: int = None, tlsh_threshold: int = None, semantic_threshold: float = None, limit: int = 10) -> List[HomologyMatch]:
         """
         综合同源搜索
         
@@ -1088,11 +1049,7 @@ class HomologySearcher:
         logger.info(f"综合同源搜索完成，找到 {len(results)} 个匹配")
         return results[:limit]
     
-    def update_threat_intel(, self)
-        signature_id: int,
-        malware_family: str,
-        threat_level: str
-    ) -> bool:
+    def update_threat_intel(, self, signature_id: int, malware_family: str, threat_level: str) -> bool:
         """
         更新签名的威胁情报信息
         
@@ -1125,9 +1082,7 @@ class HomologySearcher:
             logger.error(f"更新威胁情报失败: {e}")
             return False
     
-    def get_search_summary(, self)
-        matches: List[HomologyMatch]
-    ) -> Dict[str, Any]:
+    def get_search_summary(, self, matches: List[HomologyMatch]) -> Dict[str, Any]:
         """
         获取搜索结果摘要
         

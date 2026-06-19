@@ -207,11 +207,7 @@ class StackPivotGenerator:
         r'lea\s+([a-zA-Z]+),\s*\[([^\]]+)\]\s*;?\s*ret',
     ]
     
-    def __init__(, self)
-        binary_path: str = "",
-        arch: str = "amd64",
-        max_gadget_length: int = 5
-    ):
+    def __init__(, self, binary_path: str = "", arch: str = "amd64", max_gadget_length: int = 5):
         """
         初始化栈迁移生成器
         
@@ -235,10 +231,7 @@ class StackPivotGenerator:
         self.entry_point: int = 0
         self.sections: Dict[str, Tuple[int, int]] = {}  # name -> (addr, size)
     
-    def scan_gadgets(, self)
-        disassembly_data: Optional[Dict[int, str]] = None,
-        rop_gadgets: Optional[List[GadgetInfo]] = None
-    ) -> List[StackPivotGadget]:
+    def scan_gadgets(, self, disassembly_data: Optional[Dict[int, str]] = None, rop_gadgets: Optional[List[GadgetInfo]] = None) -> List[StackPivotGadget]:
         """
         扫描栈迁移 gadget
         
@@ -258,9 +251,7 @@ class StackPivotGenerator:
         
         return self.pivot_gadgets
     
-    def _scan_from_disassembly(, self)
-        disassembly_data: Dict[int, str]
-    ) -> None:
+    def _scan_from_disassembly(, self, disassembly_data: Dict[int, str]) -> None:
         """
         从反汇编数据扫描 gadget
         
@@ -280,12 +271,7 @@ class StackPivotGenerator:
                         self.pivot_gadgets.append(gadget)
                         break
     
-    def _create_pivot_gadget(, self)
-        address: int,
-        instruction: str,
-        pivot_type: PivotType,
-        pattern: str
-    ) -> Optional[StackPivotGadget]:
+    def _create_pivot_gadget(, self, address: int, instruction: str, pivot_type: PivotType, pattern: str) -> Optional[StackPivotGadget]:
         """
         创建栈迁移 gadget 对象
         
@@ -378,13 +364,7 @@ class StackPivotGenerator:
         return max(0.0, min(1.0, reliability
 
     
-    def generate_pivot_chain(, self)
-        pivot_gadget: StackPivotGadget,
-        target_address: int,
-        target_size: int = 4096,
-        target_region: str = "heap",
-        rop_gadgets: Optional[List[GadgetInfo]] = None
-    ) -> PivotChain:
+    def generate_pivot_chain(, self, pivot_gadget: StackPivotGadget, target_address: int, target_size: int = 4096, target_region: str = "heap", rop_gadgets: Optional[List[GadgetInfo]] = None) -> PivotChain:
         """
         生成栈迁移链
         
@@ -434,10 +414,7 @@ class StackPivotGenerator:
         
         return chain
     
-    def _find_setup_gadgets(, self)
-        target_register: str,
-        rop_gadgets: Optional[List[GadgetInfo]]
-    ) -> List[GadgetInfo]:
+    def _find_setup_gadgets(, self, target_register: str, rop_gadgets: Optional[List[GadgetInfo]]) -> List[GadgetInfo]:
         """
         寻找设置寄存器的 gadget
         
@@ -462,9 +439,7 @@ class StackPivotGenerator:
         
         return setup_gadgets
     
-    def _build_new_stack_rop(, self)
-        rop_gadgets: List[GadgetInfo]
-    ) -> List[GadgetInfo]:
+    def _build_new_stack_rop(, self, rop_gadgets: List[GadgetInfo]) -> List[GadgetInfo]:
         """
         在新栈上构建 ROP 链
         
@@ -483,12 +458,7 @@ class StackPivotGenerator:
         
         return chain
     
-    def generate_exploit(, self)
-        overflow_size: int,
-        pivot_chain: PivotChain,
-        goal: str = "shell",
-        leaked_address: Optional[int] = None
-    ) -> ExploitWithPivot:
+    def generate_exploit(, self, overflow_size: int, pivot_chain: PivotChain, goal: str = "shell", leaked_address: Optional[int] = None) -> ExploitWithPivot:
         """
         生成完整的利用方案
         
@@ -622,10 +592,7 @@ if __name__ == "__main__":
         """
         self.rop_gadgets.append(gadget)
     
-    def export_chains(, self)
-        chains: List[PivotChain],
-        output_path: str
-    ) -> None:
+    def export_chains(, self, chains: List[PivotChain], output_path: str) -> None:
         """
         导出栈迁移链
         

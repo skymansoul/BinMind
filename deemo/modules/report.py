@@ -252,11 +252,7 @@ class ReportGenerator:
         """
         return format_info_for_report(binary_info)
     
-    def format_decomp_analysis_section(, self)
-        function_name: str,
-        pseudocode: str,
-        analysis_result: Dict[str, Any]
-    ) -> str:
+    def format_decomp_analysis_section(, self, function_name: str, pseudocode: str, analysis_result: Dict[str, Any]) -> str:
         """
         格式化反编译分析部分
         """
@@ -294,9 +290,7 @@ class ReportGenerator:
         
         return '\n'.join(output)
     
-    def format_crash_analysis_section(, self)
-        crash_analysis: Dict[str, Any]
-    ) -> str:
+    def format_crash_analysis_section(, self, crash_analysis: Dict[str, Any]) -> str:
         """
         格式化崩溃分析部分
 
@@ -345,10 +339,7 @@ class ReportGenerator:
         
         return '\n'.join(output)
     
-    def format_exploit_section(, self)
-        exploit_result: Dict[str, Any],
-        vulnerability_info: Dict[str, Any]
-    ) -> str:
+    def format_exploit_section(, self, exploit_result: Dict[str, Any], vulnerability_info: Dict[str, Any]) -> str:
         """
         格式化利用脚本部分
         """
@@ -390,9 +381,7 @@ class ReportGenerator:
         
         return '\n'.join(output)
     
-    def format_patch_suggestions_section(, self)
-        patch_suggestions: List[Dict[str, Any]]
-    ) -> str:
+    def format_patch_suggestions_section(, self, patch_suggestions: List[Dict[str, Any]]) -> str:
         """
         格式化补丁建议部分
         """
@@ -428,9 +417,7 @@ class ReportGenerator:
         
         return '\n'.join(output)
     
-    def format_threat_intel_section(, self)
-        threat_intel_results: List[Dict[str, Any]]
-    ) -> str:
+    def format_threat_intel_section(, self, threat_intel_results: List[Dict[str, Any]]) -> str:
         """
         格式化威胁情报部分
         """
@@ -500,9 +487,7 @@ class ReportGenerator:
         
         return '\n'.join(output)
     
-    def format_exploit_verification_section(, self)
-        verification_result: Dict[str, Any]
-    ) -> str:
+    def format_exploit_verification_section(, self, verification_result: Dict[str, Any]) -> str:
         """
         格式化漏洞利用验证部分
         """
@@ -548,15 +533,7 @@ class ReportGenerator:
         
         return '\n'.join(output)
     
-    def generate_executive_summary(, self)
-        binary_info: Dict[str, Any],
-        decomp_results: List[Dict[str, Any]],
-        crash_analysis: Dict[str, Any],
-        exploit_result: Dict[str, Any],
-        patch_suggestions: List[Dict[str, Any]] = None,
-        threat_intel_results: List[Dict[str, Any]] = None,
-        verification_result: Dict[str, Any] = None
-    ) -> str:
+    def generate_executive_summary(, self, binary_info: Dict[str, Any], decomp_results: List[Dict[str, Any]], crash_analysis: Dict[str, Any], exploit_result: Dict[str, Any], patch_suggestions: List[Dict[str, Any]] = None, threat_intel_results: List[Dict[str, Any]] = None, verification_result: Dict[str, Any] = None) -> str:
         """
         生成执行摘要
         """
@@ -604,9 +581,7 @@ class ReportGenerator:
         
         return '\n'.join(summary)
     
-    def format_similar_vulnerabilities_section(, self)
-        similar_vulns: List[Dict[str, Any]]
-    ) -> str:
+    def format_similar_vulnerabilities_section(, self, similar_vulns: List[Dict[str, Any]]) -> str:
         """
         格式化相似漏洞部分
         """
@@ -638,9 +613,7 @@ class ReportGenerator:
         
         return '\n'.join(output)
     
-    def format_symbolic_execution_section(, self)
-        symbolic_result: Dict[str, Any]
-    ) -> str:
+    def format_symbolic_execution_section(, self, symbolic_result: Dict[str, Any]) -> str:
         """
         格式化符号执行分析部分
         """
@@ -705,9 +678,7 @@ class ReportGenerator:
         
         return '\n'.join(output)
     
-    def format_dynamic_taint_section(, self)
-        dynamic_taint_result: Dict[str, Any]
-    ) -> str:
+    def format_dynamic_taint_section(, self, dynamic_taint_result: Dict[str, Any]) -> str:
         """
         格式化动态污点分析部分
         """
@@ -831,17 +802,7 @@ class ReportGenerator:
         
         return json_str
     
-    def generate_report(, self)
-        binary_path: str,
-        binary_info: Dict[str, Any],
-        decomp_results: List[Dict[str, Any]],
-        crash_analysis: Dict[str, Any] = None,
-        exploit_result: Dict[str, Any] = None,
-        similar_vulns: List[Dict[str, Any]] = None,
-        symbolic_result: Dict[str, Any] = None,
-        dynamic_taint_result: Dict[str, Any] = None,
-        output_path: str = None
-    ) -> str:
+    def generate_report(, self, binary_path: str, binary_info: Dict[str, Any], decomp_results: List[Dict[str, Any]], crash_analysis: Dict[str, Any] = None, exploit_result: Dict[str, Any] = None, similar_vulns: List[Dict[str, Any]] = None, symbolic_result: Dict[str, Any] = None, dynamic_taint_result: Dict[str, Any] = None, output_path: str = None) -> str:
         """
         生成完整的 Markdown 报告
         """
@@ -910,14 +871,7 @@ class ReportGenerator:
         logger.info(f"报告已生成: {output_path}")
         return output_path
     
-    def generate_json_report(, self)
-        binary_path: str = None,
-        binary_info: Dict[str, Any] = None,
-        decomp_results: List[Dict[str, Any]] = None,
-        crash_analysis: Dict[str, Any] = None,
-        exploit_result: Dict[str, Any] = None,
-        output_path: str = None
-    ):
+    def generate_json_report(, self, binary_path: str = None, binary_info: Dict[str, Any] = None, decomp_results: List[Dict[str, Any]] = None, crash_analysis: Dict[str, Any] = None, exploit_result: Dict[str, Any] = None, output_path: str = None):
         """
         生成 JSON 格式报告
         
@@ -1092,16 +1046,7 @@ class ReportGenerator:
         else:
             return 'risk-low'
     
-    def generate_html_report(, self)
-        binary_path: str,
-        binary_info: Dict[str, Any],
-        decomp_results: List[Dict[str, Any]],
-        crash_analysis: Dict[str, Any] = None,
-        exploit_result: Dict[str, Any] = None,
-        similar_vulns: List[Dict[str, Any]] = None,
-        symbolic_result: Dict[str, Any] = None,
-        output_path: str = None
-    ) -> str:
+    def generate_html_report(, self, binary_path: str, binary_info: Dict[str, Any], decomp_results: List[Dict[str, Any]], crash_analysis: Dict[str, Any] = None, exploit_result: Dict[str, Any] = None, similar_vulns: List[Dict[str, Any]] = None, symbolic_result: Dict[str, Any] = None, output_path: str = None) -> str:
         """
         生成 HTML 格式报告
         
@@ -1366,16 +1311,7 @@ class ReportGenerator:
         logger.info(f"HTML 报告已生成: {output_path}")
         return output_path
     
-    def generate_pdf_report(, self)
-        binary_path: str,
-        binary_info: Dict[str, Any],
-        decomp_results: List[Dict[str, Any]],
-        crash_analysis: Dict[str, Any] = None,
-        exploit_result: Dict[str, Any] = None,
-        similar_vulns: List[Dict[str, Any]] = None,
-        symbolic_result: Dict[str, Any] = None,
-        output_path: str = None
-    ) -> Dict[str, Any]:
+    def generate_pdf_report(, self, binary_path: str, binary_info: Dict[str, Any], decomp_results: List[Dict[str, Any]], crash_analysis: Dict[str, Any] = None, exploit_result: Dict[str, Any] = None, similar_vulns: List[Dict[str, Any]] = None, symbolic_result: Dict[str, Any] = None, output_path: str = None) -> Dict[str, Any]:
         """
         生成 PDF 格式报告（需要 weasyprint 或 pdfkit）
         
@@ -1477,16 +1413,7 @@ class ReportGenerator:
         
         return result
     
-    def generate_full_report(, self)
-        binary_path: str,
-        binary_info: Dict[str, Any],
-        decomp_results: List[Dict[str, Any]],
-        crash_analysis: Dict[str, Any] = None,
-        exploit_result: Dict[str, Any] = None,
-        similar_vulns: List[Dict[str, Any]] = None,
-        symbolic_result: Dict[str, Any] = None,
-        formats: List[str] = None
-    ) -> Dict[str, str]:
+    def generate_full_report(, self, binary_path: str, binary_info: Dict[str, Any], decomp_results: List[Dict[str, Any]], crash_analysis: Dict[str, Any] = None, exploit_result: Dict[str, Any] = None, similar_vulns: List[Dict[str, Any]] = None, symbolic_result: Dict[str, Any] = None, formats: List[str] = None) -> Dict[str, str]:
         """
         生成多种格式的报告
         
@@ -1586,11 +1513,7 @@ class ReportGenerator:
         
         return result
     
-    def _infer_cvss_metrics(, self)
-        vuln_info: Dict[str, Any],
-        vuln_type: str,
-        severity_hint: str
-    ) -> Dict[str, str]:
+    def _infer_cvss_metrics(, self, vuln_info: Dict[str, Any], vuln_type: str, severity_hint: str) -> Dict[str, str]:
         """
         根据漏洞信息推断 CVSS 指标
         """
@@ -1767,11 +1690,7 @@ class ReportGenerator:
         
         return '; '.join(parts)
     
-    def _generate_vis_js_graphs(, self)
-        binary_info: Dict[str, Any],
-        decomp_results: List[Dict[str, Any]],
-        symbolic_result: Dict[str, Any] = None
-    ) -> Tuple[str, str]:
+    def _generate_vis_js_graphs(, self, binary_info: Dict[str, Any], decomp_results: List[Dict[str, Any]], symbolic_result: Dict[str, Any] = None) -> Tuple[str, str]:
         """
         生成 vis.js 调用图和控制流图数据
         
@@ -1923,11 +1842,7 @@ class ReportGenerator:
         
         return call_graph_html, cfg_html
     
-    def generate_ghidra_script(, self)
-        binary_path: str,
-        decomp_results: List[Dict[str, Any]],
-        crash_analysis: Dict[str, Any] = None
-    ) -> str:
+    def generate_ghidra_script(, self, binary_path: str, decomp_results: List[Dict[str, Any]], crash_analysis: Dict[str, Any] = None) -> str:
         """
         生成可在 Ghidra 中运行的 Python 脚本，用于标注漏洞位置
         

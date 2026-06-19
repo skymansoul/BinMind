@@ -286,13 +286,7 @@ class FunctionSummarizer:
         'connect': {'params': ['sockfd', 'addr', 'addrlen'], 'returns': 'int', 'role': {'rdi': 'sockfd', 'rsi': 'addr', 'rdx': 'addrlen'}},
     }
     
-    def __init__(, self)
-        binary_path: str = "",
-        arch: str = "amd64",
-        mode: ExecutionMode = ExecutionMode.CONCRETE,
-        timeout: int = 30,
-        max_blocks: int = 1000
-    ):
+    def __init__(, self, binary_path: str = "", arch: str = "amd64", mode: ExecutionMode = ExecutionMode.CONCRETE, timeout: int = 30, max_blocks: int = 1000):
         """
         初始化函数摘要生成器
         
@@ -340,12 +334,7 @@ class FunctionSummarizer:
         self._initialized = True,
         return True
     
-    def summarize(, self)
-        function_address: int,
-        function_name: str = "",
-        inputs: Optional[Dict[str, int]] = None,
-        max_depth: int = 5
-    ) -> FunctionSummary:
+    def summarize(, self, function_address: int, function_name: str = "", inputs: Optional[Dict[str, int]] = None, max_depth: int = 5) -> FunctionSummary:
         """
         生成函数摘要
         
@@ -394,13 +383,7 @@ class FunctionSummarizer:
         
         return summary
     
-    def _summarize_with_angr(, self)
-        function_address: int,
-        function_name: str,
-        inputs: Optional[Dict[str, int]],
-        max_depth: int,
-        summary: FunctionSummary
-    ) -> FunctionSummary:
+    def _summarize_with_angr(, self, function_address: int, function_name: str, inputs: Optional[Dict[str, int]], max_depth: int, summary: FunctionSummary) -> FunctionSummary:
         """
         使用 angr 生成摘要
         
@@ -506,8 +489,7 @@ class FunctionSummarizer:
         
         return params
     
-    def _analyze_calls(, self)
-        func,
+    def _analyze_calls(, self, func)
         max_depth: int
     ) -> List[FunctionCall]:
         """
@@ -540,8 +522,7 @@ class FunctionSummarizer:
         # 只返回前20个
         return calls[:20]
     
-    def _analyze_memory_access(, self)
-        func
+    def _analyze_memory_access(, self, func)
     ) -> Tuple[List[MemoryAccess], List[MemoryAccess]]:
         """
         分析内存访问
@@ -560,8 +541,7 @@ class FunctionSummarizer:
         
         return reads[:50], writes[:50]
     
-    def _generate_behavior_summary(, self)
-        func,
+    def _generate_behavior_summary(, self, func)
         summary: FunctionSummary
     ) -> str:
         """
@@ -616,8 +596,7 @@ class FunctionSummarizer:
         
         return "; ".join(behaviors)
     
-    def _analyze_side_effects(, self)
-        func,
+    def _analyze_side_effects(, self, func)
         summary: FunctionSummary
     ) -> List[str]:
         """
@@ -711,11 +690,7 @@ class FunctionSummarizer:
         
         return min(confidence, 1.0)
     
-    def _summarize_static(, self)
-        function_address: int,
-        function_name: str,
-        summary: FunctionSummary
-    ) -> FunctionSummary:
+    def _summarize_static(, self, function_address: int, function_name: str, summary: FunctionSummary) -> FunctionSummary:
         """
         静态分析生成摘要（简化实现）
         
@@ -759,9 +734,7 @@ class FunctionSummarizer:
         
         return summary
     
-    def summarize_batch(, self)
-        functions: List[Tuple[int, str]]
-    ) -> List[FunctionSummary]:
+    def summarize_batch(, self, functions: List[Tuple[int, str]]) -> List[FunctionSummary]:
         """
         批量生成函数摘要
         
@@ -779,10 +752,7 @@ class FunctionSummarizer:
         
         return summaries
     
-    def export_summaries(, self)
-        summaries: List[FunctionSummary],
-        output_path: str
-    ) -> None:
+    def export_summaries(, self, summaries: List[FunctionSummary], output_path: str) -> None:
         """
         导出摘要列表
         

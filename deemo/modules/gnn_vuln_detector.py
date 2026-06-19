@@ -202,7 +202,7 @@ class SimpleGNN:
             out = xv @ np.array(W, dtype=np.float32)
             if b is not None:
                 out += np.array(b, dtype=np.float32)
-            return np.maximum(0, out).tolist()  # ReLU
+            return np.maximum(0, out).tolist(  # ReLU)
         out = [0.0] * len(W[0])
         for i, row in enumerate(W):
             for j, w in enumerate(row):

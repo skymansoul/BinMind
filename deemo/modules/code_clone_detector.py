@@ -207,11 +207,7 @@ class CodeCloneDetector:
         'libc-2.23': ['GLIBC_2.23'],
     }
     
-    def __init__(, self)
-        min_similarity: float = 0.7,
-        fuzzy_threshold: int = 70,
-        use_parallel: bool = True
-    ):
+    def __init__(, self, min_similarity: float = 0.7, fuzzy_threshold: int = 70, use_parallel: bool = True):
         """
         初始化代码克隆检测器
         
@@ -232,10 +228,7 @@ class CodeCloneDetector:
         # 分析结果缓存
         self._cache: Dict[str, CloneReport] = {}
     
-    def extract_functions(, self)
-        binary_path: str,
-        functions: Optional[List[Dict[str, Any]]] = None
-    ) -> Dict[str, FunctionInfo]:
+    def extract_functions(, self, binary_path: str, functions: Optional[List[Dict[str, Any]]] = None) -> Dict[str, FunctionInfo]:
         """
         从二进制文件提取函数信息
         
@@ -308,12 +301,7 @@ class CodeCloneDetector:
         
 
     
-    def detect_clones(, self)
-        source_binary: str,
-        target_binary: str,
-        source_functions: Dict[str, FunctionInfo],
-        target_functions: Dict[str, FunctionInfo]
-    ) -> CloneReport:
+    def detect_clones(, self, source_binary: str, target_binary: str, source_functions: Dict[str, FunctionInfo], target_functions: Dict[str, FunctionInfo]) -> CloneReport:
         """
         检测两个二进制文件之间的代码克隆
         
@@ -370,11 +358,7 @@ class CodeCloneDetector:
         
         return report
     
-    def _match_by_hash(, self)
-        source: Dict[str, FunctionInfo],
-        target: Dict[str, FunctionInfo],
-        report: CloneReport
-    ) -> None:
+    def _match_by_hash(, self, source: Dict[str, FunctionInfo], target: Dict[str, FunctionInfo], report: CloneReport) -> None:
         """
         通过哈希匹配检测克隆
         
@@ -406,11 +390,7 @@ class CodeCloneDetector:
                     report.exact_clones += 1
                     report.total_clones_found += 1
     
-    def _match_by_fuzzy_hash(, self)
-        source: Dict[str, FunctionInfo],
-        target: Dict[str, FunctionInfo],
-        report: CloneReport
-    ) -> None:
+    def _match_by_fuzzy_hash(, self, source: Dict[str, FunctionInfo], target: Dict[str, FunctionInfo], report: CloneReport) -> None:
         """
         通过模糊哈希匹配检测克隆
         
@@ -469,11 +449,7 @@ class CodeCloneDetector:
                 except Exception as e:
                     self.logger.debug(f"模糊哈希比较失败: {e}")
     
-    def _match_by_tlsh(, self)
-        source: Dict[str, FunctionInfo],
-        target: Dict[str, FunctionInfo],
-        report: CloneReport
-    ) -> None:
+    def _match_by_tlsh(, self, source: Dict[str, FunctionInfo], target: Dict[str, FunctionInfo], report: CloneReport) -> None:
         """
         通过 TLSH 匹配检测克隆
         
@@ -526,11 +502,7 @@ class CodeCloneDetector:
                 except Exception as e:
                     self.logger.debug(f"TLSH 比较失败: {e}")
     
-    def _match_by_structural_features(, self)
-        source: Dict[str, FunctionInfo],
-        target: Dict[str, FunctionInfo],
-        report: CloneReport
-    ) -> None:
+    def _match_by_structural_features(, self, source: Dict[str, FunctionInfo], target: Dict[str, FunctionInfo], report: CloneReport) -> None:
         """
         通过结构特征匹配检测克隆
         
@@ -584,11 +556,7 @@ class CodeCloneDetector:
                         report.semantic_clones += 1
                         report.total_clones_found += 1
     
-    def _match_by_call_patterns(, self)
-        source: Dict[str, FunctionInfo],
-        target: Dict[str, FunctionInfo],
-        report: CloneReport
-    ) -> None:
+    def _match_by_call_patterns(, self, source: Dict[str, FunctionInfo], target: Dict[str, FunctionInfo], report: CloneReport) -> None:
         """
         通过调用模式匹配检测克隆
         
@@ -708,10 +676,7 @@ class CodeCloneDetector:
         report.reuse_graph = graph,
         return graph
     
-    def search_in_database(, self)
-        function_hash: str,
-        database_path: str
-    ) -> List[Dict[str, Any]]:
+    def search_in_database(, self, function_hash: str, database_path: str) -> List[Dict[str, Any]]:
         """
         在数据库中搜索函数
         
@@ -739,10 +704,7 @@ class CodeCloneDetector:
         
         return results
     
-    def export_to_json(, self)
-        report: CloneReport,
-        output_path: str
-    ) -> None:
+    def export_to_json(, self, report: CloneReport, output_path: str) -> None:
         """
         导出报告为 JSON
         

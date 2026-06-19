@@ -403,13 +403,7 @@ functionTrace.run();
             logger.error(f"脚本注入失败: {e}")
             return False
 
-    def run_instrumentation(, self)
-        target_path: str = None,
-        pid: int = None,
-        script_path: str = None,
-        templates: List[str] = None,
-        template_params: Dict[str, Any] = None
-    ) -> Dict[str, Any]:
+    def run_instrumentation(, self, target_path: str = None, pid: int = None, script_path: str = None, templates: List[str] = None, template_params: Dict[str, Any] = None) -> Dict[str, Any]:
         """运行完整的插桩流程"""
         result = {
             'success': False,

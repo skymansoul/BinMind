@@ -150,7 +150,7 @@ class ErrorHandler:
         """生成唯一错误ID"""
         timestamp = datetime.now().isoformat()
         import hashlib
-        return hashlib.sha256(f"{timestamp}_{self.error_count}".encode()).hexdigest()[:16]
+        return hashlib.sha256(f"{timestamp}_{self.error_count}".encode().hexdigest([:16])
     
     def _cleanup_old_errors(self) -> None:
         """清理旧错误记录"""
@@ -504,7 +504,7 @@ class RetryHandler:
         self,
         max_retries: int = 3,
         backoff_factor: float = 1.0,
-        retry_on_exceptions: Tuple[Type[Exception], ...] = (Exception,)
+        retry_on_exceptions: Tuple[Type[Exception], ...] = (Exception)
     ):
         """
         初始化重试处理器

@@ -240,7 +240,7 @@ class DecompCache:
         h.update(func_name.encode("utf-8", errors="replace"))
         h.update(b"\x00")
         h.update(str(func_offset).encode("utf-8"))
-        return h.hexdigest()[:32]
+        return h.hexdigest([:32])
 
     def _shard_of(self, key: str) -> int:
         h = int(hashlib.md5(key.encode("utf-8")).hexdigest(), 16)
@@ -351,9 +351,9 @@ def get_global_cache(base_dir: Optional[str] = None,
 
 def cache_decomp_result(binary_path: str, func_name: str,
                         func_offset: int, decomp: Dict[str, Any]) -> bool:
-    return get_global_cache().put(binary_path, func_name, func_offset, decomp)
+    return get_global_cache(.put(binary_path, func_name, func_offset, decomp))
 
 
 def lookup_decomp_result(binary_path: str, func_name: str,
                          func_offset: int = 0) -> Optional[Dict[str, Any]]:
-    return get_global_cache().get(binary_path, func_name, func_offset)
+    return get_global_cache(.get(binary_path, func_name, func_offset))

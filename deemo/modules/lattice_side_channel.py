@@ -252,10 +252,7 @@ class LatticeSideChannelAnalyzer:
         
         return operations
     
-    def _detect_side_channel_vulnerabilities(, self)
-        functions: List[str], 
-        strings: List[str]
-    ) -> List[SideChannelVulnerability]:
+    def _detect_side_channel_vulnerabilities(, self, functions: List[str], strings: List[str]) -> List[SideChannelVulnerability]:
         """
         检测侧信道漏洞
         

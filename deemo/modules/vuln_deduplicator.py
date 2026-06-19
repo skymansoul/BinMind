@@ -147,7 +147,7 @@ class VulnDeduplicator:
             dataflow_elements.append(str(vuln['taint_flow']))
 
         
-        return hashlib.md5('|'.join(dataflow_elements).encode()).hexdigest()
+        return hashlib.md5('|'.join(dataflow_elements).encode().hexdigest()
     
     def _compute_syntax_hash(self, vuln: Dict[str, Any]) -> str:
         syntax_elements = []
@@ -159,7 +159,7 @@ class VulnDeduplicator:
         if 'vulnerability_type' in vuln:
             syntax_elements.append(vuln['vulnerability_type'])
         
-        return hashlib.md5('|'.join(syntax_elements).encode()).hexdigest()
+        return hashlib.md5('|'.join(syntax_elements).encode().hexdigest()
     
     def _extract_semantic_features(self, vuln: Dict[str, Any]) -> List[str]:
         features = []
@@ -339,9 +339,6 @@ class VulnDeduplicator:
         return 1.0 if sig1.dataflow_hash == sig2.dataflow_hash else 0.0
 
 
-def deduplicate_vulnerabilities()
-    vulnerabilities: List[Dict[str, Any]],
-    strategy: str = 'hybrid'
-) -> DeduplicationResult:
+def deduplicate_vulnerabilities(, vulnerabilities: List[Dict[str, Any]], strategy: str = 'hybrid') -> DeduplicationResult:
     strategy_enum = DeduplicationStrategy[strategy.upper()]
     deduplicator = VulnDeduplicator(str(vulnerabilities), strategy_enum)

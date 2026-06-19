@@ -198,11 +198,11 @@ class ShellcodeTranslator:
     def _pack_args(self, args: List[int], arch: TargetArch) -> bytes:
         """按目标架构打包参数"""
         out = bytearray()
-        if arch in (TargetArch.X86,):
+        if arch in (TargetArch.X86):
             # 32-bit, push 到栈 (简化: 直接拼)
             for a in reversed(args):
                 out += struct.pack("<I", a & 0xFFFFFFFF)
-        elif arch in (TargetArch.X64,):
+        elif arch in (TargetArch.X64):
             # 64-bit
             for a in args:
                 out += struct.pack("<Q", a & 0xFFFFFFFFFFFFFFFF)

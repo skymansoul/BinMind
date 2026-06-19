@@ -1129,11 +1129,7 @@ if seg:
             logger.error(f"获取函数列表失败: {e}")
             return []
     
-    def call_openai_analysis(, self)
-        pseudocode: str,
-        binary_info: Dict[str, Any],
-        function_name: str = 'main'
-    ) -> Dict[str, Any]:
+    def call_openai_analysis(, self, pseudocode: str, binary_info: Dict[str, Any], function_name: str = 'main') -> Dict[str, Any]:
         """
         调用 OpenAI API 分析反编译代码
         
@@ -1396,11 +1392,7 @@ if seg:
             return 'Low'
         return 'Unknown'
     
-    def _simulate_analysis(, self)
-        pseudocode: str,
-        binary_info: Dict[str, Any],
-        function_name: str
-    ) -> Dict[str, Any]:
+    def _simulate_analysis(, self, pseudocode: str, binary_info: Dict[str, Any], function_name: str) -> Dict[str, Any]:
         """
         模拟 AI 分析（当没有 API 密钥时使用）
 
@@ -1464,10 +1456,7 @@ if seg:
             'mode': 'simulation'
         }
     
-    def analyze_function(, self)
-        function_name: str,
-        binary_info: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def analyze_function(, self, function_name: str, binary_info: Dict[str, Any]) -> Dict[str, Any]:
         """
         完整分析一个函数：反编译 + AI 分析
         

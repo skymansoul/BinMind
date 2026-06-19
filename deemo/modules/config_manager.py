@@ -29,7 +29,7 @@ def generate_encryption_key() -> str:
     """生成加密密钥"""
     if not CRYPTO_AVAILABLE:
         raise RuntimeError("cryptography 库不可用")
-    return Fernet.generate_key().decode()
+    return Fernet.generate_key(.decode()
 
 
 def get_encryption_key() -> bytes:
@@ -45,7 +45,7 @@ def encrypt_value(value: str) -> str:
     if not CRYPTO_AVAILABLE:
         raise RuntimeError("cryptography 库不可用")
     f = Fernet(get_encryption_key())
-    return f.encrypt(value.encode()).decode()
+    return f.encrypt(value.encode().decode()
 
 
 def decrypt_value(encrypted_value: str) -> str:
@@ -53,7 +53,7 @@ def decrypt_value(encrypted_value: str) -> str:
     if not CRYPTO_AVAILABLE:
         raise RuntimeError("cryptography 库不可用")
     f = Fernet(get_encryption_key())
-    return f.decrypt(encrypted_value.encode()).decode()
+    return f.decrypt(encrypted_value.encode().decode()
 
 
 class ConfigParser:
@@ -393,8 +393,7 @@ class TargetConfig:
         arch: str = "x86_64",
         os_type: str = "linux",
         analysis_depth: int = 3,
-        extra: Optional[Dict[str, Any]] = None,
-    ):
+        extra: Optional[Dict[str, Any]] = None):
         self.name = name
         self.path = path
         self.arch = arch
@@ -421,8 +420,7 @@ class AnalyzerConfig:
         name: str = "default",
         enabled: bool = True,
         timeout: float = 300.0,
-        options: Optional[Dict[str, Any]] = None,
-    ):
+        options: Optional[Dict[str, Any]] = None):
         self.name = name
         self.enabled = enabled
         self.timeout = timeout

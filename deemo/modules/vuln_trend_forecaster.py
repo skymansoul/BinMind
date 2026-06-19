@@ -124,7 +124,7 @@ class VulnHistoryStore:
                     FROM history
                     WHERE binary_id = ?
                     ORDER BY timestamp ASC
-                """, (binary_id,))
+                """, (binary_id))
             rows = cur.fetchall()
         return [
             VulnTimePoint(

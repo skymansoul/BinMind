@@ -234,11 +234,7 @@ class RaceDetector:
             RaceConditionType.RACE_CONDITION: "竞态条件"
         }
     
-    def detect_race_conditions(, self)
-        borrows: List[BorrowInfo],
-        locks: List[LockInfo],
-        goroutine_points: List[int]
-    ) -> List[RaceWarning]:
+    def detect_race_conditions(, self, borrows: List[BorrowInfo], locks: List[LockInfo], goroutine_points: List[int]) -> List[RaceWarning]:
         """检测数据竞争条件"""
         warnings = []
         

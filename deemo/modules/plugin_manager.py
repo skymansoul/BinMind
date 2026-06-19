@@ -207,7 +207,7 @@ class BaseAnalyzer(ABC):
     
     def get_version(self) -> str:
         """获取分析器版本"""
-        return self.get_metadata().version
+        return self.get_metadata(.version)
 
 
 class PluginManager:

@@ -195,11 +195,7 @@ class InfoLeakAnalyzer:
         ('%lld', 'long_long', 16, '泄露长长整型'),
     ]
     
-    def __init__(, self)
-        binary_path: str = "",
-        min_confidence: float = 0.5,
-        max_depth: int = 10
-    ):
+    def __init__(, self, binary_path: str = "", min_confidence: float = 0.5, max_depth: int = 10):
         """
         初始化信息泄露分析器
         
@@ -222,12 +218,7 @@ class InfoLeakAnalyzer:
         self._imported_functions: Set[str] = set()
         self._format_string_funcs: Set[str] = set()
     
-    def analyze(, self)
-        binary_info: Optional[Dict[str, Any]] = None,
-        decomp_data: Optional[Dict[str, Any]] = None,
-        crash_data: Optional[Dict[str, Any]] = None,
-        symbols: Optional[Dict[str, int]] = None
-    ) -> LeakCapabilityMatrix:
+    def analyze(, self, binary_info: Optional[Dict[str, Any]] = None, decomp_data: Optional[Dict[str, Any]] = None, crash_data: Optional[Dict[str, Any]] = None, symbols: Optional[Dict[str, int]] = None) -> LeakCapabilityMatrix:
         """
         执行信息泄露分析
         
@@ -279,9 +270,7 @@ class InfoLeakAnalyzer:
         
         return leak_matrix
     
-    def _analyze_format_string_vulnerabilities(, self)
-        decomp_data: Dict[str, Any]
-    ) -> None:
+    def _analyze_format_string_vulnerabilities(, self, decomp_data: Dict[str, Any]) -> None:
         """
         分析格式化字符串漏洞
         
@@ -316,12 +305,7 @@ class InfoLeakAnalyzer:
             # 扫描可能的泄露点
             self._scan_format_string_leak_points(func_name, pseudocode)
     
-    def _register_format_string_leak(, self)
-        func_name: str,
-        match_text: str,
-        param_index: int,
-        match: re.Match
-    ) -> None:
+    def _register_format_string_leak(, self, func_name: str, match_text: str, param_index: int, match: re.Match) -> None:
         """
         注册格式化字符串泄露点
         
@@ -367,10 +351,7 @@ class InfoLeakAnalyzer:
         self.leak_points.append(leak_point)
         self.logger.info(f"发现格式化字符串漏洞: {func_name} - {var_name}")
     
-    def _scan_format_string_leak_points(, self)
-        func_name: str,
-        pseudocode: str
-    ) -> None:
+    def _scan_format_string_leak_points(, self, func_name: str, pseudocode: str) -> None:
         """
         扫描格式化字符串泄露点
         
@@ -405,9 +386,7 @@ class InfoLeakAnalyzer:
                 
                 self.leak_points.append(leak_point)
     
-    def _evaluate_format_string_leakage(, self)
-        var_name: str
-    ) -> List[LeakDataType]:
+    def _evaluate_format_string_leakage(, self, var_name: str) -> List[LeakDataType]:
         """
         评估格式化字符串的泄露能力
         
@@ -452,10 +431,7 @@ class InfoLeakAnalyzer:
         
         return leakable_types
     
-    def _estimate_leak_bytes(, self)
-        var_name: str,
-        param_index: int
-    ) -> int:
+    def _estimate_leak_bytes(, self, var_name: str, param_index: int) -> int:
         """
         估计可泄露的字节数
         
@@ -483,10 +459,7 @@ class InfoLeakAnalyzer:
         
         return 64  # 默认估计
     
-    def _generate_format_string_exploit(, self)
-        var_name: str,
-        param_index: int
-    ) -> str:
+    def _generate_format_string_exploit(, self, var_name: str, param_index: int) -> str:
         """
         生成格式化字符串利用代码片段
         
@@ -530,10 +503,7 @@ class InfoLeakAnalyzer:
         """
         return f'printf("{spec}");  // 使用 {spec} 泄露数据'
     
-    def _determine_leak_severity(, self)
-        leak_types: List[LeakDataType],
-        max_bytes: int
-    ) -> Severity:
+    def _determine_leak_severity(, self, leak_types: List[LeakDataType], max_bytes: int) -> Severity:
         """
         确定泄露严重程度
         
@@ -591,9 +561,7 @@ class InfoLeakAnalyzer:
             return LeakDataType.OFFSET
         return LeakDataType.UNKNOWN
     
-    def _analyze_crash_data_leaks(, self)
-        crash_data: Dict[str, Any]
-    ) -> None:
+    def _analyze_crash_data_leaks(, self, crash_data: Dict[str, Any]) -> None:
         """
         分析崩溃数据中的泄露信息
         
@@ -629,12 +597,7 @@ class InfoLeakAnalyzer:
                             context=crash_data
                         
     
-    def _register_address_leak(, self)
-        address: int,
-        address_type: LeakDataType,
-        source: str,
-        context: Dict[str, Any]
-    ) -> None:
+    def _register_address_leak(, self, address: int, address_type: LeakDataType, source: str, context: Dict[str, Any]) -> None:
         """
         注册地址泄露点
         
@@ -668,9 +631,7 @@ class InfoLeakAnalyzer:
         self.leak_points.append(leak_point)
         self.logger.info(f"发现地址泄露: {address_type.value} @ {hex(address)}")
     
-    def _analyze_memory_read_vulnerabilities(, self)
-        decomp_data: Dict[str, Any]
-    ) -> None:
+    def _analyze_memory_read_vulnerabilities(, self, decomp_data: Dict[str, Any]) -> None:
         """
         分析内存越界读漏洞
         
@@ -703,12 +664,7 @@ class InfoLeakAnalyzer:
                         match_obj=match
                     
     
-    def _register_memory_read_leak(, self)
-        func_name: str,
-        match: str,
-        func_call: str,
-        match_obj: re.Match
-    ) -> None:
+    def _register_memory_read_leak(, self, func_name: str, match: str, func_call: str, match_obj: re.Match) -> None:
         """
         注册内存越界读泄露点
         
@@ -864,9 +820,7 @@ class InfoLeakAnalyzer:
         matrix.exploit_strategy = "\n".join(strategies)
         self.logger.info(f"生成利用策略:\n{matrix.exploit_strategy}")
     
-    def detect_format_string_in_binary(, self)
-        binary_path: str
-    ) -> List[Dict[str, Any]]:
+    def detect_format_string_in_binary(, self, binary_path: str) -> List[Dict[str, Any]]:
         """
         在二进制文件中检测格式化字符串漏洞
         
@@ -886,10 +840,7 @@ class InfoLeakAnalyzer:
         
         return results
     
-    def generate_leak_payload(, self)
-        leak_point: LeakPoint,
-        target_type: LeakDataType
-    ) -> str:
+    def generate_leak_payload(, self, leak_point: LeakPoint, target_type: LeakDataType) -> str:
         """
         生成泄露载荷
         

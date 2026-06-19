@@ -105,7 +105,7 @@ class FeatureExtractor:
                 ["r2", "-q", "-c", "agf @ " + hex(addr), self.binary_path],
                 capture_output=True, text=True, timeout=30,
             
-            return hashlib.md5(result.stdout.encode().hexdigest()
+            return hashlib.md5(result.stdout.encode(.hexdigest()
         except Exception:
             return ""
 
@@ -116,7 +116,7 @@ class FeatureExtractor:
                 ["r2", "-q", "-c", "afr @ " + hex(addr), self.binary_path],
                 capture_output=True, text=True, timeout=30,
             
-            return hashlib.md5(result.stdout.encode().hexdigest()
+            return hashlib.md5(result.stdout.encode(.hexdigest()
         except Exception:
             return ""
 

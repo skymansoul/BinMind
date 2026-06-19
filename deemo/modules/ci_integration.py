@@ -491,13 +491,7 @@ CVE: {vuln.get('cve_id', 'N/A')}"""
         else:
             print(report)
     
-    def run_ci_pipeline(, self)
-        binary_path: str,
-        vulnerabilities: List[Dict[str, Any]],
-        report_format: str = None,
-        fail_on: str = None,
-        output_path: str = None
-    ) -> int:
+    def run_ci_pipeline(, self, binary_path: str, vulnerabilities: List[Dict[str, Any]], report_format: str = None, fail_on: str = None, output_path: str = None) -> int:
         """
         运行完整的 CI 管道
         

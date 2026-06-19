@@ -148,7 +148,7 @@ class AssetDiscovery:
         return results
 
     def _match_pattern(self, name: str) -> bool:
-        return any(fnmatch.fnmatch(name.lower(), p.lower())
+        return any(fnmatch.fnmatch(name.lower(, p.lower())
                    for p in self.patterns)
 
     @staticmethod
@@ -254,7 +254,7 @@ class ScheduledBatchRunner:
             return
         self._stop.clear()
         self._thread = threading.Thread(
-            target=self._loop, args=(tick_seconds,), daemon=True
+            target=self._loop, args=(tick_seconds), daemon=True
         )
         self._thread.start()
         logger.info("[batch-runner] 启动")

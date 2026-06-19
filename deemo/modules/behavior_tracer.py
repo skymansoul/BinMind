@@ -333,12 +333,7 @@ class BehaviorTracer:
         except ImportError:
             return False
             
-    def trace_binary(, self)
-        binary_path: str,
-        args: Optional[List[str]] = None,
-        timeout: Optional[int] = None,
-        use_frida: bool = False
-    ) -> TraceResult:
+    def trace_binary(, self, binary_path: str, args: Optional[List[str]] = None, timeout: Optional[int] = None, use_frida: bool = False) -> TraceResult:
         """
         追踪二进制程序的API调用
         
@@ -409,11 +404,7 @@ class BehaviorTracer:
             
         return result
         
-    def _trace_with_strace(, self)
-        binary_path: str,
-        args: Optional[List[str]],
-        timeout: int
-    ) -> Optional[str]:
+    def _trace_with_strace(, self, binary_path: str, args: Optional[List[str]], timeout: int) -> Optional[str]:
         """
         使用 strace 追踪系统调用
         
@@ -450,11 +441,7 @@ class BehaviorTracer:
             logger.error(f"strace 执行失败: {e}")
             return None
             
-    def _trace_with_frida(, self)
-        binary_path: str,
-        args: Optional[List[str]],
-        timeout: int
-    ) -> Optional[List[Dict]]:
+    def _trace_with_frida(, self, binary_path: str, args: Optional[List[str]], timeout: int) -> Optional[List[Dict]]:
         """
         使用 Frida 进行动态追踪
         
@@ -773,9 +760,7 @@ class BehaviorTracer:
             
         return BehaviorCategory.UNKNOWN
         
-    def _analyze_behavior_sequences(, self)
-        api_calls: List[ApiCall]
-    ) -> List[BehaviorSequence]:
+    def _analyze_behavior_sequences(, self, api_calls: List[ApiCall]) -> List[BehaviorSequence]:
         """
         分析行为序列，识别恶意模式
         
@@ -802,10 +787,7 @@ class BehaviorTracer:
             
         return sequences
         
-    def _detect_patterns_in_window(, self)
-        calls: List[ApiCall],
-        window_key: int
-    ) -> List[BehaviorSequence]:
+    def _detect_patterns_in_window(, self, calls: List[ApiCall], window_key: int) -> List[BehaviorSequence]:
         """
         在时间窗口中检测恶意模式
         
@@ -834,10 +816,7 @@ class BehaviorTracer:
                 
         return sequences
         
-    def _match_pattern(, self)
-        calls: List[ApiCall],
-        pattern: Dict
-    ) -> bool:
+    def _match_pattern(, self, calls: List[ApiCall], pattern: Dict) -> bool:
         """
         匹配恶意行为模式
         
@@ -869,9 +848,7 @@ class BehaviorTracer:
         # 如果匹配了大部分步骤，认为模式匹配
         return matched_steps >= len(sequence) * 0.5
         
-    def _calculate_risk_summary(, self)
-        sequences: List[BehaviorSequence]
-    ) -> Dict[str, int]:
+    def _calculate_risk_summary(, self, sequences: List[BehaviorSequence]) -> Dict[str, int]:
         """
         计算风险摘要
         

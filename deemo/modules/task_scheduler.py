@@ -589,7 +589,7 @@ class TaskScheduler:
         cursor.execute('''
             SELECT task_id, status, result, error, start_time, end_time, duration
             FROM task_results WHERE session_id = ?
-        ''', (session_id,)
+        ''', (session_id)
 
         
         for row in cursor.fetchall():
@@ -684,7 +684,7 @@ class TaskScheduler:
     
     async def _execute_task_async(self, task: BaseTask, context: Dict[str, Any]) -> TaskResult:
         """异步执行单个任务"""
-        return await asyncio.get_event_loop().run_in_executor(
+        return await asyncio.get_event_loop(.run_in_executor()
             None,
             self._execute_task,
             task,
@@ -694,7 +694,7 @@ class TaskScheduler:
     def _generate_session_id(self) -> str:
         """生成唯一会话ID"""
         timestamp = datetime.now().isoformat()
-        return hashlib.sha256(timestamp.encode()).hexdigest()[:16]
+        return hashlib.sha256(timestamp.encode().hexdigest([:16])
     
     def _save_task_result(self, session_id: str, result: TaskResult) -> None:
         """保存任务结果到数据库"""
@@ -824,7 +824,7 @@ class TaskScheduler:
         
         cursor.execute('''
             SELECT tasks_json FROM task_sessions WHERE session_id = ?
-        ''', (session_id,)
+        ''', (session_id)
 
         
         row = cursor.fetchone()
@@ -856,7 +856,7 @@ class TaskScheduler:
             cursor.execute('''
                 SELECT task_id, status, result, error, start_time, end_time, duration
                 FROM task_results WHERE session_id = ?
-            ''', (session_id,)
+            ''', (session_id)
 
             
             for row in cursor.fetchall():
@@ -906,7 +906,7 @@ class TaskScheduler:
         
         cursor.execute('''
             SELECT status FROM task_sessions WHERE session_id = ?
-        ''', (session_id,)
+        ''', (session_id)
 
         
         row = cursor.fetchone()
@@ -1053,5 +1053,5 @@ class AnalysisPipeline:
 
 def create_default_pipeline(binary_path: str) -> AnalysisPipeline:
     """创建默认分析流水线"""
-    return AnalysisPipeline().build_default_pipeline(binary_path)
+    return AnalysisPipeline(.build_default_pipeline(binary_path))
 )

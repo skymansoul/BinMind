@@ -200,9 +200,7 @@ class StaticDataFlowAnalyzer:
         """
         return self.use_angr or self._check_radare2_available()
     
-    def perform_static_taint_analysis(, self)
-        function_name: str = 'main'
-    ) -> Dict[str, Any]:
+    def perform_static_taint_analysis(, self, function_name: str = 'main') -> Dict[str, Any]:
         """
         执行静态污点分析
         
@@ -232,10 +230,7 @@ class StaticDataFlowAnalyzer:
         else:
             return self._taint_analysis_radare2(function_name, result)
     
-    def _taint_analysis_angr(, self)
-        function_name: str,
-        result: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def _taint_analysis_angr(, self, function_name: str, result: Dict[str, Any]) -> Dict[str, Any]:
         """
         使用 angr 进行污点分析
         """
@@ -340,9 +335,7 @@ class StaticDataFlowAnalyzer:
         
         return False
     
-    def _is_potential_format_string(, self)
-        insn_str: str, 
-        project, 
+    def _is_potential_format_string(, self, insn_str: str,, project)
         block_addr: int
     ) -> bool:
         """
@@ -383,10 +376,7 @@ class StaticDataFlowAnalyzer:
         
         return tainted
     
-    def _taint_analysis_radare2(, self)
-        function_name: str,
-        result: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def _taint_analysis_radare2(, self, function_name: str, result: Dict[str, Any]) -> Dict[str, Any]:
         """
         使用 radare2 ESIL 进行后备污点分析
         """
@@ -459,10 +449,7 @@ class StaticDataFlowAnalyzer:
         import re
         return re.sub(r'[^\w\-_\.]', '_', name)
     
-    def _scan_assembly_for_vulns(, self)
-        disassembly: str,
-        function_name: str
-    ) -> List[StaticVulnerability]:
+    def _scan_assembly_for_vulns(, self, disassembly: str, function_name: str) -> List[StaticVulnerability]:
         """
         从汇编代码中扫描漏洞
         """
@@ -515,9 +502,7 @@ class StaticDataFlowAnalyzer:
         
         return vulns
     
-    def detect_uninitialized_memory(, self)
-        function_name: str = 'main'
-    ) -> List[Dict[str, Any]]:
+    def detect_uninitialized_memory(, self, function_name: str = 'main') -> List[Dict[str, Any]]:
         """
         检测未初始化内存使用
         
@@ -607,9 +592,7 @@ class StaticDataFlowAnalyzer:
         
         return issues
     
-    def analyze_function(, self)
-        function_name: str
-    ) -> Dict[str, Any]:
+    def analyze_function(, self, function_name: str) -> Dict[str, Any]:
         """
         完整分析一个函数
         
@@ -646,10 +629,7 @@ class StaticDataFlowAnalyzer:
         
         return result
     
-    def get_cached_analysis(, self)
-        function_name: str,
-        cache_dir: str = './data/cache'
-    ) -> Optional[Dict[str, Any]]:
+    def get_cached_analysis(, self, function_name: str, cache_dir: str = './data/cache') -> Optional[Dict[str, Any]]:
         """
         从缓存获取分析结果（如果存在）
         
@@ -675,11 +655,7 @@ class StaticDataFlowAnalyzer:
         
         return None
     
-    def save_to_cache(, self)
-        function_name: str,
-        result: Dict[str, Any],
-        cache_dir: str = './data/cache'
-    ) -> bool:
+    def save_to_cache(, self, function_name: str, result: Dict[str, Any], cache_dir: str = './data/cache') -> bool:
         """
         保存分析结果到缓存
         

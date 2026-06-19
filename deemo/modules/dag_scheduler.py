@@ -432,7 +432,7 @@ class DAGTaskScheduler(TaskScheduler):
         cursor.execute('''
             SELECT task_id, status, result, error, start_time, end_time, duration, metadata
             FROM task_results WHERE session_id = ?
-        ''', (session_id,)
+        ''', (session_id)
 
         
         for row in cursor.fetchall():

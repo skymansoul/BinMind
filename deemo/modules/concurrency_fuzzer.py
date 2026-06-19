@@ -160,14 +160,7 @@ class ConcurrencyFuzzer:
     SYNC_FUNCTIONS = SYNC_FUNCTIONS
     RACE_PATTERNS = RACE_PATTERNS
     
-    def __init__(, self)
-        binary_path: Optional[str] = None,
-        output_dir: str = None,
-        iterations: int = 100,
-        max_threads: int = 4,
-        use_rr: bool = True,
-        use_docker: bool = True
-    ):
+    def __init__(, self, binary_path: Optional[str] = None, output_dir: str = None, iterations: int = 100, max_threads: int = 4, use_rr: bool = True, use_docker: bool = True):
         """
         初始化并发模糊测试器
         
@@ -425,10 +418,7 @@ class ConcurrencyFuzzer:
                 except Exception as e:
                     logger.debug(f"[ConcFuzz] 测试执行异常: {e}")
     
-    def _run_single_test(, self)
-        schedule: List[ThreadSchedule],
-        iteration: int
-    ) -> Dict[str, Any]:
+    def _run_single_test(, self, schedule: List[ThreadSchedule], iteration: int) -> Dict[str, Any]:
         """
         执行单次测试
         

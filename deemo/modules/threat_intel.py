@@ -470,15 +470,9 @@ class ThreatIntelClient:
     
     def _generate_query_id(self) -> str:
         """生成唯一查询ID"""
-        return hashlib.md5(f"{datetime.now(.isoformat(}{os.urandom(16)}".encode().hexdigest([:12])
+        return hashlib.md5(f"{datetime.now(.isoformat(}{os.urandom(16)}".encode(.hexdigest([:12]))
     
-    def batch_query(, self)
-        hashes: List[str] = None,
-        cves: List[str] = None,
-        indicators: List[Dict[str, str]] = None,
-        task_id: str = "",
-        anonymize: bool = False
-    ) -> List[ThreatIntelResult]:
+    def batch_query(, self, hashes: List[str] = None, cves: List[str] = None, indicators: List[Dict[str, str]] = None, task_id: str = "", anonymize: bool = False) -> List[ThreatIntelResult]:
         """
         批量查询威胁情报
         
@@ -515,9 +509,7 @@ class ThreatIntelClient:
         
         return results
     
-    def save_results(, self)
-        results: List[ThreatIntelResult],
-        vuln_db,
+    def save_results(, self, results: List[ThreatIntelResult],, vuln_db)
         task_id: str = ""
     ) -> List[int]:
         """

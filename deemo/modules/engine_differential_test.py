@@ -114,24 +114,21 @@ class EngineAdapter:
                 analysis=analysis,
                 data=None,
                 elapsed=time.time() - start,
-                error="未配置 runner",
-            )
+                error="未配置 runner")
         try:
             data = self.runner(binary_path, analysis)
             return EngineResult(
                 engine=self.kind,
                 analysis=analysis,
                 data=data,
-                elapsed=time.time() - start,
-            )
+                elapsed=time.time() - start)
         except Exception as e:
             return EngineResult(
                 engine=self.kind,
                 analysis=analysis,
                 data=None,
                 elapsed=time.time() - start,
-                error=str(e),
-            )
+                error=str(e))
 
 
 class ResultNormalizer:
@@ -211,8 +208,7 @@ class DiscrepancyDetector:
                     severity=DiscrepancySeverity.MAJOR,
                     description=f"函数列表平均相似度 {avg_sim:.2f}, 低于阈值",
                     engine_subset=engines,
-                    detail={"avg_similarity": avg_sim},
-                ))
+                    detail={"avg_similarity": avg_sim}))
             # 共识: 大多数都有的函数
             counts: Counter = Counter()
             for s in sets.values():
@@ -246,8 +242,7 @@ class DiscrepancyDetector:
                     severity=DiscrepancySeverity.MINOR,
                     description=f"字符串列表平均相似度 {avg_sim:.2f}",
                     engine_subset=engines,
-                    detail={"avg_similarity": avg_sim},
-                ))
+                    detail={"avg_similarity": avg_sim}))
             counts: Counter = Counter()
             for s in sets.values():
                 counts.update(s)
@@ -285,8 +280,7 @@ class DiscrepancyDetector:
                     severity=DiscrepancySeverity.MAJOR,
                     description=f"调用图平均相似度 {avg_sim:.2f}",
                     engine_subset=engines,
-                    detail={"avg_similarity": avg_sim},
-                ))
+                    detail={"avg_similarity": avg_sim}))
         return discrepancies
 
     def detect_outliers(self, results: List[EngineResult]) -> List[EngineKind]:
@@ -347,8 +341,7 @@ class EngineDifferentialTester:
             result = DifferentialTestResult(
                 binary_path=binary_path,
                 binary_hash=self._compute_hash(binary_path),
-                analyses=analyses,
-            )
+                analyses=analyses)
             # 运行所有引擎的指定分析
             for adapter in self.adapters:
                 for analysis in analyses:

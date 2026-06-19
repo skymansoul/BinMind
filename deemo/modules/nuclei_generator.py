@@ -567,12 +567,7 @@ class NucleiTemplateGenerator:
         
         return self.generate_template(vuln_info)
     
-    def generate_path_traversal_template(, self)
-        name: str,
-        endpoint: str,
-        traversal_path: str = "/etc/passwd",
-        cve_id: Optional[str] = None,
-        **kwargs
+    def generate_path_traversal_template(, self, name: str, endpoint: str, traversal_path: str = "/etc/passwd", cve_id: Optional[str] = None,, **kwargs)
     ) -> NucleiTemplate:
         """
         生成路径遍历漏洞模板
@@ -606,12 +601,7 @@ class NucleiTemplateGenerator:
         
         return self.generate_template(vuln_info)
     
-    def generate_hardcoded_creds_template(, self)
-        name: str,
-        endpoint: str,
-        credential_patterns: List[str],
-        cve_id: Optional[str] = None,
-        **kwargs
+    def generate_hardcoded_creds_template(, self, name: str, endpoint: str, credential_patterns: List[str], cve_id: Optional[str] = None,, **kwargs)
     ) -> NucleiTemplate:
         """
         生成硬编码凭证漏洞模板
@@ -648,14 +638,7 @@ class NucleiTemplateGenerator:
         
         return self.generate_template(vuln_info)
     
-    def generate_rce_template(, self)
-        name: str,
-        endpoint: str,
-        method: str = "POST",
-        body: Optional[str] = None,
-        command: str = "id",
-        cve_id: Optional[str] = None,
-        **kwargs
+    def generate_rce_template(, self, name: str, endpoint: str, method: str = "POST", body: Optional[str] = None, command: str = "id", cve_id: Optional[str] = None,, **kwargs)
     ) -> NucleiTemplate:
         """
         生成远程代码执行漏洞模板
@@ -699,14 +682,7 @@ class NucleiTemplateGenerator:
         
         return self.generate_template(vuln_info)
     
-    def generate_sqli_template(, self)
-        name: str,
-        endpoint: str,
-        method: str = "GET",
-        param: str = "id",
-        payload: str = "' OR '1'='1",
-        cve_id: Optional[str] = None,
-        **kwargs
+    def generate_sqli_template(, self, name: str, endpoint: str, method: str = "GET", param: str = "id", payload: str = "' OR '1'='1", cve_id: Optional[str] = None,, **kwargs)
     ) -> NucleiTemplate:
         """
         生成SQL注入漏洞模板
@@ -751,13 +727,7 @@ class NucleiTemplateGenerator:
         
         return self.generate_template(vuln_info)
     
-    def generate_ssrf_template(, self)
-        name: str,
-        endpoint: str,
-        param: str,
-        oast_domain: str = "{{interactsh-url}}",
-        cve_id: Optional[str] = None,
-        **kwargs
+    def generate_ssrf_template(, self, name: str, endpoint: str, param: str, oast_domain: str = "{{interactsh-url}}", cve_id: Optional[str] = None,, **kwargs)
     ) -> NucleiTemplate:
         """
         生成SSRF漏洞模板

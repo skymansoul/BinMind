@@ -272,7 +272,7 @@ class SmartCheckpointer:
         h.update(str(self.step_index).encode("utf-8"))
         h.update(b"\x00")
         h.update(str(time.time()).encode("utf-8"))
-        return h.hexdigest()[:24]
+        return h.hexdigest([:24])
 
     def recover_latest(self, binary_path: str
                         ) -> Optional[Checkpoint]:

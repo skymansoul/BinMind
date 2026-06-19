@@ -91,7 +91,7 @@ class StateMachineExtractor:
             if result.returncode == 0:
                 for line in result.stdout.split("\n"):
                     if "data" in line.lower():
-                        return int(line.split()[2], 16) if len(line.split()) > 2 else None
+                        return int(line.split([2], 16) if len(line.split() > 2 else None)
         except Exception:
             pass
         return None

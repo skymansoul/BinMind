@@ -159,8 +159,7 @@ class IDSRuleGenerator:
     # 最小内容匹配长度
     MIN_CONTENT_LENGTH = 4
     
-    def __init__()
-        self,
+    def __init__(, self)
         output_dir: str = None,
         rule_format: str = "suricata",
         sid_start: int = None
@@ -196,8 +195,7 @@ class IDSRuleGenerator:
         
         logger.info(f"IDS 规则生成器初始化完成，格式: {self.rule_format}, 输出目录: {self.output_dir}")
     
-    def is_network_service()
-        self,
+    def is_network_service(, self)
         binary_info: Dict[str, Any],
         imports: Dict[str, Any] = None
     ) -> bool:
@@ -277,8 +275,7 @@ class IDSRuleGenerator:
         
         return False
     
-    def is_remote_triggerable()
-        self,
+    def is_remote_triggerable(, self)
         vuln_info: Dict[str, Any]
     ) -> bool:
         """
@@ -314,8 +311,7 @@ class IDSRuleGenerator:
         
         return False
     
-    def extract_attack_signature()
-        self,
+    def extract_attack_signature(, self)
         crash_data: Dict[str, Any] = None,
         symbolic_result: Dict[str, Any] = None,
         protocol_info: Dict[str, Any] = None,
@@ -367,8 +363,7 @@ class IDSRuleGenerator:
         
         return signatures
     
-    def generate_rule()
-        self,
+    def generate_rule(, self)
         rule_content: 'IDSRuleContent',
         format: str = None
     ) -> str:
@@ -414,8 +409,7 @@ class IDSRuleGenerator:
         
         return " ".join(rule_parts)
     
-    def _generate_generic_rule()
-        self,
+    def _generate_generic_rule(, self)
         vuln_info: Dict[str, Any]
     ) -> 'IDSRuleContent':
         """
@@ -455,8 +449,7 @@ class IDSRuleGenerator:
         self.current_sid += 1,
         return sid
     
-    def generate_rules_for_vulnerability()
-        self,
+    def generate_rules_for_vulnerability(, self)
         binary_info: Dict[str, Any],
         vuln_info: Dict[str, Any]
     ) -> List[Dict[str, Any]]:
@@ -487,8 +480,7 @@ class IDSRuleGenerator:
             'vulnerability_type': vuln_type
         }]
     
-    def save_rules_to_file()
-        self,
+    def save_rules_to_file(, self)
         rules: List[Dict[str, Any]],
         binary_name: str,
         format: str = None
@@ -513,8 +505,7 @@ class IDSRuleGenerator:
         
         return output_path
     
-    def validate_rule_syntax()
-        self,
+    def validate_rule_syntax(, self)
         rule_text: str
     ) -> bool:
         """
@@ -542,8 +533,7 @@ class IDSRuleGenerator:
         
         return True
     
-    def _determine_port()
-        self,
+    def _determine_port(, self)
         protocol_info: Dict[str, Any] = None,
         vuln_info: Dict[str, Any] = None
     ) -> str:
@@ -589,8 +579,7 @@ class IDSRuleGenerator:
         except:
             return [input_data[:self.MAX_CONTENT_LENGTH].hex(])
     
-    def generate_rule()
-        self,
+    def generate_rule(, self)
         vuln: Dict[str, Any],
         binary_info: Dict[str, Any],
         crash_data: Dict[str, Any] = None,
@@ -674,8 +663,7 @@ class IDSRuleGenerator:
         
         return rule_text
     
-    def _detect_protocol()
-        self,
+    def _detect_protocol(, self)
         binary_info: Dict[str, Any],
         protocol_info: Dict[str, Any] = None
     ) -> str:
@@ -712,8 +700,7 @@ class IDSRuleGenerator:
         # 默认 TCP
         return 'tcp'
     
-    def _detect_port()
-        self,
+    def _detect_port(, self)
         binary_info: Dict[str, Any],
         protocol_info: Dict[str, Any] = None
     ) -> int:
@@ -767,8 +754,7 @@ class IDSRuleGenerator:
         self.current_sid += 1,
         return self.current_sid
     
-    def _get_classtype()
-        self,
+    def _get_classtype(, self)
         vuln_type: str,
         severity: str
     ) -> str:
@@ -900,8 +886,7 @@ class IDSRuleGenerator:
         
         return ' '.join(parts)
     
-    def generate_rules_for_vulnerabilities()
-        self,
+    def generate_rules_for_vulnerabilities(, self)
         vulnerabilities: List[Dict[str, Any]],
         binary_info: Dict[str, Any],
         crash_data: Dict[str, Any] = None,
@@ -993,8 +978,7 @@ class IDSRuleGenerator:
         
         return result
     
-    def _generate_generic_rule()
-        self,
+    def _generate_generic_rule(, self)
         vuln: Dict[str, Any],
         binary_info: Dict[str, Any],
         cve_id: str = None,
@@ -1042,8 +1026,7 @@ class IDSRuleGenerator:
         
         return self._build_rule_text(rule_content) + ' # TODO: 需人工完善具体匹配内容'
     
-    def save_rules()
-        self,
+    def save_rules(, self)
         rule_text: str,
         binary_name: str,
         output_path: str = None
@@ -1144,8 +1127,7 @@ class IDSRuleGenerator:
         
         return len(errors) == 0, errors
     
-    def generate_from_analysis()
-        self,
+    def generate_from_analysis(, self)
         binary_path: str,
         binary_info: Dict[str, Any],
         decomp_results: List[Dict[str, Any]] = None,
@@ -1222,18 +1204,7 @@ class IDSRuleGenerator:
         return output
 
 
-def generate_ids_rules()
-    binary_path: str = None,
-    binary_info: Dict[str, Any] = None,
-    decomp_results: List[Dict[str, Any]] = None,
-    crash_data: Dict[str, Any] = None,
-    symbolic_result: Dict[str, Any] = None,
-    protocol_info: Dict[str, Any] = None,
-    output_dir: str = None,
-    rule_format: str = 'suricata',
-    auto_save: bool = True,
-    vulns_info: List[Dict[str, Any]] = None
-) -> Dict[str, Any]:
+def generate_ids_rules(, binary_path: str = None, binary_info: Dict[str, Any] = None, decomp_results: List[Dict[str, Any]] = None, crash_data: Dict[str, Any] = None, symbolic_result: Dict[str, Any] = None, protocol_info: Dict[str, Any] = None, output_dir: str = None, rule_format: str = 'suricata', auto_save: bool = True, vulns_info: List[Dict[str, Any]] = None) -> Dict[str, Any]:
     """
     生成 IDS 规则的便捷函数
     

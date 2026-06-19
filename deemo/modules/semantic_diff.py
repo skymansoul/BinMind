@@ -24,7 +24,7 @@ class SemanticSignature:
     
     def _compute_hash(self) -> str:
         feature_str = json.dumps(self.features, sort_keys=True)
-        return hashlib.sha256(f"{self.signature_type.value}:{self.address}:{feature_str}".encode()).hexdigest()
+        return hashlib.sha256(f"{self.signature_type.value}:{self.address}:{feature_str}".encode().hexdigest()
 
 @dataclass
 class FunctionSemantics:
@@ -37,7 +37,7 @@ class FunctionSemantics:
     
     def get_unique_signature(self) -> str:
         all_hashes = sorted(sig.hash for sig in self.signatures)
-        return hashlib.sha256("".join(all_hashes).encode()).hexdigest()
+        return hashlib.sha256("".join(all_hashes).encode().hexdigest()
 
 @dataclass
 class PatchDelta:
@@ -349,4 +349,4 @@ class CrossVersionAnalyzer:
         return functions
     
     def _get_version(self, binary) -> str:
-        return "unknown
+        return "unknown"

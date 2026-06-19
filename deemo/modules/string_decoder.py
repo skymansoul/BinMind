@@ -53,11 +53,7 @@ class StringDecoder:
     恢复明文，辅助发现隐藏的配置、域名、命令等。
     """
     
-    def __init__(, self)
-        min_length: int = 4,
-        max_length: int = 1000,
-        enable_lang_detect: bool = False
-    ):
+    def __init__(, self, min_length: int = 4, max_length: int = 1000, enable_lang_detect: bool = False):
         """
         初始化字符串解码器
         

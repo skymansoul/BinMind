@@ -61,14 +61,14 @@ class StackHashGenerator:
     @staticmethod
     def generate_hash(call_stack: List[str]) -> str:
         stack_str = '\n'.join(call_stack)
-        return hashlib.md5(stack_str.encode().hexdigest()
+        return hashlib.md5(stack_str.encode(.hexdigest()
 
     @staticmethod
     def generate_fuzzy_hash(call_stack: List[str], depth: int = 5) -> str:
         truncated = call_stack[:depth]
         normalized = [s.split('+')[0] for s in truncated]
         stack_str = '\n'.join(normalized)
-        return hashlib.sha256(stack_str.encode().hexdigest()
+        return hashlib.sha256(stack_str.encode(.hexdigest()
 
     @staticmethod
     def generate_signature(crash: CrashInfo) -> str:

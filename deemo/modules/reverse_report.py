@@ -34,14 +34,7 @@ class ReportSection(Enum):
 class ReportConfig:
     """报告生成配置"""
     
-    def __init__(, self)
-        language: str = "zh",
-        output_dir: str = "./reports",
-        max_tokens: int = 3000,
-        include_supply_chain: bool = True,
-        include_threat_intel: bool = True,
-        include_exploit_analysis: bool = True
-    ):
+    def __init__(, self, language: str = "zh", output_dir: str = "./reports", max_tokens: int = 3000, include_supply_chain: bool = True, include_threat_intel: bool = True, include_exploit_analysis: bool = True):
         """
         初始化报告配置
         
@@ -67,20 +60,7 @@ class ReportConfig:
 class ReportData:
     """报告数据容器"""
     
-    def __init__(, self)
-        binary_info: Optional[Dict[str, Any]] = None,
-        decompilation_results: Optional[List[Dict[str, Any]]] = None,
-        vulnerability_list: Optional[List[Dict[str, Any]]] = None,
-        symbolic_execution_results: Optional[Dict[str, Any]] = None,
-        crash_analysis_results: Optional[Dict[str, Any]] = None,
-        exploit_generation_results: Optional[Dict[str, Any]] = None,
-        supply_chain_data: Optional[Dict[str, Any]] = None,
-        threat_intelligence: Optional[List[Dict[str, Any]]] = None,
-        strings_data: Optional[Dict[str, Any]] = None,
-        config_extraction_results: Optional[Dict[str, Any]] = None,
-        deadlock_detection_results: Optional[Dict[str, Any]] = None,
-        corruption_classification_results: Optional[Dict[str, Any]] = None
-    ):
+    def __init__(, self, binary_info: Optional[Dict[str, Any]] = None, decompilation_results: Optional[List[Dict[str, Any]]] = None, vulnerability_list: Optional[List[Dict[str, Any]]] = None, symbolic_execution_results: Optional[Dict[str, Any]] = None, crash_analysis_results: Optional[Dict[str, Any]] = None, exploit_generation_results: Optional[Dict[str, Any]] = None, supply_chain_data: Optional[Dict[str, Any]] = None, threat_intelligence: Optional[List[Dict[str, Any]]] = None, strings_data: Optional[Dict[str, Any]] = None, config_extraction_results: Optional[Dict[str, Any]] = None, deadlock_detection_results: Optional[Dict[str, Any]] = None, corruption_classification_results: Optional[Dict[str, Any]] = None):
         """
         初始化报告数据
         

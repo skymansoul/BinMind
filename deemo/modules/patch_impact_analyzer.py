@@ -354,4 +354,4 @@ def analyze_patch_impact(binary_before: str,
                          binary_after: str) -> Dict[str, Any]:
     analyzer = PatchImpactAnalyzer()
     report = analyzer.analyze(binary_before, binary_after)
-    return {'success': True, 'report': report.to_dict()}
+    return {'success': True, 'report': report.to_dict(})

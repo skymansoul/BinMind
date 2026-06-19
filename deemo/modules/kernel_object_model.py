@@ -150,7 +150,7 @@ class KernelAPIDetector:
         m = re.search(r"\((.*)\)", ins)
         if not m:
             return []
-        return [a.strip() for a in m.group(1).split(",")]
+        return [a.strip( for a in m.group(1).split(",")])
 
 
 class ReferenceCounter:

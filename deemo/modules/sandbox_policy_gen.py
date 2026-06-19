@@ -761,11 +761,7 @@ class SandboxPolicyGenerator:
         'urandom': ['getrandom'],
     }
     
-    def __init__(, self)
-        binary_path: str = None,
-        output_dir: str = None,
-        policy_type: PolicyType = PolicyType.SECCOMP
-    ):
+    def __init__(, self, binary_path: str = None, output_dir: str = None, policy_type: PolicyType = PolicyType.SECCOMP):
         """
         初始化沙箱策略生成器
 
@@ -826,10 +822,7 @@ class SandboxPolicyGenerator:
         
 
 
-    def generate_policy(, self)
-        binary_path: str = None,
-        policy_type: str = None,
-        **kwargs
+    def generate_policy(, self, binary_path: str = None, policy_type: str = None,, **kwargs)
     ) -> Dict[str, Any]:
         """
         生成沙箱策略（统一入口）
@@ -1159,10 +1152,7 @@ class SandboxPolicyGenerator:
         
         return ''
     
-    def _generate_seccomp_policy(, self)
-        syscalls: List[SyscallInfo] = None,
-        default_deny: bool = True
-    ) -> str:
+    def _generate_seccomp_policy(, self, syscalls: List[SyscallInfo] = None, default_deny: bool = True) -> str:
         """
         生成 seccomp-bpf 策略
 
@@ -1257,11 +1247,7 @@ class SandboxPolicyGenerator:
 
         return '\n'.join(lines)
     
-    def _generate_apparmor_policy(, self)
-        syscalls: List[SyscallInfo] = None,
-        file_paths: List[str] = None,
-        network_permissions: Dict[str, List[str]] = None
-    ) -> str:
+    def _generate_apparmor_policy(, self, syscalls: List[SyscallInfo] = None, file_paths: List[str] = None, network_permissions: Dict[str, List[str]] = None) -> str:
         """
         生成 AppArmor 策略
 
@@ -1377,10 +1363,7 @@ class SandboxPolicyGenerator:
         
         return '\n'.join(lines)
     
-    def _save_policy(, self)
-        policy_code: Any = None,
-        output_path: str = None
-    ) -> str:
+    def _save_policy(, self, policy_code: Any = None, output_path: str = None) -> str:
         """
         保存策略文件
 

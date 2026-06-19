@@ -62,13 +62,7 @@ class DeadlockPath:
 class DeadlockAnalysisResult:
     """死锁分析结果类"""
     
-    def __init__(, self)
-        deadlocks: Optional[List[DeadlockPath]] = None,
-        lock_dependencies: Optional[List[LockDependency]] = None,
-        total_locks: int = 0,
-        total_functions: int = 0,
-        potential_deadlocks: int = 0
-    ):
+    def __init__(, self, deadlocks: Optional[List[DeadlockPath]] = None, lock_dependencies: Optional[List[LockDependency]] = None, total_locks: int = 0, total_functions: int = 0, potential_deadlocks: int = 0):
         self.deadlocks: List[DeadlockPath] = deadlocks or []
         self.lock_dependencies: List[LockDependency] = lock_dependencies or []
         self.total_locks: int = total_locks
@@ -99,13 +93,7 @@ class DeadlockDetector:
         self.functions_with_locks: Set[str] = set()
         self.lock_dependencies: List[LockDependency] = []
     
-    def add_lock_operation(, self)
-        function_name: str,
-        lock_name: str,
-        operation: LockOperation,
-        lock_type: LockType = LockType.MUTEX,
-        line_number: Optional[int] = None
-    ):
+    def add_lock_operation(, self, function_name: str, lock_name: str, operation: LockOperation, lock_type: LockType = LockType.MUTEX, line_number: Optional[int] = None):
         """
         添加锁操作记录
         

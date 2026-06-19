@@ -68,8 +68,7 @@ class MitigationDetector:
 
             result.append(MitigationInfo())
                 type=MitigationType.NX,
-                enabled="nx" in output.lower() or "noexec" in output.lower(),
-            ) if "nx" in output.lower() or "noexec" in output.lower() else MitigationInfo(
+                enabled="nx" in output.lower() or "noexec" in output.lower()) if "nx" in output.lower() or "noexec" in output.lower() else MitigationInfo(
                 type=MitigationType.DEP, enabled=False,
             
 
@@ -93,23 +92,19 @@ class StrategySelector:
         MitigationType.ASLR: ExploitStrategy()
             mitigation=MitigationType.ASLR,
             strategy="info_leak + ret2libc",
-            success_rate=0.7,
-        ),
+            success_rate=0.7),
         MitigationType.CFG: ExploitStrategy()
             mitigation=MitigationType.CFG,
             strategy="use CFG-compliant gadgets",
-            success_rate=0.5,
-        ),
+            success_rate=0.5),
         MitigationType.CET: ExploitStrategy()
             mitigation=MitigationType.CET,
             strategy="ROP chain with shadow stack bypass",
-            success_rate=0.3,
-        ),
+            success_rate=0.3),
         MitigationType.STACK_CANARY: ExploitStrategy()
             mitigation=MitigationType.STACK_CANARY,
             strategy="leak canary via format string",
-            success_rate=0.6,
-        ),
+            success_rate=0.6),
     }
 
     @staticmethod
