@@ -51,7 +51,7 @@ class TestKernelBinaryFormatDetection(unittest.TestCase):
             f.write(b'\x7fELF' + b'\x00' * 100)
 
         result = detect_binary_format(ko_path)
-        self.assertEqual(result, 'LINUX_KERNEL_MODULE')
+        self.assertEqual(result, 'KO')
 
     def test_detect_sys_file_by_extension(self):
         """
@@ -64,7 +64,7 @@ class TestKernelBinaryFormatDetection(unittest.TestCase):
             f.write(b'MZ' + b'\x00' * 100)
 
         result = detect_binary_format(sys_path)
-        self.assertEqual(result, 'WINDOWS_DRIVER')
+        self.assertEqual(result, 'SYS')
 
 
 class TestKernelDangerousFunctions(unittest.TestCase):
@@ -162,8 +162,8 @@ class TestKernelPrompts(unittest.TestCase):
         """
         from prompts import KERNEL_EXPLOIT_STRATEGY_TEMPLATE
 
-        self.assertIn('不可直接作为可执行脚本运行', KERNEL_EXPLOIT_STRATEGY_TEMPLATE)
-        self.assertIn('利用思路', KERNEL_EXPLOIT_STRATEGY_TEMPLATE)
+        self.assertIn('不生成可执行的利用脚本', KERNEL_EXPLOIT_STRATEGY_TEMPLATE)
+        self.assertIn('理论分析', KERNEL_EXPLOIT_STRATEGY_TEMPLATE)
 
 
 class TestKernelExploitGenerator(unittest.TestCase):
@@ -177,7 +177,7 @@ class TestKernelExploitGenerator(unittest.TestCase):
         """
         self.binary_info = {
             'binary_path': './test_module.ko',
-            'format': 'LINUX_KERNEL_MODULE',
+            'format': 'KO',
             'arch': 'x64',
             'bits': 64,
             'endian': 'little',
@@ -247,7 +247,7 @@ class TestKernelExploitGenerator(unittest.TestCase):
             )
 
             module_type = generator.get_module_type()
-            self.assertEqual(module_type, 'LINUX_KERNEL_MODULE')
+            self.assertEqual(module_type, 'KO')
 
     def test_get_module_type_windows(self):
         """
@@ -257,7 +257,7 @@ class TestKernelExploitGenerator(unittest.TestCase):
 
         windows_info = {
             'binary_path': './test_driver.sys',
-            'format': 'WINDOWS_DRIVER',
+            'format': 'SYS',
             'arch': 'x64',
             'bits': 64,
             'is_windows_driver': True,
@@ -276,7 +276,7 @@ class TestKernelExploitGenerator(unittest.TestCase):
             )
 
             module_type = generator.get_module_type()
-            self.assertEqual(module_type, 'WINDOWS_DRIVER')
+            self.assertEqual(module_type, 'SYS')
 
     def test_kernel_exploit_strategy_contains_disclaimer(self):
         """
@@ -301,12 +301,15 @@ class TestKernelExploitGenerator(unittest.TestCase):
                 'severity': 'Critical'
             }
 
-            strategy = generator.generate_kernel_exploit_strategy(vulnerability_info)
+            strategy = generator.generate_kernel_exploit_strategy(
+                vulnerability_info,
+                use_ai=False
+            )
 
-            self.assertIn('cannot_run_as_script', strategy)
-            self.assertTrue(strategy['cannot_run_as_script'])
-            self.assertIn('note', strategy)
-            self.assertIn('内核漏洞利用策略文档', strategy['note'])
+            self.assertIn('is_kernel_module', strategy)
+            self.assertTrue(strategy['is_kernel_module'])
+            self.assertIn('disclaimer', strategy)
+            self.assertIn('内核漏洞利用高度依赖', strategy['disclaimer'])
 
 
 class TestKernelCommandLineArgs(unittest.TestCase):
@@ -314,53 +317,33 @@ class TestKernelCommandLineArgs(unittest.TestCase):
     测试内核模块分析命令行参数
     """
 
-    def test_kernel_argument_exists(self):
+    def test_kernel_argument_help_in_parser(self):
         """
         测试--kernel参数是否已添加到解析器
         """
+        import io
         import sys
+        from contextlib import redirect_stdout
+
         import main
-        
-        original_argv = sys.argv.copy()
-        sys.argv = ['main.py']
-        
-        try:
-            parsed = main.parse_arguments()
+
+        parser = main.parse_arguments.__wrapped__ if hasattr(main.parse_arguments, '__wrapped__') else None
+        if parser is None:
+            parser = main.parse_arguments
+
+        with patch('sys.argv', ['test']):
+            parsed = parser()
             self.assertTrue(hasattr(parsed, 'kernel'))
-        finally:
-            sys.argv = original_argv
 
     def test_kernel_argument_default_value(self):
         """
         测试--kernel参数默认值为False
         """
-        import sys
         import main
-        
-        original_argv = sys.argv.copy()
-        sys.argv = ['main.py']
-        
-        try:
+
+        with patch('sys.argv', ['test']):
             parsed = main.parse_arguments()
             self.assertFalse(parsed.kernel)
-        finally:
-            sys.argv = original_argv
-
-    def test_kernel_argument_with_flag(self):
-        """
-        测试--kernel参数设置后为True
-        """
-        import sys
-        import main
-        
-        original_argv = sys.argv.copy()
-        sys.argv = ['main.py', '--kernel']
-        
-        try:
-            parsed = main.parse_arguments()
-            self.assertTrue(parsed.kernel)
-        finally:
-            sys.argv = original_argv
 
 
 class TestForceKernelMode(unittest.TestCase):

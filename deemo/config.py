@@ -1,903 +1,603 @@
 import os
 import logging
-from typing import Dict, Any, Optional
+import re
+from typing import Optional, Dict, Any
 
-# 日志框架配置
-try:
-    from loguru import logger as loguru_logger
-    LOGURU_AVAILABLE = True
-except ImportError:
-    LOGURU_AVAILABLE = False
+logger = logging.getLogger(__name__)
 
-class Config:
-    """配置类"""
-    
-    # 项目根目录
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    
-    # 日志配置
-    LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
-    LOG_FILE = os.path.join(BASE_DIR, 'logs', 'binary_analyzer.log')
-    
-    # 目录配置
-    LOGS_DIR = os.path.join(BASE_DIR, 'logs')
-    REPORTS_DIR = os.path.join(BASE_DIR, 'reports')
-    EXPLOITS_DIR = os.path.join(BASE_DIR, 'exploits')
-    DB_DIR = os.path.join(BASE_DIR, 'db')
-    DB_PATH = os.path.join(DB_DIR, 'vulnerabilities.db')
-    CACHE_DIR = os.path.join(BASE_DIR, 'cache')
-    CORPUS_DIR = os.path.join(BASE_DIR, 'corpus')
-    
-    # 超时配置
-    SUBPROCESS_TIMEOUT = 300
-    RADARE2_TIMEOUT = 300
-    GHIDRA_TIMEOUT = 1800
-    IDA_TIMEOUT = 1800
-    ANGR_TIMEOUT = 300
-    MAX_ITERATIONS = 5
-    
-    # 反编译器配置
-    DEFAULT_DECOMPILER = os.environ.get('DEFAULT_DECOMPILER', 'auto')
-    ENABLE_SYMBOLIC_EXECUTION = True
-    
-    # llama.cpp 配置
-    LLAMACPP_HOST = 'http://localhost:8080'
-    
-    # 数据目录
-    DATA_DIR = os.path.join(BASE_DIR, 'data')
-    TEMP_DIR = os.path.join(BASE_DIR, 'temp')
-    RESULTS_DIR = os.path.join(BASE_DIR, 'results')
-    LOGS_DIR = os.path.join(BASE_DIR, 'logs')
-    REPORTS_DIR = os.path.join(BASE_DIR, 'reports')
-    EXPLOITS_DIR = os.path.join(BASE_DIR, 'exploits')
-    DB_DIR = os.path.join(BASE_DIR, 'db')
-    DB_PATH = os.path.join(DB_DIR, 'vulnerabilities.db')
-    
-    # 数据库配置
-    DATABASE_PATH = os.path.join(DATA_DIR, 'vulnerabilities.db')
-    EXPLOITDB_CACHE_DIR = os.path.expanduser('~/.exploitdb')
-    DEEP_SEARCH_INDEX_DIR = os.path.expanduser('~/.deep_binary_search')
-    
-    # 漏洞数据库类型
-    DB_TYPE = 'sqlite'
-    
-    # 外部工具路径
-    QEMU_PATH = os.environ.get('QEMU_PATH', 'qemu-system-x86_64')
-    GCC_PATH = os.environ.get('GCC_PATH', 'gcc')
-    R2_PATH = os.environ.get('R2_PATH', 'r2')
-    
-    # 通用配置
-    MAX_ITERATIONS = 5
-    DEFAULT_DECOMPILER = os.environ.get('DEFAULT_DECOMPILER', 'auto')
-    SUBPROCESS_TIMEOUT = 300
-    RADARE2_TIMEOUT = 60
-    
-    # QEMU配置
-    QEMU_MEMORY = '512M'
-    QEMU_CPU = 'qemu64'
-    QEMU_TIMEOUT = 120
-    
-    # 内核利用配置
-    KERNEL_EXPLOIT = {
-        'enabled': False,
-        'kernel_image': None,
-        'rootfs': None,
-        'output_dir': os.path.join(RESULTS_DIR, 'kernel_exploits')
-    }
-    
-    # 信息泄露分析配置
-    INFO_LEAK_ANALYZER = {
-        'enabled': True,
-        'min_confidence': 0.5,
-        'max_depth': 10,
-        'detect_format_string': True,
-        'detect_memory_read': True,
-    }
-    
-    # 代码克隆检测配置
-    CODE_CLONE_DETECTOR = {
-        'enabled': True,
-        'min_similarity': 0.7,
-        'fuzzy_threshold': 70,
-        'use_ssdeep': True,
-        'use_tlsh': True,
-    }
-    
-    # Shellcode编码器配置
-    SHELLCODE_ENCODER = {
-        'enabled': True,
-        'default_arch': 'amd64',
-        'default_bad_chars': [0x00, 0x0a, 0x0d],
-        'auto_select_encoder': True,
-    }
-    
-    # 调用图增强配置
-    CALL_GRAPH_ENHANCER = {
-        'enabled': True,
-        'min_confidence': 0.5,
-        'detect_vtables': True,
-        'detect_fp_arrays': True,
-        'resolve_indirect_calls': True,
-    }
-    
-    # 函数摘要生成配置
-    FUNCTION_SUMMARIZER = {
-        'enabled': True,
-        'arch': 'amd64',
-        'execution_mode': 'concrete',
-        'timeout': 30,
-        'max_blocks': 1000,
-    }
-    
-    # 栈迁移生成配置
-    STACK_PIVOT_GENERATOR = {
-        'enabled': True,
-        'max_gadget_length': 5,
-        'min_reliability': 0.5,
-        'prefer_xchg': True,
-    }
-    
-    # 类型混淆检测配置
-    TYPE_CONFUSION = {
-        'enabled': False,
-        'max_functions': 50,
-        'risk_threshold': 'medium'
-    }
-    
-    # Exploit-DB配置
-    EXPLOITDB = {
-        'enabled': False,
-        'api_url': 'https://www.exploit-db.com',
-        'timeout': 30,
-        'match_threshold': 70
-    }
-    
-    # 深度学习搜索配置
-    DEEP_SEARCH = {
-        'enabled': False,
-        'model_path': None,
-        'embedding_dim': 128,
-        'top_k': 5
-    }
-    
-    # 无线协议分析配置
-    WIRELESS_ANALYZER = {
-        'enabled': False,
-        'bluetooth_enabled': True,
-        'wifi_enabled': True,
-        'generate_fuzz_cases': True
-    }
-    
-    # 逻辑炸弹检测配置
-    LOGIC_BOMB_DETECTOR = {
-        'enabled': False,
-        'max_functions': 50,
-        'date_threshold': '2025-01-01'
-    }
-    
-    # SEH/VEH分析配置
-    SEH_ANALYZER = {
-        'enabled': False,
-        'check_seh_chain': True,
-        'check_veh_handlers': True,
-        'detect_overflowable': True
-    }
-    
-    # IPC安全分析配置
-    IPC_ANALYZER = {
-        'enabled': False,
-        'max_binaries': 10,
-        'detect_pipes': True,
-        'detect_shared_memory': True,
-        'detect_sockets': True,
-        'detect_dbus': True,
-        'generate_graph': True
-    }
-    
-    # 调试信息解析配置
-    DEBUG_INFO = {
-        'enabled': False,
-        'auto_load_symbols': True,
-        'pdb_search_paths': [
-            '.',
-            './pdb',
-            './symbols',
-            './debug'
-        ],
-        'symbol_server_url': 'https://msdl.microsoft.com/download/symbols',
-        'max_symbol_count': 10000
-    }
-    
-    # 内嵌脚本提取配置
-    EMBEDDED_SCRIPT_EXTRACTOR = {
-        'enabled': False,
-        'detect_lua': True,
-        'detect_python': True,
-        'detect_javascript': True,
-        'detect_vbscript': True,
-        'max_script_size': 100000,
-        'risk_analysis': True
-    }
-    
-    # 系统调用分类配置
-    SYSCALL_CLASSIFIER = {
-        'enabled': False,
-        'model_path': os.path.join(DATA_DIR, 'syscall_model.pkl'),
-        'malicious_threshold': 0.7,
-        'enable_online_ai': False,
-        'ai_api_url': None
-    }
-    
-    # 结构体恢复配置
-    STRUCT_RECOVERY = {
-        'enabled': False,
-        'min_access_count': 2,
-        'min_field_count': 2,
-        'confidence_threshold': 0.5,
-        'enable_nested_detection': True,
-        'generate_c_code': True
-    }
-    
-    # eBPF分析配置
-    EBPF_ANALYZER = {
-        'enabled': True,
-        'use_bpftool': True,
-        'bpftool_path': 'bpftool',
-        'max_instructions': 10000,
-        'validate_ebpf': True
-    }
-    
-    # 漏洞传播分析配置
-    VULN_PROPAGATION = {
-        'enabled': True,
-        'max_paths': 10,
-        'confidence_threshold': 0.1,
-        'generate_graph': True
-    }
-    
-    # 密码误用检测配置
-    CRYPTO_MISUSE = {
-        'enabled': True,
-        'check_weak_random': True,
-        'check_hardcoded_iv': True,
-        'check_weak_hash': True,
-        'check_weak_cipher': True,
-        'check_insecure_kdf': True,
-        'check_hardcoded_secrets': True
-    }
-    
-    # DSE绕过检测配置
-    DSE_BYPASS = {
-        'enabled': True,
-        'check_signature': True,
-        'check_certificate': True,
-        'check_bypass_keywords': True,
-        'check_imports': True
-    }
-    
-    # 内存注入检测配置
-    MEMORY_MANIPULATION = {
-        'enabled': True,
-        'check_imports': True,
-        'check_patterns': True,
-        'check_strings': True,
-        'detect_sequences': True
-    }
-    
-    # 网络流量重放配置
-    TRAFFIC_REPLAYER = {
-        'enabled': True,
-        'use_scapy': True,
-        'default_timeout': 5,
-        'max_packets': 10000,
-        'generate_fuzz': True,
-        'fuzz_variations': 10
-    }
-    
-    # 安全配置
-    SECURITY = {
-        'allow_external_downloads': True,
-        'sandbox_enabled': True,
-        'max_file_size': 100 * 1024 * 1024  # 100MB
-    }
-    
-    # 攻击面分析配置
-    ATTACK_SURFACE = {
-        'enabled': False,
-        'risk_threshold': 'medium',
-        'max_surface_points': 100,
-        'include_rpc': True,
-        'include_ipc': True
-    }
-    
-    # PoC生成配置
-    POC_GENERATOR = {
-        'enabled': False,
-        'output_dir': './pocs',
-        'default_format': 'binary',
-        'max_payload_size': 65536,
-        'use_angr': False
-    }
-    
-    # 时间侧信道检测配置
-    TIMING_SIDE_CHANNEL = {
-        'enabled': False,
-        'check_key_branches': True,
-        'check_secret_loops': True,
-        'check_lookups': True,
-        'use_ai_verification': False
-    }
-    
-    # PII扫描配置
-    PII_SCANNER = {
-        'enabled': False,
-        'scan_email': True,
-        'scan_phone': True,
-        'scan_credentials': True,
-        'scan_private_keys': True,
-        'mask_output': True
-    }
-    
-    # Enclave分析配置
-    ENCLAVE_ANALYZER = {
-        'enabled': False,
-        'support_sgx': True,
-        'support_trustzone': True,
-        'check_ocall_params': True,
-        'check_ecall_pointers': True
-    }
-    
-    # OTA差分分析配置
-    OTA_DIFF_ANALYZER = {
-        'enabled': False,
-        'extract_dir': './ota_extracted',
-        'check_scripts': True,
-        'check_binaries': True,
-        'check_configs': True,
-        'detect_backdoors': True
-    }
-    
-    # 堆风水策略配置
-    HEAP_FENG_SHUI = {
-        'enabled': True,
-        'default_allocator': 'ptmalloc',
-        'default_vulnerability': 'use_after_free',
-        'default_target_size': 0x80,
-        'tcache_count': 7,
-        'enable_fastbin': True,
-        'arena_count': 1,
-        'output_dir': os.path.join(RESULTS_DIR, 'fengshui')
-    }
-    
-    # DLL劫持检测配置
-    DLL_HIJACK = {
-        'enabled': True,
-        'detect_delay_load': True,
-        'detect_known_hijack_dlls': True,
-        'risk_threshold': 'high',
-        'output_dir': os.path.join(RESULTS_DIR, 'dll_hijack')
-    }
-    
-    # 安全启动验证配置
-    SECURE_BOOT = {
-        'enabled': True,
-        'verify_signatures': True,
-        'check_rollback_protection': True,
-        'extract_certificates': True,
-        'output_dir': os.path.join(RESULTS_DIR, 'secure_boot')
-    }
-    
-    # PMC侧信道评估配置
-    PMC_SIDE_CHANNEL = {
-        'enabled': True,
-        'require_root': True,
-        'max_iterations': 1000,
-        'signal_threshold': 0.5,
-        'output_dir': os.path.join(RESULTS_DIR, 'pmc_analysis')
-    }
-
-    # 反编译重编译验证配置
-    RECOMPILER_VERIFIER = {
-        'enabled': True,
-        'compiler_path': 'gcc',
-        'equivalence_threshold': 0.5,
-        'max_functions': 100,
-        'output_dir': os.path.join(RESULTS_DIR, 'recompiler')
-    }
-
-    # 隐写检测配置
-    STEGANOGRAPHY_DETECTOR = {
-        'enabled': True,
-        'entropy_threshold': 0.8,
-        'min_hidden_size': 256,
-        'scan_overlay': True,
-        'scan_section_gaps': True,
-        'scan_embedded_archives': True,
-        'output_dir': os.path.join(RESULTS_DIR, 'steganography')
-    }
-
-    # ==================== 抗量子密码算法检测配置 ====================
-    PQC_DETECTOR = {
-        'enabled': True,
-        'detect_classical': True,
-        'detect_pqc': True,
-        'generate_migration_warnings': True,
-        'min_confidence': 0.7,
-        'output_dir': os.path.join(RESULTS_DIR, 'pqc')
-    }
-
-    # ==================== 格密码时间侧信道检测配置 ====================
-    LATTICE_SIDE_CHANNEL = {
-        'enabled': True,
-        'detect_conditional_branches': True,
-        'detect_memory_access': True,
-        'detect_lookup_tables': True,
-        'detect_ntt_operations': True,
-        'risk_threshold': 0.5,
-        'output_dir': os.path.join(RESULTS_DIR, 'lattice_side_channel')
-    }
-
-    # ==================== RISC-V扩展分析配置 ====================
-    RISCV_EXT_ANALYZER = {
-        'enabled': True,
-        'analyze_vector': True,
-        'analyze_crypto': True,
-        'detect_vector_loops': True,
-        'detect_unsafe_instructions': True,
-        'output_dir': os.path.join(RESULTS_DIR, 'riscv_ext')
-    }
-
-    # ==================== CHERI能力架构分析配置 ====================
-    CHERI_ANALYZER = {
-        'enabled': True,
-        'check_permissions': True,
-        'check_sealing': True,
-        'check_capability_leaks': True,
-        'check_delegation': True,
-        'output_dir': os.path.join(RESULTS_DIR, 'cheri')
-    }
-
-    # ==================== 多视图图神经网络配置 ====================
-    MULTI_VIEW_GNN = {
-        'enabled': True,
-        'model_path': None,
-        'embedding_dim': 512,
-        'hidden_dim': 256,
-        'num_layers': 3,
-        'device': 'auto',
-        'output_dir': os.path.join(RESULTS_DIR, 'multi_view_gnn')
-    }
-
-    # ==================== 知识蒸馏漏洞检测配置 ====================
-    DISTILLED_VULN_DETECTOR = {
-        'enabled': True,
-        'model_path': None,
-        'quantized': True,
-        'confidence_threshold': 0.8,
-        'batch_size': 32,
-        'output_dir': os.path.join(RESULTS_DIR, 'distilled_vuln_detector')
-    }
-
-    # ==================== 执行轨迹异常检测配置 ====================
-    TRAJECTORY_ANOMALY = {
-        'enabled': True,
-        'model_path': None,
-        'max_seq_length': 512,
-        'perplexity_threshold': 100.0,
-        'detect_rop': True,
-        'detect_jop': True,
-        'detect_stack_pivot': True,
-        'output_dir': os.path.join(RESULTS_DIR, 'trajectory_anomaly')
-    }
-
-    # ==================== AI 服务配置 ====================
-    # AI提供商 (openai, azure, ollama, llamacpp, custom)
-    AI_PROVIDER = os.environ.get('AI_PROVIDER', 'openai')
-    
-    # OpenAI 配置
-    OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
-    OPENAI_MODEL = os.environ.get('OPENAI_MODEL', 'gpt-4')
-    OPENAI_BASE_URL = os.environ.get('OPENAI_BASE_URL', '')
-    
-    # Azure OpenAI 配置
-    AZURE_API_KEY = os.environ.get('AZURE_API_KEY', '')
-    AZURE_ENDPOINT = os.environ.get('AZURE_ENDPOINT', '')
-    AZURE_DEPLOYMENT_NAME = os.environ.get('AZURE_DEPLOYMENT_NAME', '')
-    
-    # Ollama 配置
-    OLLAMA_MODEL = os.environ.get('OLLAMA_MODEL', 'llama2')
-    OLLAMA_HOST = os.environ.get('OLLAMA_HOST', 'http://localhost:11434')
-    
-    # llama.cpp 配置
-    LLAMACPP_MODEL_PATH = os.environ.get('LLAMACPP_MODEL_PATH', '')
-    LLAMACPP_N_THREADS = int(os.environ.get('LLAMACPP_N_THREADS', '4'))
-    
-    # 自定义 API 配置
-    CUSTOM_API_URL = os.environ.get('CUSTOM_API_URL', '')
-    CUSTOM_API_KEY = os.environ.get('CUSTOM_API_KEY', '')
-    
-    # AI 请求配置
-    AI_TIMEOUT = int(os.environ.get('AI_TIMEOUT', '60'))
-    AI_MAX_TOKENS = int(os.environ.get('AI_MAX_TOKENS', '4096'))
-    AI_TEMPERATURE = float(os.environ.get('AI_TEMPERATURE', '0.7'))
-    
-    # ==================== 威胁情报配置 ====================
-    # MISP配置
-    MISP_URL = os.environ.get('MISP_URL', '')
-    MISP_API_KEY = os.environ.get('MISP_API_KEY', '')
-    MISP_VERIFY_SSL = os.environ.get('MISP_VERIFY_SSL', 'true').lower() == 'true'
-    
-    # OTX配置
-    OTX_API_KEY = os.environ.get('OTX_API_KEY', '')
-    
-    # 威胁情报通用配置
-    THREAT_INTEL_TIMEOUT = int(os.environ.get('THREAT_INTEL_TIMEOUT', '30'))
-    THREAT_INTEL_ENABLED = os.environ.get('THREAT_INTEL_ENABLED', 'false').lower() == 'true'
-    
-    # ==================== 漏洞利用策略配置 ====================
-    EXPLOIT_STRATEGY_OUTPUT_DIR = os.environ.get('EXPLOIT_STRATEGY_OUTPUT_DIR', os.path.join(DATA_DIR, 'exploit_strategies'))
-    EXPLOIT_STRATEGY_ENABLED = os.environ.get('EXPLOIT_STRATEGY_ENABLED', 'true').lower() == 'true'
-
-    # ==================== C++虚表恢复配置 ====================
-    CPP_VTBL_OUTPUT_DIR = os.environ.get('CPP_VTBL_OUTPUT_DIR', os.path.join(DATA_DIR, 'cpp_vtbl'))
-    CPP_VTBL_ENABLED = os.environ.get('CPP_VTBL_ENABLED', 'true').lower() == 'true'
-
-    # ==================== 保护机制绕过配置 ====================
-    BYPASS_ADVISOR_OUTPUT_DIR = os.environ.get('BYPASS_ADVISOR_OUTPUT_DIR', os.path.join(DATA_DIR, 'bypass_advisor'))
-    BYPASS_ADVISOR_ENABLED = os.environ.get('BYPASS_ADVISOR_ENABLED', 'true').lower() == 'true'
-
-    # ==================== 二进制测试生成配置 ====================
-    TEST_GENERATOR_OUTPUT_DIR = os.environ.get('TEST_GENERATOR_OUTPUT_DIR', os.path.join(DATA_DIR, 'test_generator'))
-    TEST_GENERATOR_ENABLED = os.environ.get('TEST_GENERATOR_ENABLED', 'true').lower() == 'true'
-    TEST_GENERATOR_DEFAULT_LANGUAGE = os.environ.get('TEST_GENERATOR_DEFAULT_LANGUAGE', 'c')
-    TEST_GENERATOR_CASES_PER_FUNC = int(os.environ.get('TEST_GENERATOR_CASES_PER_FUNC', '5'))
-
-    # ==================== 增量分析缓存配置 ====================
-    INCREMENTAL_ANALYSIS_CACHE_DIR = os.environ.get('INCREMENTAL_ANALYSIS_CACHE_DIR', os.path.join(DATA_DIR, 'incremental_cache'))
-    INCREMENTAL_ANALYSIS_ENABLED = os.environ.get('INCREMENTAL_ANALYSIS_ENABLED', 'true').lower() == 'true'
-    CACHE_VALIDITY_DAYS = int(os.environ.get('CACHE_VALIDITY_DAYS', '30'))
-
-    # ML函数边界检测配置
-    FUNCTION_BOUNDARY_MODEL_DIR = os.environ.get('FUNCTION_BOUNDARY_MODEL_DIR', os.path.join(DATA_DIR, 'models'))
-    FUNCTION_BOUNDARY_OUTPUT_DIR = os.environ.get('FUNCTION_BOUNDARY_OUTPUT_DIR', os.path.join(DATA_DIR, 'function_boundary'))
-    FUNCTION_BOUNDARY_ENABLED = os.environ.get('FUNCTION_BOUNDARY_ENABLED', 'true').lower() == 'true'
-    FUNCTION_BOUNDARY_MODEL_PATH = os.environ.get('FUNCTION_BOUNDARY_MODEL_PATH', '')
-    FUNCTION_BOUNDARY_MIN_CONFIDENCE = float(os.environ.get('FUNCTION_BOUNDARY_MIN_CONFIDENCE', '0.5'))
-
-    # ==================== 新增六项技术功能配置（第三轮）====================
-
-    # 功能1：基于LLM的自动化深度逆向分析报告生成配置
-    REVERSE_REPORT_ENABLED = os.environ.get('REVERSE_REPORT_ENABLED', 'true').lower() == 'true'
-    REVERSE_REPORT_OUTPUT_DIR = os.environ.get('REVERSE_REPORT_OUTPUT_DIR', os.path.join(RESULTS_DIR, 'reports'))
-    REVERSE_REPORT_DEFAULT_LANG = os.environ.get('REVERSE_REPORT_DEFAULT_LANG', 'zh')
-    REVERSE_REPORT_MAX_TOKENS = int(os.environ.get('REVERSE_REPORT_MAX_TOKENS', '3000'))
-
-    # 功能2：二进制字符串自动解码与解混淆配置
-    STRING_DECODER_ENABLED = os.environ.get('STRING_DECODER_ENABLED', 'true').lower() == 'true'
-    STRING_DECODER_MIN_LENGTH = int(os.environ.get('STRING_DECODER_MIN_LENGTH', '4'))
-    STRING_DECODER_MAX_LENGTH = int(os.environ.get('STRING_DECODER_MAX_LENGTH', '1000'))
-    STRING_DECODER_ENABLE_LANG_DETECT = os.environ.get('STRING_DECODER_ENABLE_LANG_DETECT', 'false').lower() == 'true'
-
-    # 功能3：多线程死锁自动化检测配置
-    DEADLOCK_DETECTOR_ENABLED = os.environ.get('DEADLOCK_DETECTOR_ENABLED', 'true').lower() == 'true'
-    DEADLOCK_DETECTOR_USE_NETWORKX = os.environ.get('DEADLOCK_DETECTOR_USE_NETWORKX', 'true').lower() == 'true'
-
-    # 功能4：二进制内嵌配置与凭据自动提取配置
-    CONFIG_EXTRACTOR_ENABLED = os.environ.get('CONFIG_EXTRACTOR_ENABLED', 'true').lower() == 'true'
-    CONFIG_EXTRACTOR_OUTPUT_DIR = os.environ.get('CONFIG_EXTRACTOR_OUTPUT_DIR', os.path.join(RESULTS_DIR, 'extracted_config'))
-    CONFIG_EXTRACTOR_MASK_SENSITIVE = os.environ.get('CONFIG_EXTRACTOR_MASK_SENSITIVE', 'true').lower() == 'true'
-
-    # 功能5：内存损坏模式自动分类配置
-    CORRUPTION_CLASSIFIER_ENABLED = os.environ.get('CORRUPTION_CLASSIFIER_ENABLED', 'true').lower() == 'true'
-    CORRUPTION_CLASSIFIER_MIN_CONFIDENCE = float(os.environ.get('CORRUPTION_CLASSIFIER_MIN_CONFIDENCE', '0.5'))
-
-    # 功能6：反编译代码自动生成流程图与结构图配置
-    CODE_VISUALIZER_ENABLED = os.environ.get('CODE_VISUALIZER_ENABLED', 'true').lower() == 'true'
-    CODE_VISUALIZER_OUTPUT_DIR = os.environ.get('CODE_VISUALIZER_OUTPUT_DIR', os.path.join(RESULTS_DIR, 'visualizations'))
-    CODE_VISUALIZER_DEFAULT_FORMAT = os.environ.get('CODE_VISUALIZER_DEFAULT_FORMAT', 'mermaid')
-
-    # ==================== 六项高级安全功能配置（第四轮）====================
-
-    # 功能1：虚拟机自省（VMI）辅助内存分析配置
-    VMI_ENABLED = os.environ.get('VMI_ENABLED', 'false').lower() == 'true'
-    VMI_OUTPUT_DIR = os.environ.get('VMI_OUTPUT_DIR', os.path.join(RESULTS_DIR, 'vmi_dumps'))
-    VMI_HYPERVISOR = os.environ.get('VMI_HYPERVISOR', 'kvm')
-    VMI_TIMEOUT = int(os.environ.get('VMI_TIMEOUT', '60'))
-    VMI_MAX_PROCESSES = int(os.environ.get('VMI_MAX_PROCESSES', '100'))
-    VMI_DUMP_CODE_ONLY = os.environ.get('VMI_DUMP_CODE_ONLY', 'true').lower() == 'true'
-
-    # 功能2：自动生成二进制文档与函数注释配置
-    BINARY_DOCUMENTER_ENABLED = os.environ.get('BINARY_DOCUMENTER_ENABLED', 'true').lower() == 'true'
-    BINARY_DOCUMENTER_OUTPUT_DIR = os.environ.get('BINARY_DOCUMENTER_OUTPUT_DIR', os.path.join(RESULTS_DIR, 'docs'))
-    BINARY_DOCUMENTER_FORMAT = os.environ.get('BINARY_DOCUMENTER_FORMAT', 'markdown')
-    BINARY_DOCUMENTER_INCLUDE_RISK = os.environ.get('BINARY_DOCUMENTER_INCLUDE_RISK', 'true').lower() == 'true'
-    BINARY_DOCUMENTER_MAX_FUNCTIONS = int(os.environ.get('BINARY_DOCUMENTER_MAX_FUNCTIONS', '100'))
-
-    # 功能3：代码签名证书验证与滥用检测配置
-    CODE_SIGNING_CHECK_ENABLED = os.environ.get('CODE_SIGNING_CHECK_ENABLED', 'true').lower() == 'true'
-    CODE_SIGNING_CHECK_REVOCATION = os.environ.get('CODE_SIGNING_CHECK_REVOCATION', 'true').lower() == 'true'
-    CODE_SIGNING_CHECK_LEAKED_DB = os.environ.get('CODE_SIGNING_CHECK_LEAKED_DB', 'true').lower() == 'true'
-    CODE_SIGNING_LEAKED_DB_PATH = os.environ.get('CODE_SIGNING_LEAKED_DB_PATH', os.path.join(DATA_DIR, 'leaked_certs.json'))
-    CODE_SIGNING_TRUSTED_ROOT_PATH = os.environ.get('CODE_SIGNING_TRUSTED_ROOT_PATH', '')
-
-    # 功能4：基于符号执行的自动去虚拟化分析配置
-    ANTI_VM_BYPASS_ENABLED = os.environ.get('ANTI_VM_BYPASS_ENABLED', 'true').lower() == 'true'
-    ANTI_VM_BYPASS_OUTPUT_DIR = os.environ.get('ANTI_VM_BYPASS_OUTPUT_DIR', os.path.join(RESULTS_DIR, 'bypass'))
-    ANTI_VM_BYPASS_MAX_ANALYSIS_TIME = int(os.environ.get('ANTI_VM_BYPASS_MAX_ANALYSIS_TIME', '300'))
-    ANTI_VM_BYPASS_USE_UNICORN = os.environ.get('ANTI_VM_BYPASS_USE_UNICORN', 'true').lower() == 'true'
-
-    # 功能5：二进制重打包/捆绑包检测配置
-    REPACK_DETECTOR_ENABLED = os.environ.get('REPACK_DETECTOR_ENABLED', 'true').lower() == 'true'
-    REPACK_DETECTOR_ENTROPY_THRESHOLD = float(os.environ.get('REPACK_DETECTOR_ENTROPY_THRESHOLD', '7.5'))
-    REPACK_DETECTOR_SUSPICIOUS_SECTION_SCORE = int(os.environ.get('REPACK_DETECTOR_SUSPICIOUS_SECTION_SCORE', '50'))
-
-    # 功能6：ROP Gadget自动分级与利用潜力评估配置
-    ROP_GRADER_ENABLED = os.environ.get('ROP_GRADER_ENABLED', 'true').lower() == 'true'
-    ROP_GRADER_OUTPUT_DIR = os.environ.get('ROP_GRADER_OUTPUT_DIR', os.path.join(RESULTS_DIR, 'rop_grading'))
-    ROP_GRADER_MIN_SCORE_THRESHOLD = int(os.environ.get('ROP_GRADER_MIN_SCORE_THRESHOLD', '30'))
-    ROP_GRADER_MAX_GADGETS = int(os.environ.get('ROP_GRADER_MAX_GADGETS', '1000'))
-
-    @classmethod
-    def get(cls, key: str, default: Any = None) -> Any:
-        """获取配置值"""
-        keys = key.split('.')
-        value = cls
-        for k in keys:
-            if hasattr(value, k):
-                value = getattr(value, k)
-            else:
-                return default
-        return value
-    
-    @classmethod
-    def set(cls, key: str, value: Any):
-        """设置配置值"""
-        keys = key.split('.')
-        obj = cls
-        for i, k in enumerate(keys[:-1]):
-            if hasattr(obj, k):
-                obj = getattr(obj, k)
-            else:
-                return False
-        
-        if hasattr(obj, keys[-1]):
-            setattr(obj, keys[-1], value)
-            return True
-        return False
-    
-    @classmethod
-    def init_dirs(cls):
-        """初始化目录"""
-        dirs = [
-            cls.DATA_DIR,
-            cls.TEMP_DIR,
-            cls.RESULTS_DIR,
-            os.path.dirname(cls.LOG_FILE),
-            cls.EXPLOITDB_CACHE_DIR,
-            cls.DEEP_SEARCH_INDEX_DIR,
-            cls.KERNEL_EXPLOIT['output_dir']
-        ]
-        
-        for dir_path in dirs:
-            if not os.path.exists(dir_path):
-                os.makedirs(dir_path, exist_ok=True)
-
-# AI相关辅助函数
-
-def call_ai_with_retry(func, max_retries=3, delay=1):
-    """
-    带重试的AI调用包装函数
-    
-    Args:
-        func: 要执行的AI调用函数
-        max_retries: 最大重试次数
-        delay: 重试间隔（秒）
-    
-    Returns:
-        AI调用结果
-    """
-    import time
-    
-    for attempt in range(max_retries):
-        try:
-            return func()
-        except Exception as e:
-            if attempt < max_retries - 1:
-                time.sleep(delay)
-                continue
-            raise e
-
-def get_current_ai_model():
-    """获取当前配置的AI模型"""
-    provider = os.environ.get('AI_PROVIDER', 'openai')
-    
-    if provider == 'ollama':
-        return os.environ.get('OLLAMA_MODEL', 'llama2')
-    elif provider == 'azure':
-        return os.environ.get('AZURE_OPENAI_DEPLOYMENT', os.environ.get('OPENAI_MODEL', 'gpt-4'))
-    elif provider == 'llamacpp':
-        return os.environ.get('LLAMACPP_MODEL', 'llama-2-7b-chat')
-    elif provider == 'custom':
-        return os.environ.get('CUSTOM_MODEL', 'custom')
-    else:
-        return os.environ.get('OPENAI_MODEL', 'gpt-4')
-
-def mask_sensitive_data(data):
-    """
-    脱敏敏感数据
-    
-    Args:
-        data: 原始数据
-    
-    Returns:
-        脱敏后的数据
-    """
-    import re
-    
-    if isinstance(data, str):
-        # 屏蔽API密钥
-        data = re.sub(r'(sk-[a-zA-Z0-9]{48})', 'sk-****************', data)
-        # 屏蔽邮箱
-        data = re.sub(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', '***@***.com', data)
-        # 屏蔽IP地址
-        data = re.sub(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', 'xxx.xxx.xxx.xxx', data)
-    elif isinstance(data, dict):
-        for key, value in data.items():
-            data[key] = mask_sensitive_data(value)
-    elif isinstance(data, list):
-        data = [mask_sensitive_data(item) for item in data]
-    
-    return data
-
-class SensitiveFilter(logging.Filter):
-    """日志敏感信息过滤器"""
-    
-    def filter(self, record):
-        record.msg = mask_sensitive_data(record.msg)
-        if record.args:
-            record.args = tuple(mask_sensitive_data(arg) for arg in record.args)
-        return True
-
-def ensure_directories():
-    """确保所有必要目录存在"""
-    dirs = [
-        Config.DATA_DIR,
-        Config.TEMP_DIR,
-        Config.RESULTS_DIR,
-        os.path.dirname(Config.LOG_FILE),
-        Config.EXPLOITDB_CACHE_DIR,
-        Config.DEEP_SEARCH_INDEX_DIR,
-        Config.KERNEL_EXPLOIT['output_dir']
-    ]
-    
-    for dir_path in dirs:
-        if not os.path.exists(dir_path):
-            os.makedirs(dir_path, exist_ok=True)
-
-def mask_api_key(key: str) -> str:
-    """屏蔽API密钥"""
-    if not key:
-        return key
-    if len(key) <= 8:
-        return '***'
-    return key[:4] + '*' * (len(key) - 8) + key[-4:]
-
-def get_openai_client():
-    """获取OpenAI客户端"""
-    try:
-        from openai import OpenAI
-        api_key = os.environ.get('OPENAI_API_KEY')
-        if api_key:
-            return OpenAI(api_key=api_key)
-        return None
-    except ImportError:
-        return None
-
-def check_openai_api_key():
-    """检查OpenAI API密钥"""
-    api_key = os.environ.get('OPENAI_API_KEY')
-    return api_key is not None and len(api_key) > 0
-
-def validate_crash_data(crash_data):
-    """验证崩溃数据"""
-    if not isinstance(crash_data, dict):
-        return False, "崩溃数据必须是字典类型"
-    
-    if 'registers' in crash_data or 'stack_trace' in crash_data:
-        return True, None
-    
-    return False, "崩溃数据缺少必要字段（registers 或 stack_trace）"
-
-def get_crash_data_example():
-    """获取崩溃数据示例"""
-    return {
-        'registers': {
-            'rax': '0x00000000deadbeef',
-            'rbx': '0x0000000000000000',
-            'rcx': '0x0000000000000041',
-            'rdx': '0x00007ffff7a0d000',
-            'rsp': '0x00007ffff7a0cff0',
-            'rbp': '0x00007ffff7a0d000',
-            'rsi': '0x00007ffff7a0d000',
-            'rdi': '0x0000000000000000',
-            'rip': '0x00007ffff7a0d000',
-            'eflags': '0x0000000000010206'
-        },
-        'stack_trace': [
-            '#0  0x00007ffff7a0d000 in vulnerable_function ()',
-            '#1  0x00007ffff7a0d050 in main ()',
-            '#2  0x00007ffff7a0d100 in __libc_start_main ()'
-        ],
-        'output': '*** buffer overflow detected ***: ./vulnerable terminated\n',
-        'signal': 'SIGSEGV',
-        'crash_address': '0x00007ffff7a0d000',
-        'crash_type': 'buffer_overflow',
-        'exploitability': 'high'
-    }
-
-def test_api_connection() -> bool:
-    """测试AI API连接"""
-    provider = Config.AI_PROVIDER.lower()
-    
-    if provider == 'openai':
-        if not Config.OPENAI_API_KEY:
-            return False
-        try:
-            from openai import OpenAI
-            client = OpenAI(api_key=Config.OPENAI_API_KEY)
-            if Config.OPENAI_BASE_URL:
-                client.base_url = Config.OPENAI_BASE_URL
-            client.models.list()
-            return True
-        except Exception:
-            return False
-    
-    elif provider == 'azure':
-        if not Config.AZURE_API_KEY or not Config.AZURE_ENDPOINT:
-            return False
-        try:
-            from openai import AzureOpenAI
-            client = AzureOpenAI(
-                api_key=Config.AZURE_API_KEY,
-                azure_endpoint=Config.AZURE_ENDPOINT,
-                azure_deployment=Config.AZURE_DEPLOYMENT_NAME
-            )
-            client.models.list()
-            return True
-        except Exception:
-            return False
-    
-    elif provider == 'ollama':
-        try:
-            import requests
-            response = requests.get(f"{Config.OLLAMA_HOST}/api/tags", timeout=5)
-            return response.status_code == 200
-        except Exception:
-            return False
-    
-    elif provider == 'llamacpp':
-        if not Config.LLAMACPP_MODEL_PATH or not os.path.exists(Config.LLAMACPP_MODEL_PATH):
-            return False
-        return True
-    
-    elif provider == 'custom':
-        if not Config.CUSTOM_API_URL:
-            return False
-        try:
-            import requests
-            response = requests.get(Config.CUSTOM_API_URL, timeout=5)
-            return response.status_code == 200
-        except Exception:
-            return False
-    
-    return False
-
-# AI 提供商常量
 AI_PROVIDER_OPENAI = 'openai'
 AI_PROVIDER_AZURE = 'azure'
 AI_PROVIDER_OLLAMA = 'ollama'
 AI_PROVIDER_LLAMACPP = 'llamacpp'
 AI_PROVIDER_CUSTOM = 'custom'
 
-# 初始化目录
-Config.init_dirs()
+
+def mask_api_key(api_key: str, show_first: int = 4, show_last: int = 4) -> str:
+    """
+    脱敏 API Key，显示前 N 位和后 N 位，中间用 * 代替
+    
+    Args:
+        api_key: 原始 API Key
+        show_first: 显示前几位
+        show_last: 显示后几位
+        
+    Returns:
+        脱敏后的 API Key
+    """
+    if not api_key or not isinstance(api_key, str):
+        return api_key
+    
+    key_length = len(api_key)
+    
+    if key_length <= show_first + show_last:
+        return '*' * key_length
+    
+    prefix = api_key[:show_first]
+    suffix = api_key[-show_last:]
+    middle = '*' * (key_length - show_first - show_last)
+    
+    return f"{prefix}{middle}{suffix}"
+
+
+def mask_sensitive_data(text: str) -> str:
+    """
+    脱敏处理敏感信息，适用于日志输出
+    显示前 4 位和后 4 位，中间用 * 代替
+    
+    Args:
+        text: 原始文本
+        
+    Returns:
+        脱敏后的文本
+    """
+    if not text or not isinstance(text, str):
+        return text
+    
+    def replace_partial(match):
+        prefix = match.group(1) if len(match.groups()) >= 2 else ''
+        key = match.group(2) if len(match.groups()) >= 2 else match.group(1)
+        
+        if key:
+            masked_key = mask_api_key(key)
+            return prefix + masked_key
+        
+        return match.group(0)
+    
+    def replace_full(match):
+        prefix = match.group(1) if len(match.groups()) >= 2 else ''
+        env_name = match.group(2) if len(match.groups()) >= 2 else ''
+        key = match.group(3) if len(match.groups()) >= 3 else match.group(1)
+        
+        if key and env_name and 'key' in env_name.lower():
+            masked_key = mask_api_key(key)
+            return prefix + masked_key
+        elif key:
+            masked_key = mask_api_key(key)
+            return prefix + masked_key
+        
+        return match.group(0)
+    
+    api_key_patterns = [
+        r'(api[_-]?key\s*[=:]\s*["\']?)([a-zA-Z0-9\-_]{8,})',
+        r'(key\s*[=:]\s*["\']?)(sk-[a-zA-Z0-9_\-]{32,})',
+        r'()(sk-[a-zA-Z0-9_\-]{32,})',
+        r'(authorization\s*[=:]\s*["\']?Bearer\s+)([a-zA-Z0-9\-_.]+)',
+        r'(AZURE_OPENAI_API_KEY\s*[=:]\s*["\']?)([a-zA-Z0-9\-_]{8,})',
+        r'(CUSTOM_API_KEY\s*[=:]\s*["\']?)([a-zA-Z0-9\-_]{8,})',
+    ]
+    
+    masked = text
+    for pattern in api_key_patterns:
+        masked = re.sub(pattern, replace_partial, masked, flags=re.IGNORECASE)
+    
+    token_patterns = [
+        r'(token\s*[=:]\s*["\']?)([a-zA-Z0-9\-_.]{8,})',
+        r'(access[_-]?token\s*[=:]\s*["\']?)([a-zA-Z0-9\-_.]{8,})',
+        r'(secret\s*[=:]\s*["\']?)([a-zA-Z0-9\-_.]{8,})',
+        r'(password\s*[=:]\s*["\']?)([^"\'\s]{4,})',
+    ]
+    
+    for pattern in token_patterns:
+        masked = re.sub(pattern, replace_partial, masked, flags=re.IGNORECASE)
+    
+    env_patterns = [
+        r'([A-Z0-9_]+_API_KEY)\s*[=:]\s*["\']?([^"\'\s]{8,})["\']?',
+        r'([A-Z0-9_]+_SECRET)\s*[=:]\s*["\']?([^"\'\s]{8,})["\']?',
+        r'([A-Z0-9_]+_TOKEN)\s*[=:]\s*["\']?([^"\'\s]{8,})["\']?',
+    ]
+    
+    for pattern in env_patterns:
+        masked = re.sub(pattern, r'\1=***MASKED***', masked, flags=re.IGNORECASE)
+    
+    return masked
+
+
+class SensitiveFilter(logging.Filter):
+    """
+    日志过滤器，自动脱敏敏感信息
+    """
+    
+    def filter(self, record):
+        if isinstance(record.msg, str):
+            record.msg = mask_sensitive_data(record.msg)
+        
+        if record.args:
+            args_list = list(record.args)
+            for i, arg in enumerate(args_list):
+                if isinstance(arg, str):
+                    args_list[i] = mask_sensitive_data(arg)
+            record.args = tuple(args_list)
+        
+        return True
+
+
+class Config:
+    """
+    项目配置管理类
+    """
+    
+    # AI 服务配置请直接在这里填写，不再通过环境变量读取。
+    # 可选值: openai / azure / ollama / llamacpp / custom
+    AI_PROVIDER = AI_PROVIDER_OPENAI
+    
+    # OpenAI 或 OpenAI 兼容服务
+    OPENAI_API_KEY = ''
+    OPENAI_MODEL = 'gpt-4'
+    OPENAI_BASE_URL = None
+    OPENAI_ORGANIZATION = None
+    
+    # Azure OpenAI
+    AZURE_API_KEY = ''
+    AZURE_ENDPOINT = ''
+    AZURE_API_VERSION = '2024-02-15-preview'
+    AZURE_DEPLOYMENT = ''
+    
+    # Ollama
+    OLLAMA_HOST = 'http://localhost:11434'
+    OLLAMA_MODEL = 'llama2'
+    
+    # llama.cpp
+    LLAMACPP_HOST = 'http://localhost:8080'
+    
+    # 自定义 OpenAI 兼容 API
+    CUSTOM_API_KEY = ''
+    CUSTOM_BASE_URL = ''
+    CUSTOM_MODEL = ''
+    
+    LOGS_DIR = './logs'
+    REPORTS_DIR = './reports'
+    EXPLOITS_DIR = './exploits'
+    DB_DIR = './data'
+    DATA_DIR = './data'
+    CACHE_DIR = './data/cache'
+    CORPUS_DIR = './data/corpus'
+    
+    MAX_ITERATIONS = 5
+    SUBPROCESS_TIMEOUT = 30
+    RADARE2_TIMEOUT = 120
+    GHIDRA_TIMEOUT = 300
+    IDA_TIMEOUT = 300
+    ANGR_TIMEOUT = 300
+    
+    REQUIRED_FIELDS_CRASH_DATA = ['registers']
+    OPTIONAL_FIELDS_CRASH_DATA = ['stack_trace', 'fault_instruction', 'output', 'stdout', 'stderr']
+    
+    DEFAULT_DECOMPILER = os.environ.get('DEFAULT_DECOMPILER', 'auto')
+    ENABLE_SYMBOLIC_EXECUTION = os.environ.get('ENABLE_SYMBOLIC_EXECUTION', 'false').lower() == 'true'
+    
+    DB_PATH = os.path.join(DB_DIR, 'vulnerabilities.db')
+    
+    SANDBOX_MODE = os.environ.get('SANDBOX_MODE', 'none').lower()
+    SANDBOX_IMAGE = os.environ.get('SANDBOX_IMAGE', 'deemo-analyzer:latest')
+    SANDBOX_TIMEOUT = int(os.environ.get('SANDBOX_TIMEOUT', '60'))
+    SANDBOX_MEMORY_LIMIT = os.environ.get('SANDBOX_MEMORY_LIMIT', '512m')
+    SANDBOX_CPU_LIMIT = float(os.environ.get('SANDBOX_CPU_LIMIT', '1.0'))
+    SANDBOX_NETWORK_ENABLED = os.environ.get('SANDBOX_NETWORK_ENABLED', 'false').lower() == 'true'
+    
+    DB_TYPE = os.environ.get('DB_TYPE', 'sqlite').lower()
+    POSTGRES_HOST = os.environ.get('POSTGRES_HOST', 'localhost')
+    POSTGRES_PORT = int(os.environ.get('POSTGRES_PORT', '5432'))
+    POSTGRES_USER = os.environ.get('POSTGRES_USER', 'deemo')
+    POSTGRES_PASSWORD = os.environ.get('POSTGRES_PASSWORD', '')
+    POSTGRES_DB = os.environ.get('POSTGRES_DB', 'deemo_vuln_db')
+    
+    API_HOST = os.environ.get('API_HOST', '0.0.0.0')
+    API_PORT = int(os.environ.get('API_PORT', '8000'))
+    API_RELOAD = os.environ.get('API_RELOAD', 'false').lower() == 'true'
+    
+    CACHE_TTL = int(os.environ.get('CACHE_TTL', '3600'))
+    EXTERNAL_API_RATE_LIMIT = int(os.environ.get('EXTERNAL_API_RATE_LIMIT', '10'))
+    EXTERNAL_API_RATE_PERIOD = int(os.environ.get('EXTERNAL_API_RATE_PERIOD', '60'))
+    
+    FUZZER_MAX_RUNTIME = int(os.environ.get('FUZZER_MAX_RUNTIME', '3600'))
+    FUZZER_MAX_CPU = int(os.environ.get('FUZZER_MAX_CPU', '1'))
+    FUZZER_MEMORY_LIMIT = int(os.environ.get('FUZZER_MEMORY_LIMIT', '2048'))
+
+
+def check_openai_api_key() -> bool:
+    """
+    检查 OpenAI API Key 是否配置
+    
+        True 如果配置了 API Key，否则 False
+    """
+    api_key = Config.OPENAI_API_KEY
+    if not api_key or api_key.strip() == '':
+        return False
+    return True
+
+
+def get_openai_client():
+    """
+    获取 AI 客户端实例，支持多种 AI 提供商
+    
+        OpenAI 兼容的客户端实例，如果未配置则返回 None
+    """
+    provider = Config.AI_PROVIDER
+    logger.info(f"正在初始化 AI 客户端，提供商: {provider}")
+    
+    try:
+        from openai import OpenAI, AzureOpenAI
+    except ImportError:
+        logger.error("openai 库未安装，请运行: pip install openai")
+        return None
+    
+    try:
+        if provider == AI_PROVIDER_OPENAI:
+            return _create_openai_client()
+        elif provider == AI_PROVIDER_AZURE:
+            return _create_azure_client()
+        elif provider == AI_PROVIDER_OLLAMA:
+            return _create_ollama_client()
+        elif provider == AI_PROVIDER_LLAMACPP:
+            return _create_llamacpp_client()
+        elif provider == AI_PROVIDER_CUSTOM:
+            return _create_custom_client()
+        else:
+            logger.warning(f"未知的 AI 提供商: {provider}，使用 OpenAI 作为默认")
+            return _create_openai_client()
+    except Exception as e:
+        logger.error(f"初始化 AI 客户端失败: {e}")
+        return None
+
+
+def _create_openai_client():
+    """
+    创建标准 OpenAI 客户端
+    """
+    if not check_openai_api_key():
+        logger.warning("Config.OPENAI_API_KEY 未配置，将使用启发式分析模式")
+        return None
+    
+    from openai import OpenAI
+    
+    client_kwargs = {'api_key': Config.OPENAI_API_KEY}
+    if Config.OPENAI_BASE_URL:
+        client_kwargs['base_url'] = Config.OPENAI_BASE_URL
+        logger.info(f"使用自定义 OpenAI Base URL: {Config.OPENAI_BASE_URL}")
+    
+    if Config.OPENAI_ORGANIZATION:
+        client_kwargs['organization'] = Config.OPENAI_ORGANIZATION
+    
+    client = OpenAI(**client_kwargs)
+    
+    masked_key = mask_api_key(Config.OPENAI_API_KEY)
+    logger.info(f"OpenAI 客户端初始化成功，API Key: {masked_key}, 模型: {Config.OPENAI_MODEL}")
+    return client
+
+
+def _create_azure_client():
+    """
+    创建 Azure OpenAI 客户端
+    """
+    if not Config.AZURE_API_KEY:
+        logger.warning("Config.AZURE_API_KEY 未配置")
+        return None
+    
+    if not Config.AZURE_ENDPOINT:
+        logger.warning("Config.AZURE_ENDPOINT 未配置")
+        return None
+    
+    from openai import AzureOpenAI
+    
+    client = AzureOpenAI(
+        api_key=Config.AZURE_API_KEY,
+        azure_endpoint=Config.AZURE_ENDPOINT,
+        api_version=Config.AZURE_API_VERSION,
+        azure_deployment=Config.AZURE_DEPLOYMENT if Config.AZURE_DEPLOYMENT else None
+    )
+    
+    masked_key = mask_api_key(Config.AZURE_API_KEY)
+    logger.info(f"Azure OpenAI 客户端初始化成功，API Key: {masked_key}")
+    return client
+
+
+def _create_ollama_client():
+    """
+    创建 Ollama 本地模型客户端
+    """
+    from openai import OpenAI
+    
+    ollama_base = f"{Config.OLLAMA_HOST}/v1"
+    
+    client = OpenAI(
+        api_key="ollama",
+        base_url=ollama_base
+    )
+    
+    logger.info(f"Ollama 客户端初始化成功，Host: {Config.OLLAMA_HOST}, Model: {Config.OLLAMA_MODEL}")
+    return client
+
+
+def _create_llamacpp_client():
+    """
+    创建 llama.cpp 本地模型客户端
+    """
+    from openai import OpenAI
+    
+    llamacpp_base = f"{Config.LLAMACPP_HOST}/v1"
+    
+    client = OpenAI(
+        api_key="llama-cpp",
+        base_url=llamacpp_base
+    )
+    
+    logger.info(f"llama.cpp 客户端初始化成功，Host: {Config.LLAMACPP_HOST}")
+    return client
+
+
+def _create_custom_client():
+    """
+    创建自定义 API 客户端
+    """
+    if not Config.CUSTOM_BASE_URL:
+        logger.warning("CUSTOM_BASE_URL 未配置")
+        return None
+    
+    from openai import OpenAI
+    
+    api_key = Config.CUSTOM_API_KEY or "custom"
+    client_kwargs = {
+        'api_key': api_key,
+        'base_url': Config.CUSTOM_BASE_URL
+    }
+    
+    client = OpenAI(**client_kwargs)
+    
+    if Config.CUSTOM_API_KEY:
+        masked_key = mask_api_key(Config.CUSTOM_API_KEY)
+        logger.info(f"自定义 API 客户端初始化成功，API Key: {masked_key}, Base URL: {Config.CUSTOM_BASE_URL}")
+    else:
+        logger.info(f"自定义 API 客户端初始化成功（无 API Key），Base URL: {Config.CUSTOM_BASE_URL}")
+    
+    return client
+
+
+def get_current_ai_model() -> str:
+    """
+    获取当前配置的 AI 模型名称
+    
+    Returns:
+        当前模型名称
+    """
+    provider = Config.AI_PROVIDER
+    
+    if provider == AI_PROVIDER_OLLAMA:
+        return Config.OLLAMA_MODEL
+    elif provider == AI_PROVIDER_CUSTOM:
+        if Config.CUSTOM_MODEL:
+            return Config.CUSTOM_MODEL
+    elif provider == AI_PROVIDER_AZURE:
+        if Config.AZURE_DEPLOYMENT:
+            return Config.AZURE_DEPLOYMENT
+    
+    return Config.OPENAI_MODEL
+
+
+def ensure_directories():
+    """
+    确保所需目录存在
+    """
+    dirs_to_create = {
+        Config.LOGS_DIR,
+        Config.REPORTS_DIR,
+        Config.EXPLOITS_DIR,
+        Config.DB_DIR,
+        Config.CACHE_DIR,
+        Config.CORPUS_DIR
+    }
+    
+    for dir_path in dirs_to_create:
+        try:
+            if not os.path.exists(dir_path):
+                os.makedirs(dir_path)
+                logger.info(f"创建目录: {dir_path}")
+        except Exception as e:
+            logger.error(f"创建目录失败 {dir_path}: {e}")
+
+
+def validate_sandbox_config() -> Dict[str, Any]:
+    """
+    验证沙箱配置
+    
+    Returns:
+        包含验证结果的字典
+    """
+    sandbox_mode = Config.SANDBOX_MODE
+    valid_modes = ['none', 'docker', 'podman']
+    
+    result = {
+        'valid': sandbox_mode in valid_modes,
+        'mode': sandbox_mode,
+        'issues': []
+    }
+    
+    if sandbox_mode not in valid_modes:
+        result['issues'].append(
+            f"无效的 SANDBOX_MODE: {sandbox_mode}。有效值: {valid_modes}"
+        )
+    
+    if sandbox_mode == 'docker':
+        try:
+            import docker
+            client = docker.from_env()
+            client.ping()
+            result['docker_available'] = True
+        except ImportError:
+            result['issues'].append("Docker SDK 未安装，请运行: pip install docker")
+        except Exception as e:
+            result['issues'].append(f"Docker 不可用: {e}")
+    
+    if sandbox_mode == 'podman':
+        try:
+            import subprocess
+            subprocess.run(['podman', '--version'], capture_output=True, check=True)
+            result['podman_available'] = True
+        except (FileNotFoundError, subprocess.CalledProcessError):
+            result['issues'].append("Podman 未安装或不在 PATH 中")
+    
+    return result
+
+
+def get_postgres_connection_string() -> Optional[str]:
+    """
+    获取 PostgreSQL 连接字符串
+    
+    Returns:
+        PostgreSQL 连接字符串，如果配置不完整则返回 None
+    """
+    if Config.DB_TYPE != 'postgres':
+        return None
+    
+    if not Config.POSTGRES_PASSWORD:
+        logger.warning("POSTGRES_PASSWORD 未设置")
+        return None
+    
+    return (
+        f"postgresql://{Config.POSTGRES_USER}:{Config.POSTGRES_PASSWORD}"
+        f"@{Config.POSTGRES_HOST}:{Config.POSTGRES_PORT}/{Config.POSTGRES_DB}"
+    )
+
+
+def validate_crash_data(crash_data: dict) -> tuple:
+    """
+    验证崩溃数据格式
+    
+    """
+    if not isinstance(crash_data, dict):
+        return False, "崩溃数据必须是字典格式"
+    
+    has_required = any(field in crash_data for field in Config.REQUIRED_FIELDS_CRASH_DATA)
+    has_optional = any(field in crash_data for field in Config.OPTIONAL_FIELDS_CRASH_DATA)
+    
+    if not has_required and not has_optional:
+        return False, f"崩溃数据缺少必要字段，至少需要包含: {Config.REQUIRED_FIELDS_CRASH_DATA}"
+    
+    return True, None
+
+
+def get_crash_data_example() -> dict:
+    """
+    获取崩溃数据示例格式
+    
+    Returns:
+        示例崩溃数据字典
+    """
+    return {
+        "registers": {
+            "rax": "0x0000000000000000",
+            "rbx": "0x0000000000000000",
+            "rcx": "0x0000000000000000",
+            "rdx": "0x0000000000000000",
+            "rsi": "0x0000000000000000",
+            "rdi": "0x0000000000000000",
+            "rbp": "0x00007fffffffdc00",
+            "rsp": "0x00007fffffffdbe8",
+            "r8": "0x0000000000000000",
+            "r9": "0x0000000000000000",
+            "r10": "0x0000000000000000",
+            "r11": "0x0000000000000000",
+            "r12": "0x0000000000000000",
+            "r13": "0x0000000000000000",
+            "r14": "0x0000000000000000",
+            "r15": "0x0000000000000000",
+            "rip": "0x000055555555514a",
+            "eflags": "0x0000000000010202",
+            "cs": "0x0000000000000033",
+            "ss": "0x000000000000002b"
+        },
+        "stack_trace": [
+            "#0  0x000055555555514a in main ()",
+            "#1  0x00007ffff7c29d90 in __libc_start_call_main ()",
+            "#2  0x00007ffff7c29e40 in __libc_start_main_impl ()"
+        ],
+        "fault_instruction": "0x55555555514a <main+31>:    ret",
+        "output": "Segmentation fault (core dumped)",
+        "signal": "SIGSEGV"
+    }
+
+
+def call_ai_with_retry(client, **kwargs) -> Optional[str]:
+    """
+    统一的 AI API 调用函数，包含指数退避重试和降级支持
+    
+    Args:
+        client: OpenAI 兼容的客户端
+        **kwargs: 传递给 chat.completions.create 的参数
+        
+    Returns:
+        AI 响应文本，失败返回 None
+    """
+    import time
+    
+    max_retries = 3
+    base_delay = 1
+    
+    last_exception = None
+    
+    for attempt in range(max_retries):
+        try:
+            logger.info(f"[AI] 调用 API (尝试 {attempt + 1}/{max_retries})")
+            
+            response = client.chat.completions.create(**kwargs)
+            result_text = response.choices[0].message.content
+            logger.info("[AI] API 调用成功")
+            return result_text
+            
+        except Exception as e:
+            last_exception = e
+            logger.warning(f"[AI] API 调用失败 (尝试 {attempt + 1}/{max_retries}): {e}")
+            
+            if attempt < max_retries - 1:
+                delay = base_delay * (2 ** attempt)
+                logger.info(f"[AI] 等待 {delay} 秒后重试...")
+                time.sleep(delay)
+    
+    logger.error(f"[AI] 所有重试均失败: {last_exception}")
+    logger.warning("[AI] 切换到启发式分析模式")
+    
+    return None
+
+
+def test_api_connection(client) -> bool:
+    """
+    测试 AI API 连接是否正常
+    
+    Args:
+        client: OpenAI 兼容的客户端
+        
+    Returns:
+        True 如果连接正常，否则 False
+    """
+    try:
+        model = get_current_ai_model()
+        response = client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "user", "content": "Hello"}
+            ],
+            max_tokens=5
+        )
+        return True
+    except Exception as e:
+        logger.error(f"AI API 连接测试失败: {e}")
+        return False

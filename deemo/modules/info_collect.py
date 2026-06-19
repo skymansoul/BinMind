@@ -3,29 +3,7 @@ import os
 import struct
 import re
 import shlex
-from typing import Dict, List, Optional, Tuple, Any, Union
-
-logger = logging.getLogger(__name__)
-
-MOBILE_DANGEROUS_FUNCTIONS = [
-    '__android_log_print',
-    '__android_log_write',
-    'AAssetManager_open',
-    'AAssetManager_read',
-    'JNIEnv_::FindClass',
-    'JNIEnv_::GetMethodID',
-    'JNIEnv_::CallMethod',
-    'JNIEnv_::GetFieldID',
-    'JNIEnv_::SetField',
-    'system',
-    'popen',
-    'strcpy',
-    'strcat',
-    'sprintf',
-    'gets',
-    'memcpy',
-    'memmove',
-]
+from typing import Dict, List, Optional, Tuple, Any
 
 logger = logging.getLogger(__name__)
 
@@ -36,310 +14,6 @@ DANGEROUS_FUNCTIONS = [
     'popen', 'unlink', 'remove',
     'malloc', 'free', 'realloc', 'calloc',
     'memcpy', 'memmove', 'memset'
-]
-
-KERNEL_DANGEROUS_FUNCTIONS = [
-    'copy_from_user',
-    'copy_to_user',
-    'copy_in_user',
-    'copy_out_user',
-    'get_user',
-    'put_user',
-    'kmalloc',
-    'kzalloc',
-    'kvmalloc',
-    'kcalloc',
-    'kfree',
-    '__kmalloc',
-    '__kzalloc',
-    'ioremap',
-    'ioremap_nocache',
-    'ioremap_wc',
-    'iounmap',
-    'request_mem_region',
-    'release_mem_region',
-    'sprintf',
-    'snprintf',
-    'vsprintf',
-    'strncpy_from_user',
-    'strlen_user',
-    'strnlen_user',
-    'strcpy_from_user',
-    'memcpy_fromiovec',
-    'memcpy_toiovec',
-    'ioctl',
-    '__ioctl',
-    'proc_create',
-    'seq_open',
-    'seq_read',
-    'seq_write',
-    'devm_kzalloc',
-    'devm_kmalloc',
-    'devm_kfree',
-    'dma_alloc_coherent',
-    'dma_alloc_noncoherent',
-    'dma_free_coherent',
-    'dma_free_noncoherent',
-    'netdev_alloc_skb',
-    'skb_copy',
-    'skb_clone',
-    'alloc_skb',
-    'kmem_cache_alloc',
-    'kmem_cache_free',
-    '__get_free_pages',
-    'free_pages',
-    'vmalloc',
-    'vfree',
-    'slab_alloc',
-    'slab_free',
-    'down',
-    'down_interruptible',
-    'down_trylock',
-    'up',
-    'mutex_lock',
-    'mutex_unlock',
-    'spin_lock',
-    'spin_unlock',
-    'read_lock',
-    'read_unlock',
-    'write_lock',
-    'write_unlock',
-    'file_open',
-    'file_close',
-    'vfs_read',
-    'vfs_write',
-    'filp_open',
-    'filp_close',
-    'task_struct',
-    'cred',
-    'commit_creds',
-    'prepare_kernel_cred',
-    'cap_set_proc',
-    'set_current_groups',
-    'setgid',
-    'setuid',
-    'sys_setuid',
-    'sys_setgid',
-    'sys_setreuid',
-    'sys_setregid',
-    'sys_setresuid',
-    'sys_setresgid',
-    'allow_signal',
-    'send_signal',
-    'force_sig',
-    'sig_send',
-    'kernel_thread',
-    'do_fork',
-    'sys_clone',
-    'sys_fork',
-    'sys_vfork',
-    'sys_execve',
-    'sys_open',
-    'sys_close',
-    'sys_read',
-    'sys_write',
-    'sys_mmap',
-    'sys_mprotect',
-    'sys_chmod',
-    'sys_chown',
-    'sys_access',
-    'sys_brk',
-    'sys_ptrace',
-    'sys_kill',
-    'sys_nice',
-    'sys_setpriority',
-    'sys_syslog',
-    'sys_time',
-    'sys_settimeofday',
-    'sys_uname',
-    'sys_utsname',
-    'sys_sync',
-    'sys_shutdown',
-    'sys_reboot',
-    'sys_mount',
-    'sys_umount',
-    'sys_sethostname',
-    'sys_setdomainname',
-    'sys_getuid',
-    'sys_getgid',
-    'sys_geteuid',
-    'sys_getegid',
-    'sys_getresuid',
-    'sys_getresgid',
-    'sys_getgroups',
-    'sys_setgroups',
-    'sys_getpgid',
-    'sys_setpgid',
-    'sys_getsid',
-    'sys_setsid',
-    'sys_getpriority',
-    'sys_wait4',
-    'sys_waitpid',
-    'sys_sigaction',
-    'sys_sigprocmask',
-    'sys_sigpending',
-    'sys_sigsuspend',
-    'sys_sigreturn',
-    'sys_pause',
-    'sys_alarm',
-    'sys_setitimer',
-    'sys_getitimer',
-    'sys_timex',
-    'sys_getrusage',
-    'sys_gettimeofday',
-    'sys_times',
-    'sys_ptrace',
-    'sys_lseek',
-    'sys_readlink',
-    'sys_access',
-    'sys_chdir',
-    'sys_fchdir',
-    'sys_chroot',
-    'sys_sync',
-    'sys_fsync',
-    'sys_fdatasync',
-    'sys_truncate',
-    'sys_ftruncate',
-    'sys_getdents',
-    'sys_getcwd',
-    'sys_chmod',
-    'sys_fchmod',
-    'sys_chown',
-    'sys_fchown',
-    'sys_umask',
-    'sys_setreuid',
-    'sys_setregid',
-    'sys_getgroups',
-    'sys_setgroups',
-    'sys_getpgid',
-    'sys_setpgid',
-    'sys_getsid',
-    'sys_setsid',
-    'sys_getpriority',
-    'sys_setpriority',
-    'sys_wait4',
-    'sys_waitpid',
-    'sys_sigaction',
-    'sys_sigprocmask',
-    'sys_sigpending',
-    'sys_sigsuspend',
-    'sys_sigreturn',
-    'sys_pause',
-    'sys_alarm',
-    'sys_setitimer',
-    'sys_getitimer',
-    'sys_timex',
-    'sys_getrusage',
-    'sys_gettimeofday',
-    'sys_times',
-]
-
-KERNEL_DRIVER_DANGEROUS_FUNCTIONS = [
-    'MmCopyVirtualMemory',
-    'MmMapIoSpace',
-    'MmUnmapIoSpace',
-    'MmAllocatePagesForMdl',
-    'MmFreePagesFromMdl',
-    'MmBuildMdlForNonPagedPool',
-    'MmAllocateNonPagedPool',
-    'MmAllocateNonPagedPoolWithTag',
-    'MmAllocatePagedPool',
-    'MmAllocatePagedPoolWithTag',
-    'ExAllocatePool',
-    'ExAllocatePoolWithTag',
-    'ExAllocatePool2',
-    'ExFreePool',
-    'ExFreePoolWithTag',
-    'IoCreateDevice',
-    'IoCreateDeviceSecure',
-    'IoDeleteDevice',
-    'IoCreateSymbolicLink',
-    'IoDeleteSymbolicLink',
-    'IoAttachDeviceToDeviceStack',
-    'IoDetachDevice',
-    'IoCreateFile',
-    'IoOpenFile',
-    'IoReadFile',
-    'IoWriteFile',
-    'IoClose',
-    'NtCreateFile',
-    'NtOpenFile',
-    'NtReadFile',
-    'NtWriteFile',
-    'NtClose',
-    'ZwCreateFile',
-    'ZwOpenFile',
-    'ZwReadFile',
-    'ZwWriteFile',
-    'ZwClose',
-    'RtlCopyMemory',
-    'RtlMoveMemory',
-    'RtlZeroMemory',
-    'RtlFillMemory',
-    'RtlCompareMemory',
-    'RtlAppendUnicodeToString',
-    'RtlCopyUnicodeString',
-    'RtlInitUnicodeString',
-    'RtlFreeUnicodeString',
-    'RtlAnsiStringToUnicodeString',
-    'RtlUnicodeStringToAnsiString',
-    'DbgPrint',
-    'DbgPrintEx',
-    'KdPrint',
-    'KdPrintEx',
-    'KeWaitForSingleObject',
-    'KeWaitForMultipleObjects',
-    'KeSetEvent',
-    'KeResetEvent',
-    'KeInitializeEvent',
-    'KeInitializeMutex',
-    'KeAcquireMutex',
-    'KeReleaseMutex',
-    'KeInitializeSpinLock',
-    'KeAcquireSpinLock',
-    'KeReleaseSpinLock',
-    'ExInitializeResourceLite',
-    'ExAcquireResourceExclusiveLite',
-    'ExAcquireResourceSharedLite',
-    'ExReleaseResourceLite',
-    'PsCreateSystemThread',
-    'PsTerminateSystemThread',
-    'PsGetCurrentProcess',
-    'PsGetCurrentThread',
-    'ObReferenceObjectByHandle',
-    'ObDereferenceObject',
-    'SeAccessCheck',
-    'SePrivilegeCheck',
-    'SeAssignPrimaryToken',
-    'SeImpersonateClientOfPort',
-    'SeQueryInformationToken',
-    'ZwQueryInformationProcess',
-    'ZwSetInformationProcess',
-    'ZwQueryInformationThread',
-    'ZwSetInformationThread',
-    'MmGetPhysicalAddress',
-    'MmGetVirtualForPhysical',
-    'HalTranslateBusAddress',
-    'HalGetBusData',
-    'HalSetBusData',
-    'IoRegisterDeviceInterface',
-    'IoUnregisterDeviceInterface',
-    'IoCreateCompletionPort',
-    'IoSetCompletionRoutine',
-    'IoCancelIo',
-    'IoCompleteRequest',
-    'PoRegisterPowerSettingCallback',
-    'PoUnregisterPowerSettingCallback',
-    'WdfDeviceCreate',
-    'WdfDeviceDelete',
-    'WdfDeviceGetIoTarget',
-    'WdfIoTargetSendIoctlSynchronously',
-    'WdfMemoryCreate',
-    'WdfMemoryDelete',
-    'WdfRequestSend',
-    'WdfRequestComplete',
-    'WdfSpinLockAcquire',
-    'WdfSpinLockRelease',
 ]
 
 
@@ -361,7 +35,7 @@ def validate_binary_path(binary_path: str) -> str:
     
     dangerous_patterns = [
         r'\.\.',
-        r'\$\(')
+        r'\$\(',
         r'`',
         r'\|\|',
         r'&&',
@@ -383,8 +57,7 @@ def validate_binary_path(binary_path: str) -> str:
             raise ValueError(f"路径包含危险字符: {binary_path}")
     
     try:
-        abs_path = os.path.abspath(os.path.expanduser(binary_path
-
+        abs_path = os.path.abspath(os.path.expanduser(binary_path))
     except Exception as e:
         raise ValueError(f"无法解析路径: {e}")
     
@@ -402,16 +75,15 @@ KEY_STRING_PATTERNS = [
 ]
 
 
-def detect_binary_format(binary_path: str, force_kernel: bool = False) -> str:
+def detect_binary_format(binary_path: str) -> str:
     """
-    检测二进制文件格式，支持内核模块识别
+    检测二进制文件格式
     
     Args:
         binary_path: 文件路径
-        force_kernel: 是否强制以内核模式检测
         
     Returns:
-        'ELF', 'PE', 'MACH-O', 'LINUX_KERNEL_MODULE', 'WINDOWS_DRIVER', 或 'UNKNOWN'
+        'ELF', 'PE', 'MACH-O', 或 'UNKNOWN'
     """
     try:
         with open(binary_path, 'rb') as f:
@@ -421,12 +93,8 @@ def detect_binary_format(binary_path: str, force_kernel: bool = False) -> str:
             return 'UNKNOWN'
             
         if header[:4] == b'\x7fELF':
-            if force_kernel or _is_linux_kernel_module(binary_path):
-                return 'LINUX_KERNEL_MODULE'
             return 'ELF'
         elif header[:2] == b'MZ':
-            if force_kernel or _is_windows_driver(binary_path):
-                return 'WINDOWS_DRIVER'
             return 'PE'
         elif header[:4] in [b'\xca\xfe\xba\xbe', b'\xfe\xed\xfa\xce', 
                             b'\xcf\xfa\xed\xfe', b'\xce\xfa\xed\xfe']:
@@ -436,76 +104,6 @@ def detect_binary_format(binary_path: str, force_kernel: bool = False) -> str:
     except Exception as e:
         logger.error(f"检测文件格式失败: {e}")
         return 'UNKNOWN'
-
-
-def _is_linux_kernel_module(binary_path: str) -> bool:
-    """
-    判断文件是否为 Linux 内核模块(.ko)
-    
-    Args:
-        binary_path: 文件路径
-        
-    Returns:
-        True 如果是内核模块，否则 False
-    """
-    try:
-        import os
-        
-        if binary_path.lower().endswith('.ko'):
-            return True
-            
-        with open(binary_path, 'rb') as f:
-            f.seek(0, os.SEEK_END)
-            file_size = f.tell()
-            f.seek(max(0, file_size - 1024
-
-            tail_data = f.read(1024)
-            
-        if b'module_init' in tail_data or b'module_exit' in tail_data:
-            return True
-            
-        if b'.modinfo' in tail_data or b'__this_module' in tail_data:
-            return True
-            
-        return False
-    except Exception as e:
-        logger.debug(f"检测内核模块失败: {e}")
-        return False
-
-
-def _is_windows_driver(binary_path: str) -> bool:
-    """
-    判断文件是否为 Windows 驱动(.sys)
-    
-    Args:
-        binary_path: 文件路径
-        
-    Returns:
-        True 如果是驱动文件，否则 False
-    """
-    try:
-        if binary_path.lower().endswith('.sys'):
-            return True
-            
-        with open(binary_path, 'rb') as f:
-            f.seek(0x3C)
-            pe_offset = int.from_bytes(f.read(4), 'little')
-            f.seek(pe_offset)
-            pe_signature = f.read(4)
-            
-            if pe_signature != b'PE\x00\x00':
-                return False
-            
-            f.seek(pe_offset + 24)
-            subsystem = int.from_bytes(f.read(2), 'little')
-            
-            if subsystem == 0x01:
-                return True
-                
-        return False
-    except Exception as e:
-        logger.debug(f"检测 Windows 驱动失败: {e}")
-        return False
 
 
 def validate_file(binary_path: str) -> Tuple[bool, str]:
@@ -723,8 +321,8 @@ def get_checksec_elf(elf: object) -> Dict[str, Any]:
             'format': 'ELF'
         }
         
-        logger.info(f"ELF 保护机制: NX={checksec['nx']}, PIE={checksec['pie']}, ")
-                   f"RELRO={checksec['relro']}, Canary={checksec['canary']}"
+        logger.info(f"ELF 保护机制: NX={checksec['nx']}, PIE={checksec['pie']}, "
+                   f"RELRO={checksec['relro']}, Canary={checksec['canary']}")
         return checksec
     except AttributeError as e:
         logger.warning(f"获取部分保护机制字段失败: {e}")
@@ -774,7 +372,7 @@ def get_checksec_pe(pe: object, binary_path: str) -> Dict[str, Any]:
                     for entry in pe.DIRECTORY_ENTRY_LOAD_CONFIG:
                         if hasattr(entry, 'SecurityCookie') and entry.SecurityCookie:
                             checksec['gs'] = True
-                            checksec['canary'] = True,
+                            checksec['canary'] = True
                         if hasattr(entry, 'SEHandlerTable'):
                             checksec['safeseh'] = not no_seh
             else:
@@ -785,8 +383,8 @@ def get_checksec_pe(pe: object, binary_path: str) -> Dict[str, Any]:
             checksec['relro'] = getattr(pe, 'relro', None)
             checksec['canary'] = getattr(pe, 'canary', None)
         
-        logger.info(f"PE 保护机制: NX/DEP={checksec['nx']}, ASLR={checksec['aslr']}, ")
-                   f"SafeSEH={checksec['safeseh']}, CFG={checksec['cfg']}, GS={checksec['gs']}"
+        logger.info(f"PE 保护机制: NX/DEP={checksec['nx']}, ASLR={checksec['aslr']}, "
+                   f"SafeSEH={checksec['safeseh']}, CFG={checksec['cfg']}, GS={checksec['gs']}")
         
         return checksec
     except Exception as e:
@@ -823,15 +421,15 @@ def get_checksec_macho(macho: object, binary_path: str) -> Dict[str, Any]:
                     for cmd in header.load_commands:
                         cmd_type = getattr(cmd[0], 'cmd', 0)
                         LC_ENCRYPTION_INFO = 0x21
-                        LC_ENCRYPTION_INFO_64 = 0x2C,
+                        LC_ENCRYPTION_INFO_64 = 0x2C
                         if cmd_type in [LC_ENCRYPTION_INFO, LC_ENCRYPTION_INFO_64]:
                             checksec['encrypted'] = True
         elif 'pwnlib' in module_name:
             checksec['nx'] = getattr(macho, 'nx', True)
             checksec['pie'] = getattr(macho, 'pie', False)
         
-        logger.info(f"Mach-O 保护机制: NX={checksec['nx']}, PIE={checksec['pie']}, ")
-                   f"Canary={checksec['canary']}, ARC={checksec['arc']}"
+        logger.info(f"Mach-O 保护机制: NX={checksec['nx']}, PIE={checksec['pie']}, "
+                   f"Canary={checksec['canary']}, ARC={checksec['arc']}")
         
         return checksec
     except Exception as e:
@@ -904,8 +502,7 @@ def get_imported_functions(elf: object) -> Dict[str, List[str]]:
         logger.info(f"发现危险函数: {dangerous_found}")
         return {
             'all_imports': imports,
-            'dangerous_functions': list(set(dangerous_found
-
+            'dangerous_functions': list(set(dangerous_found))
         }
     except AttributeError as e:
         logger.warning(f"ELF 对象缺少属性: {e}")
@@ -1039,8 +636,7 @@ def get_imported_functions_pe(pe: object) -> Dict[str, Any]:
                     if funcs:
                         result['all_imports'][dll_name] = funcs
         
-        result['dangerous_functions'] = list(set(result['dangerous_functions']
-
+        result['dangerous_functions'] = list(set(result['dangerous_functions']))
         logger.info(f"PE 危险函数: {result['dangerous_functions']}")
         
     except Exception as e:
@@ -1113,14 +709,14 @@ def get_functions_generic(binary_path: str) -> List[Dict[str, Any]]:
             return []
         
         cmd = ['r2', '-q', '-e', 'io.color=false', '-c', 'afl', validated_path]
-        result = subprocess.run()
+        result = subprocess.run(
             cmd,
             capture_output=True,
             text=True,
             encoding='utf-8',
             errors='replace',
             timeout=Config.SUBPROCESS_TIMEOUT
-        
+        )
         
         if result.returncode == 0:
             for line in result.stdout.strip().split('\n'):
@@ -1135,11 +731,11 @@ def get_functions_generic(binary_path: str) -> List[Dict[str, Any]]:
                         if func_name.startswith('sym.'):
                             func_name = func_name[4:]
                         
-                        functions.append({)
+                        functions.append({
                             'name': func_name,
                             'address': addr,
                             'size': size
-                        }
+                        })
                     except (ValueError, IndexError):
                         continue
             
@@ -1151,13 +747,12 @@ def get_functions_generic(binary_path: str) -> List[Dict[str, Any]]:
     return functions
 
 
-def get_binary_info(binary_path: str, force_kernel: bool = False) -> Dict[str, Any]:
+def get_binary_info(binary_path: str) -> Dict[str, Any]:
     """
-    获取完整的二进制文件信息，自动检测格式，支持内核模块
+    获取完整的二进制文件信息，自动检测格式
     
     Args:
         binary_path: 二进制文件路径
-        force_kernel: 是否强制以内核模式检测
         
     Returns:
         包含二进制信息的字典
@@ -1175,7 +770,7 @@ def get_binary_info(binary_path: str, force_kernel: bool = False) -> Dict[str, A
         logger.error(error_msg)
         return {}
     
-    binary_format = detect_binary_format(validated_path, force_kernel)
+    binary_format = detect_binary_format(validated_path)
     logger.info(f"检测到文件格式: {binary_format}")
     
     if binary_format == 'UNKNOWN':
@@ -1190,46 +785,8 @@ def get_binary_info(binary_path: str, force_kernel: bool = False) -> Dict[str, A
                 return {}
         elif binary_format == 'PE':
             binary_obj = load_pe(validated_path)
-        elif binary_format == 'LINUX_KERNEL_MODULE':
-            binary_obj = load_elf(validated_path)
-        elif binary_format == 'WINDOWS_DRIVER':
-            binary_obj = load_pe(validated_path)
         elif binary_format == 'MACH-O':
             binary_obj = load_macho(validated_path)
-        
-        if binary_format in ['LINUX_KERNEL_MODULE', 'WINDOWS_DRIVER']:
-            kernel_info = extract_kernel_module_info(validated_path, binary_format)
-            
-            if binary_obj:
-                info = {
-                    'binary_path': validated_path,
-                    'format': binary_format,
-                    'arch': getattr(binary_obj, 'arch', 'unknown') if binary_format == 'LINUX_KERNEL_MODULE' else _detect_pe_arch(binary_obj),
-                    'bits': getattr(binary_obj, 'bits', 0) if binary_format == 'LINUX_KERNEL_MODULE' else _detect_pe_bits(binary_obj),
-                    'endian': getattr(binary_obj, 'endian', 'little') if binary_format == 'LINUX_KERNEL_MODULE' else 'little',
-                    'checksec': {'format': binary_format, 'is_kernel_module': True},
-                    'imports': {'all_imports': {}, 'dangerous_functions': kernel_info.get('kernel_dangerous_functions', [])},
-                    'key_strings': get_key_strings_generic(validated_path),
-                    'symbols': get_symbols(binary_obj) if binary_format == 'LINUX_KERNEL_MODULE' else get_symbols_pe(binary_obj),
-                    'functions': get_functions(binary_obj) if binary_format == 'LINUX_KERNEL_MODULE' else get_functions_pe(binary_obj, validated_path),
-                    'kernel_info': kernel_info
-                }
-            else:
-                info = {
-                    'binary_path': validated_path,
-                    'format': binary_format,
-                    'arch': 'unknown',
-                    'bits': 0,
-                    'endian': 'little',
-                    'checksec': {'format': binary_format, 'is_kernel_module': True},
-                    'imports': {'all_imports': {}, 'dangerous_functions': kernel_info.get('kernel_dangerous_functions', [])},
-                    'key_strings': get_key_strings_generic(validated_path),
-                    'symbols': {},
-                    'functions': get_functions_generic(validated_path),
-                    'kernel_info': kernel_info
-                }
-            logger.info("内核模块信息收集完成")
-            return info
         
         if binary_obj is None and binary_format != 'ELF':
             logger.warning(f"无法加载 {binary_format} 对象，尝试使用 radare2 收集基本信息")
@@ -1288,27 +845,6 @@ def get_binary_info(binary_path: str, force_kernel: bool = False) -> Dict[str, A
             }
         
         logger.info("二进制信息收集完成")
-        
-        try:
-            mobile_platform = detect_mobile_platform(binary_path)
-            if mobile_platform in ['android', 'ios']:
-                from .mobile_analysis import MobileBinaryAnalyzer
-                mobile_analyzer = MobileBinaryAnalyzer(binary_path, platform=mobile_platform)
-                mobile_result = mobile_analyzer.analyze()
-                info['mobile_analysis'] = {
-                    'platform': mobile_platform,
-                    'jni_functions': mobile_result.jni_functions,
-                    'objective_c_classes': mobile_result.objective_c_classes,
-                    'sensitive_strings': mobile_result.sensitive_strings,
-                    'vulnerabilities': mobile_result.vulnerabilities,
-                    'android_specific': mobile_result.android_specific,
-                    'ios_specific': mobile_result.ios_specific
-                }
-        except ImportError:
-            logger.warning("MobileBinaryAnalyzer 模块未找到，跳过移动平台分析")
-        except Exception as e:
-            logger.error(f"移动平台分析失败: {e}")
-        
         return info
         
     except Exception as e:
@@ -1373,14 +909,14 @@ def get_key_strings_generic(binary_path: str) -> List[str]:
             return []
         
         cmd = ['r2', '-q', '-e', 'io.color=false', '-c', 'iz', validated_path]
-        result = subprocess.run()
+        result = subprocess.run(
             cmd,
             capture_output=True,
             text=True,
             encoding='utf-8',
             errors='replace',
             timeout=Config.SUBPROCESS_TIMEOUT
-        
+        )
         
         if result.returncode == 0:
             for line in result.stdout.strip().split('\n'):
@@ -1489,670 +1025,3 @@ def format_info_for_report(info: Dict[str, Any]) -> str:
         output.append("")
     
     return '\n'.join(output)
-
-
-def extract_kernel_module_info(binary_path: str, binary_format: str) -> Dict[str, Any]:
-    """
-    提取内核模块专用信息
-    
-    Args:
-        binary_path: 内核模块文件路径
-        binary_format: 文件格式 ('LINUX_KERNEL_MODULE' 或 'WINDOWS_DRIVER')
-        
-    Returns:
-        包含内核模块信息的字典
-    """
-    info = {
-        'module_parameters': [],
-        'entry_points': {},
-        'exported_symbols': [],
-        'ioctl_handlers': [],
-        'kernel_dangerous_functions': [],
-        'module_type': binary_format
-    }
-    
-    try:
-        if binary_format == 'LINUX_KERNEL_MODULE':
-            info.update(_extract_linux_kernel_module_info(binary_path
-
-        elif binary_format == 'WINDOWS_DRIVER':
-            info.update(_extract_windows_driver_info(binary_path
-
-            
-    except Exception as e:
-        logger.error(f"提取内核模块信息失败: {e}")
-    
-    return info
-
-
-def _extract_linux_kernel_module_info(binary_path: str) -> Dict[str, Any]:
-    """
-    提取 Linux 内核模块信息
-    
-    Args:
-        binary_path: 内核模块文件路径
-        
-    Returns:
-        包含 Linux 内核模块信息的字典
-    """
-    info = {
-        'module_parameters': [],
-        'entry_points': {},
-        'exported_symbols': [],
-        'ioctl_handlers': [],
-        'kernel_dangerous_functions': []
-    }
-    
-    try:
-        functions = get_functions_generic(binary_path)
-        
-        for func in functions:
-            func_name = func['name']
-            
-            if func_name == 'module_init' or func_name.endswith('_init'):
-                info['entry_points']['init'] = {
-                    'name': func_name,
-                    'address': func['address'],
-                    'size': func['size']
-                }
-            elif func_name == 'module_exit' or func_name.endswith('_exit'):
-                info['entry_points']['exit'] = {
-                    'name': func_name,
-                    'address': func['address'],
-                    'size': func['size']
-                }
-            elif 'ioctl' in func_name.lower():
-                info['ioctl_handlers'].append({)
-                    'name': func_name,
-                    'address': func['address'],
-                    'size': func['size']
-                }
-            elif func_name in KERNEL_DANGEROUS_FUNCTIONS:
-                info['kernel_dangerous_functions'].append(func_name)
-                
-        strings = get_key_strings_generic(binary_path)
-        for s in strings:
-            if 'param_' in s.lower() or 'module_param' in s.lower():
-                info['module_parameters'].append(s)
-                
-        symbols = get_symbols(load_elf(binary_path
-
-        for name, addr in symbols.items():
-            if not name.startswith('_'):
-                info['exported_symbols'].append({)
-                    'name': name,
-                    'address': addr
-                }
-                
-        logger.info(f"提取到 Linux 内核模块信息: {len(info['module_parameters'])} 个参数, ")
-                   f"{len(info['entry_points'])} 个入口点, {len(info['ioctl_handlers'])} 个 ioctl 处理函数"
-                   
-    except Exception as e:
-        logger.error(f"提取 Linux 内核模块信息失败: {e}")
-    
-    return info
-
-
-def _extract_windows_driver_info(binary_path: str) -> Dict[str, Any]:
-    """
-    提取 Windows 驱动信息
-    
-    Args:
-        binary_path: 驱动文件路径
-        
-    Returns:
-        包含 Windows 驱动信息的字典
-    """
-    info = {
-        'module_parameters': [],
-        'entry_points': {},
-        'exported_symbols': [],
-        'ioctl_handlers': [],
-        'kernel_dangerous_functions': []
-    }
-    
-    try:
-        functions = get_functions_generic(binary_path)
-        
-        for func in functions:
-            func_name = func['name']
-            
-            if func_name == 'DriverEntry' or 'DriverInit' in func_name:
-                info['entry_points']['DriverEntry'] = {
-                    'name': func_name,
-                    'address': func['address'],
-                    'size': func['size']
-                }
-            elif 'Unload' in func_name:
-                info['entry_points']['Unload'] = {
-                    'name': func_name,
-                    'address': func['address'],
-                    'size': func['size']
-                }
-            elif 'Dispatch' in func_name or 'Ioctl' in func_name:
-                info['ioctl_handlers'].append({)
-                    'name': func_name,
-                    'address': func['address'],
-                    'size': func['size']
-                }
-            elif any(kernel_func.lower() in func_name.lower() for kernel_func in KERNEL_DRIVER_DANGEROUS_FUNCTIONS):
-                info['kernel_dangerous_functions'].append(func_name)
-                
-        strings = get_key_strings_generic(binary_path)
-        for s in strings:
-            if 'RegistryPath' in s or 'DriverName' in s:
-                info['module_parameters'].append(s)
-                
-        pe_obj = load_pe(binary_path)
-        if pe_obj:
-            symbols = get_symbols_pe(pe_obj)
-            for name, addr in symbols.items():
-                info['exported_symbols'].append({)
-                    'name': name,
-                    'address': addr
-                }
-                
-        logger.info(f"提取到 Windows 驱动信息: {len(info['module_parameters'])} 个参数, ")
-                   f"{len(info['entry_points'])} 个入口点, {len(info['ioctl_handlers'])} 个 ioctl 处理函数"
-                   
-    except Exception as e:
-        logger.error(f"提取 Windows 驱动信息失败: {e}")
-    
-    return info
-
-
-GO_DANGEROUS_FUNCTIONS = [
-    'syscall.RawSyscall',
-    'syscall.Syscall',
-    'syscall.Syscall6',
-    'syscall.Write',
-    'syscall.Read',
-    'syscall.Close',
-    'os.StartProcess',
-    'os.Exec',
-    'os.ForkExec',
-    'crypto/tls.NewListener',
-    'crypto/tls.Server',
-    'net/http.ListenAndServe',
-    'net/http.Serve',
-    'reflect.Value.Set',
-    'reflect.Value.Elem',
-    'unsafe.Pointer',
-    'unsafe.Sizeof',
-    'unsafe.Offsetof',
-    'unsafe.Alignof',
-    'runtime.Stack',
-    'runtime.Goexit',
-    'runtime.Panic',
-    'runtime.Throw',
-    'sync.Mutex.Unlock',
-    'sync.RWMutex.Unlock',
-]
-
-
-RUST_DANGEROUS_FUNCTIONS = [
-    'std::ptr::read',
-    'std::ptr::write',
-    'std::ptr::copy',
-    'std::ptr::copy_nonoverlapping',
-    'std::ptr::drop_in_place',
-    'std::mem::transmute',
-    'std::mem::forget',
-    'std::mem::uninitialized',
-    'std::mem::zeroed',
-    'std::slice::from_raw_parts',
-    'std::slice::from_raw_parts_mut',
-    'std::str::from_utf8_unchecked',
-    'std::str::from_utf8_unchecked_mut',
-    'std::ffi::CString::new',
-    'std::ffi::CStr::from_ptr',
-    'std::os::raw::c_char',
-    'core::ptr::read',
-    'core::ptr::write',
-    'core::mem::transmute',
-    'alloc::alloc::alloc',
-    'alloc::alloc::dealloc',
-    'alloc::alloc::realloc',
-]
-
-
-GO_SYMBOLS = [
-    'runtime.main',
-    'runtime.init',
-    'go.buildid',
-    'runtime.gc',
-    'runtime.mallocgc',
-    'runtime.free',
-    'runtime.stack',
-    'runtime.schedule',
-    'runtime.panic',
-    'runtime.recover',
-    'runtime.deferproc',
-    'runtime.deferreturn',
-    'sync.(*Mutex).Lock',
-    'sync.(*RWMutex).Lock',
-    'net/http.(*Server).Serve',
-    'encoding/json.Marshal',
-    'encoding/json.Unmarshal',
-]
-
-
-RUST_SYMBOLS = [
-    'rust_eh_personality',
-    '_Unwind_Resume',
-    'panic',
-    'panic_bounds_check',
-    'std::rt::lang_start',
-    'std::panicking::panic',
-    'std::panicking::try',
-    'std::process::exit',
-    'core::ptr::drop_in_place',
-    'core::fmt::write',
-    'alloc::alloc::handle_alloc_error',
-    '__rust_start_panic',
-    '__rust_foreign_exception',
-    '_ZN4core3ptr4read17h',
-    '_ZN4core3ptr5write17h',
-]
-
-
-GO_SECTIONS = [
-    '.gopclntab',
-    '.go.buildinfo',
-    '.gosymtab',
-    '_rt0_amd64_linux',
-    '_rt0_amd64_darwin',
-    '_rt0_amd64_windows',
-]
-
-
-RUST_SECTIONS = [
-    '.rustc_demangle',
-    '.rustc_std_workspace',
-    '.rustc_debug_gdb_scripts_section',
-    '.eh_frame',
-    '.gcc_except_table',
-]
-
-
-def detect_language(binary_path: str, binary_format: str = 'ELF') -> str:
-    """
-    检测二进制文件的编程语言
-    
-    Args:
-        binary_path: 二进制文件路径
-        binary_format: 二进制格式 (ELF/PE/MACH-O)
-    
-    Returns:
-        检测到的语言: 'go', 'rust', 'c/c++', 或 'unknown'
-    """
-    try:
-        go_score = 0
-        rust_score = 0
-        
-        with open(binary_path, 'rb') as f:
-            header = f.read(4096)
-            
-            if b'go.buildid' in header:
-                go_score += 3,
-            if b'.gopclntab' in header:
-                go_score += 2,
-            if b'__go_eh_frame' in header:
-                go_score += 2
-            
-            if b'rust_eh_personality' in header:
-                rust_score += 3,
-            if b'__rustc_demangle' in header:
-                rust_score += 2,
-            if b'.rustc_' in header:
-                rust_score += 2
-        
-        strings = get_key_strings_generic(binary_path)
-        symbols = _get_binary_symbols(binary_path)
-        
-        for sym in GO_SYMBOLS:
-            if any(sym.lower() in s.lower() for s in strings + symbols):
-                go_score += 1
-        
-        for sym in RUST_SYMBOLS:
-            if any(sym.lower() in s.lower() for s in strings + symbols):
-                rust_score += 1
-        
-        if binary_format == 'ELF':
-            try:
-                import subprocess
-                cmd = ['r2', '-q', '-e', 'io.color=false', '-c', 'iS', binary_path]
-                result = subprocess.run()
-                    cmd,
-                    capture_output=True,
-                    text=True,
-                    encoding='utf-8',
-                    errors='replace',
-                    timeout=30
-                
-                if result.returncode == 0:
-                    for line in result.stdout.split('\n'):
-                        for sec in GO_SECTIONS:
-                            if sec in line:
-                                go_score += 1,
-                        for sec in RUST_SECTIONS:
-                            if sec in line:
-                                rust_score += 1
-            except Exception:
-                pass
-        
-        logger.debug(f"语言检测分数 - Go: {go_score}, Rust: {rust_score}")
-        
-        if go_score >= 5:
-            logger.info(f"检测到 Go 二进制文件")
-            return 'go'
-        elif rust_score >= 5:
-            logger.info(f"检测到 Rust 二进制文件")
-            return 'rust'
-        else:
-            logger.info(f"检测到 C/C++ 二进制文件 (或其他语言)")
-            return 'c/c++'
-    
-    except Exception as e:
-        logger.error(f"检测语言失败: {e}")
-        return 'unknown'
-
-
-def _get_binary_symbols(binary_path: str) -> List[str]:
-    """
-    获取二进制文件的符号列表（简化版）
-    
-    Args:
-        binary_path: 二进制文件路径
-    
-    Returns:
-        符号名称列表
-    """
-    symbols = []
-    
-    try:
-        import subprocess
-        cmd = ['r2', '-q', '-e', 'io.color=false', '-c', 'is', binary_path]
-        result = subprocess.run()
-            cmd,
-            capture_output=True,
-            text=True,
-            encoding='utf-8',
-            errors='replace',
-            timeout=30
-        
-        
-        if result.returncode == 0:
-            for line in result.stdout.split('\n'):
-                parts = line.split()
-                if len(parts) >= 7:
-                    name = ' '.join(parts[6:])
-                    symbols.append(name)
-    
-    except Exception:
-        pass
-    
-    return symbols
-
-
-def get_language_specific_dangerous_functions(language: str) -> List[str]:
-    """
-    获取特定语言的危险函数列表
-    
-    Args:
-        language: 编程语言 ('go', 'rust', 'c/c++')
-    
-    Returns:
-        危险函数列表
-    """
-    if language == 'go':
-        return GO_DANGEROUS_FUNCTIONS
-    elif language == 'rust':
-        return RUST_DANGEROUS_FUNCTIONS
-    elif language == 'c/c++':
-        return DANGEROUS_FUNCTIONS
-    else:
-        return DANGEROUS_FUNCTIONS
-
-
-def get_language_analysis_hints(language: str) -> Dict[str, Any]:
-    """
-    获取特定语言的分析提示信息
-    
-    Args:
-        language: 编程语言
-    
-    Returns:
-        包含分析提示的字典
-    """
-    hints = {
-        'go': {
-            'calling_convention': 'Go uses register-based calling convention (DI, SI, DX, CX, R8, R9 for args)',
-            'stack_management': 'Go uses segmented stacks that grow automatically',
-            'error_handling': 'Go uses explicit error returns, check for nil errors',
-            'concurrency': 'Look for goroutine-related issues, race conditions',
-            'memory_safety': 'Go has garbage collection but can still have memory leaks',
-            'key_areas': ['defer/panic/recover misuse', 'unsafe package usage', 'channel mismanagement']
-        },
-        'rust': {
-            'calling_convention': 'Rust uses standard System V AMD64 calling convention',
-            'stack_management': 'Rust uses RAII and borrow checker',
-            'error_handling': 'Rust uses Result<T, E> and panic! macro',
-            'concurrency': 'Rust has excellent concurrency safety with Send/Sync traits',
-            'memory_safety': 'Memory safety guaranteed by compiler (except unsafe blocks)',
-            'key_areas': ['unsafe blocks', 'FFI boundaries', 'unwrap() misuse', 'concurrency bugs']
-        },
-        'c/c++': {
-            'calling_convention': 'Depends on platform (stdcall, cdecl, fastcall)',
-            'stack_management': 'Manual memory management',
-            'error_handling': 'Return codes and exceptions (C++)',
-            'concurrency': 'Manual thread management',
-            'memory_safety': 'No built-in memory safety',
-            'key_areas': ['buffer overflows', 'use-after-free', 'format strings', 'race conditions']
-        },
-        'unknown': {
-            'note': 'Language detection failed, using default analysis'
-        }
-    }
-    
-    return hints.get(language, hints['unknown'])
-
-
-def detect_mobile_platform(binary_path: str) -> str:
-    """
-    检测二进制文件是否为移动平台二进制
-    
-    Args:
-        binary_path: 二进制文件路径
-        
-    Returns:
-        'android', 'ios', 或 'unknown'
-    """
-    try:
-        with open(binary_path, 'rb') as f:
-            header = f.read(4096)
-        
-        binary_format = detect_binary_format(binary_path)
-        
-        if binary_format == 'ELF':
-            if b'Android' in header or b'__android_log' in header:
-                return 'android'
-            if binary_path.lower().endswith('.so'):
-                return 'android'
-        
-        elif binary_format == 'MACH-O':
-            if b'iOS' in header or b'iPhone' in header or b'Apple' in header:
-                return 'ios'
-            if binary_path.lower().endswith('.mach-o') or binary_path.lower().endswith('.ipa'):
-                return 'ios'
-        
-        return 'unknown'
-    except Exception as e:
-        logger.error(f"检测移动平台失败: {e}")
-        return 'unknown'
-
-
-def extract_jni_functions(elf_obj: object) -> List[Dict[str, Any]]:
-    """
-    从 ELF 文件中提取 JNI 函数信息
-    
-    Args:
-        elf_obj: ELF 对象
-        
-    Returns:
-        JNI 函数列表
-    """
-    jni_funcs = []
-    
-    try:
-        symbols = getattr(elf_obj, 'symbols', {})
-        
-        for name, addr in symbols.items():
-            if name.startswith('Java_'):
-                parts = name.split('_')
-                if len(parts) >= 3:
-                    java_class = '/'.join(parts[1:-1])
-                    java_method = parts[-1]
-                    
-                    jni_funcs.append({)
-                        'name': name,
-                        'java_class': java_class,
-                        'java_method': java_method,
-                        'address': addr
-                    }
-        
-        logger.info(f"提取到 {len(jni_funcs)} 个 JNI 函数")
-    except Exception as e:
-        logger.error(f"提取 JNI 函数失败: {e}")
-    
-    return jni_funcs
-
-
-def extract_android_specific_info(binary_path: str, elf_obj: object = None) -> Dict[str, Any]:
-    """
-    提取 Android 特定信息
-    
-    Args:
-        binary_path: 二进制文件路径
-        elf_obj: ELF 对象（可选）
-        
-    Returns:
-        Android 特定信息字典
-    """
-    info = {
-        'is_android': True,
-        'jni_functions': [],
-        'framework_calls': [],
-        'sensitive_strings': []
-    }
-    
-    try:
-        if elf_obj:
-            info['jni_functions'] = extract_jni_functions(elf_obj)
-        
-        strings = get_key_strings_generic(binary_path)
-        for s in strings:
-            if any(pattern.lower() in s.lower() for pattern in ['secret', 'key', 'password', 'token']):
-                info['sensitive_strings'].append(s)
-        
-        imports = {}
-        if elf_obj:
-            imports = get_imported_functions(elf_obj)
-        
-        for func in MOBILE_DANGEROUS_FUNCTIONS:
-            if func in imports.get('all_imports', {}).values() or func in imports.get('dangerous_functions', []):
-                info['framework_calls'].append(func)
-        
-        logger.info(f"提取 Android 信息完成")
-    except Exception as e:
-        logger.error(f"提取 Android 信息失败: {e}")
-    
-    return info
-
-
-def extract_ios_specific_info(binary_path: str, macho_obj: object = None) -> Dict[str, Any]:
-    """
-    提取 iOS 特定信息
-    
-    Args:
-        binary_path: 二进制文件路径
-        macho_obj: Mach-O 对象（可选）
-        
-    Returns:
-        iOS 特定信息字典
-    """
-    info = {
-        'is_ios': True,
-        'objc_classes': [],
-        'swift_features': [],
-        'sensitive_strings': [],
-        'jailbreak_detection': []
-    }
-    
-    try:
-        strings = get_key_strings_generic(binary_path)
-        
-        jailbreak_patterns = ['Cydia', 'Sileo', 'MobileSubstrate', '/Applications/Cydia.app']
-        for pattern in jailbreak_patterns:
-            if any(pattern.lower() in s.lower() for s in strings):
-                info['jailbreak_detection'].append(pattern)
-        
-        for s in strings:
-            if 'NSUserDefaults' in s:
-                info['sensitive_strings'].append({'content': s, 'type': 'insecure_storage'})
-            if 'sqlite' in s.lower() and ('password' in s.lower() or 'secret' in s.lower()):
-                info['sensitive_strings'].append({'content': s, 'type': 'insecure_database'})
-        
-        swift_patterns = ['type metadata', 'protocol witness table', '$s', 'Swift.']
-        for pattern in swift_patterns:
-            if any(pattern in s for s in strings):
-                info['swift_features'].append(pattern)
-        
-        logger.info(f"提取 iOS 信息完成")
-    except Exception as e:
-        logger.error(f"提取 iOS 信息失败: {e}")
-    
-    return info
-
-
-def collect_mobile_info(binary_path: str, platform: str = 'auto') -> Dict[str, Any]:
-    """
-    收集移动平台二进制文件信息
-    
-    Args:
-        binary_path: 二进制文件路径
-        platform: 平台类型 ('auto', 'android', 'ios')
-        
-    Returns:
-        移动平台信息字典
-    """
-    info = {
-        'mobile_platform': 'unknown',
-        'mobile_specific': {}
-    }
-    
-    try:
-        if platform == 'auto':
-            detected_platform = detect_mobile_platform(binary_path)
-        else:
-            detected_platform = platform
-        
-        info['mobile_platform'] = detected_platform
-        
-        if detected_platform == 'android':
-            binary_obj = load_elf(binary_path)
-            info['mobile_specific'] = extract_android_specific_info(binary_path, binary_obj)
-            if binary_obj and hasattr(binary_obj, 'close'):
-                binary_obj.close()
-        
-        elif detected_platform == 'ios':
-            binary_obj = load_macho(binary_path)
-            info['mobile_specific'] = extract_ios_specific_info(binary_path, binary_obj)
-            if binary_obj and hasattr(binary_obj, 'close'):
-                binary_obj.close()
-        
-        logger.info(f"移动平台信息收集完成: {detected_platform}")
-    except Exception as e:
-        logger.error(f"收集移动平台信息失败: {e}")
-    
-    return info))))))))))))))

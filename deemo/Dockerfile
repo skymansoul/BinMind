@@ -1,3 +1,6 @@
+# Deemo - LLM 辅助二进制漏洞分析工具 Docker 环境
+# 用于安全执行漏洞利用和二进制分析
+
 FROM ubuntu:22.04
 
 LABEL maintainer="Deemo Binary Analysis Tool"
@@ -42,8 +45,6 @@ RUN apt-get update && apt-get install -y \
     libffi-dev \
     qemu-user-static \
     binfmt-support \
-    libcapstone-dev \
-    libz3-dev \
     && rm -rf /var/lib/apt/lists/*
 
 RUN dpkg --add-architecture i386 && \
@@ -55,16 +56,34 @@ RUN dpkg --add-architecture i386 && \
     lib32z1 \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip3 install --upgrade pip setuptools wheel poetry
+RUN pip3 install --upgrade pip setuptools wheel && \
+    pip3 install \
+    pwntools \
+    ropper \
+    ROPgadget \
+    angr \
+    cle \
+    r2pipe \
+    capstone \
+    unicorn \
+    keystone-engine \
+    pefile \
+    lief \
+    pyelftools \
+    macholib \
+    requests \
+    python-dotenv \
+    prompt-toolkit \
+    pygments \
+    rich \
+    click \
+    colorama
 
-COPY pyproject.toml poetry.lock /app/
+RUN pip3 install --no-cache-dir \
+    "git+https://github.com/Gallopsled/pwntools.git@dev#egg=pwntools" \
+    2>/dev/null || true
 
-RUN poetry config virtualenvs.create false && \
-    poetry install --no-interaction --no-ansi --without dev
-
-COPY . /app
-
-RUN mkdir -p /tmp/deemo_exploits /tmp/deemo_binaries /tmp/deemo_reports /workspace
+RUN mkdir -p /tmp/deemo_exploits /tmp/deemo_binaries /tmp/deemo_reports
 
 ENV DEEMO_WORKSPACE=/workspace
 ENV DEEMO_SANDBOX=true
@@ -76,7 +95,7 @@ VOLUME ["/tmp/deemo_exploits"]
 EXPOSE 4444 9999
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python3 -c "from modules.cli import app; print('Deemo CLI available')" || exit 1
+    CMD python3 -c "import pwn; print('pwnlib available')" || exit 1
 
 CMD ["/bin/bash", "-c", "tail -f /dev/null"]
 

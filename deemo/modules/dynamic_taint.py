@@ -172,8 +172,7 @@ class DynamicTaintTracker(ABC):
                 address=0,
                 type=source_type,
                 description=desc
-            
-
+            ))
         
         for name, sink_type, args, desc in self.DEFAULT_TAINT_SINKS:
             self.taint_sinks.append(DynamicTaintSink(
@@ -182,8 +181,7 @@ class DynamicTaintTracker(ABC):
                 type=sink_type,
                 argument_positions=args,
                 description=desc
-            
-
+            ))
     
     @abstractmethod
     def is_available(self) -> bool:
@@ -196,7 +194,12 @@ class DynamicTaintTracker(ABC):
         pass
     
     @abstractmethod
-    def run_taint_analysis(, self, args: List[str] = None, timeout: int = 60, input_data: bytes = None) -> Dict[str, Any]:
+    def run_taint_analysis(
+        self,
+        args: List[str] = None,
+        timeout: int = 60,
+        input_data: bytes = None
+    ) -> Dict[str, Any]:
         """
         运行动态污点分析
         
@@ -264,7 +267,7 @@ class DynamicTaintTracker(ABC):
         }
         
         for flow in self.taint_flows:
-            result['taint_flows'].append({)
+            result['taint_flows'].append({
                 'source': {
                     'name': flow.source.name,
                     'type': flow.source.type,
@@ -280,10 +283,10 @@ class DynamicTaintTracker(ABC):
                 'path': [hex(addr) for addr in flow.path],
                 'tainted_variables': flow.tainted_variables,
                 'confidence': flow.confidence
-            }
+            })
         
         for vuln in self.vulnerabilities:
-            result['vulnerabilities'].append({)
+            result['vulnerabilities'].append({
                 'type': vuln.type,
                 'function_name': vuln.function_name,
                 'address': hex(vuln.address),
@@ -291,7 +294,7 @@ class DynamicTaintTracker(ABC):
                 'severity': vuln.severity,
                 'evidence': vuln.evidence,
                 'tainted_variables': vuln.tainted_variables
-            }
+            })
         
         return result
     
@@ -335,7 +338,7 @@ class FridaTaintTracker(DynamicTaintTracker):
  * 目标: {binary_path}
  */
 
-(function() {{)
+(function() {{
     const taintSources = new Map();
     const taintSinks = new Map();
     const taintedRegions = new Map();
@@ -348,27 +351,27 @@ class FridaTaintTracker(DynamicTaintTracker):
     const sinks = {sinks_json};
     
     // 初始化污点源
-    sources.forEach(source => {{)
-        const module = Process.findModuleByName(null);,
+    sources.forEach(source => {{
+        const module = Process.findModuleByName(null);
         if (module) {{
-            const address = Module.findExportByName(null, source.name);,
+            const address = Module.findExportByName(null, source.name);
             if (address) {{
-                taintSources.set(source.name, {{)
+                taintSources.set(source.name, {{
                     address: address,
                     type: source.type,
                     description: source.description
                 }});
                 
                 // Hook 输入函数
-                Interceptor.attach(address, {{)
+                Interceptor.attach(address, {{
                     onEnter: function(args) {{
                         this.sourceName = source.name;
                         this.args = args;
                     }},
-                    onLeave: function(retval) {{,
+                    onLeave: function(retval) {{
                         if (source.name === 'read' || source.name === 'recv') {{
                             const buf = this.args[1];
-                            const size = this.args[2].toInt32();,
+                            const size = this.args[2].toInt32();
                             if (size > 0 && !buf.isNull()) {{
                                 const region = {{
                                     start: buf.toInt32(),
@@ -377,7 +380,7 @@ class FridaTaintTracker(DynamicTaintTracker):
                                     tainted: true
                                 }};
                                 taintedRegions.set(buf.toInt32(), region);
-                                send({{)
+                                send({{
                                     type: 'taint_mark',
                                     source: source.name,
                                     address: '0x' + buf.toString(16),
@@ -392,10 +395,10 @@ class FridaTaintTracker(DynamicTaintTracker):
     }});
     
     // 初始化污点汇点
-    sinks.forEach(sink => {{)
-        const address = Module.findExportByName(null, sink.name);,
+    sinks.forEach(sink => {{
+        const address = Module.findExportByName(null, sink.name);
         if (address) {{
-            taintSinks.set(sink.name, {{)
+            taintSinks.set(sink.name, {{
                 address: address,
                 type: sink.type,
                 argument_positions: sink.argument_positions,
@@ -403,21 +406,21 @@ class FridaTaintTracker(DynamicTaintTracker):
             }});
             
             // Hook 危险函数
-            Interceptor.attach(address, {{)
+            Interceptor.attach(address, {{
                 onEnter: function(args) {{
                     this.sinkName = sink.name;
                     this.args = args;
                     
                     // 检查参数是否被污染
                     const taintedArgs = [];
-                    sink.argument_positions.forEach(pos => {{)
+                    sink.argument_positions.forEach(pos => {{
                         const arg = args[pos];
                         const argInt = arg.toInt32();
                         
                         // 检查是否在已标记的污染区域内
                         for (const [key, region] of taintedRegions) {{
                             if (argInt >= region.start && argInt < region.end) {{
-                                taintedArgs.push({{)
+                                taintedArgs.push({{
                                     position: pos,
                                     value: '0x' + arg.toString(16),
                                     source: region.source
@@ -428,7 +431,7 @@ class FridaTaintTracker(DynamicTaintTracker):
                     }});
                     
                     if (taintedArgs.length > 0) {{
-                        send({{)
+                        send({{
                             type: 'taint_flow',
                             sink: sink.name,
                             sink_type: sink.type,
@@ -487,12 +490,12 @@ class FridaTaintTracker(DynamicTaintTracker):
         """
         from datetime import datetime
         
-        sources_json = json.dumps([)
+        sources_json = json.dumps([
             {'name': s.name, 'type': s.type, 'description': s.description}
             for s in self.taint_sources
-        ]
+        ])
         
-        sinks_json = json.dumps([)
+        sinks_json = json.dumps([
             {
                 'name': s.name, 
                 'type': s.type, 
@@ -500,14 +503,14 @@ class FridaTaintTracker(DynamicTaintTracker):
                 'description': s.description
             }
             for s in self.taint_sinks
-        ]
+        ])
         
-        script = self.FRIDA_TAINT_SCRIPT_TEMPLATE.format()
+        script = self.FRIDA_TAINT_SCRIPT_TEMPLATE.format(
             timestamp=datetime.now().isoformat(),
             binary_path=self.binary_path,
             sources_json=sources_json,
             sinks_json=sinks_json
-        
+        )
         
         return script
     
@@ -553,7 +556,12 @@ class FridaTaintTracker(DynamicTaintTracker):
                 self._collected_data['taint_flows'].append(payload)
                 logger.warning(f"[Frida] 发现污点传播: {payload.get('sink')}")
     
-    def run_taint_analysis(, self, args: List[str] = None, timeout: int = 60, input_data: bytes = None) -> Dict[str, Any]:
+    def run_taint_analysis(
+        self,
+        args: List[str] = None,
+        timeout: int = 60,
+        input_data: bytes = None
+    ) -> Dict[str, Any]:
         """
         使用 Frida 运行动态污点分析
         
@@ -577,7 +585,7 @@ class FridaTaintTracker(DynamicTaintTracker):
         }
         
         if not self.is_available():
-            result['error'] = 'Frida 不可用',
+            result['error'] = 'Frida 不可用'
             return result
         
         try:
@@ -592,8 +600,7 @@ class FridaTaintTracker(DynamicTaintTracker):
             logger.info(f"[Frida] 启动进程: PID={self.process}")
             
             self.session = self.device.attach(self.process)
-            self.script = self.session.create_script(self.generate_frida_script(
-
+            self.script = self.session.create_script(self.generate_frida_script())
             self.script.on('message', self._on_message)
             self.script.load()
             
@@ -672,22 +679,22 @@ class FridaTaintTracker(DynamicTaintTracker):
                     break
             
             if not source:
-                source = DynamicTaintSource()
+                source = DynamicTaintSource(
                     name='unknown',
                     address=0,
                     type='unknown',
                     description='未知污点源'
-                
+                )
             
             if not sink:
-                sink = DynamicTaintSink()
+                sink = DynamicTaintSink(
                     name=sink_name,
                     address=int(flow_data.get('address', '0x0'), 16),
                     type=sink_type,
                     description='未知汇点'
-                
+                )
             
-            taint_flow = DynamicTaintFlow()
+            taint_flow = DynamicTaintFlow(
                 source=source,
                 sink=sink,
                 path=[],
@@ -695,11 +702,11 @@ class FridaTaintTracker(DynamicTaintTracker):
                 confidence=0.9,
                 execution_count=1,
                 runtime_trace=[json.dumps(flow_data)]
-            
+            )
             self.taint_flows.append(taint_flow)
             
             vuln_severity = self._determine_severity(sink_type)
-            vuln = DynamicVulnerability()
+            vuln = DynamicVulnerability(
                 type=self._map_sink_to_vuln_type(sink_type),
                 function_name=sink_name,
                 address=int(flow_data.get('address', '0x0'), 16),
@@ -709,7 +716,7 @@ class FridaTaintTracker(DynamicTaintTracker):
                 tainted_variables=taint_flow.tainted_variables,
                 taint_flow=taint_flow,
                 execution_trace=self._collected_data['exec_trace']
-            
+            )
             self.vulnerabilities.append(vuln)
     
     def _determine_severity(self, sink_type: str) -> str:
@@ -811,7 +818,12 @@ class QBDITaintTracker(DynamicTaintTracker):
         
         return True
     
-    def run_taint_analysis(, self, args: List[str] = None, timeout: int = 60, input_data: bytes = None) -> Dict[str, Any]:
+    def run_taint_analysis(
+        self,
+        args: List[str] = None,
+        timeout: int = 60,
+        input_data: bytes = None
+    ) -> Dict[str, Any]:
         """
         使用 QBDI 运行动态污点分析
         
@@ -838,7 +850,7 @@ class QBDITaintTracker(DynamicTaintTracker):
         }
         
         if not self.is_available():
-            result['error'] = 'QBDI 不可用',
+            result['error'] = 'QBDI 不可用'
             return result
         
         try:
@@ -851,13 +863,13 @@ class QBDITaintTracker(DynamicTaintTracker):
             
             logger.info(f"[QBDI] 执行: {' '.join(binary_args)}")
             
-            proc = subprocess.Popen()
+            proc = subprocess.Popen(
                 binary_args,
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 timeout=timeout
-            
+            )
             
             try:
                 stdout, stderr = proc.communicate(input=input_data, timeout=timeout)
@@ -898,12 +910,12 @@ class QBDITaintTracker(DynamicTaintTracker):
             r'heap corruption|double free|use-after-free': ('heap_vulnerability', 'Critical'),
             r'format string|%[xpsd]': ('format_string', 'High'),
             r'stack.*overflow|stack smashing detected': ('stack_overflow', 'Critical'),
-            r'system\(|exec|popen': ('command_execution', 'Critical'))
+            r'system\(|exec|popen': ('command_execution', 'Critical'),
         }
         
         for pattern, (vuln_type, severity) in dangerous_patterns.items():
             if re.search(pattern, output, re.IGNORECASE):
-                vuln = DynamicVulnerability()
+                vuln = DynamicVulnerability(
                     type=vuln_type,
                     function_name='detected_in_output',
                     address=0,
@@ -911,7 +923,7 @@ class QBDITaintTracker(DynamicTaintTracker):
                     severity=severity,
                     evidence=[output[:500]],
                     tainted_variables=[]
-                
+                )
                 self.vulnerabilities.append(vuln)
                 logger.warning(f"[QBDI] 检测到潜在漏洞: {vuln_type}")
     
@@ -928,7 +940,10 @@ class QBDITaintTracker(DynamicTaintTracker):
         return self.vulnerabilities
 
 
-def create_dynamic_taint_tracker(, binary_path: str, engine: str = 'frida') -> Optional[DynamicTaintTracker]:
+def create_dynamic_taint_tracker(
+    binary_path: str,
+    engine: str = 'frida'
+) -> Optional[DynamicTaintTracker]:
     """
     创建动态污点追踪器实例
     
@@ -963,7 +978,13 @@ def create_dynamic_taint_tracker(, binary_path: str, engine: str = 'frida') -> O
     return None
 
 
-def run_dynamic_taint_analysis(, binary_path: str, engine: str = 'frida', args: List[str] = None, timeout: int = 60, input_data: bytes = None) -> Dict[str, Any]:
+def run_dynamic_taint_analysis(
+    binary_path: str,
+    engine: str = 'frida',
+    args: List[str] = None,
+    timeout: int = 60,
+    input_data: bytes = None
+) -> Dict[str, Any]:
     """
     便捷函数：运行动态污点分析
     

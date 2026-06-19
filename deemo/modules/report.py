@@ -1,6 +1,5 @@
 import logging
 import os
-import re
 from datetime import datetime
 from typing import Dict, Any, List, Optional, Tuple
 
@@ -8,15 +7,6 @@ from prompts import REPORT_SUMMARY_TEMPLATE
 from modules.info_collect import format_info_for_report
 
 logger = logging.getLogger(__name__)
-
-ANSI_ESCAPE_PATTERN = re.compile(r'\x1b\[[0-9;]*[a-zA-Z]')
-
-try:
-    from jinja2 import Environment, FileSystemLoader, BaseLoader
-    JINJA2_AVAILABLE = True
-except ImportError:
-    JINJA2_AVAILABLE = False
-    logger.warning("Jinja2 未安装，将使用内置模板引擎")
 
 
 class ReportGenerator:
@@ -30,200 +20,30 @@ class ReportGenerator:
     
     """
     
-    def __init__(self, output_dir: str = './reports', template_dir: str = None):
+    def __init__(self, output_dir: str = './reports'):
         """
         初始化报告生成器
         
         Args:
             output_dir: 输出目录
-            template_dir: Jinja2模板目录
         """
         self.output_dir = output_dir
-        self.template_dir = template_dir or os.path.join(os.path.dirname(__file__), 'templates')
         self.analysis_steps = []
         self.steps = []
-        self.jinja_env = None
         self._ensure_output_dir()
-        self._init_jinja2()
-    
-    def _init_jinja2(self):
-        """
-        初始化Jinja2模板引擎
-        """
-        if not JINJA2_AVAILABLE:
-            return
-        
-        try:
-            if os.path.exists(self.template_dir):
-                self.jinja_env = Environment()
-                    loader=FileSystemLoader(self.template_dir),
-                    autoescape=True,
-                    trim_blocks=True,
-                    lstrip_blocks=True
-                
-                logger.info(f"Jinja2模板引擎初始化成功，模板目录: {self.template_dir}")
-            else:
-                self.jinja_env = Environment(loader=BaseLoader(
-
-                logger.info("Jinja2模板引擎初始化成功（使用内存模板）")
-        except Exception as e:
-            logger.error(f"Jinja2初始化失败: {e}")
-            self.jinja_env = None
     
     def _ensure_output_dir(self):
         """
         确保输出目录存在
+
+
+        
         """
         try:
             if not os.path.exists(self.output_dir):
                 os.makedirs(self.output_dir)
         except Exception as e:
             logger.error(f"创建输出目录失败: {e}")
-    
-    def _clean_ansi_escape(self, text: str) -> str:
-        """
-        移除文本中的 ANSI 转义序列（颜色、光标控制等）
-        
-        Args:
-            text: 可能包含 ANSI 转义序列的文本
-            
-        Returns:
-            清理后的纯文本
-        """
-        if not text:
-            return text
-        return ANSI_ESCAPE_PATTERN.sub('', text)
-    
-    def render_template(self, template_content: str, context: Dict[str, Any]) -> str:
-        """
-        使用Jinja2渲染模板
-        
-        Args:
-            template_content: 模板内容
-            context: 模板上下文数据
-            
-        Returns:
-            渲染后的字符串
-        """
-        if not self.jinja_env:
-            logger.warning("Jinja2不可用，使用字符串格式化回退")
-            try:
-                return template_content.format(**context)
-            except Exception as e:
-                logger.error(f"字符串格式化失败: {e}")
-                return template_content
-        
-        try:
-            template = self.jinja_env.from_string(template_content)
-            return template.render(context)
-        except Exception as e:
-            logger.error(f"Jinja2模板渲染失败: {e}")
-            return template_content
-    
-    def _generate_dot_graph(self, nodes: List[Dict[str, Any]], edges: List[Tuple[str, str]], graph_name: str = "graph") -> str:
-        """
-        生成Graphviz DOT格式图
-        
-        Args:
-            nodes: 节点列表，每个节点包含name, label, color属性
-            edges: 边列表，(from_node, to_node)
-            graph_name: 图名称
-            
-        Returns:
-            DOT格式字符串
-        """
-        lines = []
-        lines.append(f"digraph {graph_name} {{")
-        lines.append("    rankdir=TB;")
-        lines.append("    node [shape=box, style=filled, fontname=Arial];")
-        lines.append("    edge [fontname=Arial];")
-        
-        for node in nodes:
-            name = node.get('name', 'unknown')
-            label = node.get('label', name)
-            color = node.get('color', '#e0e7ff')
-            lines.append(f'    "{name}" [label="{label}", fillcolor="{color}"];')
-        
-        for from_node, to_node in edges:
-            lines.append(f'    "{from_node}" -> "{to_node}";')
-        
-        lines.append("}")
-        return '\n'.join(lines)
-    
-    def _generate_cfg_html(self, function_name: str, basic_blocks: List[str], edges: List[Tuple[int, int]]) -> str:
-        """
-        生成控制流图HTML可视化
-        
-        Args:
-            function_name: 函数名
-            basic_blocks: 基本块列表
-            edges: 边列表
-            
-        Returns:
-            HTML字符串
-        """
-        nodes = []
-        for i, block in enumerate(basic_blocks):
-            nodes.append({)
-                'name': f'bb_{i}',
-                'label': f'BB{i}\\n{block[:30]}...' if len(block) > 30 else f'BB{i}\\n{block}',
-                'color': '#dcfce7' if i == 0 else '#fef3c7' if i == len(basic_blocks)-1 else '#e0e7ff'
-            }
-        
-        dot_content = self._generate_dot_graph(nodes, [(f'bb_{e[0]}', f'bb_{e[1]}') for e in edges], 'CFG')
-        
-        return f"""
-<div class="card">
-    <h3>🔄 {function_name} 控制流图</h3>
-    <div style="text-align:center;margin-top:15px;">
-        <div class="graph-container" style="display:inline-block;padding:10px;">
-            <pre style="background:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;font-size:12px;max-width:600px;overflow-x:auto;">{dot_content}</pre>
-        </div>
-    </div>
-    <p style="font-size:12px;color:#64748b;margin-top:10px;">提示: 将上述内容保存为 .dot 文件，使用 Graphviz 渲染为图像</p>
-</div>
-"""
-    
-    def _generate_data_flow_graph(self, sources: List[str], sinks: List[str], flows: List[Tuple[str, str]]) -> str:
-        """
-        生成数据流图HTML可视化
-        
-        Args:
-            sources: 数据源列表
-            sinks: 数据汇列表
-            flows: 数据流列表
-            
-        Returns:
-            HTML字符串
-        """
-        nodes = []
-        for src in sources:
-            nodes.append({)
-                'name': src,
-                'label': f'SOURCE\\n{src}',
-                'color': '#fef2f2'
-            }
-        
-        for sink in sinks:
-            nodes.append({)
-                'name': sink,
-                'label': f'SINK\\n{sink}',
-                'color': '#dcfce7'
-            }
-        
-        dot_content = self._generate_dot_graph(nodes, flows, 'DataFlow')
-        
-        return f"""
-<div class="card">
-    <h3>🌊 数据流图</h3>
-    <div style="text-align:center;margin-top:15px;">
-        <div class="graph-container" style="display:inline-block;padding:10px;">
-            <pre style="background:#1e293b;color:#e2e8f0;padding:15px;border-radius:8px;font-size:12px;max-width:600px;overflow-x:auto;">{dot_content}</pre>
-        </div>
-    </div>
-    <p style="font-size:12px;color:#64748b;margin-top:10px;">提示: 将上述内容保存为 .dot 文件，使用 Graphviz 渲染为图像</p>
-</div>
-"""
     
     def add_step(self, name: str, data=None, result=None):
         """
@@ -234,16 +54,16 @@ class ReportGenerator:
             data: 步骤数据（可选）
             result: 步骤结果（可选）
         """
-        self.steps.append({)
+        self.steps.append({
             'name': name,
             'data': data,
             'result': result
-        }
-        self.analysis_steps.append({)
+        })
+        self.analysis_steps.append({
             'step': name,
             'timestamp': datetime.now().isoformat(),
             'data': data or {}
-        }
+        })
         logger.info(f"记录分析步骤: {name}")
     
     def format_binary_info_section(self, binary_info: Dict[str, Any]) -> str:
@@ -252,17 +72,24 @@ class ReportGenerator:
         """
         return format_info_for_report(binary_info)
     
-    def format_decomp_analysis_section(, self, function_name: str, pseudocode: str, analysis_result: Dict[str, Any]) -> str:
+    def format_decomp_analysis_section(
+        self,
+        function_name: str,
+        pseudocode: str,
+        analysis_result: Dict[str, Any]
+    ) -> str:
         """
         格式化反编译分析部分
+
+
+        
         """
         output = []
         output.append(f"## 函数分析: {function_name}\n")
         
         output.append("### 反编译代码")
         output.append("```c")
-        clean_pseudocode = self._clean_ansi_escape(pseudocode)
-        output.append(clean_pseudocode[:5000] if len(clean_pseudocode) > 5000 else clean_pseudocode)
+        output.append(pseudocode[:5000] if len(pseudocode) > 5000 else pseudocode)
         output.append("```\n")
         
         vulnerabilities = analysis_result.get('vulnerabilities', [])
@@ -290,7 +117,10 @@ class ReportGenerator:
         
         return '\n'.join(output)
     
-    def format_crash_analysis_section(, self, crash_analysis: Dict[str, Any]) -> str:
+    def format_crash_analysis_section(
+        self,
+        crash_analysis: Dict[str, Any]
+    ) -> str:
         """
         格式化崩溃分析部分
 
@@ -339,7 +169,11 @@ class ReportGenerator:
         
         return '\n'.join(output)
     
-    def format_exploit_section(, self, exploit_result: Dict[str, Any], vulnerability_info: Dict[str, Any]) -> str:
+    def format_exploit_section(
+        self,
+        exploit_result: Dict[str, Any],
+        vulnerability_info: Dict[str, Any]
+    ) -> str:
         """
         格式化利用脚本部分
         """
@@ -381,159 +215,13 @@ class ReportGenerator:
         
         return '\n'.join(output)
     
-    def format_patch_suggestions_section(, self, patch_suggestions: List[Dict[str, Any]]) -> str:
-        """
-        格式化补丁建议部分
-        """
-        output = []
-        output.append("## 补丁建议\n")
-        
-        if not patch_suggestions:
-            output.append("未生成补丁建议。\n")
-            return '\n'.join(output)
-        
-        output.append(f"### AI 生成的修复建议 ({len(patch_suggestions)} 个)\n")
-        output.append("> **注意**: 以下补丁建议由 AI 生成，仅供参考。修复前请进行代码审查和测试验证。\n\n")
-        
-        for i, suggestion in enumerate(patch_suggestions, 1):
-            output.append(f"#### 建议 {i}: {suggestion.get('vuln_type', 'Unknown')}")
-            output.append(f"- **目标函数**: {suggestion.get('target_function', 'N/A')}")
-            output.append(f"- **漏洞位置**: 偏移 0x{suggestion.get('target_offset', 0):x}")
-            output.append(f"- **置信度**: {suggestion.get('confidence', 0.0) * 100:.1f}%")
-            output.append(f"- **建议类型**: {suggestion.get('suggestion_type', 'general')}\n")
-            
-            if suggestion.get('description'):
-                output.append("**修复说明:**")
-                output.append(suggestion['description'])
-                output.append("")
-            
-            if suggestion.get('patch_diff'):
-                output.append("**建议补丁 (unified diff):**")
-                output.append("```diff")
-                output.append(suggestion['patch_diff'])
-                output.append("```")
-            
-            output.append("")
-        
-        return '\n'.join(output)
-    
-    def format_threat_intel_section(, self, threat_intel_results: List[Dict[str, Any]]) -> str:
-        """
-        格式化威胁情报部分
-        """
-        output = []
-        output.append("## 威胁情报关联\n")
-        
-        if not threat_intel_results:
-            output.append("未查询威胁情报。\n")
-            return '\n'.join(output)
-        
-        for result in threat_intel_results:
-            provider = result.get('provider', 'unknown').upper()
-            output.append(f"### {provider} 查询结果")
-            output.append(f"- **查询类型**: {result.get('query_type', 'N/A')}")
-            output.append(f"- **查询值**: {result.get('query_value', 'N/A')}")
-            output.append(f"- **是否恶意**: {'是' if result.get('is_malicious') else '否'}")
-            output.append(f"- **在野利用**: {'是' if result.get('in_wild') else '否'}")
-            output.append(f"- **置信度**: {result.get('confidence', 0.0) * 100:.1f}%\n")
-            
-            malware_families = result.get('malware_families', [])
-            if malware_families:
-                if isinstance(malware_families, str):
-                    import json
-                    try:
-                        malware_families = json.loads(malware_families)
-                    except:
-                        malware_families = []
-                output.append("**关联恶意软件家族:**")
-                for family in malware_families:
-                    output.append(f"- {family}")
-                output.append("")
-            
-            apt_groups = result.get('apt_groups', [])
-            if apt_groups:
-                if isinstance(apt_groups, str):
-                    import json
-                    try:
-                        apt_groups = json.loads(apt_groups)
-                    except:
-                        apt_groups = []
-                output.append("**关联APT组织:**")
-                for group in apt_groups:
-                    output.append(f"- {group}")
-                output.append("")
-            
-            iocs = result.get('iocs', [])
-            if iocs:
-                if isinstance(iocs, str):
-                    import json
-                    try:
-                        iocs = json.loads(iocs)
-                    except:
-                        iocs = []
-                output.append(f"**关联IOC ({len(iocs)}个):**")
-                for ioc in iocs[:5]:
-                    output.append(f"- {ioc.get('type')}: {ioc.get('value')}")
-                if len(iocs) > 5:
-                    output.append(f"- ... 还有 {len(iocs) - 5} 个")
-                output.append("")
-            
-            if result.get('summary'):
-                output.append(f"**摘要:** {result['summary']}")
-            
-            output.append("")
-            output.append("---")
-            output.append("")
-        
-        return '\n'.join(output)
-    
-    def format_exploit_verification_section(, self, verification_result: Dict[str, Any]) -> str:
-        """
-        格式化漏洞利用验证部分
-        """
-        output = []
-        output.append("## 利用验证\n")
-        
-        if not verification_result:
-            output.append("未进行利用验证。\n")
-            return '\n'.join(output)
-        
-        success_count = verification_result.get('success_count', 0)
-        total_runs = verification_result.get('total_runs', 0)
-        reliability = verification_result.get('reliability_score', 0.0)
-        
-        output.append(f"### 验证结果")
-        output.append(f"- **成功次数**: {success_count}/{total_runs}")
-        output.append(f"- **可靠性评分**: {reliability:.1f}%")
-        output.append(f"- **利用成熟度**: {verification_result.get('exploit_code_maturity', 'U')}")
-        
-        cvss_info = verification_result.get('cvss_exploitability_score', {})
-        if cvss_info:
-            output.append(f"- **CVSS 可利用性**: {cvss_info.get('base_score', 0.0)}")
-            output.append(f"- **向量**: {cvss_info.get('vector_string', '')}")
-            output.append(f"- **成熟度说明**: {cvss_info.get('maturity_description', '')}")
-        
-        avg_time = verification_result.get('avg_execution_time', 0.0)
-        output.append(f"- **平均执行时间**: {avg_time:.2f} 秒\n")
-        
-        detailed = verification_result.get('detailed_results', [])
-        if detailed:
-            output.append("### 详细运行记录")
-            for i, run in enumerate(detailed, 1):
-                status = "成功" if run.get('success') else "失败"
-                output.append(f"#### 运行 {i}: {status}")
-                output.append(f"- Run ID: {run.get('run_id', 'N/A')}")
-                output.append(f"- 退出码: {run.get('exit_code', 'N/A')}")
-                output.append(f"- 执行时间: {run.get('execution_time', 0.0):.2f} 秒")
-                if run.get('error_message'):
-                    output.append(f"- 错误信息: {run['error_message']}")
-                if run.get('got_shell'):
-                    output.append(f"- 获取Shell: 是")
-                output.append("")
-        
-        return '\n'.join(output)
-    
-    def generate_executive_summary(, self, binary_info: Dict[str, Any], decomp_results: List[Dict[str, Any]], crash_analysis: Dict[str, Any], exploit_result: Dict[str, Any], patch_suggestions: List[Dict[str, Any]] = None, threat_intel_results: List[Dict[str, Any]] = None, verification_result: Dict[str, Any] = None) -> str:
+    def generate_executive_summary(
+        self,
+        binary_info: Dict[str, Any],
+        decomp_results: List[Dict[str, Any]],
+        crash_analysis: Dict[str, Any],
+        exploit_result: Dict[str, Any]
+    ) -> str:
         """
         生成执行摘要
         """
@@ -581,7 +269,10 @@ class ReportGenerator:
         
         return '\n'.join(summary)
     
-    def format_similar_vulnerabilities_section(, self, similar_vulns: List[Dict[str, Any]]) -> str:
+    def format_similar_vulnerabilities_section(
+        self,
+        similar_vulns: List[Dict[str, Any]]
+    ) -> str:
         """
         格式化相似漏洞部分
         """
@@ -613,7 +304,10 @@ class ReportGenerator:
         
         return '\n'.join(output)
     
-    def format_symbolic_execution_section(, self, symbolic_result: Dict[str, Any]) -> str:
+    def format_symbolic_execution_section(
+        self,
+        symbolic_result: Dict[str, Any]
+    ) -> str:
         """
         格式化符号执行分析部分
         """
@@ -678,84 +372,6 @@ class ReportGenerator:
         
         return '\n'.join(output)
     
-    def format_dynamic_taint_section(, self, dynamic_taint_result: Dict[str, Any]) -> str:
-        """
-        格式化动态污点分析部分
-        """
-        output = []
-        output.append("## 动态污点追踪分析\n")
-        
-        if not dynamic_taint_result:
-            output.append("动态污点追踪未启用或不可用。\n")
-            return '\n'.join(output)
-        
-        if not dynamic_taint_result.get('success'):
-            output.append(f"动态污点分析失败: {dynamic_taint_result.get('error', '未知错误')}\n")
-            return '\n'.join(output)
-        
-        engine = dynamic_taint_result.get('engine', 'unknown')
-        output.append(f"### 分析引擎")
-        output.append(f"- **引擎类型**: {engine}\n")
-        
-        taint_marks = dynamic_taint_result.get('taint_marks', [])
-        if taint_marks:
-            output.append("### 污点标记")
-            output.append(f"- **标记数量**: {len(taint_marks)}")
-            for mark in taint_marks[:5]:
-                output.append(f"  - {mark.get('source', 'unknown')} @ {mark.get('address', 'N/A')} (大小: {mark.get('size', 0)} 字节)")
-            if len(taint_marks) > 5:
-                output.append(f"  - ... 还有 {len(taint_marks) - 5} 个标记")
-            output.append("")
-        
-        taint_flows = dynamic_taint_result.get('taint_flows', [])
-        if taint_flows:
-            output.append("### 污点传播路径")
-            output.append(f"- **发现路径**: {len(taint_flows)} 条")
-            for i, flow in enumerate(taint_flows[:5], 1):
-                sink = flow.get('sink', 'unknown')
-                sink_type = flow.get('sink_type', 'unknown')
-                tainted_args = flow.get('tainted_args', [])
-                output.append(f"\n#### 路径 {i}")
-                output.append(f"- **目标函数**: {sink}")
-                output.append(f"- **函数类型**: {sink_type}")
-                if tainted_args:
-                    output.append("- **被污染参数**:")
-                    for arg in tainted_args:
-                        output.append(f"  * 参数 {arg.get('position', 'N/A')}: {arg.get('value', 'N/A')} (来源: {arg.get('source', 'unknown')})")
-            if len(taint_flows) > 5:
-                output.append(f"\n- ... 还有 {len(taint_flows) - 5} 条路径")
-            output.append("")
-        
-        vulnerabilities = dynamic_taint_result.get('vulnerabilities', [])
-        if vulnerabilities:
-            output.append("### 检测到的漏洞")
-            output.append(f"- **漏洞数量**: {len(vulnerabilities)}")
-            for i, vuln in enumerate(vulnerabilities[:5], 1):
-                severity = vuln.get('severity', 'Unknown')
-                vuln_type = vuln.get('type', 'Unknown')
-                function_name = vuln.get('function_name', 'Unknown')
-                output.append(f"\n#### 漏洞 {i}: {vuln_type}")
-                output.append(f"- **严重程度**: {severity}")
-                output.append(f"- **受影响函数**: {function_name}")
-                output.append(f"- **描述**: {vuln.get('description', 'N/A')}")
-                if vuln.get('evidence'):
-                    output.append(f"- **证据**: {vuln['evidence'][0][:100] if vuln['evidence'] else 'N/A'}...")
-            if len(vulnerabilities) > 5:
-                output.append(f"\n- ... 还有 {len(vulnerabilities) - 5} 个漏洞")
-            output.append("")
-        
-        exec_trace = dynamic_taint_result.get('exec_trace', [])
-        if exec_trace:
-            output.append("### 执行追踪")
-            output.append("```")
-            for line in exec_trace[:20]:
-                output.append(line)
-            if len(exec_trace) > 20:
-                output.append(f"... (还有 {len(exec_trace) - 20} 行)")
-            output.append("```\n")
-        
-        return '\n'.join(output)
-    
     def generate_markdown_report(self, output_path: str = None):
         """
         生成 Markdown 格式报告（基于步骤）
@@ -766,7 +382,7 @@ class ReportGenerator:
         Returns:
             Markdown 报告字符串
         """
-        report = "# Analysis Report\n\n",
+        report = "# Analysis Report\n\n"
         for step in self.steps:
             report += f"## {step['name']}\n"
             report += f"**Data:** {step['data']}\n"
@@ -802,7 +418,17 @@ class ReportGenerator:
         
         return json_str
     
-    def generate_report(, self, binary_path: str, binary_info: Dict[str, Any], decomp_results: List[Dict[str, Any]], crash_analysis: Dict[str, Any] = None, exploit_result: Dict[str, Any] = None, similar_vulns: List[Dict[str, Any]] = None, symbolic_result: Dict[str, Any] = None, dynamic_taint_result: Dict[str, Any] = None, output_path: str = None) -> str:
+    def generate_report(
+        self,
+        binary_path: str,
+        binary_info: Dict[str, Any],
+        decomp_results: List[Dict[str, Any]],
+        crash_analysis: Dict[str, Any] = None,
+        exploit_result: Dict[str, Any] = None,
+        similar_vulns: List[Dict[str, Any]] = None,
+        symbolic_result: Dict[str, Any] = None,
+        output_path: str = None
+    ) -> str:
         """
         生成完整的 Markdown 报告
         """
@@ -810,12 +436,10 @@ class ReportGenerator:
         
         content_parts = []
         
-        content_parts.append(self.format_binary_info_section(binary_info
-
+        content_parts.append(self.format_binary_info_section(binary_info))
         
         if similar_vulns:
-            content_parts.append(self.format_similar_vulnerabilities_section(similar_vulns
-
+            content_parts.append(self.format_similar_vulnerabilities_section(similar_vulns))
         
         if decomp_results:
             for result in decomp_results:
@@ -823,41 +447,33 @@ class ReportGenerator:
                     result.get('function_name', 'Unknown'),
                     result.get('pseudocode', ''),
                     result.get('analysis', {})
-                
-
+                ))
         
         if symbolic_result:
-            content_parts.append(self.format_symbolic_execution_section(symbolic_result
-
-        
-        if dynamic_taint_result:
-            content_parts.append(self.format_dynamic_taint_section(dynamic_taint_result
-
+            content_parts.append(self.format_symbolic_execution_section(symbolic_result))
         
         if crash_analysis:
-            content_parts.append(self.format_crash_analysis_section(crash_analysis
-
+            content_parts.append(self.format_crash_analysis_section(crash_analysis))
         
         if exploit_result:
             first_vuln = {}
             if decomp_results and decomp_results[0].get('analysis', {}).get('vulnerabilities'):
                 first_vuln = decomp_results[0]['analysis']['vulnerabilities'][0]
-            content_parts.append(self.format_exploit_section(exploit_result, first_vuln
-
+            content_parts.append(self.format_exploit_section(exploit_result, first_vuln))
         
-        executive_summary = self.generate_executive_summary()
+        executive_summary = self.generate_executive_summary(
             binary_info,
             decomp_results,
             crash_analysis or {},
             exploit_result or {}
+        )
         
-        
-        full_content = REPORT_SUMMARY_TEMPLATE.format()
+        full_content = REPORT_SUMMARY_TEMPLATE.format(
             date=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             binary_path=binary_path,
             summary=executive_summary,
             content='\n---\n\n'.join(content_parts)
-        
+        )
         
         if not output_path:
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -871,7 +487,15 @@ class ReportGenerator:
         logger.info(f"报告已生成: {output_path}")
         return output_path
     
-    def generate_json_report(, self, binary_path: str = None, binary_info: Dict[str, Any] = None, decomp_results: List[Dict[str, Any]] = None, crash_analysis: Dict[str, Any] = None, exploit_result: Dict[str, Any] = None, output_path: str = None):
+    def generate_json_report(
+        self,
+        binary_path: str = None,
+        binary_info: Dict[str, Any] = None,
+        decomp_results: List[Dict[str, Any]] = None,
+        crash_analysis: Dict[str, Any] = None,
+        exploit_result: Dict[str, Any] = None,
+        output_path: str = None
+    ):
         """
         生成 JSON 格式报告
         
@@ -1036,7 +660,7 @@ class ReportGenerator:
     
     def _get_risk_badge_class(self, severity: str) -> str:
         """获取风险等级对应的 CSS 类"""
-        severity_lower = severity.lower() if severity else '',
+        severity_lower = severity.lower() if severity else ''
         if 'critical' in severity_lower:
             return 'risk-critical'
         elif 'high' in severity_lower:
@@ -1046,7 +670,17 @@ class ReportGenerator:
         else:
             return 'risk-low'
     
-    def generate_html_report(, self, binary_path: str, binary_info: Dict[str, Any], decomp_results: List[Dict[str, Any]], crash_analysis: Dict[str, Any] = None, exploit_result: Dict[str, Any] = None, similar_vulns: List[Dict[str, Any]] = None, symbolic_result: Dict[str, Any] = None, output_path: str = None) -> str:
+    def generate_html_report(
+        self,
+        binary_path: str,
+        binary_info: Dict[str, Any],
+        decomp_results: List[Dict[str, Any]],
+        crash_analysis: Dict[str, Any] = None,
+        exploit_result: Dict[str, Any] = None,
+        similar_vulns: List[Dict[str, Any]] = None,
+        symbolic_result: Dict[str, Any] = None,
+        output_path: str = None
+    ) -> str:
         """
         生成 HTML 格式报告
         
@@ -1119,9 +753,9 @@ class ReportGenerator:
         
         content_parts.append('</div></div>')
         
-        call_graph_html, cfg_html = self._generate_vis_js_graphs()
+        call_graph_html, cfg_html = self._generate_vis_js_graphs(
             binary_info, decomp_results, symbolic_result
-        
+        )
         content_parts.append(call_graph_html)
         content_parts.append(cfg_html)
         
@@ -1181,8 +815,7 @@ class ReportGenerator:
                 content_parts.append('<table>')
                 content_parts.append('<tr><th>类型</th><th>文件</th><th>严重程度</th><th>函数</th></tr>')
                 for vuln in similar_vulns[:5]:
-                    sev_badge = self._get_risk_badge_class(vuln.get('severity', 'Low'
-
+                    sev_badge = self._get_risk_badge_class(vuln.get('severity', 'Low'))
                     content_parts.append(f'<tr>')
                     content_parts.append(f'<td>{vuln.get("vulnerability_type", "N/A")}</td>')
                     content_parts.append(f'<td>{vuln.get("binary_name", "N/A")}</td>')
@@ -1265,7 +898,7 @@ class ReportGenerator:
         
         function toggleGhidraScript() {{
             var el = document.getElementById('ghidraScriptContent');
-            var pre = document.getElementById('ghidraScriptPre');,
+            var pre = document.getElementById('ghidraScriptPre');
             if (el.style.display === 'none') {{
                 pre.textContent = ghidraScriptContent;
                 el.style.display = 'block';
@@ -1280,23 +913,15 @@ class ReportGenerator:
         content = '\n'.join(content_parts)
         
         html_content = self.HTML_TEMPLATE
-        html_content = html_content.replace('{{ binary_name }}', os.path.basename(binary_path
-
+        html_content = html_content.replace('{{ binary_name }}', os.path.basename(binary_path))
         html_content = html_content.replace('{{ binary_path }}', binary_path)
-        html_content = html_content.replace('{{ analysis_time }}', datetime.now().strftime('%Y-%m-%d %H:%M:%S'
-
-        html_content = html_content.replace('{{ arch }}', binary_info.get('arch', 'N/A'
-
-        html_content = html_content.replace('{{ bits }}', str(binary_info.get('bits', 'N/A'
-
-        html_content = html_content.replace('{{ total_vulns }}', str(total_vulns
-
-        html_content = html_content.replace('{{ critical_vulns }}', str(critical_vulns
-
-        html_content = html_content.replace('{{ high_vulns }}', str(high_vulns
-
-        html_content = html_content.replace('{{ iterations }}', str(iterations
-
+        html_content = html_content.replace('{{ analysis_time }}', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+        html_content = html_content.replace('{{ arch }}', binary_info.get('arch', 'N/A'))
+        html_content = html_content.replace('{{ bits }}', str(binary_info.get('bits', 'N/A')))
+        html_content = html_content.replace('{{ total_vulns }}', str(total_vulns))
+        html_content = html_content.replace('{{ critical_vulns }}', str(critical_vulns))
+        html_content = html_content.replace('{{ high_vulns }}', str(high_vulns))
+        html_content = html_content.replace('{{ iterations }}', str(iterations))
         html_content = html_content.replace('{{ content }}', content)
         
         if not output_path:
@@ -1311,7 +936,17 @@ class ReportGenerator:
         logger.info(f"HTML 报告已生成: {output_path}")
         return output_path
     
-    def generate_pdf_report(, self, binary_path: str, binary_info: Dict[str, Any], decomp_results: List[Dict[str, Any]], crash_analysis: Dict[str, Any] = None, exploit_result: Dict[str, Any] = None, similar_vulns: List[Dict[str, Any]] = None, symbolic_result: Dict[str, Any] = None, output_path: str = None) -> Dict[str, Any]:
+    def generate_pdf_report(
+        self,
+        binary_path: str,
+        binary_info: Dict[str, Any],
+        decomp_results: List[Dict[str, Any]],
+        crash_analysis: Dict[str, Any] = None,
+        exploit_result: Dict[str, Any] = None,
+        similar_vulns: List[Dict[str, Any]] = None,
+        symbolic_result: Dict[str, Any] = None,
+        output_path: str = None
+    ) -> Dict[str, Any]:
         """
         生成 PDF 格式报告（需要 weasyprint 或 pdfkit）
         
@@ -1344,11 +979,11 @@ class ReportGenerator:
         }
         
         html_path = output_path.replace('.pdf', '.html')
-        self.generate_html_report()
+        self.generate_html_report(
             binary_path, binary_info, decomp_results,
             crash_analysis, exploit_result, similar_vulns, symbolic_result,
             output_path=html_path
-        
+        )
         result['html_path'] = html_path
         
         weasyprint_available = False
@@ -1409,11 +1044,21 @@ class ReportGenerator:
                 "  pip install weasyprint\n"
                 "  或\n"
                 "  pip install pdfkit (还需要安装 wkhtmltopdf)"
-            
+            )
         
         return result
     
-    def generate_full_report(, self, binary_path: str, binary_info: Dict[str, Any], decomp_results: List[Dict[str, Any]], crash_analysis: Dict[str, Any] = None, exploit_result: Dict[str, Any] = None, similar_vulns: List[Dict[str, Any]] = None, symbolic_result: Dict[str, Any] = None, formats: List[str] = None) -> Dict[str, str]:
+    def generate_full_report(
+        self,
+        binary_path: str,
+        binary_info: Dict[str, Any],
+        decomp_results: List[Dict[str, Any]],
+        crash_analysis: Dict[str, Any] = None,
+        exploit_result: Dict[str, Any] = None,
+        similar_vulns: List[Dict[str, Any]] = None,
+        symbolic_result: Dict[str, Any] = None,
+        formats: List[str] = None
+    ) -> Dict[str, str]:
         """
         生成多种格式的报告
         
@@ -1436,28 +1081,28 @@ class ReportGenerator:
         generated = {}
         
         if 'md' in formats:
-            generated['markdown'] = self.generate_report()
+            generated['markdown'] = self.generate_report(
                 binary_path, binary_info, decomp_results,
                 crash_analysis, exploit_result, similar_vulns, symbolic_result
-            
+            )
         
         if 'json' in formats:
-            generated['json'] = self.generate_json_report()
+            generated['json'] = self.generate_json_report(
                 binary_path, binary_info, decomp_results,
                 crash_analysis, exploit_result
-            
+            )
         
         if 'html' in formats:
-            generated['html'] = self.generate_html_report()
+            generated['html'] = self.generate_html_report(
                 binary_path, binary_info, decomp_results,
                 crash_analysis, exploit_result, similar_vulns, symbolic_result
-            
+            )
         
         if 'pdf' in formats:
-            pdf_result = self.generate_pdf_report()
+            pdf_result = self.generate_pdf_report(
                 binary_path, binary_info, decomp_results,
                 crash_analysis, exploit_result, similar_vulns, symbolic_result
-            
+            )
             generated['pdf'] = pdf_result
         
         logger.info(f"已生成 {len(generated)} 种格式的报告")
@@ -1513,7 +1158,12 @@ class ReportGenerator:
         
         return result
     
-    def _infer_cvss_metrics(, self, vuln_info: Dict[str, Any], vuln_type: str, severity_hint: str) -> Dict[str, str]:
+    def _infer_cvss_metrics(
+        self,
+        vuln_info: Dict[str, Any],
+        vuln_type: str,
+        severity_hint: str
+    ) -> Dict[str, str]:
         """
         根据漏洞信息推断 CVSS 指标
         """
@@ -1622,8 +1272,7 @@ class ReportGenerator:
         I = CIA_scores.get(metrics['I'], 0)
         A = CIA_scores.get(metrics['A'], 0)
         
-        ISC_base = 1 - ((1 - C) * (1 - I) * (1 - A
-
+        ISC_base = 1 - ((1 - C) * (1 - I) * (1 - A))
         
         if metrics['S'] == 'U':
             Impact = 6.42 * ISC_base
@@ -1690,7 +1339,12 @@ class ReportGenerator:
         
         return '; '.join(parts)
     
-    def _generate_vis_js_graphs(, self, binary_info: Dict[str, Any], decomp_results: List[Dict[str, Any]], symbolic_result: Dict[str, Any] = None) -> Tuple[str, str]:
+    def _generate_vis_js_graphs(
+        self,
+        binary_info: Dict[str, Any],
+        decomp_results: List[Dict[str, Any]],
+        symbolic_result: Dict[str, Any] = None
+    ) -> Tuple[str, str]:
         """
         生成 vis.js 调用图和控制流图数据
         
@@ -1709,7 +1363,7 @@ class ReportGenerator:
             func_name = result.get('function_name', 'unknown')
             vulns = result.get('analysis', {}).get('vulnerabilities', [])
             
-            color = '#10b981',
+            color = '#10b981'
             if vulns:
                 severity = max(v.get('severity', '').lower() for v in vulns)
                 if 'critical' in severity:
@@ -1719,33 +1373,33 @@ class ReportGenerator:
                 elif 'medium' in severity:
                     color = '#eab308'
             
-            functions.append({)
+            functions.append({
                 'id': func_name,
                 'label': func_name,
                 'title': f'{func_name}<br/>漏洞: {len(vulns)}',
                 'color': color,
                 'size': 20 if vulns else 15
-            }
+            })
             
-            call_edges.append({)
+            call_edges.append({
                 'from': 'main',
                 'to': func_name,
                 'arrows': 'to',
                 'width': 2 if vulns else 1,
                 'color': '#ef4444' if vulns else '#94a3b8'
-            }
+            })
         
         for i, func1 in enumerate(functions[1:], 1):
             for j, func2 in enumerate(functions[i+1:], i+1):
                 if j % 3 == 0:
-                    call_edges.append({)
+                    call_edges.append({
                         'from': func1['id'],
                         'to': func2['id'],
                         'arrows': 'to',
                         'width': 1,
                         'color': '#cbd5e1',
                         'dashes': True
-                    }
+                    })
         
         cfg_nodes = []
         cfg_edges = []
@@ -1755,32 +1409,32 @@ class ReportGenerator:
             bbs = attack_path.get('basic_blocks', [])
             
             for idx, bb in enumerate(bbs[:20]):
-                cfg_nodes.append({)
+                cfg_nodes.append({
                     'id': f'bb_{idx}',
                     'label': f'BB{idx}',
                     'title': str(bb),
                     'color': '#8b5cf6'
-                }
+                })
                 if idx > 0:
-                    cfg_edges.append({)
+                    cfg_edges.append({
                         'from': f'bb_{idx-1}',
                         'to': f'bb_{idx}',
                         'arrows': 'to'
-                    }
+                    })
         else:
             for i in range(8):
-                cfg_nodes.append({)
+                cfg_nodes.append({
                     'id': f'bb_{i}',
                     'label': f'BB{i}',
                     'title': f'Basic Block {i}',
                     'color': '#8b5cf6'
-                }
+                })
                 if i > 0:
-                    cfg_edges.append({)
+                    cfg_edges.append({
                         'from': f'bb_{i-1}',
                         'to': f'bb_{i}',
                         'arrows': 'to'
-                    }
+                    })
         
         import json
         
@@ -1842,7 +1496,12 @@ class ReportGenerator:
         
         return call_graph_html, cfg_html
     
-    def generate_ghidra_script(, self, binary_path: str, decomp_results: List[Dict[str, Any]], crash_analysis: Dict[str, Any] = None) -> str:
+    def generate_ghidra_script(
+        self,
+        binary_path: str,
+        decomp_results: List[Dict[str, Any]],
+        crash_analysis: Dict[str, Any] = None
+    ) -> str:
         """
         生成可在 Ghidra 中运行的 Python 脚本，用于标注漏洞位置
         
@@ -1877,7 +1536,7 @@ class ReportGenerator:
                 }
                 color = color_map.get(severity.lower(), '0xFFCC00')
                 
-                vuln_markers.append({)
+                vuln_markers.append({
                     'func_name': func_name,
                     'type': vuln_type,
                     'severity': severity,
@@ -1885,7 +1544,7 @@ class ReportGenerator:
                     'color': color,
                     'description': description,
                     'exploitation': exploitation
-                }
+                })
         
         script_content = '''# -*- coding: utf-8 -*-
 """
@@ -1915,10 +1574,10 @@ BINARY_NAME = "{binary_name}"
 ANALYSIS_TIME = "{analysis_time}"
 
 VULNERABILITY_MARKERS = [
-'''.format()
+'''.format(
     binary_name=os.path.basename(binary_path),
     analysis_time=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-
+)
         
         for marker in vuln_markers:
             script_content += f'''    {{
@@ -1968,8 +1627,7 @@ def set_function_color(func, color_int):
             entry = func.getEntryPoint()
             block = func.getBody()
             
-            addrSet = block.intersect(currentProgram.getMemory(
-
+            addrSet = block.intersect(currentProgram.getMemory())
             if addrSet is not None and not addrSet.isEmpty():
                 colorizer.setBackgroundColor(addrSet, color, TaskMonitor.DUMMY)
                 return True
@@ -2025,7 +1683,7 @@ def main():
                 f"Description:\\n{description}\\n"
                 f"\\n"
                 f"Exploitation:\\n{exploitation}\\n"
-            
+            )
             
             set_pre_comment(entry, comment_text)
             
@@ -2070,4 +1728,4 @@ def round_up(value: float) -> float:
     CVSS 3.1 评分的向上取整（保留一位小数）
     """
     from math import ceil
-    return ceil(value * 10) / 10.0)))))))))))))))))))))
+    return ceil(value * 10) / 10.0
