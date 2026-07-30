@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import os
 import logging
 import re
@@ -601,3 +602,103 @@ def test_api_connection(client) -> bool:
     except Exception as e:
         logger.error(f"AI API 连接测试失败: {e}")
         return False
+=======
+#!/usr/bin/env python3
+"""
+Static configuration for the binary analysis pipeline.
+All values can be overridden via environment variables.
+No external config file dependency — keeps Docker deploys simple.
+"""
+
+import os as _os
+
+_BASE = _os.path.dirname(_os.path.abspath(__file__))
+
+
+# -- paths -----------------------------------------------------------
+DATA_DIR     = _os.path.join(_BASE, 'data')
+RESULTS_DIR  = _os.path.join(_BASE, 'results')
+LOGS_DIR     = _os.path.join(_BASE, 'logs')
+CACHE_DIR    = _os.path.join(_BASE, 'cache')
+CORPUS_DIR   = _os.path.join(_BASE, 'corpus')
+DB_PATH      = _os.path.join(DATA_DIR, 'vulnerabilities.db')
+
+# -- API keys (env-only, never hardcoded) ----------------------------
+OPENAI_API_KEY      = _os.environ.get('OPENAI_API_KEY', '')
+ANTHROPIC_API_KEY   = _os.environ.get('ANTHROPIC_API_KEY', '')
+GITHUB_TOKEN        = _os.environ.get('GITHUB_TOKEN', '')
+
+# -- AI provider ----------------------------------------------------
+AI_PROVIDER  = _os.environ.get('AI_PROVIDER', 'openai')
+AI_MODEL     = _os.environ.get('AI_MODEL', 'gpt-4o')
+
+# -- timeouts (seconds) ----------------------------------------------
+SUBPROCESS_TIMEOUT = int(_os.environ.get('TIMEOUT', '300'))
+R2_TIMEOUT         = 60
+ANGR_TIMEOUT       = 300
+GHIDRA_TIMEOUT     = 1800
+
+# -- decompiler ------------------------------------------------------
+DEFAULT_DECOMPILER = _os.environ.get('DECOMPILER', 'auto')   # auto | r2 | ghidra | ida
+
+# -- analysis limits ------------------------------------------------
+MAX_FUNCTIONS       = int(_os.environ.get('MAX_FUNCTIONS', '20'))
+MAX_PARALLEL        = int(_os.environ.get('MAX_PARALLEL', '4'))
+MAX_STRING_LENGTH   = int(_os.environ.get('MAX_STRING_LENGTH', '1024'))
+
+# -- feature flags --------------------------------------------------
+ENABLE_SYMBOLIC     = _os.environ.get('ENABLE_SYMBOLIC', 'true').lower() == 'true'
+ENABLE_CRYPTO_SCAN  = _os.environ.get('ENABLE_CRYPTO_SCAN', 'true').lower() == 'true'
+ENABLE_TAINTRACK    = _os.environ.get('ENABLE_TAINTRACK', 'false').lower() == 'true'
+ENABLE_FUZZING      = _os.environ.get('ENABLE_FUZZING', 'false').lower() == 'true'
+ENABLE_UNPACK       = _os.environ.get('ENABLE_UNPACK', 'true').lower() == 'true'
+
+# -- module-specific configs (kept as dicts for JSON compat) --------
+CRYPTO_SCAN = {
+    'check_weak_random': True,
+    'check_hardcoded_iv': True,
+    'check_weak_hash': True,
+    'check_weak_cipher': True,
+    'check_hardcoded_secrets': True,
+}
+
+HEAP_ANALYSIS = {
+    'default_allocator': 'ptmalloc',
+    'tcache_count': 7,
+    'enable_fastbin': True,
+}
+
+EXPLOIT_GEN = {
+    'validate_exploit': False,
+    'no_rop': False,
+    'output_dir': _os.path.join(RESULTS_DIR, 'exploits'),
+}
+
+# -- external tool paths --------------------------------------------
+R2_PATH      = _os.environ.get('R2_PATH', 'r2')
+QEMU_PATH    = _os.environ.get('QEMU_PATH', 'qemu-system-x86_64')
+GCC_PATH     = _os.environ.get('GCC_PATH', 'gcc')
+
+# -- LLM backend endpoints ------------------------------------------
+LLM_ENDPOINTS = {
+    'openai':    'https://api.openai.com/v1',
+    'anthropic': 'https://api.anthropic.com/v1',
+    'ollama':    _os.environ.get('OLLAMA_HOST', 'http://localhost:11434'),
+    'llamacpp':  _os.environ.get('LLAMACPP_HOST', 'http://localhost:8080'),
+    'custom':    _os.environ.get('CUSTOM_LLM_URL', ''),
+}
+
+
+def ensure_dirs():
+    """Create data/log/results/cache dirs if missing."""
+    for p in [DATA_DIR, RESULTS_DIR, LOGS_DIR, CACHE_DIR, CORPUS_DIR]:
+        _os.makedirs(p, exist_ok=True)
+
+
+def check_openai_api_key() -> bool:
+    return bool(OPENAI_API_KEY)
+
+
+def get_current_ai_model() -> str:
+    return AI_MODEL
+>>>>>>> d81973a (精简冗余模块)

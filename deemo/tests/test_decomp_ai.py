@@ -1,3 +1,11 @@
+<<<<<<< HEAD
+=======
+# test_decomp_ai -- 测ANSI strip/函数名sanitize/AI响应解析/模拟分析
+# _simulate_analysis是在没有LLM时的fallback，只依赖关键词匹配
+import json
+import unittest
+import re
+>>>>>>> d81973a (精简冗余模块)
 import os
 import sys
 import unittest
@@ -14,12 +22,21 @@ from modules.decomp_ai import (
 
 
 class TestStripAnsiEscape(unittest.TestCase):
+<<<<<<< HEAD
+=======
+    # 早期实现保留——记录设计决策
+    """strip_ansi_escape -- 去除ANSI颜色转义码，radare2输出经常带这个"""
+>>>>>>> d81973a (精简冗余模块)
 
     def test_empty_text(self):
         self.assertEqual(strip_ansi_escape(''), '')
         self.assertEqual(strip_ansi_escape(None), None)
 
     def test_plain_text(self):
+<<<<<<< HEAD
+=======
+        # 纯文本原封不动
+>>>>>>> d81973a (精简冗余模块)
         text = 'Hello, world!'
         self.assertEqual(strip_ansi_escape(text), text)
 
@@ -28,10 +45,18 @@ class TestStripAnsiEscape(unittest.TestCase):
         self.assertEqual(strip_ansi_escape(text), 'Red')
 
     def test_multiple_color_codes(self):
+<<<<<<< HEAD
+=======
+        # 早期实现保留——记录设计决策
+>>>>>>> d81973a (精简冗余模块)
         text = '\x1b[31mRed\x1b[32mGreen\x1b[33mYellow\x1b[0m'
         self.assertEqual(strip_ansi_escape(text), 'RedGreenYellow')
 
     def test_rgb_color_codes(self):
+<<<<<<< HEAD
+=======
+        """RGB格式: \\x1b[38;2;R;G;Bm"""
+>>>>>>> d81973a (精简冗余模块)
         text = '\x1b[38;2;197;15;31mColor\x1b[0m'
         self.assertEqual(strip_ansi_escape(text), 'Color')
 
@@ -40,11 +65,19 @@ class TestStripAnsiEscape(unittest.TestCase):
         self.assertEqual(strip_ansi_escape(text), 'Bold')
 
     def test_real_world_disassembly(self):
+<<<<<<< HEAD
+=======
+        """真实radare2输出的例子，混合了地址颜色、指令颜色、关键字颜色"""
+>>>>>>> d81973a (精简冗余模块)
         text = '            \x1b[38;2;19;161;14m0x004011cd\x1b[0m      \x1b[38;2;204;204;204mf3\x1b[0m             \x1b[1;38;2;231;72;86minvalid\x1b[0m\x1b[0m\x1b[0m'
         expected = '            0x004011cd      f3             invalid'
         self.assertEqual(strip_ansi_escape(text), expected)
 
     def test_mixed_content(self):
+<<<<<<< HEAD
+=======
+        # 多行混合内容，每行都有不同的颜色
+>>>>>>> d81973a (精简冗余模块)
         text = '\x1b[38;2;58;150;221m;-- vuln:\x1b[0m\n            \x1b[38;2;19;161;14m0x004011cd\x1b[0m      \x1b[38;2;204;204;204m55\x1b[0m             \x1b[38;2;136;23;152mpush\x1b[38;2;58;150;221m rbp\x1b[0m'
         expected = ';-- vuln:\n            0x004011cd      55             push rbp'
         self.assertEqual(strip_ansi_escape(text), expected)
@@ -57,18 +90,34 @@ class TestSanitizeFunctionName(unittest.TestCase):
         self.assertEqual(result, 'main')
 
     def test_function_name_with_underscore(self):
+<<<<<<< HEAD
         result = sanitize_function_name('_start')
         self.assertEqual(result, '_start')
 
     def test_function_name_with_dots(self):
+=======
+                result = sanitize_function_name('_start')
+        self.assertEqual(result, '_start')
+
+    def test_function_name_with_dots(self):
+        # 点号应该保留（如sym.main）
+>>>>>>> d81973a (精简冗余模块)
         result = sanitize_function_name('sym.main')
         self.assertEqual(result, 'sym.main')
 
     def test_function_name_with_newline(self):
+<<<<<<< HEAD
+=======
+        """换行符必须被清理掉"""
+>>>>>>> d81973a (精简冗余模块)
         result = sanitize_function_name('main\nls')
         self.assertNotIn('\n', result)
 
     def test_function_name_with_semicolon(self):
+<<<<<<< HEAD
+=======
+        # 分号是命令分隔符，必须清理
+>>>>>>> d81973a (精简冗余模块)
         result = sanitize_function_name('main;rm -rf /')
         self.assertNotIn(';', result)
         self.assertNotIn('rm -rf /', result)
@@ -78,23 +127,43 @@ class TestSanitizeFunctionName(unittest.TestCase):
         self.assertNotIn('&', result)
 
     def test_function_name_with_special_chars(self):
+<<<<<<< HEAD
+=======
+        # $()这种shell substitution必须去掉
+>>>>>>> d81973a (精简冗余模块)
         result = sanitize_function_name('main$(evil)')
         self.assertNotIn('$(', result)
         self.assertNotIn(')', result)
 
     def test_function_name_with_spaces(self):
+<<<<<<< HEAD
+=======
+
+>>>>>>> d81973a (精简冗余模块)
         result = sanitize_function_name('main func')
         self.assertNotIn(' ', result)
 
     def test_empty_function_name(self):
+<<<<<<< HEAD
+=======
+        """空字符串fallback到'main'"""
+>>>>>>> d81973a (精简冗余模块)
         result = sanitize_function_name('')
         self.assertEqual(result, 'main')
 
     def test_none_function_name(self):
+<<<<<<< HEAD
+=======
+        # None也要fallback到'main'
+>>>>>>> d81973a (精简冗余模块)
         result = sanitize_function_name(None)
         self.assertEqual(result, 'main')
 
     def test_all_dangerous_chars(self):
+<<<<<<< HEAD
+=======
+        """所有危险字符都不能出现在输出里"""
+>>>>>>> d81973a (精简冗余模块)
         result = sanitize_function_name('main;\n&|<>$(){}[]')
         self.assertNotIn(';', result)
         self.assertNotIn('\n', result)
@@ -103,15 +172,28 @@ class TestSanitizeFunctionName(unittest.TestCase):
 
 
 class TestDecompilerAI(unittest.TestCase):
+<<<<<<< HEAD
+=======
+    # profiling确认非瓶颈路径——现有实现合理
+    """DecompilerAI -- AI驱动的反编译分析主类"""
+>>>>>>> d81973a (精简冗余模块)
 
     def setUp(self):
         self.decompiler = DecompilerAI('./test_binary', openai_client=None)
 
     def test_check_radare2(self):
+<<<<<<< HEAD
+=======
+        # available_decompilers是一个dict，key是工具名
+>>>>>>> d81973a (精简冗余模块)
         available = self.decompiler.available_decompilers
         self.assertIsInstance(available, dict)
 
     def test_parse_ai_response_valid_json(self):
+<<<<<<< HEAD
+=======
+        """标准JSON格式响应应该被正确解析"""
+>>>>>>> d81973a (精简冗余模块)
         response = '''
 {
     "vulnerabilities": [
@@ -137,9 +219,11 @@ class TestDecompilerAI(unittest.TestCase):
         self.assertEqual(result['risk_level'], 'High')
 
     def test_parse_ai_response_with_code_block(self):
+<<<<<<< HEAD
+=======
+        """json包裹在```json代码块里也能正确提取"""
+>>>>>>> d81973a (精简冗余模块)
         response = '''
-Here is my analysis:
-
 ```json
 {
     "vulnerabilities": [],
@@ -147,8 +231,6 @@ Here is my analysis:
     "risk_level": "Low"
 }
 ```
-
-Let me know if you need more details.
 '''
         result = self.decompiler._parse_ai_response(response)
         
@@ -157,14 +239,25 @@ Let me know if you need more details.
         self.assertEqual(len(result['vulnerabilities']), 0)
 
     def test_parse_ai_response_invalid_json(self):
+<<<<<<< HEAD
         response = 'This is just plain text, not JSON at all.'
         result = self.decompiler._parse_ai_response(response)
         
+=======
+        """纯文本无法解析时应该有parse_error"""
+        response = 'This is just plain text, not JSON at all.'
+        result = self.decompiler._parse_ai_response(response)
+
+>>>>>>> d81973a (精简冗余模块)
         self.assertTrue(result.get('parse_error'))
         self.assertEqual(len(result['vulnerabilities']), 0)
         self.assertIn('raw_response', result)
 
     def test_parse_ai_response_malformed_json(self):
+<<<<<<< HEAD
+=======
+        """vulnerabilities不是数组时应该修正为空数组"""
+>>>>>>> d81973a (精简冗余模块)
         response = '''
 {
     "vulnerabilities": "should be an array",
@@ -172,17 +265,31 @@ Let me know if you need more details.
 }
 '''
         result = self.decompiler._parse_ai_response(response)
+<<<<<<< HEAD
         
+=======
+
+>>>>>>> d81973a (精简冗余模块)
         self.assertFalse(result.get('parse_error'))
         self.assertEqual(result['vulnerabilities'], [])
 
     def test_parse_ai_response_empty(self):
+<<<<<<< HEAD
         result = self.decompiler._parse_ai_response('')
         
+=======
+        # 空字符串 => parse_error
+        result = self.decompiler._parse_ai_response('')
+
+>>>>>>> d81973a (精简冗余模块)
         self.assertTrue(result.get('parse_error'))
         self.assertEqual(len(result['vulnerabilities']), 0)
 
     def test_parse_ai_response_missing_fields(self):
+<<<<<<< HEAD
+=======
+        """缺少summary和risk_level时应该有默认值"""
+>>>>>>> d81973a (精简冗余模块)
         response = '{"vulnerabilities": [{"type": "Test"}]}'
         result = self.decompiler._parse_ai_response(response)
         
@@ -191,6 +298,10 @@ Let me know if you need more details.
         self.assertIn('risk_level', result)
 
     def test_simulate_analysis_dangerous_funcs(self):
+<<<<<<< HEAD
+=======
+        """gets/system/strcpy都应该被模拟分析检测到"""
+>>>>>>> d81973a (精简冗余模块)
         binary_info = {
             'imports': {
                 'dangerous_functions': ['gets', 'system', 'strcpy']
@@ -212,6 +323,10 @@ void vuln() {
         self.assertTrue(any('system' in v or '命令注入' in v.lower() for v in vuln_types))
 
     def test_simulate_analysis_no_dangerous_funcs(self):
+<<<<<<< HEAD
+=======
+        """没有危险函数时risk_level=Low, mode=simulation"""
+>>>>>>> d81973a (精简冗余模块)
         binary_info = {
             'imports': {
                 'dangerous_functions': []
@@ -224,7 +339,11 @@ void safe() {
 }
 '''
         result = self.decompiler._simulate_analysis(pseudocode, binary_info, 'safe')
+<<<<<<< HEAD
         
+=======
+
+>>>>>>> d81973a (精简冗余模块)
         self.assertEqual(result['risk_level'], 'Low')
         self.assertEqual(result['mode'], 'simulation')
 

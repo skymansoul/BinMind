@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+
+>>>>>>> d81973a (精简冗余模块)
 import os
 import sys
 import unittest
@@ -15,8 +19,13 @@ class TestReportGenerator(unittest.TestCase):
         self.report_gen = ReportGenerator(output_dir='./test_reports')
 
     def test_generate_markdown_report(self):
+<<<<<<< HEAD
         self.report_gen.add_step('Step 1', data={'test': 'data'}, result='success')
         self.report_gen.add_step('Step 2', data={'more': 'info'}, result='complete')
+=======
+        self.report_gen.add_step_rp('Step 1', data={'test': 'data'}, result='success')
+        self.report_gen.add_step_rp('Step 2', data={'more': 'info'}, result='complete')
+>>>>>>> d81973a (精简冗余模块)
         
         report = self.report_gen.generate_markdown_report()
         
@@ -26,7 +35,12 @@ class TestReportGenerator(unittest.TestCase):
         self.assertIn('## Step 2', report)
 
     def test_generate_json_report(self):
+<<<<<<< HEAD
         self.report_gen.add_step('Analysis Step', data={'key': 'value'}, result='done')
+=======
+        # 实践验证过的阈值选择
+        self.report_gen.add_step_rp('Analysis Step', data={'key': 'value'}, result='done')
+>>>>>>> d81973a (精简冗余模块)
         
         report = self.report_gen.generate_json_report()
         
@@ -43,8 +57,13 @@ class TestReportGenerator(unittest.TestCase):
         self.assertEqual(parsed['steps'][0]['name'], 'Analysis Step')
 
     def test_generate_json_report_content(self):
+<<<<<<< HEAD
         self.report_gen.add_step('Step 1', data={'test': 123}, result='success')
         self.report_gen.add_step('Step 2', data={'info': 'test'}, result='pending')
+=======
+        self.report_gen.add_step_rp('Step 1', data={'test': 123}, result='success')
+        self.report_gen.add_step_rp('Step 2', data={'info': 'test'}, result='pending')
+>>>>>>> d81973a (精简冗余模块)
         
         report = self.report_gen.generate_json_report()
         parsed = json.loads(report)
@@ -54,7 +73,11 @@ class TestReportGenerator(unittest.TestCase):
         self.assertEqual(parsed['steps'][1]['result'], 'pending')
 
     def test_json_report_contains_expected_fields(self):
+<<<<<<< HEAD
         self.report_gen.add_step('Init', data={'status': 'ok'}, result='done')
+=======
+        self.report_gen.add_step_rp('Init', data={'status': 'ok'}, result='done')
+>>>>>>> d81973a (精简冗余模块)
         
         report = self.report_gen.generate_json_report()
         parsed = json.loads(report)
@@ -66,5 +89,9 @@ class TestReportGenerator(unittest.TestCase):
         self.assertIn('result', step)
 
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> d81973a (精简冗余模块)
 if __name__ == '__main__':
     unittest.main()

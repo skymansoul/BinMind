@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+
+>>>>>>> d81973a (精简冗余模块)
 import os
 import sys
 import unittest
@@ -32,11 +36,16 @@ class TestSymbolicExecutor(unittest.TestCase):
 
         with patch.dict('sys.modules', {'angr': mock_angr, 'claripy': mock_claripy}):
             from modules.symbolic_exe import SymbolicExecutor
-            
+
             executor = SymbolicExecutor('fake_binary')
+<<<<<<< HEAD
             
+=======
+
+lass字段完整性$/d
+>>>>>>> d81973a (精简冗余模块)
             self.assertTrue(mock_angr.Project.called)
-            
+
             args, kwargs = mock_angr.Project.call_args
             self.assertEqual(args[0], 'fake_binary')
             self.assertEqual(kwargs.get('auto_load_libs'), False)
@@ -58,15 +67,19 @@ class TestSymbolicExecutor(unittest.TestCase):
 
         with patch.dict('sys.modules', {'angr': mock_angr, 'claripy': mock_claripy}):
             from modules.symbolic_exe import SymbolicExecutor
-            
+
             executor = SymbolicExecutor('fake_binary', target_arch='x86')
+<<<<<<< HEAD
             
+=======
+
+>>>>>>> d81973a (精简冗余模块)
             self.assertTrue(mock_angr.Project.called)
-            
+
             args, kwargs = mock_angr.Project.call_args
             self.assertEqual(args[0], 'fake_binary')
             self.assertEqual(kwargs.get('auto_load_libs'), False)
-            
+
             main_opts = kwargs.get('main_opts', {})
             self.assertEqual(main_opts.get('base_addr'), 0)
             self.assertEqual(main_opts.get('arch'), 'x86')
@@ -87,18 +100,18 @@ class TestSymbolicExecutor(unittest.TestCase):
 
         with patch.dict('sys.modules', {'angr': mock_angr, 'claripy': mock_claripy}):
             from modules.symbolic_exe import SymbolicExecutor
-            
+
             executor = SymbolicExecutor('fake_binary')
-            
+
             self.assertIsNotNone(executor.project)
             self.assertTrue(executor.is_available())
 
     def test_load_project_angr_not_available(self):
         with patch.dict('sys.modules', {'angr': None}):
             from modules.symbolic_exe import SymbolicExecutor
-            
+
             executor = SymbolicExecutor('fake_binary')
-            
+
             self.assertIsNone(executor.project)
             self.assertFalse(executor.is_available())
 
@@ -109,12 +122,16 @@ class TestSymbolicExecutor(unittest.TestCase):
 
         with patch.dict('sys.modules', {'angr': mock_angr, 'claripy': mock_claripy}):
             from modules.symbolic_exe import SymbolicExecutor
-            
+
             executor = SymbolicExecutor('fake_binary')
-            
+
             self.assertTrue(mock_angr.Project.called)
             self.assertIsNone(executor.project)
 
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> d81973a (精简冗余模块)
 if __name__ == '__main__':
     unittest.main()

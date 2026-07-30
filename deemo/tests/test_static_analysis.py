@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+
+>>>>>>> d81973a (精简冗余模块)
 import os
 import sys
 import unittest
@@ -104,6 +108,10 @@ class TestStaticDataFlowAnalyzer(unittest.TestCase):
                 
                 analyzer = StaticDataFlowAnalyzer('fake_binary', use_angr=True)
                 
+<<<<<<< HEAD
+=======
+lass字段完整性$/d
+>>>>>>> d81973a (精简冗余模块)
                 self.assertGreater(len(analyzer.taint_sources), 0)
                 self.assertGreater(len(analyzer.taint_sinks), 0)
                 
@@ -113,8 +121,16 @@ class TestStaticDataFlowAnalyzer(unittest.TestCase):
                 
                 sink_names = [s.name for s in analyzer.taint_sinks]
                 self.assertIn('system', sink_names)
+<<<<<<< HEAD
                 self.assertIn('printf', sink_names)
 
 
+=======
+lass字段完整性$/d
+                self.assertIn('printf', sink_names)
+
+
+
+>>>>>>> d81973a (精简冗余模块)
 if __name__ == '__main__':
     unittest.main()

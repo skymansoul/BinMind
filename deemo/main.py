@@ -1,18 +1,24 @@
 #!/usr/bin/env python3
 """
+<<<<<<< HEAD
 大语言模型辅助的二进制漏洞分析工具
 
+=======
+Main launcher. Delegates analysis to core.pipeline and reporting
+to core.report. Kept around for backward compatibility — scripts
+that `from main import run_pipeline` still work.
+
+Direct CLI usage should go through binmind.py, which binds to
+cli.commands for proper argument parsing.
+>>>>>>> d81973a (精简冗余模块)
 """
 
 import argparse
-import logging
 import os
 import sys
-import subprocess
-from datetime import datetime
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Dict, Any, List, Optional
+import time
 
+<<<<<<< HEAD
 from config import (
     Config, check_openai_api_key, get_openai_client, ensure_directories, 
     validate_crash_data, get_current_ai_model, SensitiveFilter, mask_sensitive_data
@@ -1857,20 +1863,44 @@ def main():
         )
 
         print_cve_query_results(results, limit=args.cve_limit)
+=======
+from utils.logging_setup import init_logging
+from config import ensure_dirs, ENABLE_SYMBOLIC, ENABLE_CRYPTO_SCAN
 
-        if args.cve_json:
-            try:
-                import json
-                output_dir = os.path.dirname(args.cve_json)
-                if output_dir and not os.path.exists(output_dir):
-                    os.makedirs(output_dir, exist_ok=True)
 
-                with open(args.cve_json, 'w', encoding='utf-8') as f:
-                    json.dump(results, f, ensure_ascii=False, indent=2)
-                logger.info(f"CVE 查询结果已保存到: {args.cve_json}")
-            except Exception as e:
-                logger.error(f"保存 JSON 文件失败: {e}")
+# ── thin argument parser (kept for scripts that call main directly) ──────
 
+def _quick_parse(argv=None):
+    """Legacy argument parser. Prefer binmind CLI for interactive use."""
+    p = argparse.ArgumentParser(
+        prog='binmind',
+        description='Binary vulnerability analysis (programmatic entry)',
+    )
+    p.add_argument('binary', nargs='?', help='path to binary')
+    p.add_argument('-o', '--output', default='./results', help='output dir')
+    p.add_argument('--crash', help='crash log file')
+    p.add_argument('--functions', nargs='*', help='functions to analyze')
+    p.add_argument('--max-funcs', type=int, default=20)
+    p.add_argument('--include-lib', action='store_true')
+    p.add_argument('--parallel', action='store_true')
+    p.add_argument('--format', choices=['markdown', 'json'],
+                   default='markdown')
+    p.add_argument('--decompiler', choices=['auto', 'r2', 'ghidra'],
+                   default='auto')
+    p.add_argument('--hooks', help='hooks directory')
+    p.add_argument('--verbose', '-v', action='store_true')
+    p.add_argument('--no-crypto', action='store_true')
+    p.add_argument('--no-symbolic', action='store_true')
+    return p.parse_args(argv)
+
+>>>>>>> d81973a (精简冗余模块)
+
+# ── main entry ──────────────────────────────────────────────────────────
+
+def main(argv=None):
+    args = _quick_parse(argv)
+
+<<<<<<< HEAD
         return 0
     
     if not args.binary:
@@ -1958,19 +1988,54 @@ def main():
         decompiler=args.decompiler,
         enable_symbolic_execution=args.enable_symbolic_execution,
         use_vuln_db=not args.no_db,
+=======
+    if not args.binary:
+        print("usage: python main.py <binary> [options]")
+        print("       see binmind CLI for full help: python -m binmind --help")
+        return 1
+
+    init_logging('DEBUG' if args.verbose else 'INFO')
+    ensure_dirs()
+
+    binary = os.path.abspath(args.binary)
+    if not os.path.isfile(binary):
+        sys.stderr.write(f"error: not a file: {binary}\n")
+        return 1
+
+    t0 = time.time()
+
+    from core.pipeline import run_pipeline
+
+    # respect top-level feature toggles
+    if args.no_symbolic:
+        import config; config.ENABLE_SYMBOLIC = False
+    if args.no_crypto:
+        import config; config.ENABLE_CRYPTO_SCAN = False
+
+    result = run_pipeline(
+        binary_path=binary,
+        crash_path=args.crash,
+        functions=args.functions,
+        max_funcs=args.max_funcs,
+>>>>>>> d81973a (精简冗余模块)
         include_lib=args.include_lib,
-        interactive=args.interactive,
-        output_format=args.output_format,
         parallel=args.parallel,
+<<<<<<< HEAD
         max_parallel=args.max_parallel,
         hooks_dir=args.hooks_dir,
         fuzzer_type=args.fuzzer if args.fuzzer != 'none' else None,
         expert_mode=args.expert,
         export_corpus_dir=args.export_corpus,
         no_rop=args.no_rop
+=======
+        output_format=args.format,
+        hooks_dir=args.hooks,
+        decompiler=args.decompiler,
+>>>>>>> d81973a (精简冗余模块)
     )
-    
+
     if 'error' in result:
+<<<<<<< HEAD
         logger.error(f"分析失败: {result['error']}")
         sys.exit(1)
     
@@ -1981,35 +2046,22 @@ def main():
             decomp_results=result.get('decomp_analysis', [])
         )
     
+=======
+        sys.stderr.write(f"error: {result['error']}\n")
+        return 1
+
+    elapsed = result.get('elapsed', time.time() - t0)
+>>>>>>> d81973a (精简冗余模块)
     reports = result.get('reports', {})
-    logger.info("")
-    logger.info("=" * 60)
-    logger.info("分析完成")
-    logger.info(f"Markdown 报告: {reports.get('markdown', 'N/A')}")
-    logger.info(f"JSON 报告: {reports.get('json', 'N/A')}")
-    
-    similar_vulns = result.get('similar_vulnerabilities', [])
-    if similar_vulns:
-        logger.info(f"数据库相似漏洞: {len(similar_vulns)} 个")
-    
-    decomp_results = result.get('decomp_analysis', [])
-    total_vulns = sum(len(r.get('analysis', {}).get('vulnerabilities', [])) for r in decomp_results)
-    logger.info(f"发现漏洞总数: {total_vulns}")
-    
-    symbolic_result = result.get('symbolic_execution')
-    if symbolic_result:
-        sym_success = symbolic_result.get('success', False)
-        logger.info(f"符号执行: {'成功' if sym_success else '失败或跳过'}")
-    
-    exploit_result = result.get('exploit_result')
-    if exploit_result:
-        status = "成功" if exploit_result.get('success') else "需要调试"
-        logger.info(f"利用脚本状态: {status}")
-        if exploit_result.get('script_path'):
-            logger.info(f"利用脚本: {exploit_result['script_path']}")
-    
-    logger.info("=" * 60)
-    
+
+    print()
+    print(f"  done in {elapsed:.1f}s")
+    print(f"  functions: {len(result.get('decomp_analysis', []))}")
+    print(f"  vulns:     {result.get('total_vulns', 0)}")
+    for fmt, path in reports.items():
+        print(f"  {fmt}: {path}")
+    print()
+
     return 0
 
 

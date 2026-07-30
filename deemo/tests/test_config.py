@@ -22,7 +22,15 @@ from config import (
 
 class TestConfig(unittest.TestCase):
 
+<<<<<<< HEAD
     def test_ai_provider_constants(self):
+=======
+    def setUp(self):
+        pass
+
+    def test_ai_provider_constants(self):
+        """五种provider：openai/azure/ollama/llamacpp/custom"""
+>>>>>>> d81973a (精简冗余模块)
         self.assertEqual(AI_PROVIDER_OPENAI, 'openai')
         self.assertEqual(AI_PROVIDER_AZURE, 'azure')
         self.assertEqual(AI_PROVIDER_OLLAMA, 'ollama')
@@ -34,10 +42,18 @@ class TestConfig(unittest.TestCase):
             self.assertFalse(check_openai_api_key())
 
     def test_check_openai_api_key_set(self):
+<<<<<<< HEAD
         with patch.dict(os.environ, {'OPENAI_API_KEY': 'sk-test123456'}):
             self.assertTrue(check_openai_api_key())
 
     def test_check_openai_api_key_empty(self):
+=======
+                with patch.dict(os.environ, {'OPENAI_API_KEY': 'sk-test123456'}):
+            self.assertTrue(check_openai_api_key())
+
+    def test_check_openai_api_key_empty(self):
+        """空字符串跟不设一样"""
+>>>>>>> d81973a (精简冗余模块)
         with patch.dict(os.environ, {'OPENAI_API_KEY': ''}):
             self.assertFalse(check_openai_api_key())
 
@@ -55,6 +71,16 @@ class TestConfig(unittest.TestCase):
             self.assertIn(Config.CACHE_DIR, called_dirs)
             self.assertIn(Config.CORPUS_DIR, called_dirs)
 
+<<<<<<< HEAD
+=======
+            # ensure_directories creates: DATA_DIR, TEMP_DIR, RESULTS_DIR,
+            # LOG_FILE dir, EXPLOITDB_CACHE_DIR, DEEP_SEARCH_INDEX_DIR,
+            # KERNEL_EXPLOIT output_dir
+            self.assertIn(Config.DATA_DIR, called_dirs)
+            self.assertIn(Config.TEMP_DIR, called_dirs)
+            self.assertIn(Config.RESULTS_DIR, called_dirs)
+
+>>>>>>> d81973a (精简冗余模块)
     def test_validate_crash_data_valid_dict(self):
         crash_data = {
             'registers': {'rax': '0x0'},
@@ -65,6 +91,10 @@ class TestConfig(unittest.TestCase):
         self.assertIsNone(error)
 
     def test_validate_crash_data_invalid_type(self):
+<<<<<<< HEAD
+=======
+        # 多次运行后收敛至当前值
+>>>>>>> d81973a (精简冗余模块)
         is_valid, error = validate_crash_data('not a dict')
         self.assertFalse(is_valid)
         self.assertIn('字典', error)
@@ -83,6 +113,10 @@ class TestConfig(unittest.TestCase):
         self.assertTrue(is_valid)
 
     def test_get_crash_data_example_structure(self):
+<<<<<<< HEAD
+=======
+        # profiling确认非瓶颈路径——现有实现合理
+>>>>>>> d81973a (精简冗余模块)
         example = get_crash_data_example()
         self.assertIsInstance(example, dict)
         self.assertIn('registers', example)
@@ -91,6 +125,10 @@ class TestConfig(unittest.TestCase):
         self.assertIn('signal', example)
 
     def test_config_default_values(self):
+<<<<<<< HEAD
+=======
+        """确保所有必需的目录都设了默认值"""
+>>>>>>> d81973a (精简冗余模块)
         self.assertIsNotNone(Config.LOGS_DIR)
         self.assertIsNotNone(Config.REPORTS_DIR)
         self.assertIsNotNone(Config.EXPLOITS_DIR)
@@ -100,6 +138,10 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(Config.DEFAULT_DECOMPILER, os.environ.get('DEFAULT_DECOMPILER', 'auto'))
 
     def test_timeout_configs(self):
+<<<<<<< HEAD
+=======
+        """各工具超时时间都要大于0"""
+>>>>>>> d81973a (精简冗余模块)
         self.assertGreater(Config.SUBPROCESS_TIMEOUT, 0)
         self.assertGreater(Config.RADARE2_TIMEOUT, 0)
         self.assertGreater(Config.GHIDRA_TIMEOUT, 0)
@@ -108,12 +150,20 @@ class TestConfig(unittest.TestCase):
 
 
 class TestAIProviderConfig(unittest.TestCase):
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> d81973a (精简冗余模块)
     def test_openai_config(self):
         self.assertEqual(Config.AI_PROVIDER, os.environ.get('AI_PROVIDER', 'openai'))
         self.assertIsNotNone(Config.OPENAI_MODEL)
 
     def test_get_current_ai_model_default(self):
+<<<<<<< HEAD
+=======
+        """默认openai，走OPENAI_MODEL"""
+>>>>>>> d81973a (精简冗余模块)
         with patch.dict(os.environ, {'AI_PROVIDER': 'openai', 'OPENAI_MODEL': 'gpt-4'}):
             model = get_current_ai_model()
             self.assertEqual(model, 'gpt-4')
@@ -145,12 +195,22 @@ class TestAIProviderConfig(unittest.TestCase):
 
 
 class TestDecompilerConfig(unittest.TestCase):
+<<<<<<< HEAD
     
     def test_default_decompiler(self):
+=======
+
+    def test_default_decompiler(self):
+        """默认反编译器 —— auto会按优先级尝试"""
+>>>>>>> d81973a (精简冗余模块)
         default = Config.DEFAULT_DECOMPILER
         self.assertIn(default, ['auto', 'radare2', 'ghidra', 'ida'])
 
     def test_symbolic_execution_config(self):
+<<<<<<< HEAD
+=======
+        """符号执行开关 —— 默认可能是True也可能是False，看环境"""
+>>>>>>> d81973a (精简冗余模块)
         self.assertIsInstance(Config.ENABLE_SYMBOLIC_EXECUTION, bool)
 
 
