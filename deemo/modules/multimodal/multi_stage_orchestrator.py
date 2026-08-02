@@ -892,3 +892,243 @@ ExploitChainStep = None
 ExploitChain = None
 ChainAnalysisResult = None
 orchestrate_exploit_chain = None
+
+
+# ============================================================================
+# MCTS链规划 — 蒙特卡洛树搜索选择最优步骤序列
+# 参考：Silver et al. Mastering Chess and Shogi by Self-Play... AlphaZero.
+#       Science 2018. + Browne et al. A Survey of MCTS Methods. 2012.
+# 将 exploit chain 视为决策树：每个节点=一个步骤，边=执行结果
+# MCTS在可能的步骤序列空间中探索，通过 UCB 权衡探索 vs 利用
+# ============================================================================
+
+class MCTSChainPlanner:
+    """蒙特卡洛树搜索链规划器。
+
+    使用四步迭代：Selection → Expansion → Simulation → Backpropagation。
+    UCB1 公式：score = avg_success + c_puct * sqrt(log(N_parent) / N_child)
+    """
+
+    def __init__(self, exploration_weight: float = 1.4, n_simulations: int = 100):
+        self.c_puct = exploration_weight
+        self.n_sims = n_simulations
+        self._tree: Dict[str, Dict] = {}  # node_id → {visits, total_reward, actions}
+
+    def plan(self, steps: List[ChainStep],
+             target_info: Optional[Dict[str, Any]] = None,
+             max_steps: int = 10) -> List[str]:
+        """MCTS规划：返回最优步骤顺序（action名列表）。
+
+        每次模拟从根节点出发：
+        - 选择：沿树下降，选 UCB1 最大的子节点
+        - 扩展：到达叶节点后，展开一个未尝试的步骤
+        - 模拟：随机完成剩余步骤，评估最终奖励
+        - 反向传播：将奖励沿路径回溯更新统计
+        """
+        if not steps:
+            return []
+
+        _action_names = [s.action for s in steps]
+        self._tree = {'root': {'visits': 0, 'total_reward': 0.0, 'children': {}}}
+
+        for _sim in range(self.n_sims):
+            _path = ['root']
+            _node = 'root'
+            _available = set(_action_names) - set(_path)
+
+            # Selection + Expansion
+            while _node in self._tree and self._tree[_node].get('children') is not None:
+                _children = self._tree[_node]['children']
+                if not _children:
+                    break
+                # UCB1 选择
+                _best_action = None
+                _best_ucb = -float('inf')
+                _log_parent = math.log(max(1, self._tree[_node]['visits']))
+                for _act, _child_id in _children.items():
+                    if _child_id not in self._tree:
+                        continue
+                    _child = self._tree[_child_id]
+                    _exploit = _child['total_reward'] / max(1, _child['visits'])
+                    _explore = self.c_puct * math.sqrt(_log_parent / max(1, _child['visits']))
+                    _ucb = _exploit + _explore
+                    if _ucb > _best_ucb:
+                        _best_ucb = _ucb
+                        _best_action = _act
+                if _best_action is None or _best_action not in _children:
+                    break
+                _node = _children[_best_action]
+                _path.append(_best_action)
+                _available.discard(_best_action)
+
+            # Expansion: 展开一个新动作
+            if _available and len(_path) < max_steps:
+                _next_act = next(iter(_available))
+                _new_id = f"node_{_next_act}_{_sim}"
+                if 'children' not in self._tree[_node]:
+                    self._tree[_node]['children'] = {}
+                self._tree[_node]['children'][_next_act] = _new_id
+                self._tree[_new_id] = {'visits': 0, 'total_reward': 0.0, 'children': {}}
+                _path.append(_next_act)
+                _node = _new_id
+
+            # Simulation: 评估当前路径的奖励
+            _reward = self._rollout(_path, steps, target_info)
+
+            # Backpropagation
+            for _nid in _path:
+                if _nid in self._tree:
+                    self._tree[_nid]['visits'] += 1
+                    self._tree[_nid]['total_reward'] += _reward
+
+        # 提取最优路径
+        _best_path = self._extract_best_path()
+        return _best_path
+
+    def _rollout(self, path: List[str], steps: List[ChainStep],
+                  target_info: Optional[Dict[str, Any]] = None) -> float:
+        """模拟执行：启发式评估路径的成功概率。
+
+        考虑因素：步骤前置条件满足度、shell命令可靠性、
+        fuzzable步骤的变异成功率。
+        """
+        _score = 1.0
+        _step_map = {s.action: s for s in steps}
+        _completed = set()
+
+        for _act in path:
+            if _act not in _step_map:
+                continue
+            _step = _step_map[_act]
+            # 前置条件满足度
+            _pre_satisfied = sum(1 for _pre in _step.pre_conditions
+                                if _pre in _completed or _pre in [_step.action for _step in
+                                [s for s in steps if s.action in path[:path.index(_act)]]])
+            _total_pre = max(1, len(_step.pre_conditions))
+            _pre_factor = _pre_satisfied / _total_pre
+
+            # Shell命令可靠性（模拟执行有不确定性）
+            _shell_factor = 0.95 if _step.shell_command else 1.0
+
+            # Fuzzable步骤成功率
+            _fuzz_factor = 0.85 if _step.fuzzable else 1.0
+
+            _step_success = _pre_factor * _shell_factor * _fuzz_factor
+            _score *= max(0.1, _step_success)
+            _completed.add(_act)
+
+        return _score
+
+    def _extract_best_path(self) -> List[str]:
+        """从搜索树中提取被访问次数最多的路径。"""
+        _node = 'root'
+        _path: List[str] = []
+        _max_depth = 20
+
+        while _node in self._tree and _max_depth > 0:
+            _children = self._tree[_node].get('children', {})
+            if not _children:
+                break
+            _best_act = max(_children.keys(),
+                          key=lambda a: self._tree.get(_children[a], {}).get('visits', 0))
+            _path.append(_best_act)
+            _node = _children[_best_act]
+            _max_depth -= 1
+
+        return _path
+
+
+# ============================================================================
+# 贝叶斯优化 — 对fuzzing payload参数做自动调优
+# 参考：Snoek et al. Practical Bayesian Optimization of ML Algorithms. NIPS 2012.
+# 高斯过程代理模型 + Expected Improvement (EI) 采集函数
+# 在连续参数空间（payload大小、超时、变异强度）中寻找最优配置
+# ============================================================================
+
+class BayesianPayloadOptimizer:
+    """贝叶斯优化器：在高维payload参数空间中高效搜索。
+
+    适用于：NOP sled长度、shellcode编码方式选择、timeout设置等。
+    使用 GP 代理 + EI 采集，比 Grid Search 少 5-10× 评估次数。
+    """
+
+    def __init__(self, param_bounds: Dict[str, Tuple[float, float]],
+                 n_initial: int = 5):
+        self.bounds = param_bounds  # {param_name: (min, max)}
+        self.n_initial = n_initial
+        self._X: List[List[float]] = []  # 已评估的参数组合
+        self._y: List[float] = []        # 对应得分
+        self._param_order = list(param_bounds.keys())
+        self._n_dims = len(self._param_order)
+
+    def _rbf_kernel(self, x1: List[float], x2: List[float],
+                     length_scale: float = 1.0) -> float:
+        """RBF 核：k(x, x') = exp(-0.5 * ||x-x'||² / l²)"""
+        _sq_dist = sum((x1[i]-x2[i])**2 for i in range(len(x1)))
+        return math.exp(-0.5 * _sq_dist / (length_scale**2))
+
+    def suggest(self) -> Dict[str, float]:
+        """返回下一个建议评估的参数组合。"""
+        if len(self._X) < self.n_initial:
+            # 初始随机采样
+            _params = {}
+            for _i, _key in enumerate(self._param_order):
+                _lo, _hi = self.bounds[_key]
+                _params[_key] = _lo + random.random() * (_hi - _lo)
+            return _params
+
+        # Expected Improvement 最大化
+        _best_y = max(self._y) if self._y else 0.0
+        _n_candidates = 50
+        _candidates: List[List[float]] = []
+        for _ in range(_n_candidates):
+            _cand = [self.bounds[_key][0] + random.random() *
+                     (self.bounds[_key][1] - self.bounds[_key][0])
+                     for _key in self._param_order]
+            _candidates.append(_cand)
+
+        _best_ei = -float('inf')
+        _best_cand = _candidates[0]
+        for _cand in _candidates:
+            # 简化GP预测：加权平均
+            if self._X:
+                _k_self = [[self._rbf_kernel(self._X[i], self._X[j])
+                           for j in range(len(self._X))] for i in range(len(self._X))]
+                _k_pred = [self._rbf_kernel(_cand, self._X[i]) for i in range(len(self._X))]
+                # 伪逆预测
+                _mean_pred = sum(_k_pred[i]*self._y[i] for i in range(len(self._y))) / max(1, sum(_k_pred))
+                _var_pred = max(0.01, 1.0 - sum(kp*kp for kp in _k_pred)/max(1, len(self._X)))
+            else:
+                _mean_pred = 0.5
+                _var_pred = 1.0
+
+            # EI = (μ - y_best) * Φ(z) + σ * φ(z)
+            _std = math.sqrt(_var_pred)
+            if _std < _EPS:
+                continue
+            _z = (_mean_pred - _best_y) / _std
+            # 标准正态 CDF (sigmoid 近似)
+            _cdf = 1.0 / (1.0 + math.exp(-1.702 * _z))
+            _pdf = math.exp(-0.5 * _z * _z) / math.sqrt(2.0 * math.pi)
+            _ei = (_mean_pred - _best_y) * _cdf + _std * _pdf
+
+            if _ei > _best_ei:
+                _best_ei = _ei
+                _best_cand = _cand
+
+        return {self._param_order[i]: round(_best_cand[i], 4)
+                for i in range(self._n_dims)}
+
+    def observe(self, params: Dict[str, float], score: float):
+        """记录一次评估结果。"""
+        _vec = [params.get(_key, 0.0) for _key in self._param_order]
+        self._X.append(_vec)
+        self._y.append(score)
+
+    def best_params(self) -> Dict[str, float]:
+        """返回当前观察到的最优参数。"""
+        if not self._y:
+            return {}
+        _best_idx = max(range(len(self._y)), key=lambda i: self._y[i])
+        return {self._param_order[i]: round(self._X[_best_idx][i], 4)
+                for i in range(self._n_dims)}

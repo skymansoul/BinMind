@@ -737,3 +737,148 @@ class SequentialBayesianUpdater:
         if _first_var < 1e-10:
             return 0.0
         return round(math.log(max(_current_var, 1e-12) / _first_var) / _n_delta, 4)
+
+
+# ============================================================================
+# 贝叶斯模型平均 (BMA) — 对多个校准器做后验加权
+# 参考：Hoeting et al. Bayesian Model Averaging. Statistical Science 1999.
+# 每个校准方法视为一个"模型"，其后验概率由其历史 Brier 分数决定。
+# ============================================================================
+
+def bayesian_model_average(calibrator_outputs: List[Dict[str, Any]],
+                             brier_scores: Optional[List[float]] = None
+                             ) -> Dict[str, float]:
+    """贝叶斯模型平均：用各校准器的 Brier 分数作为加权依据。
+
+    calibrator_outputs: 每个校准器的输出 dict，至少含 'confidence' 键。
+    brier_scores: 各校准器的历史 Brier 分数（低 = 好）。
+
+    权重的后验正比于 exp(-brier * n_samples)，
+    然后用 softmax-like 归一化。
+    若未提供 brier_scores，则等权平均。
+    """
+    _M = len(calibrator_outputs)
+    if _M == 0:
+        return {'bma_confidence': 0.5, 'weights': []}
+
+    if brier_scores is None or len(brier_scores) != _M:
+        _weights = [1.0/_M] * _M
+    else:
+        # 负对数似然加权
+        _log_weights = [-bs for bs in brier_scores]
+        _max_lw = max(_log_weights)
+        _weights = [math.exp(lw - _max_lw) for lw in _log_weights]
+        _sum_w = sum(_weights)
+        _weights = [w/_sum_w for w in _weights]
+
+    _bma_conf = sum(_weights[i] * calibrator_outputs[i].get('confidence', 0.5)
+                   for i in range(_M))
+    _bma_interval = (
+        sum(_weights[i] * calibrator_outputs[i].get('ci_lower', 0.0) for i in range(_M)),
+        sum(_weights[i] * calibrator_outputs[i].get('ci_upper', 1.0) for i in range(_M)),
+    )
+
+    return {
+        'bma_confidence': round(_bma_conf, 4),
+        'bma_ci_lower': round(_bma_interval[0], 4),
+        'bma_ci_upper': round(_bma_interval[1], 4),
+        'weights': [round(w, 4) for w in _weights],
+        'n_models': _M,
+    }
+
+
+# ============================================================================
+# 成本敏感阈值 — 根据假阳性/假阴性代价调整决策阈值
+# 参考：Elkan. The Foundations of Cost-Sensitive Learning. IJCAI 2001.
+# optimal_threshold = C_FP / (C_FP + C_FN)
+# 当假阴性代价远高于假阳性时，自动降低阈值以提高召回
+# ============================================================================
+
+def cost_sensitive_threshold(calibrated_probs: List[float],
+                              cost_fp: float = 1.0,
+                              cost_fn: float = 5.0) -> float:
+    """成本敏感决策阈值。
+
+    cost_fp: 误报代价（不必要的人工审查时间）。
+    cost_fn: 漏报代价（漏洞被忽略的潜在损失）。
+    threshold = cost_fp / (cost_fp + cost_fn) — 当 FN 代价高时降低阈值。
+    这等价于在 ROC 曲线上沿切线 λ = C_FP/C_FN 选择操作点。
+    """
+    _opt_thresh = cost_fp / (cost_fp + cost_fn)
+    # 可选：在经验分布上做平滑
+    if calibrated_probs:
+        _mean_conf = sum(calibrated_probs) / len(calibrated_probs)
+        # James-Stein style shrinkage toward prior
+        _n = len(calibrated_probs)
+        _shrink_factor = min(0.2, 3.0 / max(_n, 1))
+        _opt_thresh = _shrink_factor * 0.5 + (1.0 - _shrink_factor) * _opt_thresh
+    return round(_opt_thresh, 4)
+
+
+# ============================================================================
+# 校准变化追踪 — 随时间监控校准器的性能退化
+# 参考：Widmer & Kubat. Learning in the Presence of Concept Drift. 1996.
+# 当校准误差的趋势线斜率显著为正 → 需要重新校准
+# ============================================================================
+
+class CalibrationDriftMonitor:
+    """校准漂移监控：追踪 ECE 的时序变化，预警校准失效。
+
+    滞后窗口 (lag=20) 上计算 ECE 移动平均，
+    当 MA 超过基线 2× 标准差时触发重新校准信号。
+    """
+
+    def __init__(self, window: int = 30, alert_multiplier: float = 2.0):
+        self.window = window
+        self.alert_mult = alert_multiplier
+        self._ece_history: List[float] = []
+        self._baseline_ece: float = 0.0
+        self._baseline_std: float = 0.01
+        self.recalibrate_needed: bool = False
+
+    def update(self, ece: float) -> bool:
+        """记录当前 ECE，返回是否需要重新校准。"""
+        self._ece_history.append(ece)
+        if len(self._ece_history) > 200:
+            self._ece_history.pop(0)
+
+        _n = len(self._ece_history)
+        if _n < self.window:
+            return False
+
+        _recent = self._ece_history[-self.window:]
+        _ma = sum(_recent) / len(_recent)
+        _baseline = self._ece_history[:max(self.window, _n - self.window)]
+        self._baseline_ece = sum(_baseline) / len(_baseline)
+        _var = sum((x-self._baseline_ece)**2 for x in _baseline) / len(_baseline)
+        self._baseline_std = math.sqrt(_var) + _EPS
+
+        _z_score = (_ma - self._baseline_ece) / self._baseline_std
+        self.recalibrate_needed = _z_score > self.alert_mult
+        return self.recalibrate_needed
+
+    def reset(self):
+        self._ece_history.clear()
+        self._baseline_ece = 0.0
+        self.recalibrate_needed = False
+
+
+# ============================================================================
+# 鲁棒校准 — 使用 Huber 损失替代 MSE 的稳健保序回归
+# 参考：Huber. Robust Estimation of a Location Parameter. 1964.
+# 对离群值的敏感度由 δ 控制：|resid| ≤ δ → MSE, |resid| > δ → MAE
+# ============================================================================
+
+def huber_calibration_loss(prob: float, label: int, delta: float = 0.2) -> float:
+    """Huber 校准损失：对离群分数鲁棒的 BCE 替代。
+
+    resid = prob - label
+    |resid| ≤ δ → 0.5 * resid²（MSE，对小残差精确）
+    |resid| > δ → δ * (|resid| - 0.5*δ)（MAE，对大残差不敏感）
+    这避免了少数离群样本过度影响整体校准结果。
+    """
+    _resid = prob - label
+    _abs_r = abs(_resid)
+    if _abs_r <= delta:
+        return 0.5 * _resid * _resid
+    return delta * (_abs_r - 0.5 * delta)

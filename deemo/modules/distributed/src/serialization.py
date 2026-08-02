@@ -25,6 +25,16 @@ try:
 except ImportError:
     LZ4_AVAILABLE = False
 
+# protobuf — 离线场景的首选紧凑格式
+try:
+    from google.protobuf import json_format as _pb_json_format
+    from google.protobuf import descriptor_pool as _pb_descriptor_pool
+    PROTOBUF_AVAILABLE = True
+except ImportError:
+    PROTOBUF_AVAILABLE = False
+    _pb_json_format = None
+    _pb_descriptor_pool = None
+
 # ---- 魔术字节 ----
 MAGIC_GZIP = b'\x1f\x8b'
 MAGIC_LZ4 = b'\x04\x22\x4d\x18'
@@ -134,3 +144,37 @@ def deserialize_stream(data_iter: Iterator[bytes], fmt: str = "json") -> Iterato
             stripped = line.rstrip(b"\n")
             if stripped:
                 yield json.loads(stripped.decode("utf-8"))
+
+
+# ===== Protobuf 序列化 — 离线/跨语言场景首选紧凑格式 =====
+# protobuf 比 JSON 体积小 ~60-80%，比 msgpack 更紧凑但需预定义 .proto schema
+# 此处提供 message ↔ JSON dict 的双向转换，方便与现有 JSON 生态互操作
+
+def pb_to_json(message) -> dict:
+    """protobuf Message → JSON dict。需要 protobuf 库。"""
+    if not PROTOBUF_AVAILABLE:
+        raise RuntimeError("protobuf not installed")
+    return _pb_json_format.MessageToDict(
+        message,
+        including_default_value_fields=False,
+        preserving_proto_field_name=True,
+    )
+
+
+def pb_from_json(message_class, data: dict):
+    """JSON dict → protobuf Message。message_class 为生成的 Proto 类。"""
+    if not PROTOBUF_AVAILABLE:
+        raise RuntimeError("protobuf not installed")
+    return _pb_json_format.ParseDict(data, message_class())
+
+
+def serialize_pb(message) -> bytes:
+    """protobuf Message → wire format bytes。"""
+    return message.SerializeToString()
+
+
+def deserialize_pb(message_class, data: bytes):
+    """wire format bytes → protobuf Message。"""
+    msg = message_class()
+    msg.ParseFromString(data)
+    return msg

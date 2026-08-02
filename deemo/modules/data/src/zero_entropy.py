@@ -1,0 +1,249 @@
+# Zero-entropy region optimization + vectorized CDC refinements
+# 参考:
+#   Al Jarah et al., "The Impact of Low-Entropy on Chunking Techniques for
+#     Data Deduplication" (IEEE CLOUD 2024): 零熵/低熵数据块对 CDC 算法
+#     (Rabin, FastCDC, AE, RAM) 的性能影响分析 —— 零熵区域导致 chunk
+#     边界检测失效，chunk 大小分布严重偏离预期。
+#   Al Jarah, "Exploiting Zero-Entropy Data for Efficient Deduplication"
+#     (Master's Thesis, 2025): ZERO 预处理 —— 在 CDC 之前扫描并提取
+#     零熵区域 → RLE 编码 → 剩余数据用标准 CDC → 提升空间节省 up to 29%。
+#   VectorCDC [Udayashankar et al., FAST '25, arXiv:2508.05797]:
+#     使用 SIMD 向量指令加速 hashless CDC，吞吐量 8-26x 提升。
+#     Python 中无法直接使用 SSE/AVX 指令，但在逻辑层面实现了等效的
+#     零熵跳过 (zero-skip) 和 range scan 策略以减少无效 hash 计算。
+#
+# 核心思路:
+#   1. detect_zero_runs: 扫描二进制数据，识别连续 ≥ min_run 字节的
+#      相同字节值区域 (不限于 0x00, 含 0xFF Padding 等)。
+#   2. ZeroRegionExtractor: 将零熵区域替换为 (offset, byte_value, length)
+#      元组，剩余数据走标准 CDC，空间节省来自 RLE 编码。
+#   3. 零熵跳过模式 (ZeroSkipCDC): 在 CDC 的 gear hash 循环中，
+#      检测到进入零熵区域时直接跳到区域末尾，减少 hash 计算。
+
+from typing import List, Tuple, Optional, Iterator
+
+# ---------------------------------------------------------------------------
+# 零熵区域检测
+# ---------------------------------------------------------------------------
+
+def detect_zero_runs(data: bytes, min_run: int = 64,
+                      target_byte: int = None) -> List[Tuple[int, int, int]]:
+    """扫描数据中连续重复字节的区域。
+
+    返回 [(offset, byte_value, length), ...]。
+    target_byte=None 时检测任意相同字节值（不限于 0x00）。
+
+    min_run=64 来自 Al Jarah 2025 的经验参数: 短于 64 字节的零熵区域
+    单独 RLE 编码的元数据开销 (offset+length+value ≈ 12-16 bytes)
+    超过收益，应留给标准 CDC 自然切割。
+    """
+    if not data:
+        return []
+    runs = []
+    n = len(data)
+    i = 0
+    while i < n:
+        b = data[i]
+        # 找连续相同字节的终点
+        j = i + 1
+        while j < n and data[j] == b:
+            j += 1
+        run_len = j - i
+        if run_len >= min_run and (target_byte is None or b == target_byte):
+            runs.append((i, b, run_len))
+        i = j
+    return runs
+
+
+def zero_entropy_ratio(data: bytes, min_run: int = 64) -> float:
+    """零熵区域占总大小的比例 —— 快速评估 ZERO 预处理是否值得。
+
+    若 ratio < 0.05 (不足 5%)，零熵优化的开销可能超过收益。
+    参考 Al Jarah 2025: 在 VM image 和 scientific data 中 ratio
+    可达 15-40%，此时 ZERO 预处理显著提升去重效果。
+    """
+    runs = detect_zero_runs(data, min_run)
+    total_ze = sum(r[2] for r in runs)
+    return total_ze / max(len(data), 1)
+
+
+# ---------------------------------------------------------------------------
+# ZeroRegionExtractor — 零熵提取 + RLE 编码
+# ---------------------------------------------------------------------------
+
+class ZeroRegionExtractor:
+    """提取二进制数据中的零熵区域并用 RLE 编码。
+
+    输出: (non_zero_data, rle_records)
+      non_zero_data: 去掉零熵区域后的剩余数据 (拼接)
+      rle_records: [(original_offset, byte_value, length), ...]
+    """
+
+    def __init__(self, min_run: int = 64):
+        self.min_run = min_run
+
+    def extract(self, data: bytes) -> Tuple[bytes, List[Tuple[int, int, int]]]:
+        """从 data 中剥离零熵区域。"""
+        runs = detect_zero_runs(data, self.min_run)
+        if not runs:
+            return data, []
+
+        non_zero_parts = []
+        rle_records = []
+        prev_end = 0
+        for offset, byte_val, length in runs:
+            if offset > prev_end:
+                non_zero_parts.append(data[prev_end:offset])
+            rle_records.append((offset, byte_val, length))
+            prev_end = offset + length
+        if prev_end < len(data):
+            non_zero_parts.append(data[prev_end:])
+        return b"".join(non_zero_parts), rle_records
+
+    def reconstruct(self, non_zero_data: bytes,
+                    rle_records: List[Tuple[int, int, int]],
+                    original_size: int) -> bytes:
+        """用 non_zero_data + RLE records 重建原始数据。"""
+        result = bytearray(original_size)
+        nz_pos = 0
+        prev_end = 0
+        for offset, byte_val, length in rle_records:
+            # 复制 offset 前的非零数据
+            gap = offset - prev_end
+            if gap > 0:
+                result[prev_end:offset] = non_zero_data[nz_pos:nz_pos + gap]
+                nz_pos += gap
+            # 填充 RLE 区域
+            result[offset:offset + length] = bytes([byte_val] * length)
+            prev_end = offset + length
+        # 尾部剩余的非零数据
+        if prev_end < original_size:
+            result[prev_end:] = non_zero_data[nz_pos:]
+        return bytes(result)
+
+    def savings(self, data: bytes) -> dict:
+        """估算零熵提取的空间节省。"""
+        nz_data, rle = self.extract(data)
+        rle_size = len(rle) * 14  # 每条 RLE 记录 ~14 bytes (3 varints)
+        return {
+            "original_size": len(data),
+            "non_zero_size": len(nz_data),
+            "zero_regions": len(rle),
+            "rle_overhead": rle_size,
+            "total_encoded": len(nz_data) + rle_size,
+            "savings_ratio": round(
+                1 - (len(nz_data) + rle_size) / max(len(data), 1), 4),
+            "zero_ratio": round(
+                (len(data) - len(nz_data)) / max(len(data), 1), 4),
+        }
+
+
+# ---------------------------------------------------------------------------
+# ZeroSkipCDC — 零熵跳过模式的 CDC
+# 在标准 gear hash CDC 基础上，检测到零熵区域时直接跳过，
+# 将整个零熵区域作为一个 chunk 或在区域边界强制切分。
+# ---------------------------------------------------------------------------
+
+def zero_skip_cdc(data: bytes, min_chunk: int = 1024, max_chunk: int = 16384,
+                  mask_bits: int = 12, zero_min_run: int = 64) -> List[bytes]:
+    """带零熵跳过的 CDC 分块。
+
+    与标准 cdc_chunk (dedup.py) 的区别:
+    在 gear hash 循环中检测零熵区域的起始边界，
+    进入后直接跳到区域末尾节省 hash 计算。
+    适用于 VM image、core dump、firmware blob 等有大片填充区域的数据。
+    参考 VectorCDC (FAST '25) 的 range-scan 优化思路。
+    """
+    if len(data) <= min_chunk:
+        return [data]
+
+    from .dedup import _gear_table
+    gear_table = _gear_table()
+
+    mask = (1 << mask_bits) - 1
+    gear = 0
+    chunks = []
+    start = 0
+    i = 0
+
+    # 预扫描零熵区域索引
+    ze_runs = detect_zero_runs(data, zero_min_run)
+    ze_idx = 0
+    in_ze = False
+    ze_end = 0
+
+    while i < len(data):
+        # 检查是否进入/离开零熵区域
+        if ze_idx < len(ze_runs) and i >= ze_runs[ze_idx][0] and i < ze_runs[ze_idx][0] + ze_runs[ze_idx][2]:
+            if not in_ze:
+                # 进入零熵区域: 之前的部分若 ≥ min_chunk 则切分
+                if i - start >= min_chunk:
+                    chunks.append(data[start:i])
+                    start = i
+                    gear = 0
+                in_ze = True
+                ze_end = ze_runs[ze_idx][0] + ze_runs[ze_idx][2]
+        elif in_ze and i >= ze_end:
+            in_ze = False
+            ze_idx += 1
+            # 零熵区域作为一个整体 chunk
+            if i - start >= min_chunk:
+                chunks.append(data[start:ze_end])
+                start = ze_end
+                i = ze_end
+                gear = 0
+                continue
+
+        if in_ze:
+            # 在零熵区域中: 不计算 gear hash，直接向前跳
+            i += 1
+            if i - start >= max_chunk:
+                chunks.append(data[start:i])
+                start = i
+                gear = 0
+                in_ze = False
+                ze_idx += 1
+            continue
+
+        # 正常 gear hash 路径
+        b = data[i]
+        gear = ((gear << 1) + gear_table[(gear >> 24) ^ b]) & 0xFFFFFFFF
+        chunk_len = i - start
+
+        if chunk_len >= max_chunk:
+            chunks.append(data[start:i])
+            start = i
+            gear = 0
+        elif chunk_len >= min_chunk and (gear & mask) == 0:
+            chunks.append(data[start:i])
+            start = i
+            gear = 0
+        i += 1
+
+    if start < len(data):
+        chunks.append(data[start:])
+    return chunks
+
+
+def zero_skip_stats(data: bytes, zero_min_run: int = 64) -> dict:
+    """零熵跳过 CDC 的效果评估。"""
+    standard = len(_standard_cdc_wrapper(data))
+    optimized = len(zero_skip_cdc(data, zero_min_run=zero_min_run))
+    ze_runs = detect_zero_runs(data, zero_min_run)
+    return {
+        "size": len(data),
+        "zero_regions": len(ze_runs),
+        "zero_bytes": sum(r[2] for r in ze_runs),
+        "standard_chunks": standard,
+        "zero_skip_chunks": optimized,
+        "chunk_reduction": standard - optimized,
+    }
+
+
+def _standard_cdc_wrapper(data: bytes) -> List[bytes]:
+    from .dedup import cdc_chunk
+    return cdc_chunk(data)
+
+
+# 别名导出 —— 简化外部 import 路径
+_zero_skip_chunk = zero_skip_cdc

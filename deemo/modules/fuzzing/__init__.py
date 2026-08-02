@@ -23,6 +23,23 @@ _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
     "SeedEvolution": ("fuzzing.fuzz_seed_evolution", "SeedEvolution"),
     "FuzzDictionaryGenerator": ("fuzzing.fuzz_dictionary_generator", "FuzzDictionaryGenerator"),
     "ConstantExtractor": ("fuzzing.fuzz_dictionary_generator", "ConstantExtractor"),
+    # 2026-07 扩展模块 -- MAB调度/崩溃去重/结构感知变异/输入最小化/活动追踪/差分测试/符号桥接/能量策略
+    "BanditScheduler": ("fuzzing.fuzz_bandit_scheduler", "BanditScheduler"),
+    "CrashClusteringEngine": ("fuzzing.fuzz_crash_triage", "CrashClusteringEngine"),
+    "StructureAwareMutator": ("fuzzing.fuzz_structure_mutator", "StructureAwareMutator"),
+    "InputMinimizer": ("fuzzing.fuzz_input_minimizer", "InputMinimizer"),
+    "CampaignTracker": ("fuzzing.fuzz_campaign_tracker", "CampaignTracker"),
+    "DiffFuzzer": ("fuzzing.fuzz_diff_testing", "DiffFuzzer"),
+    "SymbolicBridge": ("fuzzing.fuzz_symbolic_bridge", "SymbolicBridge"),
+    "EnergyComputer": ("fuzzing.fuzz_energy_policy", "EnergyComputer"),
+    # 2026-08 扩展 -- 污点引导/文法推断/语料优化/渐进式流水线/对比评估/覆盖异常/定向模糊测试
+    "TaintGuidedMutator": ("fuzzing.fuzz_taint_guide", "TaintGuidedMutator"),
+    "GrammarInferrer": ("fuzzing.fuzz_grammar_infer", "GrammarInferrer"),
+    "CorpusOptimizer": ("fuzzing.fuzz_corpus_optimizer", "CorpusOptimizer"),
+    "ProgressivePipeline": ("fuzzing.fuzz_progressive", "ProgressivePipeline"),
+    "FuzzerComparator": ("fuzzing.fuzz_compare", "FuzzerComparator"),
+    "CoverageAnomalyDetector": ("fuzzing.fuzz_coverage_anomaly", "CoverageAnomalyDetector"),
+    "DirectedFuzzer": ("fuzzing.fuzz_directed", "DirectedFuzzer"),
 }
 
 _IMPORT_CACHE: dict[str, object] = {}

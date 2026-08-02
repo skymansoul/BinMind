@@ -13,7 +13,7 @@ from pathlib import Path
 from .core import Seed
 
 # ---- 支持动态策略切换 ----
-_VALID_STRATEGIES = frozenset({"aflfast", "roundrobin", "random", "weighted"})
+_VALID_STRATEGIES = frozenset({"aflfast", "roundrobin", "random", "weighted", "bandit"})
 
 # ===== 主要调度器 =====
 class Scheduler:
@@ -75,6 +75,8 @@ class Scheduler:
             _chosen = random.choice(self._seed_queue)
         elif self.strategy == "weighted":
             _chosen = self._pick_weighted()
+        elif self.strategy == "bandit":
+            _chosen = self._pick_bandit()
         else:
             _chosen = self._seed_queue[0]
 
@@ -82,6 +84,27 @@ class Scheduler:
             self._selection_counts[_chosen.id] += 1
             _chosen.mutation_count += 1
         return _chosen
+
+    # ---- bandit: 委托给 MAB 调度器 (LinUCB / UCB / Exp3 / Thompson) ----
+    def _pick_bandit(self) -> Seed:
+        # 懒加载, 避免循环导入和依赖侵入
+        try:
+            from fuzzing.fuzz_bandit_scheduler import BanditScheduler
+        except ImportError:
+            return self._seed_queue[0]
+        if not hasattr(self, '_bandit_impl'):
+            self._bandit_impl = BanditScheduler("linucb", alpha=0.8)
+        bctx = None  # LinUCB 会自动从 seed.metadata 生成特征
+        picked = self._bandit_impl.select_seed(self._seed_queue, contexts=None)
+        if picked is None:
+            return self._seed_queue[0]
+        idx, _score = picked
+        # 对选中的种子注入reward偏差: 新种子(unpicked)默认被识别为高潜力
+        chosen = self._seed_queue[idx]
+        sid = getattr(chosen, 'id', str(idx))
+        is_new = chosen.metadata.get("is_recent_find", False)
+        self._bandit_impl.notify_reward(sid, None, is_new_find=is_new)
+        return chosen
 
     # ---- AFLfast加权随机 ----
     def _pick_aflfast(self) -> Seed:

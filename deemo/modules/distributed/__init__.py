@@ -36,6 +36,27 @@ __all__ = [
     "RedisPool",
     # metrics
     "Counter", "Gauge", "Histogram", "Summary", "Registry",
+    # —— 2026-08 广度拓展 ——
+    # load_balancer
+    "LoadBalancer", "ConsistentHashRing", "SelectorNode",
+    # elastic_pool
+    "ElasticPool", "ThresholdScalePolicy", "PredictiveScalePolicy",
+    # adaptive_breaker
+    "AdaptiveCircuitBreaker", "FractionalCircuitBreaker",
+    # backpressure
+    "BackpressureController", "BackpressureSignal", "BackpressureBlocked",
+    # pipeline
+    "Pipeline", "PipelineRunner", "PipelineExecutor", "Stage", "FanInCollector",
+    # partition
+    "PartitionManager", "HashPartitioner", "RangePartitioner", "RoundRobinPartitioner",
+    # graceful_shutdown
+    "GracefulShutdown", "ShutdownPhase",
+    # state_machine
+    "TaskStateMachine", "TransitionTable", "StateMachineBuilder", "InvalidTransition",
+    # watermark
+    "WatermarkMonitor", "MultiQueueWatermark", "FlowController",
+    # node_registry
+    "NodeRegistry", "NodeRecord", "RedisDiscovery", "GossipDiscovery", "StaticDiscovery",
 ]
 
 _MODULE_MAP: dict[str, str] = {
@@ -63,6 +84,28 @@ _MODULE_MAP: dict[str, str] = {
     "Counter": ".src.metrics", "Gauge": ".src.metrics",
     "Histogram": ".src.metrics", "Summary": ".src.metrics",
     "Registry": ".src.metrics",
+    # 2026-08 拓展
+    "LoadBalancer": ".src.load_balancer", "ConsistentHashRing": ".src.load_balancer",
+    "SelectorNode": ".src.load_balancer",
+    "ElasticPool": ".src.elastic_pool", "ThresholdScalePolicy": ".src.elastic_pool",
+    "PredictiveScalePolicy": ".src.elastic_pool",
+    "AdaptiveCircuitBreaker": ".src.adaptive_breaker",
+    "FractionalCircuitBreaker": ".src.adaptive_breaker",
+    "BackpressureController": ".src.backpressure",
+    "BackpressureSignal": ".src.backpressure", "BackpressureBlocked": ".src.backpressure",
+    "Pipeline": ".src.pipeline", "PipelineRunner": ".src.pipeline",
+    "PipelineExecutor": ".src.pipeline", "Stage": ".src.pipeline",
+    "FanInCollector": ".src.pipeline",
+    "PartitionManager": ".src.partition", "HashPartitioner": ".src.partition",
+    "RangePartitioner": ".src.partition", "RoundRobinPartitioner": ".src.partition",
+    "GracefulShutdown": ".src.graceful_shutdown", "ShutdownPhase": ".src.graceful_shutdown",
+    "TaskStateMachine": ".src.state_machine", "TransitionTable": ".src.state_machine",
+    "StateMachineBuilder": ".src.state_machine", "InvalidTransition": ".src.state_machine",
+    "WatermarkMonitor": ".src.watermark", "MultiQueueWatermark": ".src.watermark",
+    "FlowController": ".src.watermark",
+    "NodeRegistry": ".src.node_registry", "NodeRecord": ".src.node_registry",
+    "RedisDiscovery": ".src.node_registry", "GossipDiscovery": ".src.node_registry",
+    "StaticDiscovery": ".src.node_registry",
 }
 
 _CACHE: dict[str, object] = {}

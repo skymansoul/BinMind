@@ -1,7 +1,7 @@
 # 2026-07-24
 # multimodal — cross-modal analysis & fusion
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 _submodules = {
     "multi_dimension_stats_api": ".multi_dimension_stats_api",
@@ -11,6 +11,10 @@ _submodules = {
     "multi_modal_attention": ".multi_modal_attention",
     "multi_modal_alignment": ".multi_modal_alignment",
     "multi_modal_confidence": ".multi_modal_confidence",
+    "multi_modal_retrieval": ".multi_modal_retrieval",
+    "multi_modal_fusion": ".multi_modal_fusion",
+    "multi_modal_survival": ".multi_modal_survival",
+    "multi_modal_conformal": ".multi_modal_conformal",
 }
 
 def __getattr__(name):

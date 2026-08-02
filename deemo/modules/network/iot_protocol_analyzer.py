@@ -128,6 +128,9 @@ class OPCUABinaryAnalyzer:
         return {'message_type': msg_type, 'message_size': msg_size, 'secure_channel_id': secure_channel_id, 'findings': findings}
 
 class IoTProtocolAnalyzer:
+    # CoAP fuzz 测试策略参考 Asadian et al. 2024 (Zotero #1641):
+    # 将符号执行与模糊测试结合用于 CoAP 协议一致性验证，
+    # 核心发现：option delta 溢出和 token 长度越界是 CoAP 解析器的主要崩溃面。
     def __init__(self):
         self.mqtt = MQTTAnalyzer(); self.modbus = ModbusAnalyzer()
         self.coap = CoAPAnalyzer(); self.opcua = OPCUABinaryAnalyzer()

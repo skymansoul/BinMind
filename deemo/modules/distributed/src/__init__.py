@@ -19,7 +19,18 @@ __all__ = [
     "IdempotencyGuard", "idempotency_key",
     "HealthStatus", "HealthServer", "HealthCheck",
     "RedisPool",
-    "Counter", "Gauge", "Histogram", "Registry",
+    "Counter", "Gauge", "Histogram", "Summary", "Registry",
+    # —— 2026-08 广度拓展 ——
+    "LoadBalancer", "ConsistentHashRing", "SelectorNode",
+    "ElasticPool", "ThresholdScalePolicy", "PredictiveScalePolicy",
+    "AdaptiveCircuitBreaker", "FractionalCircuitBreaker",
+    "BackpressureController", "BackpressureSignal", "BackpressureBlocked",
+    "Pipeline", "PipelineRunner", "PipelineExecutor", "Stage", "FanInCollector",
+    "PartitionManager", "HashPartitioner", "RangePartitioner", "RoundRobinPartitioner",
+    "GracefulShutdown", "ShutdownPhase",
+    "TaskStateMachine", "TransitionTable", "StateMachineBuilder", "InvalidTransition",
+    "WatermarkMonitor", "MultiQueueWatermark", "FlowController",
+    "NodeRegistry", "NodeRecord", "RedisDiscovery", "GossipDiscovery", "StaticDiscovery",
 ]
 
 _MODULE_MAP = {
@@ -41,7 +52,29 @@ _MODULE_MAP = {
     "HealthStatus": "health", "HealthServer": "health", "HealthCheck": "health",
     "RedisPool": "pool",
     "Counter": "metrics", "Gauge": "metrics", "Histogram": "metrics",
-    "Registry": "metrics",
+    "Summary": "metrics", "Registry": "metrics",
+    # 2026-08 拓展
+    "LoadBalancer": "load_balancer", "ConsistentHashRing": "load_balancer",
+    "SelectorNode": "load_balancer",
+    "ElasticPool": "elastic_pool", "ThresholdScalePolicy": "elastic_pool",
+    "PredictiveScalePolicy": "elastic_pool",
+    "AdaptiveCircuitBreaker": "adaptive_breaker",
+    "FractionalCircuitBreaker": "adaptive_breaker",
+    "BackpressureController": "backpressure", "BackpressureSignal": "backpressure",
+    "BackpressureBlocked": "backpressure",
+    "Pipeline": "pipeline", "PipelineRunner": "pipeline",
+    "PipelineExecutor": "pipeline", "Stage": "pipeline",
+    "FanInCollector": "pipeline",
+    "PartitionManager": "partition", "HashPartitioner": "partition",
+    "RangePartitioner": "partition", "RoundRobinPartitioner": "partition",
+    "GracefulShutdown": "graceful_shutdown", "ShutdownPhase": "graceful_shutdown",
+    "TaskStateMachine": "state_machine", "TransitionTable": "state_machine",
+    "StateMachineBuilder": "state_machine", "InvalidTransition": "state_machine",
+    "WatermarkMonitor": "watermark", "MultiQueueWatermark": "watermark",
+    "FlowController": "watermark",
+    "NodeRegistry": "node_registry", "NodeRecord": "node_registry",
+    "RedisDiscovery": "node_registry", "GossipDiscovery": "node_registry",
+    "StaticDiscovery": "node_registry",
 }
 
 _MODULE_CACHE: dict = {}

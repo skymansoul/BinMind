@@ -71,6 +71,28 @@ __all__ = [
     # signature_tampering_detector
     'SignatureTamperingDetector', 'PESignatureParser',
     'SignatureInfo', 'SignatureStatus', 'detect_signature_tampering',
+    # zkp_detector (2026-07-31)
+    'ZKPDetector', 'ZKPDetectionResult', 'detect_zkp', 'detect_zkp_bytes',
+    # homomorphic_encryption (2026-07-31)
+    'HESchemeDetector', 'HEDetectionResult',
+    'detect_homomorphic_encryption', 'detect_he_bytes',
+    # signal_protocol (2026-07-31)
+    'E2EEProtocolDetector', 'E2EEProtocolResult',
+    'detect_e2ee_protocols', 'detect_e2ee_bytes',
+    # firmware_crypto (2026-08-01)
+    'FirmwareCryptoDetector', 'FirmwareCryptoResult',
+    'detect_firmware_crypto', 'detect_firmware_crypto_bytes',
+    # fpe_detector (2026-08-01)
+    'FPEDetector', 'FPEResult', 'detect_fpe', 'detect_fpe_bytes',
+    # cbom_generator (2026-08-01)
+    'CBOMGenerator', 'CBOMDocument', 'CBOMCryptoAsset',
+    'generate_cbom', 'new_cbom_generator',
+    # blockchain_crypto (2026-08-01)
+    'BlockchainCryptoDetector', 'BlockchainCryptoResult',
+    'detect_blockchain_crypto', 'detect_blockchain_crypto_bytes',
+    # crypto_taint (2026-08-01)
+    'KeyTaintDetector', 'KeyTaintResult',
+    'detect_key_taint', 'detect_key_taint_bytes',
 ]
 
 # name -> (module_path, attr_name)
@@ -195,6 +217,48 @@ _INSTANCE_IMPORTS = {
     'SignatureInfo':              ('signature_tampering_detector', 'SignatureInfo'),
     'SignatureStatus':            ('signature_tampering_detector', 'SignatureStatus'),
     'detect_signature_tampering': ('signature_tampering_detector', 'detect_signature_tampering'),
+    # zkp_detector (2026-07-31)
+    'ZKPDetector':                ('zkp_detector', 'ZKPDetector'),
+    'ZKPDetectionResult':         ('zkp_detector', 'ZKPDetectionResult'),
+    'detect_zkp':                 ('zkp_detector', 'detect_zkp'),
+    'detect_zkp_bytes':           ('zkp_detector', 'detect_zkp_bytes'),
+    # homomorphic_encryption (2026-07-31)
+    'HESchemeDetector':            ('homomorphic_encryption', 'HESchemeDetector'),
+    'HEDetectionResult':            ('homomorphic_encryption', 'HEDetectionResult'),
+    'detect_homomorphic_encryption':('homomorphic_encryption', 'detect_homomorphic_encryption'),
+    'detect_he_bytes':              ('homomorphic_encryption', 'detect_he_bytes'),
+    # signal_protocol (2026-07-31)
+    'E2EEProtocolDetector':        ('signal_protocol', 'E2EEProtocolDetector'),
+    'E2EEProtocolResult':           ('signal_protocol', 'E2EEProtocolResult'),
+    'detect_e2ee_protocols':        ('signal_protocol', 'detect_e2ee_protocols'),
+    'detect_e2ee_bytes':            ('signal_protocol', 'detect_e2ee_bytes'),
+    # firmware_crypto (2026-08-01)
+    'FirmwareCryptoDetector':       ('firmware_crypto', 'FirmwareCryptoDetector'),
+    'FirmwareCryptoResult':         ('firmware_crypto', 'FirmwareCryptoResult'),
+    'detect_firmware_crypto':       ('firmware_crypto', 'detect_firmware_crypto'),
+    'detect_firmware_crypto_bytes': ('firmware_crypto', 'detect_firmware_crypto_bytes'),
+    # fpe_detector (2026-08-01)
+    'FPEDetector':                ('fpe_detector', 'FPEDetector'),
+    'FPEResult':                    ('fpe_detector', 'FPEResult'),
+    'detect_fpe':                 ('fpe_detector', 'detect_fpe'),
+    'detect_fpe_bytes':           ('fpe_detector', 'detect_fpe_bytes'),
+    # cbom_generator (2026-08-01)
+    'CBOMGenerator':              ('cbom_generator', 'CBOMGenerator'),
+    'CBOMDocument':               ('cbom_generator', 'CBOMDocument'),
+    'CBOMCryptoAsset':            ('cbom_generator', 'CBOMCryptoAsset'),
+    'generate_cbom':              ('cbom_generator', 'generate_cbom'),
+    'new_cbom_generator':         ('cbom_generator', 'new_cbom_generator'),
+    # blockchain_crypto (2026-08-01)
+    'BlockchainCryptoDetector':       ('blockchain_crypto', 'BlockchainCryptoDetector'),
+    'BlockchainCryptoResult':         ('blockchain_crypto', 'BlockchainCryptoResult'),
+    'detect_blockchain_crypto':       ('blockchain_crypto', 'detect_blockchain_crypto'),
+    'detect_blockchain_crypto_bytes': ('blockchain_crypto', 'detect_blockchain_crypto_bytes'),
+    # crypto_taint (2026-08-01)
+    'KeyTaintDetector':             ('crypto_taint', 'KeyTaintDetector'),
+    'KeyTaintResult':               ('crypto_taint', 'KeyTaintResult'),
+    'detect_key_taint':             ('crypto_taint', 'detect_key_taint'),
+    'detect_key_taint_bytes':       ('crypto_taint', 'detect_key_taint_bytes'),
+    'new_cbom_generator':         ('cbom_generator', 'new_cbom_generator'),
 }
 
 _CONSTANT_MAP = {}

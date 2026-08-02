@@ -1,0 +1,270 @@
+# 2026-08-02
+# Walma: 学习识别 WebAssembly 内存损坏
+# 参考:
+#   "Walma: Learning to See Memory Corruption in WebAssembly"
+#    (arXiv 2603.24167, Mar 2026)
+#    方法: 将 WASM 线性内存表示为 2D heatmap → CNN 识别 4 类内存损坏模式
+#    类型: (1) linear overflow (2) UAF (3) type confusion (4) uninitialized read
+#    F1=0.91 (超过 ASan 在 WASM 上的 0.74)
+#   "Wemby's Web: Hunting for Memory Corruption in WebAssembly"
+#    (ISSTA 2025) — 互补的 fuzzing 方法, 使用语法感知变异
+
+import os
+import struct
+import math
+import logging
+from dataclasses import dataclass, field
+from typing import Optional
+from collections import Counter
+
+logger = logging.getLogger(__name__)
+
+# WASM 内存布局特征 — 用于构建 2D heatmap 输入
+# 每个线性内存页 (64KB) 转换为一个 64x64 的网格单元，
+# 每个单元的"温度"编码该地址范围的访问频率、类型和有效性
+_MEMORY_PAGE_SIZE = 65536    # 64KB
+_HEATMAP_DIM = 64            # 64x64 网格 → 4096 特征像素
+
+# Walma 定义的 4 类内存损坏模式 — 在 heatmap 上的视觉特征
+_CORRUPTION_SIGNATURES = {
+    "linear_overflow": {
+        "description": "写入超出分配区域的连续内存溢出",
+        "heatmap_pattern": "边界处连续高写入密度向低地址方向延伸",
+        "severity": "Critical",
+        "cwe": "CWE-787",
+    },
+    "use_after_free": {
+        "description": "已释放内存区域仍被访问",
+        "heatmap_pattern": "零值区域中出现离散的高读写点",
+        "severity": "Critical",
+        "cwe": "CWE-416",
+    },
+    "type_confusion": {
+        "description": "一种类型的数据被错误解释为另一种类型",
+        "heatmap_pattern": "同一地址的交替读写模式 (不同大小)",
+        "severity": "High",
+        "cwe": "CWE-843",
+    },
+    "uninitialized_read": {
+        "description": "读取未初始化的内存区域",
+        "heatmap_pattern": "新分配区域的低写入但高读取模式",
+        "severity": "Medium",
+        "cwe": "CWE-908",
+    },
+}
+
+
+@dataclass
+class MemoryHeatmap:
+    """WASM 线性内存的 2D 热度图表示。"""
+    grid: list[list[float]] = field(default_factory=list)  # 64x64
+    access_count: int = 0
+    write_count: int = 0
+    read_count: int = 0
+    zero_region_count: int = 0
+    hot_spot_regions: list[tuple[int, int, float]] = field(default_factory=list)
+
+
+@dataclass
+class MemoryCorruptionFinding:
+    corruption_type: str
+    severity: str
+    location: tuple = (0, 0)     # (page_idx, offset_within_page)
+    confidence: float = 0.0
+    heatmap_region: list = field(default_factory=list)
+    description: str = ""
+    cwe: str = ""
+
+
+class WalmaMemoryChecker:
+    """Walma 风格的 WASM 内存损坏检测器 (arXiv 2603.24167)。
+
+    不依赖 runtime instrumentation (ASan 需要重新编译)，
+    而是将 WASM 线性内存的访问模式建模为 2D heatmap，
+    通过 CNN 启发的 pattern matching 检测 4 类内存损坏。
+
+    输入: WASM 模块的运行时内存访问轨迹
+    格式: [(addr, size, access_type, timestamp), ...]
+    其中 access_type = 0(read) | 1(write) | 2(alloc) | 3(free)
+    """
+
+    def __init__(self, memory_trace: list[tuple] | None = None,
+                 memory_pages: int = 1):
+        self._trace = memory_trace or []
+        self._n_pages = max(memory_pages, 1)
+        self._heatmaps: list[MemoryHeatmap] = []
+        self._findings: list[MemoryCorruptionFinding] = []
+
+    def add_trace(self, trace: list[tuple]):
+        self._trace.extend(trace)
+
+    def build_heatmaps(self) -> list[MemoryHeatmap]:
+        """Step 1: 将内存访问轨迹转换为 2D heatmap。
+
+        每页 (64KB) 映射到一个 64x64 网格。
+        每个网格单元 (cell) 对应 16 字节的内存区域。
+        单元的"温度" = 该 16B 区域内访问事件的加权和:
+        write=+2.0, read=+1.0, alloc=+3.0, free=-5.0
+        """
+        self._heatmaps = []
+        cell_size = _MEMORY_PAGE_SIZE // (_HEATMAP_DIM * _HEATMAP_DIM)  # 16B per cell
+        for page in range(self._n_pages):
+            grid = [[0.0] * _HEATMAP_DIM for _ in range(_HEATMAP_DIM)]
+            page_start = page * _MEMORY_PAGE_SIZE
+            page_end = page_start + _MEMORY_PAGE_SIZE
+            read_cnt = 0; write_cnt = 0
+            for addr, size, atype, _ in self._trace:
+                if not (page_start <= addr < page_end):
+                    continue
+                offset = addr - page_start
+                end_off = offset + size
+                weight = {0: 1.0, 1: 2.0, 2: 3.0, 3: -5.0}.get(atype, 0)
+                if atype == 0:
+                    read_cnt += 1
+                elif atype == 1:
+                    write_cnt += 1
+                # 将访问分布到相关的 cell
+                cell_start = offset // cell_size
+                cell_end = min((end_off - 1) // cell_size + 1, _HEATMAP_DIM * _HEATMAP_DIM)
+                for cidx in range(cell_start, cell_end):
+                    row = cidx // _HEATMAP_DIM
+                    col = cidx % _HEATMAP_DIM
+                    if 0 <= row < _HEATMAP_DIM and 0 <= col < _HEATMAP_DIM:
+                        grid[row][col] += weight / max(cell_end - cell_start, 1)
+            zero_cells = sum(1 for r in grid for c in r if abs(c) < 1e-6)
+            total_cells = _HEATMAP_DIM * _HEATMAP_DIM
+            hmap = MemoryHeatmap(
+                grid=grid, access_count=read_cnt + write_cnt,
+                write_count=write_cnt, read_count=read_cnt,
+                zero_region_count=zero_cells,
+                hot_spot_regions=self._find_hotspots(grid, page))
+            self._heatmaps.append(hmap)
+        return self._heatmaps
+
+    def _find_hotspots(self, grid: list[list[float]],
+                       page: int) -> list[tuple[int, int, float]]:
+        """找出热量最高的前 5 个区域。"""
+        cells = []
+        for r in range(_HEATMAP_DIM):
+            for c in range(_HEATMAP_DIM):
+                val = abs(grid[r][c])
+                if val > 0.5:
+                    cells.append((r, c, val))
+        cells.sort(key=lambda x: x[2], reverse=True)
+        return [(r + page * _HEATMAP_DIM, c, v) for r, c, v in cells[:5]]
+
+    def detect_corruptions(self) -> list[MemoryCorruptionFinding]:
+        """Step 2: 在 heatmap 上检测 4 类内存损坏模式。
+
+        检测策略基于 arXiv 2603.24167 Section 4 的模式定义:
+        - linear_overflow: 页边界处连续高写入密度
+        - use_after_free: 零区域中出现离散高读写点
+        - type_confusion: 同一地址区域内读写交替
+        - uninitialized_read: 低写入高读取的区域
+        """
+        if not self._heatmaps:
+            self.build_heatmaps()
+        self._findings = []
+        for page_idx, hmap in enumerate(self._heatmaps):
+            self._detect_overflow(hmap, page_idx)
+            self._detect_uaf(hmap, page_idx)
+            self._detect_type_confusion(hmap, page_idx)
+            self._detect_uninit_read(hmap, page_idx)
+        return self._findings
+
+    def _detect_overflow(self, hmap: MemoryHeatmap, page: int):
+        """检测连续溢出: 检查页的末行是否有突然升高的写入密度。"""
+        grid = hmap.grid
+        # 检查最后一行 (最大地址区域) vs 之前几行的平均写入密度
+        last_row_avg = sum(grid[_HEATMAP_DIM - 1]) / _HEATMAP_DIM if _HEATMAP_DIM > 0 else 0
+        prev_rows_avg = (sum(sum(r) for r in grid[:-1]) /
+                         max((_HEATMAP_DIM - 1) * _HEATMAP_DIM, 1))
+        if last_row_avg > prev_rows_avg * 3 and last_row_avg > 2:
+            self._findings.append(MemoryCorruptionFinding(
+                corruption_type="linear_overflow",
+                severity="Critical", location=(page, _HEATMAP_DIM - 1),
+                confidence=min(0.95, (last_row_avg - prev_rows_avg) / 10),
+                description="High write density at page boundary suggests linear overflow",
+                cwe="CWE-787"))
+
+    def _detect_uaf(self, hmap: MemoryHeatmap, page: int):
+        """检测 UAF: 零区域中有离散高访问热度 (free→ -5, read→ +1)。"""
+        grid = hmap.grid
+        for r in range(_HEATMAP_DIM):
+            for c in range(_HEATMAP_DIM):
+                val = grid[r][c]
+                # 负值 → 最近 free 过; 随后又出现了正值 → 可能 UAF
+                if val < -2 and self._has_adjacent_positive(grid, r, c):
+                    self._findings.append(MemoryCorruptionFinding(
+                        corruption_type="use_after_free",
+                        severity="Critical",
+                        location=(page, r * _HEATMAP_DIM + c),
+                        confidence=0.80,
+                        description=f"Freed memory region at ({r},{c}) shows subsequent access patterns",
+                        cwe="CWE-416"))
+                    return  # 每页只报告一次以避免过度噪声
+
+    def _has_adjacent_positive(self, grid: list[list[float]],
+                                row: int, col: int) -> bool:
+        """检查邻域是否有正值 — 表明 free 后的访问。"""
+        for dr in (-1, 0, 1):
+            for dc in (-1, 0, 1):
+                nr, nc = row + dr, col + dc
+                if 0 <= nr < _HEATMAP_DIM and 0 <= nc < _HEATMAP_DIM:
+                    if grid[nr][nc] > 0.5:
+                        return True
+        return False
+
+    def _detect_type_confusion(self, hmap: MemoryHeatmap, page: int):
+        """检测类型混淆: 同一 cell 内出现不同大小的交替读写。
+
+        简化: 如果一个 hotspot 同时具有正写入和负 free 值 → 类型可能在交替。
+        """
+        for (r, c, val) in hmap.hot_spot_regions:
+            if val > 2 and abs(hmap.grid[r % _HEATMAP_DIM][c]) > 1:
+                self._findings.append(MemoryCorruptionFinding(
+                    corruption_type="type_confusion",
+                    severity="High",
+                    location=(page, r * _HEATMAP_DIM + c),
+                    confidence=0.55,
+                    description="Alternating read/write sizes in same region suggest type confusion",
+                    cwe="CWE-843"))
+
+    def _detect_uninit_read(self, hmap: MemoryHeatmap, page: int):
+        """检测未初始化读取: 写入密度远低于读取密度的区域。"""
+        grid = hmap.grid
+        for r in range(_HEATMAP_DIM):
+            for c in range(_HEATMAP_DIM):
+                val = grid[r][c]
+                if 0.1 < val <= 2.0 and hmap.write_count < hmap.read_count * 0.3:
+                    self._findings.append(MemoryCorruptionFinding(
+                        corruption_type="uninitialized_read",
+                        severity="Medium",
+                        location=(page, r * _HEATMAP_DIM + c),
+                        confidence=0.40,
+                        description=f"Region ({r},{c}) has reads but low writes — possibly uninitialized",
+                        cwe="CWE-908"))
+                    return
+
+    def generate_report(self) -> dict:
+        findings = self._findings or self.detect_corruptions()
+        return {
+            "total_findings": len(findings),
+            "by_type": dict(Counter(f.corruption_type for f in findings)),
+            "by_severity": dict(Counter(f.severity for f in findings)),
+            "heatmap_pages": len(self._heatmaps),
+            "trace_events": len(self._trace),
+            "findings": [
+                {"type": f.corruption_type, "severity": f.severity,
+                 "confidence": f.confidence, "location": f.location,
+                 "cwe": f.cwe, "description": f.description}
+                for f in findings
+            ]
+        }
+
+
+def check_wasm_memory(trace: list[tuple], memory_pages: int = 1
+                      ) -> dict:
+    checker = WalmaMemoryChecker(memory_trace=trace,
+                                  memory_pages=memory_pages)
+    return checker.generate_report()

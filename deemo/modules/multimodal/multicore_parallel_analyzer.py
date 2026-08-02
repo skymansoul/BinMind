@@ -665,3 +665,209 @@ __all__ = ["MulticoreParallelAnalyzer", "TaskPartitioner", "AnalysisTask",
            "ParallelStrategy", "WorkerStats", "ProgressTracker",
            "WorkStealingQueue", "analyze_multicore_parallel",
            "execute_with_progress", "ensemble_vote", "stream_results"]
+
+
+# ============================================================================
+# 推测执行 — 预测慢任务并提前在多个worker上冗余执行
+# 参考：Dean & Barroso. The Tail at Scale. CACM 2013.
+#       Ananthanarayanan et al. GRASS: Trimming Stragglers. NSDI 2014.
+# 长尾延迟的根本问题：一个慢任务阻塞整个batch。
+# 对策：当任务运行超过 p95 耗时阈值时，在另一个worker上启动克隆。
+# 谁先完成就用谁的结果——这是 "speculative execution" 的核心。
+# ============================================================================
+
+class SpeculativeScheduler:
+    """推测执行调度器：检测straggler并启动克隆任务。
+
+    在任务耗时超过自适应阈值时，自动启动一个克隆副本。
+    克隆与原任务竞争，先完成者的结果被采用。
+    自适应阈值 = EWMA + k * σ，k默认2.5（覆盖约99%的正常波动）。
+    """
+
+    def __init__(self, clone_multiplier: float = 2.5, max_clones: int = 2):
+        self.clone_mult = clone_multiplier
+        self.max_clones = max_clones
+        self._task_times: List[float] = []
+        self._ewma: float = 10.0
+        self._ewma_var: float = 25.0
+        self._alpha: float = 0.1
+
+    def should_clone(self, task: AnalysisTask) -> bool:
+        """判断是否应对该任务启动克隆。
+
+        条件：task已运行时间 > EWMA + clone_mult * σ，
+        且尚未达到最大克隆数。
+        """
+        if task.cancelled or task.completed:
+            return False
+        if task.retries >= self.max_clones:
+            return False
+        if not self._task_times or len(self._task_times) < 5:
+            # 不足数据 → 静态阈值 30s
+            return (task.elapsed or 0.0) > 30.0
+
+        _threshold = self._ewma + self.clone_mult * math.sqrt(max(0.01, self._ewma_var))
+        _elapsed = task.elapsed or 0.0
+        return _elapsed > _threshold
+
+    def record_completion(self, elapsed: float):
+        """记录一次任务完成时间，更新EWMA统计。"""
+        self._task_times.append(elapsed)
+        self._ewma = self._alpha * elapsed + (1 - self._alpha) * self._ewma
+        self._ewma_var = (self._alpha * (elapsed - self._ewma) ** 2
+                         + (1 - self._alpha) * self._ewma_var)
+
+    def current_threshold(self) -> float:
+        """当前克隆触发阈值。"""
+        return round(self._ewma + self.clone_mult * math.sqrt(max(0.01, self._ewma_var)), 1)
+
+    def straggler_rate(self) -> float:
+        """历史straggler比率：超过阈值完成任务的比例。"""
+        if not self._task_times:
+            return 0.0
+        _threshold = self.current_threshold()
+        _count = sum(1 for t in self._task_times if t > _threshold)
+        return round(_count / len(self._task_times), 3)
+
+
+# ============================================================================
+# 内存感知调度 — 基于当前可用内存动态调整worker数
+# 参考：Hindman et al. Mesos: A Platform for Fine-Grained Resource Sharing. NSDI 2011.
+# 当可用内存低于阈值时，减少并行度以避免OOM/swap抖动；
+# 当内存充裕时，增加worker以最大化吞吐。
+# ============================================================================
+
+class MemoryAwareScheduler:
+    """内存感知调度器：基于当前系统内存压力自适应调整并发度。
+
+    内存使用率 = 1 - (available / total)。
+    水位线策略：
+    - mem_usage < 60%: 全速 (base_workers)
+    - 60-80%: 缩减至 base_workers * 0.7
+    - 80-90%: 缩减至 base_workers * 0.4
+    - > 90%: 缩减至1（保底单worker，避免OOM）
+    """
+
+    def __init__(self, base_workers: int = 4):
+        self.base_workers = base_workers
+        self._mem_history: List[float] = []
+
+    def recommend_workers(self) -> int:
+        """基于当前可用内存推荐最优worker数。"""
+        _avail = _mem_available_mb()
+        # 估算总内存：假设avail通常占总内存的40-60%
+        _estimated_total = _avail / 0.5
+        _usage_pct = (1.0 - _avail / max(1, _estimated_total)) * 100.0
+
+        if _usage_pct < 60:
+            _rec = self.base_workers
+        elif _usage_pct < 80:
+            _rec = max(1, int(self.base_workers * 0.7))
+        elif _usage_pct < 90:
+            _rec = max(1, int(self.base_workers * 0.4))
+        else:
+            _rec = 1
+
+        self._mem_history.append(_avail)
+        if len(self._mem_history) > 100:
+            self._mem_history.pop(0)
+        return _rec
+
+    def memory_pressure_index(self) -> float:
+        """内存压力指数 ∈ [0, 1]，越高表示内存越紧张。"""
+        if not self._mem_history:
+            return 0.0
+        _avail = _mem_available_mb()
+        _min_hist = min(self._mem_history)
+        _max_hist = max(self._mem_history)
+        _range = _max_hist - _min_hist
+        if _range < 1.0:
+            return 0.5
+        return round(1.0 - (_avail - _min_hist) / _range, 3)
+
+    def is_thrashing(self) -> bool:
+        """检测是否在内存抖动（可用内存剧烈波动 + 绝对值低）。"""
+        if len(self._mem_history) < 10:
+            return False
+        _recent = self._mem_history[-10:]
+        _mean = sum(_recent) / 10
+        _var = sum((x - _mean) ** 2 for x in _recent) / 10
+        # 高方差 + 低可用内存 → 可能在swap
+        _is_low = _mean < 512  # MB
+        _is_volatile = _var > 10000
+        return _is_low and _is_volatile
+
+
+# ============================================================================
+# 管道并行 — 将任务拆分为阶段并在流水线中执行
+# 参考：Huang et al. GPipe: Efficient Training of Giant Neural Networks. 2019.
+# 各阶段可以并行处理不同的micro-batch，提高整体吞吐。
+# 这特别适用于"扫描→分析→报告"的链式流程。
+# ============================================================================
+
+class PipelineExecutor:
+    """简单管道执行器：将任务划分为串行阶段，流水线式处理。
+
+    每个阶段是一个转换函数 f_i: input → output，
+    输入数据被分为 micro_batches，各阶段在 micro_batch 上并行。
+    预热后管道达到稳态吞吐 = min(各阶段吞吐量)。
+    """
+
+    def __init__(self, stages: List[Callable], n_microbatches: int = 4):
+        self.stages = stages
+        self.n_micro = n_microbatches
+        self._stage_times: List[List[float]] = [[] for _ in range(len(stages))]
+
+    def execute(self, inputs: List[Any]) -> List[Any]:
+        """流水线执行：各阶段在micro-batch上并行处理。
+
+        返回每个输入的最终处理结果（保持输入顺序）。
+        """
+        _n_stages = len(self.stages)
+        if _n_stages == 0 or not inputs:
+            return inputs
+
+        # 将输入分为 micro-batches
+        _batch_size = max(1, len(inputs) // self.n_micro)
+        _batches: List[List[Any]] = []
+        for _b in range(0, len(inputs), _batch_size):
+            _batches.append(inputs[_b:_b + _batch_size])
+
+        # 流水线：stage × micro_batch
+        _results: List[List[Any]] = _batches[:] if _batches else []
+
+        for _si in range(_n_stages):
+            _stage_fn = self.stages[_si]
+            _next_results: List[List[Any]] = []
+            _stage_start = time.monotonic()
+            for _mb in _results:
+                _mb_result = []
+                for _item in _mb:
+                    _r = _stage_fn(_item)
+                    _mb_result.append(_r)
+                _next_results.append(_mb_result)
+            _results = _next_results
+            self._stage_times[_si].append(time.monotonic() - _stage_start)
+
+        # 展平结果
+        _flat: List[Any] = []
+        for _mb in _results:
+            _flat.extend(_mb)
+        return _flat[:len(inputs)]
+
+    def stage_throughput(self) -> List[float]:
+        """各阶段的平均吞吐量 (items/sec)。"""
+        _tp = []
+        for _si, _times in enumerate(self._stage_times):
+            if _times:
+                _tp.append(round(1.0 / (sum(_times) / len(_times) + _EPS), 2))
+            else:
+                _tp.append(0.0)
+        return _tp
+
+    def bottleneck_stage(self) -> int:
+        """返回当前瓶颈阶段的索引（吞吐最低的阶段）。"""
+        _tp = self.stage_throughput()
+        if not _tp:
+            return -1
+        return min(range(len(_tp)), key=lambda i: _tp[i])

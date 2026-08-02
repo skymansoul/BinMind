@@ -1,8 +1,9 @@
 # patching module — binary patch analysis & auto-fix toolchain
 # v2 refactor Aug 2026, 懒加载以避免循环导入问题
 # this file also serves as compat shim for older direct imports
+# v3 expansion: patch safety, stack integrity, gadget analysis, CVE kb, etc.
 
-__version__ = "2.1.0"
+__version__ = "2.2.0"
 
 import sys as _sys
 import os as _os
@@ -51,6 +52,16 @@ __all__ = [
     'PatchConfig',
     'BackupManager', 'InstrumentationManager', 'PatchVerifier',
     'PatchError', 'PatchApplyError', 'PatchVerifyError', 'BackupError',
+    # v3 expansions (2026-08)
+    'PatchSafetyVerifier', 'SafetyVerdict', 'SafetyReport', 'verify_patch_safety', 'batch_safety_check',
+    'StackIntegrityChecker', 'StackIntegrityReport', 'check_stack_integrity',
+    'GadgetChainAnalyzer', 'GadgetChainAnalysis', 'analyze_gadget_chains',
+    'DistortionDetector', 'DistortionReport', 'detect_distortions', 'auto_fix_distortions',
+    'CVEKnowledgeBase', 'CVEEntry', 'create_cve_kb', 'import_nvd_to_kb',
+    'PatchTestGenerator', 'TestSuite', 'generate_patch_tests',
+    'BoundedModelChecker', 'ModelCheckingReport', 'bounded_model_check',
+    'DiffMinimizer', 'minimize_patch_diff',
+    'PatchReportComposer', 'compose_patch_report',
 ]
 
 _lazy_map = {
@@ -117,6 +128,36 @@ _lazy_map = {
     'PatchApplyError': ('src.exceptions', 'PatchApplyError'),
     'PatchVerifyError': ('src.exceptions', 'PatchVerifyError'),
     'BackupError': ('src.exceptions', 'BackupError'),
+    # v3 expansions (2026-08)
+    'PatchSafetyVerifier': ('patch_safety_verifier', 'PatchSafetyVerifier'),
+    'SafetyVerdict': ('patch_safety_verifier', 'SafetyVerdict'),
+    'SafetyReport': ('patch_safety_verifier', 'SafetyReport'),
+    'verify_patch_safety': ('patch_safety_verifier', 'verify_patch_safety'),
+    'batch_safety_check': ('patch_safety_verifier', 'batch_safety_check'),
+    'StackIntegrityChecker': ('stack_integrity_checker', 'StackIntegrityChecker'),
+    'StackIntegrityReport': ('stack_integrity_checker', 'StackIntegrityReport'),
+    'check_stack_integrity': ('stack_integrity_checker', 'check_stack_integrity'),
+    'GadgetChainAnalyzer': ('gadget_chain_analyzer', 'GadgetChainAnalyzer'),
+    'GadgetChainAnalysis': ('gadget_chain_analyzer', 'GadgetChainAnalysis'),
+    'analyze_gadget_chains': ('gadget_chain_analyzer', 'analyze_gadget_chains'),
+    'DistortionDetector': ('decomp_distortion_detector', 'DistortionDetector'),
+    'DistortionReport': ('decomp_distortion_detector', 'DistortionReport'),
+    'detect_distortions': ('decomp_distortion_detector', 'detect_distortions'),
+    'auto_fix_distortions': ('decomp_distortion_detector', 'auto_fix_distortions'),
+    'CVEKnowledgeBase': ('cve_knowledge_base', 'CVEKnowledgeBase'),
+    'CVEEntry': ('cve_knowledge_base', 'CVEEntry'),
+    'create_cve_kb': ('cve_knowledge_base', 'create_cve_kb'),
+    'import_nvd_to_kb': ('cve_knowledge_base', 'import_nvd_to_kb'),
+    'PatchTestGenerator': ('patch_test_generator', 'PatchTestGenerator'),
+    'TestSuite': ('patch_test_generator', 'TestSuite'),
+    'generate_patch_tests': ('patch_test_generator', 'generate_patch_tests'),
+    'BoundedModelChecker': ('bounded_model_checker', 'BoundedModelChecker'),
+    'ModelCheckingReport': ('bounded_model_checker', 'ModelCheckingReport'),
+    'bounded_model_check': ('bounded_model_checker', 'bounded_model_check'),
+    'DiffMinimizer': ('diff_minimizer', 'DiffMinimizer'),
+    'minimize_patch_diff': ('diff_minimizer', 'minimize_patch_diff'),
+    'PatchReportComposer': ('patch_report_composer', 'PatchReportComposer'),
+    'compose_patch_report': ('patch_report_composer', 'compose_patch_report'),
 }
 
 

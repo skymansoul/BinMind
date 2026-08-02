@@ -74,7 +74,13 @@ class _PowerScheduler:
         return min(16.0, max(1.0, self._scores[key]))
 
 class ICSFuzzTemplateGenerator(BaseAnalyzer):
-    """ICS/SCADA fuzz template generator — protocol-specific mutations + Peach Pit XML"""
+    """ICS/SCADA fuzz template generator — protocol-specific mutations + Peach Pit XML
+
+    协议模糊测试策略参考 Zotero #428 "A Survey of Protocol Fuzzing" 的分类法：
+    基于生成(grammar-based) 优于基于变异(mutation-based) 对有状态协议，
+    状态引导(state-guided) 对深层协议状态覆盖率最高但开销最大。
+    本实现采用生成+反馈引导的混合策略。
+    """
     PROTOCOLS: Dict[str, Dict[str, Any]] = {
         "Modbus": {"ports": [502], "func_codes": list(range(1, 128)),
             "mutations": ["overflow_length","invalid_func_code","negative_value","null_byte","bit_flip"],

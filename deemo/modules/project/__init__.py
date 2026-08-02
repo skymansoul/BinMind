@@ -1,8 +1,20 @@
 # project module -- lazy-loading facade (Aug 2026 refactor)
-__version__ = "1.7.0"
+__version__ = "1.8.0"
 import sys as _sys, importlib as _il
 
-__all__ = ['CIIntegration', 'CollaborationManager', 'ConfigManager', 'PluginManager', 'ProjectManager', 'RemoteAgent', 'ReportLocalizationEngine', 'ReportTemplateEngine', 'ResourceControl', 'SIEMIntegrator', 'TaskScheduler', 'WebAPI', 'AssetRegistry', 'ScanOrchestrator', 'EventBus', 'AuditTrail', 'CacheManager', 'MetricsRegistry', 'Counter', 'Gauge', 'Histogram', 'Summary', 'count_calls', 'track_inprogress']
+__all__ = ['CIIntegration', 'CollaborationManager', 'ConfigManager', 'PluginManager', 'ProjectManager', 'RemoteAgent', 'ReportLocalizationEngine', 'ReportTemplateEngine', 'ResourceControl', 'SIEMIntegrator', 'TaskScheduler', 'WebAPI', 'AssetRegistry', 'ScanOrchestrator', 'EventBus', 'AuditTrail', 'CacheManager', 'MetricsRegistry', 'Counter', 'Gauge', 'Histogram', 'Summary', 'count_calls', 'track_inprogress',
+           'BinaryDiffEngine', 'get_diff_engine', 'diff_binaries',
+           'VulnerabilityGraphBuilder', 'CascadePredictor', 'CWECorrelationFinder',
+           'build_vuln_graph_from_findings', 'assess_supply_chain_risk',
+           'IncrementalAnalysisCache', 'IncrementalAnalysisScheduler',
+           'AdaptiveThresholdDetector', 'MultiScaleResidualDetector',
+           'MetricsAnomalyPipeline', 'BatchMetricAnalyzer',
+           'EvidenceMapper', 'CrossStandardMapper', 'StandardLibrary',
+           'assess_compliance',
+           'AdaptiveScheduler', 'TaskProfiler', 'AdaptivePriorityLearner',
+           'DataLineageTracker', 'PipelineLineageHook',
+           'FindingEnrichmentPipeline', 'CVSSInferrer', 'CWERefiner', 'MITREAttackMapper',
+           'ExploitabilityScorer', 'EPSSEstimator', 'TemporalDecayScorer']
 
 _lazy = {
     'CIIntegration': ('ci_integration', 'CIIntegrator'), 'CollaborationManager': ('collaboration', 'CollaborationManager'),
@@ -19,6 +31,15 @@ _lazy = {
     'Gauge': ('metrics_collector', 'Gauge'), 'Histogram': ('metrics_collector', 'Histogram'),
     'Summary': ('metrics_collector', 'Summary'), 'count_calls': ('metrics_collector', 'count_calls'),
     'track_inprogress': ('metrics_collector', 'track_inprogress'),
+    'BinaryDiffEngine': ('binary_diff_engine', 'BinaryDiffEngine'), 'get_diff_engine': ('binary_diff_engine', 'get_diff_engine'), 'diff_binaries': ('binary_diff_engine', 'diff_binaries'),
+    'VulnerabilityGraphBuilder': ('vuln_knowledge_graph', 'VulnerabilityGraphBuilder'), 'CascadePredictor': ('vuln_knowledge_graph', 'CascadePredictor'), 'CWECorrelationFinder': ('vuln_knowledge_graph', 'CWECorrelationFinder'), 'build_vuln_graph_from_findings': ('vuln_knowledge_graph', 'build_vuln_graph_from_findings'), 'assess_supply_chain_risk': ('vuln_knowledge_graph', 'assess_supply_chain_risk'),
+    'IncrementalAnalysisCache': ('incremental_cache', 'IncrementalAnalysisCache'), 'IncrementalAnalysisScheduler': ('incremental_cache', 'IncrementalAnalysisScheduler'),
+    'AdaptiveThresholdDetector': ('metrics_anomaly', 'AdaptiveThresholdDetector'), 'MultiScaleResidualDetector': ('metrics_anomaly', 'MultiScaleResidualDetector'), 'MetricsAnomalyPipeline': ('metrics_anomaly', 'MetricsAnomalyPipeline'), 'BatchMetricAnalyzer': ('metrics_anomaly', 'BatchMetricAnalyzer'),
+    'EvidenceMapper': ('compliance_mapper', 'EvidenceMapper'), 'CrossStandardMapper': ('compliance_mapper', 'CrossStandardMapper'), 'StandardLibrary': ('compliance_mapper', 'StandardLibrary'), 'assess_compliance': ('compliance_mapper', 'assess_compliance'),
+    'AdaptiveScheduler': ('adaptive_scheduler', 'AdaptiveScheduler'), 'TaskProfiler': ('adaptive_scheduler', 'TaskProfiler'), 'AdaptivePriorityLearner': ('adaptive_scheduler', 'AdaptivePriorityLearner'),
+    'DataLineageTracker': ('data_lineage', 'DataLineageTracker'), 'PipelineLineageHook': ('data_lineage', 'PipelineLineageHook'),
+    'FindingEnrichmentPipeline': ('finding_enricher', 'FindingEnrichmentPipeline'), 'CVSSInferrer': ('finding_enricher', 'CVSSInferrer'), 'CWERefiner': ('finding_enricher', 'CWERefiner'), 'MITREAttackMapper': ('finding_enricher', 'MITREAttackMapper'),
+    'ExploitabilityScorer': ('exploitability_scorer', 'ExploitabilityScorer'), 'EPSSEstimator': ('exploitability_scorer', 'EPSSEstimator'), 'TemporalDecayScorer': ('exploitability_scorer', 'TemporalDecayScorer'),
 }
 
 def __getattr__(name: str):

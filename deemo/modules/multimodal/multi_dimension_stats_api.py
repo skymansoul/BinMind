@@ -1276,3 +1276,192 @@ def get_statistics(statistic_type: str, analysis_history: List[Dict[str, Any]],
         statistic_type=StatisticType.ANALYSIS_METRICS,
         data={},
         timestamp=api._get_timestamp())
+
+
+# ============================================================================
+# Pareto前沿优化 — 在严重度 vs 修复成本的多目标空间中找非支配解
+# 参考：Deb et al. A Fast Elitist Non-dominated Sorting Genetic Algorithm
+#       (NSGA-II). IEEE TEC 2002.
+# 应用场景：给定多个漏洞修复方案（严重度降低 vs 所需工时），
+#          求Pareto前沿——非支配方案集，供决策者在效率边界上选择。
+# ============================================================================
+
+def pareto_frontier(objectives: List[Tuple[float, float]],
+                     minimize: Tuple[bool, bool] = (False, True)
+                     ) -> List[Tuple[float, float, int]]:
+    """计算2D Pareto前沿。
+
+    objectives: [(severity_reduction, effort_hours), ...]
+    minimize[0] = False → 第一个目标最大化（严重度降低越多越好）
+    minimize[1] = True → 第二个目标最小化（工时越少越好）
+
+    返回前沿上的点及它们在输入列表中的原始索引。
+    non_dominated_sorting 的 O(N²) 实现，对 N<1000 足够。
+    """
+    _N = len(objectives)
+    if _N < 2:
+        return [(objectives[0][0], objectives[0][1], 0)] if _N == 1 else []
+
+    # 归一化方向：所有目标转为"越小越好"
+    def _normalize(pt: Tuple[float, float]) -> Tuple[float, float]:
+        _f0 = -pt[0] if not minimize[0] else pt[0]
+        _f1 = pt[1] if minimize[1] else -pt[1]
+        return (_f0, _f1)
+
+    _normed = [_normalize(obj) for obj in objectives]
+    _dominated = [False] * _N
+
+    for _i in range(_N):
+        if _dominated[_i]:
+            continue
+        for _j in range(_N):
+            if _i == _j or _dominated[_j]:
+                continue
+            # i dominates j: i在所有目标上 ≤ j，且至少一个严格 <
+            _a, _b = _normed[_i], _normed[_j]
+            if _a[0] <= _b[0] and _a[1] <= _b[1] and (_a[0] < _b[0] or _a[1] < _b[1]):
+                _dominated[_j] = True
+            elif _b[0] <= _a[0] and _b[1] <= _a[1] and (_b[0] < _a[0] or _b[1] < _a[1]):
+                _dominated[_i] = True
+
+    _frontier = [(objectives[_i][0], objectives[_i][1], _i)
+                 for _i in range(_N) if not _dominated[_i]]
+    # 按第一个目标排序以便可视化
+    _frontier.sort(key=lambda p: p[0], reverse=not minimize[0])
+    return _frontier
+
+
+# ============================================================================
+# Benjamini-Hochberg FDR控制 — 多重假设检验的假发现率控制
+# 参考：Benjamini & Hochberg. Controlling the FDR. JRSS-B 1995.
+# 在同时测试多个漏洞是否为"真正高危"时，BH过程控制假发现率≤alpha
+# ============================================================================
+
+def benjamini_hochberg(p_values: List[float],
+                         alpha: float = 0.05) -> List[bool]:
+    """Benjamini-Hochberg 过程：控制FDR在alpha水平。
+
+    p_values: 每个漏洞的p值（越小越显著→"该漏洞为高危"的证据越强）。
+    返回布尔列表：True = 拒绝原假设（该漏洞判定为高危）。
+
+    步骤：
+    1. 将p值升序排列
+    2. 找最大k使得 p_(k) ≤ k/m * alpha
+    3. 拒绝前k个假设
+    """
+    _m = len(p_values)
+    if _m == 0:
+        return []
+
+    _indexed = sorted(enumerate(p_values), key=lambda x: x[1])
+    _k_max = 0
+    for _rank, (_, _pv) in enumerate(_indexed, 1):
+        _threshold = _rank / _m * alpha
+        if _pv <= _threshold:
+            _k_max = _rank
+
+    _rejected = [False] * _m
+    for _rank, (_orig_idx, _) in enumerate(_indexed, 1):
+        if _rank <= _k_max:
+            _rejected[_orig_idx] = True
+    return _rejected
+
+
+# ============================================================================
+# 幂律拟合 — 漏洞分布在函数间常遵循Zipf/幂律分布
+# 参考：Clauset et al. Power-Law Distributions in Empirical Data. SIAM Review 2009.
+# 对漏洞计数做 log-log 线性回归，估计幂律指数 α
+# ============================================================================
+
+def fit_power_law(counts: List[int]) -> Dict[str, float]:
+    """幂律拟合：P(X > x) ∝ x^{-α+1} 或 P(X = x) ∝ x^{-α}。
+
+    对 log(count) vs log(rank) 做最小二乘线性回归。
+    α ≈ -slope + 1（针对互补累积分布CCDF）。
+
+    返回：{'alpha': 幂律指数, 'xmin': 最小截断值, 'r_squared': 拟合优度}。
+    若 α < 2，分布具有无限方差（高风险——极端集中可能发生）。
+    """
+    _pos = [c for c in counts if c > 0]
+    if len(_pos) < 5:
+        return {'alpha': 0.0, 'xmin': 0, 'r_squared': 0.0}
+
+    # 按值降序 → rank vs value 的双对数线性回归
+    _sorted = sorted(_pos, reverse=True)
+    _xmin = min(_sorted)
+    _use = [v for v in _sorted if v >= _xmin]
+    _n = len(_use)
+
+    # log-log OLS
+    _log_rank = [math.log(i+1) for i in range(_n)]
+    _log_val = [math.log(v) for v in _use]
+    _mean_r = sum(_log_rank)/_n
+    _mean_v = sum(_log_val)/_n
+    _num = sum((_log_rank[i]-_mean_r)*(_log_val[i]-_mean_v) for i in range(_n))
+    _den = sum((_log_rank[i]-_mean_r)**2 for i in range(_n))
+    _slope = _num/_den if _den > 1e-10 else -1.0
+    _r2 = (_num/_den)**2 * (_den/sum((_log_val[i]-_mean_v)**2 for i in range(_n))) if _den > 1e-10 else 0.0
+    _alpha = 1.0 - _slope  # CCDF 幂律关系
+
+    return {'alpha': round(_alpha, 3), 'xmin': int(_xmin),
+            'r_squared': round(min(1.0, max(0.0, _r2)), 4)}
+
+
+# ============================================================================
+# Granger因果检验 — 检测一种漏洞类型的变化是否"Granger-cause"另一种
+# 参考：Granger. Investigating Causal Relations by Econometric Models. 1969.
+# 对时序数据做自回归 + 交叉滞后的F检验
+# ============================================================================
+
+def granger_causality_test(series_a: List[float], series_b: List[float],
+                             max_lag: int = 3) -> Dict[str, Any]:
+    """Granger因果检验：B的历史值是否能改善A的预测。
+
+    原假设：B不Granger-cause A。
+    构建两个模型：仅用A的滞后预测A（受限模型），
+              用A和B的滞后共同预测A（完全模型）。
+    F统计量显著 → 拒绝原假设 → B可能Granger-cause A。
+
+    注意：Granger因果≠真实因果——它只检测时序上的预测性。
+    """
+    _n = len(series_a)
+    if _n < max_lag + 10:
+        return {'f_statistic': 0.0, 'p_value': 1.0, 'significant': False, 'optimal_lag': 0}
+
+    _best_lag = 1
+    _best_f = 0.0
+    _best_p = 1.0
+
+    for _lag in range(1, max_lag + 1):
+        _eff_n = _n - _lag
+        # 受限模型：A_t = α + Σ β_i A_{t-i}
+        _resid_restricted: List[float] = []
+        for _t in range(_lag, _n):
+            _pred = sum(series_a[_t-_i-1] for _i in range(_lag)) / _lag
+            _resid_restricted.append(series_a[_t] - _pred)
+
+        # 完全模型：A_t = α + Σ β_i A_{t-i} + Σ γ_i B_{t-i}
+        _resid_full: List[float] = []
+        for _t in range(_lag, _n):
+            _pred_a = sum(series_a[_t-_i-1] for _i in range(_lag)) / _lag
+            _pred_b = sum(series_b[_t-_i-1] for _i in range(_lag)) / _lag
+            _pred = (_pred_a + _pred_b) / 2.0
+            _resid_full.append(series_a[_t] - _pred)
+
+        _rss_r = sum(r*r for r in _resid_restricted)
+        _rss_f = sum(r*r for r in _resid_full)
+        if _rss_f < 1e-10:
+            continue
+        _f_stat = ((_rss_r - _rss_f) / _lag) / (_rss_f / (_eff_n - 2*_lag - 1))
+        if _f_stat > _best_f:
+            _best_f = _f_stat
+            _best_lag = _lag
+            # 简化p值：F → 卡方近似
+            _best_p = 1.0 - math.erf(math.sqrt(_f_stat/_lag) / math.sqrt(2.0))
+
+    return {
+        'f_statistic': round(_best_f, 3),
+        'p_value': round(max(0.0, min(1.0, _best_p)), 4),
+        'significant': _best_p < 0.05,
+        'optimal_lag': _best_lag,
+    }

@@ -684,3 +684,392 @@ def align(modalities: Dict[str, List[List[float]]],
         'converged_epoch': _converged,
         'final_loss': _loss_hist[-1] if _loss_hist else float('inf'),
     }
+
+
+# ============================================================================
+# SimSiam风格停止梯度对齐 — 预测器 + stop_grad 避免模式坍缩
+# 参考：Chen & He. Exploring Simple Siamese Representation Learning. CVPR 2021.
+# 关键设计：predictor MLP是非对称的核心，stop_grad使一侧成为常量目标
+# ============================================================================
+
+class SimSiamAlign:
+    """SimSiam 对齐：非对称孪生网络 + stop-gradient。
+
+    一侧编码器输出通过 predictor 预测另一侧编码器的 stop_gradient 输出。
+    负余弦相似度作为损失，最小化 → 两个嵌入方向一致。
+    无需负样本、无需动量编码器、无需大 batch——设计极简但有效。
+    """
+
+    def __init__(self, input_dim: int, hidden_dim: int = 128, proj_dim: int = 64):
+        self._proj = ProjectionHead(input_dim, hidden_dim, proj_dim)
+        # predictor: proj_dim → hidden_dim → proj_dim (瓶颈结构)
+        self._pred_W1: List[List[float]] = [
+            [math.sin(i*0.47 + j*0.83) * math.sqrt(2.0/proj_dim)
+             for j in range(hidden_dim)] for i in range(proj_dim)]
+        self._pred_W2: List[List[float]] = [
+            [math.sin(i*0.29 + j*1.07) * math.sqrt(2.0/hidden_dim)
+             for j in range(proj_dim)] for i in range(hidden_dim)]
+
+    def forward(self, z1: List[List[float]], z2: List[List[float]]) -> float:
+        """z1, z2 是两个增强视图的编码器输出。
+
+        流程：z1→proj→pred(z1); z2→proj→stop_grad(z2)
+        loss = -cos(pred(proj(z1)), stop_grad(proj(z2)))
+        """
+        _p1 = self._proj.forward(z1)
+        _p2 = self._proj.forward(z2)
+        # predictor on view 1
+        _pred1 = self._predictor_forward(_p1)
+        _N, _d = len(_pred1), len(_pred1[0]) if _pred1 else 0
+        if _N == 0:
+            return 0.0
+        _loss = 0.0
+        for _i in range(_N):
+            _dot = sum(_pred1[_i][_j] * _p2[_i][_j] for _j in range(min(_d, len(_p2[_i]))))
+            _n1 = math.sqrt(sum(x*x for x in _pred1[_i])) + _EPS
+            _n2 = math.sqrt(sum(x*x for x in _p2[_i])) + _EPS
+            _loss -= _dot / (_n1 * _n2)
+        return _loss / _N
+
+    def _predictor_forward(self, x: List[List[float]]) -> List[List[float]]:
+        _n = len(x)
+        _h_dim = len(self._pred_W1[0])
+        _hidden = [[0.0]*_h_dim for _ in range(_n)]
+        for _i in range(_n):
+            for _j in range(_h_dim):
+                _acc = sum(x[_i][_k]*self._pred_W1[_k][_j]
+                         for _k in range(min(len(x[_i]), len(self._pred_W1))))
+                _hidden[_i][_j] = max(0.0, _acc)
+        _o_dim = len(self._pred_W2[0])
+        _out = [[0.0]*_o_dim for _ in range(_n)]
+        for _i in range(_n):
+            for _j in range(_o_dim):
+                _out[_i][_j] = sum(_hidden[_i][_k]*self._pred_W2[_k][_j]
+                                 for _k in range(min(len(_hidden[_i]), len(self._pred_W2))))
+        return _out
+
+
+# ============================================================================
+# VICReg — 方差-不变性-协方差正则化
+# 参考：Bardes et al. VICReg: Variance-Invariance-Covariance Regularization
+#       for Self-Supervised Learning. ICLR 2022.
+# 三项损失之和约束嵌入空间：不变性（配对的MSE）、方差（防坍缩）、
+# 协方差（去相关，使各维编码不同信息）
+# ============================================================================
+
+class VICRegLoss:
+    """VICReg 损失：variance + invariance + covariance。
+
+    不变性项 (s)：配对的 MSE——最小化增强版本间的差异。
+    方差项 (v)：嵌入各维度的标准差与目标值的 hinge loss——防止所有样本映射到同一点。
+    协方差项 (c)：嵌入协方差矩阵的非对角元素的平方和——去相关化，最大化信息利用率。
+    """
+
+    def __init__(self, sim_coef: float = 25.0, std_coef: float = 25.0,
+                 cov_coef: float = 1.0, epsilon: float = 1e-4):
+        self.sim_coef = sim_coef
+        self.std_coef = std_coef
+        self.cov_coef = cov_coef
+        self.eps = epsilon
+
+    # 不变性：配对 MSE
+    def _inv_loss(self, z1: List[List[float]], z2: List[List[float]]) -> float:
+        _n = len(z1)
+        if _n == 0:
+            return 0.0
+        _d = len(z1[0])
+        _mse = sum(sum((z1[i][j]-z2[i][j])**2 for j in range(_d)) for i in range(_n))
+        return self.sim_coef * _mse / _n
+
+    # 方差：每个维的标准差 → hinge(1 - sqrt(var+eps))
+    def _var_loss(self, z: List[List[float]]) -> float:
+        _n, _d = len(z), len(z[0]) if z else 0
+        if _n < 2:
+            return 0.0
+        _total = 0.0
+        for _j in range(_d):
+            _mean_j = sum(z[_i][_j] for _i in range(_n)) / _n
+            _var_j = sum((z[_i][_j]-_mean_j)**2 for _i in range(_n)) / (_n-1)
+            _std_j = math.sqrt(_var_j + self.eps)
+            _total += max(0.0, 1.0 - _std_j)
+        return self.std_coef * _total / _d
+
+    # 协方差：去相关
+    def _cov_loss(self, z: List[List[float]]) -> float:
+        _n, _d = len(z), len(z[0]) if z else 0
+        if _n < 2:
+            return 0.0
+        # 中心化
+        _centered = [[0.0]*_d for _ in range(_n)]
+        for _j in range(_d):
+            _m = sum(z[_i][_j] for _i in range(_n)) / _n
+            for _i in range(_n):
+                _centered[_i][_j] = z[_i][_j] - _m
+        # 协方差矩阵 C = (Z^T Z) / (n-1)
+        _total = 0.0
+        for _j in range(_d):
+            for _k in range(_d):
+                if _j == _k:
+                    continue
+                _c_jk = sum(_centered[_i][_j]*_centered[_i][_k] for _i in range(_n))/(_n-1)
+                _total += _c_jk * _c_jk
+        return self.cov_coef * _total / _d
+
+    def forward(self, z1: List[List[float]], z2: List[List[float]]) -> Tuple[float, Dict[str, float]]:
+        _inv = self._inv_loss(z1, z2)
+        _var = (self._var_loss(z1) + self._var_loss(z2)) / 2.0
+        _cov = (self._cov_loss(z1) + self._cov_loss(z2)) / 2.0
+        _total = _inv + _var + _cov
+        return _total, {'invariance': round(_inv,4), 'variance': round(_var,4), 'covariance': round(_cov,4)}
+
+
+# ============================================================================
+# Sinkhorn-Knopp 最优传输对齐 — 在嵌入空间执行等变聚类
+# 参考：Caron et al. Unsupervised Learning of Visual Features by
+#       Contrasting Cluster Assignments (SwAV). NeurIPS 2020.
+# Sinkhorn 归一化：将相似度矩阵映射为双随机矩阵 → 软聚类分配
+# 用软分配的交叉熵替代直接的特征对比
+# ============================================================================
+
+def sinkhorn_knopp(similarity_matrix: List[List[float]],
+                   n_iters: int = 3, epsilon_sk: float = 0.05) -> List[List[float]]:
+    """Sinkhorn-Knopp 算法：将任意方阵 or 矩形阵归一化为双随机矩阵。
+
+    设 S 的每行对 batch，每列对 prototype。
+    交替对行/列做指数缩放 + 归一化，收敛于最优传输的熵正则化解。
+    复杂度 O(N·K·n_iters)，远小于完整最优传输的 O(N³) 匈牙利算法。
+    """
+    _N = len(similarity_matrix)
+    _K = len(similarity_matrix[0]) if _N > 0 else 0
+    if _N == 0 or _K == 0:
+        return similarity_matrix
+
+    _Q = [[math.exp(similarity_matrix[i][j]/epsilon_sk) for j in range(_K)] for i in range(_N)]
+
+    for _ in range(n_iters):
+        # 行归一化
+        for _i in range(_N):
+            _row_sum = sum(_Q[_i][_j] for _j in range(_K)) + _EPS
+            for _j in range(_K):
+                _Q[_i][_j] /= _row_sum
+        # 列归一化
+        for _j in range(_K):
+            _col_sum = sum(_Q[_i][_j] for _i in range(_N)) + _EPS
+            for _i in range(_N):
+                _Q[_i][_j] /= _col_sum
+
+    return _Q
+
+
+class OTAlignmentLoss:
+    """最优传输对齐损失：将跨模态嵌入映射到共享 prototype 空间。
+
+    流程：
+    1. 各模态独立投影到 K 个 prototype
+    2. Sinkhorn-Knopp 将得分矩阵转为双随机矩阵（软分配）
+    3. 交叉熵损失：A模态的软分配 → B模态的软分配标签
+    这等效于在嵌入空间做软聚类对齐——SwAV 的核心思路。
+    """
+
+    def __init__(self, n_prototypes: int = 256, temperature: float = 0.1):
+        self.n_prototypes = n_prototypes
+        self.temperature = temperature
+        # prototype 向量：可学习的聚类中心
+        self._prototypes: List[List[float]] = [
+            [math.sin(p*0.17 + d*0.53)*0.1/math.sqrt(64) for d in range(64)]
+            for p in range(n_prototypes)]
+
+    def forward(self, embeddings_a: List[List[float]],
+                embeddings_b: List[List[float]]) -> float:
+        """计算跨模态软聚类对齐损失。"""
+        _N = len(embeddings_a)
+        _d_a, _d_b = len(embeddings_a[0]) if _N>0 else 0, len(embeddings_b[0]) if _N>0 else 0
+        if _N < 2:
+            return 0.0
+
+        _proto_dim = len(self._prototypes[0])
+        _K = self.n_prototypes
+
+        # 模态A → prototype 相似度
+        _sim_a = [[0.0]*_K for _ in range(_N)]
+        for _i in range(_N):
+            for _p in range(_K):
+                _dot = sum(embeddings_a[_i][_j]*self._prototypes[_p][_j]
+                         for _j in range(min(_d_a, _proto_dim)))
+                _sim_a[_i][_p] = _dot / self.temperature
+
+        # 模态B → prototype 相似度
+        _sim_b = [[0.0]*_K for _ in range(_N)]
+        for _i in range(_N):
+            for _p in range(_K):
+                _dot = sum(embeddings_b[_i][_j]*self._prototypes[_p][_j]
+                         for _j in range(min(_d_b, _proto_dim)))
+                _sim_b[_i][_p] = _dot / self.temperature
+
+        # Sinkhorn 归一化 → 软分配 Q_a, Q_b
+        _Q_a = sinkhorn_knopp(_sim_a)
+        _Q_b = sinkhorn_knopp(_sim_b)
+
+        # 交叉熵：用 Q_b 作为 Q_a 的软标签
+        _loss = 0.0
+        for _i in range(_N):
+            for _p in range(_K):
+                if _Q_b[_i][_p] > 1e-8:
+                    _loss -= _Q_b[_i][_p] * math.log(max(_Q_a[_i][_p], _EPS))
+        return _loss / _N
+
+
+# ============================================================================
+# MIL-NCE — 多实例学习 + 噪声对比估计 (弱对齐场景)
+# 参考：Miech et al. End-to-End Learning of Visual Representations
+#       from Uncurated Instructional Videos. CVPR 2020.
+# 关键：视频中任意时间窗口的 clip-text 对视为正样本，
+# 不要求严格对齐——适合仅有弱配对信息的场景
+# ============================================================================
+
+def mil_nce_loss(clip_embeddings: List[List[float]],
+                  text_embeddings: List[List[float]],
+                  n_clips_per_text: int = 5,
+                  temperature: float = 0.07) -> float:
+    """MIL-NCE：对每个文本取 K 个最相似 clip 的对数似然平均。
+
+    对文本 i，在 clip_embeddings 中找 n_clips_per_text 个最相似的 clip，
+    取这些 clip-text 对的平均相似度作为正样本得分。
+    这允许一个文本对应多个视觉片段——适合弱对齐设置。
+    """
+    _N_clips = len(clip_embeddings)
+    _N_texts = len(text_embeddings)
+    if _N_clips < 3 or _N_texts < 2:
+        return 0.0
+
+    _loss_fn = NTXentLoss()
+    _sim = _loss_fn.cosine_similarity_matrix(text_embeddings, clip_embeddings)
+    _tau = temperature
+
+    _total_loss = 0.0
+    for _t in range(_N_texts):
+        _row = _sim[_t]
+        # 每个文本取 top-K 个 clips 作为正样本
+        _topk_indices = sorted(range(_N_clips), key=lambda j: _row[j], reverse=True)[:n_clips_per_text]
+        _pos_sims = [_row[_j] for _j in _topk_indices]
+        # log-sum-exp 稳定计算
+        _scaled_row = [_s / _tau for _s in _row]
+        _mx = max(_scaled_row)
+        _denom = math.log(sum(math.exp(_s - _mx) for _s in _scaled_row) + _EPS)
+        # 正样本对数似然平均
+        _pos_term = sum(_s / _tau for _s in _pos_sims) / n_clips_per_text
+        _total_loss += -(_pos_term - _mx - _denom)
+
+    return _total_loss / _N_texts
+
+
+# ============================================================================
+# SigLIP 风格损失 — sigmoid 替代 softmax，每个对独立判断
+# 参考：Zhai et al. Sigmoid Loss for Language Image Pre-Training. ICCV 2023.
+# 优势：不依赖 batch 内归一化，batch size 可降至很小；
+#      每个正/负对独立计算二元交叉熵，天然支持极端不平衡。
+# ============================================================================
+
+def siglip_contrastive_loss(embeddings_a: List[List[float]],
+                              embeddings_b: List[List[float]],
+                              temperature: float = 0.07,
+                              bias: float = -10.0) -> float:
+    """SigLIP 对比损失：逐对 sigmoid 二元交叉熵。
+
+    正对标签 = +1，负对标签 = -1（用 +bias 做 logit 偏置→负对期望输出≈0）。
+    独立于 batch size——这是 SigLIP 相比 NT-Xent 的最大实际优势。
+    """
+    _N = len(embeddings_a)
+    if _N < 1:
+        return 0.0
+
+    _loss_fn = NTXentLoss()
+    _sim = _loss_fn.cosine_similarity_matrix(embeddings_a, embeddings_b)
+
+    _total_loss = 0.0
+    _count = 0
+    for _i in range(_N):
+        for _j in range(_N):
+            _logit = _sim[_i][_j] / temperature + bias
+            _label = 1.0 if _i == _j else -1.0
+            # -log σ(label * logit) = log(1 + exp(-label*logit))
+            _z = -_label * _logit
+            # 数值稳定：log(1+exp(-z))
+            if _z > 20:
+                _total_loss += _z  # ≈ log(exp(-z)) = -z = label*logit
+            else:
+                _total_loss += math.log(1.0 + math.exp(_z))
+            _count += 1
+
+    return _total_loss / max(1, _count)
+
+
+# ============================================================================
+# 跨模态 Mixup — 在嵌入空间做线性插值增强
+# 参考：Zhang et al. mixup: Beyond Empirical Risk Minimization. ICLR 2018.
+# 跨模态扩展：同时 mixup 两个模态的样本 + 标签，
+# 生成连续的跨模态插值合成样本
+# ============================================================================
+
+def cross_modal_mixup(embeddings_a: List[List[float]],
+                       embeddings_b: List[List[float]],
+                       labels: List[int],
+                       alpha_mix: float = 0.4) -> Tuple[List[List[float]], List[List[float]], List[int], List[int], List[float]]:
+    """跨模态 mixup：在嵌入空间中对一个 batch 内的样本对做凸组合。
+
+    λ ~ Beta(α, α)，混合 A = λ·A_i + (1-λ)·A_j，B同理。
+    标签也混合（用于 SupCon 等标签感知损失）。
+    返回 (mixed_A, mixed_B, labels_i, labels_j, lambdas)。
+    """
+    _N = len(embeddings_a)
+    if _N < 2:
+        return embeddings_a, embeddings_b, labels, labels, [1.0]*_N
+
+    _d_a = len(embeddings_a[0]) if _N > 0 else 0
+    _d_b = len(embeddings_b[0]) if _N > 0 else 0
+
+    _mixed_a = [[0.0]*_d_a for _ in range(_N)]
+    _mixed_b = [[0.0]*_d_b for _ in range(_N)]
+    _labels_i = list(labels)
+    _labels_j = [0]*_N
+    _lambdas = [0.0]*_N
+
+    for _i in range(_N):
+        _j = (_i + 1 + int(math.sin(_i*1.37)*100)) % _N  # 伪随机配对
+        _lam = random.betavariate(alpha_mix, alpha_mix) if alpha_mix > 0 else 1.0
+        _lambdas[_i] = _lam
+        _labels_j[_i] = labels[_j]
+        for _d in range(_d_a):
+            _mixed_a[_i][_d] = _lam * embeddings_a[_i][_d] + (1-_lam) * embeddings_a[_j][_d]
+        for _d in range(_d_b):
+            _mixed_b[_i][_d] = _lam * embeddings_b[_i][_d] + (1-_lam) * embeddings_b[_j][_d]
+
+    return _mixed_a, _mixed_b, _labels_i, _labels_j, _lambdas
+
+
+# ============================================================================
+# 对齐均匀性指标 — 评估嵌入空间在整个超球面上的分布质量
+# 参考：Wang & Isola. Understanding Contrastive Representation Learning
+#       through Alignment and Uniformity. ICML 2020.
+# 对齐：正样本对距离小；均匀性：嵌入在整个球面上均匀散布
+# ============================================================================
+
+def uniformity_metric(embeddings: List[List[float]], t: float = 2.0) -> float:
+    """嵌入均匀性：所有嵌入对之间的平均 RBF 核值。
+
+    L_uniform = log( E_{i≠j}[ exp(-t·||z_i - z_j||²) ] )
+    低值 → 嵌入在超球面上分布更均匀 → 保留了更多信息容量。
+    配合对齐损失，可达到 alignment + uniformity 的 Pareto 最优。
+    """
+    _N = len(embeddings)
+    if _N < 2:
+        return 0.0
+    _d = len(embeddings[0]) if _N > 0 else 0
+    _total = 0.0
+    _pairs = 0
+    for _i in range(_N):
+        for _j in range(_i+1, _N):
+            _dist_sq = sum((embeddings[_i][_k]-embeddings[_j][_k])**2 for _k in range(_d))
+            _total += math.exp(-t * _dist_sq)
+            _pairs += 1
+    return -math.log(_total / max(1, _pairs) + _EPS)

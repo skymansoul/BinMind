@@ -26,6 +26,20 @@ _submodules = {
     "network_forensics": ".network_forensics",
     "network_ids": ".network_ids",
     "pcap_processor": ".pcap_processor",
+    # 2026-07 新增模块 — 广度拓展
+    "quic_analyzer": ".quic_analyzer",
+    "encrypted_traffic_classifier": ".encrypted_traffic_classifier",
+    "netflow_analyzer": ".netflow_analyzer",
+    "ddos_detector": ".ddos_detector",
+    "ntp_analyzer": ".ntp_analyzer",
+    "covert_channel_detector": ".covert_channel_detector",
+    "arp_spoof_detector": ".arp_spoof_detector",
+    "snmp_analyzer": ".snmp_analyzer",
+    "voip_analyzer": ".voip_analyzer",
+    "topology_mapper": ".topology_mapper",
+    # Zotero 文献驱动模块 — 协议模糊测试编排 + RFC合规校验
+    "protocol_fuzz_orchestrator": ".protocol_fuzz_orchestrator",
+    "rfc_compliance_checker": ".rfc_compliance_checker",
 }
 
 def __getattr__(name):

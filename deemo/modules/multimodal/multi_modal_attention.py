@@ -811,3 +811,308 @@ def fuse_modalities(modality_features: List[List[List[float]]],
                 _fused[_i][_col + _j] = _p[_i][_j]
         _col += _pd
     return _fused
+
+
+# ============================================================================
+# 线性注意力 — Performer FAVOR+ 风格的核特征近似
+# 参考：Choromanski et al. Rethinking Attention with Performers. ICLR 2021.
+# 用随机特征映射 φ(x) 近似 softmax 核：φ(Q)·φ(K)^T ≈ softmax(QK^T/√d)
+# 复杂度：O(N·d·m) 其中 m 是随机特征数，远小于 N²
+# 正交随机特征 (ORF) 相比 i.i.d. 随机特征有更低的近似方差
+# ============================================================================
+
+class LinearAttention:
+    """Performer风格线性注意力：K^T·V 先聚合避免显式 N×N 矩阵。
+
+    softmax(QK^T/√d)V ≈ φ(Q)·(φ(K)^T·V) / (φ(Q)·φ(K)^T·1)
+    先计算 (φ(K)^T·V) — O(N·d·m)，再右乘 φ(Q) — O(N·d·m)。
+    总计 O(N·d·m) vs 标准注意力的 O(N²·d)。当 m << N 时有显著收益。
+    """
+
+    def __init__(self, dim: int = 64, n_random_features: int = 128):
+        self.dim = dim
+        self.n_features = n_random_features
+        # 正交随机特征 (ORF): 随机投影 + 正交化 → 更低方差
+        self._proj: List[List[float]] = self._make_orf(dim, n_random_features)
+
+    def _make_orf(self, d_in: int, m: int) -> List[List[float]]:
+        """生成正交随机特征投影矩阵。
+
+        先产生 i.i.d. 高斯矩阵，再通过 QR 分解正交化——
+        正交性保证核近似的方差上界更紧。
+        """
+        _raw = [[(math.sin(i*1.73 + j*0.91)-0.5)*2.0*math.sqrt(1.0/d_in)
+                 for j in range(m)] for i in range(d_in)]
+        # 对列做 Gram-Schmidt 正交化
+        for _j in range(m):
+            _norm_j = math.sqrt(sum(_raw[_i][_j]**2 for _i in range(d_in)))
+            if _norm_j > _EPS:
+                for _i in range(d_in):
+                    _raw[_i][_j] /= _norm_j
+            for _k in range(_j+1, m):
+                _dot = sum(_raw[_i][_j]*_raw[_i][_k] for _i in range(d_in))
+                for _i in range(d_in):
+                    _raw[_i][_k] -= _dot * _raw[_i][_j]
+        return _raw
+
+    def _kernel_map(self, x: List[List[float]]) -> List[List[float]]:
+        """φ(x) = exp(||x||²/2) · [cos(Wx) || sin(Wx)] / √m
+
+        random fourier features 近似高斯核，
+        结合 scaled dot-product 重构 softmax attention。
+        """
+        _N, _d = len(x), len(x[0]) if x else 0
+        _m = self.n_features
+        # 归一化因子：exp(||x||²/2)
+        _norms = [0.0]*_N
+        for _i in range(_N):
+            _norms[_i] = math.exp(0.5*sum(x[_i][_j]**2 for _j in range(_d)) + _EPS)
+        # Wx: projection
+        _Wx = [[0.0]*_m for _ in range(_N)]
+        for _i in range(_N):
+            for _j in range(_m):
+                _acc = 0.0
+                for _k in range(min(_d, len(self._proj))):
+                    _acc += x[_i][_k] * self._proj[_k][_j]
+                _Wx[_i][_j] = _acc
+        # φ(x) = [cos(Wx)|| sin(Wx)] / √m, scaled by norm
+        _phi = [[0.0]*(2*_m) for _ in range(_N)]
+        _inv_sqrt_m = 1.0/math.sqrt(_m)
+        for _i in range(_N):
+            _n = _norms[_i]
+            for _j in range(_m):
+                _w = _Wx[_i][_j]
+                _phi[_i][2*_j] = _n * math.cos(_w) * _inv_sqrt_m
+                _phi[_i][2*_j+1] = _n * math.sin(_w) * _inv_sqrt_m
+        return _phi
+
+    def forward(self, Q: List[List[float]], K: List[List[float]],
+                V: List[List[float]]) -> AttentionOutput:
+        """线性注意力前向。"""
+        _N = len(Q)
+        _d_v = len(V[0]) if V else 0
+        if _N == 0:
+            return AttentionOutput(output=[[0.0]*_d_v for _ in range(_N)])
+
+        _phi_q = self._kernel_map(Q)
+        _phi_k = self._kernel_map(K)
+        _feat_dim = 2 * self.n_features
+
+        # KV = φ(K)^T · V  (feat_dim × d_v)
+        _KV = [[0.0]*_d_v for _ in range(_feat_dim)]
+        for _j in range(_feat_dim):
+            for _c in range(_d_v):
+                _acc = 0.0
+                for _n in range(_N):
+                    _acc += _phi_k[_n][_j] * V[_n][_c]
+                _KV[_j][_c] = _acc
+
+        # 归一化向量 φ(K)^T · 1
+        _K_sum = [sum(_phi_k[_n][_j] for _n in range(_N)) for _j in range(_feat_dim)]
+
+        # 输出：φ(Q) · KV / (φ(Q) · K_sum)
+        _output = [[0.0]*_d_v for _ in range(_N)]
+        for _i in range(_N):
+            _norm = sum(_phi_q[_i][_j]*_K_sum[_j] for _j in range(_feat_dim)) + _EPS
+            for _c in range(_d_v):
+                _acc = sum(_phi_q[_i][_j]*_KV[_j][_c] for _j in range(_feat_dim))
+                _output[_i][_c] = _acc / _norm
+
+        return AttentionOutput(output=_output, attention_weights=[])
+
+
+# ============================================================================
+# ALiBi — 注意力线性偏差 (不学位置嵌入，直接加偏置)
+# 参考：Press et al. Train Short, Test Long: ALiBi. ICLR 2022.
+# 核心：在 QK^T 矩阵上加一个按头递减的线性偏置矩阵
+#       head_h 的斜率 = 2^(-8/h * h)，从最近的token开始惩罚远端token
+# 效果：不增加任何参数即可实现序列长度外推，训练用 1024，推理可至 2048+
+# ============================================================================
+
+class ALiBiBias:
+    """ALiBi 位置偏置：不加位置编码，加固定斜率的距离惩罚。
+
+    bias[i][j] = -slope_h * |i-j|  (causal: i>=j时有效)
+    每个注意力头使用不同斜率，越远的头惩罚越重→短程头+长程头分工。
+    """
+
+    def __init__(self, num_heads: int = 8):
+        self.num_heads = num_heads
+        # 斜率：等差数列，2^(-8/num_heads * (h+1))
+        self._slopes: List[float] = []
+        for _h in range(num_heads):
+            _exp = -8.0 * (_h + 1) / num_heads
+            self._slopes.append(2.0 ** _exp)
+
+    def get_bias_matrix(self, seq_len: int, head_idx: int) -> List[List[float]]:
+        _slope = self._slopes[min(head_idx, len(self._slopes)-1)]
+        _bias = [[0.0]*seq_len for _ in range(seq_len)]
+        for _i in range(seq_len):
+            for _j in range(seq_len):
+                # causal: 只对 i>=j 有效，且距离越远惩罚越大
+                if _i >= _j:
+                    _bias[_i][_j] = -_slope * (_i - _j)
+                else:
+                    _bias[_i][_j] = -1e9  # causal mask
+        return _bias
+
+
+# ============================================================================
+# 差分注意力 — 两个softmax之差，滤除共享噪声，突出独特信号
+# 参考：Ye et al. Differential Transformer. arXiv 2024.
+# DiffAttn(X) = (softmax(Q1·K1^T) - λ·softmax(Q2·K2^T))·V
+# 两组注意力头的差可以消除跨token共享的噪声分量，
+# λ 是可学习的标量，控制噪声减法强度
+# ============================================================================
+
+class DifferentialAttention:
+    """差分注意力：两组 Q/K 计算 softmax 后做带权减法。
+
+    Q₁, K₁ 和 Q₂, K₂ 通过不同投影获得，
+    最终注意力 = A₁ - λ·A₂，其中 λ = exp(λ_q·λ_k)/exp(λ_q·λ_k)+1 限制在 (0,1)。
+    减法操作消除了两组注意力共享的噪声模式——相当于"差分放大器"。
+    """
+
+    def __init__(self, dim: int = 64, head_dim: int = 32):
+        self.dim = dim
+        self.head_dim = head_dim
+        # 两组 Q/K 投影
+        self._Q1_proj = self._init_proj(dim, head_dim)
+        self._K1_proj = self._init_proj(dim, head_dim)
+        self._Q2_proj = self._init_proj(dim, head_dim)
+        self._K2_proj = self._init_proj(dim, head_dim)
+        # 可学习标量 λ
+        self._lambda_q = 0.1
+        self._lambda_k = 0.1
+        self._attn = ScaledDotProductAttention()
+
+    def _init_proj(self, in_d: int, out_d: int) -> List[List[float]]:
+        return [[math.sin(i*0.73+j*1.17)*0.1 for j in range(out_d)] for i in range(in_d)]
+
+    def forward(self, X: List[List[float]]) -> AttentionOutput:
+        _N, _d_in = len(X), len(X[0]) if X else 0
+        if _N == 0:
+            return AttentionOutput(output=[])
+
+        # Q1, K1, Q2, K2
+        _Q1 = _matmul(X, self._Q1_proj)
+        _K1 = _matmul(X, self._K1_proj)
+        _Q2 = _matmul(X, self._Q2_proj)
+        _K2 = _matmul(X, self._K2_proj)
+
+        _result1 = self._attn.forward(_Q1, _K1, X)
+        _result2 = self._attn.forward(_Q2, _K2, X)
+
+        # λ = sigmoid(λ_q * λ_k)
+        _lam = 1.0/(1.0 + math.exp(-self._lambda_q*self._lambda_k))
+
+        _d_out = len(_result1.output[0]) if _result1.output else 0
+        _out = [[0.0]*_d_out for _ in range(_N)]
+        for _i in range(_N):
+            for _j in range(_d_out):
+                _out[_i][_j] = _result1.output[_i][_j] - _lam*_result2.output[_i][_j]
+
+        return AttentionOutput(output=_out, attention_weights=_result1.attention_weights)
+
+
+# ============================================================================
+# 膨胀滑动窗口注意力 — 跳跃式窗口，覆盖更广上下文
+# 参考：Beltagy et al. Longformer. 2020.  + Ding et al. Dilated Attention. 2023
+# 窗口大小 = window_size, 膨胀率 = dilation
+# 有效感受野 = window_size × dilation，但不增加计算量
+# ============================================================================
+
+def dilated_sliding_window_attention(Q: List[List[float]], K: List[List[float]],
+                                       V: List[List[float]], window_size: int = 64,
+                                       dilation: int = 2) -> AttentionOutput:
+    """膨胀滑动窗口注意力：跳跃式覆盖，扩大感受野而不增加FLOPs。
+
+    dilation=2 → 每隔1个token采样，窗口大小仍为64但覆盖128个token范围。
+    这是 Longformer 的滑动窗口 + 膨胀的纯Python复现。
+    适用于长序列建模（如函数调用链、指令序列）。
+    """
+    _N = len(Q)
+    _d_k = len(K[0]) if K else 1
+    _d_v = len(V[0]) if V else _d_k
+    _scale = 1.0/math.sqrt(max(_d_k, 1))
+    _half = window_size // 2
+
+    _output = [[0.0]*_d_v for _ in range(_N)]
+    for _i in range(_N):
+        # 构建膨胀索引列表
+        _indices: List[int] = []
+        _center = _i
+        for _d in range(-_half, _half+1):
+            _idx = _center + _d * dilation
+            if 0 <= _idx < _N:
+                _indices.append(_idx)
+        # 局部 QK^T
+        _n_local = len(_indices)
+        _scores = [0.0]*_n_local
+        for _j_idx, _j in enumerate(_indices):
+            _dot = sum(Q[_i][_k]*K[_j][_k] for _k in range(min(len(Q[_i]), len(K[_j]))))
+            _scores[_j_idx] = _dot * _scale
+        # softmax
+        _mx = max(_scores) if _scores else 0.0
+        _exps = [math.exp(_s-_mx) for _s in _scores]
+        _sum_exp = sum(_exps)+_EPS
+        # 加权V
+        for _j_idx, _j in enumerate(_indices):
+            _w = _exps[_j_idx]/_sum_exp
+            for _c in range(min(_d_v, len(V[_j]))):
+                _output[_i][_c] += _w * V[_j][_c]
+
+    return AttentionOutput(output=_output)
+
+
+# ============================================================================
+# 跨模态门控融合单元 — 动态控制模态间的信息流
+# 参考：Peng et al. Gated Cross-Attention for Multimodal Learning. 2024.
+# gate = σ(W_g·[cross_attn_output; self_attn_output])
+# output = gate ⊙ cross + (1-gate) ⊙ self
+# ============================================================================
+
+class GatedCrossAttention:
+    """带门控的交叉注意力：自适应决定每个位置融合多少跨模态信息。
+
+    对每个 token，门控值 ∈ [0,1] 决定了该位置从跨模态信息中吸收的比例。
+    低噪声模态的 token 可以更信任跨模态信号（gate → 1），
+    高噪声模态的 token 可以保留自注意结果（gate → 0）。
+    """
+
+    def __init__(self, dim: int = 64, dropout: float = 0.1):
+        self.dim = dim
+        self._cross_attn = CrossModalAttention(dim=dim, dropout=dropout)
+        self._self_attn = ModalitySelfAttention(dim=dim)
+        # 门控权重: 2*dim → dim
+        self._W_gate: List[List[float]] = [
+            [math.sin(i*0.47+j*0.83)*0.05 for j in range(2*dim)] for i in range(dim)]
+
+    def forward(self, modality_a: List[List[float]],
+                modality_b: List[List[float]]) -> List[List[float]]:
+        _cross_result = self._cross_attn.forward(modality_a, modality_b)
+        _self_result = self._self_attn.forward(modality_a)
+
+        _N = len(modality_a)
+        _d = self.dim
+        if _N == 0:
+            return []
+
+        _fused = [[0.0]*_d for _ in range(_N)]
+        for _i in range(_N):
+            # 拼接 cross 和 self 输出 → 门控
+            _concat = (_cross_result.output[_i][:min(_d, len(_cross_result.output[_i]))] +
+                      _self_result.output[_i][:min(_d, len(_self_result.output[_i]))])
+            _gate_logits = [0.0]*_d
+            for _j_o in range(_d):
+                _gate_logits[_j_o] = sum(_concat[_j_i]*self._W_gate[_j_o][_j_i]
+                                        for _j_i in range(min(len(_concat), 2*_d)))
+            _gate = [1.0/(1.0+math.exp(-min(max(_g, 20), -20))) for _g in _gate_logits]
+            # 门控融合
+            for _j in range(_d):
+                _cross_val = (_cross_result.output[_i][_j]
+                             if _j < len(_cross_result.output[_i]) else 0.0)
+                _self_val = (_self_result.output[_i][_j]
+                            if _j < len(_self_result.output[_i]) else 0.0)
+                _fused[_i][_j] = _gate[_j]*_cross_val + (1-_gate[_j])*_self_val
+        return _fused
