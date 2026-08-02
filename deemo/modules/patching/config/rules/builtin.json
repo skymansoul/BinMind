@@ -1,0 +1,109 @@
+{
+  "rules": [
+    {
+      "id": "CWE-121",
+      "name": "Stack-based Buffer Overflow",
+      "description": "Detect stack-based buffer overflow patterns",
+      "severity": "Critical",
+      "enabled": true,
+      "tags": ["memory", "overflow", "cwe-121"],
+      "target_languages": ["c/c++"],
+      "target_formats": ["ELF", "PE", "MACH-O"],
+      "conditions": [
+        {"field": "imports.dangerous_functions", "operator": "contains", "value": "gets"},
+        {"field": "imports.dangerous_functions", "operator": "contains", "value": "strcpy"},
+        {"field": "imports.dangerous_functions", "operator": "contains", "value": "strcat"},
+        {"field": "imports.dangerous_functions", "operator": "contains", "value": "sprintf"},
+        {"field": "imports.dangerous_functions", "operator": "contains", "value": "vsprintf"}
+      ],
+      "actions": [{"type": "report_vulnerability", "parameters": {"vulnerability_type": "Stack-based Buffer Overflow", "severity": "Critical"}}]
+    },
+    {
+      "id": "CWE-122",
+      "name": "Heap-based Buffer Overflow",
+      "severity": "Critical",
+      "enabled": true,
+      "tags": ["memory", "overflow", "cwe-122"],
+      "target_languages": ["c/c++"],
+      "target_formats": ["ELF", "PE", "MACH-O"],
+      "conditions": [
+        {"field": "imports.dangerous_functions", "operator": "contains", "value": "malloc"},
+        {"field": "imports.dangerous_functions", "operator": "contains", "value": "memcpy"},
+        {"field": "imports.dangerous_functions", "operator": "contains", "value": "memmove"}
+      ],
+      "actions": [{"type": "report_vulnerability", "parameters": {"vulnerability_type": "Heap-based Buffer Overflow", "severity": "Critical"}}]
+    },
+    {
+      "id": "CWE-134",
+      "name": "Uncontrolled Format String",
+      "severity": "High",
+      "enabled": true,
+      "tags": ["format-string", "cwe-134"],
+      "target_languages": ["c/c++"],
+      "target_formats": ["ELF", "PE", "MACH-O"],
+      "conditions": [
+        {"field": "imports.dangerous_functions", "operator": "contains", "value": "printf"},
+        {"field": "imports.dangerous_functions", "operator": "contains", "value": "fprintf"},
+        {"field": "imports.dangerous_functions", "operator": "contains", "value": "sprintf"}
+      ],
+      "actions": [{"type": "report_vulnerability", "parameters": {"vulnerability_type": "Uncontrolled Format String", "severity": "High"}}]
+    },
+    {
+      "id": "CWE-20",
+      "name": "Improper Input Validation",
+      "severity": "Medium",
+      "enabled": true,
+      "tags": ["input", "validation", "cwe-20"],
+      "target_languages": ["c/c++", "go", "rust"],
+      "target_formats": ["ELF", "PE", "MACH-O"],
+      "conditions": [
+        {"field": "key_strings", "operator": "contains", "value": "scanf"},
+        {"field": "key_strings", "operator": "contains", "value": "gets"}
+      ],
+      "actions": [{"type": "report_vulnerability", "parameters": {"vulnerability_type": "Improper Input Validation", "severity": "Medium"}}]
+    },
+    {
+      "id": "GO-001",
+      "name": "Go Unsafe Syscall",
+      "severity": "High",
+      "enabled": true,
+      "tags": ["go", "syscall", "unsafe"],
+      "target_languages": ["go"],
+      "target_formats": ["ELF"],
+      "conditions": [
+        {"field": "imports.all_imports", "operator": "contains", "value": "syscall"},
+        {"field": "imports.all_imports", "operator": "contains", "value": "syscall.RawSyscall"}
+      ],
+      "actions": [{"type": "report_vulnerability", "parameters": {"vulnerability_type": "Go Unsafe Syscall", "severity": "High"}}]
+    },
+    {
+      "id": "RUST-001",
+      "name": "Rust Unsafe Code",
+      "severity": "Medium",
+      "enabled": true,
+      "tags": ["rust", "unsafe", "ffi"],
+      "target_languages": ["rust"],
+      "target_formats": ["ELF"],
+      "conditions": [
+        {"field": "symbols", "operator": "contains", "value": "std::ptr::read"},
+        {"field": "symbols", "operator": "contains", "value": "std::ptr::write"},
+        {"field": "symbols", "operator": "contains", "value": "std::mem::transmute"}
+      ],
+      "actions": [{"type": "report_vulnerability", "parameters": {"vulnerability_type": "Rust Unsafe Code", "severity": "Medium"}}]
+    },
+    {
+      "id": "RUST-002",
+      "name": "Rust FFI Boundary",
+      "severity": "High",
+      "enabled": true,
+      "tags": ["rust", "ffi", "c-interop"],
+      "target_languages": ["rust"],
+      "target_formats": ["ELF"],
+      "conditions": [
+        {"field": "symbols", "operator": "contains", "value": "extern \"C\""},
+        {"field": "symbols", "operator": "contains", "value": "std::ffi::CString"}
+      ],
+      "actions": [{"type": "report_vulnerability", "parameters": {"vulnerability_type": "Rust FFI Boundary", "severity": "High"}}]
+    }
+  ]
+}

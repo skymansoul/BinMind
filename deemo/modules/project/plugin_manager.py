@@ -1,0 +1,136 @@
+"""Plugin discovery, validation, and hot-reload lifecycle — ABC contract + hook registry."""
+import os, sys, importlib.util, logging, re as _re, abc
+from typing import List, Dict, Optional, Tuple, Set, Callable
+from collections import deque
+from contextlib import suppress
+
+logger = logging.getLogger(__name__)
+try: from core.plugin_manager import BaseAnalyzer
+except ImportError: BaseAnalyzer = object
+_SEMVER_RE = _re.compile(r"^(\d+)\.(\d+)\.(\d+)(?:-([\w.]+))?$")
+
+class AnalyzerType: STATIC = "static"; DYNAMIC = "dynamic"; HYBRID = "hybrid"
+
+# ABC contract for analyzers
+class IAnalyzer(abc.ABC):
+    @abc.abstractmethod
+    def analyze(self, *args, **kwargs) -> Dict: ...
+
+class AnalyzerMetadata:
+    __slots__ = ('name', 'version', 'author', 'type', 'description', 'entry_class', 'requires', 'priority')
+    def __init__(self, name="", ver="0.1", author="unknown", at=AnalyzerType.STATIC, desc="", ec="", reqs=None, pri=100):
+        self.name = name; self.version = ver; self.author = author; self.type = at; self.description = desc
+        self.entry_class = ec; self.requires: List[str] = reqs or []; self.priority = pri
+
+class PluginManager:
+    def __init__(self, plugin_dirs=None):
+        self._dirs = plugin_dirs or []; self.plugins: dict = {}; self._meta: dict = {}; self._order: List[str] = []
+        self._hooks: Dict[str, List[str]] = {}; self._resolve()
+
+    def _scan(self) -> Dict[str, Tuple[str, Optional[dict]]]:
+        c: Dict[str, Tuple[str, Optional[dict]]] = {}
+        for d in self._dirs:
+            if not os.path.isdir(d): continue
+            for fn in os.listdir(d):
+                if fn.startswith("_") or not fn.endswith(".py"): continue
+                mn, fp = fn[:-3], os.path.join(d, fn); c[mn] = (fp, self._read_meta(fp))
+        return c
+
+    @staticmethod
+    def _read_meta(fp):
+        with suppress(OSError):
+            with open(fp, encoding='utf-8') as f: src = f.read()
+            idx = src.find("METADATA")
+            if idx < 0: return None
+            bs = src.find("{", idx)
+            if bs < 0: return None
+            d, be = 0, bs
+            for i in range(bs, len(src)):
+                if src[i] == '{': d += 1
+                elif src[i] == '}': d -= 1
+                if d == 0: be = i + 1; break
+            with suppress(Exception): return eval(src[bs:be])
+        return None
+
+    def _resolve(self):
+        c = self._scan()
+        if not c: return
+        dg: Dict[str, Set[str]] = {}
+        for n, (_, m) in c.items():
+            dg[n] = set()
+            if m and m.get("requires"):
+                for r in m["requires"]:
+                    if r in c: dg[n].add(r)
+        indeg = {n: len(dg[n]) for n in c}; q = deque([n for n, d in indeg.items() if d == 0]); sn = []
+        while q:
+            node = q.popleft(); sn.append(node)
+            for o, deps in dg.items():
+                if node in deps: indeg[o] -= 1
+                if indeg[o] == 0: q.append(o)
+        cyc = set(c) - set(sn)
+        if cyc: logger.warning("循环依赖: %s", ", ".join(cyc))
+        pm = {}
+        for n in sn: _, m = c.get(n, ("", None)); pm[n] = m.get("priority", 100) if m else 100
+        sn.sort(key=lambda n: pm.get(n, 100), reverse=True)
+        self._order = sn
+        for n in sn: fp, m = c[n]; self._try_load(n, fp, m)
+
+    def _try_load(self, n, fp, m=None):
+        with suppress(Exception):
+            spec = importlib.util.spec_from_file_location(f"bp_{n}", fp)
+            if spec is None or spec.loader is None: return
+            mod = importlib.util.module_from_spec(spec); sys.modules[spec.name] = mod; spec.loader.exec_module(mod)
+            m = m or getattr(mod, 'METADATA', None)
+            if m and "engine_version" in m:
+                if not self._check_ver(m["engine_version"]): logger.warning("插件 %s 版本不兼容", n); return
+            if self._validate(mod):
+                self.plugins[n] = mod
+                if isinstance(m, dict):
+                    self._meta[n] = AnalyzerMetadata(name=m.get('name', n), ver=m.get('version', '0.1'), author=m.get('author', ''), at=m.get('type', AnalyzerType.STATIC), desc=m.get('description', ''), ec=m.get('entry_class', ''), reqs=m.get('requires', []), pri=m.get('priority', 100))
+                    for hk in m.get("hooks", []): self._hooks.setdefault(hk, []).append(n)
+                logger.info("plugin loaded: %s", n)
+
+    @staticmethod
+    def _check_ver(req):
+        m = _SEMVER_RE.match(req)
+        if not m: return True
+        em = _SEMVER_RE.match(os.environ.get("BINMIND_ENGINE_VERSION", "1.0.0"))
+        return int(em.group(1)) == int(m.group(1)) if em else True
+
+    def _validate(self, mod):
+        if ec := getattr(mod, 'ENTRY_CLASS', None):
+            return (cls := getattr(mod, ec, None)) and issubclass(cls, BaseAnalyzer)
+        return hasattr(mod, 'analyze') and callable(mod.analyze)
+
+    def register(self, p): self.plugins[getattr(p, 'NAME', getattr(p, '__name__', str(id(p))))] = p
+    def get(self, n): return self.plugins.get(n)
+    def unload(self, n):
+        if mod := self.plugins.pop(n, None): sys.modules.pop(f"bp_{n}", None)
+        self._meta.pop(n, None)
+        for hl in self._hooks.values():
+            with suppress(ValueError): hl.remove(n)
+    def list_all(self): return list(self.plugins.keys())
+    def list_by_type(self, at): return [n for n, m in self._meta.items() if m.type == at]
+    def list_by_priority(self):
+        items = [(n, m.priority) for n, m in self._meta.items()]; items.sort(key=lambda x: x[1], reverse=True); return items
+    def hook(self, hk):
+        res = []
+        for n in self._hooks.get(hk, []):
+            if mod := self.plugins.get(n):
+                if fn := getattr(mod, f"hook_{hk}", None):
+                    if callable(fn): res.append(fn)
+        return res
+    def reload(self, n):
+        self.unload(n)
+        for d in self._dirs:
+            if os.path.isfile(fp := os.path.join(d, f"{n}.py")): self._try_load(n, fp); return
+    def run_analyzer(self, n, *a, **kw):
+        if (mod := self.plugins.get(n)) is None: raise KeyError(f"plugin '{n}' not loaded")
+        if ec := getattr(mod, 'ENTRY_CLASS', None): return getattr(mod, ec)().analyze(*a, **kw)
+        return mod.analyze(*a, **kw)
+    def discover(self, d):
+        if d not in self._dirs: self._dirs.append(d)
+        self._resolve()
+
+def get_plugin_manager(dirs=None): return PluginManager(dirs)
+name: str = ""; module: str = ""

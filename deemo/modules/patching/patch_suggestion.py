@@ -1,0 +1,640 @@
+import logging
+from datetime import datetime
+import re
+
+try:
+    from core.config import Config, mask_api_key
+except ImportError:
+    import os as _os
+    class Config:
+        OPENAI_API_KEY = ''
+        ANTHROPIC_API_KEY = ''
+        AI_PROVIDER = 'openai'
+        OPENAI_MODEL = 'gpt-4'
+        ANTHROPIC_MODEL = 'claude-sonnet-4-20250514'
+    def mask_api_key(key): return '***'
+
+from typing import Dict, Any
+from typing import List, Optional
+
+# Default prompt template — used when the prompts module (external dep) is unavailable.
+# The template is intentionally kept simple; AI providers will fill in the rest.
+PATCH_SUGGESTION_TEMPLATE = """\
+You are a senior C/C++ security engineer. Given the decompiled code and vulnerability
+description below, produce a precise patch suggestion in unified diff format.
+
+Vulnerability type: {vuln_type}
+Description: {vuln_description}
+Function: {function_name}
+Offset: 0x{instruction_offset:x}
+{protection_info}
+
+Decompiled code:
+```
+{decompiled_code}
+```
+
+Respond with a unified diff patch enclosed in ```diff ... ``` blocks, followed by a
+## Fix Description section explaining the change, and a confidence score (0.0-1.0).
+"""
+# PATCH_SUGGESTION_TEMPLATE defined inline above as fallback
+# Original: from prompts import PATCH_SUGGESTION_TEMPLATE
+
+logger = logging.getLogger(__name__)
+
+try:
+    from openai import OpenAI
+    bOpenaiOk = True
+except ImportError:
+    bOpenaiOk = False
+
+try:
+    from anthropic import Anthropic
+    bAnthropicOk = True
+except ImportError:
+    bAnthropicOk = False
+
+
+# ── template cache ──────────────────────────────────────────────────────
+# 对 (vuln_type, function_name) 组合缓存 AI 响应，避免重复 API 调用。
+# LRU-cap with max 128 entries. 缓存命中时 confidence 打 0.9 折（保守）。
+# 缓存不跨 invocations — 随进程生命周期。
+
+_template_cache = {}
+_TEMPLATE_CACHE_MAX = 128
+
+def _cache_key(vuln_type, function_name):
+    return (vuln_type or '', function_name or '')
+
+def _cache_get(vuln_type, function_name):
+    k = _cache_key(vuln_type, function_name)
+    return _template_cache.get(k)
+
+def _cache_put(vuln_type, function_name, suggestion):
+    k = _cache_key(vuln_type, function_name)
+    if len(_template_cache) >= _TEMPLATE_CACHE_MAX:
+        _template_cache.pop(next(iter(_template_cache)), None)
+    _template_cache[k] = suggestion
+
+
+class PatchSuggestion:
+    __slots__ = (
+        'patch_id', 'vuln_id', 'vuln_type', 'patch_diff',
+        'description', 'confidence', 'suggestion_type',
+        'target_function', 'target_offset', 'timestamp', 'source_code',
+    )
+
+    def __init__(self):
+        self.patch_id = ""
+        self.vuln_id = 0
+        self.vuln_type = ""
+        self.patch_diff = ""
+        self.description = ""
+        self.confidence = 0.0
+        self.suggestion_type = ""
+        self.target_function = ""
+        self.target_offset = 0
+        self.timestamp = datetime.now().isoformat()
+        self.source_code = ""
+
+    def to_dict(self):
+        dOut = {}
+        dOut['patch_id'] = self.patch_id
+        dOut['vuln_id'] = self.vuln_id
+        dOut['vuln_type'] = self.vuln_type
+        dOut['patch_diff'] = self.patch_diff
+        dOut['description'] = self.description
+        dOut['confidence'] = self.confidence
+        dOut['suggestion_type'] = self.suggestion_type
+        dOut['target_function'] = self.target_function
+        dOut['target_offset'] = self.target_offset
+        dOut['timestamp'] = self.timestamp
+        dOut['source_code'] = self.source_code
+        return dOut
+
+    @classmethod
+    def from_cache(cls, cached):
+        """从缓存字典重建 PatchSuggestion — 避免重新调用 AI。"""
+        inst = cls()
+        for k, v in cached.items():
+            if hasattr(inst, k):
+                setattr(inst, k, v)
+        inst.confidence *= 0.9  # 缓存折价 — 不重新验证，降低置信度
+        return inst
+
+
+class PatchSuggester:
+    def __init__(self):
+        self.ai_client = None
+        self._secondary_client = None  # ensemble 的第二个 provider
+        self._init_ai_client()
+
+    def _init_ai_client(self):
+        strProvider = Config.AI_PROVIDER.lower()
+
+        if strProvider == 'openai' and bOpenaiOk:
+            try:
+                self.ai_client = OpenAI(api_key=Config.OPENAI_API_KEY)
+                logger.info("[PatchSuggester] OpenAI client initialized")
+            except Exception as e:
+                logger.warning("[PatchSuggester] OpenAI init failed: %s", e)
+
+        elif strProvider == 'anthropic' and bAnthropicOk:
+            try:
+                self.ai_client = Anthropic(api_key=Config.ANTHROPIC_API_KEY)
+                logger.info("[PatchSuggester] Anthropic client initialized")
+            except Exception as e:
+                logger.warning("[PatchSuggester] Anthropic init failed: %s", e)
+
+        # 初始化 ensemble 的第二个 provider（反向）
+        if strProvider == 'openai' and bAnthropicOk:
+            try:
+                self._secondary_client = Anthropic(api_key=Config.ANTHROPIC_API_KEY)
+            except Exception:
+                self._secondary_client = None
+        elif strProvider == 'anthropic' and bOpenaiOk:
+            try:
+                self._secondary_client = OpenAI(api_key=Config.OPENAI_API_KEY)
+            except Exception:
+                self._secondary_client = None
+
+    def generate_suggestion(self,
+        decompiled_code,
+        vuln_type,
+        function_name="",
+        instruction_offset=0,
+        protection_info=None
+    ):
+        pResult = PatchSuggestion()
+        pResult.vuln_type = vuln_type
+        pResult.target_function = function_name
+        pResult.target_offset = instruction_offset
+        pResult.source_code = decompiled_code
+
+        # 检查缓存
+        cached = _cache_get(vuln_type, function_name)
+        if cached is not None:
+            logger.debug("[PatchSuggester] cache hit for %s/%s", vuln_type, function_name)
+            pResult = PatchSuggestion.from_cache(cached)
+            return pResult
+
+        if self.ai_client is None:
+            logger.warning("[PatchSuggester] AI client not initialized, using default suggestion")
+            pResult.patch_diff = self._generate_default_patch(decompiled_code, vuln_type)
+            pResult.description = self._generate_default_description(vuln_type)
+            pResult.confidence = 0.5
+            return pResult
+
+        try:
+            strPrompt = self._build_prompt(decompiled_code, vuln_type,
+                function_name, instruction_offset, protection_info)
+
+            # ensemble: 第二个 provider 可用时同时调用，取高置信度结果
+            if self._secondary_client is not None:
+                strAiResponse = self._call_ai_ensemble(strPrompt, vuln_type)
+            else:
+                strAiResponse = self._call_ai(strPrompt)
+
+            dParsed = self._parse_ai_response(strAiResponse)
+            pResult.patch_diff = dParsed.get('patch', '')
+            pResult.description = dParsed.get('description', '')
+            pResult.confidence = dParsed.get('confidence', 0.7)
+            pResult.suggestion_type = dParsed.get('suggestion_type', 'general')
+
+            # 验证生成的 patch
+            if pResult.patch_diff:
+                pResult = self._validate_patch_syntax(pResult)
+
+            _cache_put(vuln_type, function_name, pResult.to_dict())
+
+            logger.info("[PatchSuggester] patch suggestion generated, confidence: %s", pResult.confidence)
+
+        except Exception as e:
+            logger.error("[PatchSuggester] AI call failed: %s", e)
+            pResult.patch_diff = self._generate_default_patch(decompiled_code, vuln_type)
+            pResult.description = "AI call failed, using default suggestion: " + str(e)
+            pResult.confidence = 0.3
+
+        return pResult
+
+    def suggest_mitigation_stack(self, decompiled_code, vuln_type,
+                                  function_name="", instruction_offset=0):
+        """ATLANTIS 风格 layered defense — 不只建议单个 patch，
+        而是一组分层缓解措施：prevent → detect → contain → recover。"""
+        stack = []
+
+        # Layer 1: prevent (源码级修复)
+        primary = self.generate_suggestion(decompiled_code, vuln_type,
+                                           function_name, instruction_offset)
+        stack.append({'layer': 'prevent', 'patch': primary})
+
+        # Layer 2: detect (运行时检测)
+        detect_patch = self._generate_default_patch(decompiled_code, 'detect_' + vuln_type)
+        detect_suggestion = PatchSuggestion()
+        detect_suggestion.vuln_type = vuln_type
+        detect_suggestion.patch_diff = detect_patch
+        detect_suggestion.description = "Runtime sanitizer instrumentation"
+        detect_suggestion.confidence = 0.4
+        stack.append({'layer': 'detect', 'patch': detect_suggestion})
+
+        # Layer 3: contain (沙箱/权限约束)
+        contain_suggestion = PatchSuggestion()
+        contain_suggestion.vuln_type = vuln_type
+        contain_suggestion.patch_diff = (
+            "--- a/sandbox.conf\n+++ b/sandbox.conf\n"
+            "@@ -0,0 +1,3 @@\n"
+            "+seccomp_filter = strict\n"
+            "+capabilities = none\n"
+            "+namespace = private\n")
+        contain_suggestion.description = "Apply seccomp-bpf and namespace isolation"
+        contain_suggestion.confidence = 0.35
+        stack.append({'layer': 'contain', 'patch': contain_suggestion})
+
+        # Layer 4: recover (crash 后自动恢复)
+        recover_suggestion = PatchSuggestion()
+        recover_suggestion.vuln_type = vuln_type
+        recover_suggestion.patch_diff = (
+            "--- a/crash_handler.c\n+++ b/crash_handler.c\n"
+            "@@ -0,0 +1,5 @@\n"
+            "+signal(SIGSEGV, crash_handler);\n"
+            "+setjmp(recovery_point);\n"
+            "+log_crash_and_restart();\n")
+        recover_suggestion.description = "Install crash handler with graceful recovery"
+        recover_suggestion.confidence = 0.3
+        stack.append({'layer': 'recover', 'patch': recover_suggestion})
+
+        return stack
+
+    def generate_batch_suggestions(self,
+        vulnerabilities,
+        decompiled_code
+    ):
+        lstSuggestions = []
+
+        iIdx = 0
+        iLen = len(vulnerabilities)
+        while iIdx < iLen:
+            dVuln = vulnerabilities[iIdx]
+            strSev = dVuln.get('severity', 'low')
+            if strSev in ('high', 'critical'):
+                pSuggestion = self.generate_suggestion(
+                    decompiled_code,
+                    dVuln.get('vuln_type', ''),
+                    dVuln.get('function_name', ''),
+                    dVuln.get('offset', 0),
+                    dVuln.get('protection_info', {}))
+                pSuggestion.vuln_id = dVuln.get('id', 0)
+                lstSuggestions.append(pSuggestion)
+            iIdx += 1
+
+        logger.info("[PatchSuggester] batch done, %d suggestions", len(lstSuggestions))
+        return lstSuggestions
+
+    def _build_prompt(self,
+        decompiled_code,
+        vuln_type,
+        function_name,
+        instruction_offset,
+        protection_info
+    ):
+        dVulnDesc = {
+            'stack_overflow':     'Stack buffer overflow (out-of-bounds write on stack)',
+            'format_string':      'Format string vulnerability (attacker-controlled format specifier)',
+            'integer_overflow':   'Integer overflow or wraparound (arithmetic overflow)',
+            'heap_vulnerability': 'Heap vulnerability — overflow, double free, or use-after-free',
+            'use_after_free':     'Use-after-free (UAF) — dangling pointer dereference',
+        }
+        strVulnDesc = dVulnDesc.get(vuln_type, 'Unknown vulnerability type')
+
+        strProtection = ""
+        if protection_info is not None:
+            lstEnabled = []
+            lstKeys = list(protection_info.keys())
+            for iK in range(len(lstKeys)):
+                strK = lstKeys[iK]
+                if protection_info[strK]:
+                    lstEnabled.append(strK)
+            if len(lstEnabled) > 0:
+                strProtection = "Enabled protections: " + ', '.join(lstEnabled)
+
+        return PATCH_SUGGESTION_TEMPLATE.format(
+            vuln_type=vuln_type,
+            vuln_description=strVulnDesc,
+            function_name=function_name,
+            instruction_offset=instruction_offset,
+            protection_info=strProtection,
+            decompiled_code=decompiled_code)
+
+    def _call_ai(self, prompt):
+        strProvider = Config.AI_PROVIDER.lower()
+
+        if strProvider == 'openai' and self.ai_client is not None:
+            pResp = self.ai_client.chat.completions.create(
+                model=Config.OPENAI_MODEL,
+                messages=[
+                    {"role": "system", "content": "你是一名资深C/C++安全工程师，擅长分析漏洞并提供remediation suggestion。"},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.3,
+                max_tokens=2000)
+            return pResp.choices[0].message.content
+
+        elif strProvider == 'anthropic' and self.ai_client is not None:
+            pResp = self.ai_client.messages.create(
+                model=Config.ANTHROPIC_MODEL,
+                max_tokens=2000,
+                temperature=0.3,
+                messages=[
+                    {"role": "user", "content": prompt}
+                ])
+            return pResp.content[0].text
+
+        return ""
+
+    def _call_ai_ensemble(self, prompt, vuln_type):
+        """ATLANTIS 风格 multi-provider ensemble — 同时调两个 provider，
+        如果都成功则取响应更长的（更详细的 patch 通常质量更高）。
+        如果仅一个成功，回退到该 provider 的结果。"""
+        responses = []
+        strPrimary = Config.AI_PROVIDER.lower()
+
+        # 主 provider
+        try:
+            resp = self._call_ai(prompt)
+            if resp:
+                responses.append(resp)
+        except Exception as e:
+            logger.debug("[PatchSuggester] primary provider failed: %s", e)
+
+        # 辅助 provider
+        if self._secondary_client is not None:
+            try:
+                if strPrimary == 'openai' and bAnthropicOk:
+                    pResp = self._secondary_client.messages.create(
+                        model=Config.ANTHROPIC_MODEL,
+                        max_tokens=2000, temperature=0.3,
+                        messages=[{"role": "user", "content": prompt}])
+                    if pResp.content:
+                        responses.append(pResp.content[0].text)
+                elif strPrimary == 'anthropic' and bOpenaiOk:
+                    pResp = self._secondary_client.chat.completions.create(
+                        model=Config.OPENAI_MODEL,
+                        messages=[
+                            {"role": "system", "content": "你是一名资深C/C++安全工程师。"},
+                            {"role": "user", "content": prompt}],
+                        temperature=0.3, max_tokens=2000)
+                    if pResp.choices:
+                        responses.append(pResp.choices[0].message.content)
+            except Exception as e:
+                logger.debug("[PatchSuggester] secondary provider failed: %s", e)
+
+        if not responses:
+            return ""
+
+        # 选择更长的响应（更详细）
+        if len(responses) == 1:
+            return responses[0]
+        return responses[0] if len(responses[0]) >= len(responses[1]) else responses[1]
+
+    def _parse_ai_response(self, response):
+        dResult = {
+            'patch': '',
+            'description': '',
+            'confidence': 0.7,
+            'suggestion_type': 'general'
+        }
+
+        # ```diff 块
+        mPatch = re.search(r'```diff\n(.*?)```', response, re.DOTALL)
+        if mPatch is not None:
+            dResult['patch'] = mPatch.group(1).strip()
+        else:
+            # 尝试 diff --git 格式
+            mGit = re.search(r'(diff --git.*?)(?=\n##|\n```|$)', response, re.DOTALL)
+            if mGit is not None:
+                dResult['patch'] = mGit.group(1).strip()
+
+        # 描述块
+        mDesc = re.search(r'## (?:[Ff]ix\s*[Dd]escription|fix说明)\n(.*?)(?=\n##|```|$)', response, re.DOTALL)
+        if mDesc is not None:
+            dResult['description'] = mDesc.group(1).strip()
+        else:
+            dResult['description'] = response[:500]
+
+        mConf = re.search(r'confidence[:：]?\s*(\d+\.?\d*)', response)
+        if mConf is not None:
+            fRaw = float(mConf.group(1))
+            dResult['confidence'] = min(max(fRaw, 0.0), 1.0)
+
+        strResp = response
+        bFound = False
+        iCheck = 0
+        while not bFound and iCheck < 5:
+            if iCheck == 0 and ('boundarycheck' in strResp or 'lengthcheck' in strResp):
+                dResult['suggestion_type'] = 'boundary_check'
+                bFound = True
+            elif iCheck == 1 and ('安全函数' in strResp or 'strncpy' in strResp or 'snprintf' in strResp):
+                dResult['suggestion_type'] = 'safe_function'
+                bFound = True
+            elif iCheck == 2 and ('free' in strResp and '置空' in strResp):
+                dResult['suggestion_type'] = 'null_after_free'
+                bFound = True
+            elif iCheck == 3 and ('parameter化' in strResp or '格式化' in strResp):
+                dResult['suggestion_type'] = 'parameterized'
+                bFound = True
+            iCheck += 1
+
+        return dResult
+
+    def _validate_patch_syntax(self, suggestion):
+        """对生成的 diff 做基本语法检查 — 确保至少有 @@ hunk header 和实质性内容。"""
+        if not suggestion.patch_diff:
+            suggestion.confidence *= 0.7
+            return suggestion
+
+        diff = suggestion.patch_diff
+        issues = []
+
+        # 至少有一个 hunk header
+        if '@@' not in diff:
+            issues.append('missing hunk header')
+            suggestion.confidence *= 0.6
+
+        # 至少有一行实质变更（非注释）
+        non_meta_lines = [l for l in diff.split('\n')
+                         if l.strip() and not l.startswith('---') and not l.startswith('+++')
+                         and not l.startswith('@@') and not l.startswith('diff')]
+        if not non_meta_lines:
+            issues.append('no actual change lines')
+            suggestion.confidence *= 0.5
+
+        # 至少有一行以 + 或 - 开头
+        has_change = any(l.startswith('+') or l.startswith('-') for l in non_meta_lines)
+        if not has_change:
+            issues.append('no add/remove lines')
+            suggestion.confidence *= 0.7
+
+        if issues:
+            logger.debug("[PatchSuggester] validation issues: %s", ', '.join(issues))
+
+        return suggestion
+
+    def _generate_default_patch(self, decompiled_code, vuln_type):
+        dPatches = {
+            'stack_overflow': """--- a/source.c
++++ b/source.c
+@@ -1,5 +1,8 @@
+ void vulnerable_function(char *input) {
++    if (strlen(input) >= BUFFER_SIZE) {
++        return;  // prevent stack overflow
++    }
+        char buffer[BUFFER_SIZE];
+        strcpy(buffer, input);
+ }""",
+            'format_string': """--- a/source.c
++++ b/source.c
+@@ -1,5 +1,5 @@
+ void vulnerable_function(char *user_input) {
+-    printf(user_input);
++    printf("%s", user_input);
+ }""",
+            'integer_overflow': """--- a/source.c
++++ b/source.c
+@@ -1,5 +1,8 @@
+ int calculate_size(int a, int b) {
++    if (a > INT_MAX - b) {
++        return -1;  // prevent integer overflow
++    }
+        return a + b;
+ }""",
+            'heap_vulnerability': """--- a/source.c
++++ b/source.c
+@@ -1,5 +1,8 @@
+ void allocate_buffer(size_t size) {
++    if (size > MAX_ALLOC_SIZE) {
++        return NULL;  // prevent heap overflow
++    }
+        char *buf = malloc(size);
+ }""",
+            'use_after_free': """--- a/source.c
++++ b/source.c
+@@ -1,8 +1,10 @@
+ void process_data() {
+        char *data = malloc(100);
+        // use data...
+        free(data);
++    data = NULL;  // prevent UAF
+        // won't accidentally use freed data
+ }""",
+            # detect layers
+            'detect_stack_overflow': """--- a/build.sh
++++ b/build.sh
+@@ -0,0 +1,2 @@
++CFLAGS="$CFLAGS -fsanitize=address -fstack-protector-strong"
+""",
+            'detect_format_string': """--- a/build.sh
++++ b/build.sh
+@@ -0,0 +1,2 @@
++CFLAGS="$CFLAGS -Wformat -Wformat-security -Werror=format-security"
+""",
+            'detect_integer_overflow': """--- a/build.sh
++++ b/build.sh
+@@ -0,0 +1,2 @@
++CFLAGS="$CFLAGS -fsanitize=undefined -ftrapv"
+""",
+            'detect_heap_vulnerability': """--- a/build.sh
++++ b/build.sh
+@@ -0,0 +1,2 @@
++CFLAGS="$CFLAGS -fsanitize=address"
++LDFLAGS="$LDFLAGS -lasan"
+""",
+            'detect_use_after_free': """--- a/build.sh
++++ b/build.sh
+@@ -0,0 +1,2 @@
++CFLAGS="$CFLAGS -fsanitize=address"
+""",
+        }
+        return dPatches.get(vuln_type, "# Default patch suggestion\n# Manual analysis and remediation required")
+
+    def _generate_default_description(self, vuln_type):
+        dDescs = {
+            'stack_overflow':
+                'Add bounds check before copy; use safe string functions (strncpy, snprintf) instead of strcpy/sprintf.',
+            'format_string':
+                'Use parameterised format strings; avoid passing user-controlled input directly as format specifier.',
+            'integer_overflow':
+                'Validate operand range before arithmetic to prevent overflow-induced buffer overrun or logic error.',
+            'heap_vulnerability':
+                'Validate allocation size before heap request to prevent heap overflow. For double-free: use safe memory libraries or add post-free guards.',
+            'use_after_free':
+                'Null the pointer immediately after free() to prevent subsequent accidental dereference of freed memory.'
+        }
+        return dDescs.get(vuln_type, 'Analyse vulnerability context and provide targeted remediation.')
+
+    def format_patch_for_report(self, suggestion):
+        strPatchId = suggestion.patch_id
+        if strPatchId == "":
+            strPatchId = 'N/A'
+
+        lstLines = []
+        lstLines.append("## Patch Suggestion ID: " + strPatchId)
+        lstLines.append("**Vulnerability type:** " + suggestion.vuln_type)
+        lstLines.append("**Target function:** " + suggestion.target_function)
+        lstLines.append("**Vulnerability offset:** 0x{:x}".format(suggestion.target_offset))
+        lstLines.append("**Confidence:** {:.1f}%".format(suggestion.confidence * 100.0))
+        lstLines.append("**Fix description:**\n" + suggestion.description)
+        lstLines.append("\n**Suggested patch (unified diff):**\n```diff\n" + suggestion.patch_diff + "\n```")
+        lstLines.append("\n---\n")
+        return '\n'.join(lstLines)
+
+    def save_suggestion(self,
+        suggestion,
+        vuln_db,
+        vuln_id=None
+    ):
+        if vuln_db is None:
+            logger.warning("[PatchSuggester] vuln_db is None, skip save")
+            return None
+
+        if vuln_db.connection is None:
+            logger.warning("[PatchSuggester] db not connected, skip save")
+            return None
+
+        try:
+            pCursor = vuln_db.connection.cursor()
+
+            iEffVulnId = vuln_id
+            if iEffVulnId is None:
+                iEffVulnId = suggestion.vuln_id
+
+            pCursor.execute(
+                """
+                INSERT INTO patch_suggestions (
+                    vuln_id, vuln_type, patch_diff, description, confidence,
+                    suggestion_type, target_function, target_offset, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    iEffVulnId,
+                    suggestion.vuln_type,
+                    suggestion.patch_diff,
+                    suggestion.description,
+                    suggestion.confidence,
+                    suggestion.suggestion_type,
+                    suggestion.target_function,
+                    suggestion.target_offset,
+                    datetime.now().isoformat()
+                ))
+
+            vuln_db.connection.commit()
+            iNewId = pCursor.lastrowid
+            suggestion.patch_id = str(iNewId)
+            logger.info("[PatchSuggester] patch suggestion saved, ID: %d", iNewId)
+            return iNewId
+
+        except Exception as e:
+            logger.error("[PatchSuggester] save failed: %s", e)
+            return None
+
+    def is_ai_available(self):
+        return self.ai_client is not None

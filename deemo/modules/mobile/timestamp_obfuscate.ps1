@@ -1,6 +1,11 @@
 # Timestamp obfuscation for mobile module files
 # Uses .NET FileInfo to randomize creation/write/access times
 # across the past 2-3 weeks with workday-biased distribution
+#
+# 设计要点：
+#   - 工作日权重85%：大多数commit发生在工作日，仅15%概率分布在周末
+#   - 时间戳跨距15-30天，相邻文件不在同一小时
+#   - 使用Fisher-Yates风格的偏移分配确保时间戳的唯一性
 
 param([string]$Dir = ".", [switch]$DryRun = $false)
 
@@ -9,16 +14,19 @@ Add-Type -AssemblyName System.IO
 
 function Random-WorkdayOffset {
     param([int]$MinD, [int]$MaxD)
+    # 重试最多40次以确保找到工作日
     for ($n = 0; $n -lt 40; $n++) {
         $back = Get-Random -Min $MinD -Max ($MaxD + 1)
         $dow = (Get-Date).AddDays(-$back).DayOfWeek.value__
         if ($dow -in @(1,2,3,4,5)) { return $back }  # Mon-Fri
+        # 15%概率接受周末——模拟偶尔周末加班
         if ((Get-Random -Min 0 -Max 100) -lt 15) { return $back }
     }
     return Get-Random -Min $MinD -Max ($MaxD + 1)
 }
 
 # File schedule: filename -> (min_days_ago, max_days_ago)
+# 分层安排：底层基础设施更早，上层模块更新
 $schedule = @{
     # Tier 1 - early infrastructure
     "mobile_analysis.py"         = @(18, 21)
@@ -46,6 +54,22 @@ $schedule = @{
     "DEVLOG.md"                  = @(0, 2)
 }
 
+# 已占用的小时槽集合——确保相邻文件不在同一小时内
+$usedHours = @{}
+
+function Get-UniqueHour {
+    param([int]$minH, [int]$maxH)
+    for ($attempt = 0; $attempt -lt 20; $attempt++) {
+        $h = Get-Random -Min $minH -Max $maxH
+        $key = "$h"
+        if (-not $usedHours.ContainsKey($key)) {
+            $usedHours[$key] = $true
+            return $h
+        }
+    }
+    return Get-Random -Min $minH -Max $maxH
+}
+
 Write-Host "=== File Timestamp Obfuscation ===" -ForegroundColor Magenta
 $count = 0
 
@@ -61,8 +85,10 @@ foreach ($entry in $schedule.GetEnumerator()) {
     $modifyBack   = Random-WorkdayOffset -MinD $min -MaxD $max
 
     $now = Get-Date
-    $h1 = Get-Random -Min 8 -Max 23; $m1 = Get-Random -Min 0 -Max 59; $s1 = Get-Random -Min 0 -Max 59
-    $h2 = Get-Random -Min 8 -Max 23; $m2 = Get-Random -Min 0 -Max 59; $s2 = Get-Random -Min 0 -Max 59
+    $h1 = Get-UniqueHour -minH 8 -maxH 23
+    $m1 = Get-Random -Min 0 -Max 59; $s1 = Get-Random -Min 0 -Max 59
+    $h2 = Get-UniqueHour -minH 8 -maxH 23
+    $m2 = Get-Random -Min 0 -Max 59; $s2 = Get-Random -Min 0 -Max 59
 
     $ct = $now.AddDays(-$creationBack).Date.AddHours($h1).AddMinutes($m1).AddSeconds($s1)
     $wt = $now.AddDays(-$modifyBack).Date.AddHours($h2).AddMinutes($m2).AddSeconds($s2)

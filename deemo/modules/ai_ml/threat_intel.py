@@ -1,0 +1,919 @@
+"""
+Threat Intelligence Module - MISP and OTX backends for threat data queries.
+
+Provides hash/CVE/indicator lookups against MISP and AlienVault OTX,
+batch queries, local DB caching, and report generation.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import logging
+import os
+import sqlite3
+import threading
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional, Tuple
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class ThreatIntelResult:
+    """Result from a threat intelligence query."""
+    query: str
+    query_type: str  # hash, cve, indicator, ip, domain
+    source: str  # misp, otx, local
+    found: bool
+    severity: str = "unknown"
+    confidence: float = 0.0
+    description: str = ""
+    tags: List[str] = field(default_factory=list)
+    related_indicators: List[str] = field(default_factory=list)
+    references: List[str] = field(default_factory=list)
+    raw_response: Dict[str, Any] = field(default_factory=dict)
+    timestamp: float = field(default_factory=time.time)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            'query': self.query,
+            'query_type': self.query_type,
+            'source': self.source,
+            'found': self.found,
+            'severity': self.severity,
+            'confidence': self.confidence,
+            'description': self.description,
+            'tags': self.tags,
+            'related_indicators': self.related_indicators,
+            'references': self.references,
+            'timestamp': self.timestamp,
+        }
+
+
+class ThreatIntelClient:
+    """Threat intelligence client with MISP and OTX backends."""
+
+    def __init__(
+        self,
+        misp_url: Optional[str] = None,
+        misp_key: Optional[str] = None,
+        otx_key: Optional[str] = None,
+        db_path: Optional[str] = None,
+    ) -> None:
+        self.misp_url = misp_url or os.environ.get('MISP_URL', '')
+        self.misp_key = misp_key or os.environ.get('MISP_KEY', '')
+        self.otx_key = otx_key or os.environ.get('OTX_KEY', '')
+
+        db_path = db_path or os.path.join(
+            os.path.dirname(__file__), '..', 'data', 'threat_intel_cache.sqlite3'
+        )
+        os.makedirs(os.path.dirname(db_path), exist_ok=True)
+        self.db_path = db_path
+        self._lock = threading.Lock()
+        self._init_db()
+
+        self._cache_ttl = 86400  # 24 hours
+        # 并发控制：限制同时请求数，避免触发API限流
+        self._rate_semaphore = threading.BoundedSemaphore(5)
+
+    def _conn(self) -> sqlite3.Connection:
+        return sqlite3.connect(self.db_path, check_same_thread=False)
+
+    def _init_db(self) -> None:
+        """Initialize SQLite cache database."""
+        with self._lock, self._conn() as conn:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS threat_cache (
+                    query_hash TEXT PRIMARY KEY,
+                    query TEXT NOT NULL,
+                    query_type TEXT NOT NULL,
+                    source TEXT NOT NULL,
+                    result_json TEXT NOT NULL,
+                    timestamp REAL NOT NULL
+                )
+            """)
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_cache_type
+                ON threat_cache(query_type)
+            """)
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_cache_timestamp
+                ON threat_cache(timestamp)
+            """)
+
+    def _cache_key(self, query: str, query_type: str) -> str:
+        """Generate a cache key from query parameters."""
+        content = f"{query_type}:{query.lower()}"
+        return hashlib.sha256(content.encode()).hexdigest()
+
+    def _check_cache(
+        self,
+        query: str,
+        query_type: str,
+    ) -> Optional[ThreatIntelResult]:
+        """Check local cache for a previous query result.
+
+        Args:
+            query: The search query.
+            query_type: Type of query (hash, cve, etc.).
+
+        Returns:
+            Cached result or None.
+        """
+        key = self._cache_key(query, query_type)
+        with self._lock, self._conn() as conn:
+            row = conn.execute(
+                "SELECT result_json, timestamp FROM threat_cache WHERE query_hash = ?",
+                (key,),
+            ).fetchone()
+
+        if row:
+            result_data = json.loads(row[0])
+            cache_time = row[1]
+            if time.time() - cache_time < self._cache_ttl:
+                return ThreatIntelResult(**result_data)
+
+        return None
+
+    def _save_cache(self, result: ThreatIntelResult) -> None:
+        """Save a query result to local cache.
+
+        Args:
+            result: The result to cache.
+        """
+        key = self._cache_key(result.query, result.query_type)
+        result_json = json.dumps(result.to_dict())
+        with self._lock, self._conn() as conn:
+            conn.execute(
+                """INSERT OR REPLACE INTO threat_cache
+                   (query_hash, query, query_type, source, result_json, timestamp)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                (key, result.query, result.query_type, result.source,
+                 result_json, result.timestamp),
+            )
+
+    def purge_stale_cache(self, older_than_seconds: Optional[int] = None) -> int:
+        """清理过期缓存条目，防止SQLite无限膨胀。
+
+        定期调用此方法（如通过cron/scheduler）清除超出TTL的记录。
+        如果缓存表很大，建议在低负载时段执行。
+
+        Args:
+            older_than_seconds: 自定义过期阈值（秒），默认使用 self._cache_ttl。
+
+        Returns:
+            已删除的过期记录数。
+        """
+        ttl = older_than_seconds if older_than_seconds is not None else self._cache_ttl
+        cutoff = time.time() - ttl
+        with self._lock, self._conn() as conn:
+            cursor = conn.execute(
+                "DELETE FROM threat_cache WHERE timestamp < ?",
+                (cutoff,),
+            )
+            deleted = cursor.rowcount
+            conn.execute("VACUUM")  # 回收磁盘空间
+        logger.info(f"Purged {deleted} stale cache entries (TTL={ttl}s)")
+        return deleted
+
+    def query_hash(self, file_hash: str) -> ThreatIntelResult:
+        """Query threat intelligence for a file hash (MD5, SHA1, SHA256).
+
+        Args:
+            file_hash: File hash string.
+
+        Returns:
+            ThreatIntelResult with findings.
+        """
+        # Determine hash type
+        hash_len = len(file_hash)
+        if hash_len == 32:
+            query_type = "hash_md5"
+        elif hash_len == 40:
+            query_type = "hash_sha1"
+        elif hash_len == 64:
+            query_type = "hash_sha256"
+        else:
+            query_type = "hash"
+
+        # Check cache
+        cached = self._check_cache(file_hash, query_type)
+        if cached:
+            return cached
+
+        result = ThreatIntelResult(
+            query=file_hash,
+            query_type=query_type,
+            source="unknown",
+            found=False,
+        )
+
+        # Try OTX
+        if self.otx_key:
+            otx_result = self._query_otx_hash(file_hash)
+            if otx_result.found:
+                result = otx_result
+
+        # Try MISP
+        if self.misp_key and not result.found:
+            misp_result = self._query_misp_hash(file_hash)
+            if misp_result.found:
+                result = misp_result
+
+        self._save_cache(result)
+        return result
+
+    def query_cve(self, cve_id: str) -> ThreatIntelResult:
+        """Query threat intelligence for a CVE identifier.
+
+        Args:
+            cve_id: CVE ID (e.g., CVE-2024-1234).
+
+        Returns:
+            ThreatIntelResult with findings.
+        """
+        cached = self._check_cache(cve_id, "cve")
+        if cached:
+            return cached
+
+        result = ThreatIntelResult(
+            query=cve_id,
+            query_type="cve",
+            source="unknown",
+            found=False,
+        )
+
+        # Try MISP
+        if self.misp_key:
+            misp_result = self._query_misp_cve(cve_id)
+            if misp_result.found:
+                result = misp_result
+
+        # Try OTX — OTX也有CVE pulse数据，优先级低于MISP
+        if self.otx_key and not result.found:
+            otx_result = self._query_otx_cve(cve_id)
+            if otx_result.found:
+                result = otx_result
+
+        self._save_cache(result)
+        return result
+
+    def query_indicator(
+        self,
+        indicator: str,
+        indicator_type: str = "auto",
+    ) -> ThreatIntelResult:
+        """Query threat intelligence for an indicator (IP, domain, URL, email).
+
+        Args:
+            indicator: The indicator value.
+            indicator_type: Type hint ('ip', 'domain', 'url', 'email', 'auto').
+
+        Returns:
+            ThreatIntelResult with findings.
+        """
+        if indicator_type == "auto":
+            indicator_type = self._detect_indicator_type(indicator)
+
+        cached = self._check_cache(indicator, indicator_type)
+        if cached:
+            return cached
+
+        result = ThreatIntelResult(
+            query=indicator,
+            query_type=indicator_type,
+            source="unknown",
+            found=False,
+        )
+
+        if self.otx_key:
+            otx_result = self._query_otx_indicator(indicator, indicator_type)
+            if otx_result.found:
+                result = otx_result
+
+        if self.misp_key and not result.found:
+            misp_result = self._query_misp_indicator(indicator, indicator_type)
+            if misp_result.found:
+                result = misp_result
+
+        self._save_cache(result)
+        return result
+
+    def _query_otx_hash(self, file_hash: str) -> ThreatIntelResult:
+        """Query AlienVault OTX for a file hash."""
+        try:
+            import requests
+            url = f"https://otx.alienvault.com/api/v1/indicators/file/{file_hash}/general"
+            headers = {'X-OTX-API-KEY': self.otx_key}
+            resp = requests.get(url, headers=headers, timeout=10)
+
+            if resp.status_code == 200:
+                data = resp.json()
+                pulses = data.get('pulse_info', {}).get('pulses', [])
+                tags = list(set(
+                    tag for pulse in pulses
+                    for tag in pulse.get('tags', [])
+                ))
+
+                return ThreatIntelResult(
+                    query=file_hash,
+                    query_type="hash",
+                    source="otx",
+                    found=len(pulses) > 0,
+                    severity="medium" if pulses else "unknown",
+                    confidence=min(len(pulses) * 0.1, 0.9),
+                    description=f"Found in {len(pulses)} OTX pulses",
+                    tags=tags[:20],
+                    references=[p.get('name', '') for p in pulses[:5]],
+                    raw_response=data,
+                )
+        except ImportError:
+            logger.debug("requests not available for OTX query")
+        except Exception as e:
+            logger.warning(f"OTX hash query failed: {e}")
+
+        return ThreatIntelResult(
+            query=file_hash,
+            query_type="hash",
+            source="otx",
+            found=False,
+        )
+
+    def _query_misp_hash(self, file_hash: str) -> ThreatIntelResult:
+        """Query MISP for a file hash."""
+        if not self.misp_url:
+            return ThreatIntelResult(
+                query=file_hash,
+                query_type="hash",
+                source="misp",
+                found=False,
+            )
+
+        try:
+            import requests
+            url = f"{self.misp_url}/attributes/restSearch"
+            headers = {
+                'Authorization': self.misp_key,
+                'Accept': 'application/json',
+            }
+            data = {
+                'returnFormat': 'json',
+                'value': file_hash,
+            }
+            resp = requests.post(url, headers=headers, json=data, timeout=15, verify=False)
+
+            if resp.status_code == 200:
+                result_data = resp.json()
+                attributes = result_data.get('response', {}).get('Attribute', [])
+                events = set(attr.get('event_id', '') for attr in attributes)
+
+                tags: List[str] = []
+                for attr in attributes:
+                    for tag in attr.get('Tag', []):
+                        tags.append(tag.get('name', ''))
+
+                return ThreatIntelResult(
+                    query=file_hash,
+                    query_type="hash",
+                    source="misp",
+                    found=len(attributes) > 0,
+                    severity="high" if len(events) > 1 else "medium",
+                    confidence=min(len(attributes) * 0.1, 0.95),
+                    description=f"Found in {len(events)} MISP events",
+                    tags=list(set(tags))[:20],
+                    references=[f"MISP Event {e}" for e in sorted(events)[:5]],
+                    raw_response=result_data,
+                )
+        except ImportError:
+            logger.debug("requests not available for MISP query")
+        except Exception as e:
+            logger.warning(f"MISP hash query failed: {e}")
+
+        return ThreatIntelResult(
+            query=file_hash,
+            query_type="hash",
+            source="misp",
+            found=False,
+        )
+
+    def _query_misp_cve(self, cve_id: str) -> ThreatIntelResult:
+        """Query MISP for a CVE — 通过 restSearch 按 CVE 标签检索关联事件。
+
+        实现思路：搜索 type=cve 或 tag 中包含 CVE-ID 的属性，
+        聚合关联事件和标签，计算置信度。
+        """
+        if not self.misp_url:
+            return ThreatIntelResult(
+                query=cve_id,
+                query_type="cve",
+                source="misp",
+                found=False,
+            )
+
+        try:
+            import requests
+            url = f"{self.misp_url}/attributes/restSearch"
+            headers = {
+                'Authorization': self.misp_key,
+                'Accept': 'application/json',
+            }
+            data = {
+                'returnFormat': 'json',
+                'value': cve_id,
+                'type': 'vulnerability',
+            }
+            resp = requests.post(url, headers=headers, json=data, timeout=15, verify=False)
+
+            if resp.status_code == 200:
+                result_data = resp.json()
+                attributes = result_data.get('response', {}).get('Attribute', [])
+                events = set(attr.get('event_id', '') for attr in attributes)
+
+                tags: List[str] = []
+                related: List[str] = []
+                for attr in attributes:
+                    for tag in attr.get('Tag', []):
+                        tags.append(tag.get('name', ''))
+                    # 收集关联的IOC
+                    if attr.get('type') == 'vulnerability':
+                        related.append(attr.get('value', ''))
+
+                # 严重程度推断：关联事件越多 → 越高
+                ecount = len(events)
+                if ecount >= 5:
+                    severity = "critical"
+                elif ecount >= 2:
+                    severity = "high"
+                elif ecount >= 1:
+                    severity = "medium"
+                else:
+                    severity = "unknown"
+
+                return ThreatIntelResult(
+                    query=cve_id,
+                    query_type="cve",
+                    source="misp",
+                    found=ecount > 0,
+                    severity=severity,
+                    confidence=min(ecount * 0.08 + 0.15, 0.95),
+                    description=f"Found in {ecount} MISP events" if ecount else "No MISP events",
+                    tags=list(set(tags))[:20],
+                    related_indicators=list(set(related))[:20],
+                    references=[f"MISP Event {e}" for e in sorted(events)[:5]],
+                    raw_response=result_data,
+                )
+        except ImportError:
+            logger.debug("requests not available for MISP CVE query")
+        except Exception as e:
+            logger.warning(f"MISP CVE query failed: {e}")
+
+        return ThreatIntelResult(
+            query=cve_id,
+            query_type="cve",
+            source="misp",
+            found=False,
+        )
+
+    def _query_otx_cve(self, cve_id: str) -> ThreatIntelResult:
+        """Query AlienVault OTX for a CVE — 通过 pulses 搜索 CVE 引用。
+
+        OTX 的 CVE 关联在 pulse 级别，通过搜索 CVE ID 获取关联 pulses。
+        """
+        try:
+            import requests
+            url = "https://otx.alienvault.com/api/v1/search/pulses"
+            headers = {'X-OTX-API-KEY': self.otx_key}
+            params = {'q': cve_id, 'limit': 20}
+            resp = requests.get(url, headers=headers, params=params, timeout=10)
+
+            if resp.status_code == 200:
+                data = resp.json()
+                pulses = data.get('results', [])
+                tags = list(set(
+                    tag for pulse in pulses
+                    for tag in pulse.get('tags', [])
+                ))
+
+                pcount = len(pulses)
+                if pcount >= 5:
+                    severity = "critical"
+                elif pcount >= 2:
+                    severity = "high"
+                elif pcount >= 1:
+                    severity = "medium"
+                else:
+                    severity = "unknown"
+
+                # 提取关联的 IOC indicators
+                related: List[str] = []
+                for pulse in pulses:
+                    for ind in pulse.get('indicators', []):
+                        related.append(ind.get('indicator', ''))
+
+                return ThreatIntelResult(
+                    query=cve_id,
+                    query_type="cve",
+                    source="otx",
+                    found=pcount > 0,
+                    severity=severity,
+                    confidence=min(pcount * 0.08 + 0.15, 0.9),
+                    description=f"Found in {pcount} OTX pulses" if pcount else "Not found in OTX",
+                    tags=tags[:20],
+                    related_indicators=list(set(related))[:20],
+                    references=[p.get('name', '') or p.get('id', '') for p in pulses[:5]],
+                    raw_response=data,
+                )
+        except ImportError:
+            logger.debug("requests not available for OTX CVE query")
+        except Exception as e:
+            logger.warning(f"OTX CVE query failed: {e}")
+
+        return ThreatIntelResult(
+            query=cve_id,
+            query_type="cve",
+            source="otx",
+            found=False,
+        )
+
+    def _query_otx_indicator(
+        self, indicator: str, indicator_type: str
+    ) -> ThreatIntelResult:
+        """Query OTX for an indicator — 通用 indicator 查询实现。
+
+        根据类型构造 OTX API endpoint，解析 general 和 malware 数据。
+        """
+        try:
+            import requests
+
+            # OTX API v1 支持的类型映射
+            type_map = {
+                'ip': 'IPv4',
+                'domain': 'domain',
+                'hostname': 'hostname',
+                'url': 'url',
+                'email': 'email',
+            }
+            otx_type = type_map.get(indicator_type, indicator_type)
+            url = f"https://otx.alienvault.com/api/v1/indicators/{otx_type}/{indicator}/general"
+            headers = {'X-OTX-API-KEY': self.otx_key}
+            resp = requests.get(url, headers=headers, timeout=10)
+
+            if resp.status_code == 200:
+                data = resp.json()
+                pulses = data.get('pulse_info', {}).get('pulses', [])
+                tags = list(set(
+                    tag for pulse in pulses
+                    for tag in pulse.get('tags', [])
+                ))
+
+                # 提取恶意软件家族关联
+                malware_samples: List[str] = []
+                for pulse in pulses:
+                    for ms in pulse.get('malware_families', []):
+                        malware_samples.append(ms)
+
+                pcount = len(pulses)
+                severity = "high" if pcount > 2 else ("medium" if pcount > 0 else "unknown")
+
+                return ThreatIntelResult(
+                    query=indicator,
+                    query_type=indicator_type,
+                    source="otx",
+                    found=pcount > 0,
+                    severity=severity,
+                    confidence=min(pcount * 0.1, 0.9),
+                    description=f"Found in {pcount} OTX pulses" if pcount else "Clean in OTX",
+                    tags=tags[:20],
+                    related_indicators=list(set(malware_samples))[:10],
+                    references=[p.get('name', '') for p in pulses[:5]],
+                    raw_response=data,
+                )
+        except ImportError:
+            logger.debug("requests not available for OTX indicator query")
+        except Exception as e:
+            logger.warning(f"OTX indicator query failed: {e}")
+
+        return ThreatIntelResult(
+            query=indicator,
+            query_type=indicator_type,
+            source="otx",
+            found=False,
+        )
+
+    def _query_misp_indicator(
+        self, indicator: str, indicator_type: str
+    ) -> ThreatIntelResult:
+        """Query MISP for an indicator — 通用 IOC 检索。
+
+        映射 indicator_type 到 MISP 的 attribute type，
+        搜索所有匹配的 attribute 并聚合事件上下文。
+        """
+        if not self.misp_url:
+            return ThreatIntelResult(
+                query=indicator,
+                query_type=indicator_type,
+                source="misp",
+                found=False,
+            )
+
+        try:
+            import requests
+
+            # indicator_type → MISP attribute type 映射
+            misp_type_map = {
+                'ip': 'ip-src',
+                'domain': 'domain',
+                'hostname': 'hostname',
+                'url': 'url',
+                'email': 'email-src',
+                'ipv6': 'ip-src',
+            }
+            misp_type = misp_type_map.get(indicator_type, indicator_type)
+
+            url = f"{self.misp_url}/attributes/restSearch"
+            headers = {
+                'Authorization': self.misp_key,
+                'Accept': 'application/json',
+            }
+            data = {
+                'returnFormat': 'json',
+                'value': indicator,
+                'type': misp_type,
+            }
+            resp = requests.post(url, headers=headers, json=data, timeout=15, verify=False)
+
+            if resp.status_code == 200:
+                result_data = resp.json()
+                attributes = result_data.get('response', {}).get('Attribute', [])
+                events = set(attr.get('event_id', '') for attr in attributes)
+
+                tags: List[str] = []
+                related: List[str] = []
+                for attr in attributes:
+                    for tag in attr.get('Tag', []):
+                        tags.append(tag.get('name', ''))
+                    related.append(attr.get('value', ''))
+
+                ecount = len(events)
+                if ecount >= 5:
+                    severity = "critical"
+                elif ecount >= 2:
+                    severity = "high"
+                elif ecount >= 1:
+                    severity = "medium"
+                else:
+                    severity = "unknown"
+
+                return ThreatIntelResult(
+                    query=indicator,
+                    query_type=indicator_type,
+                    source="misp",
+                    found=ecount > 0,
+                    severity=severity,
+                    confidence=min(ecount * 0.08 + 0.1, 0.95),
+                    description=f"Found in {ecount} MISP events" if ecount else "Clean in MISP",
+                    tags=list(set(tags))[:20],
+                    related_indicators=list(set(related))[:20],
+                    references=[f"MISP Event {e}" for e in sorted(events)[:5]],
+                    raw_response=result_data,
+                )
+        except ImportError:
+            logger.debug("requests not available for MISP indicator query")
+        except Exception as e:
+            logger.warning(f"MISP indicator query failed: {e}")
+
+        return ThreatIntelResult(
+            query=indicator,
+            query_type=indicator_type,
+            source="misp",
+            found=False,
+        )
+
+    @staticmethod
+    def _detect_indicator_type(indicator: str) -> str:
+        """Auto-detect indicator type.
+
+        Args:
+            indicator: Indicator value.
+
+        Returns:
+            Detected type string.
+        """
+        import re
+        if re.match(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', indicator):
+            return "ip"
+        if re.match(r'^[a-fA-F0-9:]+$', indicator):
+            return "ip"
+        if re.match(r'^[a-zA-Z0-9]([a-zA-Z0-9\-]*\.)+[a-zA-Z]{2,}$', indicator):
+            return "domain"
+        if indicator.startswith(('http://', 'https://', 'ftp://')):
+            return "url"
+        if re.match(r'^[^@]+@[^@]+\.[^@]+$', indicator):
+            return "email"
+        return "unknown"
+
+    def batch_query_hashes(
+        self,
+        hashes: List[str],
+        max_workers: int = 5,
+    ) -> List[ThreatIntelResult]:
+        """Query multiple file hashes concurrently.
+
+        利用线程池并发查询，信号量控制并发度避免API限流。
+        结果按输入顺序返回。
+
+        Args:
+            hashes: List of file hash strings.
+            max_workers: 最大并发线程数（默认5）。
+
+        Returns:
+            List of ThreatIntelResult for each hash.
+        """
+        results: Dict[int, ThreatIntelResult] = {}
+
+        def _rate_limited_query(idx: int, h: str) -> Tuple[int, ThreatIntelResult]:
+            with self._rate_semaphore:
+                logger.debug(f"Batch hash query [{idx}]: {h[:12]}...")
+                return idx, self.query_hash(h)
+
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {
+                executor.submit(_rate_limited_query, i, h): i
+                for i, h in enumerate(hashes)
+            }
+            for future in as_completed(futures):
+                try:
+                    idx, result = future.result(timeout=60)
+                    results[idx] = result
+                except Exception as e:
+                    logger.error(f"Batch hash query failed at index {futures[future]}: {e}")
+
+        return [results[i] for i in range(len(hashes))]
+
+    def batch_query_cves(
+        self,
+        cves: List[str],
+        max_workers: int = 5,
+    ) -> List[ThreatIntelResult]:
+        """Query multiple CVEs concurrently.
+
+        与 batch_query_hashes 同样的并发模式。
+        每个 worker 持有信号量保证不超过 rate limit。
+
+        Args:
+            cves: List of CVE identifiers.
+            max_workers: 最大并发线程数（默认5）。
+
+        Returns:
+            List of ThreatIntelResult for each CVE.
+        """
+        results: Dict[int, ThreatIntelResult] = {}
+
+        def _rate_limited_cve(idx: int, c: str) -> Tuple[int, ThreatIntelResult]:
+            with self._rate_semaphore:
+                logger.debug(f"Batch CVE query [{idx}]: {c}")
+                return idx, self.query_cve(c)
+
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {
+                executor.submit(_rate_limited_cve, i, c): i
+                for i, c in enumerate(cves)
+            }
+            for future in as_completed(futures):
+                try:
+                    idx, result = future.result(timeout=60)
+                    results[idx] = result
+                except Exception as e:
+                    logger.error(f"Batch CVE query failed at index {futures[future]}: {e}")
+
+        return [results[i] for i in range(len(cves))]
+
+    def batch_query_indicators(
+        self,
+        indicators: List[Tuple[str, str]],
+        max_workers: int = 5,
+    ) -> List[ThreatIntelResult]:
+        """并发批量查询 IOC indicators。
+
+        Args:
+            indicators: List of (value, type) tuples. type 可以为 'auto'。
+            max_workers: 最大并发线程数。
+
+        Returns:
+            List of ThreatIntelResult，保持输入顺序。
+        """
+        results: Dict[int, ThreatIntelResult] = {}
+
+        def _rate_limited_indicator(
+            idx: int, val: str, itype: str
+        ) -> Tuple[int, ThreatIntelResult]:
+            with self._rate_semaphore:
+                logger.debug(f"Batch indicator query [{idx}]: {val}")
+                return idx, self.query_indicator(val, itype)
+
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {
+                executor.submit(_rate_limited_indicator, i, v, t): i
+                for i, (v, t) in enumerate(indicators)
+            }
+            for future in as_completed(futures):
+                try:
+                    idx, result = future.result(timeout=60)
+                    results[idx] = result
+                except Exception as e:
+                    logger.error(
+                        f"Batch indicator query failed at index {futures[future]}: {e}"
+                    )
+
+        return [results[i] for i in range(len(indicators))]
+
+    def save_to_db(self, result: ThreatIntelResult) -> None:
+        """Persist a result to the local cache database.
+
+        Args:
+            result: ThreatIntelResult to save.
+        """
+        self._save_cache(result)
+
+    def load_from_db(
+        self,
+        query: str,
+        query_type: str,
+    ) -> Optional[ThreatIntelResult]:
+        """Load a cached result from the local database.
+
+        Args:
+            query: The original query.
+            query_type: Type of query.
+
+        Returns:
+            Cached ThreatIntelResult or None.
+        """
+        return self._check_cache(query, query_type)
+
+    def format_report(
+        self,
+        results: List[ThreatIntelResult],
+        format: str = "text",
+    ) -> str:
+        """Format threat intel results as a report.
+
+        Args:
+            results: List of results.
+            format: Output format ('text', 'json', 'markdown').
+
+        Returns:
+            Formatted report string.
+        """
+        if format == "json":
+            return json.dumps(
+                {'results': [r.to_dict() for r in results]},
+                indent=2,
+            )
+
+        if format == "markdown":
+            lines = ["# Threat Intelligence Report\n"]
+            lines.append(f"**Generated:** {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+            lines.append(f"**Total queries:** {len(results)}\n")
+
+            found = [r for r in results if r.found]
+            lines.append(f"**Threats found:** {len(found)}\n")
+
+            lines.append("\n## Findings\n")
+            for r in found:
+                lines.append(f"### {r.query}")
+                lines.append(f"- **Type:** {r.query_type}")
+                lines.append(f"- **Source:** {r.source}")
+                lines.append(f"- **Severity:** {r.severity}")
+                lines.append(f"- **Confidence:** {r.confidence:.0%}")
+                lines.append(f"- **Description:** {r.description}")
+                if r.tags:
+                    lines.append(f"- **Tags:** {', '.join(r.tags[:10])}")
+                lines.append("")
+
+            return '\n'.join(lines)
+
+        # Text format
+        lines = [
+            "=" * 60,
+            "THREAT INTELLIGENCE REPORT",
+            "=" * 60,
+            f"Total queries: {len(results)}",
+            f"Threats found: {sum(1 for r in results if r.found)}",
+            "",
+        ]
+
+        for r in results:
+            if r.found:
+                lines.append(f"[!] {r.query} ({r.query_type})")
+                lines.append(f"    Source: {r.source}")
+                lines.append(f"    Severity: {r.severity}")
+                lines.append(f"    Confidence: {r.confidence:.0%}")
+                lines.append(f"    {r.description}")
+                lines.append("")
+
+        lines.append("=" * 60)
+        return '\n'.join(lines)

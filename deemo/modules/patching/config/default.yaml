@@ -1,0 +1,26 @@
+# patching 模块默认配置
+# 可通过环境变量 BINMIND_* 覆盖对应项
+
+ai_provider: "openai"
+openai_model: "gpt-4"
+anthropic_model: "claude-sonnet-4-20250514"
+openai_api_key: ""
+anthropic_api_key: ""
+
+subprocess_timeout: 120
+max_retries: 3
+retry_delay: 1.0
+
+# 路径配置 (可 override via env)
+reports_dir: "~/.binmind/reports"
+data_dir: "~/.binmind/data"
+log_level: "INFO"
+log_file: "~/.binmind/logs/patching.log"
+
+# 外部工具路径
+r2_path: "r2"
+compiler_path: "gcc"
+
+# sandbox & performance
+sandbox_enabled: true
+performance_threshold: 10.0
