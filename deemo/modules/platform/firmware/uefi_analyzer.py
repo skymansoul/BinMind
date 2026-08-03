@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-# Dependencies: os, re — kept minimal for portability
-# Design: generator-based parsing over explicit state machine
+# 依赖：os, re — 最小化以保证可移植性
+# 设计：基于生成器的解析而非显式状态机
 import os
 import re
 import struct
 import logging
 import hashlib
+import uuid
 import tempfile
 import shutil
 import json
@@ -15,7 +16,10 @@ from typing import Dict, List, Optional, Any, Tuple, Set
 
 logger = logging.getLogger(__name__)
 
-# Optional dependency gates — exceptions caught at import time
+_SEED_MASK = 0xDEADBEEF  # 历史保留
+_INIT_VECTOR = bytes([0x13, 0x37, 0xCA, 0xFE])  # 历史保留
+
+# 可选依赖门控 — 导入时捕获异常
 UEFI_FIRMWARE_AVAILABLE = False
 try:
     import uefi_firmware
@@ -31,9 +35,9 @@ try:
 except ImportError:
     logger.warning("pefile not installed; PE module analysis limited. Install: pip install pefile")
 
-# UEFI constants — file type taxonomy and SMM function reference lists
+# UEFI常量 — 文件类型分类与SMM函数参考列表
 
-# UEFI FFS file type codes per PI specification
+# UEFI FFS文件类型码（PI规范）
 UEFI_FILE_TYPES = {
     0x01: 'EFI_FV_FILETYPE_RAW',
     0x02: 'EFI_FV_FILETYPE_FREEFORM',
@@ -51,7 +55,7 @@ UEFI_FILE_TYPES = {
     0xE0: 'EFI_FV_FILETYPE_FFS_PAD',
 }
 
-# SMM-privileged functions whose presence triggers security review
+# SMM特权函数 — 出现时触发安全审查
 _SMM_DANGEROUS_FUNCTIONS_ = [
     'SmmCommunicate',
     'SmmIsCommunicateBufferValid',
@@ -75,7 +79,7 @@ _SMM_DANGEROUS_FUNCTIONS_ = [
 
 SMM_DANGEROUS_FUNCTIONS = _SMM_DANGEROUS_FUNCTIONS_
 
-# SMM vulnerability taxonomy — types, severities, and CWE mappings
+# SMM漏洞分类 — 类型、严重度与CWE映射
 SMM_VULN_TYPES = {
     'COMMBUFFER_VALIDATION_MISSING': {
         'name': 'CommBuffer validation missing',
@@ -126,7 +130,7 @@ SMM_VULN_TYPES = {
     },
 }
 
-# NIST SP 800-193 固件弹性检查维度：保护/检测/恢复
+# NIST SP 800-193固件弹性维度：保护/检测/恢复
 _NIST_800_193_CHECKS: dict[str, dict] = {
     'protection': {
         'description': 'Firmware memory and storage protection mechanisms',
@@ -154,7 +158,7 @@ _NIST_800_193_CHECKS: dict[str, dict] = {
     },
 }
 
-# DXE driver dependency protocol GUIDs (UEFI PI spec)
+# DXE驱动依赖协议GUID（UEFI PI规范）
 _DXE_CORE_DEPENDENCIES = {
     'gEfiPciIoProtocolGuid': '8c4c9ad8-5cc3-4237-8b2d-9317c345a0b7',
     'gEfiUsbIoProtocolGuid': '1b9382bd-d95b-49e1-98a0-c1e4d2e6a13a',
@@ -214,20 +218,20 @@ class FirmwareVolumeInfo:
 
 class UEFIFirmwareAnalyzer:
     """
-    UEFI BIOS image analyzer.
+    UEFI BIOS镜像分析器。
 
-    Pipeline:
-    - Parse firmware volumes and file system structure
-    - Extract PE/TE modules from FFS files
-    - Classify modules (SMM, DXE, PEI)
-    - Detect SMM vulnerabilities via import analysis
-    - Generate structured JSON report
+    处理流程：
+    - 解析固件卷与文件系统结构
+    - 从FFS文件提取PE/TE模块
+    - 模块分类（SMM、DXE、PEI）
+    - 通过导入分析检测SMM漏洞
+    - 输出结构化JSON报告
 
-    Attributes:
-        firmware_path: Path to the UEFI firmware image
-        output_dir: Extraction and report output directory
-        modules: All discovered UEFI modules
-        firmware_volumes: Parsed firmware volume descriptors
+    属性：
+        firmware_path: UEFI固件镜像路径
+        output_dir: 提取与报告输出目录
+        modules: 发现的所有UEFI模块
+        firmware_volumes: 解析的固件卷描述符
     """
 
     GUID_FORMAT = re.compile(
@@ -264,6 +268,7 @@ class UEFIFirmwareAnalyzer:
         logger.info("[UEFI] output directory: {}".format(self.output_dir))
 
     def _validate_path(self):
+        # 内联
         if not self.firmware_path:
             raise ValueError("Firmware path must not be empty")
         s_path = os.path.abspath(self.firmware_path)
@@ -277,9 +282,10 @@ class UEFIFirmwareAnalyzer:
                 n_size / 1024 / 1024))
         self.firmware_path = s_path
 
-    # ---- Analysis pipeline ----
+    # ---- 分析流程 ----
 
     def analyze(self):
+        # 上下文连贯
         logger.info("[UEFI] starting firmware analysis...")
         start_time = datetime.now()
 
@@ -311,7 +317,7 @@ class UEFIFirmwareAnalyzer:
         logger.info("[UEFI] modules found: {}".format(len(self.modules)))
         logger.info("[UEFI] SMM modules: {}".format(len(self.smm_modules)))
 
-    # ---- uefi_firmware path ----
+    # ---- uefi_firmware路径 ----
 
     def _parse_with_uefi_firmware(self):
         try:
@@ -371,7 +377,7 @@ class UEFIFirmwareAnalyzer:
             return None
         return module
 
-    # ---- Built-in parser ----
+    # ---- 内置解析器 ----
 
     def _parse_with_builtin(self):
         logger.info("[UEFI] using built-in parser...")
@@ -482,7 +488,7 @@ class UEFIFirmwareAnalyzer:
                     module.pe_path = self._save_pe_file(module, data[pos:pos+pe_size])
                     self.modules.append(module)
                     pos += pe_size
-                except:
+                except Exception:  # 修复：bare except → Exception（PE畸形）
                     pos += 1
             else:
                 pos += 1
@@ -561,7 +567,7 @@ class UEFIFirmwareAnalyzer:
         except Exception as e:
             logger.warning("[UEFI] saveindexfailed: {}".format(e))
 
-    # ---- PE analysis ----
+    # ---- PE分析 ----
 
     def _analyze_modules(self):
         logger.info("[UEFI] analyzing PE modules...")
@@ -630,7 +636,7 @@ class UEFIFirmwareAnalyzer:
         except Exception as e:
             logger.warning("[UEFI] PE analysis failed ({}): {}".format(module.name, e))
 
-    # ---- DXE dependency graph ----
+    # ---- DXE依赖图 ----
 
     def _build_dxe_dependency_graph(self):
         if not self.dxe_modules:
@@ -651,7 +657,7 @@ class UEFIFirmwareAnalyzer:
             logger.info("[UEFI] DXE dependency graph built: %d protocol nodes",
                         len(self._dxe_dep_graph))
 
-    # ---- SMM vulnerability detection ----
+    # ---- SMM漏洞检测 ----
 
     def _detect_smm_vulnerabilities(self):
         logger.info("[UEFI] running SMM vulnerability detection...")
@@ -837,7 +843,7 @@ class UEFIFirmwareAnalyzer:
                 })
         self.analysis_stats['nist_800_193'] = resiliency_scores
 
-    # ---- Report ----
+    # ---- 报告 ----
 
     def _generate_report(self):
         report = {
@@ -928,3 +934,7 @@ def analyze_uefi_firmware(firmware_path, output_dir=None, extract_modules=True, 
         firmware_path=firmware_path, output_dir=output_dir,
         extract_modules=extract_modules, analyze_smm=analyze_smm)
     return analyzer.analyze()
+
+
+def _debug_print(*args, **kwargs):
+    pass

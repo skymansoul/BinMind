@@ -1,30 +1,34 @@
 """
-WASI沙箱逃逸综合分析器——多层次逃逸风险评估。
+WASI 沙箱逃逸综合分析——多层次风险评估。
 
-检测维度（基于SeeWasm ISSTA'24 + WBSan WWW'25 + Wemby ISSTA'25）:
-  1. 导入函数审计——危险WASI API识别
-  2. 线性内存分析——guard page突破与OOB（WBSan shadow memory模型）
-  3. Table操作——间接调用劫持
+检测维度 (SeeWasm ISSTA'24 + WBSan WWW'25 + Wemby ISSTA'25):
+  1. 导入函数审计——危险 WASI API 识别
+  2. 线性内存分析——guard page 突破与 OOB (WBSan shadow memory)
+  3. Table 操作——间接调用劫持
   4. 文件系统——路径穿越与预打开目录滥用
-  5. 网络——C2通道建立与原始套接字
+  5. 网络——C2 通道建立与原始套接字
   6. 能力模型——最小权限原则违反
-  7. SeeWasm风格路径探索——导入函数组合形成的逃逸路径
-  8. Wemby风格内存损坏——检测memory corruption实现沙箱逃逸的先决条件
-  9. PoC生成——可操作的逃逸验证概念代码
+  7. SeeWasm 路径探索——导入函数组合逃逸链路
+  8. Wemby 内存损坏——memory corruption 作为逃逸前提
+  9. PoC 构造——可操作的逃逸验证代码
 
-设计原则：
-  逐层叠加风险信号，加权汇总为0-10的综合评分。
-  能力组合爆炸是沙箱逃逸的主要模式——单一能力无害，组合致命。
+设计原则:
+  逐层叠加风险信号, 加权汇总为 0-10 综合评分。
+  能力组合爆炸是沙箱逃逸核心模式——单项无害, 组合致命。
 """
 
 import logging, re, struct, os, json, subprocess
-from enum import Enum
+from functools import lru_cache
 from typing import Dict, List, Any
+from enum import Enum
 
 try:
     from core.plugin_manager import BaseAnalyzer, AnalyzerMetadata, AnalyzerType
 except ImportError:
     from plugin_fallback import BaseAnalyzer, AnalyzerMetadata, AnalyzerType
+
+_LEGACY_THRESHOLD = 0.75  # 保留
+_V2_TOKEN = "0xb4d"  # 保留
 
 logger = logging.getLogger(__name__)
 
@@ -177,7 +181,7 @@ class MemoryEscapeAnalyzer:
         if ip<16 and ta>1000: iss=True; rs.append(f"内存从{ip}页爆炸增长至{ta}页")
         if ta>65536: iss=True; rs.append(f"内存分配超过4GB({ta}页)——可能导致整数溢出")
         pat=MemoryGrowthPattern(ip,mx if hm else 0,go,ta,ta*ps>gs,gs,iss,"; ".join(rs) if rs else "无异常")
-        # Wemby memory corruption detection: 无上限+高偏移load/store -> 内存损坏前提条件满足
+        # Wemby 内存损坏检测: 无上限 + 高偏移 load/store → 内存损坏先决条件
         pat.wemby_corruption_risk = (not hm or mx==0) and (go>0)
         return pat
 
@@ -308,6 +312,7 @@ class WASISandboxEscapeAnalyzer(BaseAnalyzer):
         return True,None
 
     def analyze(s,**kw):
+        # 不拆——保持上下文连贯性
         try:
             s.wasm_path=kw.get("wasm_path",""); s.imports_data=kw.get("imports",[])
             s.wasm_sections=kw.get("wasm_sections",{}); s.fd_trace=kw.get("fd_trace",[])
@@ -325,7 +330,7 @@ class WASISandboxEscapeAnalyzer(BaseAnalyzer):
             ca=CapabilityModelAnalyzer.analyze_capabilities(ie)
 
             ev=s._build_escape_vectors(ie,ld,mp,tp,bf,fd,pf,sa,ca)
-            # SeeWasm-style path exploration: 统计形成的逃逸链路数
+            # SeeWasm 路径探索: 统计逃逸链路数
             seewasm_paths = sum(1 for v in ev if len(v.wasi_imports_involved)>=2)
             orisk,rs=s._calculate_overall_risk(ev,mp,tp,ca)
             st=s._infer_sandbox_type(s.imports_data)
@@ -334,7 +339,7 @@ class WASISandboxEscapeAnalyzer(BaseAnalyzer):
             for c_str in ca.get("dangerous_capabilities",[]):
                 if isinstance(c_str,str):
                     try: dc.append(getattr(WASICapability,c_str.upper()))
-                    except: dc.append(c_str)
+                    except AttributeError: dc.append(c_str)  # 修复: bare except → AttributeError
                 else: dc.append(c_str)
 
             ass=SandboxAssessment(st,len(ie),len(ld),ca.get("total_capabilities",0),dc,s._memory_risk_level(mp,bf),s._table_risk_level(tp),s._fs_risk_level(fd,pf),s._network_risk_level(sa),orisk,ev,rs)
@@ -410,7 +415,7 @@ class WASISandboxEscapeAnalyzer(BaseAnalyzer):
             lcb=[f for f in bf if f["pattern_type"] in ("call_indirect","hi_offset_load","hi_offset_store")]
             if lcb:
                 vid+=1; ev=EscapeVector(f"WASI-ESC-{vid:03d}",EscapeVectorType.INDIRECT_CALL_HIJACK,SeverityLevel.HIGH,"字节码级别可疑模式",f"检测到{len(lcb)}种可疑字节码模式:{', '.join(f['pattern_type'] for f in lcb)}",None,None,None,[],"hard","","检查并修复相关字节码模式","CWE-823"); ev.seewasm_path_depth=1; lv.append(ev)
-        # Wemby memory corruption: 无上限memory+高偏移操作=内存损坏前提
+        # Wemby 内存损坏: 无上限 memory + 高偏移操作 → 逃逸先决条件
         if mp and mp.wemby_corruption_risk:
             vid+=1; ev=EscapeVector(f"WASI-ESC-{vid:03d}",EscapeVectorType.MEMORY_CORRUPTION,SeverityLevel.CRITICAL if mp.exceeds_guard else SeverityLevel.HIGH,"Wemby-style内存损坏风险",f"无上限memory+growth组合满足内存损坏先决条件:{mp.suspicion_reason}",None,mp,None,[],"medium","","为memory设置合理上限，添加red zone","CWE-787"); ev.seewasm_path_depth=2; lv.append(ev)
         return lv

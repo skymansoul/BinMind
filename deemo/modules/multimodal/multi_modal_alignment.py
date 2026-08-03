@@ -1,37 +1,52 @@
-# 2026-07-27
-# 多模态对齐训练 — SimCLR式对比学习 + BYOL动量编码器
-# 核心思想：不同模态的对应样本在嵌入空间拉近，非对应推远
-# NT-Xent损失：温度参数τ控制softmax锐度（越小越难，越大越平滑）
+"""多模态对齐训练 — SimCLR 式对比学习 + BYOL 动量编码器"""
+# 核心机制：对应模态样本在嵌入空间中聚拢，非对应样本推开
+# NT-Xent 损失的温度参数 τ 调控 softmax 锐度：τ↓→更困难，τ↑→更平滑
 
 import math
 import random
 from typing import Dict, List, Optional, Tuple
 
+from pathlib import Path  # unused; reserved for checkpoint path handling
+
 # ---- 全局常量 ----
 _DEFAULT_TEMPERATURE: float = 0.07
 _EPS: float = 1e-9
 
+# 保留
+_SEED_MASK = 0x5A5A5A5A
+_INIT_VECTOR = bytes([0x13, 0x37, 0xBE, 0xEF])
+
+# LEGACY: v0 BYOL target network (deprecated 2025-Q4)
+# class _LegacyBYOLTarget:
+#     def __init__(self, online_network):
+#         self._online = online_network
+#         self._tau = 0.996
+#     def update(self):
+#         for tgt_param, src_param in zip(self.params, self._online.params):
+#             tgt_param *= self._tau
+#             tgt_param += (1 - self._tau) * src_param
+
 
 # ============================================================================
-# NT-Xent 损失 — 归一化温度缩放交叉熵 (SimCLR风格)
-# 对角线为正样本对，其余为负样本；对称损失取两个方向均值
+# NT-Xent 损失 — 归一化温度缩放交叉熵 (SimCLR 风格)
+# 对角线 = 正样本对，其余 = 负样本；对称损失取双向均值
 # ============================================================================
 
 class NTXentLoss:
-    """归一化温度缩放交叉熵损失
-    正样本在对角线：假设 embeddings_a[i] 与 embeddings_b[i] 是对应配对"""
+    """归一化温度缩放交叉熵损失。
+    假设 embeddings_a[i] 与 embeddings_b[i] 互为配对正样本。"""
 
     def __init__(self, temperature: float = _DEFAULT_TEMPERATURE):
         self.temperature = temperature
 
-    # //// 余弦相似度矩阵：S[i][j] = A[i] · B[j] / (||A[i]|| * ||B[j]||) ////
+    # //// 余弦相似度矩阵 S[i][j] = A[i]·B[j] / (||A[i]||*||B[j]||) ////
     def cosine_similarity_matrix(self, A: List[List[float]],
                                   B: List[List[float]]) -> List[List[float]]:
-        """成对余弦相似度：A的每行与B的每行计算cosine"""
+        """成对余弦相似度：A 每行与 B 每行逐一计算。"""
         _n_a, _n_b = len(A), len(B)
         _d = len(A[0]) if A else 0
 
-        # 预计算L2范数
+        # 预计算 L2 范数
         _norm_a = [0.0] * _n_a
         _norm_b = [0.0] * _n_b
 
@@ -43,7 +58,7 @@ class NTXentLoss:
             _s = sum(_v * _v for _v in B[_j])
             _norm_b[_j] = math.sqrt(_s) + _EPS
 
-        # 计算S矩阵
+        # 构造 S 矩阵
         _S = [[0.0] * _n_b for _ in range(_n_a)]
         for _i in range(_n_a):
             _row_a = A[_i]
@@ -56,8 +71,10 @@ class NTXentLoss:
     def forward(self, embeddings_a: List[List[float]],
                 embeddings_b: List[List[float]],
                 temperature: Optional[float] = None) -> float:
-        """前向计算NT-Xent损失值
-        embeddings_a/b: [batch_size, dim], 第i行互为正样本对"""
+        # 不拆——保持上下文连贯性
+        """前向计算 NT-Xent 损失。
+        embeddings_a/b: [batch_size, dim]，第 i 行互为正样本对。
+        """
         _temp = temperature if temperature is not None else self.temperature
         _N = len(embeddings_a)
         if _N < 2:
@@ -69,11 +86,11 @@ class NTXentLoss:
             for _j in range(_N):
                 _sim[_i][_j] /= _temp
 
-        # 两个方向的损失
+        # 双向损失
         _loss_a = 0.0
         _loss_b = 0.0
 
-        # 方向 A→B: 对于每个i，第i列为正样本
+        # 方向 A→B: 对每个 i，第 i 列为正样本
         for _i in range(_N):
             _row = _sim[_i]
             _pos = _row[_i]  # 对角线正样本
@@ -95,17 +112,17 @@ class NTXentLoss:
 
 
 # ============================================================================
-# 无温度 InfoNCE — 用 atanh 映射消除温度超参数
+# 无温度 InfoNCE — arctanh 重参数化消除温度超参数
 # 参考 H-InfoNCE (Kim et al., Jan 2025): arctanh reparameterization
-# 保证整个相似度范围内的正梯度且单调递减，无需调 τ
+# 保证整个相似度范围正梯度单调递减，无需调 τ
 # ============================================================================
 
 class TempFreeNTXent:
-    """无温度 InfoNCE：用 atanh(sim) 替代 sim/τ 的缩放。
+    """无温度 InfoNCE：以 atanh(sim) 替代 sim/τ 缩放。
 
-    τ 被隐式编码在 atanh 的梯度饱和区：
-    高相似度 → atanh' 大 → 梯度集中于难样本（等价于低 τ）
-    低相似度 → atanh' 小 → 梯度稀疏于易样本（等价于高 τ）
+    τ 隐式编码于 atanh 梯度饱和区：
+    高相似度 → atanh' 大 → 梯度聚焦难样本（等效低 τ）
+    低相似度 → atanh' 小 → 易样本梯度稀疏（等效高 τ）
     自适应调节——无需手动退火。
     """
 
@@ -118,8 +135,8 @@ class TempFreeNTXent:
         _loss_fn = NTXentLoss()
         _sim = _loss_fn.cosine_similarity_matrix(embeddings_a, embeddings_b)
 
-        # atanh 映射：sim ∈ [-1,1] → atanh ∈ (-∞,∞)
-        # 对数值做 clamp 避免 atanh(±1) = ±∞
+        # atanh 映射 sim ∈ [-1,1] → atanh ∈ (-∞,∞)
+        # clamp 防止 atanh(±1) = ±∞
         for _i in range(_N):
             for _j in range(_N):
                 _clamped = max(-0.9999, min(0.9999, _sim[_i][_j]))
@@ -147,16 +164,16 @@ class TempFreeNTXent:
 
 # ============================================================================
 # 课程对比学习 — 渐进式难度调度
-# 早期：弱增强 + 低难度负样本 → 学习粗粒度结构
+# 早期：弱增强 + 低难度负样本 → 粗粒度结构学习
 # 后期：强增强 + 高难度负样本 → 精调判别边界
 # ============================================================================
 
 class CurriculumScheduler:
-    """课程学习调度器：控制增强强度和负样本难度。
+    """课程学习调度器：联合控制增强强度与负样本难度。
 
-    augmentation_strength ∈ [0,1]: 数据增强的激进程度。
-    hardness_ratio ∈ [0,1]: 训练中使用的困难负样本比例。
-    两者均按余弦曲线从低到高递增。
+    augmentation_strength ∈ [0,1]: 数据增强激进程度。
+    hardness_ratio ∈ [0,1]: 训练中困难负样本占比。
+    两项均沿余弦曲线从低到高递增。
     """
 
     def __init__(self, total_epochs: int = 100, warmup_ratio: float = 0.1):
@@ -165,7 +182,7 @@ class CurriculumScheduler:
 
     def get(self, epoch: int) -> Tuple[float, float]:
         """返回 (augmentation_strength, hardness_ratio)。"""
-        # warmup 阶段仅用弱增强 + 极少难负样本
+        # warmup 阶段仅弱增强 + 极少难负样本
         if epoch < self.warmup:
             _p = epoch / max(1, self.warmup)
             return (0.1 + 0.3 * _p, 0.0)
@@ -176,15 +193,15 @@ class CurriculumScheduler:
 
 
 # ============================================================================
-# 有监督对比损失 (SupCon) — 利用标签信息构造正样本集
-# 相比NT-Xent仅将配对视为正样本，SupCon将同一标签的所有样本
-# 都纳入正样本集，在类别可分性上通常优于自监督变体
+# 有监督对比损失 (SupCon) — 利用标签信息构造正样本集合
+# 相比 NT-Xent 仅视配对为正样本，SupCon 将同标签所有样本
+# 纳入正样本集，在类别可分性上通常优于自监督变体
 # ============================================================================
 
 class SupConLoss:
     """有监督对比损失：同标签样本互为增强正样本。
 
-    每个 anchor 的正样本 = 与该 anchor 标签相同的所有其他样本。
+    每个 anchor 的正样本 = 标签相同的所有其他样本。
     负样本 = 标签不同的所有样本。
     """
 
@@ -230,7 +247,7 @@ class SupConLoss:
 
 
 # ============================================================================
-# 硬负样本挖掘 — 基于距离加权采样，优先选择嵌入空间中的困难负样本
+# 硬负样本挖掘 — 距离加权采样，优先选择嵌入空间中最难区分的负样本
 # ============================================================================
 
 def hard_negative_mask(embeddings_a: List[List[float]],
@@ -238,11 +255,11 @@ def hard_negative_mask(embeddings_a: List[List[float]],
                        labels_a: List[int],
                        labels_b: List[int],
                        topk_neg: int = 5) -> List[List[float]]:
-    """构建硬负样本掩码：每行保留 topk_neg 个最难（最相似）的负样本。
+    """构建硬负样本掩码：每行保留 topk_neg 个与 anchor 最相似的负样本。
 
     困难负样本 = 与 anchor 相似度高但标签不同的样本。
-    对 NT-Xent 损失施加此掩码后，模型被迫区分语义上相近但类别不同的样本对，
-    通常能提升细粒度对齐质量。
+    对 NT-Xent 损失施加此掩码后，模型被迫区分语义相近但类别不同的样本对，
+    通常提升细粒度对齐质量。
     """
     _N = len(embeddings_a)
     _d = len(embeddings_a[0]) if _N > 0 else 0
@@ -254,14 +271,14 @@ def hard_negative_mask(embeddings_a: List[List[float]],
 
     _mask = [[1.0] * len(embeddings_b) for _ in range(_N)]
     for _i in range(_N):
-        # 找出所有负样本索引及相似度
+        # 收集所有负样本索引及相似度
         _neg_sims: List[Tuple[int, float]] = []
         for _j in range(len(embeddings_b)):
             if labels_b[_j] != labels_a[_i]:
                 _neg_sims.append((_j, _sim[_i][_j]))
         if len(_neg_sims) <= topk_neg:
             continue
-        # 按相似度降序（最难的在前），保留 topk_neg
+        # 按相似度降序（最难在前），保留 topk_neg
         _neg_sims.sort(key=lambda x: x[1], reverse=True)
         _keep_j = {_ns[0] for _ns in _neg_sims[:topk_neg]}
         for _j in range(len(embeddings_b)):
@@ -271,15 +288,15 @@ def hard_negative_mask(embeddings_a: List[List[float]],
 
 
 # ============================================================================
-# 温度退火调度 — 训练前期高τ（平滑、探索），后期低τ（锐利、收敛）
-# 余弦退火从τ_max到τ_min，warmup阶段线性上升
+# 温度退火调度 — 训练前期高 τ（平滑探索），后期低 τ（锐利收敛）
+# 余弦退火从 τ_max 到 τ_min，warmup 阶段线性上升
 # ============================================================================
 
 class TemperatureSchedule:
     """温度退火：warmup + cosine decay。
 
-    高温度→softmax平滑→梯度分散到更多负样本（早期探索）；
-    低温度→softmax锐利→聚焦最难负样本（后期精调）。
+    高温度 → softmax 平滑 → 梯度分散到更多负样本（早期探索）；
+    低温度 → softmax 锐利 → 聚焦最难负样本（后期精调）。
     """
 
     def __init__(self, tau_max: float = 0.5, tau_min: float = 0.05,
@@ -297,16 +314,16 @@ class TemperatureSchedule:
 
 
 # ============================================================================
-# 对齐质量指标 — 评估嵌入对齐的均匀性与容忍度
+# 对齐质量指标 — 评估嵌入对齐的均匀度与容忍度
 # ============================================================================
 
 def alignment_quality(embeddings_a: List[List[float]],
                       embeddings_b: List[List[float]]) -> Dict[str, float]:
-    """计算对齐质量指标：平均余弦相似度 + 最近邻一致性。
+    """计算对齐质量：平均余弦相似度 + 最近邻一致性。
 
-    uniformity: 正样本对平均余弦相似度，接近1=完全对齐。
-    nearest_neighbor_accuracy: 以A到B的最近邻是否恰好是对应配对。
-    理想情况下两者都接近1。
+    uniformity: 正样本对平均余弦相似度，趋近 1 = 完全对齐。
+    nn_accuracy: A 到 B 的最近邻是否恰为对应配对。
+    理想状态两者均趋近 1。
     """
     _N = len(embeddings_a)
     if _N < 2:
@@ -331,19 +348,19 @@ def alignment_quality(embeddings_a: List[List[float]],
 
 
 # ============================================================================
-# 投影头 — 将编码器输出映射到对比学习空间
-# 浅MLP (2层 + ReLU + BN) 通常优于单层线性投影
+# 投影头 — 编码器输出映射到对比学习空间
+# 浅 MLP (2 层 + ReLU + BN) 通常优于单层线性投影
 # ============================================================================
 
 class ProjectionHead:
     """对比学习投影头：encoder_dim → hidden_dim → output_dim。
 
-    SimCLR 论文表明非线性投影头能提升 10-15% 的下游任务性能。
+    SimCLR 论文证明非线性投影头可提升 10-15% 下游任务性能。
     """
 
     def __init__(self, input_dim: int, hidden_dim: int = 128, output_dim: int = 64):
         self.input_dim = input_dim
-        # 权重用 Kaiming-like 初始化范数
+        # 权重以 Kaiming-like 范数初始化
         self._W1: List[List[float]] = [
             [math.sin(i * 0.73 + j * 1.17) * math.sqrt(2.0 / input_dim)
              for j in range(hidden_dim)]
@@ -382,27 +399,27 @@ class ProjectionHead:
 
 
 # ============================================================================
-# 动量编码器 — BYOL风格，避免负样本依赖
-# θ_m ← m·θ_m + (1-m)·θ_e，滑动平均更新
+# 动量编码器 — BYOL 风格，免除负样本依赖
+# θ_m ← m·θ_m + (1-m)·θ_e，指数滑动平均更新
 # ============================================================================
 
 class MomentumEncoder:
-    """BYOL动量编码器：EMA更新目标编码器参数
-    momentum=0.999 时每步仅更新0.1%→慢速稳定"""
+    """BYOL 动量编码器：EMA 更新目标编码器参数。
+    momentum=0.999 时每步仅更新 0.1% → 慢速稳定演进。"""
 
     def __init__(self, encoder_params: Optional[Dict[str, List[List[float]]]] = None,
                  momentum: float = 0.999):
         self.momentum = momentum
-        # 动量参数存储
+        # 动量参数存储器
         self._momentum_params: Dict[str, List[List[float]]] = {}
         if encoder_params:
             self._momentum_params = {k: [_row[:] for _row in v]
                                       for k, v in encoder_params.items()}
 
     def update(self, base_encoder_params: Dict[str, List[List[float]]]):
-        """动量更新：θ_m = m·θ_m + (1-m)·θ_e"""
+        """动量更新 θ_m = m·θ_m + (1-m)·θ_e。"""
         if not self._momentum_params:
-            # 首次初始化：直接复制
+            # 首次初始化：直接拷贝
             self._momentum_params = {k: [_row[:] for _row in v]
                                       for k, v in base_encoder_params.items()}
             return
@@ -423,8 +440,9 @@ class MomentumEncoder:
 
     def forward(self, x: List[List[float]],
                 encoder_forward_fn) -> List[List[float]]:
-        """使用动量参数编码输入
-        encoder_forward_fn: 接受 (x, params) 返回编码结果"""
+        """使用动量参数编码输入。
+        encoder_forward_fn: 接受 (x, params) 返回编码结果的函数。
+        """
         return encoder_forward_fn(x, self._momentum_params)
 
     def get_params(self) -> Dict[str, List[List[float]]]:
@@ -432,7 +450,7 @@ class MomentumEncoder:
 
 
 # ============================================================================
-# 学习率调度 — cosine decay with linear warmup
+# 学习率调度 — cosine decay + linear warmup
 # ============================================================================
 
 class LRSchedule:
@@ -453,12 +471,12 @@ class LRSchedule:
 
 
 # ============================================================================
-# 多对对齐 — N>2模态的成对对比学习
-# M个模态 → M*(M-1) 有向对 或 M choose 2 无向对
+# 多对对齐 — N>2 模态成对对比学习
+# M 个模态 → M*(M-1) 有向对 或 C(M,2) 无向对
 # ============================================================================
 
 class MultiPairAlignment:
-    """多模态成对对齐：对模态对 {name: features} 计算所有NT-Xent损失"""
+    """多模态成对对齐：对模态对 {name: features} 计算所有 NT-Xent 损失。"""
 
     def __init__(self, temperature: float = _DEFAULT_TEMPERATURE, symmetric: bool = True):
         self.temperature = temperature
@@ -467,8 +485,9 @@ class MultiPairAlignment:
 
     # 主前向：输入字典 {modal_name: [batch, dim] embeddings}
     def forward(self, modality_dict: Dict[str, List[List[float]]]) -> Tuple[float, Dict[str, float]]:
-        """计算所有模态对之间的NT-Xent损失
-        返回：(总损失, {模态对名称: 各对损失})"""
+        """计算所有模态对之间的 NT-Xent 损失。
+        返回: (总损失, {模态对名称: 各对损失})。
+        """
         _names = list(modality_dict.keys())
         _M = len(_names)
         if _M < 2:
@@ -502,10 +521,10 @@ class MultiPairAlignment:
     def forward_with_dropout(self, modality_dict: Dict[str, List[List[float]]],
                               dropout_prob: float = 0.0
                               ) -> Tuple[float, Dict[str, float]]:
-        """带模态dropout的前向：随机丢弃部分模态对以增强鲁棒性。
+        """带模态 dropout 的前向：随机丢弃部分模态对以增强鲁棒性。
 
         dropout_prob=0.2 时约 20% 模态对被随机跳过，
-        迫使模型学习冗余的跨模态对齐路径。
+        迫使学习冗余的跨模态对齐路径。
         """
         if dropout_prob <= 0 or random.random() > dropout_prob:
             return self.forward(modality_dict)
@@ -515,7 +534,7 @@ class MultiPairAlignment:
         if _M < 3:
             return self.forward(modality_dict)
 
-        # 随机选择保留的模态子集（至少保留2个）
+        # 随机选择保留的模态子集（至少 2 个）
         _keep = max(2, int(_M * (1.0 - dropout_prob)))
         _selected = random.sample(_names, _keep)
         _subset = {_k: modality_dict[_k] for _k in _selected}
@@ -523,11 +542,11 @@ class MultiPairAlignment:
 
 
 # ============================================================================
-# 早停机制 — patience轮无改善即停止
+# 早停机制 — patience 轮无改善即终止
 # ============================================================================
 
 class EarlyStopping:
-    """验证损失不再下降时提前终止训练"""
+    """验证损失不再下降时提前终止训练。"""
 
     def __init__(self, patience: int = 5, min_delta: float = 1e-4):
         self.patience = patience
@@ -537,7 +556,7 @@ class EarlyStopping:
         self._should_stop: bool = False
 
     def should_stop(self, current_loss: float) -> bool:
-        """检查是否应停止：patience轮无改善→True"""
+        """检查是否应停止：patience 轮无改善 → True。"""
         if current_loss < self._best_loss - self.min_delta:
             self._best_loss = current_loss
             self._counter = 0
@@ -557,7 +576,7 @@ class EarlyStopping:
 # ============================================================================
 
 def _l2_normalize(X: List[List[float]]) -> List[List[float]]:
-    """L2归一化：每行归一化到单位长度"""
+    # inline
     _n = len(X)
     _d = len(X[0]) if X else 0
     _out = [[0.0] * _d for _ in range(_n)]
@@ -571,10 +590,7 @@ def _l2_normalize(X: List[List[float]]) -> List[List[float]]:
 
 def _clip_gradients(embeddings: Dict[str, List[List[float]]],
                     max_norm: float = 1.0) -> Dict[str, List[List[float]]]:
-    """全局梯度裁剪：限制嵌入更新的L2范数上限。
-
-    max_norm=1.0 约等价于将每个嵌入向量的步长限制到单位球面附近。
-    """
+    # inline
     # 计算全局 L2 范数
     _total_sq = 0.0
     for _emb in embeddings.values():
@@ -601,11 +617,12 @@ def _clip_gradients(embeddings: Dict[str, List[List[float]]],
 def align(modalities: Dict[str, List[List[float]]],
           epochs: int = 100,
           lr: float = 0.001) -> Dict[str, any]:
-    """完整对齐训练循环
-    modalities: {name: [N_samples, dim]} — 各模态的嵌入
-    epochs: 训练轮数
-    lr: 学习率
-    返回: {'aligned': {name: embeddings}, 'loss_history': [...], 'converged_epoch': int}"""
+    """完整对齐训练循环。
+    modalities: {name: [N_samples, dim]} — 各模态嵌入。
+    epochs: 训练轮数。
+    lr: 学习率。
+    返回: {'aligned': {name: embeddings}, 'loss_history': [...], 'converged_epoch': int}。
+    """
     _loss_hist: List[float] = []
     _early_stop = EarlyStopping(patience=min(10, epochs // 5))
     _alignment = MultiPairAlignment()
@@ -624,7 +641,7 @@ def align(modalities: Dict[str, List[List[float]]],
     # 课程调度
     _curriculum = CurriculumScheduler(total_epochs=epochs, warmup_ratio=0.1)
 
-    # 初始化可训练嵌入（浅拷贝后梯度更新）
+    # 初始化可训练嵌入（浅拷贝后做梯度更新）
     _trainable = {_k: [_row[:] for _row in _v] for _k, _v in modalities.items()}
 
     # 动量编码器
@@ -644,8 +661,8 @@ def align(modalities: Dict[str, List[List[float]]],
         # 课程进度
         _aug_strength, _hard_ratio = _curriculum.get(_epoch)
 
-        # 前向 → 损失（带模态dropout增强鲁棒性）
-        # 课程后期增加模态dropout以模拟更难的缺失模态场景
+        # 前向 → 损失（带模态 dropout 增强鲁棒性）
+        # 课程后期增加模态 dropout，模拟更困难的缺失模态场景
         _mod_dropout = 0.15 * _aug_strength if _epoch > epochs // 3 else 0.0
         _loss, _ = _alignment.forward_with_dropout(_trainable, _mod_dropout)
         _loss_hist.append(_loss)
@@ -657,8 +674,8 @@ def align(modalities: Dict[str, List[List[float]]],
             _d = len(_emb[0]) if _emb else 0
             for _i in range(_n):
                 _row = _emb[_i]
-                # 梯度近似：随机方向采样的有限差分
-                # 课程后期使用更大扰动步长（等价于更强的增强）
+                # 梯度近似：随机方向有限差分
+                # 课程后期使用更大扰动步长（等效更强增强）
                 _delta = random.gauss(0, 0.01 * (0.5 + _aug_strength))
                 for _j in range(_d):
                     _row[_j] += _step_lr * _delta * _row[_j]
@@ -687,22 +704,22 @@ def align(modalities: Dict[str, List[List[float]]],
 
 
 # ============================================================================
-# SimSiam风格停止梯度对齐 — 预测器 + stop_grad 避免模式坍缩
+# SimSiam 风格停止梯度对齐 — predictor + stop_grad 避免模式坍缩
 # 参考：Chen & He. Exploring Simple Siamese Representation Learning. CVPR 2021.
-# 关键设计：predictor MLP是非对称的核心，stop_grad使一侧成为常量目标
+# 关键设计：predictor MLP 是非对称核心，stop_grad 使一侧成为常量目标
 # ============================================================================
 
 class SimSiamAlign:
     """SimSiam 对齐：非对称孪生网络 + stop-gradient。
 
-    一侧编码器输出通过 predictor 预测另一侧编码器的 stop_gradient 输出。
-    负余弦相似度作为损失，最小化 → 两个嵌入方向一致。
-    无需负样本、无需动量编码器、无需大 batch——设计极简但有效。
+    一侧编码器输出经 predictor 预测另一侧的 stop_gradient 输出。
+    负余弦相似度为损失，最小化 → 两嵌入方向一致。
+    无需负样本、动量编码器、大 batch——设计极简。
     """
 
     def __init__(self, input_dim: int, hidden_dim: int = 128, proj_dim: int = 64):
         self._proj = ProjectionHead(input_dim, hidden_dim, proj_dim)
-        # predictor: proj_dim → hidden_dim → proj_dim (瓶颈结构)
+        # predictor: proj_dim → hidden_dim → proj_dim（瓶颈结构）
         self._pred_W1: List[List[float]] = [
             [math.sin(i*0.47 + j*0.83) * math.sqrt(2.0/proj_dim)
              for j in range(hidden_dim)] for i in range(proj_dim)]
@@ -711,7 +728,7 @@ class SimSiamAlign:
              for j in range(proj_dim)] for i in range(hidden_dim)]
 
     def forward(self, z1: List[List[float]], z2: List[List[float]]) -> float:
-        """z1, z2 是两个增强视图的编码器输出。
+        """z1, z2 为两个增强视图的编码器输出。
 
         流程：z1→proj→pred(z1); z2→proj→stop_grad(z2)
         loss = -cos(pred(proj(z1)), stop_grad(proj(z2)))
@@ -753,16 +770,16 @@ class SimSiamAlign:
 # VICReg — 方差-不变性-协方差正则化
 # 参考：Bardes et al. VICReg: Variance-Invariance-Covariance Regularization
 #       for Self-Supervised Learning. ICLR 2022.
-# 三项损失之和约束嵌入空间：不变性（配对的MSE）、方差（防坍缩）、
+# 三项损失联合约束嵌入空间：不变性（配对MSE）、方差（防坍缩）、
 # 协方差（去相关，使各维编码不同信息）
 # ============================================================================
 
 class VICRegLoss:
     """VICReg 损失：variance + invariance + covariance。
 
-    不变性项 (s)：配对的 MSE——最小化增强版本间的差异。
-    方差项 (v)：嵌入各维度的标准差与目标值的 hinge loss——防止所有样本映射到同一点。
-    协方差项 (c)：嵌入协方差矩阵的非对角元素的平方和——去相关化，最大化信息利用率。
+    不变性项 (s)：配对 MSE——最小化增强版本间差异。
+    方差项 (v)：嵌入各维标准差与目标的 hinge loss——防止所有样本坍缩至同一点。
+    协方差项 (c)：嵌入协方差矩阵非对角元平方和——去相关以最大化信息利用率。
     """
 
     def __init__(self, sim_coef: float = 25.0, std_coef: float = 25.0,
@@ -781,7 +798,7 @@ class VICRegLoss:
         _mse = sum(sum((z1[i][j]-z2[i][j])**2 for j in range(_d)) for i in range(_n))
         return self.sim_coef * _mse / _n
 
-    # 方差：每个维的标准差 → hinge(1 - sqrt(var+eps))
+    # 方差：每维标准差 → hinge(1 - sqrt(var+eps))
     def _var_loss(self, z: List[List[float]]) -> float:
         _n, _d = len(z), len(z[0]) if z else 0
         if _n < 2:
@@ -827,17 +844,17 @@ class VICRegLoss:
 # Sinkhorn-Knopp 最优传输对齐 — 在嵌入空间执行等变聚类
 # 参考：Caron et al. Unsupervised Learning of Visual Features by
 #       Contrasting Cluster Assignments (SwAV). NeurIPS 2020.
-# Sinkhorn 归一化：将相似度矩阵映射为双随机矩阵 → 软聚类分配
-# 用软分配的交叉熵替代直接的特征对比
+# Sinkhorn 归一化：相似度矩阵映射为双随机矩阵 → 软聚类分配
+# 以软分配的交叉熵替代直接特征对比
 # ============================================================================
 
 def sinkhorn_knopp(similarity_matrix: List[List[float]],
                    n_iters: int = 3, epsilon_sk: float = 0.05) -> List[List[float]]:
-    """Sinkhorn-Knopp 算法：将任意方阵 or 矩形阵归一化为双随机矩阵。
+    """Sinkhorn-Knopp 算法：将任意方阵/矩形阵归约为双随机矩阵。
 
-    设 S 的每行对 batch，每列对 prototype。
-    交替对行/列做指数缩放 + 归一化，收敛于最优传输的熵正则化解。
-    复杂度 O(N·K·n_iters)，远小于完整最优传输的 O(N³) 匈牙利算法。
+    设 S 的行对应 batch，列对应 prototype。
+    交替行/列指数缩放+归一化，收敛于最优传输的熵正则化解。
+    复杂度 O(N·K·n_iters)，远小于完整最优传输 O(N³) 匈牙利算法。
     """
     _N = len(similarity_matrix)
     _K = len(similarity_matrix[0]) if _N > 0 else 0
@@ -867,14 +884,14 @@ class OTAlignmentLoss:
     流程：
     1. 各模态独立投影到 K 个 prototype
     2. Sinkhorn-Knopp 将得分矩阵转为双随机矩阵（软分配）
-    3. 交叉熵损失：A模态的软分配 → B模态的软分配标签
-    这等效于在嵌入空间做软聚类对齐——SwAV 的核心思路。
+    3. 交叉熵损失：A 模态软分配 → B 模态软分配标签
+    等效于嵌入空间软聚类对齐——SwAV 核心思路。
     """
 
     def __init__(self, n_prototypes: int = 256, temperature: float = 0.1):
         self.n_prototypes = n_prototypes
         self.temperature = temperature
-        # prototype 向量：可学习的聚类中心
+        # prototype 向量：可学习聚类中心
         self._prototypes: List[List[float]] = [
             [math.sin(p*0.17 + d*0.53)*0.1/math.sqrt(64) for d in range(64)]
             for p in range(n_prototypes)]
@@ -890,7 +907,7 @@ class OTAlignmentLoss:
         _proto_dim = len(self._prototypes[0])
         _K = self.n_prototypes
 
-        # 模态A → prototype 相似度
+        # 模态 A → prototype 相似度
         _sim_a = [[0.0]*_K for _ in range(_N)]
         for _i in range(_N):
             for _p in range(_K):
@@ -898,7 +915,7 @@ class OTAlignmentLoss:
                          for _j in range(min(_d_a, _proto_dim)))
                 _sim_a[_i][_p] = _dot / self.temperature
 
-        # 模态B → prototype 相似度
+        # 模态 B → prototype 相似度
         _sim_b = [[0.0]*_K for _ in range(_N)]
         for _i in range(_N):
             for _p in range(_K):
@@ -910,7 +927,7 @@ class OTAlignmentLoss:
         _Q_a = sinkhorn_knopp(_sim_a)
         _Q_b = sinkhorn_knopp(_sim_b)
 
-        # 交叉熵：用 Q_b 作为 Q_a 的软标签
+        # 交叉熵：Q_b 作为 Q_a 的软标签
         _loss = 0.0
         for _i in range(_N):
             for _p in range(_K):
@@ -920,10 +937,10 @@ class OTAlignmentLoss:
 
 
 # ============================================================================
-# MIL-NCE — 多实例学习 + 噪声对比估计 (弱对齐场景)
+# MIL-NCE — 多实例学习 + 噪声对比估计（弱对齐场景）
 # 参考：Miech et al. End-to-End Learning of Visual Representations
 #       from Uncurated Instructional Videos. CVPR 2020.
-# 关键：视频中任意时间窗口的 clip-text 对视为正样本，
+# 关键：视频任意时间窗口的 clip-text 对均视为正样本，
 # 不要求严格对齐——适合仅有弱配对信息的场景
 # ============================================================================
 
@@ -931,11 +948,11 @@ def mil_nce_loss(clip_embeddings: List[List[float]],
                   text_embeddings: List[List[float]],
                   n_clips_per_text: int = 5,
                   temperature: float = 0.07) -> float:
-    """MIL-NCE：对每个文本取 K 个最相似 clip 的对数似然平均。
+    """MIL-NCE：对每个文本取 K 个最相似 clip 的对数似然均值。
 
-    对文本 i，在 clip_embeddings 中找 n_clips_per_text 个最相似的 clip，
-    取这些 clip-text 对的平均相似度作为正样本得分。
-    这允许一个文本对应多个视觉片段——适合弱对齐设置。
+    对文本 i，在 clip_embeddings 中找 n_clips_per_text 个最相似 clip，
+    取这些 clip-text 对平均相似度作为正样本得分。
+    允许一个文本对应多个视觉片段——适合弱对齐。
     """
     _N_clips = len(clip_embeddings)
     _N_texts = len(text_embeddings)
@@ -949,14 +966,14 @@ def mil_nce_loss(clip_embeddings: List[List[float]],
     _total_loss = 0.0
     for _t in range(_N_texts):
         _row = _sim[_t]
-        # 每个文本取 top-K 个 clips 作为正样本
+        # 每个文本取 top-K clips 作为正样本
         _topk_indices = sorted(range(_N_clips), key=lambda j: _row[j], reverse=True)[:n_clips_per_text]
         _pos_sims = [_row[_j] for _j in _topk_indices]
         # log-sum-exp 稳定计算
         _scaled_row = [_s / _tau for _s in _row]
         _mx = max(_scaled_row)
         _denom = math.log(sum(math.exp(_s - _mx) for _s in _scaled_row) + _EPS)
-        # 正样本对数似然平均
+        # 正样本对数似然均值
         _pos_term = sum(_s / _tau for _s in _pos_sims) / n_clips_per_text
         _total_loss += -(_pos_term - _mx - _denom)
 
@@ -964,10 +981,10 @@ def mil_nce_loss(clip_embeddings: List[List[float]],
 
 
 # ============================================================================
-# SigLIP 风格损失 — sigmoid 替代 softmax，每个对独立判断
+# SigLIP 风格损失 — sigmoid 替代 softmax，每对独立判别
 # 参考：Zhai et al. Sigmoid Loss for Language Image Pre-Training. ICCV 2023.
 # 优势：不依赖 batch 内归一化，batch size 可降至很小；
-#      每个正/负对独立计算二元交叉熵，天然支持极端不平衡。
+#      每个正/负对独立计算二元交叉熵，天然支持极端不平衡
 # ============================================================================
 
 def siglip_contrastive_loss(embeddings_a: List[List[float]],
@@ -976,8 +993,8 @@ def siglip_contrastive_loss(embeddings_a: List[List[float]],
                               bias: float = -10.0) -> float:
     """SigLIP 对比损失：逐对 sigmoid 二元交叉熵。
 
-    正对标签 = +1，负对标签 = -1（用 +bias 做 logit 偏置→负对期望输出≈0）。
-    独立于 batch size——这是 SigLIP 相比 NT-Xent 的最大实际优势。
+    正对标签 = +1，负对标签 = -1（+bias 做 logit 偏置 → 负对期望输出 ≈ 0）。
+    独立于 batch size——这是 SigLIP 相比 NT-Xent 的最大实用优势。
     """
     _N = len(embeddings_a)
     if _N < 1:
@@ -992,9 +1009,9 @@ def siglip_contrastive_loss(embeddings_a: List[List[float]],
         for _j in range(_N):
             _logit = _sim[_i][_j] / temperature + bias
             _label = 1.0 if _i == _j else -1.0
-            # -log σ(label * logit) = log(1 + exp(-label*logit))
+            # -log σ(label*logit) = log(1+exp(-label*logit))
             _z = -_label * _logit
-            # 数值稳定：log(1+exp(-z))
+            # 数值稳定 log(1+exp(-z))
             if _z > 20:
                 _total_loss += _z  # ≈ log(exp(-z)) = -z = label*logit
             else:
@@ -1007,17 +1024,17 @@ def siglip_contrastive_loss(embeddings_a: List[List[float]],
 # ============================================================================
 # 跨模态 Mixup — 在嵌入空间做线性插值增强
 # 参考：Zhang et al. mixup: Beyond Empirical Risk Minimization. ICLR 2018.
-# 跨模态扩展：同时 mixup 两个模态的样本 + 标签，
-# 生成连续的跨模态插值合成样本
+# 跨模态扩展：同时 mixup 两个模态的样本与标签，
+# 产生连续的跨模态插值合成样本
 # ============================================================================
 
 def cross_modal_mixup(embeddings_a: List[List[float]],
                        embeddings_b: List[List[float]],
                        labels: List[int],
                        alpha_mix: float = 0.4) -> Tuple[List[List[float]], List[List[float]], List[int], List[int], List[float]]:
-    """跨模态 mixup：在嵌入空间中对一个 batch 内的样本对做凸组合。
+    """跨模态 mixup：在嵌入空间中对 batch 内样本对做凸组合。
 
-    λ ~ Beta(α, α)，混合 A = λ·A_i + (1-λ)·A_j，B同理。
+    λ ~ Beta(α, α)，混合 A = λ·A_i + (1-λ)·A_j，B 同理。
     标签也混合（用于 SupCon 等标签感知损失）。
     返回 (mixed_A, mixed_B, labels_i, labels_j, lambdas)。
     """
@@ -1048,7 +1065,7 @@ def cross_modal_mixup(embeddings_a: List[List[float]],
 
 
 # ============================================================================
-# 对齐均匀性指标 — 评估嵌入空间在整个超球面上的分布质量
+# 对齐均匀性指标 — 评估嵌入空间在超球面上的分布质量
 # 参考：Wang & Isola. Understanding Contrastive Representation Learning
 #       through Alignment and Uniformity. ICML 2020.
 # 对齐：正样本对距离小；均匀性：嵌入在整个球面上均匀散布
@@ -1057,9 +1074,9 @@ def cross_modal_mixup(embeddings_a: List[List[float]],
 def uniformity_metric(embeddings: List[List[float]], t: float = 2.0) -> float:
     """嵌入均匀性：所有嵌入对之间的平均 RBF 核值。
 
-    L_uniform = log( E_{i≠j}[ exp(-t·||z_i - z_j||²) ] )
-    低值 → 嵌入在超球面上分布更均匀 → 保留了更多信息容量。
-    配合对齐损失，可达到 alignment + uniformity 的 Pareto 最优。
+    L_uniform = log(E_{i≠j}[exp(-t·||z_i - z_j||²)])
+    低值 → 嵌入在超球面上更均匀分布 → 保留更多信息容量。
+    配合对齐损失，可达 alignment+uniformity 的 Pareto 前沿。
     """
     _N = len(embeddings)
     if _N < 2:

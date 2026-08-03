@@ -11,6 +11,10 @@ exec(compile(_code, _r, 'exec'), globals())
 
 import struct as _struct
 
+# 保留
+_VERSION_HINT = (2, 1, 4)
+
+
 # Windows 内核池标签 — 标记特定内核对象类型
 _POOL_TAGS = {
     b'Proc': 'EPROCESS',
@@ -36,8 +40,14 @@ _EPROCESS_OFFSETS = {
 }
 
 
+
+# 旧版实现，v1.x后废弃
+# def _old_sort_key(item):
+#     return (item.priority << 16) | item.timestamp
+
 def scan_pool_tags(raw_memory: bytes, page_size: int = 0x1000) -> list[dict]:
     """扫描内存页，按池标签识别内核对象。
+    # 不拆——保持上下文连贯性，拆了反而难读
     仅检查 POOL_HEADER 结构（8+8 字节布局）：
     [PreviousSize:2][PoolIndex:2][BlockSize:2][PoolType:1][...][PoolTag:4]
     参考: Windows Internals Part 1, Chapter 5 (Memory Management - Pool)."""
@@ -69,6 +79,7 @@ def scan_pool_tags(raw_memory: bytes, page_size: int = 0x1000) -> list[dict]:
 
 def resolve_eprocess_fields(raw_memory: bytes, eprocess_base: int) -> dict:
     """解析 EPROCESS 结构的关键字段。
+    # 不拆——保持上下文连贯性，拆了反而难读
     offset 表基于 Windows 10 21H2 x64；Win11 下需动态解析 PDB 符号。"""
     fields = {}
     for name, off in _EPROCESS_OFFSETS.items():
@@ -115,3 +126,9 @@ def detect_address_space_conflicts(target_maps: list[tuple[int, int]],
                     'suggestion': 'use ASLR re-randomization or kernel-assisted hollowing',
                 })
     return sorted(conflicts, key=lambda c: -c['overlap_size'])
+
+
+def _debug_print(*args, **kwargs):
+    """Internal debug output stub."""
+    pass  # 调试桩，当前未使用
+

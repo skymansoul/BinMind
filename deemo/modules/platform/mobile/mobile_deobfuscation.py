@@ -1,23 +1,23 @@
 #!/usr/bin/env python3
 """
-移动应用混淆检测与解混淆辅助分析 + KEENHash函数指纹相似性搜索。
+移动端混淆检测与解混淆辅助分析 + KEENHash函数指纹相似性比对。
 
-检测能力:
-  1. Java/Kotlin 混淆器识别
+检测维度:
+  1. Java/Kotlin 混淆器判别
   2. 原生层混淆——OLLVM, Hikari, Arxan, DexProtector
-  3. 字符串加密检测——熵分析+解码函数交叉引用
-  4. 控制流平坦化(CFF)识别
+  3. 字符串加密检测——熵分析及解码函数交叉引用
+  4. 控制流平坦化(CFF)辨识
   5. 虚假控制流(BCF)检测
   6. 跨平台框架混淆——Flutter, React Native, Xamarin, Unity
   7. 反调试/反篡改检测——ptrace, /proc/self/status, inotify, CRC
   8. 动态加载混淆——DexClassLoader, InMemoryDexClassLoader, dlsym
-  9. ORCAS语义图评分——基于支配树的混淆韧性评估
-  10. KEENHash函数指纹——基于SimHash的轻量级函数签名，用于大规模二进制相似性比较
+  9. ORCAS语义图评分——支配树基混淆韧性评估
+  10. KEENHash函数指纹——SimHash基轻量级函数签名，面向大规模二进制相似性比对
 
-KEENHash (ISSTA 2025) 核心思想：
-  使用LLM生成的函数embedding+K-Means+Feature Hashing压缩为紧凑程序级签名。
-  此处实现更轻量：使用SimHash对函数字节码生成64-bit指纹，
-  实现O(1)级别的函数去重和O(n)级别的相似函数搜索，215×加速。
+KEENHash (ISSTA 2025) 核心思路：
+  借助LLM函数嵌入+K-Means+Feature Hashing压缩为紧凑程序级签名。
+  本实现更轻量：SimHash对函数字节码产出64-bit指纹，
+  达成O(1)级函数去重与O(n)级相似函数检索，215×加速比。
 """
 
 import re, struct, logging, os, zipfile, hashlib, math
@@ -98,14 +98,14 @@ _CROSS_PLATFORM_SIGNATURES:Dict[bytes,ObfuscatorTool]={b'libflutter.so':Obfuscat
 
 _OBFUSCATION_RESILIENCE={ObfuscationType.IDENTIFIER_RENAMING:0.2,ObfuscationType.STRING_ENCRYPTION:0.4,ObfuscationType.CONTROL_FLOW_FLATTENING:0.7,ObfuscationType.BOGUS_CONTROL_FLOW:0.5,ObfuscationType.INSTRUCTION_SUBSTITUTION:0.3,ObfuscationType.CODE_VIRTUALIZATION:0.9,ObfuscationType.PACKING:0.6,ObfuscationType.ANTI_DEBUG:0.3,ObfuscationType.ANTI_TAMPER:0.4,ObfuscationType.RESOURCE_OBFUSCATION:0.1,ObfuscationType.API_HIDING:0.5,ObfuscationType.REFLECTION_OBFUSCATION:0.5}
 
-# ── KEENHash SimHash实现 ──
+# ── KEENHash SimHash轻量实现 ──
 def _simhash_64(data:bytes)->int:
-    """64-bit SimHash——KEENHash核心算法的轻量级实现。
+    """64-bit SimHash——KEENHash核心算法的轻量实现。
 
-    将任意字节序列映射到64-bit指纹，保证：
-      - 相似输入→低Hamming距离（用于检测混淆变体）
-      - 完全不同的输入→高Hamming距离
-    复杂度O(n)，n=data长度，内存O(1)。
+    将任意字节序列映射为64-bit指纹，确保：
+      - 相似输入→低Hamming距离（检测混淆变体）
+      - 完全不同输入→高Hamming距离
+    时间复杂度O(n)，n=data长度，空间O(1)。
     """
     if not data: return 0
     v=[0]*64
@@ -113,7 +113,7 @@ def _simhash_64(data:bytes)->int:
         for bit in range(8):
             mask=1<<bit
             if b&mask:
-                # 正加权：bit位为1
+                # bit位为1→正向加权
                 for j in range(64):
                     h=hash((i,j,b))&1
                     v[j]+=1 if h else -1
@@ -123,15 +123,15 @@ def _simhash_64(data:bytes)->int:
     return result&0xFFFFFFFFFFFFFFFF
 
 def _compute_semantic_graph_score(indicators:List[ObfuscationIndicator])->Tuple[float,str]:
-    if not indicators: return 0.0,"无混淆——语义图完整保留"
+    if not indicators: return 0.0,"无混淆——语义图完整得以保留"
     weighted=0.0; seen:Set[ObfuscationType]=set()
     for ind in indicators: seen.add(ind.technique)
     for t in seen: weighted+=_OBFUSCATION_RESILIENCE.get(t,0.1)
     score=min(weighted/max(len(seen),1),1.0)
-    if score<0.3: desc="低韧性——标准去混淆工具可恢复大部分语义"
-    elif score<0.6: desc="中韧性——需要定制化去混淆策略"
-    elif score<0.8: desc="高韧性——ORCAS-style语义图面临显著退化"
-    else: desc="极高韧性——代码虚拟化+多层混淆，自动分析基本失效"
+    if score<0.3: desc="低韧性——标准解混淆工具可还原大部分语义"
+    elif score<0.6: desc="中韧性——需定制化解混淆方案"
+    elif score<0.8: desc="高韧性——ORCAS语义图面临显著退化"
+    else: desc="极高韧性——代码虚拟化+多层混淆，自动分析基本失灵"
     return round(score,3),desc
 
 def _compute_shannon_entropy(data:bytes)->float:
@@ -207,15 +207,15 @@ class DEXObfuscationDetector:
         if rc>10: s.indicators.append(ObfuscationIndicator('reflection_obfuscation',technique=ObfuscationType.REFLECTION_OBFUSCATION,confidence=min(rc/50.0,1.0),evidence=f'{rc}反射调用点',location='code')); return True
         return False
 
-    # ── KEENHash函数指纹 ──
+    # ── KEENHash函数指纹抽取 ──
     def compute_function_fingerprints(s)->Dict[str,int]:
-        """对DEX中的每个函数生成SimHash指纹。
+        """对DEX中各函数产出SimHash指纹。
 
-        将字节码指令序列作为输入计算SimHash，相同或高度相似的函数
-        会产生接近的指纹（低Hamming距离），用于大规模去重和相似性搜索。
+        以字节码指令序列作为输入计算SimHash，相同或高度相似函数
+        产出邻近指纹（低Hamming距离），服务于大规模去重与相似性检索。
         """
         fps={}
-        # 按method边界提取字节码块：以return/invoke指令为分隔
+        # 按method边界提取字节码块：return/invoke指令为切分点
         method_pattern=re.compile(rb'(?:\.method\s+.+?\n)(.*?)(?:\.end\s+method)',re.DOTALL)
         for idx,m in enumerate(method_pattern.finditer(s.data)):
             body=m.group(1)
@@ -226,15 +226,15 @@ class DEXObfuscationDetector:
         return fps
 
     def compute_keenhash_similarity(s)->float:
-        """计算函数指纹集合的自我相似度——高相似度意味着大量重复代码，
-        可能是混淆器生成的模板代码或虚拟机dispatch块。"""
+        """计算函数指纹集合的自相似度——高相似度意味着大量重复代码，
+        可能源自混淆器产出的样板代码或虚拟机dispatch块。"""
         fps=s.compute_function_fingerprints()
         if len(fps)<2: return 0.0
         hashes=list(fps.values()); n=len(hashes)
         close_pairs=0; total_pairs=n*(n-1)//2
         for i in range(n):
             for j in range(i+1,n):
-                # Hamming距离<8（即64-bit中差异<8bit=12.5%）视为高度相似
+                # Hamming距离<8（64-bit中差异<8bit=12.5%）判为高度相似
                 xor=hashes[i]^hashes[j]; dist=bin(xor).count('1')
                 if dist<8: close_pairs+=1
         sim=close_pairs/max(total_pairs,1)
@@ -259,12 +259,12 @@ class NativeObfuscationDetector:
 
     def detect_cff_patterns(s)->bool:
         brc=len(re.findall(rb'\x60\x01\x1f\xd6',s.data)); adc=len(re.findall(rb'[\x00-\xff]\x00\x00\x90',s.data))
-        if brc>20 and adc>50: s.indicators.append(ObfuscationIndicator('cff_arm64_dispatcher',technique=ObfuscationType.CONTROL_FLOW_FLATTENING,confidence=min(brc/100.0,0.85),evidence=f'{brc}间接分支,{adc}ADRP——CFF可疑','native arm64')); return True
+        if brc>20 and adc>50: s.indicators.append(ObfuscationIndicator('cff_arm64_dispatcher',technique=ObfuscationType.CONTROL_FLOW_FLATTENING,confidence=min(brc/100.0,0.85),evidence=f'{brc}间接分支,{adc}ADRP——CFF可疑',location='native arm64')); return True
         return False
 
     def detect_bcf_patterns(s)->bool:
         cs=len(re.findall(rb'\x1f\x00\x00\xeb',s.data))
-        if cs>5: s.indicators.append(ObfuscationIndicator('bcf_opaque_predicate',technique=ObfuscationType.BOGUS_CONTROL_FLOW,confidence=min(cs/20.0,0.8),evidence=f'{cs} opaque predicate','native arm64')); return True
+        if cs>5: s.indicators.append(ObfuscationIndicator('bcf_opaque_predicate',technique=ObfuscationType.BOGUS_CONTROL_FLOW,confidence=min(cs/20.0,0.8),evidence=f'{cs} opaque predicate',location='native arm64')); return True
         return False
 
     def detect_anti_debug(s)->bool:
@@ -315,15 +315,15 @@ class MobileObfuscationAnalyzer:
                 with zipfile.ZipFile(path,'r') as zf:
                     for entry in zf.namelist():
                         try: s.file_list[entry]=zf.read(entry)
-                        except: pass
+                        except zipfile.BadZipFile: pass  # 修复：裸except收窄至BadZipFile
                 logger.info(f"Loaded {len(s.file_list)} entries from {p.name}")
-            except zipfile.BadZipFile: logger.warning(f"Not a valid ZIP: {path}")
+            except zipfile.BadZipFile: logger.warning(f"非有效ZIP归档: {path}")
 
     def _analyze_dex(s,name:str,data:bytes):
         det=DEXObfuscationDetector(data)
         for ind in det.analyze(): ind.location=f'{name}:{ind.location}'; s._indicators.append(ind)
         for tool in det.detect_packer(): s._detected_tools.add(tool)
-        # 收集函数指纹
+        # 汇聚函数指纹
         fps=det.compute_function_fingerprints()
         for k,v in fps.items(): s._function_fingerprints[f'{name}:{k}']=v
 
@@ -334,11 +334,11 @@ class MobileObfuscationAnalyzer:
         s._entropy_scores[name]=_compute_shannon_entropy(data)
 
     def compute_keenhash_similarity(s)->float:
-        """全局KEENHash相似性评分——所有DEX函数的SimHash指纹自我相似度。"""
+        """全局KEENHash相似性评分——全体DEX函数SimHash指纹自相似度。"""
         hashes=list(s._function_fingerprints.values())
         if len(hashes)<2: return 0.0
         n=len(hashes); close=0
-        for i in range(min(n,500)):  # 采样前500个以避免O(n²)
+        for i in range(min(n,500)):  # 截取前500样本以规避O(n²)
             for j in range(i+1,min(n,500)):
                 xor=hashes[i]^hashes[j]; dist=bin(xor).count('1')
                 if dist<8: close+=1

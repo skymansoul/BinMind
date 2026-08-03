@@ -1,16 +1,14 @@
-# 攻击/漏洞签名自动提取 — 从二进制分析结果中挖掘 IOC 和检测规则
-# 参考 Zotero 文献:
-#   "Fast and automated generation of attack signatures: a basis for building
-#     self-protecting servers" [Liang & Sekar, CCS 2005] — 最早的自动签名
-#     生成框架，从网络/主机入侵事件中提取 token-based 签名。
-#   "Dynamic Taint Analysis for Automatic Detection, Analysis, and Signature
-#     Generation of Exploits on Commodity Software" [Newsome & Song, NDSS 2005]
-#     — 动态污点分析 + 自动签名生成，签名存储为语义模板。
+# 攻击/漏洞签名自主提取 —— 从二进制分析结果中挖掘 IOC 与检测规则
+# 文献依据:
+#   "Fast and automated generation of attack signatures..." [Liang & Sekar, CCS 2005]
+#     — 最早的自动化签名构造框架，从网络/主机入侵事件中提取 token-based 签名。
+#   "Dynamic Taint Analysis for Automatic Detection..." [Newsome & Song, NDSS 2005]
+#     — 动态污点分析 + 自动化签名构造，签名存为语义骨架。
 #   "Towards automated exploit signature generation using honeypots"
 #     [Almohri et al., ACSAC 2018] — 蜜罐驱动的漏洞签名提取流水线。
-#   "Automatic Patch-Based Exploit Generation is Possible: Techniques and
-#     Implications" [Brumley et al., IEEE S&P 2008] — 基于补丁 diff 的
-#     自动 exploit 生成，其签名提取部分直接启发本模块。
+#   "Automatic Patch-Based Exploit Generation is Possible..."
+#     [Brumley et al., IEEE S&P 2008] — 基于补丁 diff 的
+#     自主 exploit 构造，其签名提取部分直接启发本模块。
 #
 # 签名类型:
 #   - IOC (Indicator of Compromise): 文件 hash、IP、域名、mutex 名等
@@ -29,7 +27,7 @@ from collections import Counter
 
 
 # ---------------------------------------------------------------------------
-# IOC 提取 —— 从 findings 中自动识别可操作的威胁指标
+# IOC 提取 —— 从 findings 中自主识别可操作的威胁指标
 # ---------------------------------------------------------------------------
 
 class IOCExtractor:
@@ -39,10 +37,10 @@ class IOCExtractor:
     registry_key, file_path, email, cve_id。
 
     [Liang & Sekar 2005] 将签名定义为 token 序列的最长子串；
-    本实现将此泛化到任意 IOC 类型的提取 + 去重 + 置信度排序。
+    本实现泛化至任意 IOC 类型的提取 + 去重 + 置信度排序。
     """
 
-    # 预编译的正则模式 —— 按识别顺序排列
+    # 预编译正则模式 —— 按识别顺序排列
     _PATTERNS = [
         ("sha256", re.compile(r'\b[a-fA-F0-9]{64}\b')),
         ("sha1",   re.compile(r'\b[a-fA-F0-9]{40}\b')),
@@ -62,7 +60,7 @@ class IOCExtractor:
 
     def extract_from_text(self, text: str, source: str = "",
                            min_confidence: float = 0.5) -> List[dict]:
-        """从任意文本中提取 IOC。source 用于标记 IOC 来源。"""
+        """从任意文本中提取 IOC。source 标记 IOC 来源。"""
         found = []
         for ioc_type, pattern in self._PATTERNS:
             for match in pattern.finditer(text):
@@ -81,7 +79,7 @@ class IOCExtractor:
 
     def extract_from_findings(self, findings: List[dict],
                                sig_id: int = 0) -> List[dict]:
-        """从 analysis_results 中批量提取 IOC。"""
+        """从 analysis_results 批量提取 IOC。"""
         all_iocs = []
         text_fields = ["description", "detail", "summary", "message",
                        "output", "value", "data", "addr", "caller", "callee"]
@@ -95,11 +93,11 @@ class IOCExtractor:
         return all_iocs
 
     def _confidence(self, ioc_type: str, value: str) -> float:
-        """IOC 置信度启发式评估 —— 基于结构和上下文信号。"""
+        """IOC 置信度启发式评估 —— 基于结构与上下文信号。"""
         if ioc_type == "sha256":
             return 0.95
         if ioc_type in ("ipv4", "domain"):
-            # 排除常见的假阳性 (回环地址、localhost 等)
+            # 排除常见假阳性 (回环、保留地址、localhost 等)
             if value in ("127.0.0.1", "0.0.0.0", "255.255.255.255",
                          "localhost", "example.com"):
                 return 0.1
@@ -115,7 +113,7 @@ class IOCExtractor:
 
     def to_yara_rule(self, rule_name: str = "auto_generated_rule",
                       min_confidence: float = 0.7) -> str:
-        """从高置信度 IOC 生成 YARA 规则骨架 —— 字符串部分用 IOC 值填充。"""
+        """从高置信度 IOC 构造 YARA 规则骨架 —— 字符串部分用 IOC 值填充。"""
         iocs = [i for i in self._all_iocs if i["confidence"] >= min_confidence]
         if not iocs:
             return ""
@@ -178,7 +176,7 @@ class IOCExtractor:
 
 # ---------------------------------------------------------------------------
 # SignaturePatternMiner — 从 findings 中挖掘检测模式
-# 参考 [Newsome & Song 2005] 的语义模板生成策略
+# 参考 [Newsome & Song 2005] 的语义骨架构造策略
 # ---------------------------------------------------------------------------
 
 class SignaturePatternMiner:
@@ -222,7 +220,7 @@ class SignaturePatternMiner:
                     "type": "api_sequence",
                 })
 
-        # 控制流特征 (从 findings 中的基本块数据)
+        # 控制流特征 (从 findings 基本块数据提取)
         bb_count = 0
         edge_count = 0
         for f in findings:
@@ -261,7 +259,7 @@ class SignaturePatternMiner:
         return cnt.most_common(top_k)
 
     def export_rules(self, out_path: str = "") -> List[dict]:
-        """将模式导出为可执行的检测规则。"""
+        """将模式导出为可执行检测规则。"""
         rules = []
         freq = self.frequent_api_patterns(top_k=50)
         for seq_tuple, count in freq:

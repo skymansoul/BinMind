@@ -1,7 +1,7 @@
-# re-export from compat/ — 知识图谱桩
-# importlib 代理策略，保持最小侵入
-# 参考: Call Graphlets (arXiv:2406.02606) GNN + 深度度量学习 &
-#        Binary2vec (2025) 跨架构嵌入 + contrastive learning
+# compat/ 重导出 — 知识图谱分析桩
+# 最小侵入代理策略，零全局副作用。
+# Call Graphlets (arXiv:2406.02606) GNN + 深度度量学习
+# Binary2vec (2025) 跨架构嵌入 + contrastive learning
 import os as _os
 import importlib.util as _iu
 
@@ -14,18 +14,17 @@ for _sym in dir(_mod):
     if not _sym.startswith('_'):
         globals()[_sym] = getattr(_mod, _sym)
 
-# --- 图谱增强: call graphlet 特征提取 ---
-# Call Graphlets 论文 (2406.02606) 的核心思想：
-# 将函数调用图的局部邻域结构编码为图元 (graphlet) 统计特征，
-# 送入 GNN 进行函数级别的相似性检索。此处提供 graphlet 计数工具。
+# 图增强：Call Graphlet 特征提取
+# Graphlets 将函数调用图局部邻域编码为子图统计，
+# 作为 GNN 相似性检索的输入签名（arXiv:2406.02606）。
 from collections import Counter as _Ctr
 from itertools import combinations as _combos
 
 def count_3_node_graphlets(adj_list: dict[str, set[str]]) -> dict[str, int]:
-    """在函数调用图中统计所有 3 节点 graphlet 类型。
-    3 节点有向图共有 16 种同构类型 (Milo et al., 2002)；
-    此简化实现仅区分: triangle, in_star, out_star, two_path, disconnected。
-    复杂度 O(|V|^3)，仅适用于 ≤1000 节点的图。"""
+    """函数调用图中3节点graphlet类型统计。
+    3节点有向图共16种同构类（Milo et al., 2002）；
+    简化区分: triangle, in_star, out_star, two_path, disconnected。
+    O(|V|^3)，上限≤1000节点。"""
     nodes = list(adj_list.keys())
     if len(nodes) > 1000:
         return {'warning_too_large': len(nodes)}
@@ -48,7 +47,7 @@ def count_3_node_graphlets(adj_list: dict[str, set[str]]) -> dict[str, int]:
     return dict(counts)
 
 def normalize_graphlet_vector(raw_counts: dict[str, int]) -> list[float]:
-    """归一化 graphlet 计数为特征向量。
+    """归一化graphlet计数为特征向量。
     返回 [triangle_ratio, in_out_star_ratio, two_path_ratio, disconnected_ratio]"""
     total = sum(raw_counts.values())
     if total == 0:

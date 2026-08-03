@@ -1,7 +1,7 @@
 # repack_detector.py
-# Detects APK repackaging by comparing original vs repackaged artifacts.
-# Checks resource modifications, code injection, certificate changes, and
-# AndroidManifest.xml tampering.
+# 检测 APK repackaging comparing original vs repackaged artifacts
+# 检查 resource modifications, code injection, 证书 changes
+# AndroidManifest.xml tampering
 
 import hashlib as _hashlib
 import logging
@@ -36,7 +36,7 @@ def _file_sha256(zf: _zipfile.ZipFile, name: str) -> str:
 
 
 def _list_dex_classes(zf: _zipfile.ZipFile, dex_name: str) -> Set[str]:
-    """Heuristic: extract class name strings from a DEX file."""
+    """Heuristic: 提取 class name strings a DEX file"""
     try: raw = zf.read(dex_name)
     except (KeyError, _zipfile.BadZipFile): return set()
     classes = set()
@@ -48,11 +48,11 @@ def _list_dex_classes(zf: _zipfile.ZipFile, dex_name: str) -> Set[str]:
 # ---------------------------------------------------------------------------
 # DEX 字符串表比较 —— 比类名比较更细粒度
 # DEX 格式: string_ids 段包含所有字符串引用。重打包工具（如 apktool）
-# 重建 DEX 时会改变字符串的顺序、对齐和填充。
+# 重建 DEX 时会改变字符串的顺序、对齐和填充
 # ---------------------------------------------------------------------------
 
 def _list_dex_strings(zf: _zipfile.ZipFile, dex_name: str) -> Set[str]:
-    """提取 DEX 文件中所有非空字符串。扫描 MUTF-8 编码的字符串表。"""
+    """提取 DEX 文件中所有非空字符串。扫描 MUTF-8 编码的字符串表"""
     try: raw = zf.read(dex_name)
     except (KeyError, _zipfile.BadZipFile): return set()
     strings = set()
@@ -89,9 +89,9 @@ def _dex_opcode_histogram(zf: _zipfile.ZipFile, dex_name: str) -> Dict[int, int]
 
 
 # ---------------------------------------------------------------------------
-# 原生 .so ELF dynsym 导出符号比较
-# 从 APK 内的 .so 文件中提取 .dynsym 中的导出符号名，比较两个
-# APK 之间的差异。新增的 JNI 导出（Java_* 前缀）是代码注入的强信号。
+# 原生. ELF dynsym 导出符号比较
+# 从 APK 内的. 文件中提取.dynsym 中的导出符号名，比较两个
+# APK 之间的差异。新增的 JNI 导出（Java_* 前缀）是代码注入的强信号
 # ---------------------------------------------------------------------------
 
 _DT_SYMTAB = 6
@@ -99,7 +99,7 @@ _DT_STRTAB = 5
 _DT_STRSZ = 10
 
 def _elf_dynsym_exports(elf_data: bytes) -> Set[str]:
-    """从 ELF .dynamic 段中定位 .dynsym/.dynstr 并提取导出符号名。"""
+    """从 ELF.dynamic 段中定位.dynsym/.dynstr 并提取导出符号名"""
     exports: Set[str] = set()
     if elf_data[:4] != _ELF_MAGIC or len(elf_data) < 64:
         return exports
@@ -137,7 +137,7 @@ def _elf_dynsym_exports(elf_data: bytes) -> Set[str]:
             return exports
 
         sym_size = 24 if bitness == 64 else 16
-        # 扫描 .dynsym 中的所有非零 st_name 条目
+        # 扫描.dynsym 中的所有非零 st_name 条目
         for i in range(256):
             sym_off = symtab_addr - (p_offset if 'p_offset' in dir() else 0)
             if sym_off < 0: sym_off += p_offset
@@ -182,7 +182,7 @@ def _compare_native_libs(z_orig: _zipfile.ZipFile, z_rep: _zipfile.ZipFile) -> O
 
 
 def _parse_cert(zf: _zipfile.ZipFile) -> Optional[Dict[str, str]]:
-    """Extract the first RSA/DSA cert fingerprint from META-INF."""
+    """提取 first RSA/DSA cert fingerprint META-INF"""
     for name in zf.namelist():
         if name.startswith(_META_DIR):
             _, ext = _os.path.splitext(name)
@@ -194,8 +194,8 @@ def _parse_cert(zf: _zipfile.ZipFile) -> Optional[Dict[str, str]]:
 
 
 def _parse_manifest_meta(zf: _zipfile.ZipFile) -> Dict[str, str]:
-    """Return key attributes from AndroidManifest.xml (binary XML, so we
-    do a string scan)."""
+    """返回 key attributes AndroidManifest.xml (binary XML
+    a string scan)"""
     meta: Dict[str, str] = {}
     try: raw = zf.read(_ANDROIDMANIFEST)
     except (KeyError, _zipfile.BadZipFile): return meta
@@ -290,7 +290,7 @@ class RepackConfig:
 
 
 class RepackDetector:
-    """Compare an original APK against a (suspected) repackaged one."""
+    """比较 an original APK against a (suspected) repackaged one"""
 
     def __init__(self, config: Optional[RepackConfig] = None):
         self.config = config or RepackConfig()
@@ -434,8 +434,8 @@ class RepackDetector:
             signing_scheme=signing_info)
 
     def detect_single(self, binary: str) -> bool:
-        """Trivial stub: single-argument check returns True if the
-        APK shows signs of repacking (excess META-INF entries)."""
+        """Trivial stub: single-argument 检查 返回 True
+        APK 显示 signs repacking (excess META-INF entries)"""
         try:
             with _zipfile.ZipFile(binary) as zf:
                 meta_count = sum(1 for n in zf.namelist() if n.startswith(_META_DIR))

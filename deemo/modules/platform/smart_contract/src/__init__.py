@@ -1,16 +1,23 @@
-# 2026-07-16
 # smart_contract/src — EVM bytecode analysis pipeline
+# Lazy-load submodules via _submodules registry
+# 不拆: 懒加载 table 集中管理
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 
 _submodules = {
-    "opcodes": ".opcodes",
+    "core": ".core",
     "parser": ".parser",
+    "detectors": ".detectors",
+    "analyzer": ".analyzer",
+    "reporter": ".reporter",
+    "utils": ".utils",
+    "opcodes": ".core.opcodes",
     "cfg": ".cfg",
     "pattern_matcher": ".pattern_matcher",
     "taint_tracker": ".taint_tracker",
-    "detectors": ".detectors",
-    "reporter": ".reporter",
+    # 跨合约污点流分析
+    "cross_contract_taint": ".cross_contract_taint",
+    "cli": ".cli",
 }
 
 def __getattr__(name):

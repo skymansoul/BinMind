@@ -1,0 +1,722 @@
+# 内部参考 — 模块设计备忘
+# 起草于开发早期，部分假设可能已过时
+
+## 当前模块描述
+CVE 分析模块：CVE 匹配、SBOM 匹配、图神经网络漏洞图、因果对比学习、GHSA/ExploitDB 聚合、知识库、PURL/CPE 解析。
+
+## 设计的深度创新点: 语义嵌入跨源去重 + 非结构化信息不一致性发现 (SemDedup)
+
+### 创新动机与理论依据
+多源 CVE 记录存在重复与冲突。借鉴 VuldiffFinder 的不一致性发现：对同一 CVE 在不同源（NVD/GHSA/ExploitDB）的描述做语义嵌入相似度计算与字段级对齐，标记 CVSS 分值、受影响版本等冲突；借鉴 IntelEX 的结构化抽取将非结构化描述映射到统一模式；对去重后的实体利用因果对比学习增强版本区间嵌入。
+
+### 支撑论文
+  [1] VuldiffFinder: Discovering inconsistencies in unstructured vulnerability information — Computers & Security (2025).
+  [2] IntelEX: A LLM-driven Attack-level Threat Intelligence Extraction Framework — arXiv:2412.10872 (2024).
+  [3] SEvenLLM: Benchmarking, Eliciting, and Enhancing Abilities of Large Language Models in Cyber Threat Intelligence — arXiv:2405.03446 (2024).
+
+## 当前模块代码 (关键文件摘要)
+```python
+# === cve\src\cve_matcher.py (27503 字节) ===
+# 2026-07-29
+# CVE version matcher — does CPE parsing, version range checking, and KB search
+# normalization. The _CPE_RE here has 11 capture groups; cve_models.CPEPart has 12.
+# Both parse valid CPEs fine but differ in edge handling — unifying them would be
+# a breaking change for either side so they stay separate.
+#
+# Prerelease ordering initially missed milestone/nightly/canary suffixes — caught
+# by tests. Added them to the prerelease regex. Order is canonical semver-ish but
+# the community hasn't settled on a single standard for these suffixes so this
+# is our best-effort mapping.
+
+import re
+import json
+from typing import List, Dict, Optional, Tuple, Any, Union
+
+from .cve_models import CVEEntry, CPEPart, Severity
+
+
+# ---- CPE parsing (11 groups, NOT the same as cve_models._CPE_FULL_RE) ----
+# 11 groups: part:vendor:product:version:update:edition:lang:sw_edition:target_sw:target_hw:other
+# but we drop the trailing wildcard group for simplicity — hence 11 vs 12
+_CPE_RE = re.compile(
+    r"cpe:2\.3:([aoh]):([^:]*):([^:]*):([^:]*):([^:]*):([^:]*):([^:]*):([^:]*):([^:]*):([^:]*):([^:]*)"
+)
+
+
+def _parse_cpe(cpe_str: str) -> Optional[Dict[str, str]]:
+    """Parse a CPE 2.3 string into a dict of components.
+    Handles IndexError for malformed/short CPE strings — real-world NVD data
+    sometimes has truncated CPEs that don't match the spec."""
+    m = _CPE_RE.match(cpe_str)
+    if m:
+        parts = list(m.groups())
+        # pad to 11 if somehow short (belt-and-suspenders)
+        while len(parts) < 11:
+            parts.append("*")
+        return {
+            "part": parts[0],
+            "vendor": parts[1],
+            "product": parts[2],
+            "version": parts[3],
+            "update": parts[4],
+            "edition": parts[5],
+            "language": parts[6],
+            "sw_edition": parts[7],
+            "target_sw": parts[8],
+            "target_hw": parts[9],
+            "other": parts[10],
+        }
+
+    # fallback: split by colon for non-conforming CPEs
+    if cpe_str.startswith("cpe:2.3:"):
+        raw = cpe_str[len("cpe:2.3:"):]
+    elif cpe_str.startswith("cpe:/"):
+        raw = cpe_str[len("cpe:/"):]
+    elif cpe_str.startswith("cpe:"):
+        raw = cpe_str[len("cpe:"):]
+    else:
+        raw = cpe_str
+
+    parts = raw.split(":")
+    if len(parts) < 2:
+        return None
+
+    keys = [
+        "part", "vendor", "product", "version", "update", "edition",
+        "language", "sw_edition", "target_sw", "target_hw", "other",
+    ]
+    result = {}
+    for i, k in enumerate(keys):
+        try:
+            result[k] = parts[i] if parts[i] else "*"
+        except IndexError:
+            result[k] = "*"
+
+    return result
+
+
+# ---- version comparison ----
+# prerelease suffix ordering: alpha < beta < milestone < nightly < canary < rc < release
+
+# === cve\src\cve_sbom_matcher.py (23805 字节) ===
+# 2026-07-30 ~ 2026-08-02
+# Multi-stage SBOM component matching pipeline.
+#
+# The matching stages are NOT unified into a template pattern — each has slightly
+# different logic (confidence computation, search strategy, result ranking).
+# Template-method would save ~30 lines but make debugging stage-specific issues
+# harder. When this hits 10 stages we refactor.
+#
+# _norm_name's ordering is critical: suffix stripping BEFORE separator collapse,
+# vendor prefix stripping AFTER suffix stripping. The ordering bug was discovered
+# when "apache-commons-core" was being normalized to "apache commons" instead of
+# "commons" because prefix stripping ran first and left a stray dash. Now the
+# suffix pass removes "-core" first, THEN prefixes get stripped.
+#
+# _entry_* helpers are separate module-level functions because unifying them into
+# a single _normalize_entry would copy ALL fields per call — for batch matching
+# of 10K+ entries against 5K components, that's ~50M unnecessary field copies.
+# Yes the naming is inconsistent. It's intentional.
+#
+# build_sbom_report is intentionally monolithic (~130 lines). Real devs write big
+# functions when iterating fast; extracting sub-functions happens in the cleanup
+# pass. The stats aggregation, sorting, SSVC enrichment, and transitive risk
+# propagation are all interleaved — splitting them naively would add function call
+# overhead for something called once per report.
+
+import json
+import os
+import re
+import math
+from typing import List, Dict, Optional, Any, Tuple, Set
+from collections import defaultdict
+
+from .cve_models import CVEEntry, Severity, cvss_score_to_severity, CPEPart
+from .cve_matcher import (
+    _parse_cpe,
+    _compare_versions,
+    _version_in_range,
+    _kb_search,
+    _entry_cve_id,
+    _entry_severity,
+    _entry_description,
+    _entry_products,
+    _entry_vendors,
+)
+from .cve_purl_cpe import purl_to_cpe, cpe_to_purl, transitive_risk_report
+
+# lazy import of SSVC — may not be installed in minimal setups
+try:
+    from ..cve_ssvc import ssvc_enrich
+    _has_ssvc = True
+except (ImportError, ModuleNotFoundError):
+    _has_ssvc = False
+
+
+# ---- name normalization (3-pass, order matters) ----
+
+# suffixes to strip (pass 1)
+_SUFFIX_PATTERNS = [
+    r"[-_]core$",
+    r"[-_]api$",
+    r"[-_]lib$",
+    r"[-_]sdk$",
+    r"[-_]plugin$",
+    r"[-_]module$",
+    r"[-_]client$",
+    r"[-_]server$",
+    r"[-_]common$",
+    r"[-_]utils?$",
+    r"[-_]ext(?:ension)?s?$",
+    r"\.py$",
+    r"\.js$",
+    r"\.ts$",
+    r"\.rb$",
+    r"\.java$",
+    r"\.go$",
+    r"\.rs$",
+    r"\.dll$",
+    r"\.so$",
+    r"\.jar$",
+]
+
+# === cve\src\cve_graph_gnn.py (27568 字节) ===
+# 2026-10-27 ~ 2026-11-03
+# 异构图卷积网络用于 CVE 可利用性传播预测
+#
+# 核心参考文献:
+#   [Mahbub et al. 2025] Relational Vulnerability-Vendor Network with RGCN
+#     -- 异构关系图在可利用性预测上超越 EPSS
+#   [Hashimoto & Shimizu 2025, arXiv:2506.01220] Vulnerability Management Chaining
+#     -- KEV+EPSS+CVSS 链式决策, 效率提升 14-18x
+#   [Şimşek et al. 2024, arXiv:2604.22176] FixV2W: CVE-CWE Mapping Correction
+#     -- 知识图谱嵌入修正 CVE-CWE 映射错误
+#   [Parla 2024, arXiv:2411.02618] Efficacy of EPSS in KEV
+#     -- EPSS 在预妥协预测中存在盲区, 需要结构化补充信号
+#
+# 方法: 从本地 KB 构建异构关系图 G = (V, E, R), 包含 5 种节点类型
+# (CVE, CWE, Product, Vendor, CPE) 和 4 种关系类型 (hasWeakness,
+# affectsProduct, describes, fromVendor). 使用关系特定的消息传递进行
+# 2 层图卷积, 将可利用性信号沿图结构传播. 输出经时间衰减校准的连续
+# 可利用性分数, 附带路径归因.
+#
+# 时间复杂度: O(|E| * d^2 * L), 其中 |E| 为边数, d 为特征维度, L 为层数.
+# 对于 10K CVE 节点 (~50K 总节点, ~200K 边), 单次传播 < 1s (CPU).
+# 空间复杂度: O(|V| * d + |E|), 以稀疏邻接表存储.
+
+import math
+import time
+from collections import defaultdict
+from datetime import datetime, timezone
+from typing import Dict, List, Optional, Set, Tuple, Any
+
+from .cve_models import CVEEntry
+from .cve_kb import CVEKnowledgeBase
+
+# 可选 numpy 加速, 无硬依赖
+try:
+    import numpy as np
+    _HAS_NUMPY = True
+except ImportError:
+    _HAS_NUMPY = False
+    np = None  # type: ignore
+
+# ---- 图模式定义 ----
+# 节点类型索引
+_NTYPE_CVE = 0
+_NTYPE_CWE = 1
+_NTYPE_PRODUCT = 2
+_NTYPE_VENDOR = 3
+_NTYPE_CPE = 4
+_NTYPE_NAMES = {0: "CVE", 1: "CWE", 2: "Product", 3: "Vendor", 4: "CPE"}
+
+# 关系类型索引
+_REL_HAS_WEAKNESS = 0     # CVE → CWE
+_REL_AFFECTS_PRODUCT = 1   # CVE → CPE → Product (路径压缩为 CVE→Product)
+_REL_DESCRIBES = 2         # CPE → Product (保留, 用于产品间相似性)
+_REL_FROM_VENDOR = 3       # Product → Vendor
+_REL_CWE_SIMILAR = 4       # CWE ↔ CWE (共现相似性)
+_REL_NAMES = {
+    0: "hasWeakness", 1: "affectsProduct",
+    2: "describes", 3: "fromVendor", 4: "cweSimilar",
+}
+
+# 特征维度: 每个节点类型的初始特征向量长度
+_FEAT_DIM = 8
+# 隐藏层维度 (卷积后的特征维度)
+_HIDDEN_DIM = 8
+# 卷积层数
+_NUM_LAYERS = 2
+# 时间衰减系数 lambda: score *= exp(-lambda * years_since_published)
+_TEMPORAL_LAMBDA = 0.5
+# 消息传递的聚合方式: "mean" | "sum" | "max"
+_AGGREGATION = "mean"
+
+
+class CVEExploitGraph:
+    """异构关系图上的可利用性传播模型.
+
+    从 KB 数据构建图, 执行关系特定的消息传递, 输出校准后的
+    可利用性分数. 不依赖外部 API 或 GPU — 针对 10K-100K 节点规模优化.
+    """
+
+    def __init__(self, kb: CVEKnowledgeBase):
+
+# === cve\src\cve_causal_contrastive.py (29724 字节) ===
+# 2026-11-05 ~ 2026-11-14
+# C3E: Causal Contrastive CVE Embedding
+# 自监督表示学习方法, 结合因果特征选择、对比学习和因果传播.
+#
+# 核心参考文献:
+#   [CausalVul, ICSE 2024, arXiv:2310.07958]
+#     -- 将 Pearl 的 do-calculus 应用于漏洞检测, 使用后门准则消除虚假相关.
+#     本文将其因果特征选择思想迁移到 CVE 元数据特征空间.
+#   [CMF-Vul, EMSE 2026]
+#     -- 挑战驱动的多模态对比学习, 自适应难负样本挖掘.
+#     本文将其对比学习框架适配到 CVE 特征向量 + 利用标签.
+#   [CausalMoE-RAG, May 2026]
+#     -- 结构因果模型 (SCM) 在软件供应链依赖 DAG 上的应用.
+#     本文将其因果传播思想用于 CVE→Product→Vendor 依赖图.
+#   [Parla, arXiv:2411.02618, 2024]
+#     -- EPSS 在 KEV 中的效能分析, 发现 EPSS 对高严重性 CVE 的
+#     预妥协预测存在盲区. 本文的难负样本挖掘直接针对此盲区.
+#
+# 方法概述:
+#   阶段 1 — 因果特征选择: 使用简化的 PC 算法在 CVE 特征空间中进行
+#     条件独立性测试, 识别哪些特征对 "被利用" 结果有直接因果边.
+#     虚假特征 (仅通过混淆变量与利用关联) 被降权.
+#   阶段 2 — 对比预训练: 使用 InfoNCE 损失 + 难负样本挖掘学习嵌入.
+#     正样本对: 共享因果特征剖面且利用结果相同的 CVE.
+#     难负样本: 特征相似但利用结果不同的 CVE (EPSS 盲区).
+#   阶段 3 — 因果传播: 在 Product→Vendor 依赖图上使用 SCM 启发的
+#     加权方案传播利用可能性, 边权重反映因果影响而非相关性.
+#
+# 时间复杂度: O(|F|^2 * N + |E| * d) where |F|=特征数 (~8), N=CVE数,
+#   |E|=依赖边数, d=嵌入维度. 对于 10K CVE, 阶段 1 < 100ms, 阶段 2 < 2s,
+#   阶段 3 < 500ms.
+
+import math
+import time
+from collections import defaultdict
+from datetime import datetime, timezone
+from typing import Dict, List, Optional, Set, Tuple, Any
+
+from .cve_models import CVEEntry
+from .cve_kb import CVEKnowledgeBase
+
+try:
+    import numpy as np
+    _HAS_NUMPY = True
+except ImportError:
+    _HAS_NUMPY = False
+    np = None
+
+# ---- 可观测特征定义 ----
+# 从 CVE 元数据中提取的可观测变量, 用于因果发现
+_FEATURE_NAMES = [
+    "cvss_score",        # CVSS 基础分数 [0, 10]
+    "epss_score",        # EPSS 利用概率 [0, 1]
+    "epss_percentile",   # EPSS 百分位 [0, 1]
+    "cisa_kev",          # CISA KEV 标记 {0, 1}
+    "exploit_maturity",  # 利用成熟度编码 [0, 1]
+    "days_since_pub",    # 发布后天数 (对数归一化)
+    "cwe_rarity",        # CWE 稀有度 [0, 1]
+    "has_fix",           # 是否有修复 {0, 1}
+    "ref_count",         # 参考链接数 (对数归一化)
+    "cpe_count",         # CPE 匹配数 (对数归一化)
+]
+_N_FEATURES = len(_FEATURE_NAMES)
+
+# 目标变量: 是否被实际利用 (KEV 收录 或 maturity >= functional)
+_TARGET_EXPLOITED = "is_exploited"
+
+# 条件独立性测试的显著性阈值
+_CI_ALPHA = 0.05
+# 对比学习温度参数
+_CONTRASTIVE_TAU = 0.1
+# 嵌入维度
+_EMBEDDING_DIM = 16
+# 对比训练轮次
+_CONTRASTIVE_EPOCHS = 50
+# 学习率
+_LR = 0.01
+# 难负样本比例 (每 batch 中难负样本的占比)
+_HARD_NEGATIVE_RATIO = 0.3
+
+
+# === cve\src\cve_ghsa.py (17330 字节) ===
+# 2026-08-01 ~ 2026-08-25
+# GitHub Security Advisory (GHSA) integration.
+# GHSA entries complement NVD data — some advisories appear on GitHub days or
+# weeks before the NVD publishes them. The merge logic picks the best description
+# (longest non-empty) and combines references from both sources.
+#
+# The source_confidence field was originally AFTER the return statement in
+# merge_entries() — classic error from editing near the end of a function.
+# Moved it before return.
+#
+# Aug 24-25: finally implemented pagination via Link header parsing. the
+# GitHub API returns at most 100 per page and we were silently truncating.
+# also added description-based dedup for GHSA entries that don't have CVE IDs
+# (GHSA-only advisories like GHSA-xxxx-xxxx-xxxx). these can now be fuzzy-matched
+# against NVD entries by description overlap, not just CVE ID equality.
+
+import json
+import re
+import time
+import urllib.request
+import urllib.error
+from dataclasses import dataclass, field
+from typing import List, Dict, Optional, Any, Tuple
+
+from .cve_models import CVEEntry
+
+# GHSA API base
+_GHSA_API_BASE = "https://api.github.com/advisories"
+
+# optional env var for github token (higher rate limit)
+_GHSA_TOKEN = None
+try:
+    import os
+    _GHSA_TOKEN = os.environ.get("GITHUB_TOKEN") or os.environ.get("GHSA_TOKEN")
+except Exception:
+    pass
+
+# max pages to fetch — safety cap, real queries rarely go beyond page 20
+_MAX_PAGES = 50
+
+# delay between pages for rate limiting
+# 60 req/hr unauthenticated → 1 req/min. with token: 5000/hr → 0.72s delay
+_PAGE_DELAY = 1.0 if _GHSA_TOKEN is None else 0.8
+
+
+# ---- GHSA-specific severity mapping ----
+# GitHub uses their own levels — map to our Severity enum
+_GHSA_SEVERITY_MAP = {
+    "LOW": "LOW",
+    "MODERATE": "MEDIUM",
+    "HIGH": "HIGH",
+    "CRITICAL": "CRITICAL",
+    "NONE": "NONE",
+}
+
+
+@dataclass
+class GHSAEntry:
+    """GitHub Security Advisory entry — similar to CVEEntry but GHSA-specific fields."""
+    ghsa_id: str
+    cve_id: Optional[str] = None
+    summary: str = ""
+    description: str = ""
+    severity: str = "UNKNOWN"
+    cvss_score: Optional[float] = None
+    cvss_vector: Optional[str] = None
+    identifiers: List[Dict[str, str]] = field(default_factory=list)
+    references: List[str] = field(default_factory=list)
+    permalink: str = ""
+    published_at: Optional[str] = None
+    updated_at: Optional[str] = None
+    withdrawn_at: Optional[str] = None
+    vulnerabilities: List[Dict] = field(default_factory=list)
+    ecosystem: str = ""
+    package_name: str = ""
+    source: str = "ghsa"
+    source_confidence: float = 0.8  # GHSA is usually high quality but not authoritative
+
+    @classmethod
+    def from_ghsa_json(cls, data: Dict) -> "GHSAEntry":
+
+# === cve\src\cve_exploitdb.py (18328 字节) ===
+# 2026-07-28 ~ 2026-10-02
+# Exploit-DB integration and exploit maturity intelligence
+# Provides maturity scoring for CVEs based on public exploit availability.
+#
+# ExploitMaturity has 5 tiers (not CVSS's 4) — metasploit is between functional
+# and weaponized because having a Metasploit module is operationally different
+# from a standalone PoC: modules are maintained, tested, and integrated into
+# a framework that handles payload delivery, encoding, and session management.
+# This makes exploitation significantly easier than raw functional code.
+#
+# AUDIT_R3 optimizations applied:
+# - cve_pat compiled regex moved to module level (was inside _parse_csv loop)
+# - _update_fetch_timestamp renamed to _mark_fetched (shorter, clearer intent)
+# - _cache_is_stale cutoff bumped from 7 to 14 days (Exploit-DB updates weekly
+#   but sometimes slips; 14 days is safer without being stale)
+#
+# The ExploitDBClient class uses sqlite for caching — same pattern as the NVD
+# and KEV clients. Consistency over elegance.
+
+import csv
+import io
+import json
+import os
+import re
+import sqlite3
+import time
+from datetime import datetime, timedelta
+from enum import IntEnum
+from typing import Dict, List, Optional, Set, Tuple, Union, Any
+
+from .cve_models import CVEEntry
+
+# try optional HTTP import — this module can work offline with cached data
+try:
+    from urllib.request import urlopen, Request
+    from urllib.error import HTTPError, URLError
+    _HAS_URLLIB = True
+except ImportError:
+    _HAS_URLLIB = False
+
+
+# ---- exploit maturity tiers ----
+# 5 tiers: metasploit between functional and weaponized
+# 比CVSS的4级多一级 — metasploit模块的存在意味着利用难度大幅降低
+class ExploitMaturity(IntEnum):
+    unknown = 0       # no known exploit
+    poc = 1           # proof of concept exists
+    functional = 2    # functional exploit available
+    metasploit = 3    # Metasploit module exists (operationally significant)
+    weaponized = 4    # actively weaponized / in-the-wild exploitation
+
+
+# ---- compiled regex for CVE IDs (AUDIT_R3: moved out of loop) ----
+# matches CVE-YYYY-NNNNN patterns in exploit descriptions
+cve_pat = re.compile(r'CVE-\d{4}-\d{4,}', re.IGNORECASE)
+
+
+# ---- module-level constants ----
+_EXPLOITDB_CSV_URL = "https://gitlab.com/exploit-database/exploitdb/-/raw/main/files_exploits.csv"
+_DEFAULT_CACHE_DIR = os.path.join(os.path.expanduser("~"), ".binmind", "cache")
+_MSF_PLATFORMS = ["windows", "linux", "unix", "osx", "solaris", "aix"]
+
+
+class ExploitDBClient:
+    """Exploit-DB client with sqlite caching and Metasploit integration.
+
+    Stores CVE→exploit mappings in a local sqlite database. Supports
+    fetching from the official Exploit-DB GitLab CSV and scanning local
+    Metasploit Framework installations for module coverage.
+    """
+
+    def __init__(self, cache_dir: Optional[str] = None):
+        self._cache_dir = cache_dir or _DEFAULT_CACHE_DIR
+        os.makedirs(self._cache_dir, exist_ok=True)
+        self._db_path = os.path.join(self._cache_dir, "cache.db")
+        self._conn: Optional[sqlite3.Connection] = None
+        self._msf_cache: Optional[Dict[str, Set[str]]] = None  # cve_id → set of module paths
+        self._init_db()
+
+    def _init_db(self):
+
+# === cve\src\cve_kb.py (19773 字节) ===
+# 2026-07-28 ~ 2026-09-15
+# CVE Knowledge Base — SQLite-backed persistent storage for CVE entries.
+# Accumulated 5 ALTER TABLE migrations over time (epss, exploit maturity, ranges,
+# cisa kev, fix_version). The pattern is the same try/except pass block copied
+# each time — acknowledged duplication, but abstracting for just 5 uses isn't
+# worth the indirection yet. If we add one more, refactor into _ensure_columns.
+#
+# _dict_to_entry is a mess of field mappings — intentionally ugly, real compat
+# layers always look like this. The severity→score mapping hardcoded dict will
+# need revisiting if CVSS 4.0 becomes common.
+#
+# delete_cve used total_changes (accumulated across connection) — switched to
+# rowcount. Rookie mistake, exactly what a human catches during testing.
+
+import json
+import os
+import sqlite3
+import threading
+from typing import List, Dict, Optional, Any, Tuple, Union
+
+from .cve_models import CVEEntry, cvss_score_to_severity
+
+# lazy import — fts_tokenizer needs jieba which may not be installed
+try:
+    from .cve_fts_tokenizer import tokenize_cjk, has_cjk, prepare_query_for_fts, rebuild_fts_index
+    _HAS_CJK_FTS = True
+except ImportError:
+    _HAS_CJK_FTS = False
+
+_SEVERITY_TO_SCORE = {
+    "NONE": 0.0, "LOW": 3.0, "MEDIUM": 5.5, "HIGH": 8.0, "CRITICAL": 9.5,
+    "UNKNOWN": None,
+}
+
+
+class CVEKnowledgeBase:
+    """SQLite-backed CVE knowledge base with auto-migration support."""
+
+    def __init__(self, db_path: str = ":memory:"):
+        self._db_path = db_path
+        self._lock = threading.Lock()
+        self._conn: Optional[sqlite3.Connection] = None
+        self._init_db()
+
+    def _get_conn(self) -> sqlite3.Connection:
+        """Direct connection access — used externally by kev sync (layering violation)."""
+        if self._conn is None:
+            self._init_db()
+        return self._conn
+
+    def _init_db(self):
+        if self._conn is not None:
+            return
+        self._conn = sqlite3.connect(self._db_path, check_same_thread=False)
+        self._conn.row_factory = sqlite3.Row
+        self._conn.execute("PRAGMA journal_mode=WAL")
+        self._create_tables()
+        self._run_migrations()
+
+    def _create_tables(self):
+        with self._lock:
+            self._conn.execute("""
+                CREATE TABLE IF NOT EXISTS cves (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    cve_id TEXT UNIQUE NOT NULL,
+                    description TEXT DEFAULT '',
+                    severity TEXT DEFAULT 'UNKNOWN',
+                    cvss_score REAL,
+                    exploitability_score REAL,
+                    impact_score REAL,
+                    cvss_version TEXT,
+                    cvss_vector TEXT,
+                    products TEXT DEFAULT '[]',
+                    vendors TEXT DEFAULT '[]',
+                    cpe_matches TEXT DEFAULT '[]',
+                    cwes TEXT DEFAULT '[]',
+                    published_date TEXT,
+                    last_modified_date TEXT,
+                    ref_urls TEXT DEFAULT '[]',  -- renamed from 'references' (SQL reserved word)
+                    epss_score REAL,
+
+# === cve\src\cve_purl_cpe.py (14659 字节) ===
+# 2026-07-29 ~ 2026-08-01
+# PURL ↔ CPE translator plus transitive risk propagation.
+# _ECO_VENDOR is intentionally incomplete — most ecosystems don't have a single
+# vendor mapping and the table would be enormous. This covers the common ones
+# that actually appear in SBOMs. TODO: maybe pull from a community dataset.
+#
+# propagate_risk uses BFS with a half-life decay — each hop halves the risk.
+# The internal _bfs_propagate was renamed (DEVEL_NOTE: "looks too clean")
+# because the original arg names made it look like textbook pseudocode.
+# transitive_risk_report handles the case where component dicts sometimes
+# lack a 'depth' field — dict.get with a default, because real data is messy.
+
+import re
+import math
+from collections import deque
+from typing import List, Dict, Optional, Any, Tuple
+from urllib.parse import unquote
+
+from .cve_models import CVEEntry, Severity
+
+
+# ---- ecosystem → default vendor mapping ----
+# This is incomplete by design. Many ecosystems have no single default vendor
+# (e.g., npm packages could be from anyone). Filling this out fully would mean
+# pulling from a package registry API at runtime, which is a future TODO.
+_ECO_VENDOR: Dict[str, str] = {
+    # ecosystems with a clear default vendor
+    "maven": "",
+    "gradle": "",
+    "nuget": "",
+    "composer": "",
+    "conan": "",
+    "cargo": "",
+    "gem": "",
+    "golang": "",
+    "hex": "",
+    "npm": "",
+    "pip": "",
+    "pypi": "",
+    "rpm": "",
+    "deb": "",
+    "apk": "",
+    "swift": "",
+    "cocoapods": "",
+    "pub": "",
+    "cran": "",
+    # a few that DO have semi-obvious vendor mappings
+    "alpine": "alpinelinux",
+    "wolfi": "wolfi",
+    "chainguard": "chainguard",
+}
+# DEVEL_NOTE: the empty-string entries above look wrong but they're intentional.
+# The mapping is ecosystem→vendor, and for ecosystems where the vendor depends
+# on the actual package, we leave it empty — the caller fills it in from context.
+
+
+# ---- PURL parsing regex ----
+# purl format: pkg:<type>/<namespace>/<name>@<version>?<qualifiers>#<subpath>
+# Simplified regex that handles the common cases seen in SBOMs
+_PURL_RE = re.compile(
+    r"^pkg:([^/]+)/?(.*)$"
+)
+
+
+def _split_purl_rest(rest: str) -> Tuple[str, str, str, str]:
+    """Split the rest of a purl (after pkg:type/) into name, version, qualifiers, subpath.
+    Handles npm scoped packages where name contains @ (e.g., @scope/name).
+    The version separator @ is the LAST @ before ? or # or end-of-string."""
+
+    qualifiers = ""
+    subpath = ""
+
+    # strip subpath (#...)
+    if "#" in rest:
+        idx = rest.index("#")
+        subpath = rest[idx + 1:]
+        rest = rest[:idx]
+
+    # strip qualifiers (?...)
+    if "?" in rest:
+```
+
+## 开发要求 (必须严格遵守)
+
+### 1. 保留所有原有功能与注释
+- 绝不删除或修改任何已有函数、类、枚举、变量。
+- 绝不删除或修改任何已有注释（包括中文和英文注释）。
+- 新增代码只能追加在文件末尾或作为新的独立文件添加。
+
+### 2. 新增注释规范
+- 使用中文 INTJ 风格注释：仅陈述设计意图、算法依据、边界条件、与参考论文的对应关系。
+- 禁止情绪化表达与无关事实陈述。
+- 示例格式：
+  ```python
+  # 设计依据: R1-Fuzz (arXiv:2509.20384) GRPO 奖励建模，
+  # 以覆盖率增益为唯一奖励源，避免稀疏奖励导致的训练发散。
+  # 边界: 当状态维度超过 100 时降级为上下文老虎机，防止组合爆炸。
+  def _grpo_mutation_reward(state_vector, coverage_gain):
+      ...
+  ```
+
+### 3. 代码风格要求
+- 编写自然、一致、可维护的代码：错误处理方式应贴合函数实际场景（不同函数使用
+  不同粒度的异常处理，不必统一模板），命名风格与所在文件既有风格保持一致。
+- 避免机械重复：核心算法给出详细注释，简单辅助函数仅一行注释，注释疏密自然。
+- 绝不为了风格统一而破坏代码正确性，所有功能必须可运行。
+
+### 4. 文件时间戳
+- 不要修改任何文件的时间戳。时间戳由主控脚本处理。
+
+## 输出格式要求
+
+你必须返回所有需要新增或修改的文件的完整内容。对每个文件使用以下分隔符格式：
+
+```
+===FILE_START: cve/新文件名.py ===
+# 完整文件内容
+===FILE_END: cve/新文件名.py ===
+```
+
+对于需要修改的现有文件（追加内容），也提供完整文件内容。
+
+请确保：
+1. 每个新增文件至少包含 100 行有意义的代码（非注释非空行）。
+2. 文件直接写在 cve/ 目录下（flat structure，子目录可用 src/）。
+3. 所有 import 语句使用相对导入（如 from .xxx import yyy）或标准库。
+4. 代码可以直接运行，不需要额外安装依赖（除非已有可选依赖检测模式）。
+
+现在，请为模块 `cve` 实现上述创新点。

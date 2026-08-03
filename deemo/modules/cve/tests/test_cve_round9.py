@@ -1,5 +1,5 @@
-# round 9 tests — attack graph, risk scoring, att&ck mapping
-# ~22 tests covering new features added late sep 2026
+# Round 9 测试——攻击图、风险评分、ATT&CK映射
+# ~22项测试，覆盖2026年9月下旬新增特性
 
 import pytest
 from modules.cve.src.cve_kb import CVEKnowledgeBase

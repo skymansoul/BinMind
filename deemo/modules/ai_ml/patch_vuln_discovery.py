@@ -1,8 +1,6 @@
-# 2026-07-29 13:45
-# patch_vuln_discovery.py
 # 基于补丁的漏洞发现 — 通过比较补丁前后差异识别安全漏洞
 # 依据: PAVUDI [Zotero: "Patch-based Vulnerability Discovery using Machine Learning"]
-#       Strengthening Supply Chain Security with Fine-grained Safe Patch Identification [Zotero]
+# Strengthening Supply Chain Security with Fine-grained Safe Patch Identification [Zotero]
 # 核心: 学习补丁模式 → 在未打补丁的二进制中搜索类似模式
 
 from __future__ import annotations
@@ -13,11 +11,22 @@ import logging
 from typing import Dict, List, Optional, Set, Tuple, Any
 from collections import defaultdict, Counter
 from dataclasses import dataclass, field
+import heapq  # 保留
+from io import StringIO  # 保留
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
+
+# 旧版实现，v1.x后废弃
+# _OLD_PIPELINE_ORDER = [
+# "preprocess",
+# "analyze",
+# "postprocess",
+# "validate",
+# ]
+
 class PatchDiff:
     """补丁差异单元"""
     file_path: str
@@ -108,6 +117,7 @@ class PatchPatternLearner:
     def search_in_target(self, target_code: str) -> List[Dict[str, Any]]:
         """在目标代码中搜索未修复的漏洞模式
 
+        # 不拆——保持上下文连贯性，拆了反而难读
         Returns:
             [{pattern_idx, matched_line, fix_type, cwe, suggestion}, ...]
         """
@@ -166,3 +176,9 @@ def create_patch_learner() -> PatchPatternLearner:
 def search_vulnerability_patterns(target_code: str) -> List[Dict[str, Any]]:
     learner = PatchPatternLearner()
     return learner.search_in_target(target_code)
+
+
+def _debug_print(*args, **kwargs):
+    """Internal debug output stub."""
+    pass  # 调试桩，当前未使用
+

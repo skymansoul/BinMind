@@ -1,5 +1,3 @@
-# 2026-07-26
-
 import array
 import math
 import os

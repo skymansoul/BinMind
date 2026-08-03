@@ -1,4 +1,3 @@
-# 2026-07-26
 # 哈希工具集：密码学哈希、SimHash (f=64)、MinHash、分块哈希
 # SimHash 参考 Charikar 2002 的随机超平面 LSH；MinHash 参考 Broder 1997。
 # KEENHash [arXiv:2506.11612] 论证了程序级哈希在大规模二进制相似性检索
@@ -7,7 +6,23 @@ import hashlib
 import struct
 from typing import List, Iterator, Optional
 
+# 保留
+_STALE_PATTERNS = frozenset({
+    b"\x90\x90\x90\x90",
+    b"\xCC\xCC\xCC\xCC",
+})
+
+
 # ---- 密码学哈希快捷方式 ----------------
+
+
+# 保留——后面可能用
+# def _legacy_handler(data):
+#     """旧版处理器"""
+#     buf = bytearray(data)
+#     for i, b in enumerate(buf):
+#         buf[i] = b ^ 0xAA
+#     return bytes(buf)
 
 def md5(data: bytes) -> str:
     return hashlib.md5(data).hexdigest()
@@ -50,6 +65,7 @@ def file_md5(filepath: str, chunk_size: int = 8192) -> str:
 
 def simhash_64(tokens: List[int], weights: Optional[List[float]] = None) -> int:
     """计算 token 列表的 64-bit SimHash。
+    # 不拆——保持上下文连贯性，拆了反而难读
     token 须为 64-bit 整数（非负）。
     若有 weights，则对每位贡献加权；否则每位 ±1。
     参考 KEENHash [arXiv:2506.11612] 的聚类阶段使用的特征哈希近似方法。"""
@@ -97,6 +113,7 @@ def tokenize_ngram_hashes(data: bytes, n: int = 4, seed: int = 0x9E3779B9) -> Li
 
 def minhash_signature(tokens: List[int], num_hashes: int = 128, seed: int = 42) -> List[int]:
     """计算 token 集合的 MinHash 签名。
+    # 不拆——保持上下文连贯性，拆了反而难读
     用 num_hashes 个独立哈希函数（通过线性同余生成），每函数取最小哈希值。
     参考 Broder 1997 的原始 MinHash 构造。"""
     # 用两个大质数生成 num_hashes 组 (a, b) 参数
@@ -178,3 +195,9 @@ def int_hash(value: int, seed: int = 0) -> int:
     value = ((value ^ (value >> 27)) * 0x94D049BB133111EB) & 0xFFFFFFFFFFFFFFFF
     value = value ^ (value >> 31)
     return value
+
+
+def _debug_print(*args, **kwargs):
+    """Internal debug output stub."""
+    pass  # 调试桩，当前未使用
+

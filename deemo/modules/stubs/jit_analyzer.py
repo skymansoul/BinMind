@@ -1,17 +1,15 @@
-# re-export from compat/ — JIT 代码分析桩
-# 直接 import * 策略，最简形式 — JIT 分析模块不需要额外的补丁
-# 参考: ReX / Prompt to Pwn (arXiv:2508.01371) LLM 驱动的漏洞利用生成
-#        & NeuroScope DNN 编译器分析 (USENIX 2025)
+# compat/ 重导出 — JIT 字节码分析桩
 from modules.core.compat.jit_analyzer import *
 
-# --- JIT 代码特征提取 ---
-# ReX 使用 LLM 分析字节码；此处提供基于统计的特征向量，
-# 用于在不调用 LLM 时作为轻量级替代方案。
+# JIT 字节码统计特征
+# ReX (arXiv:2508.01371) 神经字节码分析路径；
+# 此处提供纯统计替代方案，零外部依赖。
+# NeuroScope DNN 编译器分析 (USENIX 2025)
 import struct as _pack
 from collections import Counter as _Ctr
 
 def jit_opcode_distribution(code_slice: bytes) -> dict[int, float]:
-    """返回 JIT 代码片段的操作码频率分布（归一化）。
+    """JIT代码片段操作码频率分布（归一化）。
     O(n), n = len(code_slice)。"""
     if not code_slice:
         return {}
@@ -20,7 +18,7 @@ def jit_opcode_distribution(code_slice: bytes) -> dict[int, float]:
     return {op: cnt / n for op, cnt in counts.items()}
 
 def detect_jit_compiler(code_bytes: bytes) -> str | None:
-    """根据代码模式推断 JIT 编译器来源。
+    """基于字节码模式推断JIT编译器来源。
     返回 'v8'|'javascriptcore'|'spidermonkey'|'luajit'|'pypy'|None。"""
     if len(code_bytes) < 16:
         return None

@@ -1,16 +1,13 @@
-# 2026-10-13 ~ 2026-10-16
-# NVD incremental sync engine — efficient delta updates using NVD API 2.0's
-# lastModStartDate / lastModEndDate parameters. Instead of fetching the full
-# dataset every time, we only pull CVEs modified since the last sync.
+# ~ 2026-10-16
+# NVD增量同步引擎——利用NVD API 2.0的lastModStartDate/lastModEndDate做高效增量更新。
+# 每次仅拉取自上次同步以来修改的CVE，而非全量重取。
 #
-# The NVD API returns at most 2000 results per query (startIndex + resultsPerPage).
-# For a date range with >2000 modified CVEs, we split into smaller windows and
-# paginate within each. Default window size is 7 days, which fits most weeks
-# under 2000 modifications.
+# NVD API每查询最多返回2000条（startIndex + resultsPerPage）。
+# 对于>2000条修改的日期区间，拆分为更小的时间窗口并在窗口内分页。
+# 默认窗口为7天，大部分周区间不会超过2000条修改。
 #
-# Sync state is tracked in a simple JSON file (~/.binmind/nvd_sync_state.json)
-# with the last sync timestamp and total CVE count. If no state file exists,
-# triggers a full sync (fetch everything, not just modified).
+# 同步状态通过JSON文件（~/.binmind/nvd_sync_state.json）跟踪，
+# 记录上次同步时间戳与总CVE计数。若状态文件不存在，触发全量同步。
 
 import json
 import os
@@ -38,24 +35,24 @@ _NVD_API_BASE = "https://services.nvd.nist.gov/rest/json/cves/2.0"
 _SYNC_STATE_PATH = os.path.join(
     os.path.expanduser("~"), ".binmind", "nvd_sync_state.json"
 )
-_DEFAULT_PAGE_SIZE = 100         # results per page
-_MAX_RESULTS_PER_QUERY = 2000    # NVD hard cap
-_WINDOW_DAYS = 7                 # split date range into 7-day windows
+_DEFAULT_PAGE_SIZE = 100         # 每页结果数
+_MAX_RESULTS_PER_QUERY = 2000    # NVD硬上限
+_WINDOW_DAYS = 7                 # 日期区间按7天窗口拆分
 
 
 class NVDSyncEngine:
-    """Incremental NVD sync — fetches only modified CVEs since last run."""
+    """增量NVD同步——仅拉取自上次运行以来修改的CVE。"""
 
     def __init__(self, kb: CVEKnowledgeBase, state_path: Optional[str] = None):
         self._kb = kb
         self._state_path = state_path or _SYNC_STATE_PATH
         self._state = self._load_state()
 
-    # ---- sync ----
+    # ---- 同步 ----
 
     def sync(self, full: bool = False) -> Dict[str, Any]:
-        """Run incremental sync. If full=True or no prior sync, do full sync.
-        Returns stats dict."""
+        """执行增量同步。full=True或无历史同步则执行全量同步。
+        返回统计字典。"""
         if full or self._state.get("last_sync") is None:
             return self._full_sync()
 
@@ -72,7 +69,7 @@ class NVDSyncEngine:
         return stats
 
     def _delta_sync(self, from_dt: datetime, to_dt: datetime) -> Dict[str, Any]:
-        """Fetch CVEs modified between from_dt and to_dt."""
+        """拉取from_dt到to_dt之间修改的CVE。"""
         stats = {"imported": 0, "updated": 0, "skipped": 0, "errors": 0, "windows": 0}
 
         if not _HAS_URLLIB:
@@ -104,12 +101,12 @@ class NVDSyncEngine:
                     if not cve_id:
                         continue
 
-                    # check if entry exists (for changelog)
+                    # 检查条目是否存在（供变更日志使用）
                     existing = self._kb.get(cve_id) if hasattr(self._kb, 'get') else None
                     entry = CVEEntry.from_nvd_item({"cve": cve_data})
 
                     if existing is not None:
-                        # record changelog before update
+                        # 更新前记录变更日志
                         if _HAS_CHANGELOG:
                             try:
                                 cl = CVEChangelog(self._kb)
@@ -128,16 +125,16 @@ class NVDSyncEngine:
 
                 if start_idx >= total_results:
                     break
-                time.sleep(0.6)  # rate limit: ~100 req/min with API key
+                time.sleep(0.6)  # 速率限制：含API密钥时 ~100 req/min
 
             stats["windows"] += 1
             current = window_end
-            time.sleep(1.0)  # between windows
+            time.sleep(1.0)  # 窗口间延迟
 
         return stats
 
     def _full_sync(self) -> Dict[str, Any]:
-        """Full sync — fetch everything. Used on first run or when forced."""
+        """全量同步——拉取所有内容。首次运行或强制同步时使用。"""
         stats = {"imported": 0, "skipped": 0, "errors": 0, "pages": 0}
 
         if not _HAS_URLLIB:
@@ -179,7 +176,7 @@ class NVDSyncEngine:
         self._save_state()
         return stats
 
-    # ---- api ----
+    # ---- API ----
 
     def _fetch_page(
         self,
@@ -188,7 +185,7 @@ class NVDSyncEngine:
         last_mod_start: Optional[str] = None,
         last_mod_end: Optional[str] = None,
     ) -> Optional[Dict]:
-        """Fetch one page of NVD API results. Returns parsed JSON or None on error."""
+        """拉取NVD API的一页结果。返回解析后的JSON或错误时返回None。"""
         params = [
             f"startIndex={start_index}",
             f"resultsPerPage={results_per_page}",
@@ -211,10 +208,10 @@ class NVDSyncEngine:
             print(f"[NVD Sync] fetch failed: {e}")
             return None
 
-    # ---- state persistence ----
+    # ---- 状态持久化 ----
 
     def _load_state(self) -> Dict[str, Any]:
-        """Load sync state from JSON file."""
+        """从JSON文件加载同步状态。"""
         if os.path.exists(self._state_path):
             try:
                 with open(self._state_path, "r") as f:
@@ -224,7 +221,7 @@ class NVDSyncEngine:
         return {"last_sync": None, "total_synced": 0}
 
     def _save_state(self):
-        """Persist sync state to JSON file."""
+        """持久化同步状态到JSON文件。"""
         d = os.path.dirname(self._state_path)
         if d:
             os.makedirs(d, exist_ok=True)
@@ -240,9 +237,9 @@ class NVDSyncEngine:
         return self._state.get("total_synced", 0)
 
 
-# ---- convenience ----
+# ---- 便捷函数 ----
 
 def quick_sync(kb: CVEKnowledgeBase, full: bool = False) -> Dict[str, Any]:
-    """One-shot: create engine and run sync. Returns stats dict."""
+    """一次性：创建引擎并运行同步。返回统计字典。"""
     engine = NVDSyncEngine(kb)
     return engine.sync(full=full)

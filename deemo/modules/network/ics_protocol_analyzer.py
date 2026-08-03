@@ -1,5 +1,4 @@
-# 2026-07-23
-# ICS/SCADA protocol analyzer — Modbus, DNP3, IEC 60870-5-104, BACnet, S7comm
+# ICS/SCADA 协议分析器 — Modbus, DNP3, IEC 60870-5-104, BACnet, S7comm
 # 从网络流量中识别工业协议并提取关键操作
 # 参考：Wireshark ICS dissectors, NIST SP 800-82 r3, MITRE ATT&CK ICS matrix
 import struct, math
@@ -18,13 +17,13 @@ class ICSFrame:
     payload: bytes = b''
     is_write: bool = False   # 写操作（可能改变物理过程）
     risk_score: int = 0      # 0-100，高危操作打分高
-    # new fields for MITRE mapping & session tracking
+    # MITRE 映射与会话跟踪
     mitre_technique: str = ""
     timestamp: float = 0.0
 
 
-# ---- MITRE ATT&CK for ICS technique mapping ----
-# maps (protocol, function_code_range) -> technique ID
+# ---- MITRE ATT&CK for ICS 技术映射 ----
+# 映射 (protocol, function_code_range) → technique ID
 _MITRE_ICS_MAP = {
     ("modbus", (5,6,15,16)):   "T0836",  # Modify Parameter
     ("modbus", (8,)):           "T0842",  # Network Sniffing via diag
@@ -70,7 +69,7 @@ def _parse_modbus(data: bytes) -> Optional[ICSFrame]:
     risk = 0
     if fc in _MODBUS_WRITE_FC:
         risk = 40
-    if fc == 8:  # diagnostics — could be recon
+    if fc == 8:  # diagnostics — 可能为侦察
         risk = 25
     if fc in (5, 6, 15, 16):
         risk = 55  # write operations
@@ -102,8 +101,8 @@ def _parse_dnp3(data: bytes) -> Optional[ICSFrame]:
     ctrl = data[3]
     dst = struct.unpack("<H", data[4:6])[0]
     src = struct.unpack("<H", data[6:8])[0]
-    # CRC between header and payload skipped for simplicity
-    # Find transport header (starts with TH byte after CRC pair)
+    # CRC 位于头部与负载之间，此处简化跳过
+    # 查找 transport header（TH字节紧随CRC对之后）
     payload_start = 10  # 8 header + 2 CRC
 
     fc = 0
@@ -171,7 +170,7 @@ def _parse_bacnet(data: bytes) -> Optional[ICSFrame]:
     npci_version = data[4]
     npci_ctrl = data[5]
 
-    # APDU starts after NPDU
+    # APDU 起始于 NPDU 之后
     apdu_start = 6
     if len(data) >= apdu_start + 2:
         apdu_type = data[apdu_start] >> 4  # PDU type in top 4 bits
@@ -191,7 +190,7 @@ def _parse_bacnet(data: bytes) -> Optional[ICSFrame]:
 
 
 # ---- S7comm (Siemens) ----
-# TPKT header(4) + COTP header(3) + S7 header(4) minimum
+# TPKT header(4) + COTP header(3) + S7 header(4) 至少
 _S7COMM_MIN_LEN = 4 + 3 + 4  # 11 bytes minimum
 _S7COMM_WRITE_CODES = frozenset({0x05, 0x0F, 0x10})
 
@@ -204,17 +203,17 @@ def _parse_s7comm(data: bytes) -> Optional[ICSFrame]:
     """
     if len(data) < _S7COMM_MIN_LEN:
         return None
-    # TPKT version must be 3 for S7comm
+    # TPKT version 必须为 3 (S7comm)
     if data[0] != 3:
         return None
     tpkt_len = struct.unpack(">H", data[2:4])[0]
     if tpkt_len < _S7COMM_MIN_LEN or tpkt_len > len(data):
         return None
 
-    # COTP check: data[4] = length, data[5] = PDU type (0xF0=Data Transfer)
+    # COTP 检查: data[4] = length, data[5] = PDU type (0xF0=Data Transfer)
     cotp_len = data[4]
     if data[4] < 2 or data[5] != 0xF0:
-        return None  # not a valid S7comm data transfer TPDU
+        return None  # 非有效 S7comm 数据传送 TPDU
 
     s7_start = 4 + 1 + cotp_len  # TPKT header(4) + COTP len byte + COTP data
     if len(data) < s7_start + 4:
@@ -240,7 +239,7 @@ def _parse_s7comm(data: bytes) -> Optional[ICSFrame]:
     )
 
 
-# ---- Unified analyzer ----
+# ---- 统一分析器 ----
 
 class ICSProtocolAnalyzer:
     """工业协议分析器 — 自动检测协议类型并提取关键操作。"""
@@ -252,7 +251,7 @@ class ICSProtocolAnalyzer:
         ]
         self.frames: List[ICSFrame] = []
         self._stats: Dict[str, int] = {}
-        # per-protocol session tracking for anomaly detection
+        # 每协议会话跟踪用于异常检测
         self._proto_risk_sessions: Dict[str, List[float]] = defaultdict(list)
 
     def feed(self, data: bytes) -> Optional[ICSFrame]:
@@ -262,7 +261,7 @@ class ICSProtocolAnalyzer:
             if frame is not None:
                 self.frames.append(frame)
                 self._stats[frame.protocol] = self._stats.get(frame.protocol, 0) + 1
-                # track risk trajectory for anomaly detection
+                # 追踪风险轨迹用于异常检测
                 if frame.risk_score > 0:
                     self._proto_risk_sessions[frame.protocol].append(frame.risk_score)
                 return frame
@@ -279,10 +278,10 @@ class ICSProtocolAnalyzer:
         write_ops = [f for f in results if f.is_write]
         high_risk = [f for f in results if f.risk_score >= 50]
 
-        # detect risk escalation: exponential moving average of recent risk scores
+        # 风险升级检测: 近期风险分的指数移动平均
         escalation_warning = self._detect_escalation()
 
-        # MITRE technique summary
+        # MITRE 技术摘要
         mitre_techs = set(f.mitre_technique for f in results if f.mitre_technique)
 
         return {
@@ -298,9 +297,9 @@ class ICSProtocolAnalyzer:
         }
 
     def _detect_escalation(self) -> bool:
-        """检测风险评分趋势上升——使用EWMA与简单阈值。
+        """风险评分趋势上升检测——EWMA与阈值比较。
 
-        若最近5帧的EMA风险分比前5帧高出2倍，可能表示攻击者逐步提权。
+        若最近5帧EMA风险分比前5帧高出2倍，可能表示攻击者逐步提权。
         """
         all_risks = [f.risk_score for f in self.frames[-20:] if f.risk_score > 0]
         if len(all_risks) < 10:

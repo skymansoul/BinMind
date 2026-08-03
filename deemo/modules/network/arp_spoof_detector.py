@@ -1,15 +1,14 @@
-# 2026-07-20
 """ARP 欺骗检测器 —— MAC-IP绑定追踪、无偿ARP风暴检测、中间人攻击特征识别。
 
-ARP协议的根本缺陷：无状态、无认证。任何主机可以在任何时刻发送
-任何ARP消息而无需向网关或目标证明身份。本模块通过被动监听ARP
+ARP协议根本缺陷：无状态、无认证。任意主机可在任意时刻发送
+任意ARP消息而无需向网关或目标证明身份。本模块被动监听ARP
 流量建立MAC-IP绑定历史，在检测到绑定变更时告警。
 
 检测目标：
 - ARP缓存投毒 (gratuitous ARP with spoofed IP-MAC)
 - MAC洪水 (大量随机MAC地址的ARP请求 —— 交换机CAM表溢出前奏)
 - ARP请求风暴 (DoS + 扫描)
-- 单向ARP（只发请求从不响应 —— 被动嗅探器的指纹）
+- 单向ARP（只发请求从不响应 —— 被动嗅探器指纹）
 """
 import logging, struct, time
 from collections import defaultdict, Counter
@@ -22,7 +21,7 @@ _log = logging.getLogger(__name__)
 _ARP_REQUEST = 1; _ARP_REPLY = 2
 _ARP_RARP_REQUEST = 3; _ARP_RARP_REPLY = 4
 
-# ARP 头结构 (Ethernet + ARP 固定部分）
+# ARP 头结构 (Ethernet + ARP 固定部分)
 _ARP_HDR_OFFSET = 14  # 跳过以太网头 (6+6+2)
 _ARP_HTYPE = _ARP_HDR_OFFSET      # 硬件类型 (2B)
 _ARP_PTYPE = _ARP_HDR_OFFSET + 2  # 协议类型 (2B)
@@ -86,9 +85,9 @@ class ArpSpoofDetector:
         self._known_gateway_ips: set = set()
 
     def feed(self, raw_frame: bytes, timestamp: Optional[float] = None) -> Optional[ArpAlert]:
-        """输入以太网帧（包含14字节以太网头），返回触发的告警（如有）。
+        """输入以太网帧（含14字节以太网头），返回触发的告警（如有）。
 
-        只处理 ARP (ethertype=0x0806)。其他帧静默忽略。
+        仅处理 ARP (ethertype=0x0806)。其他帧静默忽略。
         """
         if len(raw_frame) < _ARP_MIN_SIZE:
             return None
@@ -160,7 +159,7 @@ class ArpSpoofDetector:
             alert = ArpAlert(
                 alert_type="garp_storm",
                 description=f"GARP风暴: {sha}发出{self._garp_counts[sha]}次无偿ARP —— "
-                            f"可能是ARP投毒或生成树攻击",
+                            f"ARP投毒或生成树攻击嫌疑",
                 src_mac=sha, src_ip=spa, severity="high", timestamp=ts,
             )
 
@@ -169,7 +168,7 @@ class ArpSpoofDetector:
         return alert
 
     def finalize_gateways(self) -> None:
-        """在所有包处理完成后调用 —— 自动识别网关IP"""
+        """所有包处理完成后调用 —— 自动识别网关IP"""
         for ip, count in self._gateway_candidates.most_common(5):
             if ip in self._bindings:
                 self._bindings[ip].is_gateway = True
@@ -184,7 +183,7 @@ class ArpSpoofDetector:
                 alerts.append(ArpAlert(
                     alert_type="unidirectional",
                     description=f"单向ARP设备 {mac}: 发送{self._arp_request_counts[mac]}次请求"
-                                f"，从未响应 —— 可能是被动嗅探器",
+                                f"，从未响应 —— 被动嗅探器",
                     src_mac=mac, severity="medium",
                 ))
         return alerts

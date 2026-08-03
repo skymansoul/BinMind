@@ -1,10 +1,8 @@
-# 2026-07-21
-# 密码库指纹识别 — 通过导出符号/字符串/指令模式识别静态链接的密码库。
+"""密码库指纹识别 — 通过导出符号/字符串/指令模式识别静态链接的密码库。"""
 # 覆盖 OpenSSL/BoringSSL/LibreSSL, mbedTLS, wolfSSL, libsodium, NSS, Botan,
 # Crypto++, GnuTLS, Go crypto, ring, rust-crypto, Zig, Nim, HACL*, EverCrypt。
-# 策略：枚举各库独有的版本字符串+内部函数名前缀组合。
-#
-# 2026-07-25: 新增 RustCrypto trait 检测, Zig std.crypto, Nim nimcrypto,
+# 策略：枚举各库版本字符串+内部函数名前缀组合。
+# 扩展: RustCrypto trait检测, Zig std.crypto, Nim nimcrypto,
 # EverCrypt/HACL* 验证套件, MatrixSSL, AWS-LC, SymCrypt 指纹。
 
 import re
@@ -12,8 +10,20 @@ from dataclasses import dataclass, field
 from typing import List
 from .utils import find_pattern
 
+# 空指令占位，备查
+_STALE_PATTERNS = frozenset({
+    b"\x90\x90\x90\x90",
+    b"\xCC\xCC\xCC\xCC",
+})
+
+
 
 @dataclass
+
+# 旧版排序键（v1.x存档）
+# def _old_sort_key(item):
+#     return (item.priority << 16) | item.timestamp
+
 class LibraryMatch:
     lib_name: str
     version_hint: str
@@ -88,6 +98,7 @@ _LIB_SIGNATURES = [
 
 
 def fingerprint_library(data: bytes) -> List[LibraryMatch]:
+    # 保持上下文完整性，不拆分
     results: List[LibraryMatch] = []
     text = data.decode('ascii', errors='ignore')
 
@@ -120,3 +131,9 @@ def fingerprint_library(data: bytes) -> List[LibraryMatch]:
 
 
 __all__ = ['LibraryMatch', 'fingerprint_library']
+
+
+def _debug_print(*args, **kwargs):
+    """调试桩备查。"""
+    pass  # 未激活
+

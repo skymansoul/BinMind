@@ -1,0 +1,95 @@
+# Data module default configuration
+# 2026-07-14 base, updated through 2026-07-28
+# Override via env vars: DATA_<SECTION>_<KEY>
+
+database:
+  path: "data/binsign.sqlite"
+  wal: true
+  journal_mode: "WAL"
+  page_size: 4096
+  cache_size_mb: 64
+  max_connections: 4
+
+pipeline:
+  default_stages:
+    - hash
+    - compress
+    - dedup
+    - index
+  batch_size: 4096
+  workers: 8
+  queue_size: 100
+
+dedup:
+  simhash_bits: 64
+  minhash_perm: 128
+  bloom_filter_fp_rate: 0.001
+  bloom_filter_expected_items: 1000000
+  cuckoo_bucket_size: 4
+  cuckoo_max_kicks: 500
+
+compression:
+  algorithm: "zstd"
+  level: 6
+  min_size_bytes: 256
+
+export:
+  default_format: "json"
+  chunk_size: 10000
+  max_file_size_mb: 500
+
+cache:
+  lru_size: 10000
+  s3_bucket: ""
+  s3_prefix: "cache/"
+  mmap_threshold_mb: 16
+
+metrics:
+  namespace: "data"
+  export_interval_seconds: 30
+  prometheus: false
+
+lifecycle:
+  data_retention_days: 365
+  compaction_interval_hours: 24
+  cold_threshold_days: 90
+
+streaming:
+  mmap_chunk_size: 4194304
+  pool_size: 64
+
+validate:
+  max_record_size_bytes: 1048576
+  strict_mode: false
+
+cold_storage:
+  tiers:
+    - hot
+    - warm
+    - cold
+    - archive
+  hot_retention_days: 7
+  warm_retention_days: 30
+  cold_retention_days: 90
+
+vector_search:
+  lsh_projections: 64
+  lsh_bits: 16
+
+learned_filter:
+  spline_error: 0.001
+
+zero_entropy:
+  min_zero_run: 32
+  max_gap: 4
+
+dataset_builder:
+  default_split_ratios:
+    train: 0.8
+    val: 0.1
+    test: 0.1
+  contamination_threshold: 0.9
+
+async_pipeline:
+  max_concurrency: 16
+  queue_timeout: 30

@@ -7,7 +7,7 @@ and house-of-* family primitives.
 import logging
 from typing import Any, Dict, List, Optional
 
-logger = logging.getLogger(__name__)
+_logger = logging.getLogger(__name__)
 
 
 def detect_allocator(binary_path: str) -> str:

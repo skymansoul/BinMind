@@ -1,4 +1,3 @@
-# 2026-08-02
 # 交互式分析 Shell — cmd 框架、自动补全、历史持久化、别名系统、彩色输出
 import cmd
 import os
@@ -329,8 +328,8 @@ def _register_script_command(shell: InteractiveShell):
         try:
             result = eval(expr, {'__builtins__': __builtins__}, ctx)
             print(ColorOutput.green(f'→ {result!r}'))
-        except Exception as e:
-            print(ColorOutput.red(f'Error: {e}'))
+        except Exception as ex:
+            print(ColorOutput.red(f'Error: {ex}'))
 
     def do_plugin(self, arg: str):
         """plugin <name|path> — 加载 BinMind 插件脚本"""
@@ -368,8 +367,8 @@ def _register_script_command(shell: InteractiveShell):
             if hasattr(mod, 'register'):
                 mod.register(self)
             print(ColorOutput.green(f'Plugin loaded: {os.path.basename(resolved)}'))
-        except Exception as e:
-            print(ColorOutput.red(f'Failed to load plugin: {e}'))
+        except Exception as ex:
+            print(ColorOutput.red(f'Failed to load plugin: {ex}'))
 
     InteractiveShell.do_eval = do_eval
     InteractiveShell.do_plugin = do_plugin

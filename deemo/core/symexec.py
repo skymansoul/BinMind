@@ -5,7 +5,7 @@ deeper path exploration and constraint solving.
 """
 
 import logging
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 from config import ANGR_TIMEOUT, MAX_FUNCTIONS
 
@@ -84,9 +84,9 @@ def run_symbolic(binary_path: str, target_func: str = None,
                 pass
 
         return result
-    except Exception as e:
-        logger.warning("Symbolic execution error: %s", e)
-        return {'success': False, 'error': str(e)}
+    except Exception as err:
+        logger.warning("Symbolic execution error: %s", err)
+        return {'success': False, 'error': str(err)}
 
 
 def find_buffer_overflow(binary_path: str, func_name: str) -> Dict:
@@ -120,6 +120,6 @@ def find_buffer_overflow(binary_path: str, func_name: str) -> Dict:
                 break
 
         return result
-    except Exception as e:
-        logger.warning("BO detection error in %s: %s", func_name, e)
-        return {'found': False, 'error': str(e)}
+    except Exception as err:
+        logger.warning("BO detection error in %s: %s", func_name, err)
+        return {'found': False, 'error': str(err)}

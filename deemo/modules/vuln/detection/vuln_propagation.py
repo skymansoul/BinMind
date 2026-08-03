@@ -1,7 +1,7 @@
-# 漏洞传播路径分析器——基于程序依赖图的DFS可达性传播。
-# 参考ReposVul(ASE'22)的依赖传播模型：CVE从源函数沿调用边传播，
-# 置信度沿边累积衰减，<0.1时剪枝以控制状态空间膨胀。
-# nx.all_simple_paths带cutoff参数限制路径深度，对大型图防止组合爆炸。
+# 漏洞传播路径分析器——基于程序依赖图DFS可达性传播。
+# 参考ReposVul(ASE'22)依赖传播模型：CVE从源函数沿调用边传播，
+# 置信度沿边累积衰减，<0.1时剪枝控制状态空间膨胀。
+# nx.all_simple_paths以cutoff限制路径深度，防止大型图组合爆炸。
 
 import os, logging
 from typing import Dict, List, Any, Set, Optional
@@ -128,7 +128,7 @@ class VulnPropagationAnalyzer:
             n for n in self.propagation_graph.nodes
             if self.propagation_graph.nodes[n].get('node_type') == 'memory' or
                self.propagation_graph.out_degree(n) == 0]
-        # cutoff=8限制路径深度防止组合爆炸
+        # cutoff=8限制路径深度，防止组合爆炸。
         for sink in sink_nodes[:5]:
             try:
                 for path in nx.all_simple_paths(
@@ -161,11 +161,11 @@ class VulnPropagationAnalyzer:
         if critical_paths:
             parts.append("\n主要传播路径:")
             for i, path in enumerate(critical_paths[:3], 1):
-                path_desc = " -> ".join(self._get_node_name(n) for n in path)
+                path_desc = " -> ".join(self._retrieve_node_name(n) for n in path)
                 parts.append(f"{i}. {path_desc}")
         return '\n'.join(parts)
 
-    def _get_node_name(self, node_id: str) -> str:
+    def _retrieve_node_name(self, node_id: str) -> str:
         if node_id in self.vulnerability_nodes:
             return self.vulnerability_nodes[node_id].name
         return node_id.replace('func_', '').replace('mem_', '')
@@ -189,7 +189,7 @@ class VulnPropagationAnalyzer:
             lines.append("关键传播路径:")
             lines.append("-------------")
             for i, path in enumerate(result.critical_paths, 1):
-                path_str = " -> ".join([self._get_node_name(n) for n in path])
+                path_str = " -> ".join([self._retrieve_node_name(n) for n in path])
                 lines.append(f"{i}. {path_str}")
         return '\n'.join(lines)
 

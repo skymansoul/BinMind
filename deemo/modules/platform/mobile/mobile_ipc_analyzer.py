@@ -1,30 +1,30 @@
 #!/usr/bin/env python3
 """
-移动端进程间通信 (IPC) 安全分析。
+移动端进程间通信 (IPC) 安全审计。
 
 覆盖范围:
-  1. Android Binder 事务安全——AIDL 接口解析, 权限检查审计
+  1. Android Binder 事务安全——AIDL接口解析, 权限检查审计
   2. Android Intent/Bundle 注入风险——隐式Intent劫持, Parcel序列化漏洞
   3. Broadcast 接收器安全——有序广播拦截, 粘性广播泄露
   4. iOS XPC 服务安全——Mach message 分析, XPC dictionary 审计
   5. iOS Mach Port 权限泄露——task_for_pid, thread_get_state 越权访问
   6. 进程间共享内存/文件风险——ashmem, tmpfs 竞态, ContentProvider 数据泄露
-  7. IPC 调用图——识别跨进程调用链, 发现未授权的边界穿越
-  8. AIDL 生成的 Stub/Proxy 模式识别——自动化的 Binder 事务分析
-  9. Binder事务重放攻击检测——基于ioctl序列的事务签名碰撞分析
+  7. IPC 调用图——识别跨进程调用链, 定位未授权的边界穿越
+  8. AIDL Stub/Proxy 模式识别——Binder事务自动分析
+  9. Binder事务重放攻击检测——ioctl序列基础的事务签名碰撞分析
 
 技术基础:
   - Android Binder 内核驱动协议 (ioctl: BINDER_WRITE_READ)
-  - AIDL 接口定义语言 → C++/Java 生成代码模式
+  - AIDL 接口定义语言 → C++/Java 代码模式
   - Apple XPC Services 框架 (libxpc.dylib)
   - Mach IPC 基础: mach_msg, mach_port_allocate, bootstrap_register
-  - CWE-940: Improper Verification of Source of a Communication Channel
-  - CWE-925: Improper Verification of Intent by Broadcast Receiver
+  - CWE-940: 通信信道来源校验不当
+  - CWE-925: Broadcast Receiver对Intent的验证不当
 
 参考文献:
-  - Android Binder Security: comm-base analysis via /dev/binder ioctl tracing
-  - One Byte to Rule Them All (CVE-2020-0041): Binder 引用计数 UAF
-  - XPC Service Abuse: via launchd plist injection
+  - Android Binder安全: /dev/binder ioctl追踪基通信分析
+  - One Byte to Rule Them All (CVE-2020-0041): Binder引用计数UAF
+  - XPC Service Abuse: launchd plist注入
 """
 
 import re, struct, logging, os
@@ -76,7 +76,7 @@ class BinderInterface:
     detected_permissions: List[str] = field(default_factory=list)
     transaction_codes: List[int] = field(default_factory=list)
     callsite_offsets: List[int] = field(default_factory=list)
-    # Binder重放检测：每个事务码的签名hash，用于检测碰撞
+    # Binder重放检测：每事务码签名hash，用于碰撞检测
     transaction_signatures: Dict[int, bytes] = field(default_factory=dict)
 
 
@@ -114,10 +114,10 @@ class IPCFinding:
     evidence: str = ""; component: str = ""; recommendation: str = ""
 
 
-# ── Binder事务重放检测——基于事务码+参数签名的碰撞分析 ──
+# ── Binder事务重放检测——事务码+参数签名碰撞分析 ──
 
 def _compute_transaction_signature(code: int, param_count: int, data_size: int) -> bytes:
-    """计算Binder事务的轻量级签名。使用code+参数计数+数据大小作为指纹。"""
+    """计算Binder事务的轻量级签名。以code+参数计数+数据大小构成指纹。"""
     import hashlib as _hl
     return _hl.sha256(f"{code}:{param_count}:{data_size}".encode()).digest()[:8]
 
@@ -125,10 +125,10 @@ def _compute_transaction_signature(code: int, param_count: int, data_size: int) 
 class BinderIPCAnalyzer:
     """Android Binder & IPC 安全分析器。
 
-    Binder安全模型——每个事务通过ioctl(BINDER_WRITE_READ)穿越内核，
-    调用者UID/PID由内核保证真实性，但权限检查依赖服务端实现。
-    核心审计点：onTransact中是否调用了checkCallingPermission。
-    未受保护的AIDL接口 = 任意应用可触发的内核级IPC入口。
+    Binder安全模型——各事务经ioctl(BINDER_WRITE_READ)穿越内核，
+    调用者UID/PID由内核保证真实性，权限校验依赖服务端实现。
+    核心审计点：onTransact中是否调用checkCallingPermission。
+    未受保护AIDL接口 = 任意应用可触发的内核级IPC入口。
     """
 
     _AIDL_STUB_PATTERN = re.compile(
@@ -188,11 +188,11 @@ class BinderIPCAnalyzer:
                 iface_name = iface_name_raw.decode('ascii', errors='ignore').split('.')[0]
                 if iface_name in found and code not in found[iface_name].transaction_codes:
                     found[iface_name].transaction_codes.append(code)
-                    # 计算事务签名——相同code+参数模式可能意味着重放攻击面
+                    # 计算事务签名——相同code+参数模式暗示重放攻击面
                     sig = _compute_transaction_signature(code, 0, 0)
                     found[iface_name].transaction_signatures[code] = sig
 
-        # Binder重放检测：不同事务码产生相同签名=碰撞=潜在重放攻击面
+        # Binder重放检测：异事务码同签名=碰撞=潜在重放攻击面
         for iface in found.values():
             sigs = list(iface.transaction_signatures.values())
             if len(sigs) != len(set(sigs)):

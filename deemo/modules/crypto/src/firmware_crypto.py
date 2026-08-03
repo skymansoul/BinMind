@@ -1,24 +1,23 @@
-# 2026-07-31
 # ==== 固件级加密检测: LUKS / BitLocker / FileVault / VeraCrypt / TrueCrypt ====
 # 检测磁盘加密和固件级密钥管理方案的二进制/磁盘镜像特征。
-# 支持从原始镜像 (dd image, raw partition, firmware dump) 中识别全盘加密 (FDE)
+# 支持从原始镜像(dd image, raw partition, firmware dump)中识别全盘加密(FDE)
 # 和文件级加密方案的头部结构和元数据。
 #
 # 检测方案:
-#   (1) LUKS1/LUKS2 头部解析 — PBKDF2/Argon2 参数、密钥槽、加密算法
+#   (1) LUKS1/LUKS2头部解析 — PBKDF2/Argon2参数、密钥槽、加密算法
 #   (2) BitLocker (FVE) — FVE metadata block, VMK/FVEK + TPM protector
-#   (3) FileVault 2 — CoreStorage 卷头部, EncryptedRoot.plist
-#   (4) VeraCrypt/TrueCrypt — 卷头部 (512B encrypted header, 无魔数)
-#   (5) Clevis/Tang — NBDE (Network-Bound Disk Encryption) 配置片段
-#   (6) Android dm-crypt / Adiantum / 文件级加密 (FBE) metadata
-#   (7) Apple APFS 加密 (effaceable storage, 硬件密钥封装)
+#   (3) FileVault 2 — CoreStorage卷头部, EncryptedRoot.plist
+#   (4) VeraCrypt/TrueCrypt — 卷头部(512B加密头部, 无魔数)
+#   (5) Clevis/Tang — NBDE (Network-Bound Disk Encryption)配置片段
+#   (6) Android dm-crypt / Adiantum / 文件级加密(FBE) metadata
+#   (7) Apple APFS加密 (effaceable storage, 硬件密钥封装)
 #
 # 参考: Fruhwirth (LUKS, 2004), Broz et al. (LUKS2, 2018), NIST SP 800-111,
 # Ferguson (AES-CBC+Elephant diffuser, BitLocker, 2006), Apple FileVault2 doc (2013),
 # VeraCrypt specification (2017), Android CDD §9 Encryption (2023),
 # Crowley (Adiantum, IACR TCHES 2019).
-# 2026-07-31: 新增 TCG Opal 2.0 SSC 自加密硬盘特征, IEEE 1667 silo 检测,
-# Clevis/Tang JSON JWE 格式识别。
+# 新增TCG Opal 2.0 SSC自加密硬盘特征, IEEE 1667 silo检测,
+# Clevis/Tang JSON JWE格式识别。
 
 import struct
 import logging
@@ -41,16 +40,16 @@ class FirmwareCryptoResult:
     detected_in: str = ""
 
 
-# ==== LUKS 魔数 ====
-# LUKS1: 6 bytes "LUKS\xba\xbe" (hex: 4C 55 4B 53 BA BE)
-# LUKS2: 6 bytes "LUKS\xba\xbe" + JSON 元数据区域(4096B aligned)
-# 头部大小: LUKS1 = 1MB, LUKS2 元数据在 4096-16384B 可配置
+# ==== LUKS魔数 ====
+# LUKS1: 6字节 "LUKS\xba\xbe" (hex: 4C 55 4B 53 BA BE)
+# LUKS2: 6字节 "LUKS\xba\xbe" + JSON元数据区域(4096B对齐)
+# 头部大小: LUKS1 = 1MB, LUKS2元数据在4096-16384B可配置
 LUKS1_MAGIC = b'LUKS\xba\xbe'
-LUKS2_MAGIC = b'LUKS\xba\xbe'      # 与 LUKS1 相同, 用 header version field 区分
+LUKS2_MAGIC = b'LUKS\xba\xbe'      # 与LUKS1相同, 用header version field区分
 
 
 def _detect_luks(data: bytes, source: str) -> List[FirmwareCryptoResult]:
-    """LUKS header 解析: magic bytes, version, cipher, hash spec, PBKDF parameters."""
+    # LUKS头部解析: 魔数字节, 版本, 加密算法, 哈希规格, PBK
     results = []
     off = 0
     while True:
@@ -63,15 +62,15 @@ def _detect_luks(data: bytes, source: str) -> List[FirmwareCryptoResult]:
         version = struct.unpack_from('>H', data, off + 6)[0]
         ver_str = f'LUKS{version}' if version in (1, 2) else f'LUKS (version={version})'
 
-        # 提取 cipher-name (max 32B at offset+8 in LUKS1)
+        # 提取cipher-name (LUKS1头部offset+8处, 最大32B)
         cipher_end = data.find(b'\x00', off + 8)
         cipher_name = data[off + 8:cipher_end].decode('ascii', errors='replace') if cipher_end > off + 8 else ''
 
-        # 提取 cipher-mode
+        # 提取cipher-mode
         mode_end = data.find(b'\x00', cipher_end + 1) if cipher_end > 0 else -1
         cipher_mode = data[cipher_end + 1:mode_end].decode('ascii', errors='replace') if mode_end > cipher_end else ''
 
-        # 提取 hash spec
+        # 提取哈希规格
         hash_end = data.find(b'\x00', mode_end + 1) if mode_end > 0 else -1
         hash_spec = data[mode_end + 1:hash_end].decode('ascii', errors='replace') if hash_end > mode_end else ''
 
@@ -90,13 +89,13 @@ def _detect_luks(data: bytes, source: str) -> List[FirmwareCryptoResult]:
     return results
 
 
-# ==== BitLocker FVE 检测 ====
-# BitLocker 的 FVE metadata block 以 "-FVE-FS-" 魔数开始 (hex: 2D 46 56 45 2D 46 53 2D)
-# 位于卷的末尾 (512B aligned), 包含:
-#   - FVE metadata block (3 copies at end of volume)
-#   - VMK (Volume Master Key) encrypted with protector
-#   - FVEK (Full Volume Encryption Key) encrypted with VMK
-#   - 算法: AES-CBC/AES-XTS + Elephant diffuser (Win7) 或仅 AES-XTS (Win8+)
+# ==== BitLocker FVE检测 ====
+# BitLocker的FVE metadata block以"-FVE-FS-"魔数开始(hex: 2D 46 56 45 2D 46 53 2D)
+# 位于卷末尾(512B对齐), 包含:
+#   - FVE metadata block (卷末尾3份副本)
+#   - VMK (Volume Master Key)由保护器加密
+#   - FVEK (Full Volume Encryption Key)由VMK加密
+#   - 算法: AES-CBC/AES-XTS + Elephant diffuser (Win7) 或仅AES-XTS (Win8+)
 
 FVE_MAGIC = b'-FVE-FS-'
 
@@ -108,10 +107,10 @@ def _detect_bitlocker(data: bytes, source: str) -> List[FirmwareCryptoResult]:
         off = data.find(FVE_MAGIC, off)
         if off == -1:
             break
-        # FVE block 至少 512B; metadata header 含 version field
+        # FVE block至少512B; metadata header含version field
         ctx = data[max(0, off - 64):off + 128]
         details = {}
-        # 搜索 AES-XTS / AES-CBC + Elephant 字符串
+        # 搜索AES-XTS / AES-CBC + Elephant字符串
         for algo_kw in [b'AES-XTS', b'AES-CBC', b'Elephant']:
             if algo_kw in ctx:
                 details.setdefault('algorithms', []).append(algo_kw.decode())
@@ -124,11 +123,11 @@ def _detect_bitlocker(data: bytes, source: str) -> List[FirmwareCryptoResult]:
     return results
 
 
-# ==== FileVault 2 检测 ====
-# FileVault 2 使用 CoreStorage 卷格式:
-#   - 逻辑卷族 (LVF) UUID + 加密上下文
-#   - EncryptedRoot.plist (XML plist) 含密钥封装信息
-#   - APFS 加密卷: 使用卷角色 (Volume Role) 标记和 effaceable storage
+# ==== FileVault 2检测 ====
+# FileVault 2使用CoreStorage卷格式:
+#   - 逻辑卷族(LVF) UUID + 加密上下文
+#   - EncryptedRoot.plist (XML plist)含密钥封装信息
+#   - APFS加密卷: 使用卷角色(Volume Role)标记和effaceable storage
 
 FILEVAULT_UUID_PATTERN = re.compile(
     rb'[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}')
@@ -159,13 +158,13 @@ def _detect_filevault(data: bytes, source: str) -> List[FirmwareCryptoResult]:
     return results
 
 
-# ==== VeraCrypt / TrueCrypt 检测 ====
-# VeraCrypt/TrueCrypt 卷头部是完全加密的 (无魔数) — 故意设计成与随机数据无法区分。
-# 但有以下间接检测指标:
-#   (1) 512B 完全随机数据块 (高熵, π误差<0.05) 位于特定偏移 (0, 65536, 131072)
-#   (2) 卷头部校验: VeraCrypt 使用 XTS 模式, 解密后 header 含 ASCII "TRUE" at offset 64
-#   (3) 字符串 "VeraCrypt" / "TrueCrypt" 出现在可执行文件中 (非卷本身)
-#   (4) RIPEMD-160 / Whirlpool / Streebog hash context — TrueCrypt 特有算法组合
+# ==== VeraCrypt / TrueCrypt检测 ====
+# VeraCrypt/TrueCrypt卷头部完全加密(无魔数) — 故意设计成与随机数据不可区分。
+# 间接检测指标:
+#   (1) 512B完全随机数据块(高熵, π误差<0.05)位于特定偏移(0, 65536, 131072)
+#   (2) 卷头部校验: VeraCrypt使用XTS模式, 解密后header含ASCII "TRUE" at offset 64
+#   (3) 字符串"VeraCrypt"/"TrueCrypt"出现在可执行文件中(非卷本身)
+#   (4) RIPEMD-160 / Whirlpool / Streebog哈希上下文 — TrueCrypt特有算法组合
 
 _VERACRYPT_STRINGS = [
     b'VeraCrypt', b'TrueCrypt', b'TrueCrypt.exe',
@@ -176,7 +175,7 @@ _VERACRYPT_STRINGS = [
 _TC_HASH_SPECS = [
     b'RIPEMD160', b'RIPEMD-160', b'WHIRLPOOL',
     b'whirlpool', b'Streebog', b'streebog',
-    b'kuznyechik', b'Kuznyechik',  # VeraCrypt 支持 GOST
+    b'kuznyechik', b'Kuznyechik',  # VeraCrypt支持GOST
 ]
 
 
@@ -209,11 +208,11 @@ def _detect_veracrypt(data: bytes, source: str) -> List[FirmwareCryptoResult]:
     return results
 
 
-# ==== Clevis/Tang NBDE 检测 ====
-# Clevis is a pluggable framework for automated decryption (NBDE).
-# Tang server provides network-bound disk encryption keys via JSON JWE.
-# Clients use Clevis pins: "tang", "tpm2", "sss".
-# JWE format: {"protected": "<b64>", "encrypted_key": "<b64>", ...} with "tang" pin.
+# ==== Clevis/Tang NBDE检测 ====
+# Clevis是自动化解密的可插拔框架(NBDE)。
+# Tang服务器通过JSON JWE提供网络绑定磁盘加密密钥。
+# 客户端使用Clevis pins: "tang", "tpm2", "sss"。
+# JWE格式: {"protected": "<b64>", "encrypted_key": "<b64>", ...} with "tang" pin.
 
 _CLEVIS_SIGNATURES = [
     (b'clevis', 'Clevis NBDE client'),
@@ -236,15 +235,15 @@ def _detect_clevis_tang(data: bytes, source: str) -> List[FirmwareCryptoResult]:
         results.append(FirmwareCryptoResult(
             scheme='Clevis/Tang (NBDE)', confidence=0.78,
             evidence=[f'{desc}'], detected_in=source))
-        break  # one evidence is sufficient for NBDE classification
+        break  # NBDE分类一条证据足够
     return results
 
 
-# ==== Android 文件级加密 (FBE) 检测 ====
-# Android FBE 使用内核 fscrypt (v1/v2) 或 ext4/f2fs 原生加密。
-# 密钥派生: 用户凭据 → 密钥库 (keystore2) → 每文件密钥。
-# Adiantum (ChaCha12 + NH + Poly1305): Android Go 设备的轻量级 FBE, 无 AES 硬件加速。
-# 检测: fscrypt 策略结构, "ice" (Inline Crypto Engine) 引用, Adiantum 算法引用。
+# ==== Android文件级加密(FBE)检测 ====
+# Android FBE使用内核fscrypt(v1/v2)或ext4/f2fs原生加密。
+# 密钥派生: 用户凭据→密钥库(keystore2)→每文件密钥。
+# Adiantum (ChaCha12 + NH + Poly1305): Android Go设备的轻量级FBE, 无AES硬件加速。
+# 检测: fscrypt策略结构, "ice"(Inline Crypto Engine)引用, Adiantum算法引用。
 
 _ANDROID_FBE_SIGNATURES = [
     (b'fscrypt', 'fscrypt kernel policy'),
@@ -272,9 +271,9 @@ def _detect_android_fbe(data: bytes, source: str) -> List[FirmwareCryptoResult]:
 
 
 # ==== TCG Opal 2.0 SSC (自加密硬盘) ====
-# TCG Opal SSC 规范定义了 SED (Self-Encrypting Drive) 的 TPer 协议。
-# 检测: Opal key hierarchy (Admin1 SP, Locking SP), K_AES_256 密钥引用,
-# TPer COM 堆栈 (IF-SEND/IF-RECV), Shadow MBR table 痕迹。
+# TCG Opal SSC规范定义了SED (Self-Encrypting Drive)的TPer协议。
+# 检测: Opal密钥层次(Admin1 SP, Locking SP), K_AES_256密钥引用,
+# TPer COM栈(IF-SEND/IF-RECV), Shadow MBR table痕迹。
 
 _OPAL_SIGNATURES = [
     (b'OPAL', 'TCG Opal SSC reference'),
@@ -303,7 +302,7 @@ def _detect_opal_sed(data: bytes, source: str) -> List[FirmwareCryptoResult]:
 # ==== 主检测器 ====
 
 class FirmwareCryptoDetector:
-    """固件和磁盘加密方案指纹检测器."""
+    """固件和磁盘加密方案指纹检测器。"""
 
     def __init__(self):
         pass

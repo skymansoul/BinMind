@@ -349,7 +349,7 @@ class MemoryVisualizer:
 
     # --- 新增: 内存保护统计 ---
     def protection_stats(self,maps_content:str="")->Dict[str,Any]:
-        """统计内存映射中各保护属性的分布。RWX占比高是严重安全问题的标志。"""
+        """统计内存映射中各保护属性的分布。RWX占比高是严重安全问题的标志"""
         if maps_content: self._memory_map=self._parser.parse(maps_content)
         if not self._memory_map: return {"success":False,"error":"No memory map parsed"}
         prot_counts: Dict[str,int]={}

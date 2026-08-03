@@ -1,5 +1,3 @@
-# 2026-08-01
-# 二进制格式检测与解析 — PE/ELF/Mach-O 完整解析器
 # 零拷贝快速判别 + 深度头解析 + LIEF 可选回退
 
 import struct, os, hashlib

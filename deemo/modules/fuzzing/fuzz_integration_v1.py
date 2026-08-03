@@ -11,7 +11,7 @@ import time
 from pathlib import Path
 from typing import Any, Optional
 
-logger = logging.getLogger(__name__)
+_log = logging.getLogger(__name__)
 name: str = "fuzz_integration"
 module: str = "fuzz_integration"
 
@@ -51,7 +51,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {{
 }}
 """
 
-# ── Sanitizer 崩溃报告解析正则 ──────────────────────────────────
+# ── Sanitizer 崩溃输出的正则捕获 ──────────────────────────────────
 
 _ASAN_CRASH_RE = re.compile(
     r'(ERROR: AddressSanitizer):\s*(\S.*?)\n'
@@ -66,7 +66,7 @@ _SEGV_RE = re.compile(
     r'(signal\s+\d+|SEGV)\s+.*?at\s+(0x[0-9a-fA-F]+)',
     re.IGNORECASE
 )
-# 提取栈帧 — 用于生成崩溃签名
+# 从sanitizer输出中抽取栈帧，组合为崩溃签名
 _STACK_FRAME_RE = re.compile(
     r'#(\d+)\s+0x[0-9a-fA-F]+\s+in\s+(\S+)\s+.*?(?:at\s+([^:\n]+):(\d+))?',
 )
@@ -86,13 +86,14 @@ def _guess_func_info(signature: str) -> dict[str, str]:
             "struct_type": "uint8_t", "min_size": "1"}
 
 
-# ── 崩溃分类与签名 ──────────────────────────────────────────────
+# ── 崩溃识别与消重签名 ──────────────────────────────────────────
 
 def _classify_crash(stderr_output: str) -> dict[str, Any]:
-    """解析 sanitizer/stderr 输出，提取崩溃类型、栈帧和签名。
+    """从 sanitizer/stderr 文本中提取崩溃类型、栈帧与唯一签名。
 
-    模仿 CASR 的崩溃报告结构化思路: 以 fault_type + top3_frames
-    的 SHA‑256 前 12 字符作为去重签名。"""
+    签名策略: SHA‑256(fault_type | top3_funcs) 的前12字符，等价于
+    按崩溃根因聚合重复样本。
+    """
     result: dict[str, Any] = {
         'crash_type': 'unknown',
         'fault_addr': '',
@@ -124,7 +125,7 @@ def _classify_crash(stderr_output: str) -> dict[str, Any]:
         for f in frames[:5]
     ]
 
-    # 签名: crash_type + 前三条帧的函数名
+    # 签名: crash_type 拼接前三条帧函数名
     sig_raw = result['crash_type'] + '|' + '|'.join(
         fr['func'] for fr in result['frames'][:3]
     )
@@ -141,9 +142,9 @@ class FuzzManager:
         self._output_dir: Path = self._work_dir / "output"
         self._harness_path: Path = self._work_dir / "harness.c"
         self._process: subprocess.Popen | None = None
-        # 并行运行追踪
+        # 并行worker句柄表
         self._parallel_processes: list[subprocess.Popen] = []
-        # 自适应超时历史
+        # 历史超时记录，供自适应调节使用
         self._timeout_history: list[float] = []
         self._triaged_crashes: list[dict[str, Any]] = []
 
@@ -168,12 +169,12 @@ class FuzzManager:
             return FUZZER_STATUS_RUNNING
         return self._status
 
-    # ── 启动模糊测试 ────────────────────────────────────────────
+    # ── 单实例启动 ────────────────────────────────────────────────
 
     def start(self, target_binary: str, fuzzer_type: str = FUZZER_TYPE_AFL,
               timeout: int = 3600) -> bool:
         if not os.path.isfile(target_binary):
-            logger.error("Target binary not found: %s", target_binary)
+            _log.error("Target binary not found: %s", target_binary)
             return False
         cmd: list[str] = []
         if fuzzer_type == FUZZER_TYPE_AFL:
@@ -193,26 +194,27 @@ class FuzzManager:
             self._status = FUZZER_STATUS_RUNNING
             return True
         except FileNotFoundError:
-            logger.warning("Fuzzer binary not found: %s", cmd[0])
+            _log.warning("Fuzzer binary not found: %s", cmd[0])
             return False
         except Exception as e:
-            logger.error("Failed to start fuzzing: %s", e)
+            _log.error("Failed to start fuzzing: %s", e)
             return False
 
-    # ── 并行多核启动 ─────────────────────────────────────────────
+    # ── 多worker并行调度 ─────────────────────────────────────────
 
     def start_parallel(
         self, target_binary: str, fuzzer_type: str = FUZZER_TYPE_AFL,
         timeout: int = 3600, num_workers: int = 4,
         master_port: int = 0,
     ) -> bool:
-        """启动 N 个并行模糊测试实例。
+        """fork N 个模糊测试子进程，共享同步目录。
 
-        AFL 模式下: worker‑1 作为 master (-M), 其余为 slave (-S worker_N)。
-        LibFuzzer 模式下: 每个 worker 独立运行，各自使用不同的 corpus 子集。
-        借鉴 OSS‑Fuzz 的并行度设计 — workers = min(num_cores, 4)。"""
+        AFL 模式: worker[0] 为主控 (-M master)，其余为从属 (-S fuzzerN)。
+        LibFuzzer: 每个进程独立运行，语料按 worker_idx % N 分片。
+        边界: 未找到可执行文件或任一worker启动失败时立即返回False。
+        """
         if not os.path.isfile(target_binary):
-            logger.error("Target binary not found: %s", target_binary)
+            _log.error("Target binary not found: %s", target_binary)
             return False
         self._parallel_processes = []
         syncdir = self._output_dir
@@ -230,7 +232,7 @@ class FuzzManager:
             elif fuzzer_type == FUZZER_TYPE_LIBFUZZER:
                 worker_corpus = self._corpus_dir / f"worker_{idx}"
                 worker_corpus.mkdir(parents=True, exist_ok=True)
-                # 为每个 worker 喂入共享语料中该 worker 负责的子集
+                # 按 worker 下标取模分配共享语料子集
                 for i, seed in enumerate(sorted(self._corpus_dir.iterdir())):
                     if i % num_workers == idx and seed.is_file():
                         shutil.copy2(seed, worker_corpus / seed.name)
@@ -253,16 +255,16 @@ class FuzzManager:
                 )
                 self._parallel_processes.append(proc)
             except FileNotFoundError:
-                logger.warning("Fuzzer binary not found: %s", cmd[0])
+                _log.warning("Fuzzer binary not found: %s", cmd[0])
                 return False
             except Exception as e:
-                logger.error("Worker %d 启动失败: %s", idx, e)
+                _log.error("Worker %d 启动失败: %s", idx, e)
                 return False
 
         self._status = FUZZER_STATUS_RUNNING
         return True
 
-    # ── 停止 ─────────────────────────────────────────────────────
+    # ── 终止所有子进程 ───────────────────────────────────────────
 
     def stop(self) -> None:
         if self._process and self._process.poll() is None:
@@ -281,7 +283,7 @@ class FuzzManager:
         self._parallel_processes.clear()
         self._status = FUZZER_STATUS_COMPLETED
 
-    # ── 崩溃收集 ────────────────────────────────────────────────
+    # ── 产物回收 ──────────────────────────────────────────────────
 
     def collect_crashes(self) -> list[str]:
         crashes_dir = self._output_dir / "crashes"
@@ -295,15 +297,17 @@ class FuzzManager:
             return [str(p) for p in self._corpus_dir.iterdir() if p.is_file()]
         return [str(p) for p in queue_dir.iterdir() if p.is_file()]
 
-    # ── 崩溃分类聚合 ────────────────────────────────────────────
+    # ── 崩溃重放与分类 ────────────────────────────────────────────
 
     def triage_crashes(
         self, target_binary: str, max_crashes: int = 50
     ) -> list[dict[str, Any]]:
-        """对收集到的每个崩溃文件重放并解析 sanitizer 输出以分类。
+        """逐个重放崩溃样本，从 sanitizer 输出解析分类信息。
 
-        重放策略: 将崩溃输入再次喂入目标程序 (带 ASAN/UBSAN 的构建)，
-        截取 stderr 输出并于正则中匹配。不上报的纯超时样本跳过。"""
+        重放方式: 将崩溃文件传给目标二进制，捕获 stderr 并用正则提取
+        错误类型与栈帧。超时样本标为 timeout 但不做栈分析。
+        上限 max_crashes 防止大量重复崩溃占满内存。
+        """
         crashes = self.collect_crashes()
         if not crashes:
             return []
@@ -331,23 +335,24 @@ class FuzzManager:
                     'frames': [],
                 })
             except Exception as e:
-                logger.debug("triage crash %s: %s", crash_path, e)
+                _log.debug("triage crash %s: %s", crash_path, e)
 
         self._triaged_crashes = triaged
         return triaged
 
-    # ── 语料库最小化 ─────────────────────────────────────────────
+    # ── 语料精简 ─────────────────────────────────────────────────
 
     def minimize_corpus(
         self, target_binary: str, strategy: str = "greedy_setcover"
     ) -> list[str]:
-        """基于 afl‑cmin 的贪心集合覆盖算法的语料去重。
+        """贪心集合覆盖算法压缩语料库，保留最小覆盖集。
 
-        strategy 选项:
-        - greedy_setcover: 按覆盖元组频率递增选取最小种子 (标准 afl‑cmin)
-        - random_sample: 等概率抽样 (快但不保证覆盖完整性)
+        strategy:
+          greedy_setcover — 优先保留独占覆盖元组的文件，再按覆盖增量贪心选取
+          random_sample   — 等概率抽样 (仅限无afl-showmap时的快速降级)
 
-        返回去重后保留的文件路径列表。"""
+        返回精简后的文件路径列表。
+        """
         queue_dir = self._output_dir / "queue"
         source = queue_dir if queue_dir.is_dir() else self._corpus_dir
         all_files = [str(p) for p in source.iterdir() if p.is_file()]
@@ -355,7 +360,7 @@ class FuzzManager:
             return all_files
 
         trace_map: dict[str, set[tuple]] = {}
-        # 批量 trace
+        # 逐文件采集覆盖元组
         for fpath in all_files:
             try:
                 r = subprocess.run(
@@ -381,7 +386,7 @@ class FuzzManager:
             k = min(len(all_files), max(8, len(all_files) // 3))
             return random.sample(all_files, k)
 
-        # 贪心集合覆盖
+        # 贪心: 优先保留独占覆盖文件
         all_tuples: set[tuple] = set()
         for tuples in trace_map.values():
             all_tuples.update(tuples)
@@ -390,7 +395,7 @@ class FuzzManager:
 
         selected: list[str] = []
         remaining_tuples = set(all_tuples)
-        # 先选只能被唯一文件覆盖的元组对应的文件 (afl‑cmin 的优化)
+        # 独占覆盖 —— 某元组仅被单个文件触发时，强制保留该文件
         for tup in sorted(all_tuples):
             covering = [f for f, tuples in trace_map.items() if tup in tuples]
             if len(covering) == 1 and tup in remaining_tuples:
@@ -399,7 +404,7 @@ class FuzzManager:
                     selected.append(f)
                     remaining_tuples.difference_update(trace_map[f])
 
-        # 剩余元组贪心选取: 每次选覆盖最多剩余元组的文件
+        # 对剩余元组执行标准贪心: 每次选覆盖量最大的文件
         remaining_files = [f for f in all_files if f not in selected]
         while remaining_tuples and remaining_files:
             best = max(
@@ -414,22 +419,23 @@ class FuzzManager:
 
         return selected
 
-    # ── 自适应超时调节 ───────────────────────────────────────────
+    # ── 运行时自适应调节 ─────────────────────────────────────────
 
     def adaptive_timeout(
         self, base_timeout: int = 600, history_window: int = 5
     ) -> int:
-        """基于历史运行的崩溃发现速率调节超时值。
+        """按近期崩溃发现分布动态伸缩单轮超时。
 
-        若最近 N 次运行中有 >60% 在 base_timeout 后半段发现新崩溃，
-        则将超时延长 50%；若 80% 崩溃在前 1/3 时间内发现，则缩减 20%。
-        最低不低于 60 秒，最高不超过 86400 秒 (1天)。"""
+        启发式: 若最近N轮中位崩溃发现时刻落在base_timeout后半段，
+        延长50%；若80%崩溃集中在前1/3窗口，压缩20%。
+        硬边界: [60, 86400] 秒。
+        """
         self._timeout_history.append(base_timeout)
         if len(self._timeout_history) < history_window:
             return base_timeout
 
         recent = self._timeout_history[-history_window:]
-        # 假设最后㇐次运行的崩溃发现时点在 base_timeout 中期 (简化启发式)
+        # 简化估计: 用历史中位数近似当前崩溃发现时点
         median = sorted(recent)[len(recent) // 2]
         if median > base_timeout * 0.6:
             adjusted = int(base_timeout * 1.5)
@@ -440,18 +446,20 @@ class FuzzManager:
 
         return max(60, min(86400, adjusted))
 
-    # ── 容器化隔离 ───────────────────────────────────────────────
+    # ── 容器沙箱执行 ──────────────────────────────────────────────
 
     def start_in_container(
         self, target_binary: str, fuzzer_type: str = FUZZER_TYPE_AFL,
         timeout: int = 3600, image: str = "aflplusplus/aflplusplus:latest",
     ) -> bool:
-        """在 Docker 容器内启动模糊测试，隔离文件系统和网络。
+        """在 Docker 容器中运行模糊测试，隔离文件系统与网络。
 
-        挂载: 语料输入目录、输出目录以 bind mount 方式传递。
-        崩溃文件在容器终止后仍可从 ./output/crashes 访问。"""
+        目标文件以只读bind mount注入，输出目录可读写，容器终止后
+        崩溃文件可从宿主机 output/crashes 路径访问。
+        未检测到docker时自动回退到本地启动。
+        """
         if not shutil.which("docker"):
-            logger.warning("Docker 未安装，回退到本地启动")
+            _log.warning("Docker 未安装，回退到本地启动")
             return self.start(target_binary, fuzzer_type, timeout)
 
         target_abs = os.path.abspath(target_binary)
@@ -489,7 +497,7 @@ class FuzzManager:
             self._status = FUZZER_STATUS_RUNNING
             return True
         except Exception as e:
-            logger.error("容器启动失败: %s", e)
+            _log.error("容器启动失败: %s", e)
             return False
 
 

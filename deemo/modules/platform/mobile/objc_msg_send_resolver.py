@@ -1,4 +1,4 @@
-"""Swift/ObjC消息发送静态解糖分析器。将objc_msgSend及Swift虚调用解析为直接调用。融合类层次结构、选择器字符串分析与类型传播。"""
+"""Swift/ObjC消息发送静态解糖分析器。将objc_msgSend及Swift虚调用解析为直接调用，融合类层次结构、选择器字符串分析及类型传播。"""
 import logging, os, re
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any, Tuple
@@ -55,7 +55,7 @@ class ObjcMessageSendParser(MessageSendParser):
                 off=data.find(pat,off)
                 if off==-1: break
                 ct=s._map_call_type(ctn); sel=s._infer_selector(data,off)
-                # 选择器劫持检测：如果调用点前的上下文不包含预期类引用
+                # 选择器劫持检测：调用点前的上下文不包含预期类引用
                 ctx=data[max(0,off-64):off]
                 hijackable = b'_OBJC_CLASS_' not in ctx
                 sites.append(MessageSendSite(offset=off,selector=sel,call_type=ct,confidence=0.7,is_hijackable=hijackable))
@@ -138,7 +138,7 @@ class ObjcMsgSendResolverAnalyzer(BaseAnalyzer):
             if dl not in s.parsers: return {"success":False,"error":f"不支持的语言:{dl}"}
             p=s.parsers[dl]; cs,ss=p.parse(bd); rs=s.resolver.resolve(cs,ss)
             rc=sum(1 for x in rs if x.resolved_target is not None); uc=len(rs)-rc
-            # 选择器劫持统计
+            # 选择器劫持计数统计
             hij=sum(1 for x in rs if x.is_hijackable)
             return {"success":True,"result":{"language":dl,"num_classes":len(cs),"num_message_sites":len(ss),"resolved_count":rc,"unresolved_count":uc,"resolution_rate":rc/len(ss) if ss else 0.0,"hijackable_sites":hij,"classes":[{"name":c.name,"superclass":c.superclass,"method_count":len(c.methods),"methods":c.methods[:5]} for c in cs],"message_sites":[{"offset":hex(x.offset),"class_name":x.class_name,"selector":x.selector,"call_type":x.call_type.value,"resolved_target":x.resolved_target,"resolved_address":hex(x.resolved_address) if x.resolved_address else None,"confidence":x.confidence,"hijackable":x.is_hijackable} for x in rs],"summary":s._generate_summary(dl,rc,uc)}}
         except Exception as e: logger.error(f"消息发送解糖分析失败:{e}"); return {"success":False,"error":str(e)}

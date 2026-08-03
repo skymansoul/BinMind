@@ -10,19 +10,19 @@ from dataclasses import dataclass, field
 class IOCTLHandler:
     code: int
     handler_addr: int
-    method: str  # METHOD_BUFFERED, METHOD_IN_DIRECT, METHOD_OUT_DIRECT, METHOD_NEITHER
-    access: str  # FILE_ANY_ACCESS, FILE_READ_ACCESS, etc.
+    method: str  # METHOD_缓冲区ED, METHOD_IN_DIRECT, METHOD_OUT_DIRECT, METHOD_NEITHER
+    access: str  # FILE_ANY_ACCESS, FILE_READ_ACCESS, etc
     device_type: int
     is_dangerous: bool = False
 
 
 class KernelModuleAnalyzer:
-    """Linux LKM + Windows driver + macOS kext analysis: IOCTL, dangerous API, tainted kernel"""
+    """Linux LKM + Windows 驱动 + macOS kext analysis: IOCTL, dangerous API, tainted kernel"""
 
     # ---- 初始化: 三平台特征 ----
 
     def __init__(self):
-        # Windows driver危险API
+        # Windows 驱动危险API
         self._win_dangerous_apis = {
             'memory': [
                 'MmMapIoSpace', 'MmMapLockedPages', 'MmAllocateContiguousMemory',
@@ -109,7 +109,7 @@ class KernelModuleAnalyzer:
             ],
         }
 
-        # IOCTL method types (bits 0-1 of IOCTL code)
+        # IOCTL method types (bits 0-1 IOCTL code)
         self._ioctl_methods = {
             0: 'METHOD_BUFFERED',
             1: 'METHOD_IN_DIRECT',
@@ -129,7 +129,7 @@ class KernelModuleAnalyzer:
     def detect_platform(self, data: bytes, strings: List[str]) -> str:
         _strs_text = ' '.join(strings)
 
-        # Windows driver
+        # Windows 驱动
         if b'DriverEntry' in data or b'DRIVER_OBJECT' in data:
             return 'windows'
         if 'DriverEntry' in _strs_text or 'DriverObject' in _strs_text:
@@ -157,7 +157,7 @@ class KernelModuleAnalyzer:
 
         return 'unknown'
 
-    # //// IOCTL handler枚举 (仅Windows) ////
+    # //// IOCTL 处理器枚举 (仅Windows) ////
 
     def enumerate_ioctl_handlers(self, data: bytes,
                                   strings: List[str]) -> List[IOCTLHandler]:
@@ -167,7 +167,7 @@ class KernelModuleAnalyzer:
         # CTL_CODE宏: CTL_CODE(DeviceType, Function, Method, Access)
         # = ((DeviceType) << 16) | ((Access) << 14) | ((Function) << 2) | (Method)
         _ioctl_patterns = [
-            # Literal numbers in switch/if statements
+            # Literal numbers switch/ statements
             re.compile(rb'(?:case|0x)([0-9A-Fa-f]{8})\s*:', re.I),
             # CTL_CODE macro
             re.compile(rb'CTL_CODE\s*\([^,]+,\s*0x(\w+)', re.I),
@@ -189,12 +189,12 @@ class KernelModuleAnalyzer:
             _func = (_code >> 2) & 0xFFF
             _method = _code & 0x3
 
-            # METHOD_NEITHER is most dangerous
+            # METHOD_NEITHER dangerous
             _is_dangerous = _method == 3
 
             _handlers.append(IOCTLHandler(
                 code=_code,
-                handler_addr=0,  # needs disasm to resolve
+                handler_addr=0,  # needs disasm 解析
                 method=self._ioctl_methods.get(_method, f'UNKNOWN({_method})'),
                 access=self._ioctl_access.get(_access, f'UNKNOWN({_access})'),
                 device_type=_dev_type,
@@ -223,7 +223,7 @@ class KernelModuleAnalyzer:
         elif platform == 'macos':
             _apis = self._macos_dangerous_apis
         else:
-            # check all platforms
+            # 检查 platforms
             _apis = {}
             for _d in [self._win_dangerous_apis, self._linux_dangerous_apis,
                         self._macos_dangerous_apis]:
@@ -264,7 +264,7 @@ class KernelModuleAnalyzer:
 
         # 1. 无签名/自签名检测 (PE)
         if data[:2] == b'MZ':
-            # Check if security directory is empty
+            # 检查 security directory empty
             _pe_off = struct.unpack('<I', data[0x3C:0x40])[0] if len(data) > 0x40 else 0
             if _pe_off + 160 < len(data):
                 _sec_dir_rva = struct.unpack('<I', data[_pe_off + 24 + 128:

@@ -1,15 +1,15 @@
-# 二进制熵分析器——通过信息熵和统计特征检测加壳/混淆/加密段。
-# 参考Applied Network Science (2025) 的图基混淆检测和传统PEiD熵检测方法。
+# 二进制熵分析器——通过信息熵与统计特征检测加壳/混淆/加密段。
+# 参考Applied Network Science (2025)图基混淆检测及传统PEiD熵检测方法。
 #
 # 检测维度:
-#   - 整体熵: Shannon熵 > 7.0 暗示加密/压缩（正常代码 ~5.0-6.5）
+#   - 整体熵: Shannon熵 > 7.0暗示加密/压缩（正常代码~5.0-6.5）
 #   - 分段熵: 按section/segment分别计算，高熵.text段异常
-#   - 字节分布: chi-square检验观察分布vs均匀分布的距离
-#   - N-gram重复率: 重复模式密度高→可能是加壳器存根
-#   - 可打印字符比例: < 10% 暗示二进制payload段
+#   - 字节分布: chi-square检验观测分布与均匀分布的距离
+#   - N-gram重复率: 重复模式密度高→加壳器存根可能性
+#   - 可打印字符比: < 10%暗示二进制payload段
 #
-# 2026-07-27 —— 初版，Shannon熵+分段分析
-# 2026-08-01 —— 新增chi-square检验和ML分类器集成（sklearn可选）
+# 当前实现——Shannon熵+分段分析
+# 增强——chi-square检验与ML分类器集成（sklearn可选）
 
 import os, math, struct, logging, json
 from typing import Dict, List, Optional, Any, Tuple
@@ -38,7 +38,7 @@ class SectionType(str, Enum):
 
 @dataclass
 class SectionEntropy:
-    """单个段/节的熵分析结果。"""
+    """单段/节熵分析结果"""
     name: str
     section_type: SectionType
     offset: int = 0
@@ -53,7 +53,7 @@ class SectionEntropy:
 
 @dataclass
 class EntropyReport:
-    """完整熵分析报告。"""
+    """完整熵分析报告"""
     file_path: str
     file_size: int = 0
     overall_entropy: float = 0.0
@@ -70,19 +70,19 @@ class BinaryEntropyAnalyzer:
 
     核心算法:
         1. Shannon熵: H = -Σ p_i * log2(p_i)，p_i为字节值i的概率
-        2. Chi-square: χ² = Σ (o_i - e_i)² / e_i，衡量分布与均匀分布的偏离
-        3. 分段分析: 将文件切分为固定窗口，检测熵的局部突变
+        2. Chi-square: χ² = Σ (o_i - e_i)² / e_i，衡量与均匀分布的偏离
+        3. 分段分析: 固定窗口切分，检测熵的局部突变
         4. 启发式规则: 综合多指标判定加壳/混淆/加密状态
 
     Shannon熵阈值参考:
-        < 5.0: 结构化数据、未压缩代码
+        < 5.0: 结构化数据/未压缩代码
         5.0–6.5: 典型编译代码（x86/x86_64）
         6.5–7.0: 可疑——轻量混淆或部分压缩
         > 7.0: 强加密或压缩数据段
         > 7.5: 几乎确定为加密/压缩payload
     """
 
-    # 加壳器特征——常见加壳器的节名和入口特征
+    # 加壳器特征——常见加壳器节名与入口特征
     _PACKER_SIGNATURES = {
         'UPX': [b'UPX!', b'UPX0', b'UPX1'],
         'ASPack': [b'ASPack', b'.aspack'],
@@ -161,7 +161,7 @@ class BinaryEntropyAnalyzer:
         return round(ent, 3)
 
     def _chi_square(self, byte_counts, total):
-        """Chi-square检验——衡量字节分布与均匀分布的偏离程度。
+        """Chi-square检验——衡量字节分布与均匀分布的偏离。
 
         自由度=255，均匀分布期望值=total/256。
         """
@@ -176,9 +176,9 @@ class BinaryEntropyAnalyzer:
         return round(chi2, 1)
 
     def _section_analysis(self, data, total_size):
-        """滑动窗口分段分析——检测熵的局部突变区域。
+        """滑动窗口分段分析——检测熵的局部突变。
 
-        高熵窗口密集的区域标识为可疑段。
+        高熵窗口密集区域标识为可疑段。
         """
         sections = []
         if total_size < self.window_sz:
@@ -212,12 +212,12 @@ class BinaryEntropyAnalyzer:
                     printable_ratio=self._printable_ratio(window_data),
                     null_byte_ratio=self._null_ratio(window_data),
                     avg_byte_value=sum(window_data) / max(len(window_data), 1),
-                    anomaly_flags=['高熵连续段——可能是加密数据或压缩payload']))
+                    anomaly_flags=['高熵连续段——可能为加密数据或压缩payload']))
 
         return sections
 
     def _parse_sections_from_header(self, data):
-        """从ELF或PE头解析节表——提取各节的熵信息。"""
+        """从ELF或PE头解析节表——提取各节熵信息"""
         sections = []
         if len(data) < 64:
             return sections
@@ -264,7 +264,7 @@ class BinaryEntropyAnalyzer:
                     flags = []
                     ent = self._shannon_entropy(scnt, s_size)
                     if ent > 7.0 and stype == SectionType.CODE:
-                        flags.append(f'.text段熵异常({ent:.2f})——可能是自修改代码或混淆')
+                        flags.append(f'.text段熵异常({ent:.2f})——可能为自修改代码或混淆')
                     if ent > 7.5:
                         flags.append(f'极高熵({ent:.2f})——强加密或压缩')
 
@@ -288,7 +288,6 @@ class BinaryEntropyAnalyzer:
                     return sections
                 if data[pe_offset:pe_offset + 4] != b'PE\x00\x00':
                     return sections
-                # PE可选头后的节表
                 coff_nsections = struct.unpack_from('<H', data, pe_offset + 6)[0]
                 opt_header_size = struct.unpack_from('<H', data, pe_offset + 20)[0]
                 section_start = pe_offset + 24 + opt_header_size
@@ -330,7 +329,7 @@ class BinaryEntropyAnalyzer:
         return sections
 
     def _scan_packer_signatures(self, data):
-        """扫描已知加壳器的字节签名。"""
+        """扫描已知加壳器字节签名"""
         hits = []
         for packer, sigs in self._PACKER_SIGNATURES.items():
             for sig in sigs:
@@ -344,10 +343,10 @@ class BinaryEntropyAnalyzer:
 
         决策树:
             entropy > 7.5 AND chi_square < 500 → 加密
-            entropy > 7.0 AND sections中有异常 → 压缩/加壳
-            entropy > 6.5 AND packer_signature存在 → 确认加壳
+            entropy > 7.0 AND 段异常存在 → 压缩/加壳
+            entropy > 6.5 AND 加壳器签名存在 → 确认加壳
             printable_ratio < 0.05 → 二进制payload（可能混淆）
-            null_ratio > 0.30 → 未充分使用（可能是未初始化段）
+            null_ratio > 0.30 → 未充分使用（可能未初始化段）
             else → 未加壳
         """
         flags = report.anomaly_flags
@@ -370,7 +369,7 @@ class BinaryEntropyAnalyzer:
                 status = PackingStatus.LIKELY_PACKED
                 confidence = 0.55 + min(0.3, (ent - 7.0) * 0.6)
 
-        # 检查段异常
+        # 段异常检测
         for sec in report.sections:
             if sec.anomaly_flags:
                 flags.extend(sec.anomaly_flags)
@@ -398,7 +397,7 @@ class BinaryEntropyAnalyzer:
                          '字符串搜索和静态模式匹配的有效性将降低。')
         return recs
 
-    # ---- 统计辅助函数 ----
+    # 统计辅助函数
 
     @staticmethod
     def _printable_ratio(data):
@@ -414,16 +413,16 @@ class BinaryEntropyAnalyzer:
         return data.count(0) / len(data)
 
 
-# ---- 便捷函数 ----
+# 便捷函数
 
 def analyze_entropy(file_path: str) -> EntropyReport:
-    """分析二进制文件的熵和加壳检测。"""
+    """分析二进制文件熵与加壳检测"""
     analyzer = BinaryEntropyAnalyzer()
     return analyzer.analyze_file(file_path)
 
 
 def quick_entropy_check(data: bytes) -> Tuple[float, str]:
-    """快速熵检查——返回(熵值, 评估字符串)。"""
+    """快速熵检查——返回(熵值, 评估字符串)"""
     if not data:
         return 0.0, "无数据"
     cnt = Counter(data)

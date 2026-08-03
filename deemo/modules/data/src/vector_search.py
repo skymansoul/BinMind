@@ -1,21 +1,21 @@
 # 向量化签名搜索 — embedding-based similarity with LSH indexing
-# 将二进制签名转换为固定维度的特征向量 (feature vector)，
+# 将二进制签名转换为固定维度特征向量 (feature vector)，
 # 通过 LSH (Locality-Sensitive Hashing) 索引实现亚线性 kNN 搜索。
 #
 # 参考:
-#   DeepLSH [ICSE 2024]: 深度 LSH 学习 crash report 语义 hash,
-#     与 MinHash/SimHash 在 Jaccard/Cosine 指标上做系统对比,
-#     在 100M 查询规模下实现 ~24s 搜索 (vs exact k-NN 的 hours 级)。
+#   DeepLSH [ICSE 2024]: 深度 LSH 训练 crash report 语义 hash,
+#     与 MinHash/SimHash 在 Jaccard/Cosine 指标上系统对比,
+#     100M 查询规模下 ~24s 搜索 (vs exact k-NN 数小时级)。
 #   SemHash-LLM [arXiv:2607.01601]: 多粒度语义 hash 框架,
-#     联合语义投影 hash + attention-weighted MinHash + 对比边界学习，
-#     用于万亿级文档去重。
+#     联合语义投影 hash + attention-weighted MinHash + 对比边界训练，
+#     面向万亿级文档去重。
 #
-# 本实现提供不依赖深度学习框架的"经典 LSH"版本:
+# 本实现提供不依赖深度模型框架的"经典 LSH"版本:
 #   1. 随机投影 (Random Projection) LSH for Cosine similarity
-#   2. 特征提取: 从二进制 signature 元数据中提取数值特征
+#   2. 特征提取: 从二进制 signature 元数据提取数值特征
 #      (file_size, entropy, section_count, import_count, etc.)
 #   3. 向量索引: 多表 LSH + 线性扫描重排序
-# 若安装了 numpy/scipy/sklearn，可通过 optional 导入支持更高效的
+# 若已安装 numpy/scipy/sklearn，可通过 optional 导入启用更高效的
 # 超球面 LSH (Spherical LSH) 和 PCA 降维。
 
 import math
@@ -30,10 +30,10 @@ def extract_features(sig: dict, data: bytes = b"") -> List[float]:
     # 特征维度 ~30 (有 data) / ~12 (无 data):
     #   log(file_size+1), compression_ratio, byte_entropy, zero_byte_ratio,
     #   tag_count, stage_onehot×4, age_days, path_length
-    # 无 data 时 entropy 和 zero_ratio 填默认值 0.5/0.1
+    # 无 data 时 entropy 和 zero_ratio 填入默认值 0.5/0.1
     feats = []
 
-    # --- 大小相关 (log 防止极端值) ---
+    # --- 文件大小 (log 压缩极端值) ---
     fsize = sig.get("file_size", 0)
     feats.append(math.log(fsize + 1) / 20.0)   # normalize to ~[0, 1]
 
@@ -44,11 +44,11 @@ def extract_features(sig: dict, data: bytes = b"") -> List[float]:
     else:
         feats.append(0.5)
 
-    # --- 熵估计 (byte histogram spread) ---
+    # --- 字节熵估计 (histogram spread) ---
     if data and len(data) > 0:
         entropy = _byte_entropy(data)
         feats.append(entropy / 8.0)   # max entropy for bytes = 8
-        # 额外: 零字节比例
+        # 额外: 零字节占比
         zero_ratio = data.count(b'\x00') / len(data)
         feats.append(zero_ratio)
     else:
@@ -105,7 +105,7 @@ def _cosine_similarity(a: List[float], b: List[float]) -> float:
 
 # ---------------------------------------------------------------------------
 # Random Projection LSH for Cosine Similarity
-# 参考: Charikar, "Similarity Estimation Techniques from Rounding Algorithms",
+# 依据: Charikar, "Similarity Estimation Techniques from Rounding Algorithms",
 #   STOC 2002. 随机超平面 hash: sign(w · x) → 1 bit。
 #   K 个超平面 → K-bit hash → L 个表 → LSH 索引。
 # ---------------------------------------------------------------------------
@@ -113,8 +113,8 @@ def _cosine_similarity(a: List[float], b: List[float]) -> float:
 class RandomProjectionLSH:
     """Cosine LSH: K 个随机超平面将向量映射为 K-bit hash。
 
-    L 个独立的 hash 表，每个表用不同的随机投影矩阵。
-    查询时: 计算 query 的 L 个 hash → 在各表对应的 bucket 里找候选 →
+    L 张独立 hash 表，每张表用不同随机投影矩阵。
+    查询: 计算 query 的 L 个 hash → 在各表对应 bucket 内检索候选 →
     线性扫描候选计算真实 cosine → 返回 top-K。
     """
 
@@ -123,7 +123,7 @@ class RandomProjectionLSH:
         self.dim = dim
         self.K = K
         self.L = L
-        # 每个表一个 (K, dim) 随机矩阵
+        # 每表一个 (K, dim) 随机矩阵
         self._planes: List[List[List[float]]] = []
         self._buckets: List[Dict[int, List[Tuple[int, List[float]]]]] = [
             {} for _ in range(L)
@@ -187,7 +187,7 @@ class RandomProjectionLSH:
 
 
 # ---------------------------------------------------------------------------
-# VectorIndex — 向量搜索索引的管理器
+# VectorIndex — 向量搜索索引管理器
 # ---------------------------------------------------------------------------
 
 class VectorIndex:
@@ -261,7 +261,7 @@ class VectorIndex:
         return self
 
     def incremental_update(self, sig_id: int, db) -> bool:
-        """单条签名的增量更新。"""
+        """单条签名增量更新。"""
         sig = db.get_signature_by_id(sig_id)
         if sig is None:
             return False

@@ -1,16 +1,12 @@
-# 2026-07-30 ~ 2026-09-12
-# Main CVE analyzer — ties everything together.
-# The double-KB architecture is acknowledged tech debt: CVEKnowledgeBase from
-# cve_kb.py is SQLite-backed; there's also a CVEKB JSON-file version floating
-# around. Analyzer lazy-loads whichever is available. Long-term these should
-# consolidate into a single KB implementation.
+# ~ 2026-09-12
+# CVE分析入口——串联各子模块的统一调度层。
+# 双KB架构为已知技术债：CVEKnowledgeBase基于SQLite，另有一个CVEKB JSON版本。
+# 分析器惰性加载可用者。长期应将两者合并为单一实现。
 #
-# semantic_search() creates a fresh CVESearchEngine each call — fine for a few
-# queries but slow for bulk use. Cache the engine on the instance if you need
-# to do repeated searches. Noted as future optimization, not a bug.
+# semantic_search()每次调用新建CVESearchEngine——少量查询适用，批量场景需缓存。
+# 此为待优化项，非缺陷。
 #
-# prioritize() try/except chains each module separately — if one fails (e.g.
-# epss not installed), the others still work. Better than a single broad except.
+# prioritize()逐个try/except各评分模块——单模块失败不影响其余环节。
 
 import os
 from typing import List, Dict, Optional, Any, Union
@@ -20,19 +16,19 @@ from .cve_kb import CVEKnowledgeBase, get_kb
 
 
 class CVEAnalyzer:
-    """Main entry point for CVE analysis — file/binary/SBOM dispatch."""
+    """CVE分析主入口——文件/二进制/SBOM分发调度。"""
 
     def __init__(self, kb: Optional[CVEKnowledgeBase] = None):
-        """Initialize analyzer.
-        kb: optional injection point. If None, uses the module-level singleton.
-        Supports the double-KB pattern — pass a CVEKB JSON instance if needed."""
+        """初始化分析器。
+        kb: 可选注入点。None时使用模块级单例。
+        兼容双KB模式——按需传入CVEKB JSON实例。"""
         self._kb = kb if kb is not None else get_kb()
 
-    # ---- main dispatch ----
+    # ---- 主分发 ----
     def analyze(self, target: str) -> Dict[str, Any]:
-        """Main entry point. Accepts file path, binary path, or SBOM path.
-        Dispatches based on target type.
-        Returns a dict with results from the analysis pipeline."""
+        """主入口。接受文件路径、二进制路径或SBOM路径。
+        按目标类型分发。
+        返回分析管道结果字典。"""
         if not os.path.exists(target):
             return {"error": f"Target not found: {target}", "target": target}
 
@@ -55,7 +51,7 @@ class CVEAnalyzer:
         return result
 
     def _detect_type(self, target: str) -> str:
-        """Guess target type from path/extension."""
+        """按路径/扩展名推断目标类型。"""
         target_lower = target.lower()
         if target_lower.endswith((".json", ".xml")) and any(
             kw in os.path.basename(target_lower) for kw in ["sbom", "cyclonedx", "spdx", "bom"]
@@ -65,10 +61,10 @@ class CVEAnalyzer:
             return "binary"
         return "file"
 
-    # ---- compat methods ----
+    # ---- 兼容方法 ----
     def analyze_strings(self, strings: List[str]) -> List[CVEEntry]:
-        """Compat method — searches KB for CVEs mentioned in extracted strings.
-        Parses CVE IDs (CVE-YYYY-NNNNN format) from the string list."""
+        """兼容方法——从提取的字符串中解析CVE ID并检索知识库。
+        匹配CVE-YYYY-NNNNN格式。"""
         import re
 
         found: Dict[str, CVEEntry] = {}
@@ -84,49 +80,48 @@ class CVEAnalyzer:
 
         return list(found.values())
 
-    # ---- KB access ----
+    # ---- 知识库访问 ----
     def get_cve(self, cve_id: str) -> Optional[CVEEntry]:
-        """Fetch a single CVE from the knowledge base."""
+        """从知识库获取单个CVE条目。"""
         return self._kb.get(cve_id)
 
     def search_cves(self, query: str, limit: int = 50) -> List[CVEEntry]:
-        """Keyword search via the KB's built-in search."""
+        """通过知识库内置搜索做关键词检索。"""
         entries, _ = self._kb.search(query=query, limit=limit)
         return entries
 
-    # ---- semantic search ----
+    # ---- 语义搜索 ----
     def semantic_search(self, query: str, top_n: int = 10) -> List[Tuple[CVEEntry, float]]:
-        """BM25 semantic search over CVE descriptions.
-        Creates a NEW CVESearchEngine each call — engine NOT cached.
-        Fine for a few queries, slow for bulk. Future optimization: cache on instance."""
+        """基于BM25的CVE描述语义检索。
+        每次调用新建CVESearchEngine——引擎未缓存。
+        少量查询适用，批量场景需优化：将引擎缓存到实例上。"""
         from .cve_search import CVESearchEngine
 
         engine = CVESearchEngine(self._kb)
         engine.build()
         return engine.search(query, top_n=top_n)
 
-    # ---- enrichment ----
+    # ---- 富化 ----
     def enrich_with_epss(self, cve_ids: List[str]) -> Dict[str, Dict]:
-        """Batch EPSS enrichment. Returns dict of cve_id -> {score, percentile}."""
+        """批量EPSS富化。返回 cve_id -> {score, percentile}。"""
         try:
             from .cve_epss import EPSSClient
             client = EPSSClient()
             return client.fetch_scores(cve_ids)
         except ImportError:
-            # cve_epss not available — return empty enrichment
+            # cve_epss不可用——返回空富化
             return {cve_id: {"epss_score": None, "epss_percentile": None} for cve_id in cve_ids}
 
-    # ---- prioritization ----
+    # ---- 优先级排序 ----
     def prioritize(self, entries: List[CVEEntry]) -> List[CVEEntry]:
-        """Sort entries by severity + EPSS score + SSVC decision.
-        Each scoring module is try/except'd separately — one failure doesn't
-        break the whole pipeline."""
+        """按严重度 + EPSS评分 + SSVC决策排序。
+        各评分模块独立try/except——单模块失败不中断整个管道。"""
         enriched = list(entries)
 
-        # collect cve_ids for batch enrichment
+        # 收集cve_id做批量富化
         cve_ids = [e.cve_id for e in enriched]
 
-        # EPSS scoring
+        # EPSS评分
         try:
             from .cve_epss import EPSSClient
             client = EPSSClient()
@@ -138,35 +133,35 @@ class CVEAnalyzer:
                 if data.get("epss_percentile") is not None:
                     entry.epss_percentile = data["epss_percentile"]
         except ImportError:
-            pass  # epss module not available
+            pass  # epss模块不可用
 
-        # SSVC scoring (try import, skip if missing)
+        # SSVC评分（尝试导入，缺失则跳过）
         try:
             from .cve_ssvc import evaluate_ssvc
             for entry in enriched:
                 try:
                     decision = evaluate_ssvc(entry)
-                    # stash decision on the entry (hacky — should be a field)
+                    # 将决策暂存于entry上（临时方案——应作为正式字段）
                     entry.__dict__["_ssvc_decision"] = decision
                 except Exception:
                     pass
         except ImportError:
             pass
 
-        # sort: CRITICAL > HIGH > MEDIUM > LOW > NONE > UNKNOWN, then by epss percentile desc
+        # 排序：CRITICAL > HIGH > MEDIUM > LOW > NONE > UNKNOWN，同级别按epss percentile降序
         severity_order = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "NONE": 4, "UNKNOWN": 5}
 
         def sort_key(e: CVEEntry) -> Tuple[int, float]:
             sev = severity_order.get(e.severity, 99)
-            epss = -(e.epss_percentile or 0.0)  # negate so higher percentile = lower key
+            epss = -(e.epss_percentile or 0.0)  # 取负使高percentile排前
             return (sev, epss)
 
         enriched.sort(key=sort_key)
         return enriched
 
-    # ---- internal analyzers ----
+    # ---- 内部分析器 ----
     def _analyze_file(self, path: str) -> Dict[str, Any]:
-        """Analyze a text file — read contents, search KB."""
+        """分析文本文件——读取内容并搜索知识库。"""
         findings: Dict[str, Any] = {"path": path, "cves": []}
 
         try:
@@ -176,13 +171,13 @@ class CVEAnalyzer:
             findings["error"] = f"Failed to read file: {e}"
             return findings
 
-        # extract CVE IDs using regex
+        # 正则提取CVE ID
         import re
         cve_pattern = re.compile(r'CVE-\d{4}-\d{4,}', re.IGNORECASE)
         cve_ids = list(set(m.group(0).upper() for m in cve_pattern.finditer(content)))
 
         entries = []
-        for cve_id in cve_ids[:100]:  # cap at 100 to avoid ridiculous lookups
+        for cve_id in cve_ids[:100]:  # 上限100，避免过度查询
             entry = self._kb.get(cve_id)
             if entry:
                 entries.append(entry)
@@ -192,10 +187,10 @@ class CVEAnalyzer:
         return findings
 
     def _analyze_binary(self, path: str) -> Dict[str, Any]:
-        """Analyze a binary — extract strings, search KB for CVEs."""
+        """分析二进制——提取字符串并搜索知识库中的CVE。"""
         findings: Dict[str, Any] = {"path": path, "cves": []}
 
-        # simple binary string extraction (no pefile/elf dependencies)
+        # 简易二进制字符串提取（无pefile/elf依赖）
         try:
             with open(path, "rb") as f:
                 data = f.read()
@@ -203,7 +198,7 @@ class CVEAnalyzer:
             findings["error"] = f"Failed to read binary: {e}"
             return findings
 
-        # extract printable ASCII strings >= 4 chars
+        # 提取 >=4字符的可打印ASCII字符串
         strings = self._extract_strings(data)
 
         entries = self.analyze_strings(strings)
@@ -213,16 +208,16 @@ class CVEAnalyzer:
         return findings
 
     def _analyze_sbom(self, path: str) -> Dict[str, Any]:
-        """Analyze an SBOM file — parse, match packages to known CVEs."""
+        """分析SBOM文件——解析并匹配包到已知CVE。"""
         findings: Dict[str, Any] = {"path": path, "cves": []}
 
         try:
-            # try sbom matcher if available
+            # 优先使用sbom匹配器
             from .cve_sbom_matcher import match_sbom
             result = match_sbom(path, self._kb)
             findings.update(result)
         except ImportError:
-            # fallback: just read the file and look for CVE IDs
+            # 回退：直接读取文件查找CVE ID
             try:
                 with open(path, "r", encoding="utf-8", errors="replace") as f:
                     content = f.read()
@@ -244,20 +239,20 @@ class CVEAnalyzer:
 
     @staticmethod
     def _extract_strings(data: bytes, min_len: int = 4) -> List[str]:
-        """Extract printable ASCII strings from binary data.
-        Static method — doesn't need instance state."""
+        """从二进制数据提取可打印ASCII字符串。
+        静态方法——不依赖实例状态。"""
         strings: List[str] = []
         current: List[int] = []
 
         for byte in data:
-            if 32 <= byte <= 126:  # printable ASCII
+            if 32 <= byte <= 126:  # 可打印ASCII
                 current.append(byte)
             else:
                 if len(current) >= min_len:
                     strings.append(bytes(current).decode("ascii", errors="replace"))
                 current = []
 
-        # don't forget the last one
+        # 末尾残留处理
         if len(current) >= min_len:
             strings.append(bytes(current).decode("ascii", errors="replace"))
 

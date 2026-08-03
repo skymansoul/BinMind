@@ -2,16 +2,16 @@
 """
 选择性符号执行引擎
 
-基于 [Hybrid Taint 2025] 的选择性状态传播策略，
-仅对污点相关的分支进行符号化约束求解，
-非污点路径保持具体执行以减少状态爆炸。
+基于 [Hybrid Taint 2025] 的选择性状态传播策略
+仅对污点相关的分支进行符号化约束求解
+非污点路径保持具体执行以减少状态爆炸
 
 核心思想：
 - 静态污点分析确定关键输入字节
 - 符号执行仅在污点影响范围内展开
 - 非污点路径使用具体值快速通过
 
-参考 [FuzzRDUCC 2025, arXiv:2509.04967] 的 def-use 链引导策略。
+参考 [FuzzRDUCC 2025, arXiv:2509.04967] 的 def-使用 链引导策略
 """
 
 import logging
@@ -39,7 +39,7 @@ class TaintRegion:
     """污点区域：输入字节范围映射"""
     start_offset: int
     end_offset: int
-    source_type: str  # 'stdin', 'argv', 'env', 'file', 'network'
+    source_type: str  # 'stdin', 'argv', 'env', 'file', '网络'
     label: str = ""
 
 
@@ -47,9 +47,9 @@ class TaintRegion:
 class SelectiveState:
     """
     选择性符号状态
-
-    区别于全符号状态，仅标记有限的符号变量和约束。
-    参考 [Hybrid Taint 2025] 的剪枝状态表示。
+    
+    区别于全符号状态，仅标记有限的符号变量和约束
+    参考 [Hybrid Taint 2025] 的剪枝状态表示
     """
     addr: int
     tainted_regs: Set[str] = field(default_factory=set)
@@ -73,10 +73,10 @@ class SelectiveExecutionResult:
 class TaintPropagator:
     """
     污点传播器（寄存器级 + 内存级）
-
-    轻量实现：基于指令模式匹配的污点传播，
-    避免重量级 IR 转换。
-    参考 [ZTaint-Havoc 2025] 的零开销推断策略。
+    
+    轻量实现：基于指令模式匹配的污点传播
+    避免重量级 IR 转换
+    参考 [ZTaint-Havoc 2025] 的零开销推断策略
     """
 
     # x86-64 数据移动指令（源→目标传播模式）
@@ -113,8 +113,8 @@ class TaintPropagator:
     ) -> Tuple[Set[str], Set[int]]:
         """
         单条指令的污点传播
-
-        返回更新后的 (tainted_regs, tainted_mem)。
+        
+        返回更新后的 (tainted_regs, tainted_mem)
         """
         new_regs = set(tainted_regs)
         new_mem = set(tainted_mem)
@@ -142,7 +142,7 @@ class TaintPropagator:
                 elif dst in tainted_regs:
                     pass  # 如果目标是已污点寄存器，不自动清除（保守策略）
 
-        # 二元操作: add/sub/or/and/xor dst, src
+        # 二元操作: add/sub/or//xor dst, src
         m = self._BINARY_OP.match(instruction.strip())
         if m:
             dst, src = m.group(2).lower(), m.group(3).lower()
@@ -154,9 +154,9 @@ class TaintPropagator:
     def is_sink(self, instruction: str) -> Optional[str]:
         """
         检查是否为敏感汇点指令
-
-        Returns:
-            汇点类型字符串或 None
+        
+        返回:
+        汇点类型字符串或 None
         """
         call_match = re.search(r'call\s+(.+)', instruction, re.I)
         if not call_match:
@@ -204,23 +204,23 @@ class SelectiveSymbolicExecutor:
     ) -> SelectiveExecutionResult:
         """
         基于污点引导的选择性符号执行
-
+        
         核心算法：
         1. 初始化具体状态，仅将污点输入区域设为符号
         2. 步进执行，对每条指令检查：
-           a. 是否访问污点数据 → 是则符号分叉
-           b. 是否遇到敏感汇点 + 污点参数 → 报告漏洞
-           c. 是否无污点且无分支 → 快速具体执行
+        a. 是否访问污点数据 → 是则符号分叉
+        b. 是否遇到敏感汇点 + 污点参数 → 报告漏洞
+        c. 是否无污点且无分支 → 快速具体执行
         3. 污点约束剪枝：在非污点分支处不产生新状态
-
+        
         Args:
-            taint_regions: 污点输入区域定义
-            target_addr: 目标地址
-            avoid_addrs: 规避地址
-            max_paths: 最大路径数
-
-        Returns:
-            SelectiveExecutionResult
+        taint_regions: 污点输入区域定义
+        target_addr: 目标地址
+        avoid_addrs: 规避地址
+        max_paths: 最大路径数
+        
+        返回:
+        SelectiveExecutionResult
         """
         result = SelectiveExecutionResult(paths_found=0, tainted_paths=0)
 
@@ -317,10 +317,10 @@ class SelectiveSymbolicExecutor:
     ) -> Any:
         """
         创建部分符号化的标准输入
-
-        仅将污点区域的字节设为符号变量，
-        其余填充具体值（零）。
-        参考 [Hybrid Taint 2025] 的选择性符号化策略。
+        
+        仅将污点区域的字节设为符号变量
+        其余填充具体值（零）
+        参考 [Hybrid Taint 2025] 的选择性符号化策略
         """
         if not _HAS_ANGR:
             return b'\x00' * size
@@ -400,15 +400,15 @@ def run_selective_symbolic_execution(
 ) -> Dict[str, Any]:
     """
     便捷函数：选择性符号执行
-
+    
     Args:
-        binary_path: 二进制文件路径
-        taint_spec: 污点规格，如 [{"start": 0, "end": 256, "type": "stdin"}]
-        target_addr: 目标地址
-        timeout_seconds: 超时
-
-    Returns:
-        执行结果字典
+    binary_path: 二进制文件路径
+    taint_spec: 污点规格，如 [{"启动": 0, "end": 256, "type": "stdin"}]
+    target_addr: 目标地址
+    timeout_seconds: 超时
+    
+    返回:
+    执行结果字典
     """
     if not _HAS_ANGR:
         return {'error': 'angr 不可用', 'success': False}

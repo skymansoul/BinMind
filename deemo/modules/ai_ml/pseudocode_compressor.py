@@ -166,7 +166,7 @@ class ASTAnalyzer:
     CONTROL_FLOW = {'if', 'else', 'while', 'for', 'switch', 'case',
                     'default', 'break', 'continue', 'goto', 'return', 'do'}
 
-    # 常见的无意义填充词 —— 删掉对语义无损，对 token 预算有利
+    # 常见的无意义填充词 -- 删掉对语义无损，对 token 预算有利
     _FILLER_PATTERNS: List[str] = [
         r'\bthe\b', r'\ba\b', r'\ban\b', r'\bis\s+(?:a|the|an)\b',
         r'\b(?:basically|essentially|simply|just|merely|actually)\b',
@@ -241,7 +241,7 @@ class PseudocodeCompressor:
         'structure': 'struct', 'unsigned': 'u', 'volatile': 'vol',
     }
 
-    # 对BPE分词器更友好的估算系数 —— 经验值，来源于 tiktoken cl100k_base 的统计回归
+    # 对BPE分词器更友好的估算系数 -- 经验值，来源于 tiktoken cl100k_base 的统计回归
     _BPE_AVG_CHARS_PER_TOKEN = 3.2
     _BPE_SPECIAL_CHAR_WEIGHT = 1.8
 
@@ -280,7 +280,7 @@ class PseudocodeCompressor:
         elif self.config.strategy == CompressionStrategy.SIMPLIFY_IDENTIFIERS:
             compressed = self._simplify_identifiers(compressed)
 
-        # 注释剥离后再去填充词 —— 仅在 aggressive 及以上级别执行
+        # 注释剥离后再去填充词 -- 仅在 aggressive 及以上级别执行
         if self.config.level.value >= CompressionLevel.AGGRESSIVE.value:
             compressed = self.analyzer.strip_filler_words(compressed)
 

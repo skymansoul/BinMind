@@ -1,4 +1,3 @@
-# 2026-08-02
 # ROP/JOP/SYS 指令片段扫描器 — 自动发现可利用的代码片段
 # 参考: "War on JITs" (Ducasse et al. ACM Computing Surveys 2025) —
 #       JIT-ROP 的 gadget 发现与分类框架

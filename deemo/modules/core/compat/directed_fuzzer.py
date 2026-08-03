@@ -1,4 +1,3 @@
-# 2026-08-02
 # 定向灰盒模糊测试基元 — 目标驱动的路径探索与距离度量
 # 参考: BEACON (IEEE S&P 2022) — 可证明路径剪枝的定向灰盒模糊测试:
 #       将到达目标的路径编码为线性规划问题, 剪枝不可避免偏离目标的路径
@@ -88,7 +87,7 @@ def compute_block_distance(callgraph: dict[str, list[str]],
             cur = local_q.popleft()
             info = cfg.get(cur, {})
             # 反向: 谁可以跳转到 cur?
-            for pred_addr in _get_predecessors(cur, cfg):
+            for pred_addr in _retrieve_predecessors(cur, cfg):
                 if pred_addr in baddrs and pred_addr not in local_dist:
                     local_dist[pred_addr] = local_dist[cur] + 1
                     local_q.append(pred_addr)
@@ -113,7 +112,7 @@ def compute_block_distance(callgraph: dict[str, list[str]],
     }
 
 
-def _get_predecessors(addr: int, cfg: dict[int, dict]) -> list[int]:
+def _retrieve_predecessors(addr: int, cfg: dict[int, dict]) -> list[int]:
     """在 CFG 中查找 addr 的所有前驱。"""
     preds = []
     for block_addr, info in cfg.items():
@@ -167,7 +166,7 @@ def prune_by_dominance(cfg: dict[int, dict],
     # 计算目标的 dominators (简化: 仅前驱检查)
     # 真实场景中这来自 LLVM/Machine-SUIF 的 dominator tree pass
     target_info = cfg.get(target_addr, {})
-    target_preds = _get_predecessors(target_addr, cfg)
+    target_preds = _retrieve_predecessors(target_addr, cfg)
 
     current = current_path[-1] if current_path else None
     if current is None:
@@ -183,7 +182,7 @@ def prune_by_dominance(cfg: dict[int, dict],
     for succ in succs:
         if succ == target_addr:
             return False
-        succ_preds = _get_predecessors(succ, cfg)
+        succ_preds = _retrieve_predecessors(succ, cfg)
         if any(p in target_preds for p in succ_preds):
             return False
 

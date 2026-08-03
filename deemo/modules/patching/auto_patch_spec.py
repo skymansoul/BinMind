@@ -4,7 +4,7 @@ from enum import Enum
 from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional
 
-# from core.plugin_manager import BaseAnalyzer, AnalyzerMetadata, AnalyzerType
+# 插件管理器导入桩 — 基础设施就绪后启用
 
 logger = logging.getLogger(__name__)
 
@@ -68,9 +68,9 @@ class BinaryPatch:
     applied: bool = False
 
 
-# ── spec template cache ────────────────────────────────────────────────
-# 对相似漏洞避免重复调用 LLM — CWE + affected_function 组成复合 key。
-# 缓存 64 条，LRU 淘汰。简单场景（无 AI）也可命中 RuleBasedSpec。
+# ── spec 缓存 ──────────────────────────────────────────────────────────
+# CWE + affected_function + vuln_type 组成复合键，避免同漏洞重复推演。
+# 容量 64 条，LRU 淘汰。规则路径命中则跳过远程调用。
 
 _spec_cache = {}
 _SPEC_CACHE_MAX = 64
@@ -95,13 +95,13 @@ def _cache_put(vuln_context, spec):
     if k is None:
         return
     if len(_spec_cache) >= _SPEC_CACHE_MAX:
-        # evict oldest (naive — just pop first key)
+        # 淘汰最旧条目 — 简单弹出首键
         _spec_cache.pop(next(iter(_spec_cache)), None)
     _spec_cache[k] = spec
 
 
-# ── rule-based spec generator ──────────────────────────────────────────
-# 非 LLM 的快速路径：根据 CWE ID 和 vuln type 直接输出预定义 spec。
+# ── 规则驱动 spec 构造 ────────────────────────────────────────────────
+# 查表直出：CWE ID + vuln type 映射预置 spec，零远程开销。
 # 覆盖 CWE-121, CWE-122, CWE-416, CWE-476, CWE-190, CWE-134。
 
 _RULE_SPECS = {
@@ -156,8 +156,8 @@ class PatchSpecGenerator:
 
 
 class RuleBasedSpecGenerator(PatchSpecGenerator):
-    """基于预定义规则的 spec 生成器 — 无需 LLM，O(1) 查找。
-    覆盖常见 CWE，未命中时回退到通用 CODE_REPLACEMENT 策略。"""
+    """查表直出预置 spec — O(1) 恒定开销。
+    命中常见 CWE 即返回；未命中回退至通用 CODE_REPLACEMENT。"""
 
     def generate_specification(self, vulnerability_context):
         if vulnerability_context is None:
@@ -167,7 +167,7 @@ class RuleBasedSpecGenerator(PatchSpecGenerator):
         rule = _RULE_SPECS.get(cwe)
 
         if rule is None:
-            # 尝试从 vuln type 推断
+            # vuln type 关键词推断 CWE 归类
             vt = (vulnerability_context.vulnerability_type or '').lower()
             if 'overflow' in vt or 'buffer' in vt:
                 rule = _RULE_SPECS.get('CWE-121')
@@ -226,13 +226,13 @@ class LLMPatchSpecGenerator(PatchSpecGenerator):
 
     def _init_ai_client(self):
         try:
-            # DecompAI module import — uncomment when available
+            # 远程推理客户端 — 模块就绪后取消注释
             # from modules.decomp_ai import DecompAI
             # self.ai = DecompAI()
             # if self.ai:
-            #     logger.info("LLM patch spec generator initialized successfully")
+            #     logger.info("远程 spec 构造器初始化完成")
             # else:
-            #     logger.warning("AI client initialization returned None")
+            #     logger.warning("远程推理客户端初始化返回 None")
             pass
         except ImportError as e:
             logger.warning("Cannot initialize AI client: %s", e)
@@ -487,7 +487,7 @@ Patch specification requirements:
 class AutoPatchSpecAnalyzer:
     def __init__(self):
         self._generator = LLMPatchSpecGenerator()
-        self._rule_generator = RuleBasedSpecGenerator()  # 快速路径 fallback
+        self._rule_generator = RuleBasedSpecGenerator()  # 查表直出，远程不可用时兜底
         self._generated_specs = []
 
     def analyze(self, **kwargs):
@@ -522,7 +522,7 @@ class AutoPatchSpecAnalyzer:
 
         logger.info("Generating patch spec: %s", vuln_type)
 
-        # 先查缓存
+        # 缓存优先 — 命中则跳过构造
         cached = _cache_get(vuln_context)
         if cached is not None:
             logger.debug("cache hit for %s", vuln_type)
@@ -530,7 +530,7 @@ class AutoPatchSpecAnalyzer:
             return self._spec_to_result(cached)
 
         try:
-            # 优先尝试基于规则的快速路径
+            # 规则路径优先 — 查表 O(1)，命中即出
             if cwe_id and cwe_id in _RULE_SPECS:
                 spec = self._rule_generator.generate_specification(vuln_context)
                 logger.debug("rule-based spec generated for %s", cwe_id)
@@ -573,23 +573,23 @@ class AutoPatchSpecAnalyzer:
         if vulnerability_contexts is None:
             return specs
 
-        seen = set()  # 去重：同一 patch_id 的 spec 只保留一份
+        seen = set()  # 去重：同 CWE+函数+vuln_type 仅留一份
         for context in vulnerability_contexts:
             if context is not None:
-                # dedup key: (CWE, function, vuln_type)
+                # 去重键: (CWE, function, vuln_type)
                 dedup_key = _cache_key(context)
                 if dedup_key in seen:
                     continue
                 seen.add(dedup_key)
 
-                # 检查缓存
+                # 查缓存
                 cached = _cache_get(context)
                 if cached is not None:
                     specs.append(cached)
                     self._generated_specs.append(cached)
                     continue
 
-                # 优先规则路径
+                # 规则路径优先
                 if context.cwe_id and context.cwe_id in _RULE_SPECS:
                     spec = self._rule_generator.generate_specification(context)
                 else:
@@ -607,7 +607,7 @@ class AutoPatchSpecAnalyzer:
 
     @classmethod
     def get_metadata(cls):
-        # Metadata stub; import AnalyzerMetadata when plugin infra is available
+        # 元数据桩；插件基础设施就绪后引入 AnalyzerMetadata
         return {}
 
     def validate_input(self, **kwargs):

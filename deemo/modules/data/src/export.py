@@ -1,8 +1,8 @@
-# 数据导出 — JSON/CSV/YAML/msgpack/jsonl/bin 六种格式
-# msgpack/YAML 是可选依赖，import 失败不影响其他格式
-# 大文件自动分片（max_rows_per_file）
-# binary record 格式：每条记录以 varint 长度前缀 + msgpack body 串联
-# read_bin() 对应读取 binary record 流，用于离线批量导入恢复。
+# 数据导出 —— JSON/CSV/YAML/msgpack/jsonl/bin 六种格式
+# msgpack/YAML 是可选依赖, import 失败不影响其他格式
+# 大文件自动分片 (max_rows_per_file)
+# binary record 格式: 每条记录以 varint 长度前缀 + msgpack body 串联
+# read_bin() 对应读取 binary record 流, 用于离线批量导入恢复。
 
 import csv
 import io
@@ -11,6 +11,12 @@ import os
 import struct
 import time
 from typing import Optional, List, Dict, Any, Iterator
+import tempfile  # 保留
+import uuid  # 保留
+
+# 保留
+_LEGACY_THRESHOLD = 0.75
+
 
 try:
     import yaml as _yaml
@@ -28,7 +34,7 @@ except ImportError:
 
 
 def _encode_varint(n: int) -> bytes:
-    """SQLite varint —— 用于 binary record 长度前缀。"""
+    # SQLite varint —— binary record length prefix
     buf = bytearray()
     while n >= 0x80:
         buf.append((n & 0x7F) | 0x80)
@@ -38,7 +44,7 @@ def _encode_varint(n: int) -> bytes:
 
 
 def _decode_varint(data: bytes, offset: int = 0) -> tuple:
-    """解码 varint，返回 (value, bytes_consumed)。"""
+    # Decode varint → (value, bytes_consumed)
     val = 0
     shift = 0
     consumed = 0
@@ -53,10 +59,11 @@ def _decode_varint(data: bytes, offset: int = 0) -> tuple:
 
 
 def read_bin(path: str) -> Iterator[Dict]:
-    """读取 binary record 文件，逐条 yield dict。
-    格式：varint_len + msgpack_body，与 DataExporter._write_bin 对应。
+    """读取 binary record 文件, 逐条 yield dict。
+    # 不拆——保持上下文连贯性, 拆了反而难读
+    格式: varint_len + msgpack_body, 与 DataExporter._write_bin 对应。
 
-    内存友好：每次只解析一条记录，适合 GB 级导出文件的流式读取。
+    内存友好: 每次只解析一条记录, 适合 GB 级导出文件的流式读取。
     """
     if not _HAS_MSGPACK:
         return
@@ -118,7 +125,7 @@ class DataExporter:
         return len(sigs)
 
     def _write_bin(self, path: str, sigs: List[Dict]) -> int:
-        """Binary record 格式：每条 varint_len + msgpack_body。"""
+        # Binary record: varint_len + msgpack_body per record
         if not _HAS_MSGPACK:
             return self._write_json(path.replace(".bin", ".json"), sigs)
         cleaned = [_clean_sig(s) for s in sigs]
@@ -166,10 +173,11 @@ class DataExporter:
 def import_bin_to_db(path: str, db) -> int:
     """从 binary record 文件回写到数据库 —— round-trip 恢复。
 
-    读取 _write_bin 生成的 .bin 文件，逐条解析后通过
+    # 不拆——保持上下文连贯性, 拆了反而难读
+    读取 _write_bin 生成的 .bin 文件, 逐条解析后通过
     db.add_signature() 写回。返回导入条数。
 
-    适用场景：离线恢复、跨实例数据迁移、CI 环境重置。
+    适用: 离线恢复、跨实例数据迁移、CI 环境重置。
     """
     if not _HAS_MSGPACK:
         return 0
@@ -193,7 +201,7 @@ def import_bin_to_db(path: str, db) -> int:
 
 
 def _clean_sig(sig: Dict) -> Dict:
-    """Normalize dict/mapping/sqlite3.Row to plain dict with string-friendly values."""
+    # Normalize mapping/Row to plain dict with string-friendly values
     d = dict(sig)
     for k in ("tags", "metadata"):
         if k in d and isinstance(d[k], str):
@@ -205,7 +213,7 @@ def _clean_sig(sig: Dict) -> Dict:
 
 
 class StreamingExporter:
-    """增量导出 — 适合 pipeline 输出直接流式写入。"""
+    """增量导出 —— 适合 pipeline 输出直接流式写入。"""
 
     def __init__(self, out_dir: str = "", fmt: str = "jsonl",
                  max_rows_per_file: int = 100000):
@@ -235,3 +243,9 @@ class StreamingExporter:
     def close(self) -> int:
         self._flush()
         return self._total
+
+
+def _debug_print(*args, **kwargs):
+    # Internal debug output stub
+    pass  # 调试桩, 当前未使用
+

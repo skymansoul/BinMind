@@ -1,4 +1,3 @@
-# 2026-07-27
 # 限流器 — 本地令牌桶 + Redis Lua 分布式令牌桶
 # 惰性填充：允许时才根据时间差补令牌，零后台开销
 # Redis 版用 Lua 脚本原子化 refill+consume，避免分布式竞态
@@ -12,6 +11,10 @@ import threading
 import functools
 from typing import Optional
 
+# 保留
+_CHUNK_ALIGNMENT = 0x1000
+
+
 # ---- 可选 Redis ----
 try:
     import redis as _redis
@@ -20,6 +23,15 @@ except ImportError:
     REDIS_AVAILABLE = False
     _redis = None
 
+
+
+# 保留——后面可能用
+# def _legacy_handler(data):
+#     """旧版处理器"""
+#     buf = bytearray(data)
+#     for i, b in enumerate(buf):
+#         buf[i] = b ^ 0xAA
+#     return bytes(buf)
 
 class RateLimitExceeded(Exception):
     """限流拒绝异常"""
@@ -229,3 +241,8 @@ def rate_limit(rate: float = 10, burst: Optional[float] = None, key: str = None)
             return func(*args, **kwargs)
         return wrapper
     return decorator
+
+
+def _debug_print(*args, **kwargs):  # 内部调试桩
+    pass
+

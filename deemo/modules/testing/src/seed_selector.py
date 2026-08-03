@@ -1,6 +1,4 @@
-# 2026-07-31
-# 多臂老虎机驱动的种子选择器 — UCB1 / Thompson Sampling / EXP3
-# 将模糊测试的种子调度建模为 bandit 问题：
+# 将模糊测试的种子调度建模为bandit问题:
 #   臂 = 种子, 奖励 = 新覆盖边数 / 触发崩溃 / 执行时间效率
 # 在探索（试用新种子）与利用（反复变异高产种子）之间自适应平衡。
 # 参考:
@@ -16,18 +14,20 @@ import time
 
 
 class UCB1Selector:
-    """标准 UCB1: 每臂维护 (选择次数, 累积奖励)，选上置信界最高者。
+    """标准UCB1: 每臂维护(选择次数, 累积奖励)，选上置信界最高者。
+
     arm_score = mean_reward + sqrt(2 * log(total_trials) / trials_arm)
 
-    奖励值域 [0, inf)，高奖励的种子获得更多选择机会。
-    新种子（trials=0）优先选出以完成冷启动。"""
+    奖励值域 [0, inf)，高奖励种子获得更多选择机会。
+    新种子（trials=0）优先选出以完成冷启动。
+    """
 
     def __init__(self, exploration_bonus: float = 2.0):
         """
-        exploration_bonus: UCB 探索系数。>1 偏向探索，
-        <1 偏向利用。默认 2.0 (经典 UCB1)。"""
+        exploration_bonus: UCB探索系数。>1偏向探索，<1偏向利用。默认2.0。
+        """
         self._c = exploration_bonus
-        self._arms: Dict[str, Dict[str, float]] = {}  # name → {trials, reward, last_seen}
+        self._arms: Dict[str, Dict[str, float]] = {}  # name -> {trials, reward, last_seen}
         self._total = 0
 
     def add_arm(self, name: str) -> None:
@@ -36,7 +36,7 @@ class UCB1Selector:
                                "last_seen": time.time()}
 
     def select(self) -> str:
-        """选择一个臂。trials==0 的臂优先选出（冷启动）。"""
+        """选择一个臂。trials==0的臂优先选出（冷启动）。"""
         self._total += 1
         best_arm = None
         best_score = float('-inf')
@@ -55,7 +55,7 @@ class UCB1Selector:
         return best_arm or next(iter(self._arms))
 
     def reward(self, name: str, value: float) -> None:
-        """给予奖励。value 建议归一化到 [0, 10]。"""
+        """给予奖励。value建议归一化到[0, 10]。"""
         if name in self._arms:
             self._arms[name]["trials"] += 1
             self._arms[name]["reward"] += value
@@ -85,16 +85,18 @@ class UCB1Selector:
 
 
 class ThompsonSelector:
-    """Thompson 采样: 每臂维护 Beta(α, β) 后验分布。
-    奖励建模为二项结果 (成功/失败)，由外部报告 new_edges > 0 为成功。
-    每次选臂时从 Beta 分布采样，选采样值最高的臂。
-    与 UCB1 不同，Thompson 天然具备随机探索性（后验方差大的臂
-    也有机会被选中），不需要显式探索项。
+    """Thompson采样: 每臂维护Beta(alpha, beta)后验分布。
 
-    参考 Chapelle & Li 2011 "An Empirical Evaluation of Thompson Sampling" """
+    奖励建模为二项结果(成功/失败)，由外部报告new_edges > 0为成功。
+    每次选臂时从Beta分布采样，选采样值最高者。
+    与UCB1不同，Thompson天然具备随机探索性（后验方差大的臂也有机会
+    被选中），不需要显式探索项。
+
+    参考Chapelle & Li 2011 "An Empirical Evaluation of Thompson Sampling"
+    """
 
     def __init__(self):
-        self._arms: Dict[str, Dict[str, float]] = {}  # name → {alpha, beta}
+        self._arms: Dict[str, Dict[str, float]] = {}  # name -> {alpha, beta}
 
     def add_arm(self, name: str, alpha: float = 1.0,
                 beta: float = 1.0) -> None:
@@ -114,7 +116,7 @@ class ThompsonSelector:
         return best_name or next(iter(self._arms), "")
 
     def reward(self, name: str, success: bool) -> None:
-        """success=True → alpha += 1, success=False → beta += 1"""
+        """success=True -> alpha += 1, success=False -> beta += 1"""
         if name in self._arms:
             if success:
                 self._arms[name]["alpha"] += 1.0
@@ -141,18 +143,20 @@ class ThompsonSelector:
 
 class EXP3Selector:
     """EXP3 (Exponential-weight for Exploration and Exploitation):
-    对抗性 bandit 算法，不对奖励分布做任何假设。适用于非稳态
-    奖励（如 fuzzing 过程中某个种子突然发现大量新覆盖）。
-    每臂维护权重 w_i，选择概率 p_i = (1-γ)*(w_i/Σw_j) + γ/N。
-    收到奖励后做重要性加权更新: w_i *= exp(γ * reward_i / (N * p_i))。
+    对抗性bandit算法，不对奖励分布做任何假设。适用于非稳态奖励
+    （如fuzzing过程中某种子突然发现大量新覆盖）。
+    每臂维护权重w_i，选择概率p_i = (1-gamma)*(w_i/SUM(w_j)) + gamma/N。
+    收到奖励后做重要性加权更新: w_i *= exp(gamma * reward_i / (N * p_i))。
 
-    参考 Auer et al. 2002, "The Nonstochastic Multiarmed Bandit Problem"
-    及 EcoFuzz (Yue et al. USENIX 2020) 的对抗性 MAB 应用。"""
+    参考Auer et al. 2002, "The Nonstochastic Multiarmed Bandit Problem"
+    及EcoFuzz (Yue et al. USENIX 2020)的对抗性MAB应用。
+    """
 
     def __init__(self, exploration_rate: float = 0.1):
         """
-        exploration_rate (γ): 均匀探索比例 [0, 1]。0.1=10%的时间做均匀探索。
-        较大值适合高度非稳态奖励流。"""
+        exploration_rate (gamma): 均匀探索比例 [0, 1]。0.1=10%时间做均匀探索。
+        较大值适合高度非稳态奖励流。
+        """
         self._gamma = max(0.01, min(0.5, exploration_rate))
         self._weights: Dict[str, float] = {}
         self._names: List[str] = []
@@ -185,7 +189,7 @@ class EXP3Selector:
         return self._names[-1]
 
     def reward(self, name: str, value: float) -> None:
-        """value ∈ [0, 1]，做重要性加权更新权重。"""
+        """value in [0, 1]，做重要性加权更新权重。"""
         if name not in self._weights or not self._names:
             return
         n = len(self._names)
@@ -194,7 +198,7 @@ class EXP3Selector:
                 + self._gamma / n)
         if prob <= 0:
             return
-        # 重要性加权：除以选择概率以纠正采样偏差
+        # 重要性加权: 除以选择概率以纠正采样偏差
         scaled_reward = value / prob
         self._weights[name] *= math.exp(
             self._gamma * scaled_reward / n)
@@ -214,12 +218,14 @@ class EXP3Selector:
 
 
 class CompositeSeedSelector:
-    """组合多种 bandit 策略的种子选择器。
+    """组合多种bandit策略的种子选择器。
+
     三种策略各有优势:
       UCB1: 确定性探索，适合稳定奖励
       Thompson: 贝叶斯探索，适合二项奖励
       EXP3: 对抗性探索，适合非稳态奖励
-    最终选择通过投票或加权混合决定。"""
+    最终选择通过加权投票决定。
+    """
 
     def __init__(self):
         self._ucb1 = UCB1Selector()
@@ -258,7 +264,7 @@ class CompositeSeedSelector:
 
     def update_strategy_performance(self, strategy: str,
                                     was_successful: bool) -> None:
-        """跟踪各策略的长期成功率，用于加权投票。"""
+        """跟踪各策略长期成功率，用于加权投票。"""
         self._strategy_success[strategy].append(1.0 if was_successful else 0.0)
         recent = self._strategy_success[strategy][-32:]
         avg = sum(recent) / len(recent)

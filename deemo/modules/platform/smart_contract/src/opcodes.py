@@ -1,6 +1,6 @@
-# 2026-07-28
-# EVM opcode table — 参考 Ethereum Yellow Paper + EIP 更新
-# 按 family 分组方便 gas profiling；taint source/sink 为 taint_tracker 准备
+# EVM操作码表 — 参考以太坊黄皮书 + EIP更新
+# 按family分组方便gas分析；taint source/sink为taint_tracker准备
+# 不拆: 230+操作码放在一张表里，操作码查找O(1)
 from enum import IntEnum
 
 class OpcodeFamily(IntEnum):

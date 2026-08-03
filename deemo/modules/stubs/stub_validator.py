@@ -1,5 +1,5 @@
-# stub_validator.py — 桩模块完整性验证
-# 验证目标 compat 模块是否存在、桩能否加载、核心符号是否缺失。
+# stub_validator.py — 桩模块完整性校验
+# 验证目标 compat 模块是否可加载、核心符号是否缺失。
 # 参考: Neural Decompilation (arXiv:2412.07538) 管道验证 &
 #   DeBinVul (arXiv:2411.04981) 多架构完整性校验
 import os as _os
@@ -9,7 +9,7 @@ import importlib.util as _iu
 _STUBS_DIR = _os.path.dirname(_os.path.abspath(__file__))
 _COMPAT_DIR = _os.path.join(_os.path.dirname(_STUBS_DIR), 'core', 'compat')  # fix
 
-# 核心符号清单 — stub 中缺失即视为破坏性变更
+# 核心符号清单 — stub 中缺失任一即视为破坏性变更
 _CRITICAL = {
     'binary_format_loader':   ['BinaryFormat', 'Arch', 'BinaryLoader', 'detect_format'],
     'crypto_param_extractor': ['CryptoAlgorithm', 'KeyMaterial', 'detect_algorithm'],

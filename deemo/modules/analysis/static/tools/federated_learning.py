@@ -1,21 +1,19 @@
-"""Federated-learning-driven collaborative analysis for sensitive targets.
+"""Federated-learning-driven collaborative analysis for sensitive targets
 
 Capabilities:
 1. Client-side FL agent
-2. Server-side FL orchestrator
+2. Server-side FL 调度器
 3. Gradient aggregation / parameter synchronization
-4. Differential-privacy gradient obfuscation
-5. Secure aggregation protocol
-6. Model versioning and state synchronization
+4. Differential-privacy gradient 混淆
+5. Model versioning state synchronization
 
-Invariants enforced:
-- Raw data remains resident on client nodes
-- Only model gradients and parameter deltas cross the wire
-- Gradient vectors receive differential-privacy perturbation before transmission
-- Optional SMPC protocol for multi-party scenarios
+注: "Secure aggregation 协议" 和 "SMPC" 在当前版本中未实现。
+基类 FLClient / FLServer 为抽象接口, 不可直接实例化。
+具体实现参见 VulnerabilityDetectionClient / VulnerabilityDetectionServer。
 """
 
 import logging, json, hashlib, time
+from abc import ABC, abstractmethod
 
 _g_log = logging.getLogger(__name__)
 
@@ -71,7 +69,7 @@ class FLRoundResult:
         self.participating_clients = participating_clients if participating_clients is not None else []; self.timestamp = timestamp
 
 class PrivacyProtector:
-    """Gradient privacy layer: clip norm, then inject Laplace noise."""
+    """Gradient privacy layer: clip norm, inject Laplace noise"""
 
     def __init__(self, epsilon=1.0, clip_norm=1.0):
         self.epsilon = epsilon; self.clip_norm = clip_norm
@@ -89,7 +87,7 @@ class PrivacyProtector:
         return (grad_np + noise).tolist()
 
     def protect(self, gradients):
-        """Clip then noise: full DP-SGD gradient protection pipeline."""
+        """Clip noise: full DP-SGD gradient protection 流水线"""
         if gradients is None: return {}
         protected = {}
         grad_keys = list(gradients.keys()); i = 0
@@ -98,9 +96,9 @@ class PrivacyProtector:
         return protected
 
     def compute_privacy_spent(self, steps: int, delta: float = 1e-5) -> float:
-        """Rényi DP 会计——基于 moments accountant 的隐私预算追踪。
-        返回 (ε, δ) 组合用于判断训练是否违反预设隐私上限。
-        简化实现：假设每次查询独立，使用高斯机制的组合定理。
+        """Rényi DP 会计——基于 moments accountant 的隐私预算追踪
+        返回 (ε, δ) 组合用于判断训练是否违反预设隐私上限
+        简化实现：假设每次查询独立，使用高斯机制的组合定理
         """
         if steps <= 0 or self.epsilon <= 0:
             return 0.0
@@ -112,7 +110,7 @@ class PrivacyProtector:
         return eps_alpha * steps  # 近似的 ε 累积
 
 class GradientAggregator:
-    """Strategy-pattern gradient aggregation: FedAvg, FedProx, FedSGD, etc."""
+    """Strategy-pattern gradient aggregation: FedAvg, FedProx, FedSGD, etc"""
 
     def __init__(self, algorithm=FLAlgorithm.FEDAVG):
         self.algorithm = algorithm
@@ -124,7 +122,7 @@ class GradientAggregator:
         else: return self._fedavg_aggregate(gradients)
 
     def _fedavg_aggregate(self, gradients):
-        """Weighted average: each client contribution scaled by sample_count."""
+        """Weighted average: client contribution scaled sample_count"""
         import numpy as np
         total_samples = 0; i = 0
         while i < len(gradients): total_samples += gradients[i].sample_count if gradients[i].sample_count > 0 else 1; i += 1
@@ -145,30 +143,48 @@ class GradientAggregator:
         return aggregated
 
     def _fedprox_aggregate(self, gradients):
-        """FedProx: proximal-term variant of weighted average (simplified)."""
+        """FedProx: proximal-term variant weighted average (simplified)"""
         return self._fedavg_aggregate(gradients)
 
-class FLClient:
-    """Federated learning client node: local training, gradient perturbation."""
+class FLClient(ABC):
+    """联邦学习客户端基类 — 不可直接实例化, 子类必须实现 train_local 和 evaluate_local。
+    具体实现: VulnerabilityDetectionClient。
+    """
 
     def __init__(self, client_id, config=None):
         self.client_id = client_id; self.config = config or FLConfig(); self.status = FLStatus.IDLE; self.local_model = None
         self.privacy_protector = PrivacyProtector(epsilon=self.config.epsilon, clip_norm=self.config.clip_norm)
 
-    def load_local_data(self, data_path): pass
-    def train_local(self, global_model): pass
-    def evaluate_local(self, model): pass
+    @abstractmethod
+    def load_local_data(self, data_path):
+        """加载本地训练数据。子类必须覆盖——数据格式取决于具体应用场景。"""
+        ...
+
+    @abstractmethod
+    def train_local(self, global_model):
+        """本地 SGD 训练。返回 (FLGradient, FLMetrics)。
+        子类必须实现前向传播→损失计算→梯度计算。
+        """
+        ...
+
+    @abstractmethod
+    def evaluate_local(self, model):
+        """本地模型评估。返回 FLMetrics (含 loss/accuracy)。"""
+        ...
 
     def protect_gradient(self, gradients):
-        """Apply DP perturbation to local gradient before uplink."""
+        """Apply DP perturbation local gradient uplink"""
         if gradients is None: return {}
         return self.privacy_protector.protect(gradients)
 
     def get_status(self):
         return {'client_id': self.client_id, 'status': self.status.value, 'config': {'local_epochs': self.config.local_epochs, 'learning_rate': self.config.learning_rate, 'epsilon': self.config.epsilon}}
 
-class FLServer:
-    """Federated learning server: client registry, round orchestration, model synchronization."""
+class FLServer(ABC):
+    """联邦学习服务端基类 — 不可直接实例化。
+    子类必须实现 initialize_global_model 和 update_global_model。
+    具体实现: VulnerabilityDetectionServer。
+    """
 
     def __init__(self, config=None):
         self.config = config or FLConfig(); self.status = FLStatus.IDLE; self.global_model = None
@@ -189,7 +205,10 @@ class FLServer:
         if len(client_list) <= selected_count: return client_list
         return random.sample(client_list, selected_count)
 
-    def initialize_global_model(self): pass
+    @abstractmethod
+    def initialize_global_model(self):
+        """初始化全局模型权重。子类必须返回 FLModel 实例。"""
+        ...
 
     def broadcast_model(self, clients):
         if clients is None: return False
@@ -216,10 +235,15 @@ class FLServer:
         if gradients is None or len(gradients) == 0: _g_log.warning("no gradients to aggregate"); return {}
         return self.gradient_aggregator.aggregate(gradients)
 
-    def update_global_model(self, aggregated_gradients): pass
+    @abstractmethod
+    def update_global_model(self, aggregated_gradients):
+        """应用聚合梯度更新全局模型。子类必须实现 SGD 步骤: W = W - lr * grad。
+        返回 True 表示更新成功。
+        """
+        ...
 
     def run_round(self):
-        """Execute one complete FL round: select, broadcast, train, aggregate, evaluate."""
+        """执行 one complete FL 舍入: select, broadcast, train, aggregate, evaluate"""
         self.current_round += 1; _g_log.info("round %d start", self.current_round)
         selected_clients = self.select_clients()
         if len(selected_clients) < self.config.min_clients:
@@ -248,7 +272,7 @@ class FLServer:
         return metrics
 
     def train(self):
-        """Full training lifecycle: initialize, iterate rounds, check convergence."""
+        """Full training lifecycle: 初始化, 迭代 舍入, 检查 convergence"""
         if not self.global_model: self.global_model = self.initialize_global_model()
         results = []; round_idx = 0
         while round_idx < self.config.max_rounds:
@@ -259,7 +283,7 @@ class FLServer:
         return results
 
     def _check_convergence(self, result):
-        """Convergence criterion: mean loss across all participating clients < 0.01."""
+        """Convergence criterion: mean loss across participating clients < 0.01"""
         if result is None or not result.metrics: return False
         total = 0.0; i = 0
         while i < len(result.metrics): total += result.metrics[i].loss; i += 1
@@ -269,7 +293,7 @@ class FLServer:
         return {'status': self.status.value, 'current_round': self.current_round, 'total_rounds': self.config.max_rounds, 'num_clients': len(self.clients), 'algorithm': self.config.algorithm.value, 'model_id': self.global_model.model_id if self.global_model else None}
 
 class VulnerabilityDetectionClient(FLClient):
-    """FL client specialized for vulnerability detection on local binary corpora."""
+    """FL client specialized for 漏洞检测 local binary corpora"""
 
     def __init__(self, client_id, config=None):
         super().__init__(client_id, config); self.local_data = []; self.feature_extractor = None
@@ -310,7 +334,7 @@ class VulnerabilityDetectionClient(FLClient):
         return FLMetrics(round=self.config.max_rounds, client_id=self.client_id, loss=0.3, accuracy=0.85, precision=0.82, recall=0.88, f1_score=0.85)
 
 class VulnerabilityDetectionServer(FLServer):
-    """FL server specialized for vulnerability detection model aggregation."""
+    """FL server specialized for 漏洞检测 model aggregation"""
 
     def __init__(self, config=None):
         super().__init__(config)
@@ -332,7 +356,7 @@ class VulnerabilityDetectionServer(FLServer):
         self.global_model.version += 1; self.global_model.timestamp = time.time(); return True
 
 class FLNetworkSimulator:
-    """Simulated FL network: latency model, client/server wiring, round loop."""
+    """Simulated FL 网络: 延迟 model, client/server wiring, 舍入 loop"""
 
     def __init__(self): self.clients = {}; self.server = None
 
@@ -349,7 +373,7 @@ class FLNetworkSimulator:
         if self.server: self.server.unregister_client(client_id)
 
     def simulate_latency(self, base_latency=0.1):
-        """Inject synthetic network latency per communication round."""
+        """Inject synthetic 网络 延迟 per communication 舍入"""
         import random; time.sleep(base_latency + random.uniform(0, 0.1))
 
     def run_simulation(self, rounds=10):

@@ -1,0 +1,92 @@
+# CVE module default configuration
+# 2026-07-16 base, updated through 2026-08-02
+# Override via env vars: CVE_<SECTION>_<KEY>
+
+nvd:
+  api_url: "https://services.nvd.nist.gov/rest/json/cves/2.0"
+  sync_interval_hours: 6
+  batch_size: 2000
+  max_retries: 5
+  timeout_seconds: 60
+
+epss:
+  api_url: "https://api.first.org/data/v1/epss"
+  cache_ttl_hours: 24
+  min_percentile: 0.85
+
+osv:
+  api_url: "https://api.osv.dev/v1"
+  ecosystems:
+    - PyPI
+    - npm
+    - Maven
+    - Go
+    - crates.io
+    - RubyGems
+    - NuGet
+
+ghsa:
+  github_api: "https://api.github.com/graphql"
+  per_page: 100
+  max_pages: 10
+
+kev:
+  catalog_url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
+  refresh_hours: 12
+
+ssvc:
+  decision_tree_version: "1.1.0"
+  default_priority: "scheduled"
+
+vex:
+  format_version: "1.2.1"
+  author: "BinMind"
+
+watchlist:
+  max_entries: 5000
+  check_interval_hours: 6
+
+sbom:
+  supported_formats:
+    - spdx
+    - cyclonedx
+
+risk_scorer:
+  epss_weight: 0.35
+  kev_weight: 0.25
+  cvss_weight: 0.20
+  exploit_maturity_weight: 0.20
+
+attack_graph:
+  max_depth: 10
+  max_paths: 100
+
+embeddings:
+  model: "text-embedding-3-small"
+  dimension: 1536
+  batch_size: 100
+
+exploit_strategy:
+  strategy_chain_depth: 3
+  confidence_threshold: 0.6
+
+correlation:
+  max_deployments: 1000
+  blast_radius_depth: 3
+
+remediation:
+  default_sla_days: 90
+  critical_sla_days: 15
+
+c3e:
+  temperature: 0.07
+  epochs: 5
+  batch_size: 32
+
+gnn:
+  layers: 3
+  hidden_dim: 128
+  epochs: 200
+
+changelog:
+  retain_versions: 50

@@ -1,5 +1,3 @@
-# 2026-07-18
-
 """Fuzzing核心数据结构 -- Seed/FuzzConfig/FuzzResult/CorpusStats."""
 
 import hashlib

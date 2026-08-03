@@ -1,16 +1,16 @@
-# 模糊测试编排器——管理AFL++/libFuzzer/自定义fuzzer的完整生命周期。
-# 参考HyllFuzz (arXiv:2412.15931) 的LLM辅助seed生成与VPGFuzz (IEEE TIFS 2025)
-# 的路径引导策略，以及IDFuzz (USENIX Security 2025) 的神经网络驱动变异。
+# 模糊测试编排引擎——管理AFL++/libFuzzer/自定义fuzzer完整生命周期。
+# 参考HyllFuzz (arXiv:2412.15931) LLM辅助seed构造、VPGFuzz (IEEE TIFS 2025)
+# 路径引导策略、IDFuzz (USENIX Security 2025) 神经网络驱动变异。
 #
 # 功能边界:
 #   - 多fuzzer并发编排——AFL++(coverage-guided) + libFuzzer(in-process) + 自定义变异器
-#   - 崩溃去重与严重度分诊——基于信号类型、调用栈哈希、可复现性的三分法
+#   - 崩溃去重与严重度分诊——信号类型、调用栈哈希、可复现性三分法
 #   - Seed进化——低覆盖率seed剔除、高收益seed变异增强
-#   - Fuzzer间结果共享——AFL++发现的路径可转换为libFuzzer的语料
-#   - 资源感知调度——CPU核心/内存/时间预算约束下的最优分配
+#   - Fuzzer间结果共享——AFL++路径转换为libFuzzer语料
+#   - 资源感知调度——CPU核心/内存/时间预算约束下最优分配
 #
-# 2026-07-24 —— 初版，仅AFL++ wrapper
-# 2026-07-29 —— 新增崩溃分诊和多fuzzer编排
+# 当前实现——AFL++ wrapper基础上扩展
+# 增强——崩溃分诊与多fuzzer编排
 
 import os, sys, time, re, json, subprocess, signal, hashlib, shutil, logging, threading
 import tempfile as _tempfile
@@ -51,7 +51,7 @@ class CrashSeverity(str, Enum):
 
 @dataclass
 class FuzzerConfig:
-    """单个fuzzer实例的配置。"""
+    """单fuzzer实例配置"""
     fuzzer_type: FuzzerType
     target_binary: str
     input_dir: str = ""
@@ -68,7 +68,7 @@ class FuzzerConfig:
 
 @dataclass
 class CrashInfo:
-    """单次崩溃的元信息。"""
+    """单次崩溃元信息"""
     crash_id: str                   # 基于调用栈哈希的唯一ID
     signal_type: int                # SIGSEGV=11, SIGABRT=6, SIGILL=4, ...
     fault_addr: int = 0
@@ -86,7 +86,7 @@ class CrashInfo:
 
 @dataclass
 class FuzzingCampaign:
-    """一次fuzzing活动的记录。"""
+    """单次fuzzing活动记录"""
     campaign_id: str
     target: str
     fuzzer_configs: List[FuzzerConfig] = field(default_factory=list)
@@ -100,10 +100,10 @@ class FuzzingCampaign:
     status: str = "pending"
 
 
-# ---- Fuzzer进程管理 ----
+# Fuzzer进程管理
 
 class FuzzerProcess:
-    """单个fuzzer进程的封装——管理启动、监控、优雅关闭。"""
+    """单fuzzer进程封装——启动/监控/优雅关闭"""
 
     def __init__(self, config: FuzzerConfig, workdir: str):
         self.cfg = config
@@ -115,7 +115,7 @@ class FuzzerProcess:
         self._stop_event = threading.Event()
 
     def build_command(self) -> List[str]:
-        """构建fuzzer命令行——根据类型生成不同参数。"""
+        """构建fuzzer命令行——按类型分发参数"""
         cmd = []
         if self.cfg.fuzzer_type == FuzzerType.AFLPP:
             cmd = ['afl-fuzz']
@@ -150,7 +150,7 @@ class FuzzerProcess:
         return cmd
 
     def start(self) -> bool:
-        """启动fuzzer进程。"""
+        """启动fuzzer进程"""
         cmd = self.build_command()
         if not cmd:
             logger.error(f"无法构建fuzzer命令: {self.cfg.fuzzer_type}")
@@ -184,7 +184,7 @@ class FuzzerProcess:
             return False
 
     def stop(self, grace_period: float = 5.0):
-        """优雅关闭——先SIGTERM，超时后SIGKILL。"""
+        """优雅关闭——先SIGTERM，超时后SIGKILL"""
         if self.process is None or self.process.poll() is not None:
             self.status = FuzzerStatus.COMPLETED
             return
@@ -212,12 +212,12 @@ class FuzzerProcess:
         return (self.process is not None and self.process.poll() is None)
 
 
-# ---- 崩溃分诊 ----
+# 崩溃分诊
 
 class CrashTriager:
-    """崩溃分诊器——对fuzzer产出的崩溃做去重+严重度评估。
+    """崩溃分诊器——去重+严重度评估。
 
-    去重策略（参考AFL++的crash exploration模式）:
+    去重策略（参考AFL++ crash exploration模式）:
         1. 调用栈哈希——不同输入触发同一崩溃路径视为重复
         2. 崩溃信号类型——SIGSEGV/SIGABRT等区分不同根因
         3. ASAN报告哈希——ASAN输出比调用栈更精确
@@ -238,7 +238,7 @@ class CrashTriager:
 
     def triage(self, crash_input: str, target_binary: str,
                timeout: int = 10) -> Optional[CrashInfo]:
-        """对单个崩溃输入做分诊——复现+分析+分类。
+        """单崩溃输入分诊——复现+分析+分类。
 
         返回CrashInfo或None（无法复现时）。
         """
@@ -292,7 +292,7 @@ class CrashTriager:
 
     def _reproduce(self, input_file: str, target_binary: str,
                     timeout: int = 10) -> Optional[Dict]:
-        # 尝试复现崩溃——目标+输入，收集信号和栈信息
+        # 复现崩溃——目标+输入，收集信号与栈信息
         try:
             with open(input_file, 'rb') as f:
                 input_data = f.read()
@@ -328,22 +328,22 @@ class CrashTriager:
         return [ci for ci in self._crash_db.values() if not ci.duplicate_of]
 
 
-# ---- 主编排器 ----
+# 主编排器
 
 class FuzzingOrchestrator:
-    """模糊测试编排器——管理多个fuzzer的协作运行。
+    """模糊测试编排器——管理多fuzzer协作运行。
 
     核心流程:
         1. 准备——创建输出目录、种子语料、字典
         2. 启动——并行启动各fuzzer实例
         3. 监控——轮询状态、收集覆盖率、同步语料
-        4. 分诊——对发现的新崩溃做去重+严重度评估
-        5. 收敛判断——覆盖率增长停滞或时间/执行数达上限
+        4. 分诊——对新崩溃做去重+严重度评估
+        5. 收敛——覆盖率增长停滞或时间/执行数达上限
 
     参考:
-        - HyllFuzz (arXiv:2412.15931): LLM辅助seed生成+混合fuzzing编排
-        - VPGFuzz (IEEE TIFS 2025): 漏洞路径引导的灰盒fuzzing
-        - IDFuzz (USENIX 2025): 神经网络驱动的定向变异
+        - HyllFuzz (arXiv:2412.15931): LLM辅助seed构造+混合fuzzing编排
+        - VPGFuzz (IEEE TIFS 2025): 漏洞路径引导灰盒fuzzing
+        - IDFuzz (USENIX 2025): 神经网络驱动定向变异
     """
 
     def __init__(self, output_base: str = "", max_concurrent: int = 3):
@@ -366,13 +366,13 @@ class FuzzingOrchestrator:
 
         参数:
             target_binary: 目标二进制文件路径
-            fuzzer_types: 使用的fuzzer类型列表，默认[AFLPP]
+            fuzzer_types: fuzzer类型列表，默认[AFLPP]
             input_dir: 初始种子语料目录
             duration_minutes: 预计运行时间（分钟）
-            memory_per_fuzzer_mb: 每个fuzzer的内存限制MB
+            memory_per_fuzzer_mb: 单fuzzer内存限制MB
             extra_args: 传递给目标程序的额外命令行参数
 
-        返回FuzzingCampaign对象，调用方可用其追踪进度。
+        返回FuzzingCampaign对象，用于追踪进度。
         """
         if not os.path.exists(target_binary):
             raise FileNotFoundError(f"目标文件不存在: {target_binary}")
@@ -385,7 +385,7 @@ class FuzzingOrchestrator:
         seed_dir = input_dir or os.path.join(camp_dir, 'seeds')
         os.makedirs(seed_dir, exist_ok=True)
 
-        # 如果没有种子输入，创建一个最小的哑输入
+        # 无种子输入时创建最小哑输入
         if not os.listdir(seed_dir):
             dummy = os.path.join(seed_dir, 'dummy_seed')
             with open(dummy, 'wb') as f:
@@ -418,7 +418,7 @@ class FuzzingOrchestrator:
                 logger.warning(f"Fuzzer {cfg.fuzzer_type.value} 启动失败")
 
         self._running = True
-        # 后台监控线程——周期性检查进度
+        # 后台监控线程——周期检查进度
         self._monitor_thread = threading.Thread(
             target=self._monitor_loop, args=(campaign, duration_minutes * 60),
             daemon=True)
@@ -429,7 +429,7 @@ class FuzzingOrchestrator:
         return campaign
 
     def _monitor_loop(self, campaign: FuzzingCampaign, max_seconds: int):
-        """监控循环——周期性收集统计、同步语料、检查超时。"""
+        """监控循环——周期收集统计/同步语料/检查超时"""
         start_ts = time.time()
         sync_interval = 300  # 5分钟同步一次
 
@@ -442,8 +442,8 @@ class FuzzingOrchestrator:
             # 收集覆盖率
             campaign.total_execs = self._estimate_total_execs()
 
-            # 语料同步——将AFL++发现的新路径复制到libFuzzer的语料目录
-            # 仅在存在多个不同类型fuzzer时执行
+            # 语料同步——AFL++发现路径复制到libFuzzer语料目录
+            # 仅在多类型fuzzer并存时执行
             if len(set(fz.cfg.fuzzer_type for fz in self.fuzzers if fz.is_alive)) > 1:
                 if (time.time() - start_ts) % sync_interval < 10:
                     self._sync_corpus(campaign)
@@ -459,7 +459,7 @@ class FuzzingOrchestrator:
                 fz.stop()
 
     def _estimate_total_execs(self) -> int:
-        """估算所有fuzzer的总执行次数。"""
+        """估算所有fuzzer总执行次数"""
         total = 0
         for fz in self.fuzzers:
             plot_data = os.path.join(fz.cfg.output_dir, 'plot_data')
@@ -475,7 +475,7 @@ class FuzzingOrchestrator:
         return total
 
     def _sync_corpus(self, campaign: FuzzingCampaign):
-        """同步语料——在fuzzer间共享发现的路径。"""
+        """同步语料——fuzzer间共享发现路径"""
         afl_dirs = [fz.cfg.output_dir for fz in self.fuzzers
                      if fz.cfg.fuzzer_type in (FuzzerType.AFL, FuzzerType.AFLPP)
                      and fz.is_alive]
@@ -499,9 +499,9 @@ class FuzzingOrchestrator:
 
     def collect_crashes(self, campaign: FuzzingCampaign = None,
                           target_binary: str = "") -> List[CrashInfo]:
-        """收集并分诊所有发现的崩溃。
+        """收集并分诊所有崩溃。
 
-        扫描各fuzzer输出目录的crashes子目录，对每个崩溃输入调用triager。
+        扫描各fuzzer输出目录crashes子目录，逐崩溃输入调用triager。
         """
         if campaign is None:
             campaign = self.campaigns[-1] if self.campaigns else None
@@ -528,7 +528,7 @@ class FuzzingOrchestrator:
                 if info:
                     all_crashes.append(info)
 
-        # 更新campaign的崩溃统计
+        # 更新campaign崩溃统计
         campaign.crashes = all_crashes
         unique = [c for c in all_crashes if not c.duplicate_of]
         campaign.unique_crashes = len(unique)
@@ -536,7 +536,7 @@ class FuzzingOrchestrator:
         return unique
 
     def stop_all(self):
-        """停止所有运行中的fuzzer。"""
+        """停止所有运行中fuzzer"""
         self._running = False
         for fz in self.fuzzers:
             if fz.is_alive:
@@ -545,7 +545,7 @@ class FuzzingOrchestrator:
             self._monitor_thread.join(timeout=10)
 
     def get_status(self, campaign_id: str = "") -> Dict[str, Any]:
-        """获取当前运行状态——用于仪表盘/监控。"""
+        """获取当前运行状态（仪表盘/监控用）"""
         campaign = None
         if campaign_id:
             campaign = next((c for c in self.campaigns
@@ -581,13 +581,13 @@ class FuzzingOrchestrator:
         }
 
 
-# ---- 便捷函数 ----
+# 便捷函数
 
 def fuzz_target(target_binary: str, output_dir: str = "",
                 fuzzer_type: str = "aflpp",
                 duration_minutes: int = 30,
                 input_dir: str = "") -> FuzzingCampaign:
-    """便捷函数——对单个目标启动fuzzing。
+    """单目标fuzzing启动便捷函数。
 
     返回FuzzingCampaign。
     """
@@ -610,7 +610,7 @@ def triage_crash_directory(crash_dir: str, target_binary: str
                             ) -> List[CrashInfo]:
     """对目录中所有崩溃文件做分诊。
 
-    返回去重后的CrashInfo列表。
+    返回去重后CrashInfo列表。
     """
     triager = CrashTriager()
     results = []

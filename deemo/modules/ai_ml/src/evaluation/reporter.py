@@ -1,5 +1,4 @@
-# 2026-07-18
-# 报告生成器 —— 分类报告 / 混淆矩阵 / K折汇总
+# 报告生成器 -- 分类报告 / 混淆矩阵 / K折汇总
 # 战略意图：评估结果需可视化、可追踪，每个fold单独记录，汇总时给出mean±std
 
 import numpy as np
@@ -135,8 +134,8 @@ class EvalReporter:
 
     def __init__(self):
         # ---- 存储结构 ----
-        self._kfold_results = []       # list of dicts: [{"accuracy": 0.9, "f1": 0.87, ...}, ...]
-        self._epoch_log = []           # list of (epoch, train_loss, val_loss)
+        self._kfold_results = []       # list of dicts: [{"准确度": 0.9, "f1": 0.87, ...}, ...]
+        self._epoch_log = []           # list of (轮次, train_loss, val_loss)
         self._fold_metrics_order = []  # 记录指标名顺序，保证表格输出一致
 
     def add_fold(self, fold_idx, metrics):
@@ -201,7 +200,7 @@ class EvalReporter:
             )
         _lines.append("-" * 48)
 
-        # //// 附上 epoch loss 摘要
+        # //// 附上 轮次 loss 摘要
         if self._epoch_log:
             _lines.append("")
             _lines.append("Epoch Log:")

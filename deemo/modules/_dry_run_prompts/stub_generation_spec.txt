@@ -1,0 +1,637 @@
+# Notes on stub generation module
+# Written during initial design phase, revised during implementation
+
+## 当前模块描述
+占位实现模块：stub 注册表、stub 健康监控、以及尚未实现的各分析器占位（固件分析、污点追踪、内核漏洞分析、字符串去混淆、补丁差异分析）。
+
+## 设计的深度创新点: Stub 健康监控 + 神经符号渐进实现 (StubGradual)
+
+### 创新动机与理论依据
+stub 目录存放大量未实现占位。借鉴 Agentic Repair 的神经符号流程：为每个 stub 生成接口契约（签名+输入输出约束+错误语义），依据健康监控得分与调用频率排序实现优先级；实现过程中以测试执行反馈验证语义正确性，未通过则回退并记录。差异点：现有 stub 为纯占位，新增方案引入契约驱动的渐进实现与验证闭环。
+
+### 支撑论文
+  [1] Agentic Program Repair from Test Failures at Scale: A Neuro-symbolic approach — arXiv:2507.18755 (2025).
+  [2] SynthFix: Adaptive Neuro-Symbolic Code Vulnerability Repair — arXiv:2604.17184 (2026).
+
+## 当前模块代码 (关键文件摘要)
+```python
+# === stubs\stub_registry.py (2838 字节) ===
+# stub_registry.py — 桩模块中心注册表
+# 维护 stubs/ 下所有重导出桩与其 compat 目标的映射关系，
+# 提供导入前的存在性检查、版本差异检测和批量重载。
+# 参考: Implicit Patterns in LLM-Based Binary Analysis (arXiv:2603.19138)
+#   "knowledge-guided prioritization" 策略 — 注册表优先级排序借鉴该思路。
+import os as _os
+from dataclasses import dataclass as _dc, field as _field
+from typing import Optional as _Opt
+
+_STUBS_DIR = _os.path.dirname(_os.path.abspath(__file__))
+_COMPAT_DIR = _os.path.join(_os.path.dirname(_STUBS_DIR), 'core', 'compat')  # fix: _stubs_dir undefined
+
+@_dc
+class StubEntry:
+    stub_name: str
+    compat_target: str
+    loader_style: str = 'import_star'
+    api_surface_size: int = 0
+    has_extensions: bool = False
+    min_python: tuple = (3, 10)
+    deprecated: bool = False
+
+class StubRegistry:
+
+    def __init__(self):
+        self._entries: dict[str, StubEntry] = {}
+        self._by_target: dict[str, list[StubEntry]] = {}
+        self._loaded = False
+
+    def register(self, entry: StubEntry) -> None:
+        self._entries[entry.stub_name] = entry
+        # 允许同一 compat_target 对应多个 stub（多路径代理）
+        self._by_target.setdefault(entry.compat_target, []).append(entry)
+
+    def discover(self) -> int:
+        """扫描 stubs/ 目录，为每个有 compat 对应项的 .py 文件注册条目。"""
+        cnt = 0
+        try:
+            items = _os.listdir(_STUBS_DIR)
+        except OSError:
+            return 0
+
+        for fn in items:
+            if fn.startswith('_') or not fn.endswith('.py'):
+                continue
+            name = fn[:-3]
+            if name in self._entries:
+                continue
+            compat_target = _os.path.join(_COMPAT_DIR, f'{name}.py')
+            if _os.path.isfile(compat_target):
+                self.register(StubEntry(stub_name=name, compat_target=name))
+                cnt += 1
+        self._loaded = True
+        return cnt
+
+    def lookup_stub(self, name: str) -> _Opt[StubEntry]:
+        return self._entries.get(name)
+
+    def list_all(self) -> list[StubEntry]:
+        return sorted(self._entries.values(), key=lambda e: e.stub_name)
+
+    def targets_without_stubs(self) -> list[str]:
+        existing = set()
+        try:
+            listing = _os.listdir(_COMPAT_DIR)
+        except OSError:
+            return []
+        for fn in listing:
+            if not fn.startswith('_') and fn.endswith('.py'):
+                existing.add(fn[:-3])
+        return sorted(existing - set(self._entries.keys()))
+
+
+_registry = None  # 懒初始化，首次 get_registry() 调用时填充
+
+def get_registry() -> StubRegistry:
+    global _registry
+    if _registry is None:
+        _registry = StubRegistry()
+        _registry.discover()
+
+# === stubs\stub_health_monitor.py (3960 字节) ===
+"""
+桩健康监控 — 运行时调用追踪 + 渐进式废弃调度。
+
+模块位置: stubs/stub_health_monitor.py
+"""
+
+import time, json, os
+from collections import defaultdict
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional, Tuple
+import logging
+_log = logging.getLogger(__name__)
+
+
+@dataclass
+class StubCallRecord:
+    """桩调用记录。"""
+    stub_name: str
+    compat_target: str
+    call_count: int = 0
+    caller_modules: Dict[str, int] = field(default_factory=dict)
+    first_seen: float = 0.0
+    last_seen: float = 0.0
+    deprecation_candidate: bool = False
+
+
+class StubHealthMonitor:
+    """
+    桩健康监控器 — 运行时调用追踪。
+
+    功能:
+      1. 透明记录每个桩的调用频率和调用者
+      2. 当调用频率低于阈值时自动标记为废弃候选
+      3. 生成桩到新 API 的迁移指南
+    """
+
+    def __init__(self, deprecation_threshold_days: int = 90, min_calls: int = 5):
+        self._records: Dict[str, StubCallRecord] = {}
+        self._threshold_days = deprecation_threshold_days
+        self._min_calls = min_calls
+
+    def record_call(self, stub_name: str, compat_target: str, caller_module: str = "unknown"):
+        """记录一次桩调用。"""
+        now = time.time()
+        if stub_name not in self._records:
+            self._records[stub_name] = StubCallRecord(
+                stub_name=stub_name, compat_target=compat_target,
+                first_seen=now,
+            )
+        rec = self._records[stub_name]
+        rec.call_count += 1
+        rec.caller_modules[caller_module] = rec.caller_modules.get(caller_module, 0) + 1
+        rec.last_seen = now
+
+    def evaluate_deprecation(self) -> List[StubCallRecord]:
+        """评估哪些桩可以废弃。"""
+        now = time.time()
+        candidates = []
+        for rec in self._records.values():
+            days_since_last = (now - rec.last_seen) / 86400.0
+            if days_since_last > self._threshold_days or rec.call_count < self._min_calls:
+                rec.deprecation_candidate = True
+                candidates.append(rec)
+        return sorted(candidates, key=lambda r: r.last_seen)
+
+    def generate_migration_guide(self) -> str:
+        """生成迁移指南 — 桩 → 新 API 映射。"""
+        lines = ["# 桩迁移指南", f"生成时间: {time.strftime('%Y-%m-%d')}", ""]
+        for name, rec in sorted(self._records.items()):
+            new_path = rec.compat_target.replace(".", "/")
+            lines.append(f"## {name}")
+            lines.append(f"- 旧导入: `from modules.{name} import X`")
+            lines.append(f"- 新导入: `from modules.core.compat.{new_path} import X`")
+            lines.append(f"- 调用次数: {rec.call_count}")
+            lines.append(f"- 调用者: {', '.join(f'{m}({c})' for m, c in rec.caller_modules.items())}")
+            if rec.deprecation_candidate:
+                lines.append(f"- **废弃候选** (最后调用: {time.strftime('%Y-%m-%d', time.localtime(rec.last_seen))})")
+            lines.append("")
+        return "\n".join(lines)
+
+
+# === stubs\firmware_analyzer.py (3561 字节) ===
+# firmware_analyzer.py — 固件安全分析器
+# 分析 IoT / 嵌入式设备固件，提取文件系统、识别已知漏洞、评估加固水平。
+# 参考: FIE on Firmware (USENIX Security 2013) — 嵌入式系统的符号执行 &
+#   FITS (ASPLOS 2023) — IoT 固件的中间污点源推断 &
+#   FirmRec (ACM CCS 2024) — 重复漏洞检测 &
+#   IoT Firmware Emulation and Its Security Application in Fuzzing (2024) &
+#   Shimware (2016) — 固件安全 retrofit
+import os as _os, struct as _pack, re as _re
+from dataclasses import dataclass as _dc, field as _field
+
+# 常见固件文件系统魔数
+_FS_MAGICS = {
+    b'\x28\xcd\x2d\x3d': 'SquashFS (LE)',
+    b'\x68\x73\x71\x73': 'SquashFS (BE)',
+    b'\x1f\x8b\x08':     'gzip compressed',
+    b'\xfd\x37\x7a\x58\x5a\x00': 'XZ compressed',
+    b'\x42\x5a\x68':     'bzip2 compressed',
+    b'\x50\x4b\x03\x04': 'Zip archive',
+    b'UBI#':            'UBI image',
+    b'CRAMFS':          'CramFS',
+    b'\x3a\xff\x26\xed': 'JFFS2',
+    b'\xe2\xe1\x85\x1a': 'YAFFS',
+}
+
+@_dc
+class FirmwareInfo:
+    file_path: str = ''
+    file_size: int = 0
+    fs_type: str = 'unknown'
+    compression: str = 'none'
+    kernel_version: str = ''
+    architecture: str = ''
+    entropy: float = 0.0
+    sections: list[dict] = field(default_factory=list)
+
+def analyze_firmware_header(data: bytes) -> FirmwareInfo:
+    """检测固件映像的文件系统类型和压缩格式。
+    FIE on Firmware: 正确识别固件格式是所有后续分析的前提。"""
+    import math as _math
+    info = FirmwareInfo(file_size=len(data))
+
+    # 文件系统魔数匹配
+    for magic, fstype in _FS_MAGICS.items():
+        if data[:len(magic)] == magic:
+            info.fs_type = fstype
+            break
+
+    # 熵计算 — FITS 用于区分压缩/加密区域与代码区域
+    if data:
+        freq = [0] * 256
+        for b in data[:65536]:  # 仅分析前 64KB
+            freq[b] += 1
+        n = min(65536, len(data))
+        info.entropy = -sum((c/n)*_math.log2(c/n) for c in freq if c > 0)
+
+    # Linux 内核版本字符串扫描
+    ver_match = _re.search(rb'Linux\s+version\s+(\d+\.\d+\.\d+)', data[:1048576])
+    if ver_match:
+        info.kernel_version = ver_match.group(1).decode()
+
+    # 架构推断 — 通过 ELF header
+    if data[:4] == b'\x7fELF':
+        ei_class = data[4]
+        ei_data = data[5]
+        e_machine = _pack.unpack_from('<H', data, 18)[0]
+        arch_map = {3: 'x86', 62: 'x86_64', 40: 'ARM', 183: 'AArch64',
+                    8: 'MIPS', 20: 'PowerPC'}
+        info.architecture = arch_map.get(e_machine, f'machine_{e_machine}')
+
+    return info
+
+# FirmRec (CCS 2024) 方法: 从固件中提取漏洞签名
+def extract_vuln_signatures(firmware_data: bytes) -> list[dict]:
+    """从固件二进制中提取已知漏洞模式签名。
+    FirmRec 的 concolic 签名方法: 语义等价检测，对代码变化不敏感。"""
+    sigs = []
+    # 检测硬编码凭据
+    cred_patterns = [
+        (rb'(?:passwd|password|pass|pwd)\s*[=:]\s*["\']?([^\s"\'&|;]{4,32})["\']?', 'hardcoded_password'),
+        (rb'(?:api[_-]?key|token)\s*[=:]\s*["\']?([A-Za-z0-9_-]{16,64})["\']?', 'hardcoded_api_key'),
+
+# === stubs\taint_tracker.py (3525 字节) ===
+# taint_tracker.py — 动态污点追踪
+# 跟踪用户输入在二进制执行中的传播路径，检测注入点和信息泄露。
+# 参考: LLM-Powered Static Binary Taint Analysis (2024) — LLM 增强的静态污点 &
+#   Dynamic Taint Analysis for Automatic Detection of Exploits (Newsome & Song, 2005) &
+#   Scalable Language Agnostic Taint Tracking (SOAP 2025)
+import struct as _pack
+from collections import defaultdict as _defdict
+
+# 污点源 API 映射 — 从外部获取数据的函数
+_TAINT_SOURCES = {
+    'read', 'fread', 'recv', 'recvfrom', 'recvmsg',
+    'scanf', 'fscanf', 'gets', 'fgets',
+    'ReadFile', 'RegQueryValueEx',
+    'getenv', 'getenv_s',
+}
+
+# 污点传播操作 — 数据从源寄存器流向目标寄存器
+_TAINT_PROPAGATION_OPS = {
+    'mov', 'lea', 'add', 'sub', 'xor', 'and', 'or', 'shl', 'shr',
+    'movzx', 'movsx', 'push', 'pop', 'xchg',
+}
+
+def mark_taint_sources(instructions: list[dict]) -> dict[int, set[str]]:
+    """标记污点源。返回 {insn_index: {taint_labels}}。"""
+    taint_map = {}
+    for idx, insn in enumerate(instructions):
+        mnemonic = insn.get('mnemonic', '').lower()
+        if mnemonic == 'call':
+            target = insn.get('operands', '').lower()
+            for src in _TAINT_SOURCES:
+                if src in target:
+                    taint_map[idx] = {f'taint_{src}'}
+    return taint_map
+
+def propagate_taint(instructions: list[dict],
+                     taint_map: dict[int, set[str]]) -> dict[int, set[str]]:
+    """沿数据流传播污点标记。固定点迭代直至收敛。
+    参考 LLM-Powered Static Binary Taint Analysis 的
+    LLM 辅助别名分析 — 此处用简化版寄存器别名追踪。"""
+    changed = True
+    max_iter = len(instructions) * 3  # 防止不收敛
+
+    while changed and max_iter > 0:
+        max_iter -= 1; changed = False
+        for idx, insn in enumerate(instructions):
+            mnem = insn.get('mnemonic', '').lower()
+            if mnem not in _TAINT_PROPAGATION_OPS:
+                continue
+            # 检查前一条指令是否带污点（简化：线性传播）
+            if idx > 0 and (idx - 1) in taint_map:
+                prev_taint = taint_map[idx - 1]
+                if idx not in taint_map or not prev_taint.issubset(taint_map.get(idx, set())):
+                    taint_map.setdefault(idx, set()).update(prev_taint)
+                    changed = True
+    return taint_map
+
+def detect_taint_sinks(instructions: list[dict],
+                        taint_map: dict[int, set[str]]) -> list[dict]:
+    """检测污点汇 — 带污点的数据到达危险操作（如 system, exec, memcpy size 参数）。
+    返回 [{'insn_idx': int, 'sink_type': str, 'taint_labels': [...]}]。"""
+    # 污点汇 API
+    sinks = {
+        'system': 'command_injection',
+        'execve': 'command_injection',
+        'memcpy': 'memory_corruption',
+        'strcpy': 'buffer_overflow',
+        'sprintf': 'format_string',
+        'CreateProcess': 'process_creation',
+    }
+    findings = []
+    for idx, insn in enumerate(instructions):
+        if insn.get('mnemonic', '').lower() != 'call':
+            continue
+        ops = insn.get('operands', '').lower()
+        for sink_api, sink_type in sinks.items():
+            if sink_api.lower() in ops and idx in taint_map:
+                findings.append({
+                    'insn_idx': idx,
+                    'sink_type': sink_type,
+                    'taint_labels': list(taint_map[idx]),
+
+# === stubs\kernel_vuln_analyzer.py (3267 字节) ===
+# kernel_vuln_analyzer.py — 内核漏洞分析器
+# 检测 Linux/Windows 内核中的 UAF、竞态条件、权限提升漏洞。
+# 参考: FUZE (Wu, USENIX 2018) — 内核 UAF 利用生成 &
+#   SLAKE (CCS 2025) — Slab 内存操纵 &
+#   RetSpill (CCS 2023) — 用户态数据注入内核 &
+#   K-LEAK (NDSS 2025) — 多步信息泄露利用 &
+#   DDRace — 并发 UAF 定向模糊测试
+import re as _re
+from dataclasses import dataclass as _dc
+
+@_dc
+class KernelVulnCandidate:
+    func_name: str
+    vuln_type: str       # 'uaf' | 'race' | 'overflow' | 'info_leak' | 'privilege_escalation'
+    location: str
+    confidence: float
+    evidence: list[str]
+
+# FUZE 识别的高风险内核模式
+_KERNEL_RISK_PATTERNS = {
+    'uaf': [
+        _re.compile(r'(?:kfree|free)\s*\(.*\).*\n.*\1', _re.DOTALL),
+        _re.compile(r'(?:kmem_cache_free|vfree)\s*\(.*\)'),
+    ],
+    'race': [
+        _re.compile(r'(?:copy_to_user|copy_from_user)\s*\(.*\).*\n.*(?:mutex_unlock|spin_unlock)',
+                    _re.DOTALL),
+        _re.compile(r'rcu_read_unlock.*\n.*(?!rcu_dereference)', _re.DOTALL),
+    ],
+    'info_leak': [
+        _re.compile(r'(?:copy_to_user|put_user)\s*\([^,]*,\s*([^,]*)\)'),
+        _re.compile(r'__copy_to_user\s*\([^,]*,\s*([^)]*)\)'),
+    ],
+    'privilege_escalation': [
+        _re.compile(r'commit_creds\s*\(\s*prepare_kernel_cred\s*\(\s*0\s*\)\s*\)'),
+        _re.compile(r'(?:capable|ns_capable)\s*\(.*\).*\n.*(?!return)'),
+    ],
+}
+
+def scan_kernel_code(source_text: str) -> list[KernelVulnCandidate]:
+    """扫描内核源码/伪代码中的已知漏洞模式。
+    FUZE 方法: 先静态识别风险点，再动态符号执行验证可利用性。"""
+    candidates = []
+    # 按函数边界分割（简化: 空行分隔）
+    functions = source_text.split('\n\n')
+    for func_block in functions:
+        func_name = 'unknown'
+        name_match = _re.search(r'(\w+)\s*\(', func_block)
+        if name_match:
+            func_name = name_match.group(1)
+
+        for vtype, patterns in _KERNEL_RISK_PATTERNS.items():
+            evidence = []
+            for pat in patterns:
+                m = pat.search(func_block)
+                if m:
+                    evidence.append(m.group()[:80])
+            if evidence:
+                # 基础信心 — FUZE 用符号执行验证，此处用启发式
+                conf = 0.45 + len(evidence) * 0.1
+                candidates.append(KernelVulnCandidate(
+                    func_name=func_name, vuln_type=vtype,
+                    location=func_name,
+                    confidence=min(0.9, conf),
+                    evidence=evidence[:3],
+                ))
+    return candidates
+
+
+def assess_exploitability(vuln: KernelVulnCandidate, protections: set[str]) -> float:
+    """评估内核漏洞的可利用性。retSpill: 保护机制强度影响利用难度。
+    protections 示例: {'KASLR', 'SMEP', 'SMAP', 'KPTI', 'CFI', 'SELinux'}"""
+    base = vuln.confidence
+    # 每种保护机制的折扣因子 (RetSpill 启发式)
+    mitigation_penalty = {
+        'KASLR': 0.85, 'SMEP': 0.80, 'SMAP': 0.75,
+        'KPTI': 0.90, 'CFI': 0.60, 'SELinux': 0.85,
+    }
+    for prot in protections:
+        base *= mitigation_penalty.get(prot, 0.95)
+
+# === stubs\string_unobfuscator.py (3103 字节) ===
+# re-export from compat/ — 字符串去混淆桩
+# types.ModuleType 隔离策略，与 vm_unvirtualizer 一致
+# 参考: VulCatch 的伪代码提升模块 (KAN + CodeT5) & Implicit Patterns (arXiv:2603.19138) 的路径探索
+import os as _os
+import types as _types
+import importlib.util as _iu
+
+_target = _os.path.join(_os.path.dirname(_os.path.dirname(__file__)), 'core', 'compat', 'string_unobfuscator.py')
+_spec = _iu.spec_from_file_location('string_unobfuscator', _target)
+_m = _types.ModuleType('string_unobfuscator')
+_spec.loader.exec_module(_m)
+globals().update({k: v for k, v in _m.__dict__.items() if not k.startswith('_')})
+
+# --- 字符串去混淆补充: 多层嵌套解码 ---
+# 实际恶意软件中常出现多层编码 (base64 → xor → stack-string)，
+# 单次解码无法恢复原始字符串。此模块实现递归解码直至收敛。
+import re as _regex
+import base64 as _b64
+import uuid
+
+def _looks_base64(s: str) -> bool:
+    return bool(_regex.fullmatch(r'[A-Za-z0-9+/]+={0,2}', s))
+
+def recursive_decode(payload: str | bytes, max_layers: int = 5) -> str:
+    """对输入执行多层解码：尝试 base64 → ASCII，每次解码后再次检测。
+    max_layers 防止无限循环；解码至无变化时提前返回。"""
+    if isinstance(payload, bytes):
+        payload = payload.decode('ascii', errors='replace')
+
+    seen = {payload}
+    current = payload
+
+    for _layer in range(max_layers):
+        if not _looks_base64(current):
+            break
+        try:
+            decoded = _b64.b64decode(current).decode('ascii', errors='replace')
+        except Exception:
+            break
+        if decoded in seen:
+            break
+        seen.add(decoded)
+        current = decoded
+
+    return current
+
+# 栈字符串跨函数重构 — 基于 VulCatch 的多架构兼容思路
+def reconstruct_stack_strings(function_asm: str, frame_size: int = 0) -> list[str]:
+    # 从函数汇编中提取 MOV 立即数序列，拼接成字符串。
+    # frame_size 指定栈帧大小（≤0 时自动估算）。
+    mov_pattern = _regex.compile(
+        r'mov\s+(?:byte|word|dword|qword)?\s*ptr\s*\[.*?\],\s*(0x[0-9a-fA-F]+|\d+)',
+        _regex.IGNORECASE
+    )
+    vals = []
+    for m in mov_pattern.finditer(function_asm):
+        token = m.group(1)
+        if token.lower().startswith('0x'):
+            vals.append(int(token, 16))
+        else:
+            vals.append(int(token))
+
+    strings = []
+    buf = []
+    for v in vals:
+        byte_val = v & 0xFF
+        if 0x20 <= byte_val < 0x7F or byte_val in (0x0A, 0x0D, 0x09, 0x00):
+            if byte_val == 0x00 and buf:
+                strings.append(bytes(buf).decode('ascii', errors='replace'))
+                buf = []
+            elif byte_val != 0x00:
+                buf.append(byte_val)
+        else:
+            if buf:
+                strings.append(bytes(buf).decode('ascii', errors='replace'))
+                buf = []
+    if buf:
+        strings.append(bytes(buf).decode('ascii', errors='replace'))
+    return strings
+
+# === stubs\patch_diff_analyzer.py (3318 字节) ===
+# patch_diff_analyzer.py — 补丁差异分析器
+# 对比补丁前后的二进制差异，识别漏洞修复位置并评估利用可行性。
+# 参考: VulHawk (Luo et al., 2023, NDSS) 跨架构熵搜索 &
+#   Vestige (Ji et al., 2021) 二进制来源追踪 &
+#   Automatic Patch-Based Exploit Generation (Brumley et al., 2008 IEEE S&P) &
+#   BEDetector (Yu et al., 2021) 双通道编码漏洞检测
+import os as _os, struct as _pack
+from dataclasses import dataclass as _dc
+from collections import defaultdict as _defdict
+
+@_dc
+class DiffRegion:
+    start_addr: int
+    end_addr: int
+    change_type: str  # 'modified' | 'inserted' | 'deleted'
+    orig_bytes: bytes = b''
+    patched_bytes: bytes = b''
+    confidence: float = 0.0
+
+def find_patch_regions(orig_bin: bytes, patched_bin: bytes,
+                        base_addr: int = 0) -> list[DiffRegion]:
+    """在二进制级别定位补丁修改区域。
+    VulHawk 的熵引导方法: 先计算全局熵差定位大区域，再字节级精确定位。"""
+    if len(orig_bin) != len(patched_bin):
+        # 文件大小不同 → 按较小的逐字节比较
+        min_len = min(len(orig_bin), len(patched_bin))
+        regions = []
+        i = 0
+        while i < min_len:
+            if orig_bin[i] != patched_bin[i]:
+                start = i
+                while i < min_len and orig_bin[i] != patched_bin[i]:
+                    i += 1
+                regions.append(DiffRegion(
+                    start_addr=base_addr + start,
+                    end_addr=base_addr + i,
+                    change_type='modified',
+                    orig_bytes=orig_bin[start:i],
+                    patched_bytes=patched_bin[start:i],
+                ))
+            else:
+                i += 1
+        if len(patched_bin) > min_len:
+            regions.append(DiffRegion(base_addr + min_len,
+                         base_addr + len(patched_bin), 'inserted'))
+        elif len(orig_bin) > min_len:
+            regions.append(DiffRegion(base_addr + min_len,
+                         base_addr + len(orig_bin), 'deleted'))
+        return regions
+
+    regions = []
+    i = 0
+    while i < len(orig_bin):
+        if orig_bin[i] != patched_bin[i]:
+            start = i
+            while i < len(orig_bin) and orig_bin[i] != patched_bin[i]:
+                i += 1
+            regions.append(DiffRegion(base_addr + start, base_addr + i,
+                          'modified', orig_bin[start:i], patched_bin[start:i]))
+        else:
+            i += 1
+    return regions
+
+
+def classify_patch_type(region: DiffRegion) -> str:
+    """基于修改模式推断补丁类型。
+    Brumley et al. (2008): 条件跳转修改 → 权限检查；缓冲区大小修改 → 溢出修复。"""
+    if not region.orig_bytes or not region.patched_bytes:
+        return 'structural_change'
+    # 条件跳转变化 → 安全检查
+    JCC = {0x74, 0x75, 0x7C, 0x7D, 0x7E, 0x7F, 0x0F}
+    orig_has_jcc = any(b in JCC for b in region.orig_bytes)
+    patched_has_jcc = any(b in JCC for b in region.patched_bytes)
+    if orig_has_jcc != patched_has_jcc:
+        return 'security_check_added_or_removed'
+    # 常量变化 → 缓冲区大小
+    if len(region.orig_bytes) <= 4 and len(region.patched_bytes) <= 4:
+        return 'constant_or_size_change'
+    return 'general_modification'
+```
+
+## 开发要求 (必须严格遵守)
+
+### 1. 保留所有原有功能与注释
+- 绝不删除或修改任何已有函数、类、枚举、变量。
+- 绝不删除或修改任何已有注释（包括中文和英文注释）。
+- 新增代码只能追加在文件末尾或作为新的独立文件添加。
+
+### 2. 新增注释规范
+- 使用中文 INTJ 风格注释：仅陈述设计意图、算法依据、边界条件、与参考论文的对应关系。
+- 禁止情绪化表达与无关事实陈述。
+- 示例格式：
+  ```python
+  # 设计依据: R1-Fuzz (arXiv:2509.20384) GRPO 奖励建模，
+  # 以覆盖率增益为唯一奖励源，避免稀疏奖励导致的训练发散。
+  # 边界: 当状态维度超过 100 时降级为上下文老虎机，防止组合爆炸。
+  def _grpo_mutation_reward(state_vector, coverage_gain):
+      ...
+  ```
+
+### 3. 代码风格要求
+- 编写自然、一致、可维护的代码：错误处理方式应贴合函数实际场景（不同函数使用
+  不同粒度的异常处理，不必统一模板），命名风格与所在文件既有风格保持一致。
+- 避免机械重复：核心算法给出详细注释，简单辅助函数仅一行注释，注释疏密自然。
+- 绝不为了风格统一而破坏代码正确性，所有功能必须可运行。
+
+### 4. 文件时间戳
+- 不要修改任何文件的时间戳。时间戳由主控脚本处理。
+
+## 输出格式要求
+
+你必须返回所有需要新增或修改的文件的完整内容。对每个文件使用以下分隔符格式：
+
+```
+===FILE_START: stubs/新文件名.py ===
+# 完整文件内容
+===FILE_END: stubs/新文件名.py ===
+```
+
+对于需要修改的现有文件（追加内容），也提供完整文件内容。
+
+请确保：
+1. 每个新增文件至少包含 100 行有意义的代码（非注释非空行）。
+2. 文件直接写在 stubs/ 目录下（flat structure，子目录可用 src/）。
+3. 所有 import 语句使用相对导入（如 from .xxx import yyy）或标准库。
+4. 代码可以直接运行，不需要额外安装依赖（除非已有可选依赖检测模式）。
+
+现在，请为模块 `stubs` 实现上述创新点。

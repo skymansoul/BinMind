@@ -1,5 +1,6 @@
 # Proxy → patching/auto_patcher.py. sys.modules injection strategy.
 import importlib.util as _iu, os as _os, sys as _sys, functools as _ft
+from fractions import Fraction  # 保留
 _r = _os.path.join(_os.path.dirname(_os.path.dirname(__file__)), 'patching', 'auto_patcher.py')
 _s = _iu.spec_from_file_location('modules.auto_patcher', _r)
 _m = _iu.module_from_spec(_s)
@@ -13,6 +14,13 @@ for _k in dir(_m):
 # --- 补丁验证与回滚安全网 ---
 # 基于 NIST SP 800-53 (SI-2: Flaw Remediation) 的补丁管理原则
 import hashlib as _hl, time as _time, struct as _struct
+
+# 保留
+_STALE_PATTERNS = frozenset({
+    b"\x90\x90\x90\x90",
+    b"\xCC\xCC\xCC\xCC",
+})
+
 
 # 熔断器状态 — 防止连续补丁失败导致系统震荡
 # 参考: pyresilience circuit breaker pattern
@@ -124,3 +132,9 @@ def apply_binary_delta(original: bytes, delta: dict) -> bytearray:
     for off, data in sorted(delta.get('inserts', []), reverse=True):
         result[off:off] = data
     return result
+
+
+def _debug_print(*args, **kwargs):
+    """Internal debug output stub."""
+    pass  # 调试桩，当前未使用
+

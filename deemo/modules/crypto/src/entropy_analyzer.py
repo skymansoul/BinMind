@@ -1,25 +1,24 @@
 """
-Entropy profiling for key-material vs compressed/encrypted data discrimination.
+密钥材料与压缩/加密数据的熵区分。
 
-Theory: cryptographic keys are uniformly random → high Shannon entropy with
-low serial correlation. Compressed data also has high entropy but typically
-exhibits structure via header overhead and block boundaries. Encrypted data
-lands somewhere between.
+理论: 密码学密钥均匀随机→高Shannon熵+低序列相关。
+压缩数据熵也高, 但通过头部开销和块边界表现出结构。
+加密数据介于两者之间。
 
-Metrics computed:
-  - Shannon entropy (byte-level)
-  - Chi-square statistic (goodness-of-fit against uniform distribution)
-  - Monte Carlo π approximation (serial correlation proxy)
-  - Serial correlation coefficient (lag-1)
-  - Byte frequency distribution histogram
-  - min-entropy estimate (worst-case predictability)
+计算指标:
+  - Shannon熵 (字节级)
+  - 卡方统计量 (与均匀分布拟合优度)
+  - 蒙特卡洛π近似 (序列相关代理)
+  - 序列相关系数 (lag-1)
+  - 字节频率分布直方图
+  - 最小熵估计 (最坏情况可预测性)
 
-2026-07 additions:
-  - NIST SP 800-90B IID permutation test (adaptive, nonparametric)
-  - Collision entropy estimator (Rényi α=2)
-  - Markov transition matrix for next-byte predictability
-  - Adaptive window sizing based on data heterogeneity
-  - Lag-k serial correlation (k=1,2,4) for block-cipher mode fingerprinting
+2026-07新增:
+  - NIST SP 800-90B IID置换检验 (自适应, 非参数)
+  - 碰撞熵估计量 (Renyi α=2)
+  - 马尔可夫转移矩阵, 下一字节可预测性
+  - 基于数据异质性的自适应窗口大小
+  - Lag-k序列相关 (k=1,2,4), 用于分组密码模式指纹
 """
 
 import math
@@ -35,8 +34,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class EntropyProfile:
-    """Complete entropy characterization of a data region."""
-
+    # 数据区域的完整熵特征刻画。
     offset: int = 0
     size: int = 0
     shannon_entropy: float = 0.0
@@ -51,70 +49,67 @@ class EntropyProfile:
     serial_corr_lag4: float = 0.0
     byte_mean: float = 0.0
     byte_stddev: float = 0.0
-    # NIST SP 800-90B IID test
+    # NIST SP 800-90B IID检验
     iid_permutation_pvalue: float = 0.0
     iid_is_consistent: bool = False
-    # Markov predictability
+    # 马尔可夫可预测性
     markov_predictability: float = 0.0
-    # classification
+    # 分类
     likely_key: bool = False
     likely_compressed: bool = False
     likely_encrypted: bool = False
     likely_text: bool = False
     diagnosis: str = ""
-    # raw histogram for external visualization
+    # 原始直方图, 供外部可视化
     histogram: List[int] = field(default_factory=lambda: [0] * 256)
 
 
 class EntropyAnalyzer:
     """
-    Multi-metric entropy analyzer for distinguishing cryptographic keys
-    from compressed/encrypted/plaintext data.
+    多指标熵分析器, 用于区分密码学密钥与压缩/加密/明文数据。
 
-    Core insight: AES-256 keys, ciphertext, and gzip streams all exhibit
-    high Shannon entropy (~8 bits/byte). We need secondary metrics to tell
-    them apart:
-      - chi-square: sensitive to small deviations from uniformity
-      - monte carlo pi: uses coordinate pairs as serial correlation proxy
-      - byte mean/stddev: even one fixed header byte shifts these from 127.5
-      - collision entropy: Rényi α=2, more sensitive to repeats than Shannon
-      - Markov transition: measures next-byte predictability given current byte
-      - NIST SP 800-90B IID test: permutation-based, no normality assumption
+    核心洞察: AES-256密钥、密文和gzip流都表现出高Shannon熵(~8 bits/byte)。
+    需要次级指标来区分:
+      - 卡方: 对均匀分布的微小偏差敏感
+      - 蒙特卡洛π: 以坐标对作为序列相关代理
+      - 字节均值/标准差: 即使一个固定头部字节也会使其偏离127.5
+      - 碰撞熵: Renyi α=2, 比Shannon对重复更敏感
+      - 马尔可夫转移: 度量给定当前字节的下一字节可预测性
+      - NIST SP 800-90B IID检验: 基于置换, 无需正态性假设
     """
 
-    # Empirical thresholds — tuned against test corpora of real keys,
-    # ciphertext samples, gzip/deflate streams, and plain text.
+    # 经验阈值 — 基于真实密钥、密文样本、gzip/deflate流和明文测试语料调优。
     _KEY_ENTROPY_MIN = 7.5        # bits/byte
-    _KEY_CHI_SQ_MAX  = 350        # chi-sq below this → plausibly uniform
-    _KEY_PI_ERROR_MAX = 0.05      # π error below this → low serial correlation
+    _KEY_CHI_SQ_MAX  = 350        # 卡方低于此 → 可能均匀
+    _KEY_PI_ERROR_MAX = 0.05      # π误差低于此 → 低序列相关
     _COMPRESSED_ENTROPY_MIN = 6.5
     _TEXT_ENTROPY_MAX = 5.5
-    _MARKOV_KEY_THRESHOLD = 0.02  # Markov predictability below 2% → key-like
+    _MARKOV_KEY_THRESHOLD = 0.02  # 马尔可夫可预测性 <2% → 密钥特征
 
     def __init__(self):
         pass
 
-    # ---- Public API ----
+    # ---- 公共API ----
 
     def analyze_file(self, path: str, chunk_size: int = 4096,
                      max_regions: int = 20) -> List[EntropyProfile]:
-        """Sliding-window entropy scan of a file. Returns top-N interesting regions."""
+        """文件的滑动窗口熵扫描。返回前N个高兴趣区域。"""
         raw = safeReadBytes(path)
         if raw is None:
             return []
         return self.scan_regions(raw, chunk_size, max_regions)
 
     def analyze_bytes(self, data: bytes) -> EntropyProfile:
-        """Full-detail entropy analysis of a single byte buffer."""
+        """单字节缓冲区的完整熵分析。"""
         return self.compute_profile(data, 0)
 
     def scan_regions(self, data: bytes, window_size: int = 4096,
                      max_results: int = 20) -> List[EntropyProfile]:
-        """Sliding-window scan returning candidates sorted by interest."""
+        """滑动窗口扫描, 返回按兴趣度排序的候选区域。"""
         profiles: List[EntropyProfile] = []
-        # Adaptive step: smaller windows → finer scan
+        # 自适应步长: 小窗口→更细扫描
         step = max(window_size // 2, 256)
-        if len(data) > 50 * 1024 * 1024:  # >50MB: coarser scan to stay performant
+        if len(data) > 50 * 1024 * 1024:  # >50MB: 粗扫描以保持性能
             step = window_size
 
         for off in range(0, max(0, len(data) - window_size), step):
@@ -123,7 +118,7 @@ class EntropyAnalyzer:
             if self._is_interesting(p):
                 profiles.append(p)
 
-        # Sort by interest: keys first, then encrypted, then compressed
+        # 排序: 密钥优先, 加密次之, 压缩最后
         profiles.sort(key=lambda p: (
             not p.likely_key,
             not p.likely_encrypted,
@@ -132,7 +127,7 @@ class EntropyAnalyzer:
         return profiles[:max_results]
 
     def compute_profile(self, data: bytes, offset: int = 0) -> EntropyProfile:
-        """Run all metrics on a single data chunk."""
+        """对单个数据块执行全部指标计算。"""
         n = len(data)
         if n == 0:
             return EntropyProfile(offset=offset, size=0, diagnosis="empty")
@@ -141,7 +136,7 @@ class EntropyAnalyzer:
         for b in data:
             hist[b] += 1
 
-        # Shannon entropy
+        # Shannon熵
         shannon = 0.0
         min_ent = float('inf')
         collision = 0.0
@@ -151,37 +146,37 @@ class EntropyAnalyzer:
                 shannon -= p * math.log2(p)
                 # min-entropy = -log2(max(p))
                 min_ent = min(min_ent, -math.log2(p))
-                # Rényi collision entropy (α=2): -log2(Σ p_i^2)
+                # Renyi碰撞熵 (α=2): -log2(Σ p_i^2)
                 collision += p * p
         if min_ent == float('inf'):
             min_ent = 0.0
         collision = -math.log2(collision) if collision > 0 else 0.0
 
-        # Chi-square against uniform
+        # 针对均匀分布的卡方
         expected = n / 256.0
         chi_sq = sum((c - expected) ** 2 / expected for c in hist)
 
-        # Chi-square p-value approximation (255 DOF)
-        # Using Wilson-Hilferty transform for rough estimate
+        # 卡方p值近似 (255 DOF)
+        # 使用Wilson-Hilferty变换粗略估计
         chi_sq_p = self._chi_sq_pvalue(chi_sq, 255)
 
-        # Monte Carlo π — uses byte pairs as coordinates
+        # 蒙特卡洛π — 以字节对为坐标
         mc_pi, pi_err = self._monte_carlo_pi(data)
 
-        # Serial correlation (lag-1, lag-2, lag-4)
+        # 序列相关 (lag-1, lag-2, lag-4)
         ser_corr = self._serial_correlation(data, lag=1)
         ser_corr_2 = self._serial_correlation(data, lag=2)
         ser_corr_4 = self._serial_correlation(data, lag=4)
 
-        # Basic stats
+        # 基础统计
         byte_mean = sum(i * hist[i] for i in range(256)) / n
         variance = sum(hist[i] * (i - byte_mean) ** 2 for i in range(256)) / n
         byte_stddev = math.sqrt(variance)
 
-        # Markov transition matrix predictability
+        # 马尔可夫转移矩阵可预测性
         markov_pred = self._markov_predictability(data)
 
-        # NIST SP 800-90B IID permutation test
+        # NIST SP 800-90B IID置换检验
         iid_p, iid_ok = self._iid_permutation_test(data, hist, n)
 
         profile = EntropyProfile(
@@ -207,13 +202,13 @@ class EntropyAnalyzer:
         self._classify(profile)
         return profile
 
-    # ---- Classification ----
+    # ---- 分类 ----
 
     def _classify(self, p: EntropyProfile) -> None:
         """
-        Heuristic classification based on metric thresholds.
-        Order matters: test for keys first (most specific criteria).
-        Markov predictability < 2% and IID consistency are strong key signals.
+        基于指标阈值的启发式分类。
+        顺序重要: 先检测密钥(最具体的标准)。
+        马尔可夫可预测性<2%且IID一致性是强密钥信号。
         """
         if (p.shannon_entropy >= self._KEY_ENTROPY_MIN and
             p.chi_square <= self._KEY_CHI_SQ_MAX and
@@ -237,18 +232,17 @@ class EntropyAnalyzer:
         else:
             p.diagnosis = "indeterminate"
 
-    # ---- Metric implementations ----
+    # ---- 指标实现 ----
 
     @staticmethod
     def _monte_carlo_pi(data: bytes) -> Tuple[float, float]:
         """
-        Estimate π via Monte Carlo: treat consecutive 6-byte groups as
-        (x,y,z) coordinates within a unit cube. π ≈ 6 * (inside-unit-sphere / total).
+        蒙特卡洛π估计: 将连续6字节组视为单位立方体内的(x,y,z)坐标。
+        π ≈ 6 * (单位球内/总数)。
 
-        For random data, error vs true π is small. For structured data (even
-        compressed), coordinate bias inflates the error.
+        随机数据与真实π的误差小。结构化数据(即使压缩)的坐标偏差会放大误差。
         """
-        # use 3-byte groups for 24-bit coordinate precision
+        # 使用3字节组, 24-bit坐标精度
         n_points = min(len(data) // 6, 20000)
         if n_points < 100:
             return 0.0, 1.0
@@ -268,7 +262,7 @@ class EntropyAnalyzer:
 
     @staticmethod
     def _serial_correlation(data: bytes, lag: int = 1) -> float:
-        """Lag-k Pearson correlation of byte values."""
+        """字节值的Lag-k Pearson相关。"""
         n = len(data)
         if n < lag + 2:
             return 0.0
@@ -284,10 +278,9 @@ class EntropyAnalyzer:
     @staticmethod
     def _markov_predictability(data: bytes) -> float:
         """
-        Build a 256×256 byte-transition count matrix, then measure predictability
-        as the average max-column probability. Keys produce near-uniform transitions
-        (~1/256 ≈ 0.004); structured data produces higher peaks.
-        Returns the average p_max per state, normalized to [0,1].
+        构建256×256字节转移计数矩阵, 以平均最大列概率衡量可预测性。
+        密钥产生近似均匀转移(~1/256 ≈ 0.004); 结构化数据产生更高峰值。
+        返回各状态的平均p_max, 归一至[0,1]。
         """
         n = len(data)
         if n < 2:
@@ -295,7 +288,7 @@ class EntropyAnalyzer:
         trans = [[0] * 256 for _ in range(256)]
         for i in range(n - 1):
             trans[data[i]][data[i + 1]] += 1
-        # Average max transition probability per source state
+        # 每源状态的平均最大转移概率
         total_max = 0.0
         active_states = 0
         for src in range(256):
@@ -312,22 +305,20 @@ class EntropyAnalyzer:
     @staticmethod
     def _iid_permutation_test(data: bytes, hist: List[int], n: int) -> Tuple[float, float]:
         """
-        NIST SP 800-90B IID permutation test (§5.1).
-        Compares sample statistics against the distribution of statistics
-        from random permutations of the sample — no theoretical distribution
-        assumptions. If the original statistic falls within the central 95%
-        of the permutation distribution, the sample is consistent with IID.
+        NIST SP 800-90B IID置换检验 (§5.1)。
+        将样本统计量与随机置换所得的统计量分布比较 — 无理论分布假设。
+        若原始统计量落在置换分布的中心95%以内, 样本与IID一致。
 
-        Uses chi-square as the test statistic (sensitive to distribution shape).
-        Returns (p_value, is_iid_consistent).
+        以卡方为检验统计量(对分布形状敏感)。
+        返回(p_value, is_iid_consistent)。
         """
         if n < 256:
             return 0.0, False
-        # Compute original chi-square
+        # 计算原始卡方
         expected = n / 256.0
         orig_chi_sq = sum((c - expected) ** 2 / expected for c in hist)
 
-        # Permutation test: shuffle and recompute (bootstrap ≈ 100 iterations)
+        # 置换检验: 打乱并重新计算 (bootstrap ≈ 100次迭代)
         import random
         perm_chi_sqs = []
         orig_list = list(data)
@@ -339,33 +330,33 @@ class EntropyAnalyzer:
             perm_chi_sqs.append(
                 sum((c - expected) ** 2 / expected for c in perm_hist))
 
-        # Two-sided: fraction of permuted stats ≤ original (more uniform than chance)
+        # 双侧: 置换统计量≤原始的比例(比偶然更均匀)
         count_leq = sum(1 for v in perm_chi_sqs if v <= orig_chi_sq)
         p_val = (count_leq + 1) / (len(perm_chi_sqs) + 1)
-        is_iid = p_val >= 0.05  # fails to reject IID null at 5%
+        is_iid = p_val >= 0.05  # 5%水平未能拒绝IID零假设
         return p_val, is_iid
 
     @staticmethod
     def _chi_sq_pvalue(chi_sq: float, df: int) -> float:
         """
-        Approximate chi-square p-value via Wilson-Hilferty normal approximation.
-        Accurate enough for df > 10; we use df=255 so well within range.
-        Returns value in [0, 1]; higher → more uniform.
+        通过Wilson-Hilferty正态近似计算卡方p值。
+        df>10时精度足够; 此处df=255, 完全在范围内。
+        返回[0,1]中的值; 越高→越均匀。
         """
         if df <= 0 or chi_sq <= 0:
             return 1.0
         try:
             t = (chi_sq / df) ** (1.0 / 3.0)
             z = (t - (1.0 - 2.0 / (9.0 * df))) / math.sqrt(2.0 / (9.0 * df))
-            # Standard normal CDF approximation (Abramowitz & Stegun 26.2.17)
-            # Use the right-tail since chi-sq tests *non*-uniformity
-            # Lower chi-sq → higher p-value → more uniform
-            # Upper-tail p: P(Z > z)
+            # 标准正态CDF近似 (Abramowitz & Stegun 26.2.17)
+            # 卡方检验*非*均匀性, 故用右尾
+            # 卡方越低→p值越高→越均匀
+            # 上尾p: P(Z > z)
             if z < -6:
                 return 1.0
             if z > 6:
                 return 0.0
-            # 1 - Φ(z) approximation
+            # 1 - Φ(z) 近似
             a1, a2, a3 = 0.4361836, -0.1201676, 0.9372980
             k = 1.0 / (1.0 + 0.33267 * abs(z))
             phi = 1.0 - (1.0 / math.sqrt(2.0 * math.pi)) * math.exp(-z * z / 2.0) * (
@@ -378,20 +369,20 @@ class EntropyAnalyzer:
 
     @staticmethod
     def _is_interesting(p: EntropyProfile) -> bool:
-        """Filter: only report regions that are non-trivial."""
+        """过滤: 仅报告非平凡区域。"""
         return (
             p.likely_key or p.likely_encrypted or p.likely_compressed or
             p.shannon_entropy > 6.0
         )
 
 
-# ---- Adaptive window sizing (2026-07-27) ----
+# ---- 自适应窗口大小 (2026-07-27) ----
 # 基于数据异质性自适应选择窗口大小。先用小窗口(512B)快速扫描,
-# 计算Shannon熵的MAD (Median Absolute Deviation), MAD高→窗口加倍,
-# MAD低→窗口缩小。避免在齐次区浪费计算, 在异质区提高分辨率。
+# 计算Shannon熵的MAD(中位绝对偏差), MAD高→窗口加倍,
+# MAD低→窗口缩小。避免齐次区浪费计算, 异质区提高分辨率。
 
 def adaptive_window_size(data: bytes, min_w: int = 256, max_w: int = 16384) -> int:
-    """返回基于MAD的自适应窗口大小."""
+    """返回基于MAD的自适应窗口大小。"""
     n = len(data)
     if n < min_w * 4:
         return min_w
@@ -420,17 +411,17 @@ def adaptive_window_size(data: bytes, min_w: int = 256, max_w: int = 16384) -> i
     med = s_sorted[len(s_sorted) // 2]
     mad = sorted(abs(s - med) for s in s_sorted)[len(s_sorted) // 2]
 
-    # MAD 高 → 异质 → 用更大窗口; MAD 低 → 齐次 → 小窗口即可
+    # MAD高→异质→更大窗口; MAD低→齐次→小窗口即可
     scale = 1.0 + mad * 4.0
     return max(min_w, min(max_w, int(min_w * scale)))
 
 
 # ---- 压缩比估计 (2026-07-27) ----
 # LZ77变体的理论压缩上界: 数据中重复子串越少, 压缩比越低。
-# deflate压缩比估计使用 entropy / 8 作为下界 — 熵>7.5 → 几乎不可压缩(密钥/加密数据)。
+# deflate压缩比估计以entropy/8为下界 — 熵>7.5→几乎不可压缩(密钥/加密数据)。
 
 def compression_ratio_estimate(data: bytes) -> float:
-    """估计deflate压缩比下界: 基于熵值的理论极限."""
+    """估计deflate压缩比下界: 基于熵值的理论极限。"""
     n = len(data)
     if n == 0:
         return 1.0
@@ -445,13 +436,13 @@ def compression_ratio_estimate(data: bytes) -> float:
         if c:
             p = c * inv
             ent -= p * log2(p)
-    # 熵 = 8 → 压缩比 ≈ 1.0 (不可压缩)
-    # 熵 = 4 → 压缩比 ≈ 2.0 (可压缩一半)
+    # 熵=8→压缩比≈1.0(不可压缩)
+    # 熵=4→压缩比≈2.0(可压缩一半)
     return 8.0 / max(ent, 0.5)
 
 
-# ---- Convenience ----
+# ---- 便捷函数 ----
 
 def analyze_entropy(path: str, **kwargs) -> List[EntropyProfile]:
-    """Convenience function: scan a file for high-entropy regions."""
+    """便捷函数: 扫描文件中的高熵区域。"""
     return EntropyAnalyzer().analyze_file(path, **kwargs)

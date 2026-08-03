@@ -1,11 +1,14 @@
-# 2026-07-17
 # ---- 密码学算法检测 ----
-# 核心思路: 通过魔数常量匹配+S盒结构分析+API字符串指纹三个正交维度识别算法。
-# Boyer-Moore-Horspool用于大文件加速; S盒检测用前16字节quick-eliminate再全256验证。
+# 核心: 魔数常量匹配 + S盒结构分析 + API字符串指纹, 三维正交识别算法。
+# Boyer-Moore-Horspool用于大文件加速; S盒检测前16字节quick-eliminate后全256验证。
 # 去重策略: 同偏移+同算法 -> 保留高置信度; 同算法+偏移差<16 -> 合并为一个finding。
 #
-# 2026-07-24: NTT蝴蝶常量检测(格密码多项式乘法), Keccak-f[1600] RC搜索,
-# SM3 IV 双端序匹配, ARIA S2独立检测(S1与AES S-box相同需S2消歧义)。
+# NTT蝴蝶常量检测(格密码多项式乘法), Keccak-f[1600] RC搜索,
+# SM3 IV双端序匹配, ARIA S2独立检测(S1与AES S-box相同需S2消歧义)。
+#
+# 模糊匹配(_fuzzy_match_sbox) — 逐字节Hamming距离计算, 容忍少量变异。
+# 目的: 捕获编译器优化/OLLVM混淆修改少数字节的S-box副本及硬件查表变体。
+# 已知误报风险: 随机256B序列与真实S-box距离期望128 +/- 8, 阈值<=4 (~3sigma外)。
 
 from dataclasses import dataclass
 from typing import List, Optional
@@ -18,6 +21,10 @@ from .constants import (
 )
 from .utils import shannon_entropy
 
+# 模糊匹配容差 — INTJ权衡: 4字节差异/256 = 1.56%容差。
+# P(随机256B序列偶然匹配) ≈ sum_{k=0}^{4} C(256,k)/2^256 ≈ 2^{-183}。
+_FUZZY_HAMMING_TOLERANCE = 4
+
 
 @dataclass
 class CryptoFinding:
@@ -27,7 +34,7 @@ class CryptoFinding:
     location: int
 
 
-# //// BMH 搜索 — 单次返回下一个匹配位置 ////
+# //// BMH搜索 — 单次返回下一个匹配位置 ////
 def _bmh_search(data: bytes, pattern: bytes, start: int = 0) -> int:
     _dl = len(data)
     _pl = len(pattern)
@@ -58,6 +65,34 @@ def _match_full_sbox(data: bytes, sbox: bytes, start: int) -> bool:
     return True
 
 
+# ---- S-box模糊匹配 (2026-08-02) ----
+# 计算`start`处256字节窗口与参考`sbox`的逐字节Hamming距离。
+# 返回 (is_match, distance, entropy)。
+# INTJ设计选择: 精确匹配优先; 模糊匹配仅在精确失败时触发。
+def _fuzzy_match_sbox(data: bytes, sbox: bytes, start: int,
+                      tolerance: int = _FUZZY_HAMMING_TOLERANCE) -> tuple:
+    """
+    返回(is_match: bool, hamming_distance: int, approx_entropy: float)。
+    256字节随机窗口期望距离128 (二项分布n=256, p=1/256)。
+    tolerance <= 4 约3sigma外, P_false ≈ 2^{-183}。
+    """
+    _dl = len(data)
+    if start + 256 > _dl:
+        return False, 999, 0.0
+    dist = 0
+    _win = data[start:start + 256]
+    for _i in range(256):
+        if _win[_i] != sbox[_i]:
+            dist += 1
+            if dist > tolerance:
+                return False, dist, 0.0
+    # 熵合理性检查 — 真实S-box具有接近最大熵
+    _ent = shannon_entropy(_win)
+    if _ent < 0.97:
+        return False, dist, _ent
+    return True, dist, _ent
+
+
 # ---- 魔数常量检测 ----
 def detect_by_magic_constants(data: bytes) -> List[CryptoFinding]:
     _out = []
@@ -67,12 +102,19 @@ def detect_by_magic_constants(data: bytes) -> List[CryptoFinding]:
         _pref = bytes(_sbox[:16])
         _pos = _bmh_search(data, _pref)
         while _pos != -1:
+            _tag = 'S-box' if _sbox == AES_SBOX else 'INVERSE S-box'
             if _match_full_sbox(data, _sbox, _pos):
-                _tag = 'S-box' if _sbox == AES_SBOX else 'INVERSE S-box'
                 _out.append(CryptoFinding(
                     algorithm='AES', confidence=0.98,
                     evidence='AES {} at 0x{:x}'.format(_tag, _pos),
                     location=_pos))
+            else:
+                _is_fuzz, _fuzz_dist, _fuzz_ent = _fuzzy_match_sbox(data, _sbox, _pos)
+                if _is_fuzz:
+                    _out.append(CryptoFinding(
+                        algorithm='AES', confidence=0.82,  # 模糊匹配扣分
+                        evidence='AES {}(fuzzy d={},H={:.3f}) at 0x{:x}'.format(_tag, _fuzz_dist, _fuzz_ent, _pos),
+                        location=_pos))
             _pos = _bmh_search(data, _pref, _pos + 1)
 
     # SM4 / GOST / Camellia / ARIA S1 / ARIA S2 / SEED S0 / SEED S1
@@ -90,6 +132,13 @@ def detect_by_magic_constants(data: bytes) -> List[CryptoFinding]:
                     algorithm=_algo, confidence=0.98,
                     evidence='{} S-box at 0x{:x}'.format(_algo, _pos),
                     location=_pos))
+            else:
+                _is_fuzz, _fuzz_dist, _fuzz_ent = _fuzzy_match_sbox(data, _sbox, _pos)
+                if _is_fuzz:
+                    _out.append(CryptoFinding(
+                        algorithm=_algo, confidence=0.78,
+                        evidence='{}(fuzzy d={},H={:.3f}) at 0x{:x}'.format(_algo, _fuzz_dist, _fuzz_ent, _pos),
+                        location=_pos))
             _pos = _bmh_search(data, _pref, _pos + 1)
 
     # SHA256 / SHA512 / MD5 IV
@@ -104,7 +153,7 @@ def detect_by_magic_constants(data: bytes) -> List[CryptoFinding]:
         while _pos != -1:
             _out.append(CryptoFinding(
                 algorithm=_name, confidence=0.95,
-                evidence='{} IV ({}×{}bit) at 0x{:x}'.format(_name, len(_iv), _wsize * 8, _pos),
+                evidence='{} IV ({}x{}bit) at 0x{:x}'.format(_name, len(_iv), _wsize * 8, _pos),
                 location=_pos))
             _pos = _bmh_search(data, _iv_bytes, _pos + 1)
 
@@ -115,11 +164,11 @@ def detect_by_magic_constants(data: bytes) -> List[CryptoFinding]:
         while _pos != -1:
             _out.append(CryptoFinding(
                 algorithm='SM3', confidence=0.92,
-                evidence='SM3 IV ({}, 8×32bit) at 0x{:x}'.format(_endian, _pos),
+                evidence='SM3 IV ({}, 8x32bit) at 0x{:x}'.format(_endian, _pos),
                 location=_pos))
             _pos = _bmh_search(data, _sm3_bytes, _pos + 1)
 
-    # ChaCha20 常量
+    # ChaCha20常量
     _pos = _bmh_search(data, CHACHA20_CONSTANTS)
     while _pos != -1:
         _out.append(CryptoFinding(
@@ -139,7 +188,7 @@ def detect_by_magic_constants(data: bytes) -> List[CryptoFinding]:
                 location=_pos))
         _pos = _bmh_search(data, _rcon_bytes[:4], _pos + 1)
 
-    # Keccak-f[1600] 轮常量 (24×64bit unique values — 强鉴别力)
+    # Keccak-f[1600]轮常量 (24x64bit唯一值 — 强鉴别力)
     _krc_bytes = b''.join(_w.to_bytes(8, 'little') for _w in KECCAK_ROUND_CONSTANTS)
     _pos = _bmh_search(data, _krc_bytes[:16])
     while _pos != -1:
@@ -150,7 +199,7 @@ def detect_by_magic_constants(data: bytes) -> List[CryptoFinding]:
                 location=_pos))
         _pos = _bmh_search(data, _krc_bytes[:16], _pos + 1)
 
-    # BLAKE2 IV 搜索 (与SHA-512 IV共享初始值 — 消歧义: 同时出现BLAKE2字符串 → 提高置信度)
+    # BLAKE2 IV搜索 (与SHA-512 IV共享初始值 — 消歧义: 同时出现BLAKE2字符串提高置信度)
     _blake2_bytes = b''.join(_w.to_bytes(8, 'little') for _w in BLAKE2_IV)
     _pos = _bmh_search(data, _blake2_bytes[:16])
     while _pos != -1:
@@ -160,7 +209,7 @@ def detect_by_magic_constants(data: bytes) -> List[CryptoFinding]:
             location=_pos))
         _pos = _bmh_search(data, _blake2_bytes[:16], _pos + 1)
 
-    # SEED KC 轮密钥常量 (16×32bit, 从黄金比例导出)
+    # SEED KC轮密钥常量 (16x32bit, 从黄金比例导出)
     _kc_bytes = b''.join(_w.to_bytes(4, 'little') for _w in SEED_KC)
     _pos = _bmh_search(data, _kc_bytes[:8])
     while _pos != -1:
@@ -189,7 +238,7 @@ def detect_by_structure(data: bytes) -> List[CryptoFinding]:
                     continue
                 _out.append(CryptoFinding(
                     algorithm='Unknown_Sbox_Permutation', confidence=0.75,
-                    evidence='256-byte perfect permutation (H≈{:.3f}) at 0x{:x}'.format(_ent, _pos),
+                    evidence='256-byte perfect permutation (H~{:.3f}) at 0x{:x}'.format(_ent, _pos),
                     location=_pos))
 
     # 16字节重复块 = ECB artifact
@@ -206,7 +255,7 @@ def detect_by_structure(data: bytes) -> List[CryptoFinding]:
         else:
             _seen_blocks[_blk] = _pos
 
-    # 64字节重复块 = SHA-512块 artifact
+    # 64字节重复块 = SHA-512块artifact
     _seen64 = {}
     for _pos in range(0, _dl - 64, 64):
         _blk = data[_pos:_pos + 64]
@@ -220,9 +269,9 @@ def detect_by_structure(data: bytes) -> List[CryptoFinding]:
         else:
             _seen64[_blk] = _pos
 
-    # NTT蝴蝶常量检测 — 格密码(Kyber/Dilithium)多项式乘法的标志
-    # zeta/omega 值以 (q, 2n)-th primitive root 形式出现
-    # Kyber q=3329 的 256-th primitive root = 17; Dilithium q=8380417 的 512-th root = 1753
+    # NTT蝴蝶常量检测 — 格密码(Kyber/Dilithium)多项式乘法标志
+    # zeta/omega值以(q, 2n)-th primitive root形式出现
+    # Kyber q=3329的256-th primitive root = 17; Dilithium q=8380417的512-th root = 1753
     _ntt_primitives = [
         (3329, 17, 2, 'Kyber/ML-KEM (q=3329, 256-th root=17)'),
         (8380417, 1753, 4, 'Dilithium/ML-DSA (q=8380417, 512-th root=1753)'),

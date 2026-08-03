@@ -1,8 +1,15 @@
-# 2026-07-30
-"""BinMind Crypto Analysis — static/dynamic crypto feature detection and key auditing.
+"""BinMind 密码学分析 — 静态/动态密码特征检测与密钥审计。
 
-Lazy-import via module __getattr__: submodules load on first access only.
-Complete export registry — all 25 modules with all __all__ entries mapped.
+通过模块 __getattr__ 懒加载：子模块仅首次访问时加载。
+完整导出注册表 — 28 模块，所有 __all__ 条目已映射。
+
+2025-08-03: +crypto_invariants (S-box不变量验证/Feistel结构检测/仿射等价分组)
+             +otf_sbox_detector (动态S-box计算检测 — 嵌入式固件无查表实现)
+2025-08-04: +key_schedule (密钥扩展重构/轮常量校验/异常标记)
+             +crypto_lineage (跨二进制密码学实现谱系追踪/simhash-LSH预筛选)
+2025-08-05: +subreg_taint (子寄存器级污点追踪/字节粒度x86别名传播)
+2025-08-06: +drift_calibrator (密码实现偏移校准/指令混合比特征向量)
+             +cfg_entropy_fingerprint (CFG结构熵指纹/无魔数密码检测)
 """
 
 import importlib
@@ -93,6 +100,36 @@ __all__ = [
     # crypto_taint (2026-08-01)
     'KeyTaintDetector', 'KeyTaintResult',
     'detect_key_taint', 'detect_key_taint_bytes',
+    # pqc_ml_detector (2026-08-02)
+    'PQCMLResult', 'PQCMLPipeline', 'PQCLibraryClassifier',
+    'detect_pqc_ml', 'detect_pqc_ml_bytes', 'generate_pqc_function_summary',
+    # crypto_invariants (2025-08-02)
+    'InvariantReport', 'FeistelEvidence', 'AffineEquivalence',
+    'check_bijection', 'check_involution', 'differential_uniformity',
+    'measure_diffusion', 'ddt_signature', 'group_by_affine_equivalence',
+    'detect_feistel_structure', 'analyze_sbox', 'scan_region',
+    # otf_sbox_detector (2025-08-01)
+    'OTFSBoxFinding',
+    'scan_xtime', 'scan_poly_reduce', 'scan_affine_transform',
+    'detect_otf_sbox',
+    # key_schedule (2025-08-04)
+    'KeyScheduleMatch', 'KSReconstructionReport',
+    'search_round_constants', 'score_key_schedule', 'reconstruct',
+    # crypto_lineage (2025-08-04)
+    'CryptoRegion', 'LineageMatch', 'LineageGraph',
+    'compute_simhash', 'simhash_distance',
+    'extract_region_fingerprint', 'match_regions',
+    'regions_from_findings', 'build_lineage',
+    # subreg_taint (2025-08-05)
+    'TaintByteVector', 'SubregTaintTracker',
+    # drift_calibrator (2025-08-06)
+    'DriftProfile', 'DriftReport',
+    'extract_drift_profile', 'calibrate',
+    'register_baseline', 'list_baselines',
+    # cfg_entropy_fingerprint (2025-08-06)
+    'CFGEntropyProfile', 'CFGFingerprintMatch',
+    'compute_cfg_entropy', 'match_cfg_fingerprint',
+    'scan_for_crypto_by_cfg',
 ]
 
 # name -> (module_path, attr_name)
@@ -259,6 +296,66 @@ _INSTANCE_IMPORTS = {
     'detect_key_taint':             ('crypto_taint', 'detect_key_taint'),
     'detect_key_taint_bytes':       ('crypto_taint', 'detect_key_taint_bytes'),
     'new_cbom_generator':         ('cbom_generator', 'new_cbom_generator'),
+    # pqc_ml_detector (2026-08-02)
+    'PQCMLResult':                   ('pqc_ml_detector', 'PQCMLResult'),
+    'PQCMLPipeline':                 ('pqc_ml_detector', 'PQCMLPipeline'),
+    'PQCLibraryClassifier':          ('pqc_ml_detector', 'PQCLibraryClassifier'),
+    'detect_pqc_ml':                 ('pqc_ml_detector', 'detect_pqc_ml'),
+    'detect_pqc_ml_bytes':           ('pqc_ml_detector', 'detect_pqc_ml_bytes'),
+    '_extract_features':             ('pqc_ml_detector', '_extract_features'),
+    '_simulate_qed_lite_fingerprint':('pqc_ml_detector', '_simulate_qed_lite_fingerprint'),
+    'generate_pqc_function_summary': ('pqc_ml_detector', 'generate_pqc_function_summary'),
+    # crypto_invariants (2025-08-02)
+    'InvariantReport':               ('crypto_invariants', 'InvariantReport'),
+    'FeistelEvidence':               ('crypto_invariants', 'FeistelEvidence'),
+    'AffineEquivalence':             ('crypto_invariants', 'AffineEquivalence'),
+    'check_bijection':               ('crypto_invariants', 'check_bijection'),
+    'check_involution':              ('crypto_invariants', 'check_involution'),
+    'differential_uniformity':       ('crypto_invariants', 'differential_uniformity'),
+    'measure_diffusion':             ('crypto_invariants', 'measure_diffusion'),
+    'ddt_signature':                 ('crypto_invariants', 'ddt_signature'),
+    'group_by_affine_equivalence':   ('crypto_invariants', 'group_by_affine_equivalence'),
+    'detect_feistel_structure':      ('crypto_invariants', 'detect_feistel_structure'),
+    'analyze_sbox':                  ('crypto_invariants', 'analyze_sbox'),
+    'scan_region':                   ('crypto_invariants', 'scan_region'),
+    # otf_sbox_detector (2025-08-01)
+    'OTFSBoxFinding':                ('otf_sbox_detector', 'OTFSBoxFinding'),
+    'scan_xtime':                    ('otf_sbox_detector', 'scan_xtime'),
+    'scan_poly_reduce':             ('otf_sbox_detector', 'scan_poly_reduce'),
+    'scan_affine_transform':         ('otf_sbox_detector', 'scan_affine_transform'),
+    'detect_otf_sbox':               ('otf_sbox_detector', 'detect_otf_sbox'),
+    # key_schedule (2025-08-04)
+    'KeyScheduleMatch':              ('key_schedule', 'KeyScheduleMatch'),
+    'KSReconstructionReport':        ('key_schedule', 'KSReconstructionReport'),
+    'search_round_constants':        ('key_schedule', 'search_round_constants'),
+    'score_key_schedule':            ('key_schedule', 'score_key_schedule'),
+    'reconstruct':                   ('key_schedule', 'reconstruct'),
+    # crypto_lineage (2025-08-04)
+    'CryptoRegion':                  ('crypto_lineage', 'CryptoRegion'),
+    'LineageMatch':                  ('crypto_lineage', 'LineageMatch'),
+    'LineageGraph':                  ('crypto_lineage', 'LineageGraph'),
+    'compute_simhash':               ('crypto_lineage', 'compute_simhash'),
+    'simhash_distance':             ('crypto_lineage', 'simhash_distance'),
+    'extract_region_fingerprint':    ('crypto_lineage', 'extract_region_fingerprint'),
+    'match_regions':                 ('crypto_lineage', 'match_regions'),
+    'regions_from_findings':         ('crypto_lineage', 'regions_from_findings'),
+    'build_lineage':                 ('crypto_lineage', 'build_lineage'),
+    # subreg_taint (2025-08-05)
+    'TaintByteVector':               ('subreg_taint', 'TaintByteVector'),
+    'SubregTaintTracker':            ('subreg_taint', 'SubregTaintTracker'),
+    # drift_calibrator (2025-08-06)
+    'DriftProfile':                  ('drift_calibrator', 'DriftProfile'),
+    'DriftReport':                   ('drift_calibrator', 'DriftReport'),
+    'extract_drift_profile':         ('drift_calibrator', 'extract_drift_profile'),
+    'calibrate':                     ('drift_calibrator', 'calibrate'),
+    'register_baseline':             ('drift_calibrator', 'register_baseline'),
+    'list_baselines':                ('drift_calibrator', 'list_baselines'),
+    # cfg_entropy_fingerprint (2025-08-06)
+    'CFGEntropyProfile':             ('cfg_entropy_fingerprint', 'CFGEntropyProfile'),
+    'CFGFingerprintMatch':           ('cfg_entropy_fingerprint', 'CFGFingerprintMatch'),
+    'compute_cfg_entropy':           ('cfg_entropy_fingerprint', 'compute_cfg_entropy'),
+    'match_cfg_fingerprint':         ('cfg_entropy_fingerprint', 'match_cfg_fingerprint'),
+    'scan_for_crypto_by_cfg':        ('cfg_entropy_fingerprint', 'scan_for_crypto_by_cfg'),
 }
 
 _CONSTANT_MAP = {}
@@ -312,3 +409,29 @@ def __getattr__(name: str):
     _val = getattr(_mod, _attr)
     _CONSTANT_MAP[name] = _val
     return _val
+
+
+# ── DepLLM-Crypto 依赖引导 LLM 增强误用检测注册 (2026-08-03) ──
+# 追加导出注册: 使 crypto.src.DepLLMCryptoAnalyzer / build_dependency_context 等
+# 可经上方 __getattr__ 懒加载获取 (与 crypto_misuse 等既有模块同机制)。
+# 实现见 depllm/ 子包: dependency_graph(CRYPTBARA 依赖上下文) / heuristic(降级) /
+# llm_validator(arXiv:2407.16576) / verdict_cache(arXiv:2509.10814) /
+# symbol_table(跨编译单元常量折叠传播) / pipeline(编排)。
+_DEPLLM_EXPORTS = {
+    'DepLLMCryptoAnalyzer':      ('depllm.pipeline', 'DepLLMCryptoAnalyzer'),
+    'DepFinding':                ('depllm.pipeline', 'DepFinding'),
+    'build_dependency_context':  ('depllm.pipeline', 'build_dependency_context'),
+    'detect_dep_llm_misuse':     ('depllm.pipeline', 'detect_dep_llm_misuse'),
+    'filter_findings':           ('depllm.pipeline', 'filter_findings'),
+    'DependencyGraph':           ('depllm.dependency_graph', 'DependencyGraph'),
+    'TaintPath':                 ('depllm.dependency_graph', 'TaintPath'),
+    'trace_dependency_paths':    ('depllm.dependency_graph', 'trace_dependency_paths'),
+    'ModuleSymbolTable':         ('depllm.symbol_table', 'ModuleSymbolTable'),
+    'ConstantSymbol':            ('depllm.symbol_table', 'ConstantSymbol'),
+    'LLMValidator':              ('depllm.llm_validator', 'LLMValidator'),
+    'LLMVerdict':                ('depllm.llm_validator', 'LLMVerdict'),
+    'VerdictCache':              ('depllm.verdict_cache', 'VerdictCache'),
+    'Verdict':                   ('depllm.verdict_cache', 'Verdict'),
+}
+_INSTANCE_IMPORTS.update(_DEPLLM_EXPORTS)
+__all__ += sorted(_DEPLLM_EXPORTS.keys())

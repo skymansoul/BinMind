@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Patching CLI — provisional implementation, pending rewrite."""
+"""补丁CLI — 临时代码，待重构。"""
 
 import argparse, sys, os, json, logging
 
@@ -29,7 +29,7 @@ def setup_logging(level=None, log_file=None):
 
 def cmd_analyze(args):
     print(f"[*] analyzing: {args.binary}")
-    from patching.src.auto_patcher import AutoPatcher
+    from patching.auto_patcher import AutoPatcher
     patcher = AutoPatcher(args.binary)
     result = patcher.analyze_and_patch()
     if result.analysis_success:
@@ -50,7 +50,7 @@ def cmd_analyze(args):
 
 def cmd_diff(args):
     print(f"[*] diffing: {args.original} -> {args.patched}")
-    from patching.src.patch_diff_locator import analyze_patch_diff
+    from patching.patch_diff_locator import analyze_patch_diff
     result = analyze_patch_diff(args.original, args.patched, output_dir=args.output, use_ai=not args.no_ai)
     if result.error:
         print(f"[-] diff failed: {result.error}")
@@ -67,7 +67,7 @@ def cmd_diff(args):
 
 def cmd_root_cause(args):
     print(f"[*] analyzing crash: {args.crash}")
-    from patching.src.auto_root_cause import AutoRootCauseAnalyzer, format_root_cause_report
+    from patching.auto_root_cause import AutoRootCauseAnalyzer, format_root_cause_report
     analyzer = AutoRootCauseAnalyzer()
     report = analyzer.analyze(args.crash)
     formatted = format_root_cause_report(report)
@@ -84,7 +84,7 @@ def cmd_root_cause(args):
 
 def cmd_quality(args):
     print(f"[*] evaluating patch quality: {args.patch_data}")
-    from patching.src.patch_quality_evaluator import PatchQualityEvaluator
+    from patching.patch_quality_evaluator import PatchQualityEvaluator
     with open(args.patch_data, 'r', encoding='utf-8') as fh:
         patch_data = json.load(fh)
     evaluator = PatchQualityEvaluator()
@@ -95,7 +95,7 @@ def cmd_quality(args):
 
 
 def cmd_rules(args):
-    from patching.src.rule_engine import RuleEngine
+    from patching.rule_engine import RuleEngine
     engine = RuleEngine(args.rules_dir)
     engine.load_rules()
     if args.list:
@@ -114,7 +114,7 @@ def cmd_rules(args):
 
 def cmd_impact(args):
     print(f"[*] analyzing impact: {args.before} -> {args.after}")
-    from patching.src.patch_impact_analyzer import analyze_patch_impact
+    from patching.patch_impact_analyzer import analyze_patch_impact
     result = analyze_patch_impact(args.before, args.after)
     if result.get('success'):
         report = result['report']
@@ -209,7 +209,7 @@ def build_parser():
     p_diff.add_argument('--original', '-a', required=True, help='original binary')
     p_diff.add_argument('--patched', '-b', required=True, help='patched binary')
     p_diff.add_argument('--output', '-o', help='output directory')
-    p_diff.add_argument('--no-ai', action='store_true', help='disable AI analysis')
+    p_diff.add_argument('--no-ai', action='store_true', help='禁用自动化分析')
 
     p_rc = subs.add_parser('root-cause', help='root cause analysis')
     p_rc.add_argument('--crash', '-f', required=True, help='crash file or text')

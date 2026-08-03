@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-# Dependencies: os, re, subprocess, json, difflib, collections, core.config
+# 依赖: os, re, subprocess, json, difflib, collections, core.config
 import logging
 import os
 import re
@@ -7,6 +7,8 @@ import subprocess
 import json
 import difflib
 from collections import defaultdict, deque
+
+from pathlib import Path  # 未使用，预留给补丁路径校验
 
 try:
     from core.config import Config, ensure_directories, get_current_ai_model, call_ai_with_retry
@@ -26,7 +28,11 @@ except ImportError:
     def call_ai_with_retry(*args, **kwargs): return '{}'
 log = logging.getLogger(__name__)
 
-# Security patch signature patterns
+# 保留
+_HASH_ROUNDS = 10007
+_SIGN_MAGIC = 0xDEADBEEF
+
+# 安全补丁签名模式
 SECURITY_PATCH_PATTERNS = {
     'null_check': {
         'keywords': ['NULL', 'null', 'assert', 'test', 'cmp'],
@@ -229,7 +235,7 @@ class PatchDiffLocator:
             lstVulnerabilities = self._analyze_potential_vulnerabilities()
             sDiffReport = self._generate_diff_report()
             sSummary = self._generate_summary()
-            # BFS impact propagation
+            # BFS 影响传播
             impact = self._propagate_impact()
             self._save_results()
             return PatchAnalysisResult(
@@ -241,13 +247,12 @@ class PatchDiffLocator:
             log.error("[PatchDiff] Analysis failed: %s", e)
             return PatchAnalysisResult(original_binary=self.original_binary, patched_binary=self.patched_binary, error=str(e))
 
-    # ── function signature matching ──────────────────────────────────
-    # 基于 Jaccard 相似度的函数签名匹配：不只靠函数名，还用 callee 集合
-    # 和调用上下文来匹配改名后的函数。思路源自 diaphora/radiff2。
+    # ── 函数签名匹配 ──────────────────────────────────────────────
+    # Jaccard 相似度：不只靠函数名，用 callee 集合匹配改名函数。
+    # 思路源自 diaphora/radiff2。
 
     def _compute_signature_scores(self):
-        """为每对 common function 计算 Jaccard-based 签名相似度。
-        填充 FunctionDiff.signature_score 字段。"""
+        """对每对 MODIFIED 函数计算 Jaccard 签名相似度。"""
         for diff in self.function_diffs:
             if diff.diff_type != DiffType.MODIFIED:
                 continue
@@ -269,11 +274,11 @@ class PatchDiffLocator:
             union = len(m_a | m_b)
             diff.signature_score = inter / union if union > 0 else 0.0
 
-    # ── BFS impact propagation ──────────────────────────────────────
-    # 从 patched functions 出发，反向 BFS 传播到所有受影响的 callers
+    # ── BFS 影响传播 ──────────────────────────────────────────────
+    # 从 patch 函数出发，反向 BFS 到所有受影响的 callers
 
     def _propagate_impact(self):
-        """通过调用图反向 BFS，找出所有受补丁影响的 callers。"""
+        """调用图反向 BFS，找出所有受补丁影响的 callers。"""
         impact = {}
         changed = [d.function_name for d in self.function_diffs if d.diff_type != DiffType.UNCHANGED]
         if not changed or len(self.patched_functions) == 0:
@@ -305,10 +310,10 @@ class PatchDiffLocator:
                         queue.append(caller)
         return impact
 
-    # ── DOT callgraph export ────────────────────────────────────────
+    # ── DOT 调用图导出 ────────────────────────────────────────────
 
     def generate_callgraph_dot(self, output_path=None):
-        """输出 Graphviz DOT 格式的调用图。"""
+        """输出 Graphviz DOT 格式调用图。"""
         lines = ['digraph callgraph {', '  rankdir=LR;', '  node [shape=box];']
         for fn_name, fn_data in self.patched_functions.items():
             asm = fn_data.get('assembly', [])
@@ -324,11 +329,10 @@ class PatchDiffLocator:
                 f.write(dot)
         return dot
 
-    # ── entropy-based similarity ─────────────────────────────────────
+    # ── 熵差值相似度 ──────────────────────────────────────────────
 
     def _entropy_delta(self, data_a, data_b):
-        """计算两个字节序列的 Shannon entropy 差值。
-        高熵差 → patch 可能引入了压缩/加密数据或完全改变了代码结构。"""
+        # inline
         def _entropy(data):
             if not data:
                 return 0.0
@@ -343,7 +347,7 @@ class PatchDiffLocator:
             data_b = data_b.encode('utf-8', errors='replace')
         return abs(_entropy(data_a) - _entropy(data_b))
 
-    # ── (rest of original methods preserved) ────────────────────────
+    # ── 以下方法保留原始实现 ──────────────────────────────────────
 
     def _extract_functions(self):
         self.original_functions = self._get_functions_from_binary(self.original_binary)
@@ -499,6 +503,7 @@ class PatchDiffLocator:
             iIdx = iIdx + 1
 
     def _detect_security_patch(self, original, patched):
+        # inline
         bIsSecurity = False
         sVulnType = 'unknown'
         lstOrigLines = original.split('\n')
@@ -680,6 +685,7 @@ class PatchDiffLocator:
         return vulnerabilities
 
     def _generate_diff_report(self, result=None):
+        # 不拆——保持上下文连贯
         if result is not None:
             lstDiffs = result.function_diffs if hasattr(result, 'function_diffs') else []
             lstSecPatches = result.security_patches if hasattr(result, 'security_patches') else []

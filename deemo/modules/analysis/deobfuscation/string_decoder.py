@@ -28,7 +28,7 @@ class DecodeMethod(Enum):
 
 @dataclass
 class StringAnalysis:
-    """String analysis result container."""
+    """String analysis result container"""
     original: str
     decoded_text: Optional[str] = None
     decoding_method: Optional[str] = None
@@ -51,11 +51,11 @@ class StringAnalysis:
 
 class StringDecoder:
     """
-    Binary string auto-decoder and deobfuscator.
-
-    Scans all strings in a binary, auto-detects and decodes simply-encoded
-    strings, recovers plaintext, and helps uncover hidden configs, domain
-    names, commands, etc.
+    Binary string auto-decoder deobfuscator
+    
+    Scans strings a binary, auto-检测 解码 simply-encoded
+    strings, recovers plaintext, helps uncover hidden 配置s, domain
+    names, commands, etc
     """
 
     _MULTI_XOR_KEYS = [
@@ -85,7 +85,7 @@ class StringDecoder:
                 self.enable_lang_detect = False
 
     def _calculate_entropy(self, s):
-        """Calculate Shannon entropy of a string."""
+        """计算 Shannon entropy a string"""
         if s is None or s == "":
             return 0.0
 
@@ -108,7 +108,7 @@ class StringDecoder:
         return entropy
 
     def _is_human_readable(self, s):
-        """Check if string is human-readable."""
+        """检查 string human-readable"""
         if s is None or s == "":
             return False
 
@@ -139,7 +139,7 @@ class StringDecoder:
 
     def _try_zlib(self, s):
         """尝试 zlib 解压。恶意软件常将配置或 payload 以 zlib 压缩后
-        以 base64 或 hex 编码存储。检测 zlib magic bytes 后解压。
+        以 base64 或 hex 编码存储。检测 zlib magic bytes 后解压
         """
         results = []
         if s is None or len(s) < 12:
@@ -167,7 +167,7 @@ class StringDecoder:
         return results
 
     def _try_base64(self, s):
-        """Try Base64 decoding."""
+        """Try Base64 解码"""
         results = []
         if s is None or s == "":
             return results
@@ -203,7 +203,7 @@ class StringDecoder:
         return results
 
     def _try_hex(self, s):
-        """Try Hex decoding."""
+        """Try Hex 解码"""
         results = []
         if s is None or s == "":
             return results
@@ -254,14 +254,14 @@ class StringDecoder:
 
     def _try_sliding_xor(self, s):
         """滑动窗口 XOR 密钥恢复。对于长度 > 32 的密文，使用重合指数
-        (index of coincidence) 估算密钥长度，然后用频率分析恢复密钥。
-        相比单字节固定密钥枚举更适用于商业加壳器（通常使用 2-16 字节密钥）。
+        (index coincidence) 估算密钥长度，然后用频率分析恢复密钥
+        相比单字节固定密钥枚举更适用于商业加壳器（通常使用 2-16 字节密钥）
         """
         results = []
         if s is None or len(s) < 32:
             return results
         raw = s.encode("latin-1", errors="replace")
-        # Kasiski: 试探密钥长度 2..12
+        # Kasiski: 试探密钥长度 2.12
         best_klen = 1
         best_ioc = 0.0
         for kl in range(2, min(13, len(raw) // 4 + 1)):
@@ -313,7 +313,7 @@ class StringDecoder:
         return results
 
     def _try_xor(self, s):
-        """Try XOR decoding with common keys."""
+        """Try XOR 解码 common keys"""
         results = []
         if s is None or s == "":
             return results
@@ -343,7 +343,7 @@ class StringDecoder:
         return results
 
     def _try_rot13(self, s):
-        """Try ROT13 decoding."""
+        """Try ROT13 解码"""
         results = []
         if s is None or s == "":
             return results
@@ -371,7 +371,7 @@ class StringDecoder:
         return results
 
     def _try_url_decode(self, s):
-        """Try URL decoding."""
+        """Try URL 解码"""
         results = []
         if s is None or s == "":
             return results
@@ -403,7 +403,7 @@ class StringDecoder:
         return results
 
     def _try_unicode_escape(self, s):
-        """Try unicode escape decoding."""
+        """Try unicode escape 解码"""
         results = []
         if s is None or s == "":
             return results
@@ -423,7 +423,7 @@ class StringDecoder:
         return results
 
     def _try_quoted_printable(self, s):
-        """Try quoted-printable decoding."""
+        """Try quoted-printable 解码"""
         results = []
         if s is None or s == "":
             return results
@@ -444,7 +444,7 @@ class StringDecoder:
         return results
 
     def _try_layered(self, s):
-        """尝试分层解码链。在初始解码结果上递归最多一层。"""
+        """尝试分层解码链。在初始解码结果上递归最多一层"""
         results = []
         if s is None or len(s) < 8:
             return results
@@ -467,7 +467,7 @@ class StringDecoder:
         return results
 
     def _evaluate_decode_result(self, decoded_str):
-        """Evaluate the quality of a decoded result."""
+        """Evaluate quality a decoded result"""
         score = 0.0
 
         if decoded_str is None or decoded_str == "":
@@ -545,7 +545,7 @@ class StringDecoder:
         return min(max(score, 0.0), 1.0)
 
     def _looks_like_encoded(self, s):
-        """Check if string looks encoded."""
+        """检查 string looks encoded"""
         if s is None or s == "":
             return False
 
@@ -582,7 +582,7 @@ class StringDecoder:
         return False
 
     def _looks_like_rot13(self, s):
-        """Check if string looks like ROT13."""
+        """检查 string looks like ROT13"""
         if s is None or s == "":
             return False
 
@@ -637,7 +637,7 @@ class StringDecoder:
         return False
 
     def analyze_string(self, s):
-        """Analyze a single string with all decoders."""
+        """分析 a single 字符串解码器s"""
         if s is None:
             return StringAnalysis(original=s)
 
@@ -687,7 +687,7 @@ class StringDecoder:
         return analysis
 
     def analyze_strings(self, strings):
-        """Analyze a list of strings."""
+        """分析 a list strings"""
         results = []
         if strings is None:
             return results
@@ -700,7 +700,7 @@ class StringDecoder:
         return results
 
     def find_suspicious_patterns(self, strings):
-        """Find suspicious patterns in string list."""
+        """查找 suspicious patterns string list"""
         suspicious = []
         if strings is None:
             return suspicious
@@ -731,7 +731,7 @@ class StringDecoder:
         return suspicious
 
     def decode_all(self, strings):
-        """Full decode analysis on string list."""
+        """Full 解码 analysis string list"""
         if strings is None:
             logger.warning("strings is None")
             return {
@@ -783,7 +783,7 @@ class StringDecoder:
         return results
 
     def decode_and_enrich(self, binary_info):
-        """Decode strings and enrich binary info dict."""
+        """解码 strings enrich binary info dict"""
         if binary_info is None:
             logger.warning("binary_info is None")
             return {}

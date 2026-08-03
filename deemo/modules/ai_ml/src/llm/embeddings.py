@@ -1,5 +1,3 @@
-# 2026-07-16
-# ---- 哈希嵌入 + SentenceTransformer桥接：零依赖fallback + 语义增强双通道 ----
 # 核心思路：Weinberger哈希技巧做稀疏特征→稠密嵌入，绕过OOV/字典问题
 # ST bridge提供语义级编码，不可用时退化为字符级哈希，保证never-fail
 

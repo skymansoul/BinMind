@@ -81,7 +81,7 @@ _DEFAULT_EFFECTIVENESS_PATH = os.path.join(
 
 
 class ObfuscationDetector:
-    """Obfuscation type detection using heuristic analysis of r2 disassembly."""
+    """混淆 type detection using heuristic analysis r2 反汇编"""
 
     DEFAULT_TIMEOUT = 60
 
@@ -219,11 +219,11 @@ class RecoveryScorer:
 # ---------------------------------------------------------------------------
 # 持久化策略有效性存储 —— 跨会话学习
 # 将每次运行的策略效果存入 JSON，下次运行时用历史数据调整
-# 预期恢复率。使用指数衰减权重（最近 10 次会话权重更高）。
+# 预期恢复率。使用指数衰减权重（最近 10 次会话权重更高）
 # ---------------------------------------------------------------------------
 
 class _PersistentEffectiveness:
-    """JSON-backed persistent storage for strategy effectiveness across sessions."""
+    """JSON-backed persistent storage for strategy effectiveness across sessions"""
 
     def __init__(self, path: str = _DEFAULT_EFFECTIVENESS_PATH):
         self._path = path
@@ -344,7 +344,7 @@ class StrategySelector:
         return strategies
 
     def persist(self):
-        """将内存中的有效性数据写入磁盘。建议在分析会话结束时调用。"""
+        """将内存中的有效性数据写入磁盘。在分析会话结束时调用"""
         self._persistence.save()
 
 

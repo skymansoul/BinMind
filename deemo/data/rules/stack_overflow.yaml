@@ -1,0 +1,46 @@
+# 栈溢出检测规则
+# 匹配反编译代码中的危险函数调用模式——关注无边界检查的写入操作
+# 每条规则包含静态模式、严重度和 CWE 编号
+
+rules:
+  - id: SO-001
+    pattern: "gets\\s*\\("
+    description: "gets() 无边界检查，始终可溢出"
+    severity: Critical
+    cwe: CWE-242
+    func_pattern: "gets"
+
+  - id: SO-002
+    pattern: "strcpy\\s*\\([^,]+,\\s*[^s]"
+    description: "strcpy() 目标缓冲区大小未校验——若源来自用户输入则可溢出"
+    severity: High
+    cwe: CWE-120
+    func_pattern: "strcpy"
+
+  - id: SO-003
+    pattern: "sprintf\\s*\\([^,]+,\\s*[^\"']"
+    description: "sprintf() 格式化参数非字面量——若包含用户输入则缓冲区大小不可预知"
+    severity: High
+    cwe: CWE-120
+    func_pattern: "sprintf"
+
+  - id: SO-004
+    pattern: "read\\s*\\([^,]+,\\s*[^,]+,\\s*(0x[0-9a-fA-F]+|[0-9]{4,})\\)"
+    description: "read() 使用了固定的大缓冲区——若输入源可控则检查目标缓冲区声明大小"
+    severity: Medium
+    cwe: CWE-119
+    func_pattern: "read"
+
+  - id: SO-005
+    pattern: "memcpy\\s*\\([^,]+,\\s*[^,]+,\\s*[a-zA-Z_]"
+    description: "memcpy() 的长度参数来自变量而非常量——可能存在整数溢出或长度计算错误"
+    severity: Medium
+    cwe: CWE-119
+    func_pattern: "memcpy"
+
+  - id: SO-006
+    pattern: "fgets\\s*\\([^,]+,\\s*(0x[0-9a-fA-F]+|[0-9]{4,})\\s*,"
+    description: "fgets() 缓冲区大于局部变量声明——检查栈帧中实际分配的空间"
+    severity: Medium
+    cwe: CWE-120
+    func_pattern: "fgets"

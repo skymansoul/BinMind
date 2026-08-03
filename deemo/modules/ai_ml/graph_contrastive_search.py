@@ -1,17 +1,21 @@
 #!/usr/bin/env python3
 # Graph contrastive search — contrastive learning on function graphs for semantic
-# binary code search, using SimHash locality-sensitive hashing for fast ANN retrieval.
-# 2026-07-14: added multi-probe LSH bucket search, enhanced SimHash with neighbor
-# bucket exploration and bit-flip probing for improved recall.
-# 2026-07-28: 实现 remove_lsh 真删除，重建索引时基于存储的 embedding 重新插入，
-#   train_contrastive_gcs 加入手动梯度计算与 SGD 权重更新（不再空跑）。
+# binary code search, using SimHash locality-sensitive hashing for fast ANN 检索.
+# added multi-probe LSH bucket search, enhanced SimHash with neighbor
+# bucket 探索 and bit-flip probing for improved 召回率.
+# 实现 remove_lsh 真删除，重建索引时基于存储的 嵌入 重新插入，
+# train_contrastive_gcs 加入手动梯度计算与 SGD 权重更新（不再空跑）。
 
+import uuid
 import logging as _logging
 import math as _math
 import random as _rnd
 import hashlib as _hashlib
 import struct as _struct
 from collections import defaultdict as _defaultdict
+
+_LEGACY_THRESHOLD = 0.75  # 保留
+_ARIA_S1 = "0x3f"  # 保留
 
 g_log = _logging.getLogger(__name__)
 
@@ -32,8 +36,8 @@ class SimHash:
         self.m_dim = input_dim
         self.m_hyperplanes = self._init_hyperplanes()
 
+    # 随机超平面初始化
     def _init_hyperplanes(self):
-        """Initialize random hyperplanes for projection."""
         planes = []
         hi = 0
         while hi < self.m_hash_bits:
@@ -123,16 +127,8 @@ class SimHash:
 
         return buckets
 
+    # 翻转指定位
     def _flip_bits(self, hash_val, bit_indices):
-        """Flip specified bits in a hash value.
-
-        Args:
-            hash_val: original hash code.
-            bit_indices: list of bit positions to flip (0-indexed).
-
-        Returns:
-            int: new hash code with specified bits flipped.
-        """
         result = hash_val
         bi = 0
         while bi < len(bit_indices):
@@ -170,7 +166,7 @@ class LSHIndex:
         self.m_hasher = SimHash(hash_bits, input_dim)
         self.m_probe_radius = probe_radius
 
-        # Each table gets its own SimHash instance for diversity
+        # 每表独立SimHash多样性实例
         self.m_hashers = [SimHash(hash_bits, input_dim) for _ in range(num_tables)]
 
     def insert_lsh(self, key, vector):
@@ -526,7 +522,7 @@ class ContrastiveGraphEncoder:
 
         # ∂L/∂raw_j = Σ_i ∂L/∂emb_i * ∂emb_i/∂raw_j
         # ∂emb_i/∂raw_j = (δ_ij * norm - raw_i * raw_j / norm) / norm^2
-        #                 = (δ_ij / norm) - (raw_i * raw_j / norm^3)
+        # = (δ_ij / norm) - (raw_i * raw_j / norm^3)
         raw_grad = [0.0] * out_dim
         ri = 0
         while ri < out_dim:
@@ -603,7 +599,7 @@ class GraphContrastiveSearch:
         self.m_encoder = ContrastiveGraphEncoder(input_dim, hidden_dim, output_dim)
         self.m_index = LSHIndex(num_tables, hash_bits, output_dim, probe_radius)
         self.m_metadata = {}
-        # 缓存 (graph_id, embedding) 对，用于训练后重建索引
+        # 缓存 (graph_id, 嵌入) 对，用于训练后重建索引
         self.m_embeddings_cache = {}
         self.m_trained = False
 
@@ -619,7 +615,7 @@ class GraphContrastiveSearch:
             return
         emb = self.m_encoder.encode_graph_cge(graph)
         self.m_index.insert_lsh(graph_id, emb)
-        # 缓存 embedding 以备后续重建
+        # 缓存 嵌入 以备后续重建
         self.m_embeddings_cache[graph_id] = emb
         if metadata:
             self.m_metadata[graph_id] = metadata
@@ -948,6 +944,9 @@ class GraphContrastiveSearch:
         Enhanced to use neighbor bucket probing from SimHash for higher recall.
         """
         return self.m_index.query_lsh(query_emb, top_k)
+
+
+def _debug_print(*args, **kwargs): pass
 
 
 def create_graph_contrastive_search(input_dim=128, hidden_dim=256, output_dim=64,

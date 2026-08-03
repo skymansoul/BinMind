@@ -1,6 +1,6 @@
-# 2026-07-25 — 漏洞生命周期管理API
-# CRUD + 状态机流转 + 历史审计，INTJ风格：状态迁移约束是核心设计
-# 增强：添加批量状态迁移的原子性检查与过渡统计
+# 漏洞生命周期管理API。
+# CRUD+状态机流转+历史审计。状态迁移约束为核心设计。
+# 批量状态迁移原子性检查与过渡统计。
 
 from enum import Enum
 from dataclasses import dataclass, field
@@ -14,7 +14,7 @@ json = _json
 
 
 class VulnStatus(Enum):
-    """漏洞生命周期状态——单向流转受限于状态机规则"""
+    """漏洞生命周期状态——单向流转受状态机规则约束。"""
     NEW = "new"
     CONFIRMED = "confirmed"
     IN_PROGRESS = "in_progress"
@@ -31,8 +31,8 @@ class VulnSeverity(Enum):
     INFO = "info"
 
 
-# 状态迁移白名单 —— 定义合法状态转换
-# FIXED不可退回NEW，FALSE_POSITIVE不可复活为CONFIRMED
+# 状态迁移白名单——定义合法状态转换。
+# FIXED不可退回NEW，FALSE_POSITIVE不可复活为CONFIRMED。
 _VALID_TRANSITIONS: Dict[VulnStatus, List[VulnStatus]] = {
     VulnStatus.NEW: [VulnStatus.CONFIRMED, VulnStatus.FALSE_POSITIVE, VulnStatus.WONT_FIX],
     VulnStatus.CONFIRMED: [VulnStatus.IN_PROGRESS, VulnStatus.WONT_FIX, VulnStatus.FALSE_POSITIVE],
@@ -42,7 +42,7 @@ _VALID_TRANSITIONS: Dict[VulnStatus, List[VulnStatus]] = {
     VulnStatus.FALSE_POSITIVE: [VulnStatus.NEW],  # FP被推翻，回到NEW重新评估
 }
 
-# 严重性分数映射 —— CVSS v3兼容
+# 严重性分数映射——CVSS v3兼容。
 _SEVERITY_SCORES = {
     VulnSeverity.CRITICAL: 9.0,
     VulnSeverity.HIGH: 7.0,
@@ -54,7 +54,7 @@ _SEVERITY_SCORES = {
 
 @dataclass
 class VulnRecord:
-    """单条漏洞记录的完整快照"""
+    """单条漏洞记录的完整快照。"""
     vuln_id: str
     cve_id: str = ""
     title: str = ""
@@ -75,7 +75,7 @@ class VulnRecord:
 
 @dataclass
 class StatusChange:
-    """单次状态变更的快照"""
+    """单次状态变更的快照。"""
     from_status: VulnStatus
     to_status: VulnStatus
     timestamp: str
@@ -86,14 +86,14 @@ class StatusChange:
 class VulnLifecycleAPI:
     """漏洞生命周期管理——持久化+审计追踪。
 
-    核心函数文档:
-        transition(vuln_id, new_status) — 执行状态迁移，验证合法性后写入审计日志
-        get_history(vuln_id) — 返回该漏洞的完整状态变更时间线
+    核心入口:
+        transition(vuln_id, new_status) — 执行状态迁移，验证合法性后写入审计日志。
+        get_history(vuln_id) — 返回该漏洞的完整状态变更时间线。
     """
 
     def __init__(self, storage_path: str = ""):
         self._records: Dict[str, VulnRecord] = {}
-        # 每个vuln_id的历史变更栈
+        # vuln_id→历史变更栈映射。
         self._history: Dict[str, List[StatusChange]] = {}
         self._storage_path = storage_path
         self._dirty = False
@@ -103,7 +103,7 @@ class VulnLifecycleAPI:
     # ---- CRUD ----
 
     def create(self, **kwargs) -> VulnRecord:
-        """创建新漏洞记录。自动生成vuln_id（若未提供）。"""
+        """创建新漏洞记录。vuln_id未提供时自动生成。"""
         now = datetime.now().isoformat()
         if "vuln_id" not in kwargs:
             raw = f"{kwargs.get('cve_id', 'GEN')}{kwargs.get('function_name', '')}{now}"
@@ -138,11 +138,11 @@ class VulnLifecycleAPI:
         return self._records.get(vuln_id)
 
     def update(self, vuln_id: str, **kwargs) -> Optional[VulnRecord]:
-        """更新漏洞元数据（不触发状态迁移）。如需改状态，调用transition()。"""
+        """更新漏洞元数据，不触发状态迁移。改状态需调用transition()。"""
         rec = self._records.get(vuln_id)
         if rec is None:
             return None
-        # 不可通过update修改status —— 强制走transition确保审计完整性
+        # 禁止通过update修改status——强制经transition以保证审计完整性。
         kwargs.pop("status", None)
         kwargs.pop("vuln_id", None)
         for k, v in kwargs.items():
@@ -187,18 +187,18 @@ class VulnLifecycleAPI:
 
     def transition(self, vuln_id: str, new_status: VulnStatus,
                    reason: str = "", changed_by: str = "system") -> bool:
-        """执行漏洞状态迁移。核心约束逻辑如下:
+        """执行漏洞状态迁移。核心约束:
 
-        1. 检查当前状态→目标状态是否在合法转移表中
-        2. 写入StatusChange到历史审计栈
-        3. 更新record的updated_at
+        1. 校验当前状态→目标状态是否在合法转移表中。
+        2. 写入StatusChange至历史审计栈。
+        3. 更新record.updated_at。
 
         返回True表示迁移成功，False表示非法转移。
         """
         rec = self._records.get(vuln_id)
         if rec is None:
             return False
-        # 同状态不做无意义迁移
+        # 同状态跳过，避免无意义迁移。
         if rec.status == new_status:
             return False
         allowed = _VALID_TRANSITIONS.get(rec.status, [])
@@ -219,7 +219,7 @@ class VulnLifecycleAPI:
         return True
 
     def get_history(self, vuln_id: str) -> List[StatusChange]:
-        """返回该漏洞的完整状态变更时间线，按时间升序排列。"""
+        """返回该漏洞完整状态变更时间线，时间升序。"""
         return list(self._history.get(vuln_id, []))
 
     def get_valid_transitions(self, vuln_id: str) -> List[VulnStatus]:

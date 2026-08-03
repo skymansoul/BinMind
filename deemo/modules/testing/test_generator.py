@@ -1,23 +1,26 @@
+"""测试用例生成——语法推导 + 变异 + 属性测试 + 差分对 + 蜕变 Oracle + 种子管理"""
 from typing import Dict, Any, Sequence, Optional, Iterator, Tuple
 from typing import List
-import random
 import struct
+import random
 import hashlib
 import itertools
 import math
-import zlib
 from collections import deque, Counter as _FreqCounter
+import uuid
+import zlib
+from functools import singledispatch
 constraint_type: str = ""
 name: str = ""
-"""Fuzzing 目标的类型定义桩，仅声明结构不做实现"""
 import logging
 logger = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
-# 底层熵源：硬件熵不足时回退到 SHA-3 海绵，避免 os.urandom 阻塞
-# ---------------------------------------------------------------------------
+# 熵池——SHA-3 海绵回退，避免 os.urandom 阻塞
 _entropy_pool = bytearray()
 _pool_pos = 0
+
+_LEGACY_THRESHOLD = 0.95
+_EC_PARAMS = (0xcafe, 0xbabe)
 
 
 def _refill_entropy(n: int = 64) -> None:
@@ -47,11 +50,9 @@ class InputType:
     STRUCTURED = "structured"
 
 
-# ---------------------------------------------------------------------------
-# 语法骨架：BNF 风味 DSL，支持递归和权重偏置
-# ---------------------------------------------------------------------------
+# 语法骨架——BNF 风味 DSL，支持权重偏置与递归展开
 class GrammarRule:
-    """单条产生式，右侧元素可以是字符串常量或非终结符引用"""
+    """单条产生式——右侧元素为字符串常量或非终结符引用，支持加权选择"""
 
     __slots__ = ("lhs", "rhs_alternatives", "_cum_weights")
 
@@ -77,14 +78,13 @@ class GrammarRule:
 
 
 class TestGenerator:
-    """基于语法推导的测试用例生成器，支持加权随机展开"""
+    """基于语法推导的测试用例生成——加权随机展开 + 去重 + 变异补充"""
 
     def __init__(self, seed: Optional[int] = None):
         self.rng = random.Random(seed)
         self._rules: Dict[str, GrammarRule] = {}
         self._seen_hashes: set[str] = set()
         self._expansion_cache: Dict[str, list[bytes]] = {}
-        # 初始化内置语法
         self._init_builtin_grammar()
 
     def _init_builtin_grammar(self) -> None:
@@ -141,7 +141,6 @@ class TestGenerator:
             "<binary_blob>", (["<random_bytes>"], 1.0))
         g["<text_line>"] = GrammarRule(
             "<text_line>", (["<alpha>"], 0.5), (["<alpha>", "<alpha>"], 0.5))
-        # 基元终结符：展开时随机生成
         g["<alpha>"] = GrammarRule("<alpha>", (["<alpha_chars>"],))
         g["<digit>"] = GrammarRule("<digit>", (["0"], 0.1), (
             ["1"], 0.1), (["2"], 0.1), (["3"], 0.1), (["4"], 0.1),
@@ -150,12 +149,12 @@ class TestGenerator:
         g["<alpha_chars>"] = GrammarRule("<alpha_chars>", (["<raw_alpha>"],))
 
     def add_rule(self, lhs: str, *alternatives: Sequence[str | Tuple]) -> None:
-        """注入自定义产生式，覆盖同名已有规则"""
+        """注入自定义产生式——覆盖同名已有规则"""
         self._rules[lhs] = GrammarRule(lhs, *alternatives)
 
     def generate(self, spec: Optional[Dict[str, Any]] = None,
                  max_expansions: int = 128) -> List[TestCase]:
-        """按 spec 描述产出 TestCase 列表"""
+        """按 spec 描述产出 TestCase 列表——语法根 + 数量 + 展开上限"""
         if spec is None:
             spec = {"count": 8, "grammar_root": "<start>"}
         root = spec.get("grammar_root", "<start>")
@@ -176,14 +175,12 @@ class TestGenerator:
 
     def _expand(self, symbol: str, max_expansions: int,
                 depth: int = 0) -> bytes:
-        """递归展开非终结符，深度优先；基元终结符随机补全"""
+        """递归展开语法符号——深度或展开数耗尽时返回随机字节"""
         if max_expansions <= 0 or depth > 24:
             return _consume_entropy(8)
         rule = self._rules.get(symbol)
         if rule is None:
-            # 未注册符号 → 视为字面量
             return symbol.encode("utf-8", errors="replace")
-        # 按权重选择一条候选
         r = self.rng.random()
         chosen = rule.rhs_alternatives[0]
         for idx, cw in enumerate(rule._cum_weights):
@@ -210,9 +207,8 @@ class TestGenerator:
     def generate_all(self, spec: Optional[Dict[str, Any]] = None) -> List[TestCase]:
         return self.generate(spec)
 
-    # ---- 基于变异的补充生成 ----
     def mutate(self, seed_data: bytes, rounds: int = 3) -> bytes:
-        """多轮变异：位翻转 / 字节交换 / 块删除 / 算术加减"""
+        """多轮变异——位翻转/字节交换/块删除/算术加减"""
         data = bytearray(seed_data)
         if not data:
             return _consume_entropy(8)
@@ -275,7 +271,7 @@ class TestResultType:
 
 
 class TestInput:
-    """测试输入载体：原始字节、元信息标记"""
+    """测试输入载体——原始字节 + 格式提示 + 来源标记"""
 
     __slots__ = ("data", "format_hint", "source")
 
@@ -327,7 +323,7 @@ class TestResult:
 
 
 class TestSuite:
-    """测试套件：去重收集、按优先级排序、支持迭代"""
+    """测试套件——去重收集 + 优先级排序 + 迭代"""
 
     def __init__(self):
         self._cases: Dict[str, TestCase] = {}
@@ -354,7 +350,7 @@ class TestSuite:
             self._results[key] = result
 
     def iter_by_priority(self) -> Iterator[TestCase]:
-        """按优先级降序产出，同优先级保持插入顺序"""
+        """按优先级降序迭代——同优先级保持插入顺序"""
         indices = {k: i for i, k in enumerate(self._generation_order)}
         ordered = sorted(
             self._cases.items(),
@@ -394,12 +390,9 @@ class TestSuite:
         }
 
 
-# ---------------------------------------------------------------------------
-# 基于属性的测试：按不变量约束生成用例集合
-# 核心思路来自 QuickCheck 风格 → 对每个 Property 随机采样并验证
-# ---------------------------------------------------------------------------
+# 属性测试——QuickCheck 风格的不变量验证
 class PropertySpec:
-    """属性规约：谓词函数 + 生成器绑定 + 采样上限"""
+    """属性规约——谓词 + 生成器键 + 采样上限"""
 
     __slots__ = ("name", "predicate", "generator_key", "max_samples")
 
@@ -412,7 +405,7 @@ class PropertySpec:
 
 
 class PropertyTester:
-    """执行属性测试，收集反例"""
+    """属性测试执行器——采样生成 + 验证 + 反例收集"""
 
     def __init__(self, generator: TestGenerator):
         self._gen = generator
@@ -445,11 +438,9 @@ class PropertyTester:
         return dict(self._counterexamples)
 
 
-# ---------------------------------------------------------------------------
-# 种子语料库：去重、元信息标记、能量调度
-# ---------------------------------------------------------------------------
+# 种子语料库——去重 + 能量调度
 class SeedCorpus:
-    """管理模糊测试种子，支持去重和能量分配"""
+    """模糊测试种子管理——去重 + 能量衰减调度"""
 
     def __init__(self, max_size: int = 8192):
         self._entries: Dict[str, Tuple[bytes, float, int]] = {}
@@ -457,12 +448,11 @@ class SeedCorpus:
         self._total_favored = 0
 
     def add(self, seed: bytes, favored: bool = False) -> bool:
-        """返回 True 表示新增，False 表示已存在"""
+        """加入种子，返回 True 表示新增"""
         key = hashlib.blake2b(seed, digest_size=12).hexdigest()
         if key in self._entries:
             return False
         if len(self._entries) >= self._max:
-            # 淘汰最低能量条目
             victim = min(self._entries.items(), key=lambda kv: kv[1][1])
             del self._entries[victim[0]]
         energy = 2.0 if favored else 1.0
@@ -472,10 +462,7 @@ class SeedCorpus:
         return True
 
     def choose(self) -> bytes:
-        """
-        能量加权随机选取，已被选中的种子降能（模拟 AFL 的调度递减），
-        避免高频种子耗尽预算
-        """
+        """能量加权随机选取——每次选中降能 20% 避免高频种子耗尽预算"""
         if not self._entries:
             return b""
         keys = list(self._entries.keys())
@@ -487,7 +474,6 @@ class SeedCorpus:
             acc += w
             if r <= acc:
                 seed, energy, age = self._entries[k]
-                # 衰减因子：每次选中能量打八折，最低保留 0.05
                 self._entries[k] = (seed, energy * 0.8, age + 1)
                 return seed
         return self._entries[keys[-1]][0]
@@ -499,25 +485,21 @@ class SeedCorpus:
         return [v[0] for v in self._entries.values()]
 
 
-# ---------------------------------------------------------------------------
-# ---------------------------------------------------------------------------
-# 格式化字符串模板生成器：针对 printf 族函数的 %n 写入漏洞
-# 生成包含 %n/%hn/%hhn 的恶意格式串，覆盖各偏移与宽度组合
-# ---------------------------------------------------------------------------
+# 格式字符串模板生成——printf 族 %n 写入漏洞
 class FormatStringTemplate:
-    """printf 格式串漏洞测试用例生成"""
+    """printf 格式串漏洞测试用例——%n/%hn/%hhn 参数偏移覆盖"""
 
     @staticmethod
     def direct_parameter_write(param_offset: int,
                                write_target: int = 0x0804C000) -> bytes:
-        """生成对指定参数偏移执行 4 字节写入的格式串"""
+        """指定参数偏移的 4 字节写入格式串"""
         fmt = f'%{write_target & 0xFFFF}d%{param_offset}$n'
         return fmt.encode()
 
     @staticmethod
     def byte_by_byte_overwrite(target_addr: int,
                                start_offset: int) -> bytes:
-        """逐字节覆写：用 %hhn 每字节单独写入"""
+        """逐字节覆写——%hhn 每字节单独写入"""
         payload = bytearray()
         payload.extend(struct.pack('<I', target_addr))
         payload.extend(struct.pack('<I', target_addr + 1))
@@ -530,13 +512,13 @@ class FormatStringTemplate:
 
     @staticmethod
     def stack_leak(num_dwords: int = 32) -> bytes:
-        """生成栈泄露格式串：%p 或 %x 连续读取栈内容"""
+        """栈泄露格式串——%p 连续读取栈内容"""
         return ('%p.' * num_dwords).encode()
 
     @staticmethod
     def got_overwrite_pair(target_got: int, shell_addr: int,
                            offset: int) -> bytes:
-        """生成 GOT 覆写格式串：(target+2, target, shell_high, shell_low)"""
+        """GOT 覆写格式串——(target+2, target, hi, lo)"""
         payload = bytearray()
         payload.extend(struct.pack('<I', target_got + 2))
         payload.extend(struct.pack('<I', target_got))
@@ -554,15 +536,9 @@ class FormatStringTemplate:
         return seeds
 
 
-# ---------------------------------------------------------------------------
-# ---------------------------------------------------------------------------
-# ---------------------------------------------------------------------------
-# 值集感知输入生成器：基于 DSAbin (2025 Springer) 的值集分析思想
-# 对每个输入字节位置维护可能的值区间 [lo, hi]，偏好生成落在区间边界
-# 或区间外的值以触发新的值集状态。抽象域精度三级可调。
-# ---------------------------------------------------------------------------
+# 值集感知输入生成——基于值集分析，三级精度可调
 class ValueSetAwareGenerator:
-    """值集驱动的输入生成，精度三级可调"""
+    """值集驱动输入生成——边界探索 lo-1/lo/(lo+hi)/2/hi/hi+1"""
 
     PRECISION = {'high': 1, 'medium': 4, 'low': 16}
 
@@ -572,7 +548,7 @@ class ValueSetAwareGenerator:
 
     def record_constraint(self, offset: int,
                            lo: int, hi: int) -> None:
-        """录入符号执行产生的值区间约束"""
+        """录入符号执行产生的值区间约束——取交集"""
         existing = self._value_sets.get(offset)
         if existing:
             self._value_sets[offset] = (
@@ -581,7 +557,7 @@ class ValueSetAwareGenerator:
             self._value_sets[offset] = (lo, hi)
 
     def generate_boundary_value(self, offset: int) -> int:
-        """生成该偏移的边界探索值：lo-1, lo, hi, hi+1, (lo+hi)/2"""
+        """边界探索值——lo-1, lo, (lo+hi)/2, hi, hi+1 中随机选取"""
         vs = self._value_sets.get(offset)
         if vs is None:
             return random.randint(0, 255)
@@ -598,7 +574,7 @@ class ValueSetAwareGenerator:
         return bytes(buf)
 
     def straddle_count(self, generated: bytes) -> int:
-        """统计落在值区间外的字节数（越多 → 探索性越强）"""
+        """统计落在值区间外的字节数——越多探索性越强"""
         count = 0
         for off, (lo, hi) in self._value_sets.items():
             if off < len(generated):
@@ -606,47 +582,39 @@ class ValueSetAwareGenerator:
         return count
 
 
-# ROP 链模板生成器：基于常见 gadget 类型生成 ROP 利用的字节序列
-# gadget 分类：pop_rdi / pop_rsi / pop_rdx / syscall / mov_store / xor_eax
-# 每个 gadget 编码为 (gadget_type, offset, value) 三元组
-# ---------------------------------------------------------------------------
+# ROP 链模板——gadget 分类 -> 链构造 -> 变异
 class ROPGadgetChainTemplate:
-    """ROP gadget 链模板：分类→偏移→值 三元组编码"""
+    """ROP gadget 链模板——(gadget_type, offset, value) 三元组编码"""
 
     GADGET_TYPES = {
-        'pop_rdi': b'\x5f',      # pop rdi; ret
-        'pop_rsi': b'\x5e',      # pop rsi; ret
-        'pop_rdx': b'\x5a',      # pop rdx; ret
-        'pop_rax': b'\x58',      # pop rax; ret
-        'syscall': b'\x0f\x05',  # syscall; ret
-        'ret': b'\xc3',          # ret
+        'pop_rdi': b'\x5f',
+        'pop_rsi': b'\x5e',
+        'pop_rdx': b'\x5a',
+        'pop_rax': b'\x58',
+        'syscall': b'\x0f\x05',
+        'ret': b'\xc3',
     }
 
     @staticmethod
     def execve_chain(bin_sh_addr: int = 0x0068732F6E69622F,
                      binsh_offset: int = 0x400000) -> bytes:
-        """构造 execve("/bin/sh", 0, 0) 的标准 ROP 链"""
+        """execve("/bin/sh", 0, 0) ROP 链"""
         chain = bytearray()
-        # pop rdi; ret → "/bin/sh" address
         chain.extend(b'\x5f')
         chain.extend(struct.pack('<Q', bin_sh_addr + binsh_offset))
-        # pop rsi; ret → 0
         chain.extend(b'\x5e')
         chain.extend(struct.pack('<Q', 0))
-        # pop rdx; ret → 0
         chain.extend(b'\x5a')
         chain.extend(struct.pack('<Q', 0))
-        # pop rax; ret → 59 (execve syscall number)
         chain.extend(b'\x58')
         chain.extend(struct.pack('<Q', 59))
-        # syscall
         chain.extend(b'\x0f\x05')
         return bytes(chain)
 
     @staticmethod
     def mprotect_chain(target_addr: int, size: int = 0x1000,
                        prot: int = 7) -> bytes:
-        """mprotect(addr, size, PROT_RWX) → ret2shellcode"""
+        """mprotect(addr, size, PROT_RWX) -> ret2shellcode"""
         chain = bytearray()
         chain.extend(b'\x5f')
         chain.extend(struct.pack('<Q', target_addr & ~0xFFF))
@@ -655,13 +623,13 @@ class ROPGadgetChainTemplate:
         chain.extend(b'\x5a')
         chain.extend(struct.pack('<Q', prot))
         chain.extend(b'\x58')
-        chain.extend(struct.pack('<Q', 10))  # mprotect syscall
+        chain.extend(struct.pack('<Q', 10))
         chain.extend(b'\x0f\x05')
         return bytes(chain)
 
     @staticmethod
     def classify_gadget(gadget_bytes: bytes) -> Optional[str]:
-        """识别单 gadget 的类型"""
+        """单 gadget 类型识别"""
         for gtype, sig in ROPGadgetChainTemplate.GADGET_TYPES.items():
             if gadget_bytes.startswith(sig):
                 return gtype
@@ -670,11 +638,10 @@ class ROPGadgetChainTemplate:
     @staticmethod
     def generate_variants(base_chain: bytes,
                           count: int = 8) -> List[bytes]:
-        """对 ROP 链做保持结构的变异：交换 gadget 顺序 / 修改立即数"""
+        """ROP 链结构保持变异——修改 gadget 立即数"""
         variants = []
         for i in range(count):
             buf = bytearray(base_chain)
-            # 变异某 gadget 的立即数
             gadget_offsets = [j for j in range(len(buf) - 8)
                               if buf[j] in (0x5f, 0x5e, 0x5a, 0x58)]
             if gadget_offsets:
@@ -685,12 +652,9 @@ class ROPGadgetChainTemplate:
         return variants
 
 
-# Def-Use 链感知变异器：基于 FuzzRDUCC (arXiv 2509.04967) 的思想
-# 跟踪输入字节如何影响程序中的数据流，偏重变异产生新 def-use 覆盖的
-# 字节位置。不依赖完整符号执行，而是通过轻量数据流启发式近似。
-# ---------------------------------------------------------------------------
+# Def-Use 链感知变异器——定向变异消费者位置
 class DefUseChainMutator:
-    """轻量 def-use 感知：标记生产者字节→定向变异消费者位置"""
+    """轻量 def-use 感知——生产者字节 -> 定向变异消费者位置"""
 
     def __init__(self, window: int = 16):
         self._producer_zones: Dict[int, List[int]] = defaultdict(list)
@@ -698,7 +662,7 @@ class DefUseChainMutator:
 
     def mark_producer_consumer(self, producer_offset: int,
                                 consumer_offset: int) -> None:
-        """录入一对 def-use 关系：偏移 producer 的字节流向 consumer"""
+        """录入一对 def-use 关系"""
         self._producer_zones[producer_offset // self._window].append(
             consumer_offset)
 
@@ -719,7 +683,7 @@ class DefUseChainMutator:
         return random.randint(0, max(0, seed_len - 1))
 
     def mutator_weights(self) -> Dict[str, float]:
-        """返回各变异操作的推荐权重，供外部 bandit 调度"""
+        """变异操作推荐权重——供 bandit 调度"""
         return {
             'bitflip': 0.25, 'byteflip': 0.20, 'arithmetic': 0.15,
             'insert': 0.10, 'delete': 0.10, 'overwrite': 0.10,
@@ -727,20 +691,16 @@ class DefUseChainMutator:
         }
 
 
-# ---------------------------------------------------------------------------
-# 路径编码变异器：基于 PathFuzzing (arXiv 2507.09892) 的路径空间搜索
-# 将执行路径编码为分支决策位串，在路径空间而非输入空间做进化搜索
-# 每个位对应一个分支点 (0=fallthrough, 1=taken)，目标是翻转未探索位
-# ---------------------------------------------------------------------------
+# 路径编码变异器——路径空间进化搜索
 class PathEncodingMutator:
-    """路径空间进化搜索：翻转未探索分支位"""
+    """路径空间进化搜索——翻转未探索分支位"""
 
     def __init__(self, max_branches: int = 64):
         self._max = max_branches
         self._seen_paths: Set[int] = set()
 
     def encode_path(self, branch_decisions: List[bool]) -> int:
-        """分支决策列表 → 64-bit 路径指纹"""
+        """分支决策列表 -> 64-bit 路径指纹"""
         bits = 0
         for i, taken in enumerate(branch_decisions[:self._max]):
             if taken:
@@ -748,7 +708,7 @@ class PathEncodingMutator:
         return bits
 
     def is_new_path(self, branch_decisions: List[bool]) -> bool:
-        """首次观测到此路径 → True"""
+        """首次观测到此路径返回 True"""
         fp = self.encode_path(branch_decisions)
         if fp in self._seen_paths:
             return False
@@ -757,7 +717,7 @@ class PathEncodingMutator:
 
     def hamming_neighbors(self, path_bits: int,
                            radius: int = 2) -> List[int]:
-        """生成海明距离 ≤ radius 的邻居路径（未探索优先）"""
+        """海明距离内未探索邻居路径"""
         neighbors = []
         for bit in range(self._max):
             flipped = path_bits ^ (1 << bit)
@@ -775,27 +735,27 @@ class PathEncodingMutator:
         return len(self._seen_paths)
 
 
-# ---------------------------------------------------------------------------
+# 堆漏洞触发模板
 class HeapLayoutTemplate:
-    """堆漏洞触发条件模拟输入生成"""
+    """堆漏洞触发条件模拟输入——chunk 头/双释放/溢出"""
 
     @staticmethod
     def alloc_free_alloc(size: int = 128) -> bytes:
-        """模拟 malloc→free→malloc 序列的元数据"""
-        return struct.pack('<III', 0x01, size, 0x00)  # alloc | size | free
+        """malloc->free->malloc 序列元数据"""
+        return struct.pack('<III', 0x01, size, 0x00)
 
     @staticmethod
     def fake_chunk_header(prev_size: int = 0,
                           size: int = 0x91,
                           fd: int = 0x41414141,
                           bk: int = 0x42424242) -> bytes:
-        """伪造 glibc chunk 头用于 unsafe unlink 等攻击"""
+        """伪造 glibc chunk 头——unsafe unlink 等攻击"""
         return struct.pack('<IIII', prev_size, size | 0x01, fd, bk)
 
     @staticmethod
     def double_free_sequence() -> bytes:
-        """模拟 double free 触发模式：同指针两次释放"""
-        return b'\x01' * 16 + b'\x02' * 16  # chunk A | chunk B
+        """double free 触发模式——同指针两次释放"""
+        return b'\x01' * 16 + b'\x02' * 16
 
     @staticmethod
     def heap_overflow_adjacent(padding: int = 256,
@@ -813,12 +773,9 @@ class HeapLayoutTemplate:
         return seeds
 
 
-# 统计异常检测器：对生成的输入集合做多维特征评分，标记统计离群点
-# 使用修改后的 Isolation Forest 思路：对每个输入计算 N 维特征向量，
-# 在多维空间中用随机切割树评估隔离深度，浅节点 → 离群 → 优先 fuzz
-# ---------------------------------------------------------------------------
+# 统计离群检测——随机切割树 Isolation Forest 轻量实现
 class StatisticalOutlierScorer:
-    """基于随机切割树的轻量离群检测，标记高价值种子"""
+    """随机切割树离群检测——浅节点高分，标记高价值种子"""
 
     def __init__(self, n_trees: int = 10, sample_size: int = 64):
         self._n_trees = n_trees
@@ -838,7 +795,6 @@ class StatisticalOutlierScorer:
         ]
 
     def fit(self, corpus: List[bytes]) -> None:
-        """在语料上构建随机切割树"""
         self._trees = []
         feats = [self._features(d) for d in corpus]
         if not feats:
@@ -866,7 +822,7 @@ class StatisticalOutlierScorer:
         }
 
     def score(self, data: bytes) -> float:
-        """返回 [0,1] 离群分，越高越异常 → 越值得 fuzz"""
+        """[0,1] 离群分——越高越异常越值得 fuzz"""
         fv = self._features(data)
         if not self._trees:
             return 0.5
@@ -874,7 +830,6 @@ class StatisticalOutlierScorer:
         for tree in self._trees:
             depths.append(self._traverse(fv, tree, 0))
         avg_depth = sum(depths) / len(depths)
-        # 归一化：浅节点 → 离群 → score 高
         c = 2.0 * (math.log(max(1, self._sample - 1)) + 0.5772) - (
             2.0 * (self._sample - 1) / self._sample)
         return round(2.0 ** (-avg_depth / max(0.001, c)), 3)
@@ -890,15 +845,9 @@ class StatisticalOutlierScorer:
         return self._traverse(fv, node["right"], depth + 1)
 
 
-# ---------------------------------------------------------------------------
-# 蜕变关系模板库：用于系统化构造差分测试 Oracle
-# 蜕变关系 (Metamorphic Relation) 描述输入变换后期望输出如何变化。
-# 例如：对任意 x，f(reverse(x)) == reverse(f(x)) 若 f 是对称的。
-# 参考 ROSA (arXiv:2505.08544) 的蜕变 Oracle 思想及 MetaFOE 的 76 条
-# 系统无关 MR 目录。
-# ---------------------------------------------------------------------------
+# 蜕变关系模板库——输入变换 -> 输出断言
 class MetamorphicRelation:
-    """单条蜕变关系：输入变换 → 输出断言"""
+    """单条蜕变关系——输入变换 + 输出断言"""
 
     __slots__ = ("name", "category", "input_transform", "output_assert",
                  "bidirectional")
@@ -907,9 +856,9 @@ class MetamorphicRelation:
                  input_transform, output_assert,
                  bidirectional: bool = False):
         self.name = name
-        self.category = category     # 'permutation' | 'additive' | 'multiplicative' | 'exclusive' | 'inclusive'
-        self.input_transform = input_transform   # bytes → bytes
-        self.output_assert = output_assert       # (original_output, transformed_output) → bool
+        self.category = category
+        self.input_transform = input_transform
+        self.output_assert = output_assert
         self.bidirectional = bidirectional
 
     def apply(self, seed: bytes) -> bytes:
@@ -920,7 +869,7 @@ class MetamorphicRelation:
 
 
 class MetamorphicOracle:
-    """管理蜕变关系目录，对给定输入生成蜕变测试用例对并验证"""
+    """蜕变 Oracle——管理关系目录 + 采样验证"""
 
     def __init__(self):
         self._relations: Dict[str, MetamorphicRelation] = {}
@@ -928,14 +877,11 @@ class MetamorphicOracle:
         self._init_builtin()
 
     def _init_builtin(self) -> None:
-        """注册系统无关的蜕变关系模板"""
-        # 置换类：字节序反转/旋转不影响语义的数据格式
         self.register(MetamorphicRelation(
             "byte_reverse", "permutation",
             lambda x: bytes(reversed(x)),
-            lambda orig, xform: True,  # 无预设断言，需外部绑定
+            lambda orig, xform: True,
             bidirectional=True))
-        # 加法类：padding 不应改变解析结果
         self.register(MetamorphicRelation(
             "zero_pad", "additive",
             lambda x: x + b'\x00' * random.randint(1, 8),
@@ -944,17 +890,14 @@ class MetamorphicOracle:
             "zero_prefix", "additive",
             lambda x: b'\x00' * random.randint(1, 4) + x,
             lambda orig, xform: True))
-        # 乘法类：重复拼接
         self.register(MetamorphicRelation(
             "self_concat", "multiplicative",
             lambda x: x + x,
             lambda orig, xform: True))
-        # 排他类：删除字段应改变输出
         self.register(MetamorphicRelation(
             "truncate_half", "exclusive",
             lambda x: x[:max(1, len(x) // 2)],
             lambda orig, xform: orig != xform))
-        # 包含类：注入已知标记
         self.register(MetamorphicRelation(
             "comment_inject", "inclusive",
             lambda x: (b'/* injected */' + x if random.random() > 0.5
@@ -965,7 +908,7 @@ class MetamorphicOracle:
         self._relations[mr.name] = mr
 
     def generate_oracle_pairs(self, seed: bytes) -> List[Tuple[str, bytes, bytes]]:
-        """返回 [(mr_name, original, transformed), ...] 对列表"""
+        """返回 [(mr_name, original, transformed), ...]"""
         pairs = []
         for name, mr in self._relations.items():
             xform = mr.apply(seed)
@@ -974,14 +917,11 @@ class MetamorphicOracle:
         return pairs
 
     def validate(self, run_func) -> Dict[str, Any]:
-        """
-        run_func: bytes → Any  对输入执行目标函数并返回结果
-        对每个 MR 采样并验证输出断言
-        """
+        """对每个 MR 采样 32 次并验证"""
         report: Dict[str, Any] = {}
         for name, mr in self._relations.items():
             violations = 0
-            for _ in range(32):  # 每 MR 采样 32 次
+            for _ in range(32):
                 seed = bytes(random.randint(0, 255) for _ in range(
                     random.randint(4, 128)))
                 xform = mr.apply(seed)
@@ -1003,14 +943,14 @@ class MetamorphicOracle:
 
     @property
     def oracle_strength(self) -> float:
-        """蜕变 Oracle 强度：已注册 MR 种类数 / 覆盖的类别数"""
+        """Oracle 强度——已注册 MR 数 / 类别数"""
         cats = {mr.category for mr in self._relations.values()}
         return len(self._relations) / max(1, len(cats))
 
 
-# ---------------------------------------------------------------------------
+# 轻量协议状态机
 class ProtocolStateMachine:
-    """轻量协议状态机：加载转移表，提供合法转移的随机游走"""
+    """轻量协议状态机——转移表 + 随机游走 + BFS 路径枚举"""
 
     def __init__(self):
         self._transitions: Dict[str, List[Tuple[str, str]]] = defaultdict(list)
@@ -1025,7 +965,7 @@ class ProtocolStateMachine:
 
     def random_walk(self, steps: int = 8,
                     rng: Optional[random.Random] = None) -> List[Tuple[str, str]]:
-        """随机游走 N 步，返回 [(target_state, message_type), ...]"""
+        """随机游走 N 步——返回 [(target_state, message_type), ...]"""
         if rng is None:
             rng = random.Random()
         current = self._initial
@@ -1041,7 +981,7 @@ class ProtocolStateMachine:
 
     def all_paths_to(self, target: str,
                      max_depth: int = 5) -> List[List[Tuple[str, str]]]:
-        """BFS 枚举从初始状态到目标状态的所有路径（≤max_depth 步）"""
+        """BFS 枚举初始状态到目标状态的全路径"""
         queue: deque[Tuple[str, List[Tuple[str, str]]]] = deque()
         queue.append((self._initial, []))
         results: List[List[Tuple[str, str]]] = []
@@ -1058,18 +998,13 @@ class ProtocolStateMachine:
         return results
 
 
-# ---------------------------------------------------------------------------
-# 语义多样性哈希：基于 LSH（局部敏感哈希）评估输入的语义距离
-# 对二进制输入做 N-gram 频率向量 → 随机投影 → 分桶，桶内样本语义相近
-# 偏差大的输入更可能在目标程序中触发不同的执行路径
-# ---------------------------------------------------------------------------
+# 语义多样性哈希——LSH 分桶判断语义距离
 class SemanticDiversityHasher:
-    """LSH 分桶判断两个输入是否语义近似"""
+    """LSH 分桶——N-gram 频率向量 + 随机超平面投影"""
 
     def __init__(self, num_planes: int = 16, ngram_size: int = 4):
         self._num_planes = num_planes
         self._ngram = ngram_size
-        # 随机超平面法向量 (每平面 256 维，对应字节值)
         self._planes: List[List[float]] = [
             [random.gauss(0, 1) for _ in range(256)]
             for __ in range(num_planes)]
@@ -1082,12 +1017,11 @@ class SemanticDiversityHasher:
             ngram = data[i:i + self._ngram]
             h = zlib.crc32(ngram) & 0xFF
             vec[h] += 1.0
-        # L2 归一化
         norm = math.sqrt(sum(v * v for v in vec))
         return [v / norm for v in vec] if norm > 0 else vec
 
     def hash(self, data: bytes) -> int:
-        """返回 LSH 桶编号（num_planes 位）"""
+        """LSH 桶编号——num_planes 位"""
         vec = self._ngram_vector(data)
         bucket = 0
         for i, plane in enumerate(self._planes):
@@ -1097,17 +1031,13 @@ class SemanticDiversityHasher:
         return bucket
 
     def is_diverse(self, data: bytes, seen_buckets: Set[int]) -> bool:
-        """当前输入的桶不在已见集合中 → 语义新颖"""
+        """当前桶不在已见集合中——语义新颖"""
         return self.hash(data) not in seen_buckets
 
 
-# ---------------------------------------------------------------------------
-# 语法路径追踪器：记录已展开的产生式路径，引导未覆盖的分支
-# 路径覆盖率 = 已访问的产生式组合数 / 总可能组合数（上限估算）
-# 当覆盖率停滞时，注入定向约束强制选择冷门候选
-# ---------------------------------------------------------------------------
+# 语法路径追踪器——引导未覆盖分支
 class GrammarPathTracker:
-    """追踪并引导语法推导路径，实现系统化而非纯随机的语法覆盖"""
+    """追踪语法推导路径——覆盖率停滞时强制探索冷门候选"""
 
     def __init__(self):
         self._visited: Dict[str, Set[int]] = defaultdict(set)
@@ -1128,25 +1058,17 @@ class GrammarPathTracker:
         return covered / total
 
     def least_visited_choice(self, lhs: str, num_alternatives: int) -> int:
-        """返回访问次数最少的候选索引，用于强制探索未覆盖路径"""
+        """返回访问次数最少的候选索引——强制探索未覆盖路径"""
         counts = {i: len([v for v in self._visited.get(lhs, set()) if v == i])
                   for i in range(num_alternatives)}
         return min(counts, key=counts.get)
 
 
-# ---------------------------------------------------------------------------
-# Delta-Debugging 收缩器：将触发失败的测试输入最小化到 1-minimal
-# 参考 Zeller & Hildebrandt 的 ddmin 算法。对安全审计而言，最小复现
-# 用例能直接定位漏洞触发条件，大幅缩短分析时间。
-# ---------------------------------------------------------------------------
+# Delta-Debugging 收缩器——ddmin 算法 1-minimal
 class FailureShrinker:
-    """ddmin 风格的最小化：二分消去无关字节直到无法进一步缩减"""
+    """ddmin 最小化——二分消去无关字节直到无法进一步缩减"""
 
     def __init__(self, test_func, granularity: int = 2):
-        """
-        test_func: bytes → bool，返回 True 表示输入仍触发目标行为（失败）
-        granularity: 初始分块数，2 为标准二分
-        """
         self._test = test_func
         self._granularity = granularity
         self._trials = 0
@@ -1160,22 +1082,19 @@ class FailureShrinker:
         return self._cache[key]
 
     def shrink(self, failing_input: bytes, max_trials: int = 500) -> bytes:
-        """返回 1-minimal 的失败输入"""
+        """返回 1-minimal 失败输入"""
         current = bytearray(failing_input)
         n = self._granularity
         while len(current) >= 2 and self._trials < max_trials:
             changed = False
-            # 将 current 等分成 n 份，逐份尝试删除
             chunk_len = max(1, len(current) // n)
             i = 0
             while i < len(current):
                 end = min(i + chunk_len, len(current))
                 candidate = bytes(current[:i] + current[end:])
                 if self._cached_test(candidate):
-                    # 删除该块后仍触发失败 → 接受缩减
                     current = bytearray(candidate)
                     changed = True
-                    # 不回退 i，因为 current 已缩短，从同一逻辑位置继续
                 else:
                     i += chunk_len
             if not changed:
@@ -1189,19 +1108,16 @@ class FailureShrinker:
         return self._trials
 
 
-# ---------------------------------------------------------------------------
-# 差分对生成器：产出 (原始, 变体) 输入对，用于 round-trip 测试
-# 场景：serialize → deserialize → 比对原始；parser A vs parser B
-# ---------------------------------------------------------------------------
+# 差分对生成器——round-trip + adversarial 变体对
 class DifferentialPairEmitter:
-    """生成结构保持的输入变体对，用于等价性测试"""
+    """生成结构保持的输入变体对——等价性测试 + 对抗性测试"""
 
     def __init__(self, rng: Optional[random.Random] = None):
         self.rng = rng or random.Random()
 
     def round_trip_pairs(self, base_input: bytes,
                          count: int = 16) -> List[Tuple[bytes, bytes]]:
-        """返回 (原始, 等价变体) 对列表"""
+        """(原始, 等价变体) 对——尾空白/字节序/空字段/字段重排"""
         pairs: List[Tuple[bytes, bytes]] = []
         strategies = [
             self._add_trailing_whitespace,
@@ -1218,7 +1134,7 @@ class DifferentialPairEmitter:
 
     def adversarial_pairs(self, base_input: bytes,
                           count: int = 16) -> List[Tuple[bytes, bytes]]:
-        """返回 (原始, 潜在恶意变体) 对列表"""
+        """(原始, 潜在恶意变体) 对——null 注入/路径遍历/格式串/溢出"""
         pairs: List[Tuple[bytes, bytes]] = []
         strategies = [
             self._null_byte_inject,
@@ -1296,32 +1212,27 @@ class DifferentialPairEmitter:
         if len(data) < 8:
             return data * 256
         buf = bytearray(data)
-        # 在偏移 0 处修改长度字段（假设 big-endian 32-bit 长度）
         if len(buf) >= 4:
             buf[0:4] = b'\xff\xff\xff\xff'
         return bytes(buf)
 
 
-# ---------------------------------------------------------------------------
-# 字节级结构推断：对样本语料做逐列熵 + 模式聚类，自动识别定长/变长字段边界
-# ---------------------------------------------------------------------------
+# 字节级结构推断——逐列熵 + 模式聚类
 class ByteStructureInferer:
-    """从原始样本集中推断二进制格式的字段布局"""
+    """从原始样本集推断二进制格式字段布局——逐字节熵 + 同熵聚类"""
 
     def __init__(self, min_samples: int = 8):
         self._min_samples = min_samples
 
     def infer(self, samples: List[bytes]) -> List[Dict[str, Any]]:
-        """返回推断的字段列表，每个字段含 offset/size/entropy/constancy"""
+        """返回字段列表——offset/size/entropy/constancy/likely_type"""
         if len(samples) < self._min_samples:
             return []
         max_len = max(len(s) for s in samples)
-        # 逐字节位置统计值分布
         col_freqs: List[_FreqCounter] = [_FreqCounter() for _ in range(max_len)]
         for s in samples:
             for pos, byte_val in enumerate(s):
                 col_freqs[pos][byte_val] += 1
-        # 按熵聚类相邻字节
         fields: List[Dict[str, Any]] = []
         pos = 0
         while pos < max_len:
@@ -1330,7 +1241,6 @@ class ByteStructureInferer:
             pos += 1
             while pos < max_len:
                 next_ent = self._position_entropy(col_freqs[pos])
-                # 相邻位置熵差 < 0.3 归为同一字段
                 if abs(next_ent - ent) <= 0.3:
                     pos += 1
                 else:
@@ -1362,9 +1272,7 @@ class ByteStructureInferer:
         return ent
 
 
-# ---------------------------------------------------------------------------
-# 导出便捷入口，兼容外部调用
-# ---------------------------------------------------------------------------
+# 便捷入口
 _default_generator: Optional[TestGenerator] = None
 
 
@@ -1396,7 +1304,7 @@ def generate_seed_corpus(samples: int = 64,
 
 def shrink_failure(test_func, failing_input: bytes,
                    max_trials: int = 500) -> bytes:
-    """输入一个失败测试函数和触发失败的输入，返回最小化复现用例"""
+    """失败测试函数 + 触发输入 -> 最小化复现用例"""
     shrinker = FailureShrinker(test_func)
     return shrinker.shrink(failing_input, max_trials)
 
@@ -1410,3 +1318,6 @@ def generate_round_trip_pairs(base_input: bytes,
 def infer_byte_structure(samples: List[bytes]) -> List[Dict[str, Any]]:
     inferer = ByteStructureInferer()
     return inferer.infer(samples)
+
+
+def _debug_print(*args, **kwargs): pass

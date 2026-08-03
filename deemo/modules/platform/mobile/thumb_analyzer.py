@@ -53,8 +53,8 @@ class ModeTransition:
     transition_type: str = ""
 
 
-# ── Thumb16指令解码表：基于opcode高位的快速分类 ──
-# 采用分组查找替代if-elif链，O(1)匹配
+# ── Thumb16解码表: opcode高位分组匹配, O(1)查表 ──
+# 查找表替代条件链, 批量解码吞吐优先
 _THUMB16_DECODE = {
     # (mask, value) → (mnemonic, operand_parser)
     (0xF800, 0x4800): ("LDR", lambda w, a: ['R0', f'[PC, #{(w & 0x07FF) << 2}]']),
@@ -72,7 +72,7 @@ _THUMB16_DECODE = {
     (0xFE00, 0xB400): ("PUSH", lambda w, a: [f'{{{_decode_reglist(w)}}}']),
 }
 
-# Thumb32长跳转/调用编码
+# Thumb32 BL/BLX/DSB/DMB/ISB 编码表
 _THUMB32_DECODE = {
     (0xF800, 0xF000, 0xC000, 0x8000): "BL",
     (0xF800, 0xF000, 0xD000, 0x8000): "BLX",
@@ -92,12 +92,12 @@ def _decode_reglist(word: int) -> str:
 
 
 class ThumbInstructionDecoder:
-    """Thumb/Thumb2指令解码器。
+    """Thumb/Thumb2 指令解码器。
 
-    设计要点：
-      - 使用查找表替代if-elif链，提升批量解码吞吐
-      - Thumb32通过高16位+低16位双重匹配确认指令类型
-      - 未知指令返回None而非抛异常，调用方可自行降级处理
+    设计约束：
+      - 查找表驱动，避免条件分支，批量吞吐优先
+      - Thumb32: 高/低16位双重掩码匹配，确认指令类型
+      - 未知指令返回None，不抛异常；调用方降级兜底
     """
 
     def __init__(self):
@@ -172,10 +172,10 @@ class ThumbInstructionDecoder:
 
 
 class ThumbAnalyzer(BaseAnalyzer, ABC):
-    """ARM Thumb/Thumb2指令集分析器。
+    """ARM Thumb/Thumb2 指令集分析。
 
-    识别ARM-Thumb模式切换点、Thumb16/32指令混合比例、
-    间接跳转目标与函数边界。
+    识别 ARM-Thumb 模式切换点、Thumb16/32 混合比例、
+    间接跳转目标、函数边界推断。
     """
 
     def __init__(self, config=None):
@@ -189,12 +189,12 @@ class ThumbAnalyzer(BaseAnalyzer, ABC):
         decoder = ThumbInstructionDecoder()
         instructions = decoder.decode(raw_code, kwargs.get('start_address', 0))
 
-        # 分类统计
+        # 指令集分类计数
         arm_count = 0
         thumb_count = 0
         thumb2_count = 0
-        bx_insns: List[ARMInstruction] = []  # ARM-Thumb模式切换点
-        bl_insns: List[ARMInstruction] = []  # 函数调用点
+        bx_insns: List[ARMInstruction] = []  # BX = ARM↔Thumb模式切换
+        bl_insns: List[ARMInstruction] = []  # BL/BLX = 函数调用点
 
         for i in instructions:
             iset = i.instruction_set
@@ -209,10 +209,10 @@ class ThumbAnalyzer(BaseAnalyzer, ABC):
             if i.mnemonic in ("BL", "BLX"):
                 bl_insns.append(i)
 
-        # 解码质量评估——未知指令比例过高意味着可能不是Thumb代码
+        # 解码覆盖率: 未知比例过高 → 非Thumb代码区域
         total = len(instructions)
         decoded_ratio = total / max(1, len(raw_code) // 2)
-        # 函数边界推断：BL指令的目标地址形成自然边界
+        # 函数边界推断: BL目标地址 → 自然边界
         inferred_boundaries = [i.operands[0] if i.operands else ""
                                for i in bl_insns[:20]]
 

@@ -1,18 +1,18 @@
-# 2026-08-28 ~ 2026-08-30
-# CWE (Common Weakness Enumeration) knowledge enrichment.
-# MITRE's CWE API provides rich metadata: descriptions, extended descriptions,
-# common consequences, mitigations, detection methods.
+# ~ 2026-08-30
+# CWE (Common Weakness Enumeration) 知识扩充。
+# MITRE CWE API 提供丰富的元数据: 描述、扩展描述、
+# 常见后果、缓解措施、检测方法。
 #
-# We currently extract CWE IDs from NVD data (e.g. "CWE-79") but have
-# no local knowledge about what that weakness actually means. This module
-# fills that gap — query by CWE ID and get actionable info back.
+# 当前从 NVD 数据中提取 CWE ID（如 "CWE-79"）但缺少
+# 该弱点实际含义的本地知识。本模块填补这一缺口 —
+# 按 CWE ID 查询即可获取可操作信息。
 #
-# Top 50 CWEs are seeded at init time (hardcoded) so common queries don't
-# hit the network. The rest are fetched from MITRE API on demand and cached
-# in sqlite, same pattern as cve_epss + cve_kev.
+# 前 50 个 CWE 在初始化时种子写入（硬编码），常用查询
+# 不触发网络请求。其余从 MITRE API 按需获取并缓存到
+# sqlite，与 cve_epss + cve_kev 模式一致。
 #
-# MITRE API rate limit: 100 req/min with key, ~20 without. we're polite
-# with a 1s delay between requests.
+# MITRE API 速率限制: 有密钥 100 次/分钟，无密钥 ~20 次/分钟。
+# 请求间延迟 1 秒。
 
 import json
 import os
@@ -34,14 +34,14 @@ _CWE_CACHE_PATH = os.path.join(
     os.path.expanduser("~"), ".binmind", "cwe_cache.db"
 )
 
-# cwe id pattern: CWE-\d+
+# CWE ID 模式: CWE-\d+
 _CWE_ID_RE = re.compile(r'CWE-\d+', re.IGNORECASE)
 
 
-# ---- seed data: top 50 most common CWEs ----
-# descriptions sourced from MITRE CWE database, manually trimmed for brevity.
-# these cover the vast majority of real-world vulns — lazy-load the rest.
-# format: {cwe_id: {name, description, extended_description}}
+# ---- 种子数据: 前 50 最常见 CWE ----
+# 描述来自 MITRE CWE 数据库，手动精简。
+# 这些覆盖绝大多数真实漏洞 — 其余懒加载。
+# 格式: {cwe_id: {name, description, extended_description}}
 
 _TOP50_CWE_SEED: Dict[str, Dict[str, str]] = {
     "CWE-79": {
@@ -148,8 +148,8 @@ _TOP50_CWE_SEED: Dict[str, Dict[str, str]] = {
 
 
 class CWEClient:
-    """MITRE CWE API client with local sqlite cache.
-    Seeds the top 50 CWEs at init, lazy-fetches the rest from MITRE."""
+    """MITRE CWE API 客户端，含本地 sqlite 缓存。
+    初始化时种子写入前 50 个 CWE，其余从 MITRE 懒加载。"""
 
     def __init__(self, cache_path: Optional[str] = None):
         self._cache_path = cache_path or _CWE_CACHE_PATH
@@ -184,7 +184,7 @@ class CWEClient:
             """)
             conn.commit()
 
-        # seed top 50 if table is empty
+        # 表为空时种子写入前 50
         with self._lock:
             count = conn.execute("SELECT COUNT(*) as cnt FROM cwe_cache").fetchone()
             if count and count["cnt"] == 0:
@@ -204,10 +204,10 @@ class CWEClient:
                     )
                 conn.commit()
 
-    # ---- local cache access ----
+    # ---- 本地缓存访问 ----
     def get_cwe(self, cwe_id: str) -> Optional[Dict[str, Any]]:
-        """Get CWE data from cache. Returns None if not cached.
-        Normalizes input: '79', 'cwe-79', 'CWE-79' all map to 'CWE-79'."""
+        """从缓存获取 CWE 数据。未缓存时返回 None。
+        输入归一化: '79', 'cwe-79', 'CWE-79' 均映射到 'CWE-79'。"""
         cwe_id = _normalize_cwe_id(cwe_id)
         if not cwe_id:
             return None
@@ -232,18 +232,18 @@ class CWEClient:
         return None
 
     def has_cwe(self, cwe_id: str) -> bool:
-        """Check if a CWE is in the local cache."""
+        """检查 CWE 是否在本地缓存中。"""
         return self.get_cwe(cwe_id) is not None
 
-    # ---- api fetch ----
+    # ---- API 获取 ----
     def fetch_cwe(self, cwe_id: str) -> Optional[Dict[str, Any]]:
-        """Fetch CWE data from MITRE API and cache it.
-        Returns the same dict as get_cwe(), or None on failure."""
+        """从 MITRE API 获取 CWE 数据并缓存。
+        返回与 get_cwe() 相同格式的 dict，失败时返回 None。"""
         cwe_id = _normalize_cwe_id(cwe_id)
         if not cwe_id:
             return None
 
-        # check cache first
+        # 先查缓存
         cached = self.get_cwe(cwe_id)
         if cached is not None:
             return cached
@@ -260,14 +260,14 @@ class CWEClient:
                 url,
                 headers={"Accept": "application/json", "User-Agent": "BinMind-CVE/1.0"},
             )
-            time.sleep(0.5)  # polite rate limiting
+            time.sleep(0.5)  # 礼貌限速
             with urllib.request.urlopen(req, timeout=30) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
         except Exception as e:
             print(f"[CWE] fetch failed for {cwe_id}: {e}")
             return None
 
-        # extract relevant fields from MITRE's response structure
+        # 从 MITRE 响应结构中提取相关字段
         weaknesses = data.get("Weaknesses", [])
         if not weaknesses:
             return None
@@ -277,7 +277,7 @@ class CWEClient:
         description = w.get("Description", "")
         extended = w.get("Extended_Description", "")
 
-        # consequences
+        # 后果
         consequences: List[Dict] = []
         for c in w.get("Common_Consequences", []):
             consequences.append({
@@ -286,21 +286,21 @@ class CWEClient:
                 "note": c.get("Note", ""),
             })
 
-        # mitigations
+        # 缓解措施
         mitigations: List[str] = []
         for m in w.get("Potential_Mitigations", []):
             text = m.get("Mitigation", "") or m.get("Description", "")
             if text:
                 mitigations.append(text.strip())
 
-        # detection methods
+        # 检测方法
         detection: List[str] = []
         for d in w.get("Detection_Methods", []):
             text = d.get("Method", "") or d.get("Description", "")
             if text:
                 detection.append(text.strip())
 
-        # cache it
+        # 缓存
         now = time.time()
         conn = self._get_conn()
         with self._lock:
@@ -333,11 +333,11 @@ class CWEClient:
             "cached": True,
         }
 
-    # ---- enrichment ----
+    # ---- 扩充 ----
     def enrich_entry(self, entry) -> Dict[str, Any]:
-        """Add CWE metadata to a CVE entry. Entry can be CVEEntry or dict.
-        Returns dict with keys: cwes (list of {id, name, description, ...}).
-        Does NOT modify the original entry."""
+        """向 CVE 条目添加 CWE 元数据。entry 可以是 CVEEntry 或 dict。
+        返回含 {cwe_enrichment: [{id, name, description, ...}]} 的 dict。
+        不修改原始条目。"""
         cwe_ids: List[str] = []
         if hasattr(entry, 'cwes'):
             cwe_ids = list(entry.cwes) if entry.cwes else []
@@ -348,7 +348,7 @@ class CWEClient:
             cwe_ids = [cwe_ids]
 
         enriched = []
-        for cid in cwe_ids[:10]:  # cap at 10 CWEs per entry
+        for cid in cwe_ids[:10]:  # 每个条目最多 10 个 CWE
             cwe_data = self.get_cwe(cid) or self.fetch_cwe(cid)
             if cwe_data:
                 enriched.append(cwe_data)
@@ -358,21 +358,21 @@ class CWEClient:
         return {"cwe_enrichment": enriched}
 
     def get_mitigations(self, cwe_id: str) -> List[str]:
-        """Get mitigation recommendations for a CWE."""
+        """获取 CWE 的缓解建议。"""
         data = self.get_cwe(cwe_id) or self.fetch_cwe(cwe_id)
         if data:
             return data.get("mitigations", [])
         return []
 
     def get_detection_methods(self, cwe_id: str) -> List[str]:
-        """Get detection method recommendations for a CWE."""
+        """获取 CWE 的检测方法建议。"""
         data = self.get_cwe(cwe_id) or self.fetch_cwe(cwe_id)
         if data:
             return data.get("detection_methods", [])
         return []
 
     def stats(self) -> Dict[str, Any]:
-        """Return cache statistics."""
+        """返回缓存统计。"""
         conn = self._get_conn()
         with self._lock:
             total = conn.execute("SELECT COUNT(*) as cnt FROM cwe_cache").fetchone()
@@ -390,11 +390,11 @@ class CWEClient:
             pass
 
 
-# ---- helpers ----
+# ---- 辅助函数 ----
 def _normalize_cwe_id(raw: str) -> Optional[str]:
-    """Normalize various CWE ID formats to 'CWE-NNN'.
-    Handles: '79', 'cwe-79', 'CWE-79', 'CWE-079'.
-    Returns None if input doesn't look like a CWE ID."""
+    """将各种 CWE ID 格式归一化为 'CWE-NNN'。
+    处理: '79', 'cwe-79', 'CWE-79', 'CWE-079'。
+    输入不似 CWE ID 时返回 None。"""
     if not raw:
         return None
     s = raw.strip().upper()
@@ -407,12 +407,12 @@ def _normalize_cwe_id(raw: str) -> Optional[str]:
 
 
 def extract_cwes_from_text(text: str) -> List[str]:
-    """Extract CWE IDs from arbitrary text.
-    Returns normalized CWE IDs (e.g. ['CWE-79', 'CWE-89'])."""
+    """从任意文本中提取 CWE ID。
+    返回归一化的 CWE ID（如 ['CWE-79', 'CWE-89']）。"""
     return [_normalize_cwe_id(m) for m in _CWE_ID_RE.findall(text) if _normalize_cwe_id(m)]
 
 
-# module-level singleton (same pattern as everything else)
+# 模块级单例（与其他模块一致）
 _cwe_instance: Optional[CWEClient] = None
 _cwe_lock = threading.Lock()
 

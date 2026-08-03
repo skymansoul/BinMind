@@ -1,19 +1,18 @@
-# 2026-08-02
 # 定向模糊测试引擎 — 基于调用图距离的种子能量分配与路径引导
 # 核心思想: 计算每个基本块到目标（漏洞嫌疑区域/补丁变更函数）的最短距离，
-# 种子距离 = 该种子执行路径上所有基本块的平均目标距离。
-# 距离越近 → 能量越高 → 变异次数越多 → 更快到达目标区域。
+# 种子距离=该种子执行路径上所有基本块的平均目标距离。
+# 距离越近->能量越高->变异次数越多->更快到达目标区域。
 #
 # 参考文献:
 #   BEACON (Huang et al. USENIX 2022): Directed Grey-Box Fuzzing with
 #     Provable Path Pruning — 基于层级的距离近似
 #   Hawkeye (Chen et al. CCS 2018): Towards a Desired Directed Grey-box
-#     Fuzzer — 邻域函数距离 + 调用链距离
+#     Fuzzer — 邻域函数距离+调用链距离
 #   MC2 (Shahriar et al. CCS 2022): Rigorous and Efficient Directed
-#     Greybox Fuzzing — 调用图级 + 基本块级双重距离
+#     Greybox Fuzzing — 调用图级+基本块级双重距离
 #   RDFuzz (Ye et al. ESEC/FSE 2023): Accelerating Directed Fuzzing with
 #     Intertwined Schedule and Optimized Mutation
-#   SoK: Where to Fuzz? (Luo et al. CSF 2024) — 定向 Fuzzing 目标选择综述
+#   SoK: Where to Fuzz? (Luo et al. CSF 2024) — 定向Fuzzing目标选择综述
 import math
 import time
 import heapq
@@ -24,9 +23,9 @@ from dataclasses import dataclass, field
 
 @dataclass
 class DistanceMetrics:
-    """基本块的距离度量 — 多级距离: 调用图级 + 基本块级"""
+    """基本块的距离度量 — 多级距离: 调用图级+基本块级"""
     cg_distance: float = float('inf')     # 调用图最短路径到目标函数的步数
-    bb_distance: float = float('inf')     # 函数内基本块 CFG 最短路径到目标 BB
+    bb_distance: float = float('inf')     # 函数内基本块CFG最短路径到目标BB
     harmonic: float = float('inf')        # 调和平均: 2/(1/cg + 1/bb)
 
     def combined(self) -> float:
@@ -38,9 +37,9 @@ class DirectedFuzzer:
 
     工作流:
     1. set_targets(target_funcs, target_blocks) — 设定目标
-    2. load_call_graph(caller→callee) + load_intra_cfg(func→[bb→successors])
+    2. load_call_graph(caller->callee) + load_intra_cfg(func->[bb->successors])
     3. compute_distances() — 计算全程序的基本块-目标距离
-    4. score_seed(cov_blocks) → 对种子执行路径计算平均距离→能量
+    4. score_seed(cov_blocks) -> 对种子执行路径计算平均距离->能量
     """
 
     INF = float('inf')
@@ -50,14 +49,14 @@ class DirectedFuzzer:
         self._target_funcs: Set[str] = set()
         self._target_blocks: Set[int] = set()
         # 图结构
-        self._call_graph: Dict[str, Set[str]] = defaultdict(set)  # caller → callees
+        self._call_graph: Dict[str, Set[str]] = defaultdict(set)  # caller -> callees
         self._call_graph_rev: Dict[str, Set[str]] = defaultdict(set)
         self._intra_cfg: Dict[str, Dict[int, List[int]]] = defaultdict(
-            lambda: defaultdict(list))  # func → bb → successors
+            lambda: defaultdict(list))  # func -> bb -> successors
         # 距离缓存
-        self._cg_dist: Dict[str, float] = {}          # func → call graph distance
-        self._bb_dist: Dict[int, float] = {}          # bb_addr → intra BB distance
-        self._combined: Dict[int, float] = {}          # bb_addr → harmonic combined
+        self._cg_dist: Dict[str, float] = {}          # func -> call graph distance
+        self._bb_dist: Dict[int, float] = {}          # bb_addr -> intra BB distance
+        self._combined: Dict[int, float] = {}          # bb_addr -> harmonic combined
         self._computed = False
         # 调度状态
         self._seed_energy: Dict[str, float] = {}
@@ -96,24 +95,28 @@ class DirectedFuzzer:
 
     # ---- 距离计算 ----
     def compute_distances(self) -> None:
-        """两级距离: 先计算调用图距离，再合并函数内 BB 距离。
+        """两级距离: 先计算调用图距离，再合并函数内BB距离。
+
         调和平均: d_comb = 2 / (1/d_cg + 1/d_bb)
-        若 BB 在目标函数内 → d_cg = 0
-        若 BB 本身是目标 → d_bb = 0"""
+        若BB在目标函数内 -> d_cg = 0
+        若BB本身是目标 -> d_bb = 0
+        """
         self._compute_cg_distances()
         self._compute_bb_distances()
         self._compute_combined()
         self._computed = True
 
     def _compute_cg_distances(self) -> None:
-        """从目标函数反向 BFS 遍历调用图，计算每个函数到最近目标的
-        调用图距离 (步数)。若函数本身是目标 → distance = 0。"""
+        """从目标函数反向BFS遍历调用图，计算每个函数到最近目标的调用图距离(步数)。
+
+        若函数本身是目标 -> distance=0。
+        """
         self._cg_dist = {}
         queue = deque()
         for tf in self._target_funcs:
             self._cg_dist[tf] = 0.0
             queue.append((tf, 0.0))
-        # 收集所有已知函数（caller + callee 的并集）
+        # 收集所有已知函数（caller+callee的并集）
         all_funcs = set(self._call_graph.keys()) | set(
             self._call_graph_rev.keys()) | self._target_funcs
         for func in all_funcs:
@@ -122,7 +125,7 @@ class DirectedFuzzer:
 
         while queue:
             current, dist = queue.popleft()
-            # 反向遍历：谁调用了 current？
+            # 反向遍历: 谁调用了current？
             for caller in self._call_graph_rev.get(current, set()):
                 new_dist = dist + 1.0
                 if new_dist < self._cg_dist.get(caller, self.INF):
@@ -130,12 +133,13 @@ class DirectedFuzzer:
                     queue.append((caller, new_dist))
 
     def _compute_bb_distances(self) -> None:
-        """对每个函数内 CFG，从目标基本块反向 BFS，计算函数内 BB 距离。
-        若无目标 BB 在函数内 → 函数内所有 BB 距离 = INF，
-        仅靠调用图距离驱动。"""
+        """对每个函数内CFG，从目标基本块反向BFS，计算函数内BB距离。
+
+        若无目标BB在函数内 -> 函数内所有BB距离=INF，仅靠调用图距离驱动。
+        """
         self._bb_dist = {}
         for func_name, cfg in self._intra_cfg.items():
-            # 构建反向 CFG
+            # 构建反向CFG
             rev_cfg: Dict[int, List[int]] = defaultdict(list)
             all_bbs: Set[int] = set()
             for bb, succs in cfg.items():
@@ -144,7 +148,7 @@ class DirectedFuzzer:
                     all_bbs.add(s)
                     rev_cfg[s].append(bb)
 
-            # BFS 从目标 BB 出发
+            # BFS从目标BB出发
             queue = deque()
             local_dist: Dict[int, float] = {}
             for bb in all_bbs:
@@ -164,7 +168,7 @@ class DirectedFuzzer:
 
             self._bb_dist.update(local_dist)
 
-        # 未在任何函数内的目标 BB 单独处理
+        # 未在任何函数内的目标BB单独处理
         for tb in self._target_blocks:
             if tb not in self._bb_dist:
                 self._bb_dist[tb] = 0.0
@@ -200,8 +204,10 @@ class DirectedFuzzer:
     def seed_distance(self,
                       covered_blocks: List[int]) -> float:
         """计算种子到目标区域的平均距离。
-        距离 = 所有被覆盖块中 combined 距离的调和平均。
-        距离越小 → 种子越靠近目标。"""
+
+        距离 = 所有被覆盖块中combined距离的调和平均。
+        距离越小 -> 种子越靠近目标。
+        """
         if not self._computed:
             return self.INF
 
@@ -211,7 +217,7 @@ class DirectedFuzzer:
         if not valid:
             return self.INF
 
-        # 调和平均（对 outlier 有鲁棒性）
+        # 调和平均（对outlier有鲁棒性）
         reciprocals = [1.0 / max(0.001, d) for d in valid]
         return len(reciprocals) / sum(reciprocals)
 
@@ -219,8 +225,10 @@ class DirectedFuzzer:
                    covered_blocks: List[int],
                    new_to_target: bool = False) -> float:
         """返回种子能量 [0.1, 10.0]。
-        距离越小 → 能量越高；新发现了目标路径 → 额外 2x 加成。
-        公式: energy = 10 * 1/(1 + d) * (2.0 if new_to_target else 1.0)"""
+
+        距离越小->能量越高；新发现目标路径->额外2x加成。
+        公式: energy = 10 * 1/(1+d) * (2.0 if new_to_target else 1.0)
+        """
         dist = self.seed_distance(covered_blocks)
         if dist >= self.INF:
             base = 0.3
@@ -250,9 +258,11 @@ class DirectedFuzzer:
     def guide_mutation(self, seed: bytearray,
                        uncovered_target_blocks: Set[int]) -> bytes:
         """定向变异: 偏向修改可能影响未到达目标的字节偏移。
-        简化策略: 对种子中高熵区域（更可能对应分支条件）做密集变异。"""
-        # 未实现完整的数据流追踪 → 回退到均匀变异
-        # 完整实现需要输入-比较指令的映射（如 Hawkeye 的邻域函数逼近）
+
+        简化策略: 对种子中高熵区域（更可能对应分支条件）做密集变异。
+        """
+        # 未实现完整数据流追踪 -> 回退到均匀变异
+        # 完整实现需要输入-比较指令的映射
         import random
         rounds = max(1, min(32, len(seed) // 8))
         for _ in range(rounds):
@@ -262,7 +272,7 @@ class DirectedFuzzer:
 
     # ---- 距离热力图 ----
     def distance_report(self, top_k: int = 20) -> Dict[str, Any]:
-        """返回距离最近的前 K 个 BB 和当前调度统计。"""
+        """返回距离最近的前K个BB和当前调度统计。"""
         sorted_bbs = sorted(
             [(bb, d) for bb, d in self._combined.items()
              if d < self.INF],
@@ -292,9 +302,9 @@ class DirectedFuzzer:
 
 
 # ---------------------------------------------------------------------------
-# 调用图距离的路径剪枝: BEACON 风格的层级近似
-# 当调用图过大或无法完全加载时，使用层级编号近似 CG 距离。
-# 对调用图中的每个函数赋予 (layer, index) 坐标 →
+# 调用图距离的路径剪枝: BEACON风格层级近似
+# 当调用图过大或无法完全加载时，使用层级编号近似CG距离。
+# 对调用图中每个函数赋予(layer, index)坐标 ->
 # 距离 ≈ |layer_a - layer_b| * layer_weight + |index_a - index_b|
 # ---------------------------------------------------------------------------
 def approximate_cg_distance(func_positions: Dict[str, Tuple[int, int]],
@@ -315,7 +325,7 @@ def approximate_cg_distance(func_positions: Dict[str, Tuple[int, int]],
 def quick_directed_seed_select(
         seeds: Dict[str, List[int]],
         bb_distances: Dict[int, float]) -> str:
-    """便捷入口: 给定种子→覆盖块映射和BB距离表，选出最近种子。"""
+    """便捷入口: 给定种子->覆盖块映射和BB距离表，选出最近种子。"""
     best = ""
     best_d = float('inf')
     for sid, blocks in seeds.items():

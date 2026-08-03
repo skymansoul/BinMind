@@ -1,13 +1,14 @@
-# 2026-07-19
-# findings — 关键发现提取 + 加权评分
-# 设计考量：DANGEROUS_FUNCTIONS 按语言分层，评分算法用 severity × confidence × context
-# 去重用 (type, normalized_description) 的模糊匹配而非精确字符串比较
+# findings — 危险函数发现、评分、去重
+# 按语言分层的危险函数库，评分 = severity × confidence × context_multiplier
+# 去重用 (type, normalized_description) 模糊匹配
 
 import re
+from enum import Enum
 from dataclasses import dataclass, field
 from typing import List, Dict, Optional, Tuple
+from itertools import accumulate
 
-# ===== 危险函数字典 =====
+# ===== 危险函数库：语言 → {函数名: 基础严重度} =====
 DANGEROUS_FUNCTIONS: Dict[str, Dict[str, int]] = {
     "c": {
         "system": 9, "popen": 8, "execve": 9, "execvp": 9, "execl": 9,
@@ -50,9 +51,6 @@ DANGEROUS_FUNCTIONS: Dict[str, Dict[str, int]] = {
     },
 }
 
-# ---- Severity 枚举 ----
-from enum import Enum
-
 class Severity(Enum):
   CRITICAL = "CRITICAL"
   HIGH = "HIGH"
@@ -73,7 +71,7 @@ class Finding:
     type: str
     description: str
     severity: Severity
-    confidence: float  # 0.0–1.0
+    confidence: float
     location: str = ""
 
     def __hash__(self):
@@ -107,18 +105,15 @@ def _search_in_imports(imports: dict, pattern: str) -> list:
     return _r
 
 
-# //// 主提取逻辑 ////
 def extract_findings(binary_info: dict, strings: list = None, imports: dict = None) -> List[Finding]:
-    """从二进制信息、字符串列表、导入表中提取危险发现。
-
-    评分策略：base_score × confidence × context_multiplier。
-    imported 的函数权重 0.6（可能只是库依赖），直接 call 或出现在字符串中权重 1.0。
+    """从二进制信息/字符串/导入表提取危险发现。
+    评分公式：base_score * 10 * confidence * multiplier。
+    imported 函数 multiplier=0.6（可能只是库链接），字符串中出现 multiplier=1.0。
     """
     _findings: List[Finding] = []
     _strs = strings or binary_info.get("strings", [])
     _imps = imports or binary_info.get("imports", {})
 
-    # C/C++ 危险函数检测
     _c_funcs = DANGEROUS_FUNCTIONS["c"]
     for _fn, _base_score in _c_funcs.items():
         _pattern = re.compile(r'\b' + re.escape(_fn) + r'\b', re.IGNORECASE)
@@ -154,7 +149,6 @@ def extract_findings(binary_info: dict, strings: list = None, imports: dict = No
                     location="strings",
                 ))
 
-    # Python 危险函数检测
     for _fn, _base_score in DANGEROUS_FUNCTIONS["python"].items():
         _in_strs = _search_in_strings(_strs, re.escape(_fn))
         if _in_strs:
@@ -168,7 +162,6 @@ def extract_findings(binary_info: dict, strings: list = None, imports: dict = No
                 location="strings",
             ))
 
-    # JS 检测
     for _fn, _base_score in DANGEROUS_FUNCTIONS["js"].items():
         _in_strs = _search_in_strings(_strs, re.escape(_fn))
         if _in_strs:
@@ -182,7 +175,6 @@ def extract_findings(binary_info: dict, strings: list = None, imports: dict = No
                 location="strings",
             ))
 
-    # Kernel 检测
     for _fn, _base_score in DANGEROUS_FUNCTIONS["kernel"].items():
         _in_strs = _search_in_strings(_strs, re.escape(_fn))
         if _in_strs:
@@ -196,7 +188,6 @@ def extract_findings(binary_info: dict, strings: list = None, imports: dict = No
                 location="strings",
             ))
 
-    # 高熵段检测
     _high_entropy = _search_in_strings(_strs, r'(?:encrypt|decrypt|crypt|aes|rsa|des|blowfish|chacha|rc4)')
     if len(_high_entropy) >= 3:
         _findings.append(Finding(
@@ -207,7 +198,6 @@ def extract_findings(binary_info: dict, strings: list = None, imports: dict = No
             location="strings",
         ))
 
-    # 反分析模式
     _anti_patterns = _search_in_strings(_strs,
         r'(?:VMware|VirtualBox|vbox|qemu|xen|sandboxie|'
         r'isDebugger|isDebug|is_vm|cpuid|rdtsc|'
@@ -225,13 +215,9 @@ def extract_findings(binary_info: dict, strings: list = None, imports: dict = No
     return _findings
 
 
-# //// 去重 ////
 def dedup_findings(findings: List[Finding]) -> List[Finding]:
-    """基于 (type, normalized_description) 的相似度去重。
-
-    策略：相同的 type 下，descriptions 的编辑距离 < 30% 视为重复，保留置信度更高的。
-    这是启发式方法 —— 真实场景下用 TF-IDF cosine similarity 会更精确，
-    但此处为保持零外部依赖刻意简化。
+    """按 (type, normalized_desc) 去重，相同描述取置信度最高项。
+    归一化策略：引号/括号内容替换为占位符，抹除变量特异性。
     """
     if not findings:
         return []
@@ -239,7 +225,6 @@ def dedup_findings(findings: List[Finding]) -> List[Finding]:
     _seen_keys = set()
 
     def _normalize(desc: str) -> str:
-        # 去除变量部分：把引号内容、括号内容替换为占位符
         _s = desc.lower()
         _s = re.sub(r'"[^"]*"', '"..."', _s)
         _s = re.sub(r"'[^']*'", "'...'", _s)

@@ -1,3 +1,4 @@
+
 import os
 import sys
 import unittest
@@ -21,14 +22,8 @@ class TestDistributedConfig(unittest.TestCase):
         importlib.reload(config)
         self.config = config
 
-<<<<<<< HEAD
-    def test_distributed_enabled_default(self):
-        """测试 DISTRIBUTED_ENABLED 默认值"""
-        self.assertIsInstance(self.config.Config.DISTRIBUTED_ENABLED, bool)
-=======
     def test_distributed_mode_default(self):
         self.assertIsInstance(self.config.Config.DISTRIBUTED_MODE, bool)
->>>>>>> d81973a (精简冗余模块)
 
     def test_celery_task_queue_default(self):
         """测试 CELERY_TASK_QUEUE 默认值"""
@@ -36,19 +31,6 @@ class TestDistributedConfig(unittest.TestCase):
         self.assertIn('deemo', self.config.Config.CELERY_TASK_QUEUE)
 
     def test_celery_max_retries_default(self):
-<<<<<<< HEAD
-        """测试 CELERY_MAX_RETRIES 默认值"""
-        self.assertIsInstance(self.config.Config.CELERY_MAX_RETRIES, int)
-        self.assertGreater(self.config.Config.CELERY_MAX_RETRIES, 0)
-
-    def test_redis_url_default(self):
-        """测试 REDIS_URL 默认值"""
-        self.assertIsInstance(self.config.Config.REDIS_URL, str)
-        self.assertTrue(self.config.Config.REDIS_URL.startswith('redis://'))
-
-    def test_worker_heartbeat_interval_default(self):
-        """测试 WORKER_HEARTBEAT_INTERVAL 默认值"""
-=======
         self.assertIsInstance(self.config.Config.CELERY_MAX_RETRIES, int)
         self.assertGreater(self.config.Config.CELERY_MAX_RETRIES, 0)
 
@@ -62,7 +44,6 @@ class TestDistributedConfig(unittest.TestCase):
         self.assertEqual(self.config.Config.REDIS_PORT, 6379)
 
     def test_worker_heartbeat_interval_default(self):
->>>>>>> d81973a (精简冗余模块)
         self.assertIsInstance(self.config.Config.WORKER_HEARTBEAT_INTERVAL, int)
         self.assertGreater(self.config.Config.WORKER_HEARTBEAT_INTERVAL, 0)
 
@@ -71,8 +52,6 @@ class TestDistributedConfig(unittest.TestCase):
         self.assertIsInstance(self.config.Config.WORKER_TIMEOUT, int)
         self.assertGreater(self.config.Config.WORKER_TIMEOUT, 0)
 
-<<<<<<< HEAD
-=======
     def test_worker_max_tasks_per_child_default(self):
         """测试 WORKER_MAX_TASKS_PER_CHILD 默认值"""
         self.assertIsInstance(self.config.Config.WORKER_MAX_TASKS_PER_CHILD, int)
@@ -88,7 +67,6 @@ class TestDistributedConfig(unittest.TestCase):
         self.assertIsInstance(self.config.Config.TASK_CACHE_TTL, int)
         self.assertGreater(self.config.Config.TASK_CACHE_TTL, 0)
 
->>>>>>> d81973a (精简冗余模块)
 
 class TestRedisUrlMasking(unittest.TestCase):
     """
@@ -96,8 +74,6 @@ class TestRedisUrlMasking(unittest.TestCase):
     """
 
     def setUp(self):
-<<<<<<< HEAD
-=======
         import importlib
         import config
         importlib.reload(config)
@@ -138,58 +114,12 @@ class TestCeleryBrokerUrl(unittest.TestCase):
     """
 
     def setUp(self):
->>>>>>> d81973a (精简冗余模块)
         """在每个测试前重新加载 config 模块"""
         import importlib
         import config
         importlib.reload(config)
         self.config = config
 
-<<<<<<< HEAD
-    def test_mask_redis_url_no_password(self):
-        """测试无密码的 Redis URL"""
-        url = 'redis://localhost:6379/0'
-        self.assertEqual(self.config.mask_redis_url(url), url)
-
-    def test_mask_redis_url_with_password(self):
-        """测试带密码的 Redis URL"""
-        url = 'redis://user:mypassword@localhost:6379/0'
-        masked = self.config.mask_redis_url(url)
-        self.assertIn('***MASKED***', masked)
-        self.assertNotIn('mypassword', masked)
-
-    def test_mask_redis_url_special_password(self):
-        """测试带特殊字符密码的 Redis URL"""
-        url = 'redis://user:p@ss:w0rd@localhost:6379/0'
-        masked = self.config.mask_redis_url(url)
-        self.assertIn('***MASKED***', masked)
-        self.assertNotIn('p@ss:w0rd', masked)
-
-    def test_mask_redis_url_empty(self):
-        """测试空 URL"""
-        self.assertEqual(self.config.mask_redis_url(''), '')
-        self.assertEqual(self.config.mask_redis_url(None), '')
-
-    def test_mask_redis_url_invalid(self):
-        """测试无效 URL"""
-        url = 'not_a_redis_url'
-        self.assertEqual(self.config.mask_redis_url(url), url)
-
-
-class TestCeleryBrokerUrl(unittest.TestCase):
-    """
-    Celery Broker URL 测试
-    """
-
-    def setUp(self):
-        """在每个测试前重新加载 config 模块"""
-        import importlib
-        import config
-        importlib.reload(config)
-        self.config = config
-
-=======
->>>>>>> d81973a (精简冗余模块)
     def test_get_celery_broker_url_returns_string(self):
         """测试 Broker URL 返回字符串"""
         url = self.config.get_celery_broker_url()
@@ -199,11 +129,6 @@ class TestCeleryBrokerUrl(unittest.TestCase):
     def test_get_celery_result_backend_returns_string(self):
         """测试 Result Backend 返回字符串"""
         url = self.config.get_celery_result_backend()
-<<<<<<< HEAD
-        self.assertIsInstance(url, str)
-
-=======
-lass字段完整性$/d
         self.assertIsInstance(url, str)
 
     def test_get_celery_broker_url_with_env(self):
@@ -214,7 +139,6 @@ lass字段完整性$/d
             url = config.get_celery_broker_url()
             self.assertEqual(url, 'redis://env:6379/1')
 
->>>>>>> d81973a (精简冗余模块)
 
 class TestTaskCacheKey(unittest.TestCase):
     """
@@ -229,10 +153,6 @@ class TestTaskCacheKey(unittest.TestCase):
         self.config = config
 
     def test_get_task_cache_key_basic(self):
-<<<<<<< HEAD
-        """测试基本缓存键生成"""
-=======
->>>>>>> d81973a (精简冗余模块)
         key1 = self.config.get_task_cache_key('test.bin', {'enable_symbolic': True})
         key2 = self.config.get_task_cache_key('test.bin', {'enable_symbolic': True})
         self.assertEqual(key1, key2)
@@ -256,11 +176,7 @@ class TestTaskCacheKey(unittest.TestCase):
         self.assertGreater(len(key), 0)
 
     def test_get_task_cache_key_format(self):
-<<<<<<< HEAD
-        """测试缓存键格式"""
-=======
         """测试缓存键格式（SHA256 哈希）"""
->>>>>>> d81973a (精简冗余模块)
         key = self.config.get_task_cache_key('test.bin', {'enable_symbolic': True})
         self.assertTrue(key.startswith('deemo:cache:task:'))
 
@@ -277,45 +193,19 @@ class TestAnalysisTaskManagerStandalone(unittest.TestCase):
     """
 
     def setUp(self):
-<<<<<<< HEAD
-        """设置测试环境"""
-        self.temp_dir = tempfile.mkdtemp()
-        os.environ['DATA_DIR'] = self.temp_dir
-        
-    def tearDown(self):
-        """清理测试环境"""
-        if 'DATA_DIR' in os.environ:
-            del os.environ['DATA_DIR']
-        if os.path.exists(self.temp_dir):
-            shutil.rmtree(self.temp_dir)
-
-    def test_task_manager_import_works(self):
-        """测试 web_api 可以导入"""
-        try:
-            import modules.web_api
-            self.assertIsNotNone(modules.web_api)
-        except Exception as e:
-            self.skipTest(f"web_api 模块无法导入，可能缺少依赖: {e}")
-
-    def test_config_functions_work(self):
-        """测试 config 函数工作正常"""
-=======
         """在每个测试前重新加载 config 模块"""
->>>>>>> d81973a (精简冗余模块)
         import importlib
         import config
         importlib.reload(config)
-        
+
         # 测试 mask_redis_url
         self.assertEqual(config.mask_redis_url(''), '')
-        
+
         # 测试 get_task_cache_key
         key = config.get_task_cache_key('test', {})
         self.assertIsInstance(key, str)
         self.assertTrue(len(key) > 0)
 
-<<<<<<< HEAD
-=======
     def test_is_distributed_mode_default(self):
         """测试默认分布式模式"""
         result = self.config.is_distributed_mode()
@@ -326,7 +216,6 @@ class TestAnalysisTaskManagerStandalone(unittest.TestCase):
             import importlib
             import config
             importlib.reload(config)
-lass字段完整性$/d
             self.assertTrue(config.is_distributed_mode())
 
     def test_is_distributed_mode_env_false(self):
@@ -384,7 +273,7 @@ class TestDistributedImports(unittest.TestCase):
 
     def test_worker_celery_available(self):
         """测试 Celery 可用性标志"""
-        from modules.worker import CELERY_AVAILABLE
+        from modules.distributed.worker import CELERY_AVAILABLE
         self.assertIsInstance(CELERY_AVAILABLE, bool)
 
     def test_web_api_celery_available(self):
@@ -395,8 +284,6 @@ class TestDistributedImports(unittest.TestCase):
         except ImportError:
             self.skipTest("web_api 模块无法导入")
 
-
->>>>>>> d81973a (精简冗余模块)
 
 if __name__ == '__main__':
     unittest.main()

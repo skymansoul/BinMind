@@ -23,7 +23,7 @@ ART_MAGIC=b'art\n'; OAT_MAGIC=b'oat\n'; DEX_MAGIC_035=b'dex\n035'; DEX_MAGIC_037
 _OAT_HEADER_OFFSETS={'magic':(0,4),'version':(4,8),'data_begin':(16,24),'exec_offset':(24,32),'image_base':(32,40),'dex_count':(48,52)}
 
 # ── WOOTdroid/LEMON eBPF追踪模式 ──
-# 从二进制中检测与eBPF内核追踪相关的模式——加壳app常见的反追踪特征
+# 检测二进制中eBPF内核追踪相关模式，加壳应用常见反追踪特征
 _ANTI_TRACING_PATTERNS:Dict[bytes,str]={
     b'/sys/kernel/debug/tracing':'debugfs tracing检测——反eBPF/内核追踪',
     b'/sys/fs/bpf':'bpffs挂载点检测——检测eBPF程序存在',
@@ -36,7 +36,7 @@ _ANTI_TRACING_PATTERNS:Dict[bytes,str]={
     b'__arm64_sys_bpf':'sys_bpf调用检测——eBPF程序加载感知',
 }
 
-# WOOTdroid Binder syscall审计点
+# WOOTdroid Binder syscall审计点集合
 _BINDER_SYSCALL_PATTERNS:Dict[bytes,str]={
     b'__arm64_sys_ioctl':'ioctl调度——Binder IPC入口',
     b'BINDER_WRITE_READ':'Binder读写事务',
@@ -94,12 +94,12 @@ class AndroidRTAnalyzer:
 
     # ── WOOTdroid/LEMON eBPF反追踪检测 ──
     def detect_anti_tracing(self)->List[Dict[str,Any]]:
-        """检测反eBPF/内核追踪的代码模式。
+        """检测反eBPF/内核追踪代码模式。
 
-        基于WOOTdroid (arXiv:2604.27830) 和 LEMON (DFRWS 2026) 的洞察：
-        许多商业加固器现在检测eBPF tracing infra的存在，以对抗内核级动态分析。
-        检测这些模式可以指示：(1) app使用了高级反分析技术
-        (2) 可能需要LEMON-style内存获取来进行完整分析。
+        基于WOOTdroid（arXiv:2604.27830）与LEMON（DFRWS 2026）的结论：
+        商业加固器已开始检测eBPF tracing基础设施的存在，对抗内核级动态分析。
+        检测这些模式可推断：(1) 应用使用了高级反分析技术；
+        (2) 完整分析可能需要LEMON式内存获取。
         """
         findings=[]
         for pat,desc in _ANTI_TRACING_PATTERNS.items():
@@ -109,11 +109,11 @@ class AndroidRTAnalyzer:
         return findings
 
     def detect_binder_syscall_tracepoints(self)->List[Dict[str,Any]]:
-        """检测Binder ioctl调用点——WOOTdroid WDBind的静态定位。
+        """检测Binder ioctl调用点，WOOTdroid WDBind的静态定位。
 
-        WDBind在kernel中捕获Binder parcels并通过Java反射解码方法名和参数类型。
-        此静态检测识别二进制中与Binder事务相关的syscall封装函数，
-        为动态eBPF hook提供hook点候选。
+        WDBind在内核中捕获Binder parcels，通过Java反射解码方法名与参数类型。
+        此静态检测识别二进制中Binder事务相关的syscall封装函数，
+        为eBPF动态hook提供候选挂载点。
         """
         findings=[]
         for pat,desc in _BINDER_SYSCALL_PATTERNS.items():
@@ -142,10 +142,10 @@ class AndroidRTAnalyzer:
         v=[]; nms=self.find_native_methods()
         for m in nms:
             jc=m['java_class']
-            if 'android' not in jc.lower(): v.append({'type':'Native Code Injection','severity':'High',f'非系统类{jc}使用了原生代码',m['method_name']})
+            if 'android' not in jc.lower(): v.append({'type':'Native Code Injection','severity':'High','description':f'非系统类{jc}使用了原生代码','method_name':m['method_name']})
             mn=m['method_name'].lower()
-            if 'exec' in mn or 'system' in mn or 'runtime' in mn: v.append({'type':'Command Injection','severity':'Critical','原生方法可能执行命令注入',m['method_name']})
-        if self.oat_info and self.oat_info.compiler_filter=="verify-at-runtime": v.append({'type':'Weak Compiler Filter','severity':'Medium','OAT编译过滤级别为verify-at-runtime——存在JIT代码注入风险','oat file header'})
+            if 'exec' in mn or 'system' in mn or 'runtime' in mn: v.append({'type':'Command Injection','severity':'Critical','description':'原生方法可能执行命令注入','method_name':m['method_name']})
+        if self.oat_info and self.oat_info.compiler_filter=="verify-at-runtime": v.append({'type':'Weak Compiler Filter','severity':'Medium','description':'OAT编译过滤级别为verify-at-runtime——存在JIT代码注入风险','location':'oat file header'})
         return v
 
 
@@ -214,11 +214,11 @@ class IOSRuntimeAnalyzer:
     def _detect_ios_vulnerabilities(self):
         v=[]
         for sel,vt in [('performSelector','Remote Code Execution'),('NSClassFromString','Class Injection'),('NSSelectorFromString','Selector Injection'),('dlopen','Dynamic Library Injection'),('dlsym','Symbol Injection')]:
-            if sel in self.parse_objc_selectors(): v.append({'type':vt,'severity':'Medium',f'使用了危险选择器{sel}',f'Offset 0x{self.parse_objc_selectors()[sel]:x}'})
+            if sel in self.parse_objc_selectors(): v.append({'type':vt,'severity':'Medium','description':f'使用了危险选择器{sel}','location':f'Offset 0x{self.parse_objc_selectors()[sel]:x}'})
         for mc in self.classes:
-            if 'Keychain' in mc.name or 'SecItem' in mc.name: v.append({'type':'Keychain Access','severity':'Info',f'应用访问Keychain:{mc.name}',mc.name})
+            if 'Keychain' in mc.name or 'SecItem' in mc.name: v.append({'type':'Keychain Access','severity':'Info','description':f'应用访问Keychain:{mc.name}','location':mc.name})
         if self.swift_info and self.swift_info.mangled_names:
-            if any('password' in n.lower() or 'secret' in n.lower() for n in self.swift_info.mangled_names): v.append({'type':'Swift Symbol Exposure','severity':'Low','Swift符号可能包含敏感名称','Symbol table'})
+            if any('password' in n.lower() or 'secret' in n.lower() for n in self.swift_info.mangled_names): v.append({'type':'Swift Symbol Exposure','severity':'Low','description':'Swift符号可能包含敏感名称','location':'Symbol table'})
         return v
 
 

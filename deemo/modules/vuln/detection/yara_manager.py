@@ -1,6 +1,6 @@
 # YARA规则管理引擎——自动生成、编译、扫描与外部规则集集成。
-# 参考VirusTotal YARA最佳实践：惰性求值条件子句、文件大小门禁、扫描超时熔断。
-# 收紧规则优化：特征≥5→2 of them，特征≥3→3 of them，其余→any of them。
+# 遵循VirusTotal YARA最佳实践：惰性求值条件、文件大小门禁、扫描超时熔断。
+# 收紧规则优化：特征>=5 → 2 of them，特征>=3 → 3 of them，其余 → any of them。
 
 import os, re, json, logging, hashlib, subprocess, tempfile, fnmatch
 from datetime import datetime

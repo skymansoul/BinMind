@@ -1,5 +1,5 @@
-# Public API: CompilationStatus, EquivalenceLevel, FunctionInfo, RecompilationResult, RecompilerVerifier
-# Dependencies: os, subprocess, tempfile, difflib, hashlib, dataclasses, pathlib
+# 公开接口: CompilationStatus, EquivalenceLevel, FunctionInfo, RecompilationResult, RecompilerVerifier
+# 依赖: os, subprocess, tempfile, difflib, hashlib, dataclasses, pathlib
 import logging
 import os
 import subprocess
@@ -15,9 +15,8 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-# ── standardised Enum wrappers ────────────────────────────────────────
-# 将原来类常量风格的 CompilationStatus/EquivalenceLevel 改为标准 Enum，
-# 同时保留旧的 instance-construction 兼容路径（构造函数接收字符串 value）
+# ── 标准 Enum 封装 ────────────────────────────────────────────────
+# 原类常量风格的状态/等级改为标准 Enum，同时保留旧构造兼容路径
 
 class CompilationStatus(_StdEnum):
     SUCCESS = "success"
@@ -79,8 +78,8 @@ class RecompilationResult:
     compilation_time: float = 0.0
     notes: list = field(default_factory=list)
 
-# ── UB pattern catalogue ─────────────────────────────────────────────
-# 常见 undefined behavior 模式，用于检测重编译代码中可能引入的问题
+# ── UB 模式目录 ───────────────────────────────────────────────────
+# 常见 undefined behavior 正则，检测重编译代码中可能引入的问题
 
 _UB_PATTERNS = [
     (r'(\w+)\s*=\s*(\w+)\s*\*\s*(\w+)\s*;\s*if\s*\(\1\s*<\s*\2\)',
@@ -99,19 +98,18 @@ _UB_PATTERNS = [
 
 class RecompilerVerifier:
     """
-    Decompiled-code recompilation verifier.
+    反编译代码重编译验证器。
 
-    Re-compiles decompiled C pseudocode and validates semantic equivalence
-    against the original binary.
+    对反编译 C 伪代码重编译并校验与原二进制的语义等价性。
     """
 
     def __init__(self, compiler_path: str = "gcc"):
-        """Initialise verifier and confirm compiler availability."""
+        """初始化并确认编译器可用。"""
         self.compiler_path = compiler_path
         self._check_compiler()
 
     def _check_compiler(self) -> bool:
-        """Probe compiler binary; return False if unavailable."""
+        """探测编译器二进制；不可用时返回 False。"""
         try:
             pass
             result = subprocess.run(
@@ -131,7 +129,7 @@ class RecompilerVerifier:
         return False
 
     def compile_code(self, code: str, output_path: Optional[str] = None, flags: Optional[List[str]] = None) -> Tuple[CompilationStatus, str]:
-        """Compile C source to object file. Returns (status, output_path|stderr)."""
+        """编译 C 源文件至 .o。返回 (status, output_path|stderr)。"""
         if not output_path:
             with tempfile.NamedTemporaryFile(suffix=".c", delete=False) as f:
                 src_path = f.name
@@ -140,14 +138,14 @@ class RecompilerVerifier:
         else:
             src_path = output_path + ".c"
 
-        # write source to temp file
+        # 写源文件至临时路径
         try:
             with open(src_path, 'w', encoding='utf-8') as f:
                 f.write(code)
         except Exception as e:
             return CompilationStatus.FAILED, f"write file failed: {e}"
 
-        # assemble compiler invocation
+        # 组装编译命令
         cmd = [self.compiler_path, "-c", "-o", output_path, src_path]
         if flags:
             cmd.extend(flags)
@@ -169,12 +167,12 @@ class RecompilerVerifier:
         except Exception as e:
             return CompilationStatus.FAILED, str(e)
         finally:
-            # remove temporary source file
+            # 清理临时源文件
             if os.path.exists(src_path):
                 os.remove(src_path)
 
     def _generate_header(self, includes: Optional[List[str]] = None) -> str:
-        """Emit standard C header includes."""
+        """生成标准 C 头文件包含。"""
         default_includes = [
             "#include <stdio.h>",
             "#include <stdlib.h>",
@@ -189,19 +187,19 @@ class RecompilerVerifier:
         return "\n".join(default_includes) + "\n\n"
 
     def _fix_decompiled_code(self, code: str) -> str:
-        """Apply fixups for common decompiler output artifacts."""
+        """反编译器输出常见瑕疵修复。"""
         fixed = code
 
-        # normalise pseudo-code comment markers
+        # 归一化伪代码注释标记
         fixed = fixed.replace("//", "/*").replace("/*/", "*/")
 
-        # resolve IDA undefined types
+        # IDA 未定义类型 → 标准类型
         fixed = fixed.replace("undefined4", "uint32_t")
         fixed = fixed.replace("undefined", "uint8_t")
         fixed = fixed.replace("undefined8", "uint64_t")
         fixed = fixed.replace("undefined2", "uint16_t")
 
-        # resolve compiler-specific integer types
+        # 编译器特定整数类型
         fixed = fixed.replace("__int64", "int64_t")
         fixed = fixed.replace("__int32", "int32_t")
         fixed = fixed.replace("__int16", "int16_t")
@@ -211,54 +209,54 @@ class RecompilerVerifier:
         fixed = fixed.replace("unsigned __int16", "uint16_t")
         fixed = fixed.replace("unsigned __int8", "uint8_t")
 
-        # resolve x86 size-prefixed types
+        # x86 大小前缀类型
         fixed = fixed.replace("byte", "uint8_t")
         fixed = fixed.replace("word", "uint16_t")
         fixed = fixed.replace("dword", "uint32_t")
         fixed = fixed.replace("qword", "uint64_t")
 
-        # strip calling-convention decorators
+        # 剥离调用约定修饰符
         fixed = fixed.replace("__fastcall", "")
         fixed = fixed.replace("__stdcall", "")
         fixed = fixed.replace("__cdecl", "")
         fixed = fixed.replace("__thiscall", "")
         fixed = fixed.replace("__vectorcall", "")
 
-        # strip __ptr64 annotations
+        # 剥离 __ptr64
         fixed = fixed.replace("[__ptr64]", "")
 
-        # Ghidra-specific artifacts
+        # Ghidra 特定产物
         fixed = fixed.replace("_DAT_", "DAT_")
         fixed = fixed.replace("PTR_", "PTR_")
         fixed = fixed.replace("CONCAT", "/* CONCAT */")
         fixed = fixed.replace("ZEXT", "/* ZEXT */")
         fixed = fixed.replace("SEXT", "/* SEXT */")
 
-        # drop inline pseudo-comments
+        # 丢弃行首伪注释
         fixed = "\n".join(line for line in fixed.split("\n") if not line.strip().startswith("/*") or "*/" in line)
 
         return fixed
 
     def verify_function(self, func_name: str, decompiled_code: str, original_address: Optional[int] = None) -> FunctionInfo:
-        """Verify a single decompiled function: fix, compile, score equivalence."""
+        """单函数验证：修复 → 编译 → 等价评分。"""
         info = FunctionInfo(
             name=func_name,
             decompiled_code=decompiled_code,
             original_address=original_address
         )
 
-        # apply decompiler fixups
+        # 反编译器输出修复
         fixed_code = self._fix_decompiled_code(decompiled_code)
 
-        # prepend standard headers
+        # 前置标准头
         full_code = self._generate_header() + fixed_code
 
-        # UB scan before compilation
+        # 编译前 UB 扫描
         ub_findings = self._detect_undefined_behavior(fixed_code)
         if ub_findings:
             info.notes.append(f"UB patterns detected: {', '.join(ub_findings)}")
 
-        # compile
+        # 编译
         status, output = self.compile_code(full_code)
 
         if status == CompilationStatus.SUCCESS:
@@ -266,7 +264,7 @@ class RecompilerVerifier:
             info.equivalence_score = self._calculate_equivalence(fixed_code)
             info.equivalence_level = self._determine_equivalence_level(info.equivalence_score)
 
-            # remove compiled artifact
+            # 清理编译产物
             if os.path.exists(output):
                 os.remove(output)
         else:
@@ -275,7 +273,7 @@ class RecompilerVerifier:
             info.equivalence_score = 0.0
             info.equivalence_level = EquivalenceLevel.NONE
 
-        # annotate result
+        # 标注结果
         if not info.compiled_success:
             info.notes.append("Compilation failed; possible decompiler output error")
         elif info.equivalence_level == EquivalenceLevel.LOW:
@@ -284,11 +282,13 @@ class RecompilerVerifier:
         return info
 
     def _calculate_equivalence(self, code: str) -> float:
-        """Compute heuristic equivalence score — 混合关键词密度和结构特征。
-        原始 keyword-counting 算法作为 baseline，补充 AST 特征和 basic block 结构。
-        评分范围 0.0-1.0。"""
+        """启发式等价评分 —— 混合关键词密度与结构特征。
 
-        # 基线：control-flow keyword 密度
+        原始 keyword-counting 为基线，补充 AST 特征和 basic block 结构。
+        评分范围 0.0-1.0。
+        """
+
+        # 基线：控制流关键词密度
         features = [
             ('if', code.count('if')),
             ('else', code.count('else')),
@@ -302,14 +302,14 @@ class RecompilerVerifier:
 
         total_features = sum(cnt for _, cnt in features)
         if total_features == 0:
-            return 0.3  # 有代码但没有 CF → 可能是 trivial wrapper
+            return 0.3  # 有代码无 CF → 可能是平凡 wrapper
 
         control_flow_count = sum(cnt for name, cnt in features if name in ['if', 'else', 'while', 'for', 'switch'])
 
-        # 结构特征：basic block 数量和平均大小
+        # 结构特征：basic block 数量与平均大小
         block_score = self._estimate_block_structure(code)
 
-        # 综合评分：CF 密度 60% + 结构 40%
+        # 综合：CF 密度 60% + 结构 40%
         if control_flow_count >= 5:
             cf_score = min(1.0, 0.7 + control_flow_count * 0.04)
         elif control_flow_count >= 1:
@@ -320,9 +320,11 @@ class RecompilerVerifier:
         return min(1.0, cf_score * 0.6 + block_score * 0.4)
 
     def _estimate_block_structure(self, code):
-        """从代码文本估算 basic block 结构的完整性。
-        通过大括号 {} 配对、label/ goto 密度推断。
-        高质量 decompiled 代码通常有清晰的 block 分界。"""
+        """从代码文本估算 basic block 结构完整性。
+
+        通过大括号配对、label/goto 密度推断。
+        高质量反编译代码应有清晰的 block 分界。
+        """
         if not code:
             return 0.1
 
@@ -335,14 +337,11 @@ class RecompilerVerifier:
         brace_lines = sum(1 for l in lines if '{' in l or '}' in l)
         semi_only_lines = sum(1 for l in lines if l.endswith(';') and '{' not in l and '}' not in l)
 
-        # goto/label 密度 — 过多的 goto 表示 decompiler 未能恢复控制流结构
+        # goto/label 密度 —— 过多表示反编译器未恢复控制流结构
         goto_count = code.count('goto ') + code.count('goto\t')
         label_count = len([l for l in lines if l.endswith(':') and not l.startswith('case ') and not l.startswith('default:')])
 
-        # 评分逻辑：
-        # - brace 密度适中 → 结构清晰
-        # - semi_only 行多 → 有实际指令内容
-        # - goto/label 少 → 控制流恢复成功
+        # 评分：brace 密度适中 → 结构清晰；semi_only 多 → 有实际指令；goto/label 少 → 恢复成功
         brace_ratio = brace_lines / max(n_lines, 1)
         semi_ratio = semi_only_lines / max(n_lines, 1)
         goto_penalty = min(1.0, (goto_count + label_count) / max(n_lines, 1) * 5)
@@ -352,7 +351,9 @@ class RecompilerVerifier:
 
     def _compare_basic_blocks(self, code_a, code_b):
         """比较两个 C 函数的 basic block 结构相似度。
-        通过 brace-separated regions 的 fuzzy matching。"""
+
+        通过 brace 分隔区域的 fuzzy matching。
+        """
         def extract_blocks(src):
             blocks = []
             depth = 0
@@ -369,7 +370,7 @@ class RecompilerVerifier:
                         continue
                 if depth > 0:
                     current.append(stripped)
-            # 未闭合的 brace：把剩余内容作为一个 block
+            # 未闭合 brace：剩余内容作一个块
             if current:
                 blocks.append('\n'.join(current))
             return blocks
@@ -382,7 +383,7 @@ class RecompilerVerifier:
         if not blocks_a or not blocks_b:
             return 0.0
 
-        # Jaccard similarity on block-level hashes
+        # 块级 hash Jaccard 相似度
         hashes_a = set(hashlib.md5(b.encode('utf-8', errors='replace')).hexdigest()[:8] for b in blocks_a)
         hashes_b = set(hashlib.md5(b.encode('utf-8', errors='replace')).hexdigest()[:8] for b in blocks_b)
         inter = len(hashes_a & hashes_b)
@@ -390,8 +391,10 @@ class RecompilerVerifier:
         return inter / union if union > 0 else 0.0
 
     def _detect_undefined_behavior(self, code):
-        """在修复后的代码中检测常见的 UB 模式。
-        返回匹配到的 UB 类型标签列表。"""
+        """检测修复后代码中的常见 UB 模式。
+
+        返回匹配到的 UB 类型标签列表。
+        """
         findings = []
         for pattern, label in _UB_PATTERNS:
             if re.search(pattern, code):
@@ -399,7 +402,7 @@ class RecompilerVerifier:
         return findings
 
     def _determine_equivalence_level(self, score: float) -> EquivalenceLevel:
-        """Map numeric score to equivalence tier."""
+        """数值评分 → 等价位阶。"""
         if score >= 0.9:
             return EquivalenceLevel.FULL
         elif score >= 0.7:
@@ -412,7 +415,7 @@ class RecompilerVerifier:
             return EquivalenceLevel.NONE
 
     def verify_functions(self, functions: Dict[str, str]) -> RecompilationResult:
-        """Batch-verify multiple functions; return aggregate statistics."""
+        """批量验证多函数，返回聚合统计。"""
         result = RecompilationResult()
         start_time = time.time()
 
@@ -420,7 +423,7 @@ class RecompilerVerifier:
             func_info = self.verify_function(func_name, code)
             result.functions.append(func_info)
 
-        # compute aggregate statistics
+        # 聚合统计
         if result.functions:
             success_count = sum(1 for f in result.functions if f.compiled_success)
             result.overall_compilation_rate = success_count / len(result.functions)
@@ -431,7 +434,7 @@ class RecompilerVerifier:
 
         result.compilation_time = time.time() - start_time
 
-        # attach diagnostic notes
+        # 诊断说明
         if result.overall_compilation_rate < 0.5:
             result.notes.append("Compilation success rate low; widespread decompiler output errors likely")
         if result.overall_equivalence_level == EquivalenceLevel.LOW:
@@ -440,13 +443,13 @@ class RecompilerVerifier:
         return result
 
     def compare_binaries(self, original_path: str, recompiled_path: str) -> float:
-        """Compare original and recompiled binaries via fuzzy hash."""
+        """原始与重编译二进制 fuzzy hash 比对。"""
         try:
             with open(original_path, 'rb') as f1, open(recompiled_path, 'rb') as f2:
                 original_data = f1.read()
                 recompiled_data = f2.read()
 
-            # fuzzy hash similarity
+            # fuzzy hash 相似度
             return self._fuzzy_compare(original_data, recompiled_data)
 
         except Exception as e:
@@ -454,13 +457,13 @@ class RecompilerVerifier:
             return 0.0
 
     def _fuzzy_compare(self, data1: bytes, data2: bytes) -> float:
-        """Fuzzy byte-sequence comparison via difflib SequenceMatcher."""
+        """Fuzzy 字节序列比对（difflib SequenceMatcher）。"""
         # difflib sequence similarity
         s = difflib.SequenceMatcher(None, data1, data2)
         return s.ratio()
 
     def generate_report(self, result: RecompilationResult) -> str:
-        """Render human-readable verification report."""
+        """生成可读验证报告。"""
         lines = []
         lines.append("=" * 60)
         lines.append("Decompiled Code Recompilation Verification Report")
@@ -504,14 +507,14 @@ class RecompilerVerifier:
 
         return "\n".join(lines)
 
-# ── convenience functions ────────────────────────────────────────────
+# ── 便捷函数 ──────────────────────────────────────────────────────
 
 def verify_decompilation(functions: Dict[str, str]) -> RecompilationResult:
-    """Convenience: batch-verify decompiled functions."""
+    """批量验证反编译函数。"""
     verifier = RecompilerVerifier()
     return verifier.verify_functions(functions)
 
 def verify_single_function(func_name: str, decompiled_code: str) -> FunctionInfo:
-    """Convenience: verify a single decompiled function."""
+    """验证单条反编译函数。"""
     verifier = RecompilerVerifier()
     return verifier.verify_function(func_name, decompiled_code)

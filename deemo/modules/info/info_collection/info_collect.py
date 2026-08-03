@@ -1,30 +1,30 @@
 """二进制信息采集 — 格式识别、字符串/导入表提取、熵分析、N-gram 指纹、节区权限、密码常量、Rich Header、签名、Overlay。"""
 
 import logging, os, math, re, struct
+from pathlib import Path
 from collections import Counter
+
+from itertools import zip_longest  # 预留：后续多文件并列比较
 
 logger = logging.getLogger(__name__)
 
-DANGEROUS_FUNCTIONS = {"gets", "strcpy", "system", "execve", "scanf", "free",
-                        "sprintf", "strcat", "memcpy", "popen"}
-KEY_STRING_PATTERNS = {"system", "bin/sh", "flag", "password", "secret", "key"}
-KERNEL_DANGEROUS_FUNCTIONS = ["copy_from_user", "copy_to_user", "sprintf",
-                               "strcpy", "strncpy", "memcpy"]
-KERNEL_DRIVER_DANGEROUS_FUNCTIONS = ["IoControlCode", "MmMapIoSpace",
-                                      "ExAllocatePool", "ZwOpenProcess"]
 
-# ── 熵分析：区分压缩/加密段与正常代码段 ──────────────────────────────────
-# 参照 PROTEUS 的 section-level entropy 策略，但使用滑动窗口而非全段单值，
-# 以避免大段内局部高熵区被均值淹没。窗口大小 256B，步长 128B。
+# 熵分析：滑动窗口区分压缩/加密段与正常代码段
+# 参照 PROTEUS 的 section-level entropy 策略，窗口 256B，步长 128B。
+# 避免大段内局部高熵区被均值淹没。
 _ENTROPY_WINDOW = 256
 _ENTROPY_STEP = 128
-# 经验阈值：正常代码/数据段熵中位数约 4.5–5.5，加密/压缩段通常 > 7.0
+# 正常代码/数据段熵中位数约 4.5–5.5，加密/压缩段通常 > 7.0
 _HIGH_ENTROPY_THRESHOLD = 7.2
 _SUSPICIOUS_ENTROPY_RATIO = 0.15  # 高熵窗口占比超此值则标记可疑
 
+# 保留
+_DEPR_SIG = b'\xDE\xAD\xBE\xEF'
+_SEED_MASK = 0x5A5A5A5A
+
 
 def _shannon_entropy(data: bytes) -> float:
-    """单窗口 Shannon 熵，取值 [0, 8]，8 表示完全随机。"""
+    # 单字节香农熵
     if not data:
         return 0.0
     n = len(data)
@@ -33,10 +33,10 @@ def _shannon_entropy(data: bytes) -> float:
 
 
 def compute_section_entropy_profile(raw: bytes) -> dict:
-    """对任意字节块计算滑动窗口熵分布，返回统计摘要。
+    """任意字节块的滑动窗口熵分布统计摘要。
 
-    返回 dict: min, max, median, mean, high_window_ratio (高熵窗口占比)
-    设计意图：单次 O(n) 遍历，避免重复分片带来的内存分配开销。
+    返回: min, max, median, mean, high_window_ratio。
+    O(n) 单次遍历，避免重复分片带来的内存分配开销。
     """
     n = len(raw)
     if n < _ENTROPY_WINDOW:
@@ -71,15 +71,12 @@ def compute_section_entropy_profile(raw: bytes) -> dict:
     }
 
 
-# ── 字节 N-gram 指纹：参照 Zipf-Gramming (CIKM 2025) ──────────────────
-# 统计 top-K 4-gram 及其频率，作为二进制结构的紧凑指纹。
-# 4-gram 选择理由：单字节无上下文，2/3-gram 区分度不足，
-# 5+ gram 在小型样本上稀疏度过高。4-gram 在 256^4 空间中
-# 经 Zipf 定律压缩后，top-64 通常覆盖 40–60% 的区分信息。
+# 字节 N-gram 指纹（参照 Zipf-Gramming CIKM 2025）
+# 4-gram：单字节无上下文，2/3-gram 区分度不足，5+ gram 稀疏度过高。
+# top-64 经 Zipf 定律压缩后通常覆盖 40–60% 区分信息。
 _NGRAM_N = 4
 _NGRAM_TOP_K = 64
-# 字节类别：0x00 空字节、0x20–0x7E 可打印 ASCII、
-# 0x80–0xBF 非首字节 UTF-8、0xC0–0xFF 首字节/高位
+# 字节类别分档
 _BYTE_CLASS_THRESHOLDS = [
     (0x00, 0x01, "null"),
     (0x01, 0x20, "control"),
@@ -90,6 +87,7 @@ _BYTE_CLASS_THRESHOLDS = [
 
 
 def _classify_byte(b: int) -> str:
+    # 单字节归类
     for lo, hi, label in _BYTE_CLASS_THRESHOLDS:
         if lo <= b < hi:
             return label
@@ -97,12 +95,10 @@ def _classify_byte(b: int) -> str:
 
 
 def compute_ngram_fingerprint(raw: bytes) -> dict:
-    """提取二进制文件的 top-K 4-gram 及字节类别分布。
+    """Top-K 4-gram 及字节类别分布指纹。
 
-    返回字典: top_ngrams (list of (hex_string, count)),
-              byte_class_distribution (dict class → fraction),
-              unique_ngram_ratio (唯一 4-gram 数 / 总窗口数)
-    算法：单次 O(n) 滑动窗口 + Counter，k=4 小常数。
+    单次 O(n) 滑动窗口 + Counter，k=4 小常数。
+    返回: top_ngrams, byte_class_distribution, unique_ngram_ratio。
     """
     n = len(raw)
     if n < _NGRAM_N:
@@ -140,13 +136,13 @@ def compute_ngram_fingerprint(raw: bytes) -> dict:
     }
 
 
-# ── 跨二进制相似度 ─────────────────────────────────────────────────────────
+# 跨二进制相似度
 
 def compute_ngram_jaccard(fp_a: dict, fp_b: dict) -> float:
     """两个 N-gram 指纹的 Jaccard 相似系数。
 
-    J(A,B) = |A ∩ B| / |A ∪ B|。仅比较 top-64 以达到亚毫秒级速度。
-    用于快速判定两个二进制是否共享相同的静态链接库、编译器或代码片段。
+    仅比较 top-64 n-gram 集合达到亚毫秒级速度。
+    用于快速判定二进制间是否共享相同的静态链接库、编译器或代码片段。
     """
     ngrams_a = {ng for ng, _ in (fp_a.get("top_ngrams") or [])}
     ngrams_b = {ng for ng, _ in (fp_b.get("top_ngrams") or [])}
@@ -157,9 +153,8 @@ def compute_ngram_jaccard(fp_a: dict, fp_b: dict) -> float:
     return len(intersection) / len(union) if union else 0.0
 
 
-# ── 密码学常量扫描 ────────────────────────────────────────────────────────
-# 常见对称加密/哈希算法的初始化常量与 S-Box。匹配静态链接的常量表，
-# 不检测动态加载的加密库。
+# 密码学常量扫描
+# 常见对称加密/哈希初始化常量与 S-Box，匹配静态链接常量表，不检测动态加载。
 
 _CRYPTO_SIGNATURES: list[tuple[str, bytes, str]] = [
     ("AES_SBOX", bytes([0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5,
@@ -184,7 +179,7 @@ _CRYPTO_SIGNATURES: list[tuple[str, bytes, str]] = [
     ("BASE64_ALPH", b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdef", "Base64 encoding alphabet"),
 ]
 
-# 仅通过 GetProcAddress 获取而无静态导入字符串的函数 → 动态解析嫌疑
+# GetProcAddress 获取但无静态导入字符串的函数 — 动态解析嫌疑
 _DYNAMIC_RESOLVE_SUSPICIOUS = {
     "VirtualAlloc", "VirtualProtect", "CreateRemoteThread",
     "WriteProcessMemory", "NtUnmapViewOfSection", "QueueUserAPC",
@@ -193,11 +188,10 @@ _DYNAMIC_RESOLVE_SUSPICIOUS = {
 
 
 def scan_crypto_constants(raw: bytes) -> list[dict]:
-    """在二进制数据中搜索已知密码学常量表。
+    """全文件字节搜索已知密码学常量表。
 
-    返回: [{"algorithm": str, "constant_name": str, "offset": int, "desc": str}, ...]
-    遍历 _CRYPTO_SIGNATURES 中所有签名 → 全文件字节搜索。
-    复杂度：O(k·n)，k=签名数固定 < 20，n=文件长度。
+    复杂度 O(k·n)，k=签名数 < 20，n=文件长度。
+    返回: [{algorithm, constant_name, offset, description}, ...]。
     """
     hits = []
     raw_len = len(raw)
@@ -207,7 +201,7 @@ def scan_crypto_constants(raw: bytes) -> list[dict]:
             pos = raw.find(sig, pos + 1)
             if pos == -1:
                 break
-            # 去重：避免同一常量在相邻偏移的重复匹配
+            # 去重：同一常量在相邻偏移不重复记录
             if not any(h.get('offset', -1) == pos for h in hits):
                 hits.append({
                     "algorithm": name.split('_')[0] if '_' in name else name,
@@ -220,9 +214,8 @@ def scan_crypto_constants(raw: bytes) -> list[dict]:
     return hits
 
 
-# ── PE 节区权限分析：W^X 违规检测 ────────────────────────────────────────
-# 同时具有 EXECUTE + WRITE 权限的节区 → 自修改代码/shellcode/JIT 特征。
-# 非 JIT 的正常二进制中极为罕见。
+# PE 节区权限分析：W^X 违规检测
+# EXECUTE + WRITE 同存 → 自修改代码/shellcode/JIT 特征
 
 _IMAGE_SCN_MEM_EXECUTE = 0x20000000
 _IMAGE_SCN_MEM_WRITE   = 0x80000000
@@ -233,7 +226,7 @@ _KNOWN_EXEC_SECTIONS = {
 
 
 def analyze_pe_sections(raw: bytes) -> dict:
-    """分析 PE 节区表，检测 W^X 违规与可疑节区名。"""
+    """PE 节区表解析：W^X 违规与可疑节区名检测。"""
     if len(raw) < 64 or raw[:2] != b'MZ':
         return {"sections": [], "wxe_violations": 0, "exec_in_data": []}
     try:
@@ -269,10 +262,10 @@ def analyze_pe_sections(raw: bytes) -> dict:
 
 
 def analyze_import_table_anomalies(strings_in_binary: list[str]) -> dict:
-    """检测导入表异常：GetProcAddress 存在但敏感 API 无明文静态引用。
+    """导入表异常检测：GetProcAddress 存在但敏感 API 无明文静态引用。
 
-    恶意软件常用模式：通过 GetProcAddress + 运行时计算的 API 名
-    （哈希/解密）规避静态导入表检测。
+    恶意软件常用模式：通过 GetProcAddress + 运行时计算的 API 名（哈希/解密）
+    规避静态导入表检测。
     """
     if not strings_in_binary:
         return {"dynamic_only_apis": [], "score": 0.0}
@@ -294,9 +287,8 @@ def analyze_import_table_anomalies(strings_in_binary: list[str]) -> dict:
     }
 
 
-# ── 网络 IOC 提取 ─────────────────────────────────────────────────────────
-# C2 域名、IP、URL 模式提取。正则匹配 ASCII 字符串中的网络资源引用，
-# 仅提取而不过滤 — 过滤由上层调用者按场景决定。
+# 网络 IOC 提取
+# C2 域名、IP、URL 模式匹配，仅提取不过滤。
 
 _HOSTNAME_RE = re.compile(
     r'(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}',
@@ -311,11 +303,7 @@ _URL_RE = re.compile(
 
 
 def extract_network_iocs(strings_in_binary: list[str]) -> dict:
-    """从二进制字符串中提取网络 IOC（域名/IP/URL）。
-
-    返回: {"domains": [...], "ips": [...], "urls": [...], "total": int}
-    不做合法性过滤；内网 IP 和公共 IP 均保留。
-    """
+    """二进制字符串中提取网络 IOC（域名/IP/URL），不做合法性过滤。"""
     domains = set()
     ips = set()
     urls = set()
@@ -339,9 +327,9 @@ def extract_network_iocs(strings_in_binary: list[str]) -> dict:
     }
 
 
-# ── Shellcode 启发式检测 ──────────────────────────────────────────────────
-# 参照 libemu/libscizzle 的 GetPC 识别与解码器循环检测策略。
-# 不执行模拟 — 仅通过字节模式匹配识别常见 shellcode 惯用法。
+# Shellcode 启发式检测
+# 参照 libemu/libscizzle 的 GetPC 识别与解码器循环检测。
+# 不做执行模拟 — 仅字节模式匹配 shellcode 惯用法。
 
 _SHELLCODE_PATTERNS: list[tuple[str, bytes, str]] = [
     # GetPC: call $+5; pop eax (E8 00 00 00 00 58)
@@ -350,30 +338,24 @@ _SHELLCODE_PATTERNS: list[tuple[str, bytes, str]] = [
     ("GetPC_call_pop_ecx", b'\xE8\x00\x00\x00\x00\x59', "call $+5; pop ecx"),
     # GetPC: fldz; fnstenv (D9 EE D9 74 24 F4)
     ("GetPC_fpu", b'\xD9\xEE\xD9\x74\x24\xF4', "fldz; fnstenv GetPC"),
-    # 解码器循环: xor [reg+offset], key (30 / 31 / 80 31 opcodes)
-    # 简化检测：连续 4+ 条 XOR byte [reg+disp] 指令特征
     # 栈迁移: mov esp, ebp; popad; ret (89 EC 61 C3)
     ("stack_pivot", b'\x89\xEC\x61\xC3', "mov esp,ebp; popad; ret"),
-    # pushad → shellcode 入口点常见的全寄存器保存
+    # pushad → 全寄存器保存入口
     ("pushad", b'\x60', "pushad"),
-    # pushfd → 标志保存（反调试/shellcode 通用）
+    # pushfd → 标志保存
     ("pushfd", b'\x9C', "pushfd"),
 ]
 
 # 解码器循环特征：连续 3 条以上 XOR/MOV byte [reg+disp] 指令
-# x86 XOR [reg+disp8], imm8 = 80 / 30 / 31 前缀
 _XOR_MEM_BYTE_PAT = re.compile(
     b'(?:\x80[\x70-\x7F\xB0-\xBF]|\x30[\x40-\x7F\x80-\xBF]|\x31[\x40-\x7F\x80-\xBF]){3,}'
 )
 
 
 def detect_shellcode_patterns(raw: bytes) -> dict:
-    """检测二进制中的 shellcode 惯用法字节模式。
+    """检测 shellcode 惯用法字节模式。
 
-    返回: {"patterns_found": [...], "decoder_loop": bool, "getpc_methods": [...],
-            "shellcode_likelihood": float}
-    likelihood 由各项加权求和：GetPC 模式 +0.3，解码器循环 +0.4，
-    pushad/pushfd +0.1。
+    likelihood 加权：GetPC 模式 +0.3，解码器循环 +0.4，pushad/pushfd +0.1。
     """
     found = []
     likelihood = 0.0
@@ -409,17 +391,15 @@ def detect_shellcode_patterns(raw: bytes) -> dict:
     }
 
 
-# ── 跨检测器统一威胁评分 ─────────────────────────────────────────────────
-# Bayesian 元融合：将多个独立检测器的输出置信度合并为单一威胁评分。
-# 假设各检测器输出独立（检测维度不同），使用乘积形式：
-#   combined = 1 - Π(1 - c_i)
-# 每个检测器提供 (name, confidence) 对。
+# 跨检测器统一威胁评分
+# Bayesian 元融合：假设各检测器输出独立，使用乘积形式：
+# combined = 1 - Π(1 - c_i)
 
 def compute_unified_threat(scores: list[tuple[str, float]]) -> dict:
-    """融合多检测器置信度为统一威胁评分。
+    """多检测器置信度融合为统一威胁评分。
 
-    参数: scores — [(detector_name, confidence_0_to_1), ...]
-    返回: {"combined_score": float, "contributors": int, "highest": [...]}
+    参数: [(detector_name, confidence_0_to_1), ...]
+    返回: {combined_score, contributors, highest}。
     """
     if not scores:
         return {"combined_score": 0.0, "contributors": 0, "highest": []}
@@ -435,16 +415,14 @@ def compute_unified_threat(scores: list[tuple[str, float]]) -> dict:
     }
 
 
-# ── API 哈希检测 ──────────────────────────────────────────────────────────
-# 恶意软件常用 ROR13/DJB2/CRC32 等哈希算法动态解析 API，
-# 以规避静态导入表检测。检测策略：在二进制字节流中搜索
-# 已知哈希算法的特征常数与常见 API 名的预计算哈希值。
+# API 哈希检测
+# 恶意软件常用 ROR13/DJB2/CRC32 等哈希算法动态解析 API，规避静态导入检测。
 # 参照 HashDB (OALabs) 与 FLARE shellcode_hashes 的预计算哈希数据库。
 
-# DJB2 种子
-_DJB2_SEED = b'\x05\x15\x00\x00'  # 5381 in LE
+# DJB2 种子 (5381 LE)
+_DJB2_SEED = b'\x05\x15\x00\x00'
 
-# CRC32 多项式常见表示 (0xEDB88320 LE)
+# CRC32 多项式 (0xEDB88320 LE)
 _CRC32_POLY_LE = b'\x20\x83\xB8\xED'
 
 # 常见 API 名的 ROR13 预计算哈希 (LE dword)
@@ -464,18 +442,16 @@ _ROR13_KNOWN_HASHES: dict[bytes, str] = {
 
 
 def detect_api_hashing(raw: bytes) -> dict:
-    """检测二进制中 API 哈希使用的迹象。
+    """三步检测 API 哈希使用的迹象。
 
-    三步检测：哈希常量扫描 (DJB2 seed / CRC32 poly) →
+    哈希常量扫描 (DJB2 seed / CRC32 poly) →
     ROR13 预计算哈希匹配 → 综合评分。
-    返回: {"hash_constants_found": [...], "ror13_matches": [...],
-            "likely_api_hashing": bool, "score": float}
     """
     found_constants = []
     ror13_matches = []
     score = 0.0
 
-    # 步骤一：搜索哈希算法常量
+    # 步骤一：哈希算法常量搜索
     if _DJB2_SEED in raw:
         found_constants.append("DJB2_seed (5381)")
         score += 0.2
@@ -483,14 +459,13 @@ def detect_api_hashing(raw: bytes) -> dict:
         found_constants.append("CRC32_polynomial (0xEDB88320)")
         score += 0.2
 
-    # 步骤二：搜索 ROR13 预计算哈希值
+    # 步骤二：ROR13 预计算哈希匹配
     for hash_bytes, label in _ROR13_KNOWN_HASHES.items():
         if hash_bytes in raw:
             ror13_matches.append({"hash_hex": hash_bytes.hex(), "api": label})
             score += 0.15
 
-    # 步骤三：GetProcAddress 存在 + 稀疏导入表 = 强指示
-    # (稀疏导入表由 analyze_import_table_anomalies 独立检测)
+    # 步骤三：GetProcAddress + 稀疏导入表 — 由 analyze_import_table_anomalies 独立检测
 
     return {
         "hash_constants_found": found_constants,
@@ -500,17 +475,15 @@ def detect_api_hashing(raw: bytes) -> dict:
     }
 
 
-# ── XOR 编码字符串启发式 ──────────────────────────────────────────────────
-# 恶意软件常用的 XOR 编码字符串特征：
-# 1. 数据段中存在大量非 ASCII 字节块，但单字节 XOR 后可转为可打印 ASCII。
-# 2. 堆栈字符串：连续的 MOV byte [reg+offset], imm 指令序列。
-# 检测策略：遍历二进制，对每个字节块测试常见的单字节 XOR key (0x01–0xFF)，
-# 若解码后 ASCII 占比 > 0.85 且长度为 8–512 字节，则标记为可疑 XOR 块。
+# XOR 编码字符串启发式
+# 恶意软件常用单字节 XOR 编码存储敏感字符串。
+# 检测策略：对高熵区域字节块测试 0x01–0xFF XOR key，
+# 解码后 ASCII 占比 > 0.85 且长度 8–512 字节则标记为可疑。
 
 _XOR_CANDIDATE_MIN_LEN = 8
 _XOR_CANDIDATE_MAX_LEN = 512
 _XOR_ASCII_RATIO_THRESHOLD = 0.85
-# 仅在非代码段（高熵段）中搜索，避免对正常代码的误报
+# 仅在非代码段（高熵段）中搜索
 _XOR_SEARCH_MIN_ENTROPY = 4.5
 
 
@@ -525,11 +498,10 @@ def _ascii_ratio(decoded: str) -> float:
 
 
 def detect_xor_obfuscated_strings(raw: bytes, entropy_profile: dict = None) -> dict:
-    """检测二进制中的单字节 XOR 编码字符串。
+    """单字节 XOR 编码字符串检测。
 
-    对高熵区域 (entropy > 4.5) 中的每个 8–512 字节窗口测试
-    256 种 XOR key，统计解码后可打印 ASCII 占比。
-    复杂度：O(k·n)，k=256, n=窗口数。对大文件采样前 512KB。
+    对高熵区域的 8–512 字节窗口测试 256 种 XOR key。
+    复杂度 O(k·n)，k=256，n=窗口数。大文件采样前 512KB。
     """
     sample = raw[:524_288] if len(raw) > 524_288 else raw
     n = len(sample)
@@ -566,7 +538,7 @@ def detect_xor_obfuscated_strings(raw: bytes, entropy_profile: dict = None) -> d
                     break  # 每个窗口仅记录首个有效 key
             pos += step
 
-    # 去重：相同 key 且重叠的窗口合并为最佳候选
+    # 去重：截断至前 20 个
     if len(found_blocks) > 20:
         found_blocks = found_blocks[:20]
 
@@ -579,29 +551,24 @@ def detect_xor_obfuscated_strings(raw: bytes, entropy_profile: dict = None) -> d
 
 
 def _analyze_xor_key_distribution(blocks: list[dict]) -> list[dict]:
-    """分析 XOR key 分布 — 识别最常见的 XOR key。"""
+    """XOR key 分布分析 — 识别最常见 key。"""
     if not blocks:
         return []
     key_counts = Counter(b["xor_key_hex"] for b in blocks)
     return [{"key": k, "count": c} for k, c in key_counts.most_common(5)]
 
 
-# ── PE Rich Header 解析 ──────────────────────────────────────────────────
-# Rich Header 由 Microsoft 链接器插入，位于 DOS Stub 之后、PE 签名之前，
-# 以 "Rich" + XOR key 结尾。XOR 解码后包含 @comp.id 标记 + 产品 ID/版本/计数
+# PE Rich Header 解析
+# Rich Header 由 Microsoft 链接器插入，包含 @comp.id 标记 + 产品 ID/版本/计数
 # 的编码数组，可唯一标识编译器工具链版本。
-# 参照 Daniel Pistelli 的发现及 pefile 库的实现。
+# 参照 Daniel Pistelli 的发现及 pefile 库实现。
 
 _RICH_MAGIC = b'Rich'
 _RICH_XOR_OFFSET_FROM_MAGIC = 4  # "Rich" 后的 4 字节为 XOR key
 
 
 def _locate_rich_header(raw: bytes) -> int | None:
-    """定位 Rich Header 的起始偏移。在 DOS Stub 区域中搜索 "Rich" 标记。
-
-    DOS Stub 位于偏移 0x40 到 PE 签名 (e_lfanew) 之间。
-    返回 Rich Header 的 @comp.id 起始偏移，未找到返回 None。
-    """
+    # 在 DOS Stub 区域搜索 "DanS" 标记定位 Rich Header 起始
     if len(raw) < 128 or raw[:2] != b'MZ':
         return None
     try:
@@ -611,13 +578,11 @@ def _locate_rich_header(raw: bytes) -> int | None:
     stub_end = pe_off
     if stub_end <= 0x40 or stub_end > len(raw):
         return None
-    # 在 DOS Stub 区域中搜索 "@comp.id" 的 XOR 编码形式
-    # Rich Header 的 XOR key 在 "Rich" 标记后 4 字节
+    # 搜索 "Rich" 标记
     rich_pos = raw.rfind(_RICH_MAGIC, 0x40, stub_end)
     if rich_pos == -1:
         return None
-    # "@comp.id" 的 XOR 解码形式可能紧跟在 DWORD 计数后
-    # 反向搜索 "DanS" 标记（Rich Header 结束签名 = 0x536E6144 = "DanS" LE）
+    # 反向搜索 "DanS" 结束签名 (0x536E6144 LE)
     dans_pos = raw.rfind(b'\x44\x61\x6E\x53', 0x40, rich_pos + 8)
     if dans_pos == -1:
         return None
@@ -627,28 +592,24 @@ def _locate_rich_header(raw: bytes) -> int | None:
 def parse_pe_rich_header(raw: bytes) -> dict | None:
     """解析 PE Rich Header 中的编译器工具链信息。
 
-    返回: {"xor_key": int, "products": [{"prod_id": int, "build_id": int, "count": int}, ...],
-            "raw_entries": int, "suspicious_missing": bool}
-    若 Rich Header 不存在或无法解析则返回 None。
+    返回: {xor_key, products, raw_entries, suspicious_missing}。
     """
     dans_pos = _locate_rich_header(raw)
     if dans_pos is None:
         return None
 
     try:
-        # DanS 之后是 3 个 DWORD 填充 (0,0,0 或 0,0,1)，然后 XOR key
-        # XOR key 存储在 "Rich" 标记后的 4 字节
+        # DanS 之后 3 个 DWORD 填充后为 XOR key
         rich_pos = raw.rfind(_RICH_MAGIC, dans_pos, dans_pos + 256)
         if rich_pos == -1:
             return None
 
         xor_key = struct.unpack_from("<I", raw, rich_pos + _RICH_XOR_OFFSET_FROM_MAGIC)[0]
 
-        # 在 DanS 和 Rich 之间是 XOR 编码的 comp.id 条目数组
-        # 每个条目 = 2 个 DWORD (解码为 prod_id, build_count) 各 XOR key
-        data_start = dans_pos + 16  # 跳过 DanS(4) + 3×padding(12)
+        # DanS 和 Rich 之间是 XOR 编码的 comp.id 条目数组
+        data_start = dans_pos + 16  # 跳过 DanS(4) + 3xpadding(12)
         entry_count_raw = struct.unpack_from("<I", raw, data_start)[0] ^ xor_key
-        # 合理性校验：条目数通常 < 50
+        # 条目数通常 < 50
         if entry_count_raw > 100 or entry_count_raw < 1:
             return None
 
@@ -679,18 +640,16 @@ def parse_pe_rich_header(raw: bytes) -> dict | None:
         return None
 
 
-# ── PE 数字签名状态 ──────────────────────────────────────────────────────
-# PE 可选头 DataDirectory[4] 指向 IMAGE_DIRECTORY_ENTRY_SECURITY，
-# 包含 Authenticode 签名。检测签名存在性即可快速判定是否经过签名。
+# PE 数字签名状态
+# PE 可选头 DataDirectory[4] 指向 IMAGE_DIRECTORY_ENTRY_SECURITY。
 
 _IMAGE_DIRECTORY_ENTRY_SECURITY = 4
 
 
 def check_pe_signature(raw: bytes) -> dict:
-    """检测 PE 文件的 Authenticode 数字签名状态。
+    """检测 PE 文件的 Authenticode 数字签名存在性。
 
-    不验证签名有效性（需要 Windows CryptoAPI），仅检测签名存在性及大小。
-    返回: {"signed": bool, "signature_size": int, "certificate_offset": int}
+    不验证签名有效性（需 Windows CryptoAPI），仅检测签名数据目录。
     """
     if len(raw) < 64 or raw[:2] != b'MZ':
         return {"signed": False, "signature_size": 0, "certificate_offset": 0}
@@ -698,7 +657,6 @@ def check_pe_signature(raw: bytes) -> dict:
         pe_off = struct.unpack_from("<I", raw, 0x3C)[0]
         magic = struct.unpack_from("<H", raw, pe_off + 24)[0]
         is_pe32 = (magic == 0x10b)
-        # DataDirectory 在 PE32 可选头偏移 96，PE32+ 偏移 112
         dd_base = pe_off + 24 + (96 if is_pe32 else 112)
         sec_off = dd_base + _IMAGE_DIRECTORY_ENTRY_SECURITY * 8
         cert_rva = struct.unpack_from("<I", raw, sec_off)[0]
@@ -713,16 +671,12 @@ def check_pe_signature(raw: bytes) -> dict:
         return {"signed": False, "signature_size": 0, "certificate_offset": 0}
 
 
-# ── PE Overlay 检测 ──────────────────────────────────────────────────────
+# PE Overlay 检测
 # Overlay = 文件末尾超出最后一节数据范围之外的附加字节。
-# 常见用途：附加 payload、配置数据、隐藏的 DLL、调试信息泄露。
+
 
 def detect_pe_overlay(raw: bytes) -> dict:
-    """检测 PE 文件末尾的覆盖层（overlay）数据。
-
-    计算最后一节的 (raw_offset + raw_size) 与文件总大小之差。
-    返回: {"has_overlay": bool, "overlay_size": int, "overlay_ratio": float}
-    """
+    """计算最后一节 raw_end 与文件总大小之差，判定覆盖层数据。"""
     if len(raw) < 64 or raw[:2] != b'MZ':
         return {"has_overlay": False, "overlay_size": 0, "overlay_ratio": 0.0}
     try:
@@ -751,17 +705,17 @@ def detect_pe_overlay(raw: bytes) -> dict:
         return {"has_overlay": False, "overlay_size": 0, "overlay_ratio": 0.0}
 
 
-# ── PE 资源段枚举 ────────────────────────────────────────────────────────
-# 资源目录树遍历：三级结构 (Type → Name/ID → Language)。
-# 重点关注 RT_RCDATA(10) 含嵌入 PE、高熵资源、自定义类型。
-# 参照 Detect-It-Easy 的资源分析策略与 MITRE T1027.009。
+# PE 资源段枚举
+# 三级递归：Type → Name/ID → Language → DataEntry。
+# 重点关注 RT_RCDATA(10) 嵌入 PE、高熵资源、自定义类型。
+# 参照 Detect-It-Easy 的资源分析策略。
 
 _IMAGE_DIRECTORY_ENTRY_RESOURCE = 2
 _RT_RCDATA = 10
 _RT_MANIFEST = 24
 _RT_VERSION = 16
 _RT_ICON = 3
-# 恶意软件常用资源类型名 (字符串类型)
+# 恶意软件常用资源类型名
 _SUSPICIOUS_RESOURCE_NAMES = {
     'BIN', 'PAYLOAD', 'DLL', 'EXE', 'CFG', 'DAT', 'SETTINGS',
     'ENCRYPTED', 'PACKAGE', 'SCRIPT', 'ZIP', 'CAB',
@@ -779,7 +733,7 @@ _RESOURCE_TYPE_NAMES: dict[int, str] = {
 
 
 def _rva_to_offset_pe(raw: bytes, rva: int) -> int:
-    """PE RVA → 文件偏移转换（复用节区表）。"""
+    """PE RVA → 文件偏移转换（遍历节区表）。"""
     if len(raw) < 64 or raw[:2] != b'MZ':
         return 0
     try:
@@ -800,12 +754,7 @@ def _rva_to_offset_pe(raw: bytes, rva: int) -> int:
 
 
 def enumerate_pe_resources(raw: bytes) -> dict:
-    """遍历 PE 资源目录树，提取所有资源条目摘要。
-
-    三级递归：Type → Name/ID → Language → DataEntry。
-    返回每个资源的 type_id/name/size/lang/offset，
-    以及衍生分析：嵌入 PE 检测、高熵资源标记。
-    """
+    """PE 资源目录树三级递归遍历，提取嵌入 PE 检测与高熵资源标记。"""
     if len(raw) < 64 or raw[:2] != b'MZ':
         return {"resources": [], "embedded_pe": [], "total_resources": 0}
 
@@ -843,12 +792,10 @@ def enumerate_pe_resources(raw: bytes) -> dict:
 
 def _walk_resource_tree(raw: bytes, root: int, node_off: int, depth: int,
                         resources: list, embedded: list, max_depth: int = 4):
-    """递归遍历 PE 资源目录树。"""
+    """递归遍历 PE 资源目录树，最大深度 4 层。"""
     if depth > max_depth or node_off + 16 > len(raw):
         return
     try:
-        # IMAGE_RESOURCE_DIRECTORY: Characteristics + TimeDateStamp + MajorVersion + MinorVersion
-        # + NumberOfNamedEntries + NumberOfIdEntries
         named_count = struct.unpack_from("<H", raw, node_off + 12)[0]
         id_count = struct.unpack_from("<H", raw, node_off + 14)[0]
         total_entries = named_count + id_count
@@ -863,12 +810,12 @@ def _walk_resource_tree(raw: bytes, root: int, node_off: int, depth: int,
             offset_or_rva = struct.unpack_from("<I", raw, e_off + 4)[0]
 
             if depth == 1:
-                # Type 级：name_or_id = resource type ID
+                # Type 级
                 res_type_id = name_or_id
                 res_type_name = _RESOURCE_TYPE_NAMES.get(res_type_id, f"TYPE_{res_type_id}")
             elif depth == 2:
                 # Name 级
-                res_type_name = ""  # 由上层传递
+                res_type_name = ""
                 res_type_id = 0
             else:
                 res_type_name = ""
@@ -878,7 +825,7 @@ def _walk_resource_tree(raw: bytes, root: int, node_off: int, depth: int,
             next_off = root + (offset_or_rva & 0x7FFFFFFF)
 
             if is_leaf and depth >= 2:
-                # 到达叶子节点 → IMAGE_RESOURCE_DATA_ENTRY
+                # IMAGE_RESOURCE_DATA_ENTRY
                 if next_off + 16 <= len(raw):
                     data_rva = struct.unpack_from("<I", raw, next_off)[0]
                     data_size = struct.unpack_from("<I", raw, next_off + 4)[0]
@@ -895,7 +842,7 @@ def _walk_resource_tree(raw: bytes, root: int, node_off: int, depth: int,
                             "entropy": round(ent, 2),
                         }
                         resources.append(res_entry)
-                        # 嵌入 PE 检测：至少在文件名偏移处发现 MZ 头
+                        # 嵌入 PE 检测：资源数据区域发现 MZ 头
                         if b'MZ' in chunk[:2] and data_size > 512:
                             embedded.append({
                                 "resource_type": res_entry["type_name"],
@@ -915,18 +862,16 @@ def _walk_resource_tree(raw: bytes, root: int, node_off: int, depth: int,
         pass
 
 
-# ── PE 导出表分析 ────────────────────────────────────────────────────────
-# 检测可疑导出模式：纯序号导出（恶意软件常用，规避按名检测）、
-# 转发导出（指向其他 DLL）、大量导出但仅少量合法。
+# PE 导出表分析
+# 检测可疑导出模式：纯序号导出、转发导出、大量导出仅少量合法。
 
 _IMAGE_DIRECTORY_ENTRY_EXPORT = 0
 
 
 def analyze_pe_exports(raw: bytes) -> dict:
-    """分析 PE 导出表，检测可疑模式。
+    """PE 导出表解析，检测可疑导出模式。
 
-    返回: {"export_count": int, "named_count": int, "ordinal_only_count": int,
-            "forwarded_count": int, "names": [...], "suspicious_patterns": [...]}
+    返回: {export_count, named_count, ordinal_only_count, forwarded_count, names, suspicious_patterns}。
     """
     if len(raw) < 64 or raw[:2] != b'MZ':
         return {"export_count": 0, "named_count": 0, "ordinal_only_count": 0,
@@ -948,8 +893,8 @@ def analyze_pe_exports(raw: bytes) -> dict:
             return {"export_count": 0, "named_count": 0, "ordinal_only_count": 0,
                     "forwarded_count": 0, "names": [], "suspicious_patterns": []}
 
-        # IMAGE_EXPORT_DIRECTORY 结构
-        name_rva = struct.unpack_from("<I", raw, exp_off + 12)[0]   # DLL 名
+        # IMAGE_EXPORT_DIRECTORY
+        name_rva = struct.unpack_from("<I", raw, exp_off + 12)[0]
         ordinal_base = struct.unpack_from("<I", raw, exp_off + 16)[0]
         num_funcs = struct.unpack_from("<I", raw, exp_off + 20)[0]
         num_names = struct.unpack_from("<I", raw, exp_off + 24)[0]
@@ -976,7 +921,7 @@ def analyze_pe_exports(raw: bytes) -> dict:
                         end = name_str_off + 64
                     export_name = raw[name_str_off:end].decode('ascii', errors='replace')
                     names.append(export_name)
-                # 检测转发导出：函数地址 RVA 落在导出表段内则为转发
+                # 转发导出检测：函数地址 RVA 落在导出表段内
                 if addr_off and entry_ord_idx < num_funcs:
                     func_rva = struct.unpack_from("<I", raw,
                                                   addr_off + entry_ord_idx * 4)[0]
@@ -1005,10 +950,8 @@ def analyze_pe_exports(raw: bytes) -> dict:
                 "forwarded_count": 0, "names": [], "suspicious_patterns": ["解析错误"]}
 
 
-# ── ELF 深度解析 ─────────────────────────────────────────────────────────
-# 解析 ELF Program Headers 获取段权限与动态链接信息。
-# PT_LOAD 段标志 (PF_X/PF_W/PF_R) 等同于 PE 节区权限分析，
-# PT_DYNAMIC → NEEDED 库列表、PT_INTERP → 动态链接器路径。
+# ELF 深度解析
+# Program Headers: PT_LOAD 段权限、PT_DYNAMIC→NEEDED 库、PT_INTERP→链接器。
 
 _ELF_PT_LOAD = 1
 _ELF_PT_DYNAMIC = 2
@@ -1023,11 +966,7 @@ _PF_R = 4
 
 
 def analyze_elf_segments(raw: bytes) -> dict:
-    """解析 ELF Program Headers，提取段权限与安全特性。
-
-    返回: {"segments": [...], "interp": str|None, "needed": [...],
-            "has_gnu_stack": bool, "gnu_stack_exec": bool, "has_relro": bool}
-    """
+    """ELF Program Headers 解析：段权限、动态链接信息、安全特性。"""
     if len(raw) < 52 or raw[:4] != b'\x7fELF':
         return {"segments": [], "interp": None, "needed": [],
                 "has_gnu_stack": False, "gnu_stack_exec": False, "has_relro": False}
@@ -1069,7 +1008,7 @@ def analyze_elf_segments(raw: bytes) -> dict:
                 })
 
             elif p_type == _ELF_PT_DYNAMIC and p_filesz > 0:
-                # 解析 .dynamic 段中的 DT_NEEDED 条目
+                # 解析 .dynamic 段 DT_NEEDED 条目
                 dyn_off = p_offset
                 dt_entry_sz = 16 if is_64 else 8
                 DT_NEEDED = 1
@@ -1134,7 +1073,7 @@ def analyze_elf_segments(raw: bytes) -> dict:
 
 
 def _elf_rva_to_offset(raw: bytes, vaddr: int) -> int:
-    """ELF 虚拟地址 → 文件偏移的简化转换：遍历 PT_LOAD 段。"""
+    """ELF 虚拟地址 → 文件偏移：遍历 PT_LOAD 段。"""
     if raw[:4] != b'\x7fELF':
         return 0
     try:
@@ -1160,21 +1099,16 @@ def _elf_rva_to_offset(raw: bytes, vaddr: int) -> int:
     return 0
 
 
-# ── PE 调试目录解析 ──────────────────────────────────────────────────────
-# IMAGE_DIRECTORY_ENTRY_DEBUG (DataDirectory[6]) 包含 CodeView/PDB 路径。
-# PDB 路径泄露可揭示原始构建环境路径、用户名、项目名，是重要的
-# 信息泄露源与威胁情报信号。
+# PE 调试目录解析
+# IMAGE_DIRECTORY_ENTRY_DEBUG (DataDirectory[6]) 含 CodeView/PDB 路径。
+# PDB 路径泄露可揭示原始构建环境路径、用户名、项目名。
 
 _IMAGE_DIRECTORY_ENTRY_DEBUG = 6
 _IMAGE_DEBUG_TYPE_CODEVIEW = 2
 
 
 def parse_pe_debug_directory(raw: bytes) -> dict:
-    """解析 PE 调试目录，提取 PDB 路径及 CodeView 数据。
-
-    返回: {"has_debug": bool, "pdb_path": str|None, "cv_signature": str|None,
-            "debug_entries": [...], "info_leak_risk": bool}
-    """
+    """PE 调试目录解析：提取 PDB 路径及 CodeView 数据。"""
     if len(raw) < 64 or raw[:2] != b'MZ':
         return {"has_debug": False, "pdb_path": None, "cv_signature": None,
                 "debug_entries": [], "info_leak_risk": False}
@@ -1220,7 +1154,7 @@ def parse_pe_debug_directory(raw: bytes) -> dict:
                 else:
                     cv_sig = cv_sig_raw.hex()
                 # PDB 路径在签名 + GUID(16) + Age(4) 之后
-                pdb_off = data_off + 24  # 跳过 RSDS(4) + GUID(16) + Age(4)
+                pdb_off = data_off + 24
                 if pdb_off < len(raw):
                     end = raw.find(b'\x00', pdb_off)
                     if end == -1:
@@ -1242,21 +1176,15 @@ def parse_pe_debug_directory(raw: bytes) -> dict:
                 "debug_entries": [], "info_leak_risk": False}
 
 
-# ── PE 重定位表分析 ──────────────────────────────────────────────────────
+# PE 重定位表分析
 # IMAGE_DIRECTORY_ENTRY_BASERELOC (DataDirectory[5]) 包含基址重定位数据。
 # 存在性 = ASLR 兼容；大段重定位块 = 可疑（正常 PE 通常 < 1% 文件大小）。
-# 基址重定位的缺失在 PIE 编译的现代二进制中反而罕见 → 标记为非 ASLR。
 
 _IMAGE_DIRECTORY_ENTRY_BASERELOC = 5
 
 
 def analyze_pe_relocations(raw: bytes) -> dict:
-    """分析 PE 基址重定位表，判定 ASLR 兼容性与可疑模式。
-
-    返回: {"has_relocs": bool, "total_size": int, "block_count": int,
-            "file_size_ratio": float, "aslr_compatible": bool,
-            "suspicious_large_relocs": bool}
-    """
+    """PE 基址重定位表解析：ASLR 兼容性与可疑模式判定。"""
     if len(raw) < 64 or raw[:2] != b'MZ':
         return {"has_relocs": False, "total_size": 0, "block_count": 0,
                 "file_size_ratio": 0.0, "aslr_compatible": False,
@@ -1302,7 +1230,7 @@ def analyze_pe_relocations(raw: bytes) -> dict:
             "block_count": block_count,
             "file_size_ratio": round(ratio, 4),
             "aslr_compatible": True,
-            # 重定位表占比 > 2% 为异常（常见于加壳/混淆后的二进制）
+            # 重定位表占比 > 2% 为异常（常见于加壳/混淆后二进制）
             "suspicious_large_relocs": ratio > 0.02,
         }
     except Exception:
@@ -1311,10 +1239,8 @@ def analyze_pe_relocations(raw: bytes) -> dict:
                 "suspicious_large_relocs": False}
 
 
-# ── 命名内核对象检测 ─────────────────────────────────────────────────────
-# 恶意软件常用 CreateMutex/CreateEvent/CreatePipe 等 API 创建命名对象
-# 作为单实例互斥锁或 C2 通信通道。从字符串中提取命名对象可揭示
-# 恶意软件家族特征（Campaign ID、Bot 名、版本号等）。
+# 命名内核对象检测
+# 恶意软件常用 CreateMutex/CreateEvent/CreatePipe 等 API 创建命名对象。
 
 _NAMED_OBJECT_RE = re.compile(
     r'(?:Global\\|Local\\)?[A-Za-z0-9_\-\.]{6,64}'
@@ -1331,11 +1257,7 @@ _PIPE_INDICATORS = [
 
 
 def extract_named_objects(strings_in_binary: list[str]) -> dict:
-    """从二进制字符串中提取命名内核对象（mutex/pipe/event）。
-
-    返回: {"mutex_candidates": [...], "pipe_candidates": [...],
-            "suspicious": [...], "total": int}
-    """
+    """从二进制字符串中提取命名内核对象（mutex/pipe/event）。"""
     mutexes = set()
     pipes = set()
     suspicious = []
@@ -1373,286 +1295,14 @@ def extract_named_objects(strings_in_binary: list[str]) -> dict:
     }
 
 
-# ── 基础格式识别 ───────────────────────────────────────────────────────────
-
-def detect_language(binary):
-    return "unknown"
-
-
-def detect_binary_format(path):
-    """通过魔数字节判定二进制格式（ELF/PE/Mach-O）。"""
-    if not os.path.exists(path):
-        return "unknown"
-    with open(path, "rb") as f:
-        magic = f.read(4)
-    if magic[:4] == b"\x7fELF":
-        return "ELF"
-    if magic[:2] == b"MZ":
-        return "PE"
-    if magic[:4] in (b"\xfe\xed\xfa\xce", b"\xce\xfa\xed\xfe"):
-        return "Mach-O"
-    return "unknown"
-
-
-def format_info_for_report(info):
-    """将二进制信息渲染为中文标签的摘要字符串。"""
-    if not info:
-        return "无info"
-    lines = []
-    if "format" in info:
-        lines.append(f"格式: {info['format']}")
-    if "size" in info:
-        lines.append(f"size: {info['size']} 字节")
-    if "arch" in info:
-        lines.append(f"architecture: {info['arch']}")
-    if "strings" in info:
-        key_strs = [s for s in info.get("strings", [])
-                    if any(p in s.lower() for p in KEY_STRING_PATTERNS)]
-        if key_strs:
-            lines.append(f"关keystring: {', '.join(key_strs[:5])}")
-    if "dangerous" in info:
-        lines.append(f"dangerous function: {', '.join(info['dangerous'][:10])}")
-    return "\n".join(lines) if lines else "无可报告info"
-
-
-def _extract_pe_arch(raw: bytes) -> str:
-    """从 PE optional header 中提取 Machine 字段，映射到架构名。"""
-    if len(raw) < 64:
-        return "unknown"
-    try:
-        pe_off = struct.unpack_from("<I", raw, 0x3C)[0]
-        machine = struct.unpack_from("<H", raw, pe_off + 4)[0]
-        return {0x014C: "x86", 0x8664: "x64", 0x01C4: "ARM",
-                0xAA64: "ARM64", 0x0200: "IA64"}.get(machine, f"machine_{machine:#06x}")
-    except Exception:
-        return "unknown"
-
-
-def _extract_elf_arch(raw: bytes) -> str:
-    """从 ELF header e_machine + EI_CLASS 映射到架构名。"""
-    if len(raw) < 20:
-        return "unknown"
-    try:
-        ei_class = raw[4]   # 1=32bit, 2=64bit
-        bits = "64" if ei_class == 2 else "32"
-        machine = struct.unpack_from("<H", raw, 18)[0]
-        arch_map = {3: "x86", 62: "x64", 40: "ARM", 183: "ARM64",
-                    8: "MIPS", 21: "PPC", 43: "SPARC"}
-        base = arch_map.get(machine, f"elf_machine_{machine}")
-        return f"{base}_{bits}"
-    except Exception:
-        return "unknown"
-
-
-def _extract_ascii_strings(raw: bytes, min_len: int = 4) -> list[str]:
-    """从二进制中提取 ASCII 可打印字符串，用于导入表分析等下游任务。"""
-    strings = []
-    run = b""
-    i, n = 0, len(raw)
-    while i < n:
-        b = raw[i]
-        if 0x20 <= b <= 0x7E:
-            run += bytes([b])
-        else:
-            if len(run) >= min_len:
-                strings.append(run.decode("ascii", errors="replace"))
-            run = b""
-        i += 1
-    if len(run) >= min_len:
-        strings.append(run.decode("ascii", errors="replace"))
-    return strings
-
-
-def get_binary_info(path):
-    """提取二进制文件的格式、大小、架构及可疑指标。"""
-    if not os.path.exists(path):
-        return {"error": "file not found"}
-
-    fmt = detect_binary_format(path)
-    size = os.path.getsize(path)
-    arch = "unknown"
-    entropy_profile = None
-    ngram_fp = None
-    crypto_hits = None
-    section_analysis = None
-    import_anomalies = None
-
-    try:
-        with open(path, "rb") as fh:
-            raw = fh.read()
-    except OSError:
-        raw = b""
-
-    if raw:
-        if fmt == "PE":
-            arch = _extract_pe_arch(raw)
-            section_analysis = analyze_pe_sections(raw)
-        elif fmt == "ELF":
-            arch = _extract_elf_arch(raw)
-        # 全文件分析 — 对大文件采样前 2MB 以控制耗时
-        sample = raw[:2_097_152] if len(raw) > 2_097_152 else raw
-        entropy_profile = compute_section_entropy_profile(sample)
-        ngram_fp = compute_ngram_fingerprint(sample)
-        crypto_hits = scan_crypto_constants(sample)
-        strings = _extract_ascii_strings(raw)
-        import_anomalies = analyze_import_table_anomalies(strings)
-
-    result = {
-        "format": fmt,
-        "size": size,
-        "arch": arch,
-        "strings": [],
-        "dangerous": [],
-    }
-    if entropy_profile:
-        result["entropy"] = entropy_profile
-        if entropy_profile["high_window_ratio"] > _SUSPICIOUS_ENTROPY_RATIO:
-            result["suspicious_packing"] = True
-    if ngram_fp:
-        result["ngram_fingerprint"] = ngram_fp
-        if ngram_fp["unique_ngram_ratio"] < 0.02 and len(raw) > 1024:
-            result["repetitive_structure"] = True
-    if crypto_hits:
-        result["crypto_constants"] = crypto_hits
-        result["crypto_algorithms"] = sorted(set(h["algorithm"] for h in crypto_hits))
-    if section_analysis:
-        result["section_analysis"] = section_analysis
-        if section_analysis["wxe_violations"] > 0:
-            result["wxe_warning"] = (
-                f"检测到 {section_analysis['wxe_violations']} 个可写可执行节区，"
-                "可能为自修改代码或 shellcode 执行"
-            )
-    if import_anomalies and import_anomalies.get("likely_hashed_imports"):
-        result["import_anomaly"] = import_anomalies
-
-    # 网络 IOC
-    if strings:
-        net_iocs = extract_network_iocs(strings)
-        if net_iocs["total"] > 0:
-            result["network_iocs"] = net_iocs
-
-    # Shellcode 检测
-    if raw:
-        shellcode = detect_shellcode_patterns(raw)
-        if shellcode["patterns_found"]:
-            result["shellcode_analysis"] = shellcode
-
-    # API 哈希检测
-    if raw:
-        hashing = detect_api_hashing(raw)
-        if hashing["likely_api_hashing"]:
-            result["api_hashing"] = hashing
-
-    # XOR 编码字符串检测
-    if raw and entropy_profile:
-        xor_result = detect_xor_obfuscated_strings(raw, entropy_profile)
-        if xor_result["xor_obfuscation_likely"]:
-            result["xor_obfuscation"] = xor_result
-
-    # ELF 深层解析
-    if raw and fmt == "ELF":
-        elf_seg = analyze_elf_segments(raw)
-        if elf_seg["segments"]:
-            result["elf_segments"] = elf_seg
-            if elf_seg["needed"]:
-                result["elf_needed_libs"] = elf_seg["needed"]
-            if elf_seg["interp"]:
-                result["elf_interp"] = elf_seg["interp"]
-            # W^X 段检测（ELF 版本）
-            wxe_segments = [s for s in elf_seg["segments"] if s.get("is_wxe")]
-            if wxe_segments:
-                result["elf_wxe_warning"] = f"检测到 {len(wxe_segments)} 个可写可执行 PT_LOAD 段"
-            # NX 栈缺失
-            if elf_seg["has_gnu_stack"] and elf_seg["gnu_stack_exec"]:
-                result["elf_exec_stack"] = True
-
-    # PE 深层解析（仅 PE 格式）
-    if raw and fmt == "PE":
-        # Rich Header — 编译器工具链指纹
-        rich = parse_pe_rich_header(raw)
-        if rich:
-            result["rich_header"] = rich
-
-        # 数字签名状态
-        sig_info = check_pe_signature(raw)
-        result["signature"] = sig_info
-        if not sig_info["signed"]:
-            result["unsigned"] = True  # 快捷标记，便于上层过滤
-
-        # Overlay 检测
-        overlay_info = detect_pe_overlay(raw)
-        if overlay_info["has_overlay"]:
-            result["overlay"] = overlay_info
-
-        # 资源段枚举 + 嵌入 PE 检测
-        res_info = enumerate_pe_resources(raw)
-        if res_info["total_resources"] > 0:
-            result["resources"] = res_info
-            if res_info["embedded_pe"]:
-                result["embedded_pe_in_resources"] = True
-                result["embedded_pe_details"] = res_info["embedded_pe"]
-
-        # 导出表分析
-        exp_info = analyze_pe_exports(raw)
-        if exp_info["export_count"] > 0:
-            result["export_table"] = exp_info
-            if exp_info["suspicious_patterns"]:
-                result["suspicious_exports"] = True
-
-        # 调试目录 — PDB 路径泄露
-        debug_info = parse_pe_debug_directory(raw)
-        if debug_info["has_debug"]:
-            result["debug_directory"] = debug_info
-            if debug_info["info_leak_risk"]:
-                result["pdb_path_leak"] = True
-
-        # 重定位表 — ASLR 兼容性
-        reloc_info = analyze_pe_relocations(raw)
-        if not reloc_info["aslr_compatible"]:
-            result["no_aslr"] = True
-            result["relocation_info"] = reloc_info
-        elif reloc_info["suspicious_large_relocs"]:
-            result["relocation_info"] = reloc_info
-
-    # 命名内核对象（跨格式通用）
-    if strings:
-        named_objs = extract_named_objects(strings)
-        if named_objs["total"] > 0:
-            result["named_objects"] = named_objs
-
-    return result
-
-
-def get_language_specific_dangerous_functions(lang):
-    """按语言返回对应的危险函数列表。"""
-    if lang == "c" or lang == "c++":
-        return list(DANGEROUS_FUNCTIONS)
-    return []
-
-
-def validate_elf_file(path):
-    """验证文件偏移 0 处的 ELF 魔数。"""
-    if not os.path.exists(path):
-        return False
-    with open(path, "rb") as f:
-        return f.read(4) == b"\x7fELF"
-
-def get_language_specific_dangerous_functions(lang): return []
-
-def get_language_analysis_hints(lang): return []
-
-# 占位数据 — 由语言特定插件在集成时填充。
-GO_SYMBOLS = []
-
-RUST_SYMBOLS = []
-GO_SYMBOLS = []
-
-GO_SECTIONS = []
-
-GO_SECTIONS = []
-
-RUST_SECTIONS = []
-
-GO_DANGEROUS_FUNCTIONS = []
-
-RUST_DANGEROUS_FUNCTIONS = []
+# 向后兼容：重导出已迁移至 src/binary_scanner.py 的符号
+from .src.binary_scanner import (
+    detect_language, detect_binary_format, format_info_for_report,
+    _extract_pe_arch, _extract_elf_arch, _extract_ascii_strings,
+    get_binary_info, get_language_specific_dangerous_functions,
+    get_language_analysis_hints, validate_elf_file,
+    DANGEROUS_FUNCTIONS, KEY_STRING_PATTERNS,
+    KERNEL_DANGEROUS_FUNCTIONS, KERNEL_DRIVER_DANGEROUS_FUNCTIONS,
+    GO_SYMBOLS, RUST_SYMBOLS, GO_SECTIONS, RUST_SECTIONS,
+    GO_DANGEROUS_FUNCTIONS, RUST_DANGEROUS_FUNCTIONS,
+)

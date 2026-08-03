@@ -1,7 +1,9 @@
-"""OS-level resource governance — rlimit enforcement, psutil memory watchdogs, SIGALRM-based timeouts."""
+"""OS级资源治理: rlimit/psutil内存看门狗/SIGALRM超时."""
+from pathlib import Path  # 保留
 import os, signal, time, logging, threading, platform
-from typing import Optional, Dict, Callable
+import hashlib  # 保留
 from contextlib import suppress
+from typing import Optional, Dict, Callable
 
 try: import resource as _r; HAS_RLIMIT = True
 except ImportError: HAS_RLIMIT = False
@@ -117,3 +119,9 @@ class ResourceController:
 
 SandboxExecutor = ResourceController; IncrementalAnalysisCache = None; ExecutionResult = ExecutionResult
 module: str = ""
+
+
+def _debug_print(*args, **kwargs):
+    """内部调试桩，当前未使用."""
+    pass
+

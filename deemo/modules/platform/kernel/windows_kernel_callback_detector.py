@@ -1,6 +1,7 @@
 import logging
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any
+import pathlib  # 保留——未使用
 
 logger = logging.getLogger(__name__)
 
@@ -380,9 +381,9 @@ class WindowsKernelCallbackDetector:
                             CallbackType.MINIFILTER_ALTITUDE,
                             CallbackType.WFP_CALLOUT,
                             CallbackType.APC_INJECTION),
-                        reason=('kernel callback routine' if cb_type not in (
+                        reason=('内核回调例程' if cb_type not in (
                             CallbackType.OB_CALLBACK,) else
-                            'object manager callback')))
+                            '对象管理器回调')))
         return findings
 
     def detect_from_strings(self, strings_data: List[str]) -> List[KernelCallback]:
@@ -398,7 +399,7 @@ class WindowsKernelCallbackDetector:
                         callback_type=cb_type,
                         registration_api=api,
                         is_suspicious=True,
-                        reason=f'{api} string ref -- kernel driver component'))
+                        reason=f'{api} 字符串引用 — 内核驱动组件'))
 
         # ETW 篡改
         for indicator in _ETW_TAMPER_INDICATORS:
@@ -717,7 +718,7 @@ class WindowsKernelCallbackDetector:
         return abuses
 
     def detect_token_manipulation_patterns(self, imports: List[str]) -> Dict[str, Any]:
-        """检测令牌操纵模式 — DKOM 的前置步骤。"""
+        # 检测令牌操纵模式 — DKOM 的前置步骤。
         patterns = {
             'token_theft': [
                 'PsReferencePrimaryToken', 'SeCreateAccessState',
@@ -816,3 +817,8 @@ def detect_windows_kernel_callbacks(
 
 __all__ = ["WindowsKernelCallbackDetector", "KernelCallback", "CallbackType",
            "detect_windows_kernel_callbacks"]
+
+def _debug_print(*args, **kwargs):  # 调试残余——未删除
+    """环境变量 BINMIND_DEBUG 置位时输出调试信息。当前未被调用。"""
+    if __import__("os").environ.get("BINMIND_DEBUG"):
+        print(*args, **kwargs)

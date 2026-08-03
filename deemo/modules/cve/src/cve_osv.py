@@ -1,16 +1,15 @@
-# 2026-10-01 ~ 2026-10-04
-# OSV.dev integration — Google's Open Source Vulnerabilities database.
-# OSV aggregates advisories from 20+ ecosystems (PyPI, npm, Maven, Go, crates.io,
-# RubyGems, NuGet, etc.) with package-level precision. Different from both NVD
-# (CPE-level matching, less precise for OSS packages) and GHSA (GitHub-only).
+# ~ 2026-10-04
+# OSV.dev集成——Google开源漏洞数据库。
+# OSV汇聚20+生态（PyPI、npm、Maven、Go、crates.io、RubyGems、NuGet等）的安全通告，
+# 精度达到包级别。区别于NVD（CPE级匹配，对OSS包精度较低）和GHSA（仅限GitHub）。
 #
-# API: POST /v1/query with {package: {ecosystem, name}, version: "1.0.0"}
-# Returns list of OSV entries affecting that package@version.
-# Batch endpoint: POST /v1/querybatch for up to 1000 queries.
+# API: POST /v1/query，请求体 {package: {ecosystem, name}, version: "1.0.0"}
+# 返回影响该package@version的OSV条目列表。
+# 批量端点: POST /v1/querybatch，最多1000条查询。
 #
-# Local cache in sqlite — same pattern as cve_epss + cve_cwe.
-# Cache entries keyed by (ecosystem, package_name, version) → fetched_at.
-# OSV data changes less often than EPSS so default TTL is 7 days.
+# 本地sqlite缓存——与cve_epss + cve_cwe相同的模式。
+# 缓存条目以 (ecosystem, package_name, version) → fetched_at 为键。
+# OSV数据变更频率低于EPSS，默认TTL为7天。
 
 import json
 import os
@@ -33,11 +32,11 @@ _OSV_API_BASE = "https://api.osv.dev/v1"
 _DEFAULT_CACHE_PATH = os.path.join(
     os.path.expanduser("~"), ".binmind", "osv_cache.db"
 )
-_DEFAULT_TTL = 7 * 24 * 60 * 60  # 7 days
+_DEFAULT_TTL = 7 * 24 * 60 * 60  # 7天
 
 
 class OSVClient:
-    """Client for Google OSV.dev API with local sqlite cache."""
+    """Google OSV.dev API客户端——带本地sqlite缓存。"""
 
     def __init__(self, cache_path: Optional[str] = None, cache_ttl: int = _DEFAULT_TTL):
         self._cache_path = cache_path or _DEFAULT_CACHE_PATH
@@ -76,22 +75,22 @@ class OSVClient:
             """)
             conn.commit()
 
-    # ---- query ----
+    # ---- 查询 ----
 
     def query(
         self, package_name: str, ecosystem: str, version: str = ""
     ) -> List[Dict[str, Any]]:
-        """Query OSV for vulnerabilities affecting package@version.
-        If version is empty, returns all known vulns for the package.
+        """查询OSV中影响package@version的漏洞。
+        version为空则返回该包的所有已知漏洞。
 
-        Returns list of OSV vulnerability dicts.
-        Hits cache first, then API."""
-        # normalize
+        返回OSV漏洞字典列表。
+        优先命中缓存，未命中则请求API。"""
+        # 规范化
         eco = ecosystem.lower().strip()
         pkg = package_name.lower().strip()
         ver = version.strip()
 
-        # check cache
+        # 检查缓存
         cached = self._cache_get(eco, pkg, ver)
         if cached is not None:
             return cached
@@ -106,10 +105,10 @@ class OSVClient:
     def query_batch(
         self, queries: List[Dict[str, str]]
     ) -> Dict[str, List[Dict[str, Any]]]:
-        """Batch query — more efficient for multiple packages.
-        queries: list of {package_name, ecosystem, version} dicts.
+        """批量查询——多包场景更高效。
+        queries: {package_name, ecosystem, version}字典列表。
 
-        Returns dict keyed by "ecosystem:package@version" → list of vulns."""
+        返回以 "ecosystem:package@version" 为键的漏洞字典。"""
         results: Dict[str, List[Dict]] = {}
         uncached: List[Dict] = []
 
@@ -141,10 +140,10 @@ class OSVClient:
 
         return results
 
-    # ---- api calls ----
+    # ---- API调用 ----
 
     def _fetch_from_api(self, package: str, ecosystem: str, version: str) -> List[Dict]:
-        """Single package query to OSV API."""
+        """单包OSV API查询。"""
         body = json.dumps({
             "package": {"ecosystem": ecosystem, "name": package},
             "version": version,
@@ -167,7 +166,7 @@ class OSVClient:
         return vulns
 
     def _fetch_batch(self, queries: List[Dict]) -> List[List[Dict]]:
-        """Batch query — max 1000 queries per request."""
+        """批量查询——每次最多1000条。"""
         body = json.dumps({"queries": queries[:1000]}).encode("utf-8")
         req = urllib.request.Request(
             f"{_OSV_API_BASE}/querybatch",
@@ -185,7 +184,7 @@ class OSVClient:
         results_raw = data.get("results", []) if isinstance(data, dict) else []
         return [r.get("vulns", []) if isinstance(r, dict) else [] for r in results_raw]
 
-    # ---- cache ops ----
+    # ---- 缓存操作 ----
 
     def _cache_get(self, ecosystem: str, package: str, version: str) -> Optional[List[Dict]]:
         conn = self._get_conn()
@@ -228,16 +227,16 @@ class OSVClient:
             pass
 
 
-# ---- OSV → CVEEntry conversion ----
+# ---- OSV → CVEEntry 转换 ----
 
 def osv_to_cve_entry(osv_vuln: Dict) -> Optional[CVEEntry]:
-    """Convert an OSV vulnerability dict to a CVEEntry.
-    Returns None if the OSV entry has no useful CVE identifier."""
+    """将OSV漏洞字典转换为CVEEntry。
+    若OSV条目无可用CVE标识符则返回None。"""
     osv_id = osv_vuln.get("id", "")
     summary = osv_vuln.get("summary", "") or osv_vuln.get("details", "")[:500]
     details = osv_vuln.get("details", "")
 
-    # find CVE alias — use as primary identifier
+    # 查找CVE别名——作为主标识符
     aliases = osv_vuln.get("aliases", [])
     cve_id = ""
     for alias in aliases:
@@ -245,9 +244,9 @@ def osv_to_cve_entry(osv_vuln: Dict) -> Optional[CVEEntry]:
             cve_id = alias.upper()
             break
     if not cve_id:
-        cve_id = osv_id  # fall back to OSV ID (e.g. GHSA-xxxx)
+        cve_id = osv_id  # 回退到OSV ID（如GHSA-xxxx）
 
-    # extract severity from CVSS if present
+    # 从CVSS提取严重度（若存在）
     severity_str = "UNKNOWN"
     cvss_score = None
     cvss_vector = None
@@ -262,7 +261,7 @@ def osv_to_cve_entry(osv_vuln: Dict) -> Optional[CVEEntry]:
             cvss_score = float(s.get("score", 0))
             cvss_vector = s.get("vector", "")
 
-    # extract affected packages/products
+    # 提取受影响的包/产品
     affected = osv_vuln.get("affected", [])
     packages: List[str] = []
     ecosystems: List[str] = []
@@ -281,7 +280,7 @@ def osv_to_cve_entry(osv_vuln: Dict) -> Optional[CVEEntry]:
             if events:
                 ranges.append({"type": rtype, "events": events})
 
-    # references
+    # 引用
     refs = [ref.get("url", "") for ref in osv_vuln.get("references", []) if ref.get("url")]
 
     return CVEEntry(
@@ -302,7 +301,7 @@ def osv_to_cve_entry(osv_vuln: Dict) -> Optional[CVEEntry]:
 
 
 def osv_batch_to_entries(osv_results: Dict[str, List[Dict]]) -> List[CVEEntry]:
-    """Convert batch OSV results to CVEEntry list, dedup'd by CVE ID."""
+    """将批量OSV结果转换为CVEEntry列表，按CVE ID去重。"""
     seen: set = set()
     entries: List[CVEEntry] = []
     for key, vulns in osv_results.items():
@@ -314,16 +313,16 @@ def osv_batch_to_entries(osv_results: Dict[str, List[Dict]]) -> List[CVEEntry]:
     return entries
 
 
-# ---- cross-reference with KB ----
+# ---- 与知识库交叉引用 ----
 
 def crossref_osv_with_kb(
     osv_client: OSVClient,
     kb,
     packages: List[Dict[str, str]],
 ) -> Dict[str, Any]:
-    """Query OSV for a list of packages, cross-reference with KB.
-    packages: list of {name, ecosystem, version} dicts.
-    Returns {new_cves, known_cves, coverage_stats}."""
+    """对包列表查询OSV并与知识库交叉引用。
+    packages: {name, ecosystem, version}字典列表。
+    返回 {new_cves, known_cves, coverage_stats}。"""
     results = osv_client.query_batch([
         {"package_name": p["name"], "ecosystem": p.get("ecosystem", ""), "version": p.get("version", "")}
         for p in packages
@@ -339,7 +338,7 @@ def crossref_osv_with_kb(
             known_cves.append(entry.to_dict())
         else:
             new_cves.append(entry.to_dict())
-            # optionally insert into KB
+            # 可选：插入知识库
             if hasattr(kb, 'insert'):
                 try:
                     kb.insert(entry)
@@ -358,8 +357,8 @@ def crossref_osv_with_kb(
     }
 
 
-# ---- ecosystem helpers ----
-# map common ecosystem names to OSV's canonical names
+# ---- 生态辅助函数 ----
+# 将常见生态名称映射到OSV的规范名称
 
 _ECOSYSTEM_ALIASES = {
     "pip": "PyPI", "pypi": "PyPI", "python": "PyPI",
@@ -378,6 +377,6 @@ _ECOSYSTEM_ALIASES = {
 
 
 def normalize_ecosystem(raw: str) -> str:
-    """Normalize ecosystem names to OSV's canonical form.
-    e.g., 'pip' → 'PyPI', 'node' → 'npm'."""
+    """将生态名称规范化为OSV规范形式。
+    如 'pip' → 'PyPI', 'node' → 'npm'。"""
     return _ECOSYSTEM_ALIASES.get(raw.lower().strip(), raw)

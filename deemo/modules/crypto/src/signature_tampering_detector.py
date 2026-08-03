@@ -1,9 +1,7 @@
-"""
-PE signature tampering detection: parses the security directory and checks signer reputation.
+"""PE签名篡改检测: 解析安全目录并校验签名者信誉。
 
-2026-07-21: PE checksum verification (header vs computed), dual-signature (SHA-1+SHA-256)
-detection, Authenticode timestamp counter-signature parsing, and extended signer reputation DB
-covering 40+ known CAs and software vendors.
+2026-07-21: PE checksum校验(头vs计算值), 双签名(SHA-1+SHA-256)检测,
+Authenticode时间戳副署解析, 40+已知CA和软件厂商信誉库。
 """
 
 import struct
@@ -11,6 +9,8 @@ import logging
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, field
 from enum import Enum
+# SELF_SIGNED去重修复 2026-08-02 — 曾同时作为Enum成员和SignatureInfo实例属性冲突
+import hashlib
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +76,7 @@ class PESignatureParser:
             if sec_rva == 0 or sec_size == 0:
                 return {'signed': False, 'reason': 'No security directory'}
 
-            # PE checksum (offset 64 in PE optional header)
+            # PE校验和 (可选头偏移64处)
             stored_checksum = struct.unpack_from('<I', pe_data, pe_offset + 24 + 64)[0]
             computed_checksum = _compute_pe_checksum(pe_data, pe_offset)
 
@@ -92,10 +92,10 @@ class PESignatureParser:
 
 
 def _compute_pe_checksum(data: bytes, pe_offset: int) -> int:
-    """Compute PE checksum per MS specification: 16-bit sum of all bytes, wrapped to 32-bit."""
+    """按MS规范计算PE校验和: 16-bit逐字累加，32-bit回卷。"""
     total = 0
     for i in range(0, len(data) - 1, 2):
-        if i == pe_offset + 24 + 64:  # skip checksum field itself
+        if i == pe_offset + 24 + 64:  # 跳过校验和字段
             continue
         w = struct.unpack_from('<H', data, i)[0]
         total = (total + w) & 0xFFFFFFFF
@@ -105,8 +105,7 @@ def _compute_pe_checksum(data: bytes, pe_offset: int) -> int:
 
 
 class SignatureTamperingDetector:
-    """Primary signature tampering detection."""
-
+    # 签名篡改检测主逻辑。
     KNOWN_SIGNERS = {
         'Microsoft Corporation', 'Microsoft Windows', 'Google LLC', 'Apple Inc.',
         'Adobe Systems', 'VMware, Inc.', 'Oracle Corporation', 'Intel Corporation',
@@ -197,3 +196,6 @@ def detect_signature_tampering(files: List[Dict[str, Any]], **kwargs) -> Dict[st
 
 __all__ = ["SignatureTamperingDetector", "PESignatureParser",
            "SignatureInfo", "SignatureStatus", "detect_signature_tampering"]
+
+def _debug_print(*a,**kw):
+    if __import__("os").environ.get("BINMIND_DEBUG"):print(*a,**kw)

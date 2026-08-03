@@ -1,51 +1,50 @@
-# Learned Bloom Filter (PLBF) + SplineSketch 分位数估计
+# 训练型 Bloom Filter (PLBF) + SplineSketch 分位数估计
 #
 # Partitioned Learned Bloom Filter [Sato & Matsui, arXiv:2410.13278, 2024]:
-#   PLBF 将 key 空间按模型预测的"存在概率"划分为多个区间，
-#   每个区间分配不同大小的 Bloom filter —— 概率高的区间用更多 bits/entry，
-#   概率低的区间用更少或甚至不用 filter。总内存低于标准 Bloom filter，
-#   同时保持相同的 FPR 上界。
+#   PLBF 将 key 空间按模型推断的"存在概率"划分为多个区间，
+#   各区间分配独立尺寸的 Bloom filter —— 高概率区间用更多 bits/entry，
+#   低概率区间用更少或不用 filter。总内存低于标准 Bloom filter，
+#   维持相同 FPR 上界。
 #
 #   本实现 (Fast PLBF 路径):
-#     1. 训练一个轻量分类器预测 P(key in set)
+#     1. 训练轻量分类器预测 P(key in set)
 #     2. 按概率排序分组 (histogram binning)
-#     3. 每组的 Bloom filter 参数独立优化
-#     4. 查询时: 模型预测概率 → 索引到对应组的 Bloom filter → 查询
+#     3. 每组 Bloom filter 参数独立最优化
+#     4. 查询: 模型推断概率 → 路由至对应组 Bloom filter → 查询
 #
 # SplineSketch [Łukasiewicz et al., SIGMOD 2026]:
-#   替代 TDigest 的流式分位数 sketch，在保留 O(k) 空间的同时
-#   提供有界最坏情况误差（TDigest 的误差可无界）。
-#   核心思路: 动态细分输入值域为 bucket，用单调三次样条插值
-#   拟合 CDF。在合成和真实数据上误差比 TDigest 低 2-20x。
+#   流式分位数 sketch，替代 TDigest。O(k) 空间下有界最坏误差
+#   （TDigest 误差可无界）。核心机制: 动态细分值域为 bucket，
+#   单调三次样条插值拟合 CDF。合成/真实数据上误差比 TDigest 低 2-20x。
 #
 #   SplineSketch 参数:
 #     ε: 秩误差上界 (0, 1)，默认 0.01 → 1% 误差
-#     max_buckets: 硬上限，默认 500
+#     max_buckets: 桶数硬上限，默认 500
 
 import math
 import bisect
 from typing import List, Tuple, Optional, Dict, Any
 
 # ---------------------------------------------------------------------------
-# SplineSketch — 有界误差的流式分位数估计
+# SplineSketch — 有界误差流式分位数估计
 # ---------------------------------------------------------------------------
 
 class SplineSketch:
-    """有界秩误差的流式分位数 sketch。
+    """有界秩误差流式分位数 sketch。
 
-    核心状态: 一组有序 bucket (value, cumulative_count)。
-    插入时: 二分找到对应 bucket → 增加计数 → 检查合并/分裂条件。
+    核心状态: 有序 bucket 序列 (value, cumulative_count)。
+    插入: 二分定位 bucket → 递增计数 → 合并/分裂判定。
     分位数查询: 二分 bucket → 桶内线性插值。
-    与 TDigest (dedup.py) 的对比:
-      - SplineSketch: 有界最坏误差 ε·N，保证 ∀q: |rank_error| ≤ ε·N
-      - TDigest: 平均误差小，但最坏情况可无界
+    对比 TDigest (dedup.py):
+      - SplineSketch: 最坏误差有界 ε·N, ∀q: |rank_error| ≤ ε·N
+      - TDigest: 平均误差小，最坏可无界
     """
 
     def __init__(self, epsilon: float = 0.01, max_buckets: int = 500):
         if epsilon <= 0 or epsilon >= 1:
             raise ValueError("epsilon must be in (0, 1)")
         self.eps = epsilon
-        self.max_b = max_buckets  # 桶数硬上限，超出时触发压缩合并
+        self.max_b = max_buckets  # 桶数硬上限，超限时触发压缩合并
         self._buckets: List[Tuple[float, float]] = []  # (value, cumulative_count)
         self._n = 0
         self._vmin = float('inf')
@@ -62,11 +61,11 @@ class SplineSketch:
             self._buckets = [(x, 1.0)]
             return
 
-        # 二分搜索插入 bucket
+        # 二分定位插入 bucket
         vals = [b[0] for b in self._buckets]
         idx = bisect.bisect_left(vals, x)
         if idx < len(self._buckets) and self._buckets[idx][0] == x:
-            # 精确命中 → 增加该 bucket 计数
+            # 精确命中 → 递增该 bucket
             old_val, old_cnt = self._buckets[idx]
             self._buckets[idx] = (old_val, old_cnt + 1.0)
         else:
@@ -83,14 +82,14 @@ class SplineSketch:
             self._compact()
 
     def add_many(self, values: List[float]):
-        """批量插入 —— 先排序再合并，比逐条 add 快。"""
+        """批量插入 —— 先排序后合并，比逐条 add 高效。"""
         values.sort()
         self._n += len(values)
         if values:
             self._vmin = min(self._vmin, values[0])
             self._vmax = max(self._vmax, values[-1])
 
-        # 一次性处理 sorted list: 压缩为 (value, count) 对
+        # 单次处理 sorted list: 压缩至 (value, count) 对
         compressed: List[Tuple[float, float]] = []
         for v in values:
             if compressed and compressed[-1][0] == v:
@@ -98,7 +97,7 @@ class SplineSketch:
             else:
                 compressed.append((v, 1.0))
 
-        # 合并到现有 buckets
+        # 并入现有 buckets
         combined = self._buckets + [(v, c) for v, c in compressed]
         combined.sort(key=lambda x: x[0])
         merged = []
@@ -116,7 +115,7 @@ class SplineSketch:
             self._compact()
 
     def _compact(self):
-        """合并误差最小的相邻 bucket 对，直到 ≤ max_buckets。"""
+        """合并误差最小的相邻 bucket 对，至 ≤ max_buckets。"""
         while len(self._buckets) > self.max_b:
             best_idx = 0
             best_gap = float('inf')
@@ -151,7 +150,7 @@ class SplineSketch:
             return self._buckets[-1][0]
         if idx == 0:
             return self._buckets[0][0]
-        # 线性插值: 在 (idx-1) 和 idx 之间
+        # 线性插值: (idx-1) 和 idx 之间
         v_prev, r_prev = self._buckets[idx - 1][0], ranks[idx - 1]
         v_curr, r_curr = vals[idx], ranks[idx]
         if r_curr == r_prev:
@@ -160,7 +159,7 @@ class SplineSketch:
         return v_prev + frac * (v_curr - v_prev)
 
     def merge(self, other: "SplineSketch") -> "SplineSketch":
-        """合并两个 SplineSketch —— 用于分布式聚合。"""
+        """合并两个 SplineSketch —— 面向分布式聚合场景。"""
         merged = SplineSketch(max(self.eps, other.eps), max(self.max_b, other.max_b))
         merged._n = self._n + other._n
         merged._vmin = min(self._vmin, other._vmin)
@@ -201,18 +200,17 @@ class SplineSketch:
 
 
 # ---------------------------------------------------------------------------
-# LearnedBloomFilter — 分区学习型 Bloom filter
+# LearnedBloomFilter — 分区训练型 Bloom filter
 # ---------------------------------------------------------------------------
 
 class LearnedBloomFilter:
-    """分区学习型 Bloom filter (Fast PLBF, Sato & Matsui 2024)。
+    """分区训练型 Bloom filter (Fast PLBF, Sato & Matsui 2024)。
 
-    标准 Bloom 将每个 key 分配相同的 bits/entry (空间效率对"罕见 key"
-    和"常见 key"一视同仁)。PLBF 用一个轻量模型将 key 按"集合成员概率"
-    分组，每组独立分配优化后的 Bloom filter。
+    标准 Bloom 对所有 key 等量分配 bits/entry。PLBF 以轻量模型
+    将 key 按"集合成员概率"分组，各组独立分配优化后的 Bloom filter。
 
-    分类器: 当前使用频率计数模拟（用 CountMinSketch 或直接计数），
-    存储后端可以是任意可选的 Bloom/Cuckoo 实现。
+    分类器: 当前采用频率计数模拟（CountMinSketch 或直接计数），
+    后端存储为可选 Bloom/Cuckoo 实现。
     """
 
     def __init__(self, total_bits: int = 1_000_000, num_groups: int = 8,
@@ -226,19 +224,19 @@ class LearnedBloomFilter:
             _MiniBloom(allocations[i], k_hashes, seed=0x5bd1 + i)
             for i in range(num_groups)
         ]
-        # 频率计数器 (学习分类器)
+        # 频率计数器 (用于分组建模)
         self._freq: Dict[int, int] = {}
         self._n_inserted = 0
         self._group_thresholds: List[int] = [0] * (num_groups - 1)
 
     def train(self):
-        """基于已收集的频率数据计算分组阈值。
+        """基于已收集频率数据计算分组阈值。
 
-        将频率分布等分为 num_groups 个区间（等频分箱）。
-        调用时机: 在插入一定量的数据后调用，之后 insert 会使用模型。
+        等频分箱: 将频率分布等分为 num_groups 个区间。
+        调用时机: 插入足够数据后调用，之后 insert 启用模型路由。
         """
         if len(self._freq) < self.num_groups * 2:
-            return  # 数据不足，不训练
+            return  # 数据不足，推迟训练
         freqs = sorted(self._freq.values())
         chunk = len(freqs) // self.num_groups
         self._group_thresholds = []
@@ -261,7 +259,7 @@ class LearnedBloomFilter:
             g = self._group_for(kh)
             self._filters[g].add(kh)
         else:
-            # 训练前: 所有数据进最后一组（默认组）
+            # 训练前: 所有数据落入默认组
             self._filters[-1].add(kh)
 
     def might_contain(self, data: bytes) -> bool:
@@ -273,9 +271,9 @@ class LearnedBloomFilter:
         return self._filters[-1].contains(kh)
 
     def rebuild(self):
-        """模型训练后重建所有 Bloom filter —— 用已训练的阈值重新分配 key。
+        """模型训练后重建全部 Bloom filter —— 用最新阈值重分配 key。
 
-        这是一个开销较大的操作 (O(N))，应仅在与分区阈值变更时执行。
+        O(N) 开销，仅应在分区阈值变更时执行。
         """
         from .dedup import _fnv1a_64
         if not self._group_thresholds:
@@ -298,11 +296,11 @@ class LearnedBloomFilter:
 
 
 # ---------------------------------------------------------------------------
-# 辅助: MiniBloom + bit allocation
+# 辅助: MiniBloom + bit 分配
 # ---------------------------------------------------------------------------
 
 class _MiniBloom:
-    """微型的单 bit-array Bloom filter —— PLBF 内部使用。"""
+    """微型单 bit-array Bloom filter —— PLBF 内部组件。"""
     def __init__(self, m_bits: int, k: int, seed: int):
         self.m = max(m_bits, 1)
         self.k = k
@@ -331,16 +329,16 @@ class _MiniBloom:
 
 
 def _allocate_bits(total: int, groups: int) -> List[int]:
-    """按指数递减分配 bits: group 0 最多，group N-1 最少。
+    """指数递减 bits 分配: group 0 最多, group N-1 最少。
 
-    分配公式: bits[g] = total * (decay ^ g) / sum(decay ^ i)
-    decay = 0.7, 使得最高组获得 ~3x 于最低组的 bits。
+    公式: bits[g] = total * (decay ^ g) / sum(decay ^ i)
+    decay = 0.7, 最高组获约 3x 最低组的 bits。
     """
     decay = 0.7
     weights = [decay ** i for i in range(groups)]
     denom = sum(weights)
     alloc = [max(1, int(total * w / denom)) for w in weights]
-    # 调整截断误差: 从最大的组减去溢出
+    # 修正截断误差: 从最大组扣减溢出
     diff = sum(alloc) - total
     for i in range(len(alloc) - 1, -1, -1):
         if diff > 0 and alloc[i] > 1:

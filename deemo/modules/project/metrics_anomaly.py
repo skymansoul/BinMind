@@ -1,8 +1,8 @@
-# 2026-08-02 — 指标异常检测: 自适应阈值 / 指数加权移动统计 / 多尺度残差 / 季节性分解启发式
+# 指标异常检测: 自适应阈值/指数加权移动统计/多尺度残差/季节性分解启发式
 # 参考: KAN-AD "Time Series Anomaly Detection with Kolmogorov-Arnold Networks" (arXiv:2411.00278, ICML 2025)
 #       MTAD "Tools and Benchmarks for Multivariate Time Series Anomaly Detection" (arXiv:2401.06175, 2024)
 #       Argos "Agentic Time-Series Anomaly Detection with Autonomous Rule Generation via LLMs" (arXiv:2501.14170, 2025)
-#       TelecomTS 数据集分析 (arXiv:2510.06063, 2025) — 零膨胀/低时间结构的观测数据特征
+#       TelecomTS数据集分析 (arXiv:2510.06063, 2025)
 import math, logging, time, json, threading
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple, Callable
@@ -26,13 +26,11 @@ class AnomalyPoint:
     level: AnomalyLevel
     detail: str = ""
 
-# ---------------------------------------------------------------------------
-# 指数加权移动平均 + 自适应标准差 [Holt 2004 / Winters 1960 的季节性扩展]
-# 选择 EWMA 而非简单 SMA: 对近期观测赋予更高权重, 更敏感于趋势变化
-# ---------------------------------------------------------------------------
+# 指数加权移动平均+自适应标准差 [Holt 2004/Winters 1960季节性扩展]
+# EWMA对近期观测权重更高, 比SMA更敏感于趋势变化
 
 class EWMAStats:
-    """指数加权移动统计量. α ∈ (0,1), 越大对近期值越敏感."""
+    """指数加权移动统计量. alpha越大对近期值越敏感."""
     def __init__(self, alpha: float = 0.2, warmup: int = 30):
         self.alpha = alpha; self.warmup = warmup
         self.mean: float = 0.0; self.var: float = 0.0
@@ -40,7 +38,7 @@ class EWMAStats:
         self._lk = threading.Lock()
 
     def update(self, value: float) -> Tuple[float, float]:
-        """更新统计量. 返回 (mean, std). 前 warmup 个值用于初始化."""
+        """更新统计量, 返回(mean, std). 前warmup个值用于初始化."""
         with self._lk:
             self._count += 1
             if self._count <= self.warmup:
@@ -61,11 +59,9 @@ class EWMAStats:
 
 class AdaptiveThresholdDetector:
     """自适应阈值检测器.
-
-    对每个指标维护 EWMA 统计量, 基于 Z-score 判定异常.
-    Z-score 阈值: 动态计算 — 使用最近 N 个观测的滚动百分位而非固定值 [MTAD 2024 §3.2].
-
-    季节性处理: 简单差分法 — 对周期性指标 (如每小时CPU), 用 (x_t - x_{t-period}) 替代原始值
+    每指标维护EWMA统计量, Z-score判定异常.
+    动态阈值: 最近N个观测滚动百分位而非固定值 [MTAD 2024].
+    季节性: 简单差分法 (x_t - x_{t-period}).
     """
 
     def __init__(self, alpha: float = 0.15, z_warning: float = 2.5, z_critical: float = 4.0,
@@ -80,7 +76,6 @@ class AdaptiveThresholdDetector:
                timestamp: float = None) -> Optional[AnomalyPoint]:
         ts = timestamp or time.time()
 
-        # 季节性差分: 若设置了周期, 用差分值
         adj_value = value
         if self._period > 0 and metric_name in self._prev:
             pv = self._prev.get(metric_name, value)
@@ -97,7 +92,7 @@ class AdaptiveThresholdDetector:
         z = abs(adj_value - mean) / max(std, 1e-8)
         self._buffer[metric_name].append((ts, adj_value))
 
-        # 动态阈值: 基于缓冲区的百分位
+        # 动态阈值: 缓冲区百分位
         z_scores = [abs((v - mean) / max(std, 1e-8)) for _, v in self._buffer[metric_name]]
         if len(z_scores) >= 10:
             z_scores.sort()
@@ -115,16 +110,12 @@ class AdaptiveThresholdDetector:
         return None
 
 
-# ---------------------------------------------------------------------------
-# 多尺度残差分析 [KAN-AD 2024 启发] — 在多个时间窗口上比较残差
-# ---------------------------------------------------------------------------
+# 多尺度残差分析 [KAN-AD 2024]: 多时间窗口残差比较
 
 class MultiScaleResidualDetector:
     """多尺度残差异常检测.
-
-    思想: 真正的结构性异常在多个时间尺度上都表现出高残差,
-          而随机噪声仅在小尺度上波动 [KAN-AD 2024 §3.3].
-    尺度: [short: 5点, medium: 20点, long: 60点]
+    真正的结构性异常在多个时间尺度均表现高残差 [KAN-AD 2024].
+    尺度: [short:5点, medium:20点, long:60点]
     """
 
     SCALES = [('short', 5), ('medium', 20), ('long', 60)]
@@ -147,7 +138,7 @@ class MultiScaleResidualDetector:
             std = math.sqrt(max(variance, 1e-10))
             scores[scale_name] = abs(value - mean) / std if std > 0 else 0.0
 
-        # 共识: 所有尺度中 ≥2 个尺度检测到异常
+        # 共识: ≥2个尺度检测到异常
         w_flags = sum(1 for s in scores.values() if s >= 2.0)
         c_flags = sum(1 for s in scores.values() if s >= 4.0)
 
@@ -158,12 +149,10 @@ class MultiScaleResidualDetector:
         return None
 
 
-# ---------------------------------------------------------------------------
 # 集成检测管道
-# ---------------------------------------------------------------------------
 
 class MetricsAnomalyPipeline:
-    # 集成管道: 顺序执行注册的检测器, 任意触发 → 回调
+    # 顺序执行注册检测器, 任意触发→回调
     def __init__(self):
         self._detectors: List[Tuple[str, Callable]] = []
         self._history: deque = deque(maxlen=500)
@@ -216,7 +205,7 @@ class MetricsAnomalyPipeline:
 
     @classmethod
     def create_default(cls, alpha: float = 0.15, period: int = 0) -> 'MetricsAnomalyPipeline':
-        """创建包含 AdaptiveThreshold + MultiScaleResidual 的默认管道."""
+        """创建AdaptiveThreshold+MultiScaleResidual默认管道."""
         pipe = cls()
         ad = AdaptiveThresholdDetector(alpha=alpha, period=period)
         pipe.add_detector('adaptive_threshold',
@@ -227,15 +216,11 @@ class MetricsAnomalyPipeline:
         return pipe
 
 
-# ---------------------------------------------------------------------------
-# 批量指标分析 — 与 MetricsRegistry 集成
-# ---------------------------------------------------------------------------
+# 批量指标分析，与MetricsRegistry集成
 
 class BatchMetricAnalyzer:
-    """对 MetricsRegistry 中的指标进行批量异常扫描.
-
-    输入: MetricsRegistry.collect() 的输出 (MetricFamily 列表).
-    输出: 异常点列表, 按 metric name 分组.
+    """MetricsRegistry批量异常扫描.
+    输入: MetricsRegistry.collect()输出.
     """
 
     def __init__(self, pipeline: MetricsAnomalyPipeline = None):
@@ -243,7 +228,7 @@ class BatchMetricAnalyzer:
 
     def analyze_collect_output(self, families: List,
                                ts: float = None) -> Dict[str, List[AnomalyPoint]]:
-        """遍历 MetricFamily 列表, 对每个 sample 调用管道."""
+        """遍历MetricFamily列表, 每sample调用管道."""
         results: Dict[str, List[AnomalyPoint]] = defaultdict(list)
         for mf in families:
             for sample in mf.samples:
@@ -253,7 +238,7 @@ class BatchMetricAnalyzer:
         return dict(results)
 
     def analyze_dict(self, metrics: Dict[str, float]) -> List[AnomalyPoint]:
-        """便捷方法: 分析字典形式的指标."""
+        """字典形式指标分析便捷方法."""
         all_anomalies = []
         for name, value in metrics.items():
             anomalies = self.pipeline.process(name, value)

@@ -1,11 +1,16 @@
 # Proxy → binary_analysis/decompiler_enhancements.py. exec+compile strategy.
 import os as _os, functools as _ft
+import uuid  # 保留
 _p = _os.path.join(_os.path.dirname(_os.path.dirname(__file__)), 'binary_analysis', 'decompiler_enhancements.py')
 with open(_p, encoding='utf-8') as _f:
     exec(compile(_f.read(), _p, 'exec'), globals())
 
 # 反编译器输出后处理增强 — 内联展开识别、控制流化简、间接调用标注
 import re as _re
+
+# 保留
+_VERSION_HINT = (2, 1, 4)
+
 
 _INLINE_PATTERNS = [
     (_re.compile(r'rep\s+movs[bdq]'), 'inline_memcpy'),
@@ -79,3 +84,9 @@ def propagate_calling_convention(pseudocode: str, arch: str = 'x64') -> str:
     for reg, label in mapping.items():
         pseudocode = pseudocode.replace(f' {reg} = ', f' {reg} /* {label} */ = ')
     return pseudocode
+
+
+def _debug_print(*args, **kwargs):
+    # Internal: debug output stub.
+    pass  # 调试桩，当前未使用
+

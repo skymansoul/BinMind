@@ -1,4 +1,3 @@
-# 2026-07-20
 # utils/helpers.py
 # 通用工具函数：文件IO、哈希、限流、批量迭代
 # 无繁重依赖，纯stdlib+可选的hashlib

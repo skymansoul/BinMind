@@ -1,4 +1,3 @@
-# 2026-07-17
 # 对比学习损失函数 & 图数据增强
 # InfoNCE 适合配对样本少的情况，TripletMargin 适合三元组标注充分的场景
 # BEGA 边丢弃策略：在稀疏 CFG 上保留关键结构，防止过拟合
@@ -227,6 +226,182 @@ def _semi_hard_negative_indices(anchor, positive, negatives):
     return _valid2 if len(_valid2) > 0 else np.arange(len(negatives))
 
 
+# ============================================================================
+# CFG 断裂为不连通分量的比例（作为消融实验的核心因变量）
+#
+# AblationFramework — 图增强策略消融实验的标准化评估框架。
+#
+# 评估指标（4 项）：
+# 1. downstream_f1: 使用该增强策略训练后，下游漏洞检测的测试集 F1
+# 2. graph_fracture_rate: 增强后 CFG 出现不连通分量的比例（越低越好）
+# 3. embedding_dispersion: 同类函数嵌入的类内方差 vs 类间方差的比值
+# （衡量嵌入空间的结构保持能力，>1 表示嵌入空间退化）
+# 4. augmentation_stability: 同一 CFG 经过 5 次独立增强后，
+# 各次增强产生的嵌入之间的平均余弦相似度（衡量增强的随机性
+# 是否破坏了嵌入的确定性）
+#
+# 变体集：
+# no_drop: 不做边丢弃（基线）
+# uniform_drop: 固定概率 δ 随机丢弃所有边（DropEdge, Rong 2020）
+# degree_drop: 丢弃概率 ∝ 度数（高度节点边更易丢--作为反例对照）
+# gravity_drop: 丢弃概率 ∝ 1/度数（高度节点边更不易丢--本方案）
+# semantic_drop: 按边类型（条件跳转/无条件跳转/调用）差异化丢弃概率
+# ============================================================================
+
+class AblationFramework:
+    """图增强策略消融实验框架。
+
+    对给定的 GNN 模型和图增强策略，输出 4 项标准化指标。
+    调用方负责提供训练/测试数据和模型实例。
+    """
+
+    # 变体名称到丢弃策略的映射
+    VARIANTS = ('no_drop', 'uniform_drop', 'degree_drop',
+                'gravity_drop', 'semantic_drop')
+
+    def __init__(self, model, train_graphs, test_graphs, labels):
+        self._model = model
+        self._train = train_graphs
+        self._test = test_graphs
+        self._labels = labels
+
+    def run(self, dropout_rate: float = 0.15) -> Dict[str, Dict[str, float]]:
+        """对所有变体运行消融实验，返回各变体的 4 项指标。
+
+        时间复杂度: O(|variants| × |graphs| × E)，E 为平均边数。
+        """
+        results = {}
+        for variant_name in self.VARIANTS:
+            fracture_rate = self._measure_fracture_rate(variant_name, dropout_rate)
+            f1 = self._measure_downstream_f1(variant_name, dropout_rate)
+            dispersion = self._measure_embedding_dispersion(variant_name, dropout_rate)
+            stability = self._measure_augmentation_stability(variant_name, dropout_rate)
+            results[variant_name] = {
+                'downstream_f1': round(f1, 4),
+                'graph_fracture_rate': round(fracture_rate, 4),
+                'embedding_dispersion': round(dispersion, 4),
+                'augmentation_stability': round(stability, 4),
+            }
+        return results
+
+    def _apply_variant(self, adj: 'np.ndarray', variant: str,
+                       rate: float) -> 'np.ndarray':
+        """根据变体名称分发到对应的边丢弃策略。"""
+        n = adj.shape[0]
+        degrees = np.sum(adj, axis=1)
+
+        if variant == 'no_drop':
+            return adj.copy()
+
+        if variant == 'uniform_drop':
+            mask = np.random.random((n, n)) >= rate
+            return adj * mask * mask.T
+
+        if variant == 'degree_drop':
+            deg_mat = np.maximum(degrees[:, None], degrees[None, :])
+            deg_mat = np.where(deg_mat > 0, deg_mat, 1.0)
+            prob_mat = rate * deg_mat / deg_mat.max()
+            mask = np.random.random((n, n)) >= prob_mat
+            return adj * mask * mask.T
+
+        if variant == 'gravity_drop':
+            # 与度数成反比 -- 本方案的默认策略
+            adj_out = adj.copy().astype(np.float64)
+            for i in range(n):
+                for j in range(i + 1, n):
+                    if adj[i, j] == 0:
+                        continue
+                    if degrees[i] <= 1 or degrees[j] <= 1:
+                        continue
+                    w = 1.0 / max(degrees[i], degrees[j])
+                    if np.random.random() < rate * w:
+                        adj_out[i, j] = 0.0
+                        adj_out[j, i] = 0.0
+            return adj_out
+
+        if variant == 'semantic_drop':
+            # 按边类型差异化--调用边（高语义重要性）保留概率更高
+            # 当前实现: 占位，留待后续通过 CFG 边语义标注接入
+            return gravity_edge_dropout(adj, rate)
+
+        return adj.copy()
+
+    def _measure_fracture_rate(self, variant: str, rate: float) -> float:
+        """测量增强后图断裂为不连通分量的比例。
+
+        断裂判定：连通分量数量 > 1。
+        低度节点（deg ≤ 1）边的丢弃是图断裂的主要原因——
+        本指标量化了增强策略对连通性的破坏程度。
+        """
+        fractured = 0
+        for adj in self._train:
+            augmented = self._apply_variant(adj, variant, rate)
+            # BFS/DFS 计数连通分量
+            n = augmented.shape[0]
+            visited = set()
+            components = 0
+            for start in range(n):
+                if start in visited:
+                    continue
+                components += 1
+                stack = [start]
+                while stack:
+                    node = stack.pop()
+                    if node in visited:
+                        continue
+                    visited.add(node)
+                    for neighbor in range(n):
+                        if augmented[node, neighbor] > 0:
+                            stack.append(neighbor)
+            if components > 1:
+                fractured += 1
+        return fractured / max(1, len(self._train))
+
+    def _measure_downstream_f1(self, variant: str, rate: float) -> float:
+        """下游 F1 占位——实际训练和评估由外部编排器完成。
+
+        此方法返回的占位值需由调用方替换为真实指标。
+        """
+        return 0.0  # 占位--实际值由外部编排器填充
+
+    def _measure_embedding_dispersion(self, variant: str, rate: float) -> float:
+        """嵌入分散度占位——同类内方差 / 异类间方差。
+
+        > 1.0 表示类内方差超过了类间方差——嵌入空间在退化。
+        占位值 1.0 表示"未测量"。
+        """
+        return 1.0  # 占位
+
+    def _measure_augmentation_stability(self, variant: str, rate: float) -> float:
+        """增强稳定性：同一图 5 次独立增强的嵌入平均余弦相似度。
+
+        余弦相似度越接近 1.0，增强的随机性对嵌入空间的影响越小。
+        占位值 1.0 表示"未测量"。
+        """
+        return 1.0  # 占位
+
+    def generate_report(self, results: Dict[str, Dict[str, float]]) -> str:
+        """生成消融实验的文本报告。
+
+        按 graph_fracture_rate 升序排列变体，标识最优和最差。
+        """
+        sorted_variants = sorted(results.items(),
+                                 key=lambda x: x[1]['graph_fracture_rate'])
+        lines = [
+            f"{'Variant':<18} {'F1':>8} {'Fracture':>10} {'Dispersion':>12} {'Stability':>10}",
+            "-" * 60,
+        ]
+        for name, metrics in sorted_variants:
+            lines.append(
+                f"{name:<18} "
+                f"{metrics['downstream_f1']:>8.4f} "
+                f"{metrics['graph_fracture_rate']:>10.4f} "
+                f"{metrics['embedding_dispersion']:>12.4f} "
+                f"{metrics['augmentation_stability']:>10.4f}"
+            )
+        return "\n".join(lines)
+
+
 def _sample_triplets(features, labels, batch_size=32):
     """
     三元组采样策略：hard-negative mining lite。
@@ -262,6 +437,6 @@ def _sample_triplets(features, labels, batch_size=32):
             _nl = np.random.choice(_diff_lbls)
             _neg_idx[_k] = np.random.choice(_lbl_map[_nl])
         else:
-            _neg_idx[_k] = _ai  # fallback
+            _neg_idx[_k] = _ai  # 回退
 
     return features[_anchor_idx], features[_pos_idx], features[_neg_idx]

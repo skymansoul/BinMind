@@ -129,7 +129,7 @@ class ElfHeaderParser:
 
     @classmethod
     def _parse_phdr32(cls, data: bytes) -> List[ElfSegment]:
-        # ELF32: phoff at 28 (uint32), phentsize at 42, phnum at 44
+        # ELF32: phoff偏移28 (uint32), phentsize偏移42, phnum偏移44
         if len(data) < 52:
             return []
 
@@ -143,18 +143,18 @@ class ElfHeaderParser:
                      6: 'PHDR', 0x6474E550: 'GNU_EH_FRAME',
                      0x6474E551: 'GNU_STACK', 0x6474E552: 'GNU_RELRO'}
 
-        for i in range(min(phnum, 16)):  # cap at 16 segments
+        for i in range(min(phnum, 16)):  # 上限16段
             off = phoff + i * phentsize
             if off + 32 > len(data):
                 break
 
-            # Elf32_Phdr: 32 bytes, 8 uint32 fields
-            # layout: type(0) offset(4) vaddr(8) paddr(12)
-            #         filesz(16) memsz(20) flags(24) align(28)
+            # Elf32_Phdr: 32字节, 8个uint32字段
+            # 布局: type(0) offset(4) vaddr(8) paddr(12)
+            #        filesz(16) memsz(20) flags(24) align(28)
             p_type  = struct.unpack_from('<I', data, off + 0)[0]
             p_off   = struct.unpack_from('<I', data, off + 4)[0]
             p_vaddr = struct.unpack_from('<I', data, off + 8)[0]
-            # p_paddr unused
+            # p_paddr未使用
             p_fsz   = struct.unpack_from('<I', data, off + 16)[0]
             p_msz   = struct.unpack_from('<I', data, off + 20)[0]
             p_flags = struct.unpack_from('<I', data, off + 24)[0]
@@ -173,9 +173,9 @@ class ElfHeaderParser:
 
     @classmethod
     def check_hardening(cls, data: bytes) -> Dict[str, Any]:
-        """检测 ELF 加固特性：NX（GNU_STACK 不可执行）、RELRO、栈金丝雀
+        """检测ELF加固特性：NX（GNU_STACK不可执行）、RELRO、栈金丝雀。
 
-        返回每个加固特性的状态：'enabled' | 'disabled' | 'unknown'
+        返回各加固特性状态：'enabled' | 'disabled' | 'unknown'
         """
         result = {"nx_stack": "unknown", "relro": "unknown",
                   "stack_canary": "unknown", "pie": "unknown"}
@@ -185,22 +185,22 @@ class ElfHeaderParser:
         is_64bit = data[4] == 2
         segments = cls.parse_program_headers(data)
 
-        # 检测 GNU_STACK —— PT_GNU_STACK (0x6474E551) 存在且 PF_X 未置位 = NX
+        # 检测GNU_STACK：PT_GNU_STACK (0x6474E551)存在且PF_X未置位 = NX启用
         for seg in segments:
             if seg.seg_type == 'GNU_STACK':
                 result["nx_stack"] = "enabled" if 'E' not in seg.flags else "disabled"
             if seg.seg_type == 'GNU_RELRO':
                 result["relro"] = "enabled"
 
-        # 检测栈金丝雀 —— 搜索 __stack_chk_fail 符号引用（字符串表查找）
-        # 通过 .dynstr 或 .strtab 中的符号名检测
+        # 检测栈金丝雀：搜索__stack_chk_fail符号引用
+        # 通过.dynstr或.strtab符号名检测
         if b"__stack_chk_fail" in data or b"__stack_chk_guard" in data:
             result["stack_canary"] = "enabled"
         elif any(seg.seg_type == 'GNU_RELRO' for seg in segments):
-            # 有 RELRO 但未检测到 canary 字符串时默认假定已启用
+            # RELRO存在但未检测到canary字符串：假定已启用
             result["stack_canary"] = "likely"
 
-        # PIE 检测 —— ELF 类型为 ET_DYN (3)
+        # PIE检测：ELF类型为ET_DYN (3)
         if len(data) >= 18:
             e_type = struct.unpack_from('<H', data, 16)[0]
             result["pie"] = "enabled" if e_type == 3 else "disabled"
@@ -209,9 +209,9 @@ class ElfHeaderParser:
 
 
 class MmapBinaryAnalyzer:
-    """内存映射区域安全分析器——WX违例、RWX区域、可执行栈检测
+    """内存映射区域安全分析。WX违例、RWX区域、可执行栈检测。
 
-    新增：ELF 加固特性审计 —— NX 栈、Full/Partial RELRO、栈金丝雀、PIE。
+    扩展：ELF加固特性审计——NX栈、Full/Partial RELRO、栈金丝雀、PIE。
     """
 
     def __init__(self):
@@ -266,20 +266,20 @@ class MmapBinaryAnalyzer:
             }
         }
 
-        # ELF 加固审计 —— 若提供了 ELF 数据
+        # ELF加固审计：若提供ELF数据则附加加固报告
         if elf_data is not None:
             hardening = ElfHeaderParser.check_hardening(elf_data)
             base_result['elf_hardening'] = hardening
-            # 加固不足时升级风险
+            # 加固不足则升级风险等级
             risks = []
             if hardening.get("nx_stack") == "disabled":
                 risks.append("NX stack disabled —— 栈溢出可利用")
             if hardening.get("relro") != "enabled":
-                risks.append("RELRO 未启用 —— GOT 覆写风险")
+                risks.append("RELRO未启用 —— GOT覆写风险")
             if hardening.get("stack_canary") == "unknown":
                 risks.append("未检测到栈金丝雀")
             if hardening.get("pie") == "disabled":
-                risks.append("PIE 未启用 —— 固定基址便于 ROP")
+                risks.append("PIE未启用 —— 固定基址便于ROP")
             base_result['hardening_risks'] = risks
 
         return base_result

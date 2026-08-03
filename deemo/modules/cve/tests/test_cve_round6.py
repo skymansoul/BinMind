@@ -1,5 +1,5 @@
-# round 6 tests — cvss 4.0, cjk fts5, version comparison enhancements
-# ~30 tests covering the new features added aug 2026
+# Round 6 测试——CVSS 4.0、CJK FTS5、版本比较增强
+# ~30项测试，覆盖2026年8月新增特性
 
 import pytest
 import json
@@ -18,7 +18,7 @@ def kb():
 
 class TestCVSS40:
     def test_parse_full_vector(self):
-        """Parse a complete CVSS 4.0 vector string."""
+        """解析完整的CVSS 4.0向量字符串。"""
         vec = "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N"
         result = parse_cvss40_vector(vec)
         assert result is not None

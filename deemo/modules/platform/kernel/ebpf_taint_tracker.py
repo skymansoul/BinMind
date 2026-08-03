@@ -1,14 +1,13 @@
 """
-Data-flow taint analysis for eBPF bytecode. Tracks user-controlled inputs
-— map lookups, packet buffers — through ALU and memory operations to unsafe
-sinks: tail calls, tainted-key map mutations.
+eBPF 字节码数据流污点分析。追踪用户可控输入——map 查询、数据包缓冲区——
+经 ALU 和内存操作传播至危险汇聚点：尾调用、含污点键的 map 变更。
 """
 
 import struct
 from collections import defaultdict
 from typing import Dict, List, Optional, Tuple
 
-# eBPF opcode and helper function constants
+# eBPF 操作码与 helper 函数常量
 BPF_LD = 0x00; BPF_LDX = 0x01; BPF_ST = 0x02; BPF_STX = 0x03
 BPF_ALU = 0x04; BPF_JMP = 0x05; BPF_ALU64 = 0x07
 
@@ -26,27 +25,27 @@ BPF_SKB_LOAD = 25
 BPF_XDP_ADJUST = 29
 BPF_RINGBUF_OUTPUT = 38
 BPF_RINGBUF_RESERVE = 36
-BPF_SKB_STORE = 54   # bpf_skb_store_bytes — write path
-BPF_XDP_STORE = 55    # bpf_xdp_store_bytes — write path
+BPF_SKB_STORE = 54   # bpf_skb_store_bytes——写入路径
+BPF_XDP_STORE = 55    # bpf_xdp_store_bytes——写入路径
 BPF_PERF_EVENT_OUTPUT = 25
 
-MAP_VALUE = 0xF0     # synthetic source tag — map lookup result
-PACKET_DATA = 0xF1   # synthetic source tag — packet/xdp buffer
-ARGUMENT = 0xF2      # synthetic source tag — function parameter
-STACK_SPILL = 0xF3   # 栈溢出路径引入的污点
+MAP_VALUE = 0xF0     # 合成污点源——map 查询返回值
+PACKET_DATA = 0xF1   # 合成污点源——数据包/XDP 缓冲区
+ARGUMENT = 0xF2      # 合成污点源——函数参数
+STACK_SPILL = 0xF3   # 栈溢出路径引致的污染
 RESERVED = 0xFF
 
-R10 = 10  # stack frame base register
-CALL_REG = 1  # r1 holds context pointer
+R10 = 10  # 栈帧基址寄存器
+CALL_REG = 1  # r1 持有上下文指针
 
-# 辅助函数返回值污点继承规则
+# helper 函数返回值——污点继承映射
 _HELPER_TAINT_RULES = {
     BPF_MAP_LOOKUP: (0, MAP_VALUE),
     BPF_SKB_LOAD:   (0, PACKET_DATA),
     BPF_PROBE_READ: (0, PACKET_DATA),
 }
 
-# 写入路径 helper — 若这些 helper 的源数据受污染，污点传播到目标对象
+# 写入路径 helper——源数据被污染则污点传播至目标对象
 _WRITE_PATH_HELPERS = frozenset({
     BPF_SKB_STORE, BPF_XDP_STORE, BPF_MAP_UPDATE,
 })
@@ -91,27 +90,27 @@ class TrackerResult:
         self.taint_paths: list[TaintPath] = []
         self.toctou_alerts: list[str] = []
         self.implicit_flows: list[tuple[int, str]] = []
-        # 栈残留泄漏：记录可能导出未初始化栈数据的指令
+        # 栈残存泄漏：记录可能将未初始化栈数据导出的指令位置
         self.stack_leak_alerts: list[tuple[int, int]] = []
-        # write path sinks: 记录污染数据被写入到内核对象的位置
+        # 写入路径汇聚：污染数据被写入内核对象的位置
         self.write_path_sinks: list[tuple[int, str]] = []
 
 
 class EBPFTaintTracker:
     """
-    Per-instruction taint propagation engine. Routes data-flow from sources
-    (map lookups, packet reads) through register and stack state to sinks.
+    逐指令污点传播引擎。将数据流从污染源（map 查询、数据包读取）
+    经寄存器和栈状态路由至汇聚点。
     """
 
     SINK_MAP = {
         BPF_TAIL_CALL: TaintSink("tail_call", "bpf_tail_call with tainted target"),
         BPF_MAP_UPDATE: TaintSink("map_update", "map value update with tainted key"),
         BPF_MAP_DELETE: TaintSink("map_delete", "map deletion with tainted key"),
-        BPF_RINGBUF_OUTPUT: TaintSink("data_leak", "ringbuf_output — 用户态数据泄漏"),
-        BPF_RINGBUF_RESERVE: TaintSink("data_leak", "ringbuf_reserve — 保留污染数据的缓冲区"),
-        BPF_PERF_EVENT_OUTPUT: TaintSink("data_leak", "perf_event_output — 事件数据泄漏"),
-        BPF_SKB_STORE: TaintSink("data_inject", "skb_store_bytes — 污染数据写入数据包"),
-        BPF_XDP_STORE: TaintSink("data_inject", "xdp_store_bytes — 污染数据写入 XDP 缓冲区"),
+        BPF_RINGBUF_OUTPUT: TaintSink("data_leak", "ringbuf_output——用户态数据泄漏"),
+        BPF_RINGBUF_RESERVE: TaintSink("data_leak", "ringbuf_reserve——缓冲区保留污染数据"),
+        BPF_PERF_EVENT_OUTPUT: TaintSink("data_leak", "perf_event_output——事件数据泄漏"),
+        BPF_SKB_STORE: TaintSink("data_inject", "skb_store_bytes——污染数据写入数据包"),
+        BPF_XDP_STORE: TaintSink("data_inject", "xdp_store_bytes——污染数据写入 XDP 缓冲区"),
     }
 
     _CLEAR_ALU = frozenset({BPF_XOR, BPF_AND, BPF_SUB})
@@ -123,13 +122,13 @@ class EBPFTaintTracker:
         self._history: list[TrackerResult] = []
         self._last_map_lookup: dict[int, int] = {}
         self._map_val_usage: set[int] = set()
-        # 隐式流追踪：分支条件中使用的污染寄存器集合
+        # 隐式流追踪：分支条件中被污染的寄存器集合
         self._branch_taint: dict[int, set[str]] = {}
-        # 栈初始化追踪：记录已显式写入（非残留）的栈偏移
+        # 栈初始化追踪：已显式写入（非残存）的栈偏移量
         self._stack_initialized: set[int] = set()
 
     def track(self, prog: bytes) -> list[TrackerResult]:
-        """Execute taint propagation over parsed eBPF instruction stream."""
+        """解析 eBPF 指令流并执行污点传播。"""
         insns = self._parse(prog)
         result = TrackerResult()
         self._taint = {i: set() for i in range(11)}
@@ -139,6 +138,8 @@ class EBPFTaintTracker:
         self._map_val_usage = set()
         self._branch_taint = {}
         self._stack_initialized = set()
+        # 缓存解析后的指令列表，供 _handle_alu 做隐式流分支支配者查找
+        self._instructions: list[dict] = insns
         if not insns:
             return [result]
 
@@ -168,9 +169,9 @@ class EBPFTaintTracker:
         cls, op = insn["cls"], insn["op_alu"]
         dst, src, imm, off = insn["dst"], insn["src"], insn["imm"], insn["off"]
 
-        # 条件分支隐式流追踪 — VeRefine (OOPSLA 2025) 概念：
-        # 若分支条件依赖污染数据，则分支体内所有赋值都被隐式污染，
-        # 因为控制流本身携带了信息。
+        # 条件分支隐式流追踪——VeRefine (OOPSLA 2025) 概念：
+        # 分支条件依赖污染数据时，分支体内所有赋值均获得隐式污染标记，
+        # 因控制流本身携带信息量。
         if cls == BPF_JMP and op != 0x80 and op != 0x90:
             # 条件跳转：检查 dst 或 src 是否被污染
             if self._taint.get(dst) or (insn["opcode"] & 0x08 and self._taint.get(src)):
@@ -188,7 +189,7 @@ class EBPFTaintTracker:
 
         elif cls == BPF_STX:
             self._handle_stx(dst, src, off, result)
-            # 标记栈初始化
+            # 标记栈位置已初始化
             if dst == R10:
                 self._stack_initialized.add(off)
 
@@ -199,7 +200,7 @@ class EBPFTaintTracker:
             if dst == R10: self._stack_initialized.add(off)
 
         elif cls == BPF_LDX and src == R10:
-            # 从栈加载 — 若该栈槽从未被初始化，标记为残留泄漏风险
+            # 从栈加载——该槽位从未初始化则标记为残存泄漏风险
             if off not in self._stack_initialized:
                 result.stack_leak_alerts.append((idx, off))
             if off in self._stack_taint:
@@ -217,7 +218,7 @@ class EBPFTaintTracker:
     def _handle_call(self, idx: int, insn: dict, result: TrackerResult):
         imm = insn["imm"]
 
-        # 数据源标记
+        # 识别并标记数据源
         if imm == BPF_MAP_LOOKUP:
             self._taint[0] = {f"map_val@{idx}"}
             result.inputs.append((idx, f"map_lookup(func={imm})"))
@@ -227,7 +228,7 @@ class EBPFTaintTracker:
             result.inputs.append((idx, f"packet_load"))
         elif imm == BPF_PROBE_READ:
             self._taint[0] = {f"kern_read@{idx}"}
-            result.inputs.append((idx, f"probe_read — 内核内存暴露"))
+            result.inputs.append((idx, f"probe_read——内核内存暴露"))
 
         if imm in _HELPER_TAINT_RULES:
             ret_reg, source_tag = _HELPER_TAINT_RULES[imm]
@@ -236,7 +237,7 @@ class EBPFTaintTracker:
         if imm == BPF_MAP_UPDATE:
             self._check_toctou(idx, insn, result)
 
-        # sink & write-path 检测
+        # 汇聚点与写入路径检测
         if imm in self.SINK_MAP:
             sink = self.SINK_MAP[imm]
             if imm == BPF_TAIL_CALL:
@@ -244,7 +245,7 @@ class EBPFTaintTracker:
                 if tainted:
                     result.sinks.append((idx, sink.kind, f"{sink.description} at insn {idx}"))
             elif imm in _WRITE_PATH_HELPERS:
-                # 写入路径：检查数据源（r3/skb_store 或 r4/xdp_store）
+                # 写入路径：检查数据源寄存器（r3/skb_store 或 r4/xdp_store）
                 data_reg = 3 if imm == BPF_MAP_UPDATE else 4
                 src_reg = self._taint.get(data_reg)
                 if src_reg:
@@ -253,7 +254,7 @@ class EBPFTaintTracker:
                     path = TaintPath(); path.sink_insn = idx
                     path.hops.append(f"write-path: {sink.kind}")
                     result.taint_paths.append(path)
-                # 也检查 key/value 的污染
+                # 同时检查 key/value 的污染状态
                 if self._taint.get(1) or self._taint.get(2):
                     result.sinks.append((idx, sink.kind, f"{sink.description} at insn {idx}"))
             elif self._taint.get(1) or self._taint.get(2) or self._taint.get(3):
@@ -276,9 +277,9 @@ class EBPFTaintTracker:
 
     def _handle_alu(self, dst: int, src: int, imm: int, op: int,
                     result: TrackerResult):
-        # 隐式流污染传播：若当前指令处于被污染的分支体内，
-        # 即使源操作数不直接污染，目标操作数也获得隐式污染标记。
-        # 这是 VeRefine (OOPSLA 2025) 中流敏感精化类型系统的核心思想。
+        # 隐式流污染传播：若当前指令位于受污染的分支体内，
+        # 即使源操作数无直接污染，目标操作数也获得隐式污染标记。
+        # 这是 VeRefine (OOPSLA 2025) 中流敏感精化类型的核心机制。
         has_implicit = False
         for branch_idx, branch_tags in self._branch_taint.items():
             if branch_idx < _find_branch_dominator_end(
@@ -370,20 +371,35 @@ class EBPFTaintTracker:
         }
 
 
-def _find_branch_dominator_end(branch_idx: int, insns: list) -> int:
-    """粗略估计被污染分支的末尾位置（控制流汇合点之前的指令）。
+# eBPF 条件跳转操作码（class=BPF_JMP=0x05，ALU-op 在高半字节）
+_BPF_JMP_JEQ = 0x10  # jump if ==
+_BPF_JMP_JNE = 0x50  # jump if !=
+_BPF_JMP_JGT = 0x20  # jump if >  (unsigned)
+_BPF_JMP_JGE = 0x30  # jump if >= (unsigned)
+_BPF_JMP_JSET = 0x40  # jump if &  != 0
 
-    简化实现：从分支点开始扫描，找到第一个 JEQ/JNE 跳转目标超过
-    分支点+16 的位置作为汇合点估计。精度有限，但足以捕获
+
+def _find_branch_dominator_end(branch_idx: int, insns: list) -> int:
+    """粗略估计被污染分支的末尾指令序号（控制流汇合点之前）。
+
+    简化实现：从分支点开始扫描，定位首个 JEQ/JNE 跳转目标超过
+    branch_idx+16 的位置作为汇合点近似值。精度有限，但足以捕获
     大多数短分支体内的隐式流。
+
+    此前引用了未定义的 BPF_OP_JMP，现已改用模块作用域中定义的
+    具体操作码常量。
     """
-    if not insns: return branch_idx + 1
+    if not insns:
+        return branch_idx + 1
     n = len(insns)
     for j in range(branch_idx + 1, min(branch_idx + 32, n)):
         insn_j = insns[j] if isinstance(insns[j], dict) else None
-        if insn_j is None: continue
+        if insn_j is None:
+            continue
         op = insn_j.get("opcode", 0) if isinstance(insn_j, dict) else 0
-        if (op & 0x07) == BPF_JMP and (op & 0xF0) in (BPF_OP_JMP.JEQ, BPF_OP_JMP.JNE):
+        op_cls = op & 0x07
+        op_alu = op & 0xF0
+        if op_cls == BPF_JMP and op_alu in (_BPF_JMP_JEQ, _BPF_JMP_JNE):
             return j + 1
     return min(branch_idx + 8, n)
 
@@ -392,7 +408,7 @@ def create_ebpf_tracker() -> EBPFTaintTracker:
     return EBPFTaintTracker()
 
 
-# ─── 批量跟踪 & 导出 ───
+# ─── 批量跟踪与导出 ───
 
 def batch_track(programs: list[bytes]) -> list[dict]:
     """批量污点跟踪多个 eBPF 程序，返回每个程序的摘要。"""

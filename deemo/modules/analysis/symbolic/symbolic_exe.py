@@ -190,12 +190,12 @@ class SymbolicExecutor:
         探索路径，寻找可能的崩溃点
         
         Args:
-            target_address: 目标地址（可选）
-            avoid_addresses: 需要避免的地址列表
-            max_steps: 最大步数
-            
-        Returns:
-            探索结果字典
+        target_address: 目标地址（可选）
+        avoid_addresses: 需要避免的地址列表
+        max_steps: 最大步数
+        
+        返回:
+        探索结果字典
         """
         if not self.is_available():
             return {
@@ -400,12 +400,12 @@ class SymbolicExecutor:
         计算栈溢出偏移量
         
         Args:
-            function_name: 目标函数名
-            buffer_size_guess: 缓冲区大小猜测
-            max_attempts: 最大尝试次数
-            
-        Returns:
-            偏移量计算结果
+        function_name: 目标函数名
+        缓冲区_size_guess: 缓冲区大小猜测
+        max_attempts: 最大尝试次数
+        
+        返回:
+        偏移量计算结果
         """
         if not self.is_available():
             return {
@@ -518,11 +518,11 @@ class SymbolicExecutor:
         生成导致崩溃的输入
         
         Args:
-            function_name: 目标函数
-            max_input_size: 最大输入大小
-            
-        Returns:
-            崩溃输入生成结果
+        function_name: 目标函数
+        max_input_size: 最大输入大小
+        
+        返回:
+        崩溃输入生成结果
         """
         if not self.is_available():
             return {
@@ -592,10 +592,10 @@ class SymbolicExecutor:
         获取攻击路径可视化信息
         
         Args:
-            target_address: 目标地址（可选）
-            
-        Returns:
-            攻击路径信息
+        target_address: 目标地址（可选）
+        
+        返回:
+        攻击路径信息
         """
         if not self.is_available():
             return {
@@ -645,10 +645,10 @@ class SymbolicExecutor:
         执行完整的符号执行分析
         
         Args:
-            function_name: 目标函数
-            
-        Returns:
-            完整分析结果
+        function_name: 目标函数
+        
+        返回:
+        完整分析结果
         """
         if not self.is_available():
             return {
@@ -703,8 +703,8 @@ class SymbolicExecutor:
         """
         在二进制中查找危险函数
         
-        Returns:
-            找到的危险函数名列表
+        返回:
+        找到的危险函数名列表
         """
         if not self.is_available():
             return []
@@ -740,8 +740,8 @@ class SymbolicExecutor:
         """
         查找调用了危险函数的函数
         
-        Returns:
-            列表 [(函数名, 地址), ...]
+        返回:
+        列表 [(函数名, 地址),.]
         """
         if not self.is_available():
             return []
@@ -789,11 +789,11 @@ class SymbolicExecutor:
         自动探索危险函数，寻找可触发的崩溃
         
         Args:
-            dangerous_funcs_list: 危险函数名列表（如果为 None 则自动检测）
-            max_per_func: 每个函数的最大探索步数
-            
-        Returns:
-            第一个成功触发的崩溃状态，如果没有找到则返回 None
+        dangerous_funcs_list: 危险函数名列表（如果为 None 则自动检测）
+        max_per_func: 每个函数的最大探索步数
+        
+        返回:
+        第一个成功触发的崩溃状态，如果没有找到则返回 None
         """
         if not self.is_available():
             return None
@@ -841,8 +841,8 @@ class SymbolicExecutor:
         """
         探索指定函数，寻找崩溃
         
-        Returns:
-            崩溃信息字典，如果没有崩溃则返回 None
+        返回:
+        崩溃信息字典，如果没有崩溃则返回 None
         """
         try:
             state = self.project.factory.call_state(
@@ -923,12 +923,12 @@ class SymbolicExecutor:
         执行基本的污点分析
         
         Args:
-            function_name: 目标函数名
-            source_type: 污点源类型 ('stdin', 'arg', 'env', 'socket')
-            max_steps: 最大探索步数
-            
-        Returns:
-            污点分析结果
+        function_name: 目标函数名
+        source_type: 污点源类型 ('stdin', 'arg', 'env', '套接字')
+        max_steps: 最大探索步数
+        
+        返回:
+        污点分析结果
         """
         if not self.is_available():
             return {
@@ -1093,7 +1093,7 @@ class SymbolicExecutor:
     
     def _get_taint_recommendation(self, sensitive_reached: List[Dict]) -> str:
         """
-        根据污点分析结果生成建议
+        根据污点分析结果生成
         """
         if not sensitive_reached:
             return "未发现直接的污染路径到敏感汇点，可能需要更深入的分析"
@@ -1122,11 +1122,11 @@ class SymbolicExecutor:
         启动 angr-explorer 可视化界面
         
         Args:
-            port: Web 服务端口
-            browser: 是否自动打开浏览器
-            
-        Returns:
-            启动结果
+        port: Web 服务端口
+        browser: 是否自动打开浏览器
+        
+        返回:
+        启动结果
         """
         if not self.is_available():
             return {
@@ -1197,8 +1197,8 @@ class SymbolicExecutor:
         """
         生成可视化数据（不依赖 angr-explorer）
         
-        Returns:
-            可视化数据字典
+        返回:
+        可视化数据字典
         """
         if not self.is_available():
             return {
@@ -1265,12 +1265,12 @@ class SymbolicExecutor:
         执行全面的符号执行分析
         
         Args:
-            function_name: 目标函数
-            enable_taint: 是否启用污点分析
-            enable_visualization: 是否生成可视化数据
-            
-        Returns:
-            全面分析结果
+        function_name: 目标函数
+        enable_taint: 是否启用污点分析
+        enable_visualization: 是否生成可视化数据
+        
+        返回:
+        全面分析结果
         """
         logger.info("[angr] 开始全面分析")
         
@@ -1318,12 +1318,12 @@ class SymbolicExecutor:
         将符号执行产生的新输入导出为语料文件，供 libFuzzer/AFL 使用
         
         Args:
-            output_dir: 语料输出目录
-            max_files: 最大导出文件数
-            exploration_steps: 探索步数
-            
-        Returns:
-            导出的语料文件路径列表
+        output_dir: 语料输出目录
+        max_files: 最大导出文件数
+        exploration_steps: 探索步数
+        
+        返回:
+        导出的语料文件路径列表
         """
         if not self.is_available():
             logger.warning("[angr] 符号执行不可用，无法导出语料")

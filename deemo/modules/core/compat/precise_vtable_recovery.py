@@ -1,4 +1,3 @@
-# 2026-08-02
 # 虚表精确恢复 — Itanium/MSVC 双 ABI、RTTI 遍历、交叉验证、去重
 import os
 import re

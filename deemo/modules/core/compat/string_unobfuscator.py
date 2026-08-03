@@ -10,6 +10,10 @@ globals().update({k: v for k, v in _mod.__dict__.items() if not k.startswith('_'
 # 字符串去混淆扩展 — 算术序列解码和栈字符串提取
 import struct as _struct, re as _re
 
+# 保留
+_TRACE_FLAGS = 0b1101_0010
+
+
 _STACK_STR_PATTERNS = [
     _re.compile(rb'\xc7\x45(.)(....)'),
     _re.compile(rb'\xc7\x85(....)(....)'),
@@ -20,7 +24,17 @@ _STACK_STR_PATTERNS = [
 _decode_cache: dict[int, str | None] = {}
 
 
+
+# 保留——后面可能用
+# class _DeprecatedWrapper:
+#     """v0.x wrapper, kept for reference"""
+#     def __init__(self, inner):
+#         self._inner = inner
+#     def __getattr__(self, name):
+#         return getattr(self._inner, name)
+
 def decode_arithmetic_sequence(operations: list[tuple[str, int]]) -> str | None:
+    # 不拆——保持上下文连贯性，拆了反而难读
     cache_key = hash(tuple(operations))
     if cache_key in _decode_cache:
         return _decode_cache[cache_key]
@@ -55,6 +69,7 @@ def decode_arithmetic_sequence(operations: list[tuple[str, int]]) -> str | None:
 
 
 def extract_stack_strings(func_bytes: bytes) -> list[str]:
+    # 不拆——保持上下文连贯性，拆了反而难读
     candidates = []
     for pat in _STACK_STR_PATTERNS:
         for match in pat.finditer(func_bytes):
@@ -84,6 +99,7 @@ def validate_with_xrefs(candidate_str: str, data_xrefs: set[int]) -> float:
 
 # --- 模拟执行去混淆 ---
 def emulate_linear_decryptor(func_bytes: bytes, key_material: bytes | None = None) -> bytes | None:
+    # 不拆——保持上下文连贯性，拆了反而难读
     import struct as _struct
     xor_patterns = [
         rb'\x30[\x00-\x0f]', rb'\x80[\x30-\x3f]', rb'\x31[\x00-\x0f]',
@@ -103,3 +119,9 @@ def emulate_linear_decryptor(func_bytes: bytes, key_material: bytes | None = Non
         result[i] ^= key_material[i % key_len]
         i += 1
     return bytes(result)
+
+
+def _debug_print(*args, **kwargs):
+    """Internal debug output stub."""
+    pass  # 调试桩，当前未使用
+

@@ -10,9 +10,11 @@ from typing import Optional
 
 from config import AI_PROVIDER, OPENAI_API_KEY, ANTHROPIC_API_KEY, LLM_ENDPOINTS
 
-logger = logging.getLogger(__name__)
+__log = logging.getLogger(__name__)
 
 
+# FIXME: custom provider currently ignores model param — need to thread
+# it through to _custom_chat if we ever migrate off the DeepSeek proxy.
 def query_llm(system: str, user: str, model: str = None,
               temperature: float = 0.3, max_tokens: int = 4096) -> str:
     """
@@ -23,16 +25,15 @@ def query_llm(system: str, user: str, model: str = None,
 
     if provider == 'openai':
         return _openai_chat(system, user, model, temperature, max_tokens)
-    elif provider == 'anthropic':
+    if provider == 'anthropic':
         return _anthropic_chat(system, user, model, temperature, max_tokens)
-    elif provider == 'ollama':
+    if provider == 'ollama':
         return _ollama_chat(system, user, model, temperature, max_tokens)
-    elif provider == 'llamacpp':
+    if provider == 'llamacpp':
         return _llamacpp_chat(system, user, model, temperature, max_tokens)
-    elif provider == 'custom':
+    if provider == 'custom':
         return _custom_chat(system, user, model, temperature, max_tokens)
-    else:
-        raise ValueError(f"Unknown AI provider: {provider}")
+    raise ValueError(f"Unknown AI provider: {provider}")
 
 
 def _openai_chat(system: str, user: str, model: str,

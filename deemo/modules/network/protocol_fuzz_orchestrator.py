@@ -1,16 +1,14 @@
-# 2026-07-28
-"""协议模糊测试编排器 —— 统一的协议感知模糊测试调度框架。
+"""协议模糊测试编排器 —— 统一协议感知模糊测试调度框架。
 
 整合模块内多个fuzz引擎（CAN注入、ICS模板、IoT协议），提供：
 - 基于覆盖反馈的种子调度（LibAFL-style）
 - 协议状态感知的变异策略选择
 - 跨协议模糊测试结果关联分析
 
-Zotero 参考文献：
-- #421 LibAFL: A Framework to Build Modular and Reusable Fuzzers (Fioraldi et al.)
-- #428 A Survey of Protocol Fuzzing — 协议模糊测试分类法
-- #1641 Testing IoT Protocol Requirements Using Fuzzing and Symbolic Execution:
-  Application to CoAP (Asadian et al., 2024)
+参考文献：
+- LibAFL: 构建模块化可复用Fuzzer的框架
+- 协议模糊化调查 —— 协议模糊测试分类法
+- 基于模糊测试与符号执行的IoT协议需求测试: CoAP应用 (Asadian et al., 2024)
 """
 import time, math, uuid, logging
 from collections import defaultdict, Counter
@@ -21,21 +19,21 @@ from typing import List, Dict, Optional, Any, Tuple, Callable
 _log = logging.getLogger(__name__)
 
 class FuzzStrategy(IntEnum):
-    """协议模糊测试策略 —— 参考 A Survey of Protocol Fuzzing 分类法"""
+    """协议模糊测试策略 —— 协议模糊化调查分类法"""
     GENERATION_BASED = 0    # 基于语法生成（需协议模型）
     MUTATION_BASED = 1      # 基于种子变异（不依赖模型）
     STATE_GUIDED = 2        # 状态引导（需状态机模型）
-    COVERAGE_GUIDED = 3     # 覆盖率引导（需 instrumentation）
-    GREYBOX_HYBRID = 4      # 灰盒混合（本实现的默认策略）
+    COVERAGE_GUIDED = 3     # 覆盖率引导（需插桩）
+    GREYBOX_HYBRID = 4      # 灰盒混合（本实现默认策略）
 
 
 @dataclass
 class FuzzSeed:
-    """模糊测试种子 —— 包含协议上下文和反馈元数据
+    """模糊测试种子 —— 含协议上下文和反馈元数据
 
-    设计决策：每个种子绑定协议+状态上下文，使调度器可以按
-    协议×状态维度分配fuzz预算。该维度划分参考A Survey of Protocol
-    Fuzzing §4.2 的状态感知调度策略。
+    设计决策：每种子绑定协议+状态上下文，使调度器可按
+    协议×状态维度分配fuzz预算。维度划分参考协议模糊化
+    调查 §4.2 的状态感知调度策略。
     """
     seed_id: str = ""
     protocol: str = ""
@@ -46,8 +44,8 @@ class FuzzSeed:
     energy: float = 1.0          # LibAFL 能量调度 —— 高能种子获得更多变异次数
     fuzz_count: int = 0          # 已执行的模糊迭代次数
     crash_count: int = 0         # 产生的崩溃数
-    edge_coverage: int = 0       # 覆盖的新边数（需 instrumentation）
-    # 熵反馈 —— Asadian et al. 2024 的方法：高熵输出暗示深路径
+    edge_coverage: int = 0       # 覆盖的新边数（需插桩）
+    # 熵反馈 —— Asadian et al. 2024: 高熵输出暗示深路径
     entropy_score: float = 0.0
 
 
@@ -65,10 +63,10 @@ class FuzzReport:
 class PowerScheduler:
     """LibAFL 风格的能量调度器 —— 基于历史反馈分配变异预算
 
-    核心思想（参考 LibAFL §3.2）：种子能量 = f(执行时间, 覆盖率增益, 崩溃次数)
-    新发现的路径→高能量；频繁执行但仍无新覆盖→能量衰减。
+    核心思想（LibAFL §3.2）：种子能量 = f(执行时间, 覆盖率增益, 崩溃次数)
+    新发现的路径→高能；频繁执行但无新覆盖→能量衰减。
 
-    本实现简化为基于熵反馈 + 崩溃计数的加权方案（无实际覆盖率 instrumentation）。
+    本实现简化为基于熵反馈+崩溃计数的加权方案（无实际覆盖率插桩）。
     """
 
     def __init__(self, alpha: float = 0.3):
@@ -95,21 +93,21 @@ class PowerScheduler:
         return min(energy, base * 10)  # 上限：防止单一种子垄断预算
 
     def decay(self, seed: FuzzSeed) -> None:
-        """衰减无产出种子的能量 —— 执行多次但无新发现则降权"""
+        """衰减无产出种子能量 —— 执行多次但无新发现则降权"""
         key = seed.seed_id
         self._seed_scores[key] = self._seed_scores.get(key, 1.0) * 0.8
 
 
 class ProtocolFuzzOrchestrator:
-    """协议模糊测试编排器 —— 管理多协议fuzz会话的调度与结果聚合。
+    """协议模糊测试编排器 —— 管理多协议fuzz会话调度与结果聚合。
 
     架构：
     1. 种子队列：按协议+状态分组的优先级队列
     2. 能量调度：LibAFL style power scheduling with entropy feedback
     3. 策略选择：基于协议类型自动选择 generation/mutation/hybrid
-    4. 结果关联：跨协议崩溃模式匹配（同一解析器缺陷可能被多协议触发）
+    4. 结果关联：跨协议崩溃模式匹配（同一解析器缺陷可被多协议触发）
 
-    不直接执行fuzz —— 委托给各协议专用的 injector/generator。
+    不直接执行fuzz —— 委托给各协议专用 injector/generator。
     本类负责调度逻辑和结果聚合。
     """
 
@@ -137,7 +135,7 @@ class ProtocolFuzzOrchestrator:
 
     def select_seed(self, protocol: str,
                     strategy: FuzzStrategy = FuzzStrategy.GREYBOX_HYBRID) -> Optional[FuzzSeed]:
-        """选取下一个待模糊测试的种子 —— 加权随机选择
+        """选取下一待模糊测试种子 —— 加权随机选择
 
         权重 = 能量调度分 × 种子年龄（优先年老未充分fuzz的种子）
         """
@@ -228,13 +226,13 @@ class ProtocolFuzzOrchestrator:
         return report
 
     def correlate_crashes(self) -> Dict[str, List[str]]:
-        """跨协议崩溃关联 —— 检测可能由同一解析器缺陷引起的多协议崩溃。
+        """跨协议崩溃关联 —— 检测同一解析器缺陷引起的多协议崩溃。
 
-        相关性评分：如果两个协议出现相同崩溃签名前缀（如相同的
-        缓冲区溢出模式），可能是同一底层库的缺陷。
+        相关性评分：若两协议出现相同崩溃签名前缀（如相同的
+        缓冲区溢出模式），可能为同一底层库缺陷。
         """
         correlations: Dict[str, List[str]] = defaultdict(list)
-        sig_by_proto: Dict[str, set] = defaultdict(set)  # 简化
+        sig_by_proto: Dict[str, set] = defaultdict(set)
 
         for key, seed_ids in self._crash_signatures.items():
             proto, sig = key.split(":", 1)

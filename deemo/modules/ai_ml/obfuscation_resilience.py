@@ -1,8 +1,6 @@
-# 2026-07-21 16:08
-# obfuscation_resilience.py
 # 混淆韧性模块 — 检测/归一化/绕过常见代码混淆技术
 # 依据: "Identifying Obfuscated Code through Graph-Based Semantic Analysis"
-#       [Applied Network Science 2025] 对比了GCN/GAT/GIN/SAGE/UNet在混淆检测上的表现
+# [Applied Network Science 2025] 对比了GCN/GAT/GIN/SAGE/UNet在混淆检测上的表现
 # 核心: 结合语义特征(Pcode IR风格的特征提取)和图结构特征来抵抗混淆
 
 from __future__ import annotations

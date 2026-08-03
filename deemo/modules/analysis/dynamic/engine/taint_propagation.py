@@ -1,7 +1,7 @@
 """
-Taint propagation engine — byte-level taint tracking via worklist-driven FP iteration.
-Round 4: Ghidra headless-style AnalysisContext for state management between passes.
-Error hierarchy replaces bare string errors with typed exceptions.
+Taint propagation engine — byte-level 污点追踪 via worklist-driven FP iteration
+舍入 4: Ghidra headless-style AnalysisContext for state management passes
+Error hierarchy replaces bare string errors typed 异常s
 """
 import os, logging, re
 from dataclasses import dataclass, field
@@ -11,9 +11,9 @@ from collections import defaultdict, deque
 
 logger = logging.getLogger(__name__)
 
-# ── Round 4: Error taxonomy ──
+# ── 舍入 4: Error taxonomy ──
 # Ghidra headless scripting emphasizes domain-specific error types
-# over generic exceptions, enabling precise error recovery strategies.
+# over generic 异常s, enabling precise error recovery strategies
 
 class TaintError(Exception):
     """污点分析错误基类"""
@@ -197,14 +197,14 @@ class TaintMap:
     def is_register_tainted(self, reg: str) -> bool:
         return self._registers.get(reg, 0) != 0
 
-# ── Round 4: Ghidra headless-style AnalysisContext ────────────────────────────
+# ── 舍入 4: Ghidra headless-style AnalysisContext ────────────────────────────
 # Ghidra的headless分析使用Program/AddressFactory等上下文对象在分析阶段间
-# 传递状态。此处AnalysisContext提供等价的符号表+规则集的共享上下文。
+# 传递状态。此处AnalysisContext提供等价的符号表+规则集的共享上下文
 
 @dataclass
 class AnalysisContext:
-    """Ghidra headless风格的共享分析上下文。
-    在多个TaintEngine实例间共享符号表和传播规则。"""
+    """Ghidra headless风格的共享分析上下文
+    在多个TaintEngine实例间共享符号表和传播规则"""
     variable_count: int = 1024
     symbol_table: Dict[str, int] = field(default_factory=dict)
     next_var_id: int = 0

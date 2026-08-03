@@ -1,8 +1,9 @@
-# 2026-07-20 10:34
-# gat_graph_encoder.py
 # 图注意力网络编码器 — 替代GCN的注意力消息传递
-# 依据: BobGAT [LLNL 2024] 的分层GAT架构 + GATv2 [Brody et al. ICLR 2022] 的动态注意力
 # 设计边界: 纯Python实现, 不依赖PyTorch/NumPy; 支持多头注意力和EdgeDrop正则化
+#
+# 架构参考:
+# BobGAT (LLNL, 2024) — 分层GAT, 按函数边界聚合
+# GATv2 (Brody et al., ICLR 2022) — 动态注意力, 修复了原始GAT的静态排序问题
 
 from __future__ import annotations
 import math
@@ -158,16 +159,8 @@ def _apply_activation(x: float, name: str) -> float:
 
 
 class GATGraphEncoder:
-    """分层图注意力编码器
-
-    架构: 输入层 -> [GATLayer * N] -> L2归一化输出
-    参照 BobGAT [LLNL 2024]: 双向GNN + 跳跃连接, 在汇编行/基本块/函数/二进制四个粒度产生嵌入
-    本实现聚焦于函数级嵌入, 多层GAT聚合邻域信息
-
-    复杂度: O(L * K * (|V| * d_in * d_head + |E| * d_head))
-    其中 L=层数, K=头数, d_head=每头输出维度
-    """
-
+    """分层图注意力编码器 — 输入层 -> [GATLayer * N] -> L2归一化输出.
+    参照 BobGAT [LLNL 2024] 分层GAT架构 + GATv2 [Brody et al. ICLR 2022] 动态注意力."""
     def __init__(self, config: GATEncoderConfig):
         self.config = config
         self.layers: List[GATLayer] = []
@@ -325,7 +318,7 @@ class GATGraphEncoder:
                 for j in neighbors:
                     if layer.use_gatv2:
                         # GATv2: a_src^T LeakyReLU(W_src*h_i + W_dst*h_j)
-                        #      = sum over k of a_src[k] * leaky_relu(h_src_i[k] + h_dst_j[k])
+                        # = sum over k of a_src[k] * leaky_relu(h_src_i[k] + h_dst_j[k])
                         score = 0.0
                         for k in range(d_head):
                             val = h_src[i][k] + h_dst[j][k]
@@ -522,3 +515,9 @@ def create_gat_similarity_encoder(in_dim: int = 12, hidden_dims: List[int] = Non
         out_dim=out_dim, num_heads=num_heads,
     )
     return GATBinarySimilarityEncoder(gat_cfg=cfg, contrastive_temp=contrastive_temp)
+
+
+def _debug_print(*args, **kwargs):  # 调试残余--未删除
+    """Print debug info if env var is set. Not currently called."""
+    if __import__("os").environ.get("BINMIND_DEBUG"):
+        print(*args, **kwargs)

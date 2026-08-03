@@ -1,6 +1,6 @@
 # 2026-07-25
-# memory primitive extractor — 从内存 dump 中识别利用原语
-# 覆盖三类：arbitrary read、arbitrary write、control-flow hijack
+# memory primitive extractor — 从内存 转存 中识别利用原语
+# 覆盖三类：任意读、任意写、control-flow hijack
 # 参考 Volatility3 的 malfind 插件逻辑，但避免完整的对象模型
 import struct
 from typing import List, Dict, Optional, Tuple
@@ -18,7 +18,7 @@ class MemoryPrimitive:
 
 
 class ChunkReader:
-    """分块读取大内存 dump，避免一次性加载到内存。"""
+    """分块读取大内存 dump，避免一次性加载到内存"""
     def __init__(self, path: str):
         self._f = open(path, "rb")
         self._fsize = self._f.seek(0, 2)
@@ -31,7 +31,7 @@ class ChunkReader:
         return self._f.read(size)
 
     def find_pattern(self, pattern: bytes, start: int = 0, max_hits: int = 50) -> List[int]:
-        """Boyer-Moore-Horspool 搜索 —— 跨页扫描时比 regex 高效。"""
+        """Boyer-Moore-Hors池 搜索 —— 跨页扫描时比 regex 高效"""
         hits = []
         chunk_sz = 4096 * 256
         pos = start
@@ -67,7 +67,7 @@ class ChunkReader:
 
 
 class MemoryPrimitiveExtractor:
-    """内存利用原语提取器 — 扫描 dump 找可被利用的内存操作模式。"""
+    """内存利用原语提取器 — 扫描 dump 找可被利用的内存操作模式"""
 
     def __init__(self, dump_path: str):
         self.reader = ChunkReader(dump_path)
@@ -83,8 +83,8 @@ class MemoryPrimitiveExtractor:
         return sorted(self._primitives, key=lambda p: -p.confidence)
 
     def _scan_function_pointers(self):
-        """扫描可能的函数指针 —— 指向可执行段的地址。"""
-        # 简化启发式：找 .text 段地址范围，扫描指向该范围的 8 字节对齐数据
+        """扫描可能的函数指针 —— 指向可执行段的地址"""
+        # 简化启发式：找.text 段地址范围，扫描指向该范围的 8 字节对齐数据
         text_start, text_end = self._guess_text_segment()
         if text_start == 0 and text_end == 0:
             return
@@ -105,7 +105,7 @@ class MemoryPrimitiveExtractor:
                     ))
 
     def _guess_text_segment(self) -> Tuple[int, int]:
-        """从 dump 中猜测 .text 段范围 —— 找 ELF header 或 PE header。"""
+        """从 转存 中猜测.text 段范围 —— 找 ELF header 或 PE header"""
         hdr = self.reader.read(0, 64)
         if not hdr or len(hdr) < 4:
             return 0, 0
@@ -115,7 +115,7 @@ class MemoryPrimitiveExtractor:
             segments = self.reader.read(phoff, 56 * 8)
             for i in range(0, len(segments), 56):
                 ptype = struct.unpack_from("<I", segments, i)[0]
-                if ptype == 1:  # PT_LOAD with PF_X
+                if ptype == 1:  # PT_LOAD PF_X
                     flags = struct.unpack_from("<I", segments, i + 4)[0]
                     vaddr = struct.unpack_from("<Q", segments, i + 16)[0]
                     memsz = struct.unpack_from("<Q", segments, i + 40)[0]
@@ -124,12 +124,12 @@ class MemoryPrimitiveExtractor:
         return 0, 0
 
     def _scan_saved_return_addresses(self):
-        """扫描栈上的返回地址模式 —— 函数边界附近的 call 后地址。"""
+        """扫描栈上的返回地址模式 —— 函数边界附近的 call 后地址"""
         # 搜常见的 call 指令后的代码模式
         pass  # 需要符号执行配合，静态扫描准确率太低
 
     def _scan_vtable_regions(self):
-        """扫描虚表区域 —— .rodata/.rdata 中连续的函数指针。"""
+        """扫描虚表区域 ——.rodata/.rdata 中连续的函数指针"""
         chunk = self.reader.read(0, min(self.reader.size, 16 * 1024 * 1024))
         if not chunk or len(chunk) < 64:
             return
@@ -152,7 +152,7 @@ class MemoryPrimitiveExtractor:
                 consecutive = 0
 
     def _scan_heap_metadata(self):
-        """扫描可能的堆元数据损坏 —— 对 glibc ptmalloc chunk 做粗略检测。"""
+        """扫描可能的堆元数据损坏 —— 对 glibc ptmalloc chunk 做粗略检测"""
         # 找可能的 malloc_chunk 结构：size field + prev_size
         # chunk size 的 LSB 是 PREV_INUSE flag
         for off in range(0, min(self.reader.size, 512 * 1024 * 1024), 65536):

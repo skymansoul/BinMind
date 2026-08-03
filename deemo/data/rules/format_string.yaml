@@ -1,0 +1,32 @@
+# 格式化字符串漏洞检测规则
+# printf 族函数的格式化参数若来自用户输入则产生格式化字符串漏洞
+# 在 x86_64 下 %n 写入可覆盖任意地址；在启用 FORTIFY_SOURCE 时 printf(buf) 被编译器替换为 printf("%s", buf)
+
+rules:
+  - id: FS-001
+    pattern: "(printf|fprintf|dprintf)\\s*\\(\\s*([^\"'][^,)]*)\\s*[),]"
+    description: "printf() 族函数的格式化参数来自变量——若变量包含用户输入则可被利用"
+    severity: High
+    cwe: CWE-134
+    func_pattern: "printf"
+
+  - id: FS-002
+    pattern: "(sprintf|snprintf)\\s*\\([^,]+,\\s*([^\"'][^,)]*)\\s*[),]"
+    description: "sprintf() 族函数的格式化参数来自变量——同上"
+    severity: High
+    cwe: CWE-134
+    func_pattern: "sprintf"
+
+  - id: FS-003
+    pattern: "syslog\\s*\\([^,]+,\\s*([^\"'][^,)]*)\\s*\\)"
+    description: "syslog() 的格式化参数来自变量——日志注入+格式化字符串双重风险"
+    severity: Medium
+    cwe: CWE-134
+    func_pattern: "syslog"
+
+  - id: FS-004
+    pattern: "(err|warn|errx|warnx)\\s*\\([^,]*,\\s*([^\"'][^,)]*)\\s*[),]"
+    description: "BSD err/warn 族——格式化参数若为用户输入则产生漏洞"
+    severity: Medium
+    cwe: CWE-134
+    func_pattern: "err"

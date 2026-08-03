@@ -1,4 +1,3 @@
-# 2026-07-15
 # kernel — OS-level kernel security analysis
 
 __version__ = "0.3.1"

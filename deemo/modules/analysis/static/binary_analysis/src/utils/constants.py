@@ -1,4 +1,3 @@
-# 2026-07-16 -- 架构/格式/严重性等枚举常量
 # 统一入口，避免各处散落魔数
 
 from enum import Enum, IntEnum
@@ -20,7 +19,7 @@ class Arch(Enum):
 
     @classmethod
     def from_r2_arch(cls, r2_str: str) -> "Arch":
-        """从 radare2 架构字符串推断 Arch 枚举值。"""
+        """从 radare2 架构字符串推断 Arch 枚举值"""
         s = r2_str.lower().strip()
         _map = {
             "x86": cls.X86,
@@ -42,7 +41,7 @@ class Arch(Enum):
 
     @classmethod
     def from_elf_machine(cls, e_machine: int) -> "Arch":
-        """从 ELF e_machine 字段映射架构。"""
+        """从 ELF e_machine 字段映射架构"""
         # //// EM_* 常量 (linux/elf-em.h)
         _em_map = {
             3:   cls.X86,         # EM_386
@@ -77,7 +76,7 @@ class Severity(IntEnum):
 
     @classmethod
     def from_cvss_score(cls, score: float) -> "Severity":
-        """CVSS v3.x 分数 -> Severity。"""
+        """CVSS v3.x 分数 -> Severity"""
         if score <= 0.0:
             return cls.INFO
         elif score < 4.0:

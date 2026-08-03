@@ -1,17 +1,4 @@
-# 2026-08-02
-# Use-After-Free 模式检测器 — 基于 typestate 分析的堆生命周期追踪
-# 核心检测: 在崩溃上下文中识别 UAF (use-after-free) 和 DF (double free)
-# 的典型特征模式。不做动态堆追踪（那需要 Pintool/Frida hook），
-# 而是对已知崩溃信息做模式匹配 + 启发式推断。
-#
-# 参考:
-#   Typestate-guided fuzzer for discovering UAF (Xu et al. ICSE 2020)
-#   Finding the needle in the heap (USENIX 2012): 结合静态分析
-#     和动态符号执行触发 UAF
-#   DDRace (Yuan et al. USENIX 2024): 并发 UAF 检测
-#   UAFSan (2023): 基于 ASan 增强的 UAF 专用检测
-#   A Use-After-Free Vulnerability Detection Method for Multi-Threaded
-#     Programs Based on an Improved Petri Net and Value Flow Graph (2023)
+"""UAF 模式检测器——基于 typestate 分析的堆生命周期追踪——ASan 输出 + SIGSEGV 上下文"""
 import re
 from typing import List, Dict, Set, Tuple, Optional, Any
 from collections import defaultdict, deque
@@ -20,40 +7,31 @@ from enum import Enum
 
 
 class UAFPattern(Enum):
-    EXPLICIT_UAF = "explicit_uaf"          # ASan: heap-use-after-free
-    DOUBLE_FREE = "double_free"            # ASan: double-free
-    STALE_PTR_DEREF = "stale_ptr_deref"    # SIGSEGV on freed memory pattern
-    DANGLING_CALLBACK = "dangling_callback" # freed object still registered as callback
-    REALLOC_UAF = "realloc_uaf"            # realloc 返回新地址后旧指针仍被使用
-    TYPE_CONFUSION = "type_confusion"      # 释放后以不同类型重新分配并访问
-    THREAD_UAF = "thread_uaf"              # 跨线程的 UAF (线程A释放, 线程B访问)
+    EXPLICIT_UAF = "explicit_uaf"
+    DOUBLE_FREE = "double_free"
+    STALE_PTR_DEREF = "stale_ptr_deref"
+    DANGLING_CALLBACK = "dangling_callback"
+    REALLOC_UAF = "realloc_uaf"
+    TYPE_CONFUSION = "type_confusion"
+    THREAD_UAF = "thread_uaf"
 
 
 @dataclass
 class HeapLifetime:
-    """单个堆对象的生命周期记录。"""
+    """堆对象生命周期记录——分配/释放/悬垂使用站点追踪"""
     obj_id: int
-    alloc_site: str = ""        # 分配调用点
-    free_site: str = ""         # 释放调用点 (空=未释放)
+    alloc_site: str = ""
+    free_site: str = ""
     alloc_size: int = 0
     alloc_time: float = 0.0
     free_time: float = 0.0
-    dangling_use_sites: List[str] = field(default_factory=list)  # 释放后的访问点
-    tagged: bool = False         # 是否已被标记为可疑
+    dangling_use_sites: List[str] = field(default_factory=list)
+    tagged: bool = False
 
 
 class UAFDetector:
-    """UAF 模式检测主引擎。
+    """UAF 检测引擎——三层检测策略：ASan 直接报告 | SIGSEGV 在 free 路径 | 间接证据组合"""
 
-    输入: 崩溃信息 (signal, error msg, stack frames, sanitizer output)
-    输出: UAFPattern 分类 + 置信度 + 具体证据
-
-    检测策略分三个层次:
-      Layer 1 (高置信度): ASan/UBSan 输出直接包含 "heap-use-after-free"
-      Layer 2 (中置信度): SIGSEGV 发生在 free() 调用路径中
-      Layer 3 (低置信度): 间接证据组合 (悬挂指针模式、时序模式)"""
-
-    # 高置信度 ASan 模式
     _ASAN_UAF = re.compile(
         r'heap-use-after-free', re.IGNORECASE)
     _ASAN_DF = re.compile(
@@ -61,14 +39,12 @@ class UAFDetector:
     _ASAN_STALE = re.compile(
         r'(?:freed|released)\s+(?:pointer|memory|block)', re.IGNORECASE)
 
-    # 常见 free 路径函数
     _FREE_FUNCTIONS = {
         'free', 'operator delete', 'delete', 'realloc',
         'g_free', 'CFRelease', 'objc_release', 'fclose', 'closedir',
         'munmap', 'HeapFree', 'LocalFree', 'CoTaskMemFree',
     }
 
-    # 常见 alloc 路径函数
     _ALLOC_FUNCTIONS = {
         'malloc', 'calloc', 'realloc', 'operator new',
         'g_malloc', 'CFAllocatorAllocate', 'objc_alloc',
@@ -80,8 +56,8 @@ class UAFDetector:
         self._uaf_findings: List[Dict[str, Any]] = []
         self._obj_counter = 0
 
-    # ---- 生命周期追踪 ----
     def record_alloc(self, alloc_site: str, size: int) -> int:
+        """记录分配事件——返回对象 ID"""
         self._obj_counter += 1
         obj = HeapLifetime(
             obj_id=self._obj_counter,
@@ -91,12 +67,11 @@ class UAFDetector:
         return self._obj_counter
 
     def record_free(self, obj_id: int, free_site: str) -> bool:
-        """返回 True 表示正常释放，False 表示 double free。"""
+        """记录释放事件——返回 False 表示 double free"""
         obj = self._heap_objects.get(obj_id)
         if obj is None:
             return True
         if obj.free_site:
-            # double free
             self._uaf_findings.append({
                 'pattern': UAFPattern.DOUBLE_FREE,
                 'obj_id': obj_id,
@@ -109,11 +84,11 @@ class UAFDetector:
             })
             return False
         obj.free_site = free_site
-        obj.free_time = 0.0  # 实际使用中记录时间戳
+        obj.free_time = 0.0
         return True
 
     def record_use(self, obj_id: int, use_site: str) -> bool:
-        """在释放后记录使用。返回 True=正常, False=UAF 嫌疑。"""
+        """释放后使用记录——返回 False 表示 UAF 嫌疑"""
         obj = self._heap_objects.get(obj_id)
         if obj is None:
             return True
@@ -134,17 +109,15 @@ class UAFDetector:
             return False
         return True
 
-    # ---- 崩溃上下文检测 ----
     def analyze_crash(self, signal_num: int,
                       error_msg: str,
                       stack_frames: List[str] = None,
                       sanitizer_output: str = "") -> Dict[str, Any]:
-        """从崩溃上下文检测 UAF 模式。返回最可能的 UAF 模式 + 置信度。"""
+        """崩溃上下文 UAF 模式检测——三层分层判定"""
         frames = stack_frames or []
         msg_lower = error_msg.lower()
         sanitizer_lower = sanitizer_output.lower()
 
-        # Layer 1: ASan 直接报告
         if self._ASAN_UAF.search(sanitizer_lower):
             return self._build_result(
                 UAFPattern.EXPLICIT_UAF, 0.95,
@@ -157,7 +130,6 @@ class UAFDetector:
                 'ASan 直接报告 double-free',
                 {'sanitizer': sanitizer_output})
 
-        # Layer 2: SIGSEGV + free 路径
         if signal_num == 11:
             free_in_frame = self._find_free_in_stack(frames)
             if free_in_frame is not None:
@@ -166,10 +138,8 @@ class UAFDetector:
                     f'SIGSEGV 在 free 路径中被触发: {free_in_frame}',
                     {'crash_frame': free_in_frame, 'frames': frames[:3]})
 
-        # Layer 3: 间接证据
         evidence = {}
         if signal_num == 11:
-            # 检查错误消息中的悬挂指针关键词
             if any(kw in msg_lower for kw in
                    ('freed', 'invalid pointer', 'corrupted',
                     'already free', 'released')):
@@ -183,7 +153,7 @@ class UAFDetector:
 
     def _find_free_in_stack(self,
                             frames: List[str]) -> Optional[str]:
-        """在栈帧中搜索 free 族函数调用。"""
+        """栈帧中搜索 free 族函数调用"""
         for frame in frames:
             for func in self._FREE_FUNCTIONS:
                 if func.lower() in frame.lower():
@@ -206,28 +176,22 @@ class UAFDetector:
             'is_df': pattern == UAFPattern.DOUBLE_FREE,
         }
 
-    # ---- UAF 种子评分 ----
     def score_seed_for_uaf(self, signal_num: int,
                            error_msg: str,
                            stack_frames: List[str]) -> float:
-        """根据崩溃特征评估该种子触发 UAF 的可能性 [0, 1]。
-        用于驱动后续 fuzzing 集中在可能产生 UAF 的输入变体上。"""
+        """种子 UAF 触发可能性评分 [0, 1]——驱动定向模糊测试"""
         result = self.analyze_crash(signal_num, error_msg, stack_frames)
         return result['confidence']
 
-    # ---- 跨线程 UAF 检测 ----
     def detect_thread_uaf(self, thread_traces: Dict[int, List[str]]
                           ) -> List[Dict[str, Any]]:
-        """检测跨线程 UAF 模式：线程 A 释放，线程 B 随后访问。
-        thread_traces: {thread_id: [operation_trace]}"""
+        """跨线程 UAF 检测——线程 A 释放，线程 B 随后访问"""
         findings = []
-        # 构建释放→访问的时间线
         all_events: List[Tuple[float, int, str, str]] = []
         for tid, trace in thread_traces.items():
             for event in trace:
                 all_events.append((0.0, tid, event, ''))
 
-        # 寻找跨线程的 free → use 对
         for i, (_, t_a, op_a, obj_a) in enumerate(all_events):
             if 'free' not in op_a.lower():
                 continue
@@ -237,7 +201,7 @@ class UAFDetector:
                     continue
                 if any(alloc_func in op_b.lower()
                        for alloc_func in self._ALLOC_FUNCTIONS):
-                    continue  # 重新分配是合法的
+                    continue
                 findings.append({
                     'pattern': UAFPattern.THREAD_UAF,
                     'thread_free': t_a,
@@ -250,8 +214,8 @@ class UAFDetector:
 
         return findings
 
-    # ---- 报告 ----
     def report(self) -> Dict[str, Any]:
+        """堆生命周期追踪报告"""
         obj_count = len(self._heap_objects)
         freed_count = sum(
             1 for o in self._heap_objects.values() if o.free_site)
@@ -281,10 +245,8 @@ class UAFDetector:
         self._obj_counter = 0
 
 
-# ---------------------------------------------------------------------------
-# 便捷入口: 从 sanitizer 输出直接判定
-# ---------------------------------------------------------------------------
 def is_likely_uaf(sanitizer_output: str) -> bool:
+    """sanitizer 输出快速 UAF 判定"""
     low = sanitizer_output.lower()
     return ('heap-use-after-free' in low
             or 'double-free' in low
@@ -292,6 +254,7 @@ def is_likely_uaf(sanitizer_output: str) -> bool:
 
 
 def extract_uaf_objects(sanitizer_output: str) -> List[Dict[str, Any]]:
+    """从 ASan 输出提取 UAF 对象地址和区域信息"""
     addr_pat = re.compile(
         r'(0x[0-9a-fA-F]+)\s+is\s+(\d+)\s+bytes\s+inside\s+of\s+'
         r'(\d+)-byte\s+region\s+\[(0x[0-9a-fA-F]+),(0x[0-9a-fA-F]+)\)')

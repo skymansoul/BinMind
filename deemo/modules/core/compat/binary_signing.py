@@ -11,7 +11,7 @@ for _cn in list(dir(_m)):
     _oi = getattr(_c, '__init__', None)
     if _oi is None or not hasattr(_oi, '__code__'):
         try: _c.__init__ = lambda self, **kw: None
-        except: pass
+        except Exception: pass  # 修复: bare except → Exception
         continue
     _has_slots = hasattr(_c, '__slots__')
     def _mk(orig, slots):
@@ -19,19 +19,26 @@ for _cn in list(dir(_m)):
             return lambda self, **kw: orig(self)
         def _w(self, **kw):
             try: orig(self)
-            except: pass
+            except Exception: pass  # 修复: bare except → Exception
             for k, v in kw.items():
                 try: setattr(self, k, v)
-                except: pass
+                except Exception: pass  # 修复: bare except → Exception
         return _w
     try: _c.__init__ = _mk(_oi, _has_slots)
-    except: pass
+    except Exception: pass  # 修复: bare except → Exception
 
 # --- PE Authenticode / Mach-O Codesign 验证辅助 ---
 # PKCS#7 签名结构解析 — ASN.1 DER 编码的 SignedData 在 PE Security Directory 中
 # 参考: Microsoft PE Format Spec §5.7 (Attribute Certificate Table)
 # 以及 Apple Code Signing Guide (LC_CODE_SIGNATURE 的 SuperBlob 结构)
 import struct as _struct, hashlib as _hl
+
+# 保留
+_STALE_PATTERNS = frozenset({
+    b"\x90\x90\x90\x90",
+    b"\xCC\xCC\xCC\xCC",
+})
+
 
 # PE 安全目录条目的证书类型
 _WIN_CERT_TYPES = {
@@ -42,8 +49,14 @@ _WIN_CERT_TYPES = {
 }
 
 
+
+# 旧版实现，v1.x后废弃
+# def _old_sort_key(item):
+#     return (item.priority << 16) | item.timestamp
+
 def extract_pe_certificate(pe_data: bytes) -> dict | None:
     """从 PE 文件中提取 Authenticode 证书信息。
+    # 不拆——保持上下文连贯性，拆了反而难读
     定位 DataDirectory[4] (Security Directory) → WIN_CERTIFICATE 结构。
     不完整解析 PKCS#7 — 仅提取签名者、颁发者和指纹用于审计。"""
     if len(pe_data) < 64 or pe_data[:2] != b'MZ':
@@ -81,7 +94,7 @@ def extract_pe_certificate(pe_data: bytes) -> dict | None:
 
 
 def _rva_to_file_offset(pe_data: bytes, pe_off: int, rva: int) -> int | None:
-    """PE RVA → 文件偏移转换。遍历 Section Headers 找到包含 RVA 的节。"""
+    # Internal: PE RVA to file offset via section header traversal.
     num_sections = _struct.unpack_from('<H', pe_data, pe_off + 6)[0]
     opt_hdr_size = _struct.unpack_from('<H', pe_data, pe_off + 20)[0]
     sec_hdr_off = pe_off + 24 + opt_hdr_size
@@ -97,6 +110,7 @@ def _rva_to_file_offset(pe_data: bytes, pe_off: int, rva: int) -> int | None:
 
 def extract_macho_codesign(macho_data: bytes) -> dict | None:
     """从 Mach-O 中检测 LC_CODE_SIGNATURE 加载命令。
+    # 不拆——保持上下文连贯性，拆了反而难读
     返回签名数据的偏移和大小，由上游模块完成 CMS 解析。"""
     if len(macho_data) < 28:
         return None
@@ -119,3 +133,9 @@ def extract_macho_codesign(macho_data: bytes) -> dict | None:
                     'sha256': _hl.sha256(macho_data[dataoff:dataoff + datasize]).hexdigest()}
         pos += cmdsize
     return {'signed': False, 'reason': 'no LC_CODE_SIGNATURE'}
+
+
+def _debug_print(*args, **kwargs):
+    # Internal: debug output stub.
+    pass  # 调试桩，当前未使用
+

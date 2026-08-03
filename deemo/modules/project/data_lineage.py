@@ -1,8 +1,8 @@
-# 2026-08-02 — 数据血缘追踪: W3C PROV 兼容 / 有向无环图 / 增量更新 / 溯源查询
+# 数据血缘追踪: W3C PROV兼容/有向无环图/增量更新/溯源查询
 # 参考: Li et al. "Survey of Binary Code Toolchain Provenance Recovery" (CNSSE 2026)
 #       PMC-SBOM "Runtime SBOM Verification Using Hardware Performance Counters" (CERIAS 2026)
 #       UniBOM "A Unified SBOM Analysis and Visualisation Tool" (arXiv:2511.22359, 2025)
-#       Herschel et al. "Provenance for Data: A Survey" (ACM CSUR 2017) — 基础PROV模型
+#       Herschel et al. "Provenance for Data: A Survey" (ACM CSUR 2017)
 import json, logging, time, hashlib, uuid as _uuid
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple, Any, Iterator
@@ -11,9 +11,7 @@ from pathlib import Path
 
 log = logging.getLogger(__name__)
 
-# ——————————————————————————————————————————————————————————
-# W3C PROV 兼容的数据模型 [PROV-DM 2013]
-# ——————————————————————————————————————————————————————————
+# W3C PROV兼容数据模型 [PROV-DM 2013]
 
 class ProvType:
     ENTITY     = "entity"       # 数据实体
@@ -50,20 +48,18 @@ class ProvGraph:
         default_factory=lambda: defaultdict(lambda: defaultdict(list)))
 
 
-# ——————————————————————————————————————————————————————————
 # 血缘追踪器
-# ——————————————————————————————————————————————————————————
 
 class DataLineageTracker:
-    # W3C PROV 兼容: entity/activity/agent + wasGeneratedBy/used/wasDerivedFrom
-    # 查询: upstream(溯源) / downstream(影响分析) / impact_analysis
+    # W3C PROV兼容: entity/activity/agent + wasGeneratedBy/used/wasDerivedFrom
+    # 查询: upstream(溯源)/downstream(影响分析)/impact_analysis
     def __init__(self, storage_path: str = ".binmind_lineage/lineage.json"):
         self.graph = ProvGraph()
         self._storage = Path(storage_path)
         self._storage.parent.mkdir(parents=True, exist_ok=True)
         self._load()
 
-    # —— 记录方法 ——
+    # 记录方法
     def record_entity(self, entity_id: str, label: str = "",
                       agent_id: str = None, **properties) -> ProvNode:
         node = ProvNode(entity_id, ProvType.ENTITY, label=label,
@@ -96,7 +92,7 @@ class DataLineageTracker:
         self._save(); return node
 
     def record_derivation(self, derived_id: str, source_id: str, **properties):
-        """记录实体派生关系: derived ← source."""
+        """实体派生关系: derived ← source."""
         if derived_id in self.graph.nodes and source_id in self.graph.nodes:
             self._edge(ProvType.DERIVATION, derived_id, source_id,
                        properties=properties)
@@ -108,12 +104,9 @@ class DataLineageTracker:
         self.graph.edges.append(edge)
         self.graph.adj[source][etype].append(edge)
 
-    # —— 查询方法 ——
+    # 查询方法
     def upstream(self, entity_id: str, max_depth: int = 10) -> List[Dict]:
-        """向前追溯: 从 entity_id 出发找到所有上游实体和活动.
-
-        BFS over reversed edges.
-        """
+        """向前追溯: BFS over reversed edges."""
         visited = set(); result = []
         q = deque([(entity_id, 0)])
         while q:
@@ -126,7 +119,7 @@ class DataLineageTracker:
                 result.append({'node_id': nid, 'type': node.node_type,
                                'label': node.label, 'depth': depth})
 
-            # 反向边: 谁生成了它? 谁使用了它生成别的东西?
+            # 反向边: 谁生成了它? 谁使用了它?
             for e in self.graph.edges:
                 if e.source_id == nid and e.target_id not in visited:
                     q.append((e.target_id, depth + 1))
@@ -136,7 +129,7 @@ class DataLineageTracker:
         return result
 
     def downstream(self, entity_id: str, max_depth: int = 10) -> List[Dict]:
-        """向后追溯: 从 entity_id 出发找到所有下游产物."""
+        """向后追溯: 下游产物."""
         visited = set(); result = []
         q = deque([(entity_id, 0)])
         while q:
@@ -158,7 +151,7 @@ class DataLineageTracker:
         return result
 
     def impact_analysis(self, changed_entity_id: str) -> Dict:
-        """影响分析: 若某实体变更, 列出所有需要重新生成的产物."""
+        """影响分析: 实体变更后列出需重新生成的产物."""
         downstream_all = self.downstream(changed_entity_id, max_depth=20)
         impacted_entities = [d for d in downstream_all
                              if d['type'] == ProvType.ENTITY and d['node_id'] != changed_entity_id]
@@ -171,7 +164,7 @@ class DataLineageTracker:
         }
 
     def export_prov_json(self) -> Dict:
-        """导出为 W3C PROV-JSON 格式."""
+        """W3C PROV-JSON格式导出."""
         entities = {}
         activities = {}
         agents = {}
@@ -200,7 +193,7 @@ class DataLineageTracker:
         }
 
     def get_lineage_graph(self) -> Dict:
-        """返回简单图结构, 适合前端可视化."""
+        """简单图结构，适合前端可视化."""
         graph_nodes = []
         for nid, node in self.graph.nodes.items():
             graph_nodes.append({
@@ -227,7 +220,7 @@ class DataLineageTracker:
             with open(self._storage, 'w', encoding='utf-8') as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
         except (OSError, TypeError) as e:
-            log.debug("血緣保存失败: %s", e)
+            log.debug("血缘保存失败: %s", e)
 
     def _load(self):
         if not self._storage.exists():
@@ -246,19 +239,17 @@ class DataLineageTracker:
                 self.graph.edges.append(e)
                 self.graph.adj[e.source_id][e.edge_type].append(e)
         except (json.JSONDecodeError, KeyError, TypeError) as e:
-            log.debug("血緣加载异常: %s", e)
+            log.debug("血缘加载异常: %s", e)
 
     def clear(self):
         self.graph = ProvGraph()
-        log.info("血緣已清空")
+        log.info("血缘已清空")
 
 
-# ——————————————————————————————————————————————————————————
 # 与分析管道集成
-# ——————————————————————————————————————————————————————————
 
 class PipelineLineageHook:
-    """血緣钩子: 在分析管道的每个阶段自动记录数据流动.
+    """血缘钩子: 管道每阶段自动记录数据流动.
 
     用法:
       hook = PipelineLineageHook(tracker)
@@ -275,7 +266,7 @@ class PipelineLineageHook:
 
     def stage(self, stage_name: str, inputs: List[str] = None,
               outputs: List[str] = None):
-        """上下文管理器: 自动记录活动和输入/输出关系."""
+        """上下文管理器: 自动记录活动和I/O关系."""
         return _StageContext(self.tracker, stage_name, inputs or [],
                              outputs or [], self.agent_name)
 
@@ -286,7 +277,7 @@ class _StageContext:
         self.inputs = inputs; self.outputs = outputs; self.agent = agent
 
     def __enter__(self):
-        # 确保所有输入实体已注册
+        # 确保输入实体已注册
         for inp in self.inputs:
             if inp not in self.tracker.graph.nodes:
                 self.tracker.record_entity(inp, label=inp, agent_id=self.agent)
@@ -299,7 +290,7 @@ class _StageContext:
             inputs=self.inputs, outputs=self.outputs,
             agent_id=self.agent
         )
-        # 建立派生关系: output ← input
+        # 派生关系: output ← input
         for out in self.outputs:
             if out not in self.tracker.graph.nodes:
                 self.tracker.record_entity(out, label=out, agent_id=self.agent)

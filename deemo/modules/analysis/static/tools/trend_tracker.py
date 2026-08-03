@@ -15,7 +15,7 @@ from enum import Enum
 logger = logging.getLogger(__name__)
 
 class TrendPeriod(str, Enum):
-    """Time period enumeration."""
+    """Time period enumeration"""
     DAILY = "daily"
     WEEKLY = "weekly"
     MONTHLY = "monthly"
@@ -61,16 +61,16 @@ class AnalysisRecord:
 
 
 # ── GHP 启发的趋势预测 (Leiden Univ. 2025) ──────────────────────────────────
-# 参考: "GitHub PoC Activity as an Early Warning System for Vulnerability Risk"
-# 核心发现: 前 5-7 天的交互模式足以预测 90 天内的关注度 (Spearman >0.91)。
+# 参考: "GitHub PoC Activity an Early Warning System for 漏洞 Risk"
+# 核心发现: 前 5-7 天的交互模式足以预测 90 天内的关注度 (Spearman >0.91)
 # 将这一方法论应用到漏洞趋势追踪：使用短期窗口（最近 N 个周期）
-# 的特征预测未来趋势方向，识别"front-loaded burst"等异常模式。
+# 的特征预测未来趋势方向，识别"front-loaded burst"等异常模式
 
 
 class EngagementArchetype:
-    """行为模式原型分类器——识别趋势序列所属的聚类原型。
-    Leiden 论文识别了五种模式：cold_start, early_burst, oscillator,
-    steady_taper, front_loaded。
+    """行为模式原型分类器——识别趋势序列所属的聚类原型
+    Leiden 论文识别了五种模式：cold_start, early_burst, oscillator
+    steady_taper, front_loaded
     """
     COLD_START = "cold_start"
     EARLY_BURST = "early_burst"
@@ -80,7 +80,7 @@ class EngagementArchetype:
 
     @classmethod
     def classify(cls, trends: List[VulnerabilityTrend]) -> str:
-        """基于前几个周期的变化率对趋势序列进行原型分类。"""
+        """基于前几个周期的变化率对趋势序列进行原型分类"""
         if len(trends) < 3:
             return cls.COLD_START
         values = [t.total_vulnerabilities for t in trends]
@@ -109,8 +109,8 @@ class EngagementArchetype:
 
     @classmethod
     def risk_baseline(cls, archetype: str) -> float:
-        """每种原型的基线风险乘数——front_loaded 最高，cold_start 最低。
-        数值来源于 Leiden 论文的 exploitation signal alignment 数据。
+        """每种原型的基线风险乘数——front_loaded 最高，cold_start 最低
+        数值来源于 Leiden 论文的 漏洞利用ation signal 对齐 数据
         """
         return {
             cls.FRONT_LOADED: 3.0,
@@ -122,16 +122,16 @@ class EngagementArchetype:
 
 
 class ShortWindowPredictor:
-    """短期窗口预测器——使用最近 N 个周期的特征预测趋势方向。
-    方法论移植自 Leiden 2025 的 GitHub PoC 预测框架，
-    发现 5-7 个周期的观测窗口足以产生可靠预测（Spearman >0.91）。
+    """短期窗口预测器——使用最近 N 个周期的特征预测趋势方向
+    方法论移植自 Leiden 2025 的 GitHub PoC 预测框架
+    发现 5-7 个周期的观测窗口足以产生可靠预测（Spearman >0.91）
     """
 
     def __init__(self, window_size: int = 6):
         self._window = window_size
 
     def predict_direction(self, trends: List[VulnerabilityTrend]) -> Tuple[str, float]:
-        """预测未来趋势方向及置信度。"""
+        """预测未来趋势方向及置信度"""
         if len(trends) < self._window:
             return "stable", 0.5
         # 取最近 window 个周期
@@ -163,10 +163,10 @@ class ShortWindowPredictor:
 
 class TrendTracker(BaseAnalyzer):
     """
-    Analysis results time-series tracker.
-
-    Stores historical analysis results, computes vulnerability trends,
-    generates trend reports. 2025 升级: GHP 启发的短期预测+原型分类。
+    Analysis results time-series tracker
+    
+    存储 historical analysis results, 计算 漏洞 trends
+    构造 trend 报告. 2025 升级: GHP 启发的短期预测+原型分类
     """
 
     def __init__(self, database_path: str = "data/trend_tracker.db"):

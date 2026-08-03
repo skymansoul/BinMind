@@ -1,5 +1,4 @@
-# 2026-08-01 — vuln_detection CLI入口
-# argparse驱动: scan/export/stats/dedup/lifecycle/plugins/config 子命令
+# vuln_detection CLI 入口，argparse 子命令路由
 
 import argparse
 import sys
@@ -10,7 +9,7 @@ json = _json
 
 
 def _cmd_scan(args):
-    """扫描二进制或目录"""
+    """二进制/目录指纹扫描"""
     from vuln_detection import CodeLocator, CVEFootprint
     locator = CodeLocator()
     target = args.target
@@ -47,7 +46,7 @@ def _cmd_scan(args):
 
 
 def _cmd_export(args):
-    """导出SBOM"""
+    """SBOM 导出（SPDX/CycloneDX 格式）"""
     from vuln_detection import SBOMGenerator
     gen = SBOMGenerator()
     if args.components:
@@ -62,7 +61,7 @@ def _cmd_export(args):
 
 
 def _cmd_stats(args):
-    """统计概览"""
+    """漏洞库统计总览"""
     from vuln_detection import VulnLifecycleAPI
     api = VulnLifecycleAPI(args.db)
     st = api.stats()
@@ -73,7 +72,7 @@ def _cmd_stats(args):
 
 
 def _cmd_dedup(args):
-    """去重合并多源漏洞"""
+    """多源漏洞查重与合并"""
     from vuln_detection import VulnDedupMerger
     merger = VulnDedupMerger()
     sources = {}
@@ -104,7 +103,7 @@ def _cmd_dedup(args):
 
 
 def _cmd_lifecycle(args):
-    """漏洞生命周期管理"""
+    """漏洞生命周期状态流转"""
     from vuln_detection import VulnLifecycleAPI, VulnStatus, VulnSeverity
     api = VulnLifecycleAPI(args.db)
     if args.action == "list":
@@ -130,7 +129,7 @@ def _cmd_lifecycle(args):
 
 
 def _cmd_plugins(args):
-    """插件管理"""
+    """插件发现与注册"""
     from vuln_detection.src.core.plugin import discover_plugins, PluginManager
     mgr = PluginManager()
     discovered = discover_plugins(args.dir or "")
@@ -143,7 +142,7 @@ def _cmd_plugins(args):
 
 
 def _cmd_config(args):
-    """配置管理"""
+    """配置读写与初始化"""
     from vuln_detection.src.config import load_config, save_config, config_to_dict
     cfg_path = args.file or ""
     if args.action == "show":
@@ -163,31 +162,31 @@ def main(argv=None):
                                      description="BinMind Vulnerability Detection CLI")
     sub = parser.add_subparsers(dest="command", help="sub-command")
 
-    # scan
+    # scan 子命令
     p_scan = sub.add_parser("scan", help="Scan binary for vulnerabilities")
     p_scan.add_argument("target", help="File or directory to scan")
     p_scan.add_argument("--cve", help="Specific CVE to check for")
     p_scan.add_argument("--json", action="store_true", help="JSON output")
 
-    # export
+    # export 子命令
     p_exp = sub.add_parser("export", help="Export SBOM")
     p_exp.add_argument("--format", default="spdx", choices=["spdx", "cyclonedx"])
     p_exp.add_argument("--version", default="")
     p_exp.add_argument("--components", help="JSON list of components")
     p_exp.add_argument("--output", "-o", help="Output file path")
 
-    # stats
+    # stats 子命令
     p_stats = sub.add_parser("stats", help="Vulnerability statistics")
     p_stats.add_argument("--db", help="Lifecycle DB path")
 
-    # dedup
+    # dedup 子命令
     p_dedup = sub.add_parser("dedup", help="Deduplicate/merge findings")
     p_dedup.add_argument("--ghidra", help="Ghidra findings JSON")
     p_dedup.add_argument("--ida", help="IDA findings JSON")
     p_dedup.add_argument("--r2", help="Radare2 findings JSON")
     p_dedup.add_argument("--output", "-o", help="Output merged JSON")
 
-    # lifecycle
+    # lifecycle 子命令
     p_life = sub.add_parser("lifecycle", help="Vulnerability lifecycle management")
     p_life.add_argument("action", choices=["list", "create", "transition", "history"])
     p_life.add_argument("--db", help="Lifecycle DB path")
@@ -200,11 +199,11 @@ def main(argv=None):
     p_life.add_argument("--title", help="Title for creation")
     p_life.add_argument("--desc", help="Description for creation")
 
-    # plugins
+    # plugins 子命令
     p_plug = sub.add_parser("plugins", help="Plugin management")
     p_plug.add_argument("--dir", help="Plugin directory")
 
-    # config
+    # config 子命令
     p_cfg = sub.add_parser("config", help="Configuration management")
     p_cfg.add_argument("action", choices=["show", "init"])
     p_cfg.add_argument("--file", "-f", help="Config file path")

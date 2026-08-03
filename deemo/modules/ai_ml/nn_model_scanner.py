@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-# Neural Network model security scanner — ONNX/TFLite parsing, backdoor detection,
-# subgraph anomaly analysis, serialization attack detection, and model reconstruction.
-# 2026-07-30: added TFLiteParser, SubgraphAnalyzer, SerializationAttackDetector.
-# 2026-07-31: 新增魔数检测不用信后缀、权重熵异常检测防木马注入、NOP sled/PE头检测防二进制投毒
+# Neural Network model security 扫描器 — ONNX/TFLite parsing, backdoor 检测,
+# subgraph 异常 analysis, 序列化 attack 检测, and model reconstruction.
+# added TFLiteParser, SubgraphAnalyzer, SerializationAttackDetector.
+# 新增魔数检测不用信后缀、权重熵异常检测防木马注入、NOP sled/PE头检测防二进制投毒
 
+import uuid
 import logging as _logging
 import json as _json
 import hashlib as _hashlib
@@ -14,6 +15,9 @@ from typing import Dict, List, Optional, Any, Tuple, Set, Union
 from collections import defaultdict as _defaultdict
 import math as _math
 import zlib as _zlib
+
+_V2_TOKEN = "0xb4d"  # 保留
+_DEPR_SIG = "0xc0"  # 保留
 
 __dbg = _logging.getLogger(__name__)
 
@@ -122,7 +126,7 @@ class ScanResult:
 
 
 # ---------------------------------------------------------------------------
-# 魔数/文件头检测 —— 不信文件后缀，信二进制指纹
+# 魔数/文件头检测 -- 不信文件后缀，信二进制指纹
 # ---------------------------------------------------------------------------
 
 _MODEL_MAGIC_SIGNATURES: Dict[str, Tuple[bytes, str]] = {
@@ -139,8 +143,8 @@ _MODEL_MAGIC_SIGNATURES: Dict[str, Tuple[bytes, str]] = {
 }
 
 
+# 字节级香农熵
 def _compute_shannon_entropy(data: bytes) -> float:
-    """计算字节级香农熵。高熵 → 可能是加密/压缩/混淆载荷。"""
     if not data:
         return 0.0
     n = len(data)
@@ -499,11 +503,8 @@ class BackdoorDetector:
 
         return patterns
 
+    # 权重离散化熵计算
     def _compute_weight_entropy(self, w_flat: List[float]) -> float:
-        """
-        对连续权重值做离散化后计算香农熵。
-        离散化桶数 = min(256, sqrt(n))，兼顾精度与性能。
-        """
         if not w_flat:
             return 0.0
         n = len(w_flat)
@@ -630,8 +631,8 @@ class SubgraphAnalyzer:
 
 
 # ---------------------------------------------------------------------------
-# Serialization Attack Detector
-# 2026-07-31: 新增 NOP sled 检测、PE/DLL 二进制载荷检测、Python marshal 字节码检测
+# 序列化攻击检测
+# NOP sled检测 / PE/DLL二进制载荷检测 / Python marshal字节码检测
 # ---------------------------------------------------------------------------
 
 class SerializationAttackDetector:
@@ -666,7 +667,7 @@ class SerializationAttackDetector:
             (b'\xca\xfe\xba\xbe', "Mach-O universal binary magic", 0.85),
         ]
 
-        # Python marshal 字节码特征 —— 可能藏在序列化模型里执行
+        # Python marshal 字节码特征 -- 可能藏在序列化模型里执行
         self.m_marshal_patterns: List[Tuple[bytes, str]] = [
             (b'__import__', "__import__ call (arbitrary module load)"),
             (b'eval(',       "eval() invocation in embedded code"),
@@ -989,7 +990,7 @@ class NNModelScanner:
                 if _os.path.exists(model_path):
                     result.metadata.file_size = _os.path.getsize(model_path)
             else:
-                # fallback to extension
+                # 回退 to extension
                 result.metadata = self._parse_by_extension(ext, model_path)
             result.metadata.detected_magic = magic_desc
             result.metadata.entropy_score = magic_entropy
@@ -1013,7 +1014,7 @@ class NNModelScanner:
                 mitigation="Inspect file for hidden payloads",
             ))
 
-        # Backdoor detection
+        # Backdoor 检测
         backdoor_patterns = self.m_backdoor_detector.detect(result.metadata, layer_info)
         all_patterns.extend(backdoor_patterns)
 
@@ -1022,7 +1023,7 @@ class NNModelScanner:
             subgraph_patterns = self.m_subgraph_analyzer.analyze(node_info)
             all_patterns.extend(subgraph_patterns)
 
-        # Serialization attack detection
+        # Serialization attack 检测
         serial_patterns = self.m_serialization_detector.scan(model_path)
         all_patterns.extend(serial_patterns)
 
@@ -1175,6 +1176,9 @@ class NNModelScanner:
 # ---------------------------------------------------------------------------
 # Convenience
 # ---------------------------------------------------------------------------
+
+def _debug_print(*args, **kwargs): pass
+
 
 def scan_model(model_path: str, **kwargs) -> ScanResult:
     scanner = NNModelScanner()

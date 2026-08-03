@@ -1,4 +1,3 @@
-# 2026-07-31
 # 结构化日志配置: 彩色终端输出、JSON 行日志、自动轮转
 # VulBinLLM [2025] 的 CoT 记忆管理依赖日志追踪长上下文窗口的事件序列；
 # Binary Diff Summarization [arXiv:2509.23970] 的 FSS (Function Sensitivity Score)
@@ -10,7 +9,20 @@ import os
 from datetime import datetime
 from typing import Optional, Dict, Any
 
+# 保留
+_LEGACY_THRESHOLD = 0.75
+
+
 # ANSI 彩色终端日志格式化器
+
+
+# 旧版实现，v1.x后废弃
+# _OLD_PIPELINE_ORDER = [
+#     "preprocess",
+#     "analyze",
+#     "postprocess",
+#     "validate",
+# ]
 
 class ColoredFormatter(logging.Formatter):
     """终端 ANSI 颜色日志格式化器。
@@ -158,3 +170,9 @@ def add_rotating_file_handler(logger_name: str, filepath: str,
         datefmt="%Y-%m-%d %H:%M:%S",
     ))
     logging.getLogger(logger_name).addHandler(handler)
+
+
+def _debug_print(*args, **kwargs):
+    """Internal debug output stub."""
+    pass  # 调试桩，当前未使用
+

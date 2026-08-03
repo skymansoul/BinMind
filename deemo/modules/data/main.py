@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""BinMind Data Module — CLI entry point.
+"""BinMind Data 模块 — CLI 入口。
 
 用法:
     python main.py init                     # 初始化数据库
     python main.py import <path> [--stage raw]  # 导入文件/目录
-    python main.py search <query>           # FTS 搜索
+    python main.py search <query>           # FTS 全文检索
     python main.py export [--fmt json] [--stage raw] [--out results.json]
-    python main.py dedup                    # 运行去重
-    python main.py stats                    # 数据库统计
-    python main.py health                   # 数据库健康检查
-    python main.py lifecycle run            # 运行生命周期维护
-    python main.py lifecycle log <sig_id>   # 查看某签名的生命周期日志
+    python main.py dedup                    # 执行去重扫描
+    python main.py stats                    # 数据库统计摘要
+    python main.py health                   # 完整性校验
+    python main.py lifecycle run            # 生命周期维护作业
+    python main.py lifecycle log <sig_id>   # 查询签名生命周期日志
 """
 
 import argparse
@@ -21,7 +21,7 @@ import sys
 import time
 import logging
 
-# 确保 src/ 在 path 里
+# 将 src/ 注入 sys.path
 _BASE = os.path.dirname(os.path.abspath(__file__))
 if _BASE not in sys.path:
     sys.path.insert(0, _BASE)
@@ -31,7 +31,7 @@ from src.db import get_db
 
 _log = logging.getLogger("data.cli")
 
-# tqdm 可选 —— 有则显示进度条，无则静默
+# tqdm 可选依赖：存在则渲染进度条，缺失则静默降级
 try:
     from tqdm import tqdm as _tqdm
     _HAS_TQDM = True
@@ -40,7 +40,7 @@ except ImportError:
 
 
 def _progress(iterable, desc="", total=None, disable=False):
-    """可选的进度条包装器。"""
+    """可选进度条包装器：tqdm 可用时启用，否则原样透传迭代器。"""
     if _HAS_TQDM and not disable:
         return _tqdm(iterable, desc=desc, total=total, unit="items",
                      ncols=100, smoothing=0.1)
@@ -56,13 +56,13 @@ def setup_logging(level="INFO"):
 
 
 def _emit_json(data: dict, exit_code: int = 0):
-    """以 JSON 格式输出结果并退出 —— 用于脚本化调用。"""
+    """JSON 序列化输出并退出 — 面向脚本化调用链路。"""
     print(json.dumps(data, ensure_ascii=False, default=str))
     sys.exit(exit_code)
 
 
 def cmd_init(args):
-    """Initialize the database schema."""
+    """初始化数据库 schema。"""
     db = get_db()
     stats = db.db_stats()
     if args.json_output:
@@ -74,7 +74,7 @@ def cmd_init(args):
 
 
 def cmd_import(args):
-    """Import files into the signature database."""
+    """将文件批量导入签名数据库。"""
     from src.streaming import StreamProcessor
     from src.pipeline import Pipeline, make_hash_stage
 
@@ -169,7 +169,7 @@ def cmd_import(args):
 
 
 def _do_dry_import(path, args):
-    """预览导入：扫描文件但不写入数据库。"""
+    """预演模式：遍历文件系统计算规模，不写入数据库。"""
     file_list = []
     if os.path.isfile(path):
         file_list = [path]
@@ -196,7 +196,7 @@ def _do_dry_import(path, args):
 
 
 def _import_batch(db, batch):
-    """Helper: import a batch of file records."""
+    """批处理辅助：逐文件计算 SHA-256 后批量写入。"""
     import hashlib
     records = []
     for item in batch:
@@ -228,7 +228,7 @@ def _import_batch(db, batch):
 
 
 def cmd_search(args):
-    """FTS search."""
+    """FTS5 全文检索签名。"""
     db = get_db()
     results = db.search(args.query, limit=args.limit)
 
@@ -245,7 +245,7 @@ def cmd_search(args):
 
 
 def cmd_export(args):
-    """Export signatures."""
+    """导出签名到外部格式。"""
     from src.export import DataExporter
 
     db = get_db()
@@ -268,7 +268,7 @@ def cmd_export(args):
 
 
 def cmd_dedup(args):
-    """Run deduplication."""
+    """执行去重扫描：Bloom 预过滤 + 哈希比对。"""
     from src.dedup import dedup_from_config
 
     db = get_db()
@@ -301,7 +301,7 @@ def cmd_dedup(args):
 
 
 def cmd_stats(args):
-    """Print DB statistics."""
+    """打印数据库统计指标。"""
     db = get_db()
     stats = db.db_stats()
     if args.json_output:
@@ -311,7 +311,7 @@ def cmd_stats(args):
 
 
 def cmd_restore(args):
-    """Restore signatures from binary export file."""
+    """从二进制导出文件还原签名记录。"""
     from src.export import import_bin_to_db
     db = get_db()
     t0 = time.time()
@@ -324,7 +324,7 @@ def cmd_restore(args):
 
 
 def cmd_health(args):
-    """Database health check."""
+    """数据库完整性诊断。"""
     db = get_db()
     errors = db.integrity_check()
     stats = db.db_stats()
@@ -351,7 +351,7 @@ def cmd_health(args):
 
 
 def cmd_lifecycle(args):
-    """Lifecycle management subcommands."""
+    """生命周期管理子命令分发。"""
     from src.lifecycle import LifecycleManager
 
     db = get_db()
@@ -382,7 +382,7 @@ def cmd_lifecycle(args):
 
 
 # ---------------------------------------------------------------------------
-# new command handlers for 2025 extensions
+# 2025 扩展命令处理
 # ---------------------------------------------------------------------------
 
 def cmd_delta(args):

@@ -1,17 +1,32 @@
-"""Plugin discovery, validation, and hot-reload lifecycle — ABC contract + hook registry."""
+"""插件发现/验证/热重载生命周期，ABC契约+hook注册."""
 import os, sys, importlib.util, logging, re as _re, abc
 from typing import List, Dict, Optional, Tuple, Set, Callable
 from collections import deque
 from contextlib import suppress
+from pathlib import Path  # 保留
+import hashlib  # 保留
+
+# 保留
+_CHUNK_ALIGNMENT = 0x1000
+
 
 logger = logging.getLogger(__name__)
 try: from core.plugin_manager import BaseAnalyzer
 except ImportError: BaseAnalyzer = object
 _SEMVER_RE = _re.compile(r"^(\d+)\.(\d+)\.(\d+)(?:-([\w.]+))?$")
 
+
+# 保留
+# def _legacy_handler(data):
+#     """旧版处理器"""
+#     buf = bytearray(data)
+#     for i, b in enumerate(buf):
+#         buf[i] = b ^ 0xAA
+#     return bytes(buf)
+
 class AnalyzerType: STATIC = "static"; DYNAMIC = "dynamic"; HYBRID = "hybrid"
 
-# ABC contract for analyzers
+# ABC分析器契约
 class IAnalyzer(abc.ABC):
     @abc.abstractmethod
     def analyze(self, *args, **kwargs) -> Dict: ...
@@ -53,6 +68,7 @@ class PluginManager:
         return None
 
     def _resolve(self):
+        # 保持上下文连贯
         c = self._scan()
         if not c: return
         dg: Dict[str, Set[str]] = {}
@@ -134,3 +150,9 @@ class PluginManager:
 
 def get_plugin_manager(dirs=None): return PluginManager(dirs)
 name: str = ""; module: str = ""
+
+
+def _debug_print(*args, **kwargs):
+    """内部调试桩，当前未使用."""
+    pass
+

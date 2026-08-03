@@ -1,15 +1,14 @@
-# 2026-08-02
-"""Patch test case generator — automated input synthesis for patch validation.
+"""补丁测试用例生成器 —— 输入合成，验证补丁有效性。
 
-参考:
-- BASICS [Fang+, arXiv:2511.19670] 的 concolic execution 测试生成
-- PoC-Adapt [arXiv:2604.06618] 的语义感知 PoC 合成
-- LearnFrom 的 CFG-node-aligned 测试生成思路
+参考：
+- BASICS [Fang+, arXiv:2511.19670] concolic 执行测试生成
+- PoC-Adapt [arXiv:2604.06618] 语义感知 PoC 合成
+- LearnFrom CFG 节点对齐测试生成
 
-本模块采用混合策略: 快速路径用基于签名的模板生成，慢速路径尝试构建
-符号约束并求解覆盖新代码路径的输入。
+混合策略：快速路径用签名驱动的规则生成，慢速路径构建符号约束
+求解覆盖新代码路径的输入。
 
-核心思想: 一个补丁如果没有测试验证，不应被视为安全的。
+核心理念：无测试验证的补丁不应视为安全。
 """
 
 import re, os, random, struct, logging, hashlib
@@ -21,25 +20,25 @@ __log = logging.getLogger(__name__)
 
 
 class TestKind:
-    """测试用例类型 — 覆盖不同验证维度。"""
-    BOUNDARY = "boundary"           # 边界值测试
-    NULL_POINTER = "null_pointer"    # NULL 指针测试
-    NEGATIVE_SIZE = "negative_size"  # 负值/溢出测试
-    FORMAT_STRING = "format_string"  # 格式化字符串测试
-    OVERFLOW = "overflow"            # 整数溢出测试
+    """测试用例类型 —— 覆盖不同验证维度。"""
+    BOUNDARY = "boundary"           # 边界值
+    NULL_POINTER = "null_pointer"    # NULL 指针
+    NEGATIVE_SIZE = "negative_size"  # 负值/溢出
+    FORMAT_STRING = "format_string"  # 格式化串
+    OVERFLOW = "overflow"            # 整数溢出
     RANDOM = "random"               # 随机 fuzz
-    CORPUS = "corpus"               # 从现有语料库生成
-    CONSTRAINT = "constraint"        # 基于约束求解的测试
+    CORPUS = "corpus"               # 语料库派生
+    CONSTRAINT = "constraint"        # 约束求解
 
 
 @dataclass
 class TestCase:
-    """单个测试用例。"""
+    """单条测试用例。"""
     test_id: str
     kind: str
     target_function: str = ""
     input_data: bytes = b""
-    expected_behavior: str = ""  # "crash", "return_error", "continue", etc.
+    expected_behavior: str = ""  # "crash", "return_error", "continue" 等
     severity: float = 0.5
     description: str = ""
     generated_at: str = ""
@@ -74,8 +73,8 @@ class TestSuite:
         }
 
 
-# ── 测试模板 ──────────────────────────────────────────────────────────
-# 每种漏洞类型对应一组输入模板，模拟攻击者的输入来验证补丁
+# ── 测试输入生成器注册表 ──────────────────────────────────────────
+# 每种漏洞类型对应一组输入，模拟攻击载荷验证补丁
 
 _TEST_GENERATORS: Dict[str, Callable[[], bytes]] = {
     # 缓冲区溢出: 超长输入
@@ -83,17 +82,17 @@ _TEST_GENERATORS: Dict[str, Callable[[], bytes]] = {
         b'A' * random.randint(256, 4096) +
         b'\x00' * random.randint(1, 16)
     ),
-    # NULL 指针: 空输入
+    # NULL 指针: 全零序列
     TestKind.NULL_POINTER: lambda: b'\x00' * random.randint(1, 64),
-    # 负值/溢出: 补码表示的负整数值
+    # 负值: 补码表示的负整数
     TestKind.NEGATIVE_SIZE: lambda: struct.pack(
         '<I', random.choice([0xFFFFFFFF, 0x80000000, 0xFFFF, 0xFFFFFFFE])),
-    # 格式化字符串: %s %n %x 序列
+    # 格式化串: %s/%n/%x 序列
     TestKind.FORMAT_STRING: lambda: (
         b'%s%s%s%n%x%p' +
         b'A' * random.randint(0, 32)
     ),
-    # 整数溢出: 大整数边缘值
+    # 整数溢出: 大整数边界值
     TestKind.OVERFLOW: lambda: struct.pack(
         '<Q', random.choice([
             0xFFFFFFFFFFFFFFFF,
@@ -108,7 +107,7 @@ _TEST_GENERATORS: Dict[str, Callable[[], bytes]] = {
 }
 
 
-# 针对特定 CWE 的自定义模板
+# CWE 特定测试策略
 _CWE_SPECIFIC_TESTS = {
     'CWE-121': [
         (TestKind.BOUNDARY, 0.95),
@@ -141,11 +140,11 @@ _CWE_SPECIFIC_TESTS = {
 
 
 class PatchTestGenerator:
-    """补丁测试用例生成器 — 混合策略。
+    """补丁测试用例生成器 —— 混合策略。
 
-    - 快速路径: 基于漏洞类型的模板生成 (10-100 个用例 / 秒)
-    - 慢速路径: 基于约束的针对性用例 (需要符号执行)
-    - Fuzz 增强: 随机输入的变异和组合
+    - 快速路径：漏洞类型驱动规则生成 (10-100 cases/s)
+    - 慢速路径：约束求解定向用例 (需符号执行)
+    - Fuzz 增强：随机变异组合
     """
 
     def __init__(self, seed: Optional[int] = None):
@@ -155,7 +154,7 @@ class PatchTestGenerator:
         self._seed = seed
 
     # ============================================================
-    # generate: main entry — 根据漏洞类型生成综合测试套件
+    # 主入口 —— 按漏洞类型生成综合测试套件
     # ============================================================
     def generate(self, vuln_type: str, cwe_id: str = "",
                  target_function: str = "",
@@ -165,7 +164,7 @@ class PatchTestGenerator:
             (vuln_type + cwe_id + target_function).encode()).hexdigest()[:8])
         _suite.total_count = num_cases
 
-        # 选择测试类型
+        # 选测试类型
         _test_types = self._select_test_types(vuln_type, cwe_id)
 
         # 生成用例
@@ -182,7 +181,7 @@ class PatchTestGenerator:
                 _case_id += 1
                 _idx += 1
 
-        # Fuzz 增强: 对已生成的用例进行变异
+        # Fuzz 增强：变异已有用例
         if _suite.test_cases:
             _fuzz_cases = self._mutate_existing(_suite.test_cases, max(1, num_cases // 5))
             _suite.test_cases.extend(_fuzz_cases)
@@ -197,15 +196,15 @@ class PatchTestGenerator:
 
         return _suite
 
-    # ── 模板生成 ──────────────────────────────────────────────────────
+    # ── 测试类型选择 ──────────────────────────────────────────────
 
     def _select_test_types(self, vuln_type: str, cwe_id: str) -> List[Tuple[str, float]]:
-        """根据漏洞类型选择适当的测试类型。"""
-        # 优先使用 CWE 特定的模板
+        """按漏洞类型选择测试策略。"""
+        # CWE 特定优先
         if cwe_id and cwe_id in _CWE_SPECIFIC_TESTS:
             return list(_CWE_SPECIFIC_TESTS[cwe_id])
 
-        # 回退到 vuln_type 推导
+        # 回退 vuln_type 推断
         _vtype = vuln_type.lower()
         if 'overflow' in _vtype or 'buffer' in _vtype:
             return [
@@ -243,7 +242,7 @@ class PatchTestGenerator:
 
         _data = _gen()
 
-        # 确定期望行为
+        # 推断期望行为
         _expected = self._expected_behavior(kind)
         _test_id = "tc_{}_{:04x}".format(
             kind[:3],
@@ -260,22 +259,22 @@ class PatchTestGenerator:
         )
 
     def _expected_behavior(self, kind: str) -> str:
-        """推断补丁修复后期望的行为。"""
+        """推断补丁修复后的预期行为。"""
         _map = {
-            TestKind.BOUNDARY: "return_error",       # 边界检查 → 返回错误
-            TestKind.NULL_POINTER: "return_error",   # NULL 检查 → 返回错误
-            TestKind.NEGATIVE_SIZE: "return_error",  # 负数检查 → 返回错误
-            TestKind.FORMAT_STRING: "continue",      # 格式化字符 → 不崩溃即通过
-            TestKind.OVERFLOW: "return_error",       # 溢出检查 → 返回错误
-            TestKind.RANDOM: "continue",             # 随机测试 → 不崩溃即通过
+            TestKind.BOUNDARY: "return_error",       # 边界检查 → 错误返回
+            TestKind.NULL_POINTER: "return_error",   # NULL 检查 → 错误返回
+            TestKind.NEGATIVE_SIZE: "return_error",  # 负数检查 → 错误返回
+            TestKind.FORMAT_STRING: "continue",      # 格式化 → 不崩溃即通过
+            TestKind.OVERFLOW: "return_error",       # 溢出检查 → 错误返回
+            TestKind.RANDOM: "continue",             # 随机 → 不崩溃即通过
         }
         return _map.get(kind, "continue")
 
-    # ── 变异增强 ──────────────────────────────────────────────────────
+    # ── 变异增强 ──────────────────────────────────────────────────
 
     def _mutate_existing(self, cases: List[TestCase],
                          num_output: int) -> List[TestCase]:
-        """对已有用例做字节级变异生成新用例。"""
+        """字节级变异已有用例，生成新用例。"""
         _mutated = []
         for _i in range(num_output):
             _src = self._rng.choice(cases) if cases else None
@@ -288,26 +287,26 @@ class PatchTestGenerator:
             # 随机变异策略
             _strategy = self._rng.randint(0, 4)
             if _strategy == 0 and len(_data) > 0:
-                # bit flip
+                # bit 翻转
                 _pos = self._rng.randint(0, len(_data) - 1)
                 _bit = self._rng.randint(0, 7)
                 _data[_pos] ^= (1 << _bit)
             elif _strategy == 1:
-                # byte insert
+                # 字节插入
                 _pos = self._rng.randint(0, len(_data))
                 _byte = self._rng.randint(0, 255)
                 _data = bytearray(list(_data[:_pos]) + [_byte] + list(_data[_pos:]))
             elif _strategy == 2 and len(_data) > 0:
-                # byte delete
+                # 字节删除
                 _pos = self._rng.randint(0, len(_data) - 1)
                 _data = bytearray(list(_data[:_pos]) + list(_data[_pos+1:]))
             elif _strategy == 3:
-                # append random
+                # 尾追随机字节
                 _ext = bytes(self._rng.randint(0, 255) for _ in range(
                     self._rng.randint(1, 32)))
                 _data.extend(_ext)
             elif _strategy == 4:
-                # repeat bytes
+                # 字节重复
                 if len(_data) > 4:
                     _pos = self._rng.randint(0, len(_data) - 4)
                     _cnt = self._rng.randint(2, 8)
@@ -323,18 +322,20 @@ class PatchTestGenerator:
                 target_function=_src.target_function,
                 input_data=bytes(_data),
                 expected_behavior=_src.expected_behavior,
-                severity=_src.severity * 0.7,  # 变异后的用例置信度降低
+                severity=_src.severity * 0.7,  # 变异降权
                 description="mutated from " + str(_src.test_id),
             )
             _mutated.append(_tc)
 
         return _mutated
 
-    # ── 统计 ──────────────────────────────────────────────────────────
+    # ── 统计 ──────────────────────────────────────────────────────
 
     def _estimate_coverage(self, suite: TestSuite) -> float:
         """估算测试套件对补丁行为的覆盖率。
-        每个不同测试类型贡献 ~0.15-0.20 覆盖率。Fuzz 变异贡献 ~0.05。"""
+
+        每种不同测试类型贡献约 0.15-0.20，fuzz 变异贡献约 0.05。
+        """
         _cov = 0.0
         _kinds = set(_t.kind for _t in suite.test_cases)
         _cov += len(_kinds & {TestKind.BOUNDARY, TestKind.OVERFLOW,
@@ -358,7 +359,7 @@ class PatchTestGenerator:
         return _recs
 
 
-# ── 便捷函数 ──────────────────────────────────────────────────────────
+# ── 便捷入口 ──────────────────────────────────────────────────────
 
 def generate_patch_tests(vuln_type: str, cwe_id: str = "",
                          target_function: str = "",

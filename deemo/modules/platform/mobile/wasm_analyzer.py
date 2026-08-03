@@ -1,17 +1,17 @@
 """
-WebAssembly二进制解析与WASI组件分析。
+WebAssembly 二进制解析与 WASI 组件分析。
 
-覆盖：
-  - WASM模块结构解析（所有11种标准段类型）
-  - WASI导入函数识别与能力集分类
+覆盖:
+  - WASM 模块结构解析 (11 种标准段类型)
+  - WASI 导入函数识别与能力集分类
   - 内存安全与危险导出检测
-  - WBSan风格的shadow memory有效性验证 (WWW '25)
-  - WasmChecker风格的抽象解释静态分析pass (IEEE 2024)
+  - WBSan shadow memory 有效性验证 (WWW '25)
+  - WasmChecker 抽象解释静态分析 (IEEE 2024)
 
-参考：
-  - WASM v1.0规范与Bytecode Alliance的wasmparser设计模式
-  - WBSan (WWW '25): 首个Wasm二进制sanitizer，shadow memory+red zone检测4类内存bug
-  - WasmChecker (IEEE 2024): 抽象解释实现97.33%召回率，平均13.85秒/<1MB
+文献:
+  - WASM v1.0 规范 + Bytecode Alliance wasmparser 设计范式
+  - WBSan (WWW '25): 首个 Wasm 二进制 sanitizer, shadow memory + red zone 检测四类内存缺陷
+  - WasmChecker (IEEE 2024): 抽象解释, 召回率 97.33%, 平均 13.85s/<1MB
 """
 
 import struct
@@ -25,20 +25,20 @@ logger = logging.getLogger(__name__)
 
 
 class SectionType:
-    """WASM段类型标识常量。"""
+    """WASM 段类型标识常量。"""
     CUSTOM = 0; TYPE = 1; IMPORT = 2; FUNCTION = 3; TABLE = 4
     MEMORY = 5; GLOBAL = 6; EXPORT = 7; START = 8; ELEMENT = 9
     CODE = 10; DATA = 11; DATA_COUNT = 12
 
 
 class ValType(IntEnum):
-    """WASM值类型——WBSan shadow memory的粒度基于这些类型。"""
+    """WASM 值类型——WBSan shadow memory 粒度依此定义。"""
     I32 = 0x7F; I64 = 0x7E; F32 = 0x7D; F64 = 0x7C
     V128 = 0x7B; FUNCREF = 0x70; EXTERNREF = 0x6F
 
 
-# ── WBSan风格的shadow memory状态 ──
-# 每个线性内存字节对应一个shadow byte，编码其有效性状态
+# ── WBSan shadow memory 状态编码 ──
+# 线性内存每字节对应一个 shadow byte, 编码有效性状态
 SHADOW_VALID = 0x00
 SHADOW_FREED = 0x01
 SHADOW_REDZONE = 0x02
@@ -120,9 +120,9 @@ class WasmAnalysisResult:
 
 
 class WasmParser:
-    """WebAssembly二进制解析器。
+    """WebAssembly 二进制解析器。
 
-    按WASM规范解析模块结构：类型段、导入/导出段、函数段、内存/表/全局段、代码段。
+    按 WASM 规范解析模块: 类型段、导入/导出段、函数段、内存/表/全局段、代码段。
     """
 
     _WASM_MAGIC = b'\x00asm'
@@ -190,9 +190,13 @@ class WasmParser:
         return True
 
     def parse_sections(self):
+        # 修复: WASM 段格式 = section_id(1B) + section_size(varuint32) + content。
+        # 此前未读取 section_size, 段内容的首个 varuint (条目数) 被误作下一段
+        # section_id, 导致全部后续解析偏移错位。
         nDataLen = len(self.data)
         while self.offset < nDataLen:
             nSectionId = self._read_byte()
+            _section_size = self._read_varuint()  # consume section_size even if unused
             if nSectionId == SectionType.CUSTOM: self._parse_custom_section()
             elif nSectionId == SectionType.TYPE: self._parse_type_section()
             elif nSectionId == SectionType.IMPORT: self._parse_import_section()
@@ -330,18 +334,18 @@ class WasmParser:
 
         self.result.vulnerabilities = vulns
 
-    # ── WBSan风格的shadow memory检测 ──
+    # ── WBSan shadow memory 检测 ──
     def _detect_shadow_memory_issues(self):
-        """对每个memory段构建shadow memory模型，检查red zone配置与UAF风险。
+        """对每个 memory 段构建 shadow memory 模型, 检查 red zone 配置与 UAF 风险。
 
-        WBSan (WWW '25) 提出：在memory周围设置red zone，通过shadow memory追踪
-        每个字节的有效性。此处做静态模拟——检测memory配置是否预留了red zone空间，
-        以及是否存在memory.grow后未清零的未初始化内存访问风险。
+        WBSan (WWW '25): memory 周围设置 red zone, shadow memory 逐字节追踪有效性。
+        此处静态模拟——检测 memory 配置是否预留 red zone 空间,
+        以及 memory.grow 后未清零导致的未初始化内存访问风险。
         """
         issues = []
         for i, mem in enumerate(self.result.memories):
-            # red zone通常为64KB（1页），位于memory末尾
-            # 如果maximum=0（无上限），red zone可能被memory.grow覆盖
+            # red zone 通常 64KB (1页), 位于 memory 末尾
+            # maximum=0 (无上限) 时, red zone 可能被 memory.grow 覆盖
             if mem.maximum == 0:
                 issues.append({
                     'type': 'missing_red_zone',
@@ -358,9 +362,11 @@ class WasmParser:
                     'location': f'memory:{i}'
                 })
 
-        # 检测data段初始化后memory.grow——grow出的新页内容未定义，
-        # 等同于分配未初始化内存，是UAF和information leak的来源
-        if self.result.memories and len(self.result.data) > 0 and any(
+        # 检测 data 段初始化后 memory.grow——grow 出的新页内容未定义,
+        # 等价于分配未初始化内存, 是 UAF 与信息泄露根源
+        # 修复: self.result.data 不存在 (WasmAnalysisResult.__slots__ 无 'data')。
+        # data 为 WasmParser 的原始字节 (self.data), 以 len(self.data) 替代。
+        if self.result.memories and len(self.data) > 0 and any(
                 mem.maximum == 0 for mem in self.result.memories):
             issues.append({
                 'type': 'uninitialized_growth',
@@ -371,23 +377,23 @@ class WasmParser:
 
         self.result.shadow_memory_issues = issues
 
-    # ── WasmChecker风格的抽象解释 ──
+    # ── WasmChecker 抽象解释 ──
     def _run_abstract_interpretation(self):
-        """对每个函数执行轻量级抽象解释，检测潜在的越界与类型错误。
+        """对每个函数执行轻量抽象解释, 检测越界与类型错误。
 
-        WasmChecker (IEEE 2024) 使用迭代状态分析+漏洞过滤pipeline实现97%召回率。
-        此处实现简化版：对每个函数的局部变量进行类型状态跟踪，
-        检测i32.load/store的offset是否可能越界。
+        WasmChecker (IEEE 2024): 迭代状态分析 + 漏洞过滤 pipeline, 召回率 97%。
+        简化实现: 逐函数局部变量类型状态跟踪,
+        检测 i32.load/store offset 越界可能。
         """
         findings = []
         for i, func in enumerate(self.result.functions):
-            # 检查函数签名是否暗示危险的内存操作模式
-            # 多个i32参数+无返回 → 可能是memcpy风格的函数
+            # 函数签名是否暗示危险内存操作模式
+            # 多个 i32 参数 + 无返回值 → memcpy/memset 模式疑点
             type_idx = func.type_idx
             if type_idx < len(self.result.types):
                 ftype = self.result.types[type_idx]
                 n_params = len(ftype.param_types)
-                # 接受多个i32参数（可能是地址+长度）且无返回值
+                # 接受多个 i32 参数 (疑似地址+长度) 且无返回值
                 if n_params >= 2 and ftype.return_type is None:
                     i32_params = sum(1 for t in ftype.param_types if t == ValType.I32)
                     if i32_params >= 2:
@@ -399,8 +405,7 @@ class WasmParser:
                             'recommendation': '审查此函数的bounds checking是否充分'
                         })
 
-        # 全局分析：如果一个模块同时有memory和table但两者都没有大小上限，
-        # 则同时存在线性内存溢出和间接调用劫持的风险
+        # 全局分析: memory 与 table 同时无上限 → 线性溢出 + 间接调用劫持双攻击面
         has_unbounded_mem = any(m.maximum == 0 for m in self.result.memories)
         has_unbounded_table = any(t.maximum == 0 and t.initial > 0 for t in self.result.tables)
         if has_unbounded_mem and has_unbounded_table:
@@ -415,7 +420,7 @@ class WasmParser:
 
 
 class WASIAnalyzer:
-    """WASI组件分析器。解析WASI导入函数、能力集与系统调用接口。"""
+    """WASI 组件分析: 导入函数、能力集、系统调用接口。"""
 
     WASI_FUNCTIONS = {
         'args_sizes_get': '获取命令行参数大小', 'args_get': '获取命令行参数',
@@ -493,7 +498,7 @@ def analyze_wasm(binary_path: str) -> Dict[str, Any]:
     }
 
 
-# 兼容性存根
+# 兼容层——旧API桩
 from dataclasses import dataclass as _dc, field as _f
 
 @_dc

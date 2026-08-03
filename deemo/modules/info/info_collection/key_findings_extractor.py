@@ -8,7 +8,7 @@ import time
 from typing import Dict, Any, List, Optional, Tuple, Set
 from dataclasses import dataclass, field
 from collections import defaultdict
-
+from itertools import groupby  # 预留
 logger = logging.getLogger(__name__)
 
 class FindingPriority(StrEnum):
@@ -86,11 +86,11 @@ class ReverseNote:
 
 
 class FindingScorer:
-    """加权评分模型：严重度 × 可达性 × 公开利用 × CVSS × 关键词密度。
+    """加权评分模型：严重度 x 可达性 x 公开利用 x CVSS x 关键词密度。
 
-    每项权重由领域经验确定，非机器学习参数：
-    - 公开利用 (public_exploit) 权重最高，因为 Exploit-DB/野外样本
-      的存在直接证明了漏洞的可利用性。
+    权重由领域经验确定：
+    - 公开利用 (public_exploit) 权重最高，Exploit-DB/野外样本
+      存在直接证明可利用性。
     - CVSS >= 9 与 public_exploit 等效，>= 7 为中等加成。
     """
 
@@ -126,14 +126,14 @@ class FindingScorer:
 class KeyFindingsExtractor:
     """根据综合严重度评分提取 Top-K 安全发现。
 
-    去重策略：同一 CWE ID 最多保留 2 条，避免单一类型漏洞
-    挤占 Top-K 名额。当 CWE 未知时按标题字符串相似度去重。
-    增强：跨发现关联评分 — 若多个漏洞存在于同一函数或具备
-    互补利用路径（如 info leak + buffer overflow），则组合评分
-    超出简单加和，反映复合利用的实际风险。
+    去重策略：同一 CWE ID 最多保留 2 条，避免单一类型漏洞挤占 Top-K 名额。
+    当 CWE 未知时按标题字符串相似度去重。
+    增强：跨发现关联评分 — 若多个漏洞存在于同一函数或具备互补利用路径
+    （如 info leak + buffer overflow），则组合评分超出简单加和，
+    反映复合利用的实际风险。
     """
 
-    # 已知互补 CWE 对：(CWE_A, CWE_B) 共存时每发现额外 +2 关联分
+    # 已知互补 CWE 对：共存时每发现额外 +2 关联分
     _CORRELATED_CWE_PAIRS: set[tuple[str, str]] = {
         ("CWE-134", "CWE-121"),  # format string + stack overflow
         ("CWE-134", "CWE-122"),  # format string + heap overflow

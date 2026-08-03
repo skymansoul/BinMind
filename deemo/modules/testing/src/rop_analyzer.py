@@ -1,11 +1,10 @@
-# 2026-08-02
-# ROP Gadget 分析器 — 从二进制中扫描/分类/评估可利用的 gadget
+# ROP Gadget分析器 — 从二进制中扫描/分类/评估可利用的gadget
 # 核心分析:
-#   1. Gadget 扫描: 在全二进制中搜索 ret/间接跳转结尾的指令序列
-#   2. Gadget 分类: 按语义标记 (load/store/alu/syscall/call/branch)
-#   3. Chaining 模拟: 对给定目标 (如 mprotect+shellcode) 搜索可行链
-#   4. 缓解评估: 估计在 CFI/CET/PAC 下 gadget 可用性
-#   5. 消除验证: 比较补丁前后 gadget 数量验证缓解是否有效部署
+#   1. Gadget扫描: 在全二进制中搜索ret/间接跳转结尾的指令序列
+#   2. Gadget分类: 按语义标记 (load/store/alu/syscall/call/branch)
+#   3. Chaining模拟: 对给定目标 (如mprotect+shellcode)搜索可行链
+#   4. 缓解评估: 估计在CFI/CET/PAC下gadget可用性
+#   5. 消除验证: 比较补丁前后gadget数量验证缓解是否有效
 #
 # 参考:
 #   ROP Gadget Prevalence and Survival under Compiler-based Binary
@@ -19,12 +18,13 @@ import re
 from typing import List, Dict, Set, Tuple, Optional, Any
 from collections import defaultdict, Counter
 from dataclasses import dataclass, field
+from collections import OrderedDict
 
 
 @dataclass
 class Gadget:
-    """单条 ROP gadget。"""
-    address: int                    # gadget 起始地址 (虚拟地址)
+    """单条ROP gadget。"""
+    address: int                    # gadget起始地址 (虚拟地址)
     raw_bytes: bytes                # 原始字节序列
     disasm: str = ""               # 反汇编文本
     ret_type: str = "ret"          # ret | call reg | jmp reg | syscall
@@ -33,15 +33,15 @@ class Gadget:
     #          'alu', 'syscall', 'call', 'branch', 'nop'
     regs_written: Set[str] = field(default_factory=set)
     regs_read: Set[str] = field(default_factory=set)
-    stack_shift: int = 0            # 对 rsp/esp 的净偏移 (+n = pop n bytes)
+    stack_shift: int = 0            # 对rsp/esp的净偏移 (+n = pop n bytes)
     side_effects: List[str] = field(default_factory=list)
-    useful: bool = False            # 是否可用于实际 ROP 链构造
+    useful: bool = False            # 是否可用于实际ROP链构造
     confidence: float = 0.0         # 可利用置信度 [0, 1]
 
 
 @dataclass
 class ROPChain:
-    """一组可链接的 gadget 序列，实现特定目标。"""
+    """一组可链接的gadget序列，实现特定目标。"""
     goal: str                       # execve / mprotect / write_primitive / etc
     gadgets: List[Gadget]
     total_len: int
@@ -50,11 +50,12 @@ class ROPChain:
 
 
 class ROPGadgetScanner:
-    """在二进制中扫描 ROP gadget。
+    """在二进制中扫描ROP gadget。
 
-    扫描策略: 滑动窗 (2–16 字节) → 检测看是否以 ret/间接跳转指令结尾。
-    在 x86/x86-64 下，ret = 0xC3, ret imm16 = 0xC2, call/jmp reg 模式 =
-    FF D0-FF D7 (call) / FF E0-FF E7 (jmp)。"""
+    扫描策略: 滑动窗 (2-16字节) -> 检测是否以ret/间接跳转指令结尾。
+    在x86/x86-64下，ret=0xC3, ret imm16=0xC2, call/jmp reg模式=
+    FF D0-FF D7 (call) / FF E0-FF E7 (jmp)。
+    """
 
     # ret/间接转移编码
     _TERMINATORS = {
@@ -73,12 +74,12 @@ class ROPGadgetScanner:
         self._max_gadget_len = 16
 
     def scan_raw(self, data: bytes, base_addr: int = 0) -> int:
-        """在原始字节中扫描 gadget。返回找到的 gadget 数。"""
+        """在原始字节中扫描gadget。返回找到的gadget数。"""
         self._gadgets = []
         self._by_semantics.clear()
 
         for offset in range(len(data)):
-            # 对每个起始偏移，尝试 2-16 字节的 gadget
+            # 对每个起始偏移，尝试2-16字节的gadget
             for g_len in range(2, min(self._max_gadget_len + 1,
                                       len(data) - offset + 1)):
                 chunk = data[offset:offset + g_len]
@@ -93,7 +94,7 @@ class ROPGadgetScanner:
                                     else 'jmp_reg')
 
                 if ret_type is None:
-                    continue  # 不是有效 gadget 终止符
+                    continue  # 不是有效gadget终止符
 
                 addr = base_addr + offset
                 g = Gadget(
@@ -109,8 +110,10 @@ class ROPGadgetScanner:
         return len(self._gadgets)
 
     def _classify_semantics(self, g: Gadget) -> None:
-        """对 gadget 做启发式语义分类。基于 x86/x86-64 操作码模式。
-        仅处理最常见的单字节操作码；完整实现需要集成反汇编器。"""
+        """对gadget做启发式语义分类。基于x86/x86-64操作码模式。
+
+        仅处理最常见的单字节操作码；完整实现需集成反汇编器。
+        """
         b = g.raw_bytes
         if len(b) < 2:
             return
@@ -147,7 +150,7 @@ class ROPGadgetScanner:
             g.semantics.append('syscall')
             g.semantics.append('legacy_syscall')
 
-        # 未分类 → nop
+        # 未分类 -> nop
         if not g.semantics:
             g.semantics.append('nop')
 
@@ -156,7 +159,7 @@ class ROPGadgetScanner:
 
     # ---- 查询 ----
     def get_by_register(self, reg: str) -> List[Gadget]:
-        """获取写入指定寄存器的所有 gadget。"""
+        """获取写入指定寄存器的所有gadget。"""
         return [g for g in self._gadgets if reg in g.regs_written]
 
     def get_useful(self, min_stack_shift: int = 0) -> List[Gadget]:
@@ -172,11 +175,13 @@ class ROPGadgetScanner:
                         result[reg].append(g)
         return dict(result)
 
-    # ---- ROP 链构造 ----
+    # ---- ROP链构造 ----
     def search_chain(self, goal: str = "execve",
                      max_len: int = 8) -> List[ROPChain]:
-        """搜索可用于构造特定目标 ROP 链的 gadget 组合。
-        当前实现: 检查是否存在覆盖所需寄存器的 pop 系列 gadget。"""
+        """搜索可用于构造特定目标ROP链的gadget组合。
+
+        当前实现: 检查是否存在覆盖所需寄存器的pop系列gadget。
+        """
         required_regs = {
             'execve': ['rdi', 'rsi', 'rdx', 'rax'],
             'mprotect': ['rdi', 'rsi', 'rdx', 'rax'],
@@ -185,7 +190,7 @@ class ROPGadgetScanner:
         regs = required_regs.get(goal, ['rdi', 'rsi', 'rdx'])
         pop_map = self.pop_reg_gadgets()
 
-        # 检查每种所需寄存器是否至少有一个 pop gadget
+        # 检查每种所需寄存器是否至少有一个pop gadget
         missing = [r for r in regs if not pop_map.get(r)]
         if missing:
             return []
@@ -210,9 +215,11 @@ class ROPGadgetScanner:
 
     # ---- 缓解检测 ----
     def estimate_cfi_resistance(self) -> Dict[str, Any]:
-        """评估在启用 CFI 的情况下 gadget 可用性。
-        CFI 检查间接调用/跳转目标 → 只有 'ret' 型 gadget 可被利用
-        （call_reg/jmp_reg 受保护），且 forward-edge CFI 阻止部分调用。"""
+        """评估在启用CFI情况下gadget可用性。
+
+        CFI检查间接调用/跳转目标 -> 只有'ret'型gadget可被利用
+        （call_reg/jmp_reg受保护），且forward-edge CFI阻止部分调用。
+        """
         total = len(self._gadgets)
         ret_type = len([g for g in self._gadgets
                        if g.ret_type == 'ret'])
@@ -254,7 +261,7 @@ class ROPGadgetScanner:
 # 便捷入口
 # ---------------------------------------------------------------------------
 def scan_rop_gadgets(filepath: str, base_addr: int = 0) -> ROPGadgetScanner:
-    """从文件扫描 ROP gadget。返回已扫描的 scanner 对象。"""
+    """从文件扫描ROP gadget。返回已扫描的scanner对象。"""
     try:
         with open(filepath, 'rb') as fh:
             data = fh.read()
@@ -267,7 +274,7 @@ def scan_rop_gadgets(filepath: str, base_addr: int = 0) -> ROPGadgetScanner:
 
 def verify_gadget_elimination(before_scanner: ROPGadgetScanner,
                               after_scanner: ROPGadgetScanner) -> Dict[str, Any]:
-    """比较补丁前后 gadget 数量，验证缓解措施是否有效。"""
+    """比较补丁前后gadget数量，验证缓解措施是否有效。"""
     before = before_scanner.stats()
     after = after_scanner.stats()
     reduction = before['total_gadgets'] - after['total_gadgets']

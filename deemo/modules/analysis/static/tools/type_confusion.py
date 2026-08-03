@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-# Entry point: TypeConfusionAnalyzer. Dependencies: os, re.
+# 入口: TypeConfusionAnalyzer. Dependencies: os, re
 #
-# 2025 升级: HEXP (IEEE 2025) 启发的虚表完整性验证。
+# 2025 升级: HEXP (IEEE 2025) 启发的虚表完整性验证
 # HEXP 通过提取堆操作迹推断目标布局——将此方法论应用于虚表验证：
-# 比较静态分析得到的虚表条目与实际 .rodata 中的函数指针，
-# 不一致之处标记为可能的虚表劫持（vtable hijack）或类型混淆。
+# 比较静态分析得到的虚表条目与实际.rodata 中的函数指针
+# 不一致之处标记为可能的虚表劫持（vtable hijack）或类型混淆
 import os, re, logging
 from typing import Dict, Any, List, Optional, Tuple, Set
 from dataclasses import dataclass
@@ -146,12 +146,12 @@ class TypeConfusionAnalyzer:
             logger.warning(f"Vtable hijack detection failed: {e}")
 
     # ── HEXP 启发的虚表完整性验证 (IEEE 2025) ──────────────────────────────
-    # 核心: HEXP通过堆操作迹推断目标布局→验证实际布局是否符合预期。
+    # 核心: HEXP通过堆操作迹推断目标布局→验证实际布局是否符合预期
     # 将此方法论应用于虚表: 静态提取的虚表条目(函数指针)应与.rodata
-    # 中的实际数据一致。不一致=虚表被篡改或类型混淆。
+    # 中的实际数据一致。不一致=虚表被篡改或类型混淆
 
     def _verify_vtable_integrity(self) -> Dict[str, bool]:
-        """验证每个检测到的虚表的完整性——比较条目与预期函数指针。"""
+        """验证每个检测到的虚表的完整性——比较条目与预期函数指针"""
         if not self.binary_path:
             return {}
         verified: Dict[str, bool] = {}
@@ -210,8 +210,8 @@ class TypeConfusionAnalyzer:
         target_type = target_vuln.get('target_type', 'unknown')
         return f"""// Type confusion exploit (CWE-843)
 // Target: {func}, cast to: {target_type}
-#include <stdio.h>
-#include <stdlib.h>
+# 包含 <stdio.h>
+# 包含 <stdlib.h>
 typedef void(*vfunc_t)(void);
 struct FakeVTable {{ vfunc_t f1; vfunc_t f2; vfunc_t mal; }};
 static void shell() {{ system("/bin/sh"); }}

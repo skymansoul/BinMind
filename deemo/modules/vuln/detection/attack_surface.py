@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-# 攻击面枚举器。从二进制目标提取导出函数、网络端点、文件路径、IPC/RPC接口。
+# 攻击面枚举引擎。从二进制目标提取导出函数、网络端点、文件路径、IPC/RPC接口。
 # 风险评分按远程可达性、鉴权门控、危险函数暴露度、攻击面类型加权。
 # 端口→协议对照表手工维护，非完备，覆盖常见场景。
 # 积分公式: type_weight + remote*30 + no_auth*20 + params>3*15 + bufsize>1k*10 + danger_name*25
-# 总分/1.2调校因子后钳位至[0,100]。
+# 总分/1.2调校因子后钳位至[0, 100]。
 
 import logging, os, re, subprocess
 from datetime import datetime
@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Optional
 
-logger = logging.getLogger(__name__)
+_logger = logging.getLogger(__name__)
 
 
 class AttackSurfaceType(StrEnum):
@@ -75,7 +75,7 @@ class AttackSurfaceReport:
 
 
 class AttackSurfaceMapper:
-    """枚举二进制所有对外暴露的接口，构建攻击面拓扑。"""
+    """枚举二进制对外暴露接口，构造攻击面拓扑"""
 
     NET_FUNCS = {
         'bind', 'listen', 'accept', 'accept4', 'recv', 'recvfrom', 'recvmsg',
@@ -102,10 +102,10 @@ class AttackSurfaceMapper:
 
     def _ok(self):
         if not os.path.exists(self._path):
-            logger.error(f'file not found: {self._path}')
+            _logger.error(f'file not found: {self._path}')
             return False
         if not os.path.isfile(self._path):
-            logger.error(f'not a file: {self._path}')
+            _logger.error(f'not a file: {self._path}')
             return False
         return True
 
@@ -128,13 +128,13 @@ class AttackSurfaceMapper:
                     off = bi + 1
             if len(cur) >= 4:
                 self._strs.append((off, ''.join(cur)))
-            logger.debug(f'extracted {len(self._strs)} strings')
+            _logger.debug(f'extracted {len(self._strs)} strings')
         except Exception as e:
-            logger.error(f'string extract failed: {e}')
+            _logger.error(f'string extract failed: {e}')
         return self._strs
 
     def _extract_exports(self, rpt):
-        logger.debug('extracting exports')
+        _logger.debug('extracting exports')
         try:
             r = subprocess.run(['readelf', '-s', self._path],
                                capture_output=True, text=True, timeout=30)
@@ -167,7 +167,7 @@ class AttackSurfaceMapper:
                             self._calc_risk(pt)
                             rpt.points.append(pt)
         except Exception as e:
-            logger.debug(f'export extract failed: {e}')
+            _logger.debug(f'export extract failed: {e}')
             self._exports_from_strs(rpt)
 
     def _exports_from_strs(self, rpt):
@@ -216,6 +216,7 @@ class AttackSurfaceMapper:
                 self._calc_risk(pt)
                 rpt.points.append(pt)
 
+    # 端口→协议手工映射，覆盖常见服务
     @staticmethod
     def _guess_proto(port):
         _MAP = {80: 'HTTP', 443: 'HTTPS', 21: 'FTP', 22: 'SSH', 23: 'Telnet',
@@ -331,7 +332,7 @@ class AttackSurfaceMapper:
         rpt.nhigh = hi; rpt.nmed = med; rpt.nlow = lo
 
     def analyze(self):
-        logger.info(f'attack surface analysis: {self._path}')
+        _logger.info(f'attack surface analysis: {self._path}')
         rpt = AttackSurfaceReport(path=self._path)
         if not self._ok():
             rpt.err = f'invalid path: {self._path}'
@@ -343,6 +344,7 @@ class AttackSurfaceMapper:
             self._extract_ipc(rpt)
             self._extract_rpc(rpt)
             self._extract_cli(rpt)
+            # 去重——同(name, type)只保留一次
             seen = set()
             uniq = []
             for p in rpt.points:
@@ -354,9 +356,9 @@ class AttackSurfaceMapper:
             self._categorize(rpt)
             rpt.points.sort(key=lambda p: p.score, reverse=True)
             rpt.ok = True
-            logger.info(f'analysis done: {len(rpt.points)} surface points')
+            _logger.info(f'analysis done: {len(rpt.points)} surface points')
         except Exception as e:
-            logger.error(f'analysis failed: {e}')
+            _logger.error(f'analysis failed: {e}')
             rpt.err = str(e)
         return rpt
 

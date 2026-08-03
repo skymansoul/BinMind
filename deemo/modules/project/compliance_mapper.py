@@ -1,4 +1,4 @@
-# 2026-08-02 — 合规自动映射引擎: SBERT语义匹配 / RAG证据检索 / 跨标准对齐
+# 合规自动映射引擎: SBERT语义匹配 / RAG证据检索 / 跨标准对齐
 # 参考: Saha & Shukla "PROPARAG: Automated Cybersecurity Policy Compliance Assessment" (arXiv:2605.07515, 2025)
 #       Chung et al. "GraphCompliance: Aligning Policy and Context Graphs for LLM-Based Regulatory Compliance" (arXiv:2510.26309)
 #       Sun et al. "A Compliance Checking Framework Based on RAG" (COLING 2025)
@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 
 @dataclass
 class Control:
-    """单个合规控制项."""
+    """合规控制项."""
     standard: str
     control_id: str
     title: str
@@ -28,10 +28,10 @@ class Control:
     mappings: Dict[str, str] = field(default_factory=dict)  # 跨标准映射 {iso_27001: "A.12.6.1", ...}
 
 class StandardLibrary:
-    """预置合规标准库. 扩展自报告模板引擎的 ComplianceLibrary.
+    """预置合规标准库. 扩展自报告引擎的 ComplianceLibrary.
 
-    包含 NIST SP 800-53, ISO 27001, PCI DSS, SOC 2, HIPAA, GDPR 的精选控制项.
-    每个控制项列出 required_evidence — 预期从分析结果中提取的证据字段.
+    含 NIST SP 800-53, ISO 27001, PCI DSS, SOC 2, HIPAA, GDPR 的精选控制项.
+    required_evidence 列出预期从分析结果中提取的证据字段.
     """
 
     def __init__(self):
@@ -42,7 +42,7 @@ class StandardLibrary:
         # NIST SP 800-53
         nist = [
             Control('nist_800_53', 'RA-5', 'Vulnerability Scanning',
-                    '定期扫描系统和应用程序中的漏洞.', 'Risk Assessment',
+                    '定期扫描系统和应用漏洞.', 'Risk Assessment',
                     ['vulnerability_count', 'scan_frequency', 'last_scan_date']),
             Control('nist_800_53', 'SI-2', 'Flaw Remediation',
                     '及时修复安全缺陷.', 'System and Information Integrity',
@@ -54,7 +54,7 @@ class StandardLibrary:
                     '维护系统组件清单.', 'Configuration Management',
                     ['asset_count', 'sbom_components', 'component_versions']),
             Control('nist_800_53', 'SA-10', 'Developer Configuration Management',
-                    '开发方应维护配置管理.', 'System and Services Acquisition',
+                    '开发方维护配置管理.', 'System and Services Acquisition',
                     ['code_review_coverage', 'ci_pipeline_status', 'secure_build_evidence']),
         ]
         for c in nist:
@@ -63,13 +63,13 @@ class StandardLibrary:
         # ISO 27001:2022
         iso = [
             Control('iso_27001', 'A.8.8', '技术漏洞管理',
-                    '应及时获取有关技术漏洞的信息, 评估暴露程度, 并采取适当措施.', '信息安全控制',
+                    '及时获取技术漏洞信息, 评估暴露程度, 采取适当措施.', '信息安全控制',
                     ['vulnerability_count', 'severity_distribution', 'remediation_sla']),
             Control('iso_27001', 'A.8.9', '配置管理',
-                    '应建立并维护系统和软件的配置管理.', '信息安全控制',
+                    '建立并维护系统和软件的配置管理.', '信息安全控制',
                     ['asset_inventory', 'build_reproducibility', 'dependency_graph']),
             Control('iso_27001', 'A.8.25', '安全开发生命周期',
-                    '应在软件开发中建立并应用安全开发规则.', '信息安全控制',
+                    '在软件开发中建立并应用安全开发规则.', '信息安全控制',
                     ['secure_dev_policy', 'code_review_records', 'sast_dast_results']),
         ]
         for c in iso:
@@ -78,7 +78,7 @@ class StandardLibrary:
         # PCI DSS 4.0
         pci = [
             Control('pci_dss', '6.3.1', '安全漏洞识别',
-                    '在发布前识别安全漏洞.', '安全开发',
+                    '发布前识别安全漏洞.', '安全开发',
                     ['pre_release_scan', 'vulnerability_count', 'critical_issues']),
             Control('pci_dss', '11.3.1', '外部漏洞扫描',
                     '执行外部漏洞扫描.', '定期安全测试',
@@ -90,7 +90,7 @@ class StandardLibrary:
         # SOC 2
         soc2 = [
             Control('soc2', 'CC7.1', '变更检测',
-                    '使用变更检测机制识别对生产系统的未授权变更.', '变更管理',
+                    '使用变更检测机制识别生产系统的未授权变更.', '变更管理',
                     ['change_detection_logs', 'unauthorized_changes', 'audit_trail_completeness']),
         ]
         for c in soc2:
@@ -99,7 +99,7 @@ class StandardLibrary:
         # GDPR
         gdpr = [
             Control('gdpr', 'Art.32', '处理安全性',
-                    '实施适当的技术和组织措施以确保与风险相称的安全水平.',
+                    '实施适当的技术和组织措施确保与风险相称的安全水平.',
                     '数据保护', ['data_encryption', 'access_controls', 'breach_detection_capability']),
         ]
         for c in gdpr:
@@ -128,12 +128,11 @@ class StandardLibrary:
 
 
 # ——————————————————————————————————————————————————————————
-# 证据映射引擎 — 将分析结果字段匹配到合规控制项
+# 证据映射引擎 — 分析结果字段匹配到合规控制项
 # ——————————————————————————————————————————————————————————
 
 class EvidenceMapper:
-    # 基于字段名关键词匹配 + 可选 SBERT 语义匹配
-    # 参考 Bianchi et al. (2026) 跨标准映射 + PROPARAG (2025) 证据检索
+    # 字段名关键词匹配 + 可选 SBERT 语义匹配 (Bianchi 2026 / PROPARAG 2025)
     def __init__(self, library: StandardLibrary = None):
         self.library = library or StandardLibrary()
         self._st_model = None
@@ -147,10 +146,10 @@ class EvidenceMapper:
         except ImportError:
             self._st_model = None
         except Exception:
-            pass  # 其他错误静默忽略 (模型下载失败等)
+            pass  # 静默忽略其他错误 (模型下载失败等)
 
     def map_evidence(self, analysis_data: Dict, standards: List[str] = None) -> Dict:
-        """将分析数据映射到合规控制项.
+        """分析数据映射到合规控制项.
 
         Returns:
             {standard: [{control_id, title, status, matched_fields, missing_fields, score}, ...]}
@@ -167,7 +166,7 @@ class EvidenceMapper:
                 missing = [f for f in control.required_evidence if f not in evidence_fields
                            or analysis_data.get(f) is None]
 
-                # 字段名模糊匹配: 对每个缺失字段尝试描述级匹配
+                # 描述级模糊匹配: 对缺失字段尝试语义匹配
                 desc_match = []
                 if self._st_model and missing:
                     desc_match = self._semantic_match(
@@ -190,7 +189,7 @@ class EvidenceMapper:
         return results
 
     def _semantic_match(self, required: List[str], data: Dict) -> List[str]:
-        """SBERT 语义匹配: 对 required_evidence 中的每一项, 寻找 data 中最相似的键."""
+        """SBERT 语义匹配: required_evidence 每一项找 data 中最相似键."""
         if not self._st_model:
             return []
         matches = []
@@ -229,14 +228,14 @@ class EvidenceMapper:
 
 
 # ——————————————————————————————————————————————————————————
-# 跨标准映射 — 将一个标准的控制项映射到另一个标准
+# 跨标准映射 — 单向控制项到另一标准的双向映射
 # ——————————————————————————————————————————————————————————
 
 class CrossStandardMapper:
-    """跨标准映射: ISO 27001 ↔ NIST 800-53 ↔ PCI DSS 等的双向映射.
+    """跨标准映射: ISO 27001 / NIST 800-53 / PCI DSS 等双向映射.
 
-    方法: 组合规则映射(人工维护) + TF-IDF 描述相似度 [Bianchi 2026 §4.2].
-    若 SBERT 可用, 用余弦相似度替代 TF-IDF.
+    方法: 组合规则映射 (人工维护) + TF-IDF 描述相似度 [Bianchi 2026 §4.2].
+    SBERT 可用时以余弦相似度替代 TF-IDF.
     """
 
     # 预置映射: {standard: {control_id: {target_standard: target_control_id}}}
@@ -259,7 +258,7 @@ class CrossStandardMapper:
 
     def map(self, source_std: str, source_control_id: str,
             target_std: str) -> Optional[Dict]:
-        """将源控制项映射到目标标准. 优先规则映射, 其次语义映射."""
+        """源控制项映射到目标标准. 优先规则映射, 其次语义映射."""
         # 规则映射
         rule = self._RULE_MAP.get(source_std, {}).get(source_control_id, {}).get(target_std)
         if rule:
@@ -302,7 +301,7 @@ class CrossStandardMapper:
         return None
 
     def _tfidf_map(self, source: Control, targets: List[Control]) -> Optional[Dict]:
-        # 基于字符 n-gram TF-IDF 的无外部依赖文本相似度
+        # 字符 n-gram TF-IDF 文本相似度, 无外部依赖
         def _tokenize(text: str, n: int = 3):
             text = text.lower()
             return set(text[i:i+n] for i in range(len(text) - n + 1))
@@ -344,7 +343,7 @@ class CrossStandardMapper:
 # ——————————————————————————————————————————————————————————
 
 def assess_compliance(analysis_data: Dict, standards: List[str] = None) -> Dict:
-    """一站式合规评估: 证据映射 + 差距报告."""
+    """合规评估入口: 证据映射 + 差距报告."""
     mapper = EvidenceMapper()
     mapping = mapper.map_evidence(analysis_data, standards)
     gap_report = mapper.generate_gap_report(mapping)

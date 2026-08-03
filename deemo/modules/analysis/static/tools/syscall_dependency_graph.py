@@ -34,9 +34,9 @@ class DependencyGraph:
 
 
 # ── 基于模块度的调用图社区检测 ──────────────────────────────────────────────
-# 将系统调用依赖图划分为"社区"（功能模块）——文件系统社区、网络社区等。
-# 使用简化的 Louvain 风格贪心模块度优化：每个节点初始为独立社区，
-# 若将节点移到邻居社区能增加模块度则移动，否则保持。
+# 将系统调用依赖图划分为"社区"（功能模块）——文件系统社区、网络社区等
+# 使用简化的 Louvain 风格贪心模块度优化：每个节点初始为独立社区
+# 若将节点移到邻居社区能增加模块度则移动，否则保持
 
 class SyscallDependencyGraph:
     def __init__(self):
@@ -125,8 +125,8 @@ class SyscallDependencyGraph:
 
     def _detect_communities(self, nodes: List[SyscallNode],
                              edges: List[Dict[str, Any]]) -> Dict[str, str]:
-        """贪心社区检测——按预定义类别聚类，合并小社区。
-        社区划分有助于识别二进制功能模块：如文件操作模块 vs 网络模块。
+        """贪心社区检测——按预定义类别聚类，合并小社区
+        社区划分有助于识别二进制功能模块：如文件操作模块 vs 网络模块
         """
         comm: Dict[str, str] = {}
         for n in nodes:

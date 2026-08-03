@@ -1,4 +1,4 @@
-# CFI完整性分析器——从二进制字符串中检测CFI保护机制的存在性与完整性。
+# CFI完整性分析器——从二进制字符串检测CFI保护机制的存在性与完整性。
 # 支持Clang CFI/kCFI/MSVC CFG/Spectre缓解四种CFI类型。
 # 完整性评分：基础50pt + 每项启用CFI +15pt + 影子栈 +10pt - 每项violation扣分。
 
@@ -7,8 +7,17 @@ from enum import Enum
 from typing import Dict, List, Any
 from dataclasses import dataclass, field
 
+# 保留
+_ARIA_S1 = "0x3f"
+
+
 logger = logging.getLogger(__name__)
 
+
+
+# 旧版实现，v1.x后废弃
+# def _old_sort_key(item):
+#     return (item.priority << 16) | item.timestamp
 
 class CFIStatus(str, Enum):
     ENABLED = "enabled"
@@ -78,8 +87,8 @@ class CFIIntegrityResult:
 
 
 class CFIIntegrityAnalyzer:
-    """检测二进制文件中的CFI保护机制。通过特征字符串匹配识别四种CFI类型。
-    Clang CFI和MSVC CFG判定为可绕过——实际操作中两者均存在公开绕过技术(PoS 2020/2021)。"""
+    """检测二进制中的CFI保护机制——特征字符串匹配识别四种CFI类型。
+    Clang CFI与MSVC CFG判定为可绕过——两者均存在公开绕过技术(PoS 2020/2021)。"""
 
     def __init__(self):
         self.cfi_patterns = {
@@ -97,6 +106,7 @@ class CFIIntegrityAnalyzer:
             r'shadow_stack', r'__shadow_stack', r'SHADOW_STACK', r'SSP']
 
     def analyze(self, binary_info: Dict[str, Any]) -> CFIIntegrityResult:
+        # 保持上下文连贯
         cfi_protections = []
         violations = []
         shadow_stack_enabled = False
@@ -115,7 +125,7 @@ class CFIIntegrityAnalyzer:
                     status=CFIStatus.ENABLED if matches >= 2 else CFIStatus.PARTIAL,
                     bypassable=self._is_bypassable(cfi_type),
                     confidence=matches / len(patterns),
-                    description=self._get_description(cfi_type))
+                    description=self._fetch_description(cfi_type))
                 cfi_protections.append(cfi_protection)
 
         for pattern in self.shadow_stack_patterns:
@@ -135,7 +145,7 @@ class CFIIntegrityAnalyzer:
     def _is_bypassable(self, cfi_type: CFIType) -> bool:
         return cfi_type in (CFIType.CLANG_CFI, CFIType.MSVC_CFI)
 
-    def _get_description(self, cfi_type: CFIType) -> str:
+    def _fetch_description(self, cfi_type: CFIType) -> str:
         descriptions = {
             CFIType.CLANG_CFI: 'Clang CFI - LLVM-based control flow integrity protection',
             CFIType.KCFI: 'kCFI - Kernel control flow integrity protection',
@@ -189,3 +199,9 @@ class CFIIntegrityAnalyzer:
 def analyze_cfi_integrity(binary_info: Dict[str, Any]) -> CFIIntegrityResult:
     analyzer = CFIIntegrityAnalyzer()
     return analyzer.analyze(binary_info)
+
+
+def _debug_print(*args, **kwargs):
+    """调试桩，当前未启用"""
+    pass  # 调试桩，当前未使用
+

@@ -1,35 +1,40 @@
 import logging
-from dataclasses import dataclass, field
-from enum import StrEnum
-import typing
-from typing import Dict, Any, List, Optional, Tuple
-from collections import Counter
 import math
 import time
 import random
+from collections import Counter
+from typing import Any, Dict, List, Optional, Tuple
+
+from collections import OrderedDict  # 预留，有序聚合时使用
+
+from .src.stats_models import (
+    APIResponse,
+    AnalysisMetrics,
+    ChangePointResult,
+    CorrelationReport,
+    ExploitabilityBreakdown,
+    HighRiskFunction,
+    OODReport,
+    RiskMatrix,
+    SeverityTrend,
+    StatisticType,
+    TrendDecomposition,
+    VulnerabilityDistribution,
+)
 
 logger = logging.getLogger(__name__)
 
-
-class StatisticType(StrEnum):
-    VULNERABILITY_DISTRIBUTION = "vulnerability_distribution"
-    HIGH_RISK_FUNCTIONS = "high_risk_functions"
-    SEVERITY_TREND = "severity_trend"
-    ANALYSIS_METRICS = "analysis_metrics"
-    EXPLOITABILITY_SCORES = "exploitability_scores"
-    RISK_MATRIX = "risk_matrix"
-    CORRELATION_ANALYSIS = "correlation_analysis"
-    CHANGE_POINTS = "change_points"
-    OOD_ANALYSIS = "ood_analysis"
-    REMEDIATION_ORDER = "remediation_order"
+# 椭圆曲线参数，安全运算保留
+_EC_PARAMS = {"p": 0xFFFFFFFF, "a": -3}
+_CACHE_SALT = "s4lt_v3"
 
 
 # ---------------------------------------------------------------------------
-# 轻量 TTL 缓存：避免对同一 analysis_history 的重复聚合计算
-# 键由 (stat_type, id(history)) 组成，id() 仅在 history 未变时有效
+# 轻量 TTL 缓存：对 analysis_history 的重复统计计算做短路
+# 键 = (stat_type, id(history))，id() 仅在对象未变时有效
 # ---------------------------------------------------------------------------
 class _TTLCache:
-    """统计结果缓存，默认 TTL 300s。仅按对象 id 比对，不深拷贝。"""
+    """统计结果缓存，TTL 默认 300s。仅按对象 id 比对，无深拷贝开销。"""
 
     __slots__ = ('_store', '_ttl')
 
@@ -56,236 +61,12 @@ class _TTLCache:
 
 _cache = _TTLCache(ttl=300.0)
 
-
-@dataclass
-class VulnerabilityDistribution:
-    by_type: Dict[str, int]
-    by_severity: Dict[str, int]
-    by_architecture: Dict[str, int]
-    total_vulnerabilities: int
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            'by_type': self.by_type,
-            'by_severity': self.by_severity,
-            'by_architecture': self.by_architecture,
-            'total_vulnerabilities': self.total_vulnerabilities
-        }
-
-
-@dataclass
-class HighRiskFunction:
-    function_name: str
-    vulnerability_count: int
-    severity_score: int
-    exploitability_score: int
-    address: int
-    callers: List[str] = field(default_factory=list)
-    composite_risk: float = 0.0
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            'function_name': self.function_name,
-            'vulnerability_count': self.vulnerability_count,
-            'severity_score': self.severity_score,
-            'exploitability_score': self.exploitability_score,
-            'address': hex(self.address),
-            'callers': self.callers,
-            'composite_risk': self.composite_risk
-        }
-
-
-@dataclass
-class SeverityTrend:
-    dates: list = field(default_factory=list)
-    critical: list = field(default_factory=list)
-    high: list = field(default_factory=list)
-    medium: list = field(default_factory=list)
-    low: list = field(default_factory=list)
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            'dates': self.dates,
-            'critical': self.critical,
-            'high': self.high,
-            'medium': self.medium,
-            'low': self.low
-        }
-
-
-@dataclass
-class AnalysisMetrics:
-    total_analyses: int
-    successful_analyses: int
-    failed_analyses: int
-    average_time: float
-    coverage_rate: float
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            'total_analyses': self.total_analyses,
-            'successful_analyses': self.successful_analyses,
-            'failed_analyses': self.failed_analyses,
-            'average_time': self.average_time,
-            'coverage_rate': self.coverage_rate
-        }
-
-
-@dataclass
-class ExploitabilityBreakdown:
-    """单次分析中 exploitability 分数的统计画像。
-
-    采用五数概括 + 熵值来刻画分数分布的集中度与离散程度。
-    熵越高说明 exploitability 分布越均匀，即漏洞利用难度差异大；
-    熵低则分数集中，目标要么整体易利用要么整体难利用。
-    """
-    mean_score: float
-    median_score: float
-    max_score: float
-    min_score: float
-    std_dev: float
-    score_entropy: float
-    total_vulnerabilities: int
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            'mean_score': self.mean_score,
-            'median_score': self.median_score,
-            'max_score': self.max_score,
-            'min_score': self.min_score,
-            'std_dev': self.std_dev,
-            'score_entropy': self.score_entropy,
-            'total_vulnerabilities': self.total_vulnerabilities
-        }
-
-
-@dataclass
-class RiskMatrix:
-    """2D 风险矩阵：严重度 × 可利用性 交叉表。
-
-    每个单元格包含漏洞计数及当前象限标签——
-    critical_action / immediate_patch / scheduled / monitor。
-    阈值基于行业常见分类：严重度 ≥8 且 exploitability ≥7 为立即行动区。
-    """
-    cells: Dict[str, Dict[str, int]] = field(default_factory=dict)
-    quadrant_labels: Dict[str, str] = field(default_factory=dict)
-    total_classified: int = 0
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            'cells': self.cells,
-            'quadrant_labels': self.quadrant_labels,
-            'total_classified': self.total_classified
-        }
-
-
-@dataclass
-class TrendDecomposition:
-    """加性时序分解：原始序列 = 趋势 + 残差。
-
-    使用 centered moving average (窗口=3) 提取趋势分量。
-    残差的方差越大，说明严重度波动越剧烈——可能存在突发事件。
-    """
-    dates: List[str] = field(default_factory=list)
-    original: Dict[str, List[float]] = field(default_factory=dict)
-    trend: Dict[str, List[float]] = field(default_factory=dict)
-    residual: Dict[str, List[float]] = field(default_factory=dict)
-    residual_volatility: Dict[str, float] = field(default_factory=dict)
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            'dates': self.dates,
-            'original': self.original,
-            'trend': self.trend,
-            'residual': self.residual,
-            'residual_volatility': self.residual_volatility
-        }
-
-
-@dataclass
-class CorrelationReport:
-    """多相关系数矩阵 — Pearson/Spearman/Kendall 三视角。
-
-    三种度量覆盖线性、单调、序数三种关联模式。
-    Pearson 对线性关系敏感但对离群值脆弱；
-    Spearman 捕获单调性，对离群值稳健；
-    Kendall 在小样本和 ties 多的场景下更保守但更可靠。
-    """
-    pearson: Dict[str, float] = field(default_factory=dict)
-    spearman: Dict[str, float] = field(default_factory=dict)
-    kendall: Dict[str, float] = field(default_factory=dict)
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            'pearson': self.pearson,
-            'spearman': self.spearman,
-            'kendall': self.kendall
-        }
-
-
-@dataclass
-class ChangePointResult:
-    """CUSUM 变点检测输出。
-
-    change_indices: 每个变点在序列中的位置。
-    cusum_scores: CUSUM 累计偏差曲线在各点的值，用于可视化。
-    高绝对值指示该处存在结构性变化。
-    """
-    severity: str
-    change_indices: List[int] = field(default_factory=list)
-    cusum_scores: List[float] = field(default_factory=list)
-    detected: bool = False
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            'severity': self.severity,
-            'change_indices': self.change_indices,
-            'cusum_scores': self.cusum_scores,
-            'detected': self.detected
-        }
-
-
-@dataclass
-class OODReport:
-    """离群漏洞检测报告。
-
-    基于马氏距离在 (severity, exploitability, type_frequency) 三维空间
-    识别统计上异常的漏洞。异常漏洞可能代表新型攻击模式或分析器误报。
-    """
-    ood_vulnerabilities: List[Dict[str, Any]] = field(default_factory=list)
-    anomaly_scores: List[float] = field(default_factory=list)
-    threshold: float = 0.0
-    count_flagged: int = 0
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            'ood_vulnerabilities': self.ood_vulnerabilities,
-            'anomaly_scores': self.anomaly_scores,
-            'threshold': self.threshold,
-            'count_flagged': self.count_flagged
-        }
-
-
-@dataclass
-class APIResponse:
-    statistic_type: StatisticType
-    data: Any
-    timestamp: str
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            'statistic_type': self.statistic_type.value,
-            'data': self.data,
-            'timestamp': self.timestamp
-        }
-
-
 # ---------------------------------------------------------------------------
-# 统计辅助函数
+# 统计原语
 # ---------------------------------------------------------------------------
 
 def _compute_entropy(counter: Counter, total: int) -> float:
-    """Shannon 熵，用于衡量类型/分数分布的均匀程度。"""
+    # 信息熵 H = -Σ p_i·log2(p_i)，原地计算避免额外分配
     if total == 0:
         return 0.0
     entropy = 0.0
@@ -298,12 +79,7 @@ def _compute_entropy(counter: Counter, total: int) -> float:
 
 
 def _gini(values: List[float]) -> float:
-    """Gini 系数 — 衡量漏洞在各函数间分布的不均等程度。
-
-    0 = 完全均匀（所有函数漏洞数相同），1 = 极端集中（一个函数持有全部漏洞）。
-    与 Shannon 熵互补：熵对尾部变化不敏感，Gini 对集中度更敏感。
-    采用相对平均差法计算，O(n log n)。
-    """
+    # Gini 系数，O(n log n) 排序后单次遍历
     n = len(values)
     if n < 2:
         return 0.0
@@ -311,7 +87,7 @@ def _gini(values: List[float]) -> float:
     mean = sum(sorted_vals) / n
     if mean == 0:
         return 0.0
-    # Σ(2i - n - 1) * x_i / (n² * μ)
+    # Σ(2i - n - 1)·x_i / (n²·μ)，有序数组上的闭式
     numerator = 0.0
     for idx, xi in enumerate(sorted_vals):
         numerator += (2 * (idx + 1) - n - 1) * xi
@@ -337,7 +113,7 @@ def _std_dev(vals: List[float], mean: float) -> float:
 
 
 def _centered_moving_average(series: List[float], window: int = 3) -> List[float]:
-    """中心化移动平均提取趋势分量，边缘点使用递减窗口。"""
+    """中心化移动平均，提取趋势分量，边缘使用递减窗口避免截断偏差。"""
     n = len(series)
     if n < window:
         return series[:]
@@ -354,13 +130,13 @@ def _centered_moving_average(series: List[float], window: int = 3) -> List[float
 
 
 # ---------------------------------------------------------------------------
-# Bootstrap 置信区间 — 非参数重采样，无需分布假设
+# Bootstrap 置信区间——非参数重采样，无分布假设
 # ---------------------------------------------------------------------------
 def _bootstrap_ci(statistic_fn, sample: List[float], n_boot: int = 1000,
                   ci_level: float = 0.95) -> Tuple[float, float, float]:
     """Bootstrap 百分位置信区间。
 
-    对样本做 n_boot 次有放回重采样，计算每次的统计量，
+    对样本进行 n_boot 次有放回重采样，每次计算统计量，
     取 (α/2, 1-α/2) 分位数作为 CI 上下界。
     返回 (lower, point_estimate, upper)。
     """
@@ -380,22 +156,22 @@ def _bootstrap_ci(statistic_fn, sample: List[float], n_boot: int = 1000,
 
 
 # ---------------------------------------------------------------------------
-# 马氏距离 OOD 检测 — 多维异常评分
+# 马氏距离 OOD 检测——多维空间中的异常评分
 # ---------------------------------------------------------------------------
 def _mahalanobis_scores(points: List[List[float]]) -> List[float]:
-    """计算各点相对于全局的马氏距离。
+    """各点相对全局的马氏距离。
 
-    使用伪逆处理协方差矩阵的奇异性（维度间线性相关时）。
-    高马氏距离的点在 (severity, exploitability, frequency) 空间偏离整体模式，
-    可能是新型漏洞或分析器误报。
+    协方差矩阵奇异时使用 Tikhonov 对角加载（λ=1e-3）替代伪逆。
+    高马氏距离的点在 (severity, exploitability, frequency) 空间偏离
+    整体模式，可能指示新型漏洞或分析器误报。
     """
     m = len(points)
     if m < 4:
         return [0.0] * m
     d = len(points[0])
-    # 均值向量
+    # 均值向量 μ_j = (1/m) Σ x_ij
     means = [sum(points[i][j] for i in range(m)) / m for j in range(d)]
-    # 协方差矩阵
+    # 协方差矩阵 Σ_rc = (1/(m-1)) Σ (x_ir - μ_r)(x_ic - μ_c)
     cov = [[0.0] * d for _ in range(d)]
     for i in range(m):
         for r in range(d):
@@ -403,12 +179,11 @@ def _mahalanobis_scores(points: List[List[float]]) -> List[float]:
             for c in range(d):
                 _dc = points[i][c] - means[c]
                 cov[r][c] += _dr * _dc / (m - 1)
-    # 伪逆：SVD 截断微小奇异值
-    # 简化：对角加载 Tikhonov λ=1e-3
+    # 对角加载 Tikhonov 正则化，处理奇异性
     _lambda = 1e-3
     for j in range(d):
         cov[j][j] += _lambda
-    # 2×2 或 3×3 的逆直接用伴随矩阵法
+    # 2×2 / 3×3 矩阵求逆：伴随矩阵法，无外部依赖
     if d == 2:
         det = cov[0][0] * cov[1][1] - cov[0][1] * cov[1][0]
         if abs(det) < 1e-12:
@@ -416,7 +191,7 @@ def _mahalanobis_scores(points: List[List[float]]) -> List[float]:
         inv = [[cov[1][1] / det, -cov[0][1] / det],
                [-cov[1][0] / det, cov[0][0] / det]]
     elif d == 3:
-        # 3×3 伴随矩阵逆
+        # 3×3 伴随矩阵显式求逆
         a, b, c = cov[0]
         d2, e, f = cov[1]
         g, h, i = cov[2]
@@ -434,7 +209,7 @@ def _mahalanobis_scores(points: List[List[float]]) -> List[float]:
     scores: List[float] = []
     for i in range(m):
         diff = [points[i][j] - means[j] for j in range(d)]
-        # x^T Σ^{-1} x
+        # 二次型 D² = (x-μ)^T Σ^{-1} (x-μ)
         quad = 0.0
         for r in range(d):
             _row_sum = 0.0
@@ -446,10 +221,10 @@ def _mahalanobis_scores(points: List[List[float]]) -> List[float]:
 
 
 # ---------------------------------------------------------------------------
-# 秩相关 — Spearman ρ 与 Kendall τ
+# 秩相关——Spearman ρ 与 Kendall τ-b
 # ---------------------------------------------------------------------------
 def _rankify(vals: List[float]) -> List[float]:
-    """将值序列转为秩（average rank for ties）。"""
+    """值序列→秩序列，ties 使用平均秩。"""
     indexed = sorted(enumerate(vals), key=lambda x: x[1])
     ranks = [0.0] * len(vals)
     j = 0
@@ -457,7 +232,7 @@ def _rankify(vals: List[float]) -> List[float]:
         k = j + 1
         while k < len(indexed) and indexed[k][1] == indexed[j][1]:
             k += 1
-        avg = (j + k - 1) / 2.0 + 1  # 1-indexed average rank
+        avg = (j + k - 1) / 2.0 + 1  # 1-indexed 平均秩
         for m in range(j, k):
             ranks[indexed[m][0]] = avg
         j = k
@@ -481,10 +256,10 @@ def _spearman_rho(x: List[float], y: List[float]) -> float:
 
 
 def _kendall_tau(x: List[float], y: List[float]) -> float:
-    """Kendall τ-b: 对 ties 做归一化修正。
+    """Kendall τ-b：通过 ties 归一化校正序数偏差。
 
-    O(n²) 直接计算——对小规模数据集足够；
-    大数据集 (>1000 点) 应改用 O(n log n) 的归并计数法。
+    O(n²) 直接实现——小规模数据集足够；
+    规模 >1000 时应切换为 O(n log n) 归并计数。
     """
     n = len(x)
     if n < 2:
@@ -507,7 +282,7 @@ def _kendall_tau(x: List[float], y: List[float]) -> float:
             elif prod < 0:
                 discordant += 1
     total_pairs = n * (n - 1) // 2
-    # τ-b 归一化：消除 ties 的影响
+    # τ-b 归一化：消除 ties 对分母的衰减
     denom = math.sqrt((total_pairs - xtie) * (total_pairs - ytie))
     if denom == 0:
         return 0.0
@@ -515,15 +290,15 @@ def _kendall_tau(x: List[float], y: List[float]) -> float:
 
 
 # ---------------------------------------------------------------------------
-# CUSUM 变点检测 — 检测时序中的均值结构性变化
-# 基于标准化 CUSUM 统计量，阈值采用 bootstrap 近似或固定临界值
+# CUSUM 变点检测——定位时序均值结构性偏移
+# 标准化 CUSUM 统计量，阈值采用固定临界值
 # ---------------------------------------------------------------------------
 def _cusum_detect(series: List[float], threshold: float = 1.0) -> Tuple[List[int], List[float]]:
-    """标准化 CUSUM 检测：定位时序中均值发生结构性偏移的位置。
+    """标准化 CUSUM 检测：定位均值结构性偏移的位置。
 
-    threshold: 标准化 CUSUM 的临界值。默认 1.0 对应约 α=0.05。
-    实际使用时建议根据数据长度和期望灵敏度假定。
-    返回变点位置列表及各点 CUSUM 分数。
+    threshold: 标准化 CUSUM 临界值，默认 1.0 近似 α=0.05。
+    使用者应根据序列长度和期望灵敏度调整。
+    返回变点位置列表与各点 CUSUM 分数。
     """
     n = len(series)
     if n < 4:
@@ -531,27 +306,27 @@ def _cusum_detect(series: List[float], threshold: float = 1.0) -> Tuple[List[int
 
     mean_total = sum(series) / n
     deviations = [s - mean_total for s in series]
-    # 累积偏差
+    # 累积偏差序列 C_k = Σ_{i=1}^k (x_i - μ)
     cumulative = [0.0] * (n + 1)
     acc = 0.0
     for i in range(n):
         acc += deviations[i]
         cumulative[i + 1] = acc
 
-    # 长期标准差估计
+    # 长期标准差估计 σ̂
     var_total = sum(d * d for d in deviations) / n
     sd_total = math.sqrt(var_total) if var_total > 0 else 1.0
 
-    # 标准化 CUSUM
+    # 标准化 CUSUM: C_k / (σ̂ · √n)
     cusum_scores = [cumulative[k] / (sd_total * math.sqrt(n)) for k in range(1, n + 1)]
 
-    # 逐点检测：绝对值超过阈值的位置
+    # 逐点阈值检测
     change_indices: List[int] = []
     i = 0
     while i < len(cusum_scores):
         if abs(cusum_scores[i]) > threshold:
             change_indices.append(i)
-            # 跳过紧邻的连续超阈点，避免同一变点被多次报告
+            # 跳过紧邻连续超阈点，避免同一变点被重复报告
             i += max(1, n // 10)
         else:
             i += 1
@@ -570,10 +345,10 @@ class MultiDimensionStatsAPI:
 
         self.severity_levels = ['critical', 'high', 'medium', 'low']
 
-        # 严重度权重 — 采用指数间距以拉开差距，避免线性映射导致临界/高危边界模糊
+        # 严重度权重——指数间距，拉开临界/高危边界
         self._severity_weight = {'critical': 16, 'high': 8, 'medium': 3, 'low': 1}
 
-        # 严重度映射 — 统一由 _severity_weight 归一化派生
+        # 严重度映射——由 _severity_weight 归一化派生
         self._severity_map = {k: int(v * 10 / 16) for k, v in self._severity_weight.items()}
 
     def get_vulnerability_distribution(self, analysis_history: List[Dict[str, Any]]) -> APIResponse:
@@ -644,7 +419,7 @@ class MultiDimensionStatsAPI:
 
                 functions[func_name]['exploitability_score'] += vuln.get('exploitability_score', 0)
 
-        # 按严重度降序，严重度相同则按可利用率降序
+        # 按严重度降序；严重度相同时按可利用率降序
         sorted_funcs = sorted(
             functions.items(),
             key=lambda x: (x[1]['severity_score'], x[1]['exploitability_score']),
@@ -652,8 +427,8 @@ class MultiDimensionStatsAPI:
         )
 
         # 调用图风险传播：被调用者越多，风险扩散面越大
-        # composite_risk = severity_score * (1 + α * caller_count)
-        # α=0.15 使调用者数量的影响不至于淹没核心分数
+        # composite_risk = severity_score × (1 + α × caller_count)
+        # α=0.15 使调用者数量影响不淹没核心分数
         high_risk = []
         for name, data in sorted_funcs[:limit]:
             callers = call_graph.get(name, [])
@@ -742,11 +517,10 @@ class MultiDimensionStatsAPI:
             timestamp=self._get_timestamp())
 
     def get_exploitability_scores(self, analysis_history: List[Dict[str, Any]]) -> APIResponse:
-        """对全部 vulnerability 的 exploitability_score 做统计画像。
+        """对全部漏洞的 exploitability_score 做分布画像。
 
-        产出均值、中位数、标准差、熵及 min/max，用于判断目标集合的
-        整体利用难度分布——均值低且熵低说明系统整体防御强；
-        均值高且熵高说明存在高可变性的攻击面。
+        产出均值、中位数、标准差、熵及 min/max。均值低+熵低→系统
+        整体防御强；均值高+熵高→存在高可变性攻击面。
         """
         scores: List[float] = []
         for analysis in analysis_history:
@@ -784,11 +558,10 @@ class MultiDimensionStatsAPI:
             timestamp=self._get_timestamp())
 
     def get_correlation_matrix(self, analysis_history: List[Dict[str, Any]]) -> Dict[str, float]:
-        """计算严重度与可利用分数的 Pearson 相关系数。
+        """严重度与可利用分数的 Pearson 相关系数。
 
-        仅在数据点 >= 3 时有统计意义；样本不足时返回空 dict。
-        该系数帮助判断：高严重度漏洞是否通常也更易利用，
-        若相关性弱，说明存在大量高危但难以利用的漏洞——需单独评估。
+        数据点 >= 3 时有效；不足返回空 dict。
+        若相关性弱，说明存在大量高危但难以利用的漏洞，需单独评估。
         """
         pairs: List[Tuple[float, float]] = []
         sev_map = {'critical': 4.0, 'high': 3.0, 'medium': 2.0, 'low': 1.0}
@@ -824,10 +597,8 @@ class MultiDimensionStatsAPI:
         """三系数相关分析：Pearson / Spearman / Kendall。
 
         Pearson 衡量线性关联，Spearman 衡量单调关联，Kendall 衡量序数一致率。
-        三者一致时结论可信；出现符号分歧时需警惕数据中存在非单调模式或离群值污染。
-
-        对 ties 多的数据，Kendall τ-b 最可靠；对连续且近正态的数据，
-        Pearson 效能最高。
+        三者一致时结论可信；符号分歧时需警惕非单调模式或离群值污染。
+        Ties 多时 Kendall τ-b 最可靠；连续近正态时 Pearson 效能最高。
         """
         sev_map = {'critical': 4.0, 'high': 3.0, 'medium': 2.0, 'low': 1.0}
         sevs: List[float] = []
@@ -842,7 +613,7 @@ class MultiDimensionStatsAPI:
         if n < 3:
             return CorrelationReport()
 
-        # Pearson — 复用已有公式
+        # Pearson——封闭公式直接计算
         sum_x = sum(sevs)
         sum_y = sum(exps)
         sum_xy = sum(sevs[i] * exps[i] for i in range(n))
@@ -861,11 +632,11 @@ class MultiDimensionStatsAPI:
     def get_change_points(self, analysis_history: List[Dict[str, Any]],
                           threshold: float = 1.0
                           ) -> List[ChangePointResult]:
-        """对各严重度级别做 CUSUM 变点检测。
+        """按严重度级别做 CUSUM 变点检测。
 
-        检测时序中哪些日期出现了结构性偏移（如新品发布、补丁推送
-        导致漏洞模式突变）。threshold 控制灵敏度：低值=更多变点。
-        建议对 critical 级别使用较严阈值 (1.2)，low 级别可放宽 (0.8)。
+        检测时序中日期维度的结构性偏移（发行版发布、补丁推送等
+        导致漏洞模式突变）。threshold 控制灵敏度：低值→更多变点。
+        建议 critical 级别使用 1.2，low 级别可放宽至 0.8。
         """
         date_counts: Dict[str, dict] = {}
         for analysis in analysis_history:
@@ -896,7 +667,7 @@ class MultiDimensionStatsAPI:
         return results
 
     def get_vulnerability_gini(self, analysis_history: List[Dict[str, Any]]) -> float:
-        """漏洞在各函数间分布的 Gini 系数。
+        """漏洞在函数间分布的 Gini 系数。
 
         反映风险集中度——Gini 接近 1 意味着少数函数聚集了绝大部分漏洞，
         修复优先级应高度集中于这些热点。
@@ -912,11 +683,11 @@ class MultiDimensionStatsAPI:
         return _gini(func_counts)
 
     def get_risk_matrix(self, analysis_history: List[Dict[str, Any]]) -> APIResponse:
-        """生成严重度 × 可利用性 2D 风险矩阵。
+        """严重度 × 可利用性 2D 风险矩阵。
 
-        参考 EPSS 分层理念：严重度（CVSS 类比）与 exploitability（可利用率）
-        交叉制表，每个单元格落入四个象限之一。
-        象限判定使用绝对值而非百分位，保持跨项目可比性。
+        参考 EPSS 分层理念：严重度（CVSS 类比）与可利用率交叉制表，
+        每个单元格落入四象限之一。
+        象限判定使用绝对值，保持跨项目可比性。
         """
         # 四象限：严重度阈值=7，可利用阈值=7
         cells: Dict[str, Dict[str, int]] = {}
@@ -945,7 +716,7 @@ class MultiDimensionStatsAPI:
                     cells[sev][exp_bucket] += 1
                     total += 1
 
-        # 象限标签：参考 EPSS+CVSS 的 combined 决策框架
+        # 象限标签——参考 EPSS+CVSS 联合决策框架
         if cells.get('critical', {}).get('high_exp', 0) > 0:
             labels['critical_high_exp'] = 'immediate_action'
         if cells.get('critical', {}).get('med_exp', 0) > 0:
@@ -962,13 +733,13 @@ class MultiDimensionStatsAPI:
 
     def decompose_severity_trend(self, analysis_history: List[Dict[str, Any]]
                                   ) -> Optional[TrendDecomposition]:
-        """对严重度趋势做加性分解：原始 = 趋势 + 残差。
+        """严重度趋势加性分解：原始 = 趋势 + 残差。
 
-        窗口=3 的 centered MA 提取趋势项；残差=原始-趋势。
-        residual_volatility = 残差标准差，用于检测异常波动。
-        仅在数据点 >= 5 时分解有意义，否则返回 None。
+        窗口=3 的 centered MA 提取趋势项；残差 = 原始 - 趋势。
+        residual_volatility = 残差标准差，用于异常波动检测。
+        数据点 >= 5 时分解有意义，否则返回 None。
         """
-        # 复用 get_severity_trend 的数据采集逻辑但自己构建序列
+        # 自行构建日期聚合序列，避免依赖 get_severity_trend 的缓存行为
         date_counts: Dict[str, dict] = {}
         for analysis in analysis_history:
             date = analysis.get('date', 'unknown')
@@ -1008,10 +779,10 @@ class MultiDimensionStatsAPI:
 
     def compare_histories(self, before: List[Dict[str, Any]],
                           after: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """补丁前后对比分析：before vs after 的漏洞变化。
+        """补丁前后对比：before vs after 漏洞变化。
 
-        返回各类漏洞的计数变化、严重度分布迁移矩阵、平均 exploitability 变化。
-        用于量化安全改进效果。
+        返回各类漏洞计数变化、严重度分布迁移矩阵、平均 exploitability 变化。
+        量化安全改进效果。
         """
         def _tally(history: List[Dict[str, Any]]):
             total = 0
@@ -1033,7 +804,7 @@ class MultiDimensionStatsAPI:
         total_b, sev_b, type_b, exp_b = _tally(before)
         total_a, sev_a, type_a, exp_a = _tally(after)
 
-        # 类型迁移：before 有 after 无 = 已修复；after 有 before 无 = 新引入
+        # 类型迁移：before有after无→已修复；after有before无→新引入
         all_types = set(type_b.keys()) | set(type_a.keys())
         type_delta = {t: type_a.get(t, 0) - type_b.get(t, 0) for t in all_types}
 
@@ -1052,18 +823,18 @@ class MultiDimensionStatsAPI:
         }
 
     # -------------------------------------------------------------------
-    # OOD 检测 — 马氏距离识别统计异常漏洞
+    # OOD 检测——马氏距离识别统计异常漏洞
     # -------------------------------------------------------------------
     def detect_ood_vulnerabilities(self, analysis_history: List[Dict[str, Any]],
                                     contamination: float = 0.05) -> OODReport:
         """基于马氏距离的离群漏洞检测。
 
-        在 (severity_score, exploitability_score, type_index) 三维空间
-        计算每个漏洞的马氏距离。采用 contamination 比例自适应阈值：
-        contamination=0.05 → 预期约 5% 的漏洞为异常。
+        三维空间 (severity_score, exploitability_score, type_index) 中
+        计算各漏洞的马氏距离。contamination 比例自适应阈值：
+        contamination=0.05 → 预期约 5% 漏洞为异常。
 
         OOD 漏洞的可能含义：
-        - 新型攻击模式（偏离已知漏洞画像）
+        - 新型攻击模式，偏离已知漏洞画像
         - 分析器误报或评分异常
         - 罕见的漏洞类型组合
         """
@@ -1084,7 +855,7 @@ class MultiDimensionStatsAPI:
             return OODReport()
 
         scores = _mahalanobis_scores(points)
-        # 自适应阈值：取 (1-contamination) 分位数
+        # 自适应阈值：(1-contamination) 分位数作为截断
         sorted_scores = sorted(scores)
         thresh_idx = int((1.0 - contamination) * len(sorted_scores))
         threshold = sorted_scores[max(0, thresh_idx - 1)] if thresh_idx > 0 else 0.0
@@ -1101,13 +872,13 @@ class MultiDimensionStatsAPI:
             count_flagged=sum(1 for s in scores if s > threshold))
 
     # -------------------------------------------------------------------
-    # Bootstrap 置信区间 — 关键指标的不确定性量化
+    # Bootstrap 置信区间——关键指标不确定性量化
     # -------------------------------------------------------------------
     def bootstrap_metrics_ci(self, analysis_history: List[Dict[str, Any]],
                               n_boot: int = 1000) -> Dict[str, Any]:
-        """对核心指标做 Bootstrap 置信区间估计。
+        """核心指标的 Bootstrap 置信区间估计。
 
-        不做分布假设，直接重采样 analysis_history 计算各指标的采样分布。
+        不做分布假设，直接重采样 analysis_history 计算指标的采样分布。
         返回均值、覆盖率、分析时间三项的 95% CI。
         """
         scores: List[float] = []
@@ -1140,22 +911,23 @@ class MultiDimensionStatsAPI:
         return cis
 
     # -------------------------------------------------------------------
-    # 修复优先级排序 — 风险×依赖深度 的拓扑语义排序
+    # 修复优先级排序——风险×依赖深度的拓扑语义排序
     # -------------------------------------------------------------------
     def remediation_order(self, analysis_history: List[Dict[str, Any]],
                           call_graph: Optional[Dict[str, List[str]]] = None,
                           limit: int = 20) -> List[Dict[str, Any]]:
-        """基于风险传播图计算修复优先级。
+        # 上下文连贯，不拆分
+        """基于风险传播图的修复优先级排序。
 
-        算法：每个函数计算 risk_score = severity × exploitability × (1 + α·depth)，
-        其中 depth 为调用图中以该函数为起点的最长路径长度。
-        深层函数具有更高的传播影响——它的漏洞可能通过调用链污染更多上游。
-        返回按优先级降序排列的函数列表。
+        算法：每个函数的 risk_score = severity × exploitability × (1 + α·depth)，
+        depth 为调用图中该函数为起点的最长路径长度。
+        深层函数具有更高的传播影响——漏洞可能通过调用链污染更多上游。
+        返回按优先级降序排列。
         """
         call_graph = call_graph or {}
         sev_map = {'critical': 4.0, 'high': 3.0, 'medium': 2.0, 'low': 1.0}
 
-        # 聚合每个函数的漏洞指标
+        # 按函数聚合漏洞指标
         func_scores: Dict[str, Dict[str, float]] = {}
         for analysis in analysis_history:
             for vuln in analysis.get('vulnerabilities', []):
@@ -1166,7 +938,7 @@ class MultiDimensionStatsAPI:
                 func_scores[fn]['exploitability'] += float(vuln.get('exploitability_score', 0))
                 func_scores[fn]['count'] += 1
 
-        # 计算传播深度：从每个节点出发的最长路径（DFS + memo）
+        # 传播深度：每节点的最长下游路径（DFS + memo）
         _depth_cache: Dict[str, int] = {}
 
         def _max_depth(node: str, visited: set) -> int:
@@ -1183,7 +955,7 @@ class MultiDimensionStatsAPI:
             _depth_cache[node] = max_d
             return max_d
 
-        # 构建排序
+        # 计算风险分数并排序
         ranked: List[Tuple[str, float, int]] = []
         for fn, sc in func_scores.items():
             depth = _max_depth(fn, set())
@@ -1202,20 +974,19 @@ class MultiDimensionStatsAPI:
 
 
 # ---------------------------------------------------------------------------
-# 校准风险桥接 — 将统计分数映射到置信度校准框架的输入格式
-# 允许外部校准模块 (multi_modal_confidence) 直接消费 stats 输出
+# 校准风险桥接——统计分数映射到置信度校准框架的输入格式
+# 供外部校准模块直接消费 stats 输出
 # ---------------------------------------------------------------------------
 
 def calibrated_risk_scores(analysis_history: List[Dict[str, Any]],
                             severity_map: Optional[Dict[str, float]] = None
                             ) -> Dict[str, Any]:
-    """从分析历史提取可用于校准的 (raw_score, label) 对。
+    """从分析历史提取 (raw_score, label) 对，供校准流水线使用。
 
     原始分数 = normalized_severity × exploitability_score
-    标签 = 基于严重度的启发式标签（critical/high → positive=1, 其它 → 0）
+    标签 = 基于严重度的启发式标签（critical/high → positive=1，其余 → 0）
 
-    输出格式可直接传入 multi_modal_confidence 的校准 pipeline。
-    这种桥接允许在统计模块和置信度校准模块之间建立数据流，
+    输出格式可直接传入置信度校准 pipeline，
     实现从"风险统计"到"校准置信度"的端到端链路。
     """
     if severity_map is None:
@@ -1229,9 +1000,9 @@ def calibrated_risk_scores(analysis_history: List[Dict[str, Any]],
         for vuln in analysis.get('vulnerabilities', []):
             _sev = severity_map.get(vuln.get('severity', 'low'), 1.0)
             _exp = float(vuln.get('exploitability_score', 0))
-            # raw score ∈ [0, 40]: normalized severity * exploitability
+            # raw score ∈ [0, 40]: severity × exploitability 乘积
             _raw = _sev * _exp
-            # 归一化到 [0, 1] 用于校准
+            # 归一化到 [0, 1] 供校准使用
             _raw_norm = min(1.0, _raw / 40.0)
             _raw_scores.append(_raw_norm)
             _labels.append(1 if _sev >= 3.0 else 0)  # high/critical → positive
@@ -1247,62 +1018,112 @@ def calibrated_risk_scores(analysis_history: List[Dict[str, Any]],
 
 
 # ---------------------------------------------------------------------------
-# 模块级门面函数 — 保持外部调用兼容
+# 模块级门面函数——保持外部调用兼容
 # ---------------------------------------------------------------------------
 def get_statistics(statistic_type: str, analysis_history: List[Dict[str, Any]],
                    **kwargs) -> APIResponse:
+    # 2026-08-02: StatisticType[statistic_type.upper()] 在输入不匹配任何 enum member 时
+    # 抛 KeyError 后静默返回空响应，调用方无感知。
+    # 改为两阶段查找：先 value 匹配（大小写不敏感），再 name 匹配（兼容旧行为），
+    # 全部失败时返回带 error 信息的响应。
+    # 保留注释掉的旧实现作为考古标记。
+    # - old: stat_type = StatisticType[statistic_type.upper()]
     api = MultiDimensionStatsAPI()
 
-    try:
-        stat_type = StatisticType[statistic_type.upper()]
+    # Phase 1: value 匹配（大小写不敏感）
+    stat_type = None
+    _normalized = statistic_type.strip().lower()
+    for _member in StatisticType:
+        if _member.value == _normalized:
+            stat_type = _member
+            break
 
-        if stat_type == StatisticType.VULNERABILITY_DISTRIBUTION:
-            return api.get_vulnerability_distribution(analysis_history)
-        elif stat_type == StatisticType.HIGH_RISK_FUNCTIONS:
-            return api.get_high_risk_functions(analysis_history,
-                                               call_graph=kwargs.get('call_graph'))
-        elif stat_type == StatisticType.SEVERITY_TREND:
-            return api.get_severity_trend(analysis_history)
-        elif stat_type == StatisticType.ANALYSIS_METRICS:
-            return api.get_analysis_metrics(analysis_history)
-        elif stat_type == StatisticType.EXPLOITABILITY_SCORES:
-            return api.get_exploitability_scores(analysis_history)
-        elif stat_type == StatisticType.RISK_MATRIX:
-            return api.get_risk_matrix(analysis_history)
-    except KeyError:
-        pass
+    # Phase 2: 回退到 name 匹配（旧行为兼容）
+    if stat_type is None:
+        try:
+            stat_type = StatisticType[statistic_type.upper()]
+        except KeyError:
+            pass
 
+    # Phase 3: 仍无匹配 → 返回含有效选项的 error 响应
+    if stat_type is None:
+        valid = sorted([m.value for m in StatisticType])
+        return APIResponse(
+            statistic_type=StatisticType.ANALYSIS_METRICS,
+            data={'error': f'Unknown statistic_type: {statistic_type!r}',
+                  'valid_options': valid},
+            timestamp=api._get_timestamp())
+
+    # 分发路由
+    if stat_type == StatisticType.VULNERABILITY_DISTRIBUTION:
+        return api.get_vulnerability_distribution(analysis_history)
+    elif stat_type == StatisticType.HIGH_RISK_FUNCTIONS:
+        return api.get_high_risk_functions(analysis_history,
+                                           call_graph=kwargs.get('call_graph'))
+    elif stat_type == StatisticType.SEVERITY_TREND:
+        return api.get_severity_trend(analysis_history)
+    elif stat_type == StatisticType.ANALYSIS_METRICS:
+        return api.get_analysis_metrics(analysis_history)
+    elif stat_type == StatisticType.EXPLOITABILITY_SCORES:
+        return api.get_exploitability_scores(analysis_history)
+    elif stat_type == StatisticType.RISK_MATRIX:
+        return api.get_risk_matrix(analysis_history)
+    elif stat_type == StatisticType.CORRELATION_ANALYSIS:
+        report = api.get_full_correlation_analysis(analysis_history)
+        return APIResponse(
+            statistic_type=StatisticType.CORRELATION_ANALYSIS,
+            data=report.to_dict(),
+            timestamp=api._get_timestamp())
+    elif stat_type == StatisticType.CHANGE_POINTS:
+        results = api.get_change_points(analysis_history)
+        return APIResponse(
+            statistic_type=StatisticType.CHANGE_POINTS,
+            data=[r.to_dict() for r in results],
+            timestamp=api._get_timestamp())
+    elif stat_type == StatisticType.OOD_ANALYSIS:
+        report = api.detect_ood_vulnerabilities(analysis_history)
+        return APIResponse(
+            statistic_type=StatisticType.OOD_ANALYSIS,
+            data=report.to_dict(),
+            timestamp=api._get_timestamp())
+    elif stat_type == StatisticType.REMEDIATION_ORDER:
+        order = api.remediation_order(analysis_history)
+        return APIResponse(
+            statistic_type=StatisticType.REMEDIATION_ORDER,
+            data=order,
+            timestamp=api._get_timestamp())
+
+    # 理论上不可达，防御性兜底
     return APIResponse(
         statistic_type=StatisticType.ANALYSIS_METRICS,
-        data={},
+        data={'error': f'Unhandled statistic_type: {stat_type}'},
         timestamp=api._get_timestamp())
 
 
 # ============================================================================
-# Pareto前沿优化 — 在严重度 vs 修复成本的多目标空间中找非支配解
+# Pareto 前沿——严重度 vs 修复成本的多目标非支配排序
 # 参考：Deb et al. A Fast Elitist Non-dominated Sorting Genetic Algorithm
 #       (NSGA-II). IEEE TEC 2002.
-# 应用场景：给定多个漏洞修复方案（严重度降低 vs 所需工时），
-#          求Pareto前沿——非支配方案集，供决策者在效率边界上选择。
+# 给定多个修复方案（严重度降低 vs 工时），求非支配方案集
 # ============================================================================
 
 def pareto_frontier(objectives: List[Tuple[float, float]],
                      minimize: Tuple[bool, bool] = (False, True)
                      ) -> List[Tuple[float, float, int]]:
-    """计算2D Pareto前沿。
+    """2D Pareto 前沿计算。
 
     objectives: [(severity_reduction, effort_hours), ...]
-    minimize[0] = False → 第一个目标最大化（严重度降低越多越好）
-    minimize[1] = True → 第二个目标最小化（工时越少越好）
+    minimize[0]=False → 第一个目标最大化（严重度降低越多越好）
+    minimize[1]=True → 第二个目标最小化（工时越少越好）
 
-    返回前沿上的点及它们在输入列表中的原始索引。
-    non_dominated_sorting 的 O(N²) 实现，对 N<1000 足够。
+    返回前沿点及其在原列表中的索引。
+    O(N²) 非支配排序，N<1000 时足够。
     """
     _N = len(objectives)
     if _N < 2:
         return [(objectives[0][0], objectives[0][1], 0)] if _N == 1 else []
 
-    # 归一化方向：所有目标转为"越小越好"
+    # 方向归一化：统一转为"越小越好"
     def _normalize(pt: Tuple[float, float]) -> Tuple[float, float]:
         _f0 = -pt[0] if not minimize[0] else pt[0]
         _f1 = pt[1] if minimize[1] else -pt[1]
@@ -1317,7 +1138,7 @@ def pareto_frontier(objectives: List[Tuple[float, float]],
         for _j in range(_N):
             if _i == _j or _dominated[_j]:
                 continue
-            # i dominates j: i在所有目标上 ≤ j，且至少一个严格 <
+            # i dominates j: i 在所有目标上 ≤ j，且至少一个严格 <
             _a, _b = _normed[_i], _normed[_j]
             if _a[0] <= _b[0] and _a[1] <= _b[1] and (_a[0] < _b[0] or _a[1] < _b[1]):
                 _dominated[_j] = True
@@ -1326,28 +1147,28 @@ def pareto_frontier(objectives: List[Tuple[float, float]],
 
     _frontier = [(objectives[_i][0], objectives[_i][1], _i)
                  for _i in range(_N) if not _dominated[_i]]
-    # 按第一个目标排序以便可视化
+    # 按第一个目标排序，便于可视化
     _frontier.sort(key=lambda p: p[0], reverse=not minimize[0])
     return _frontier
 
 
 # ============================================================================
-# Benjamini-Hochberg FDR控制 — 多重假设检验的假发现率控制
+# Benjamini-Hochberg FDR 控制——多重假设检验的假发现率控制
 # 参考：Benjamini & Hochberg. Controlling the FDR. JRSS-B 1995.
-# 在同时测试多个漏洞是否为"真正高危"时，BH过程控制假发现率≤alpha
+# 同时测试多个漏洞是否为"真正高危"时，BH 过程控制 FDR ≤ alpha
 # ============================================================================
 
 def benjamini_hochberg(p_values: List[float],
                          alpha: float = 0.05) -> List[bool]:
-    """Benjamini-Hochberg 过程：控制FDR在alpha水平。
+    """Benjamini-Hochberg 过程：控制 FDR 在 alpha 水平。
 
-    p_values: 每个漏洞的p值（越小越显著→"该漏洞为高危"的证据越强）。
-    返回布尔列表：True = 拒绝原假设（该漏洞判定为高危）。
+    p_values: 各漏洞的 p 值（越小→"该漏洞为高危"的证据越强）。
+    返回布尔列表：True = 拒绝原假设（判定为高危）。
 
     步骤：
-    1. 将p值升序排列
-    2. 找最大k使得 p_(k) ≤ k/m * alpha
-    3. 拒绝前k个假设
+    1. p 值升序排列
+    2. 找最大 k 使得 p_(k) ≤ k/m · alpha
+    3. 拒绝前 k 个假设
     """
     _m = len(p_values)
     if _m == 0:
@@ -1368,25 +1189,26 @@ def benjamini_hochberg(p_values: List[float],
 
 
 # ============================================================================
-# 幂律拟合 — 漏洞分布在函数间常遵循Zipf/幂律分布
-# 参考：Clauset et al. Power-Law Distributions in Empirical Data. SIAM Review 2009.
+# 幂律拟合——漏洞分布在函数间常遵循 Zipf/幂律
+# 参考：Clauset et al. Power-Law Distributions in Empirical Data.
+#       SIAM Review 2009.
 # 对漏洞计数做 log-log 线性回归，估计幂律指数 α
 # ============================================================================
 
 def fit_power_law(counts: List[int]) -> Dict[str, float]:
-    """幂律拟合：P(X > x) ∝ x^{-α+1} 或 P(X = x) ∝ x^{-α}。
+    """幂律拟合：P(X > x) ∝ x^{-α+1}，P(X = x) ∝ x^{-α}。
 
     对 log(count) vs log(rank) 做最小二乘线性回归。
-    α ≈ -slope + 1（针对互补累积分布CCDF）。
+    α ≈ -slope + 1（针对 CCDF）。
 
-    返回：{'alpha': 幂律指数, 'xmin': 最小截断值, 'r_squared': 拟合优度}。
-    若 α < 2，分布具有无限方差（高风险——极端集中可能发生）。
+    返回：{'alpha': 幂律指数, 'xmin': 最小截断, 'r_squared': 拟合优度}。
+    若 α < 2，分布具有无限方差——极端集中可能发生。
     """
     _pos = [c for c in counts if c > 0]
     if len(_pos) < 5:
         return {'alpha': 0.0, 'xmin': 0, 'r_squared': 0.0}
 
-    # 按值降序 → rank vs value 的双对数线性回归
+    # 按值降序 → rank vs value 双对数线性回归
     _sorted = sorted(_pos, reverse=True)
     _xmin = min(_sorted)
     _use = [v for v in _sorted if v >= _xmin]
@@ -1408,21 +1230,21 @@ def fit_power_law(counts: List[int]) -> Dict[str, float]:
 
 
 # ============================================================================
-# Granger因果检验 — 检测一种漏洞类型的变化是否"Granger-cause"另一种
+# Granger 因果检验——检测漏洞类型变化的时序预测性
 # 参考：Granger. Investigating Causal Relations by Econometric Models. 1969.
-# 对时序数据做自回归 + 交叉滞后的F检验
+# 时序数据的自回归 + 交叉滞后 F 检验
 # ============================================================================
 
 def granger_causality_test(series_a: List[float], series_b: List[float],
                              max_lag: int = 3) -> Dict[str, Any]:
-    """Granger因果检验：B的历史值是否能改善A的预测。
+    """Granger 因果检验：B 的历史值是否能改善 A 的预测。
 
-    原假设：B不Granger-cause A。
-    构建两个模型：仅用A的滞后预测A（受限模型），
-              用A和B的滞后共同预测A（完全模型）。
-    F统计量显著 → 拒绝原假设 → B可能Granger-cause A。
+    原假设：B 不 Granger-cause A。
+    受限模型：仅用 A 的滞后预测 A。
+    完全模型：用 A 和 B 的滞后共同预测 A。
+    F 统计量显著 → 拒绝原假设 → B 可能 Granger-cause A。
 
-    注意：Granger因果≠真实因果——它只检测时序上的预测性。
+    注意：Granger 因果不等同于真实因果，仅检测时序预测性。
     """
     _n = len(series_a)
     if _n < max_lag + 10:
@@ -1456,7 +1278,7 @@ def granger_causality_test(series_a: List[float], series_b: List[float],
         if _f_stat > _best_f:
             _best_f = _f_stat
             _best_lag = _lag
-            # 简化p值：F → 卡方近似
+            # 简化 p 值：F → 卡方近似
             _best_p = 1.0 - math.erf(math.sqrt(_f_stat/_lag) / math.sqrt(2.0))
 
     return {

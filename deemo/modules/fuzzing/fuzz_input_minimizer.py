@@ -1,15 +1,8 @@
-# 2026-07-27
+"""覆盖率保持的输入最小化器 — afl-tmin 算法 Python 实现及扩展策略。
 
-"""覆盖率保持的输入最小化器 -- afl-tmin 算法的 Python 实现 + 扩展策略。
-
-参考:
-  AFL++ afl-tmin (2024) -- 经典覆盖率保持最小化
-  AFLFast 能量调度          -- 最小化过程中的探索/利用权衡
-  LibAFL MinimizerStage    -- 可插拔的最小化阶段
-
-给定一个种子和一组保留的覆盖边, 逐字节尝试删除/缩减,
-仅保留对覆盖率有贡献的部分。也提供基于二分的块级最小化,
-对大型文件更快。
+支持逐字节贪心、二分压缩、按行/按 token 删除四种最小化模式。
+最小化约束：结果输入必须仍触发原始种子覆盖的所有边（final_coverage ⊇ original_coverage）。
+二分模式 O(log n) 次执行，适用于大文件快速收缩。
 """
 
 import hashlib
@@ -26,10 +19,10 @@ logger = logging.getLogger(__name__)
 
 
 class MinimizeStrategy(str, Enum):
-    BYTE_WISE = "byte_wise"          # 逐字节删除, 最精细但慢
-    CHUNK_BINARY = "chunk_binary"    # 二分删除, O(log n) 次执行
-    LINE_WISE = "line_wise"          # 按行删除 (文本输入)
-    TOKEN_WISE = "token_wise"        # 按空白分隔的 token 删除
+    BYTE_WISE = "byte_wise"          # 逐字节删除，最精细策略
+    CHUNK_BINARY = "chunk_binary"    # 二分区间删除，O(log n) 次执行
+    LINE_WISE = "line_wise"          # 按换行符分割删除，面向文本输入
+    TOKEN_WISE = "token_wise"        # 按空白分隔 token 删除
 
 
 @dataclass
@@ -42,31 +35,29 @@ class MinimizeResult:
     elapsed: float
     strategy: str
     removed_bytes: int = 0
-    # 每个阶段的大小变化记录, 用于生成收缩曲线
+    # 各阶段尺寸变化记录，用于绘制收缩曲线
     size_history: List[Tuple[int, int]] = field(default_factory=list)
 
 
-# 执行器类型: 输入 bytes → 返回覆盖边集合
+# 执行器签名: 输入 bytes -> 返回覆盖边 ID 集合
 ExecutorFunc = Callable[[bytes], Set[int]]
 
 
 class InputMinimizer:
     """覆盖率保持的输入最小化引擎。
 
-    核心约束: 最小化后的输入必须仍触发 原始种子触发过的所有边。
-    即 final_coverage ⊇ original_coverage。
-
-    afl-tmin 使用逐字节贪心法: 对每个位置尝试删除 1 字节,
-    若覆盖不变则保留删除。此处额外提供二分加速策略。
+    核心约束: 最小化后的输入必须仍触发原始种子覆盖的所有边。
+    逐字节模式基于 afl-tmin 的贪心删除：每个位置尝试删除 1 字节，
+    覆盖不变则保留，否则跳过。二分模式作为大文件加速替代。
     """
 
     def __init__(self, executor: ExecutorFunc,
                  max_iterations: int = 5000,
                  timeout_seconds: float = 300.0):
         """
-        executor: 接受 bytes 输入, 返回覆盖边 id 集合的函数。
-        max_iterations: 逐字节模式的最大迭代次数。
-        timeout_seconds: 整个最小化过程的时间上限。
+        executor: 接受 bytes 返回覆盖边集合的可调用对象。
+        max_iterations: 逐字节模式的最大迭代步数上限。
+        timeout_seconds: 整个最小化过程的全局时间限制。
         """
         self.executor = executor
         self.max_iter = max_iterations
@@ -78,10 +69,10 @@ class InputMinimizer:
         t0 = time.time()
         orig_size = len(seed)
 
-        # 获取原始覆盖
+        # 测量原始种子的基线覆盖
         orig_cov = self.executor(seed)
         if not orig_cov:
-            # 执行器返回空覆盖 — 可能是种子无效或执行器异常
+            # 执行器返回空覆盖：种子无效或执行器异常
             return MinimizeResult(
                 original_size=orig_size, minimized_size=orig_size,
                 original_coverage=set(), final_coverage=set(),
@@ -117,13 +108,13 @@ class InputMinimizer:
             size_history=size_hist,
         )
 
-    # ---- 逐字节贪心 ----
+    # ---- 逐字节贪心删除 ----
     def _minimize_bytewise(self, data: bytes, ref_cov: Set[int],
                            hist: List[Tuple[int, int]],
                            start_time: float) -> bytes:
-        """O(n) 扫描, 每个位置尝试删除, 保留仍满足覆盖约束的删除。
+        """O(n) 线性扫描，每位置尝试删除 1 字节，保留覆盖不变的删除。
 
-        这是最慢但最彻底的策略 --- 适合最终发布前的精细化最小化。
+        这是最慢但最彻底的策略，适合最终发布前的精细化最小化。
         """
         raw = bytearray(data)
         i = 0
@@ -134,7 +125,7 @@ class InputMinimizer:
                 break
             iterations += 1
 
-            # 尝试删除位置 i 的 1 字节
+            # 尝试删去位置 i 的单字节
             candidate = bytes(raw[:i] + raw[i + 1:])
             try:
                 cov = self.executor(candidate)
@@ -142,22 +133,21 @@ class InputMinimizer:
                 cov = set()
 
             if ref_cov.issubset(cov):
-                # 覆盖不变 → 永久删除
+                # 覆盖不变则永久删除
                 del raw[i]
                 hist.append((iterations, len(raw)))
             else:
-                i += 1  # 覆盖丢失 → 保留此字节
+                i += 1  # 覆盖丢失则保留此字节
 
         return bytes(raw)
 
-    # ---- 二分压缩 ----
+    # ---- 二分区间压缩 ----
     def _minimize_binary(self, data: bytes, ref_cov: Set[int],
                          hist: List[Tuple[int, int]],
                          start_time: float) -> bytes:
-        """类似 git bisect 的递归二分删除。
+        """递归二分删除，类似 git bisect 的区间探测。
 
-        对巨型文件 (如>10MB 的种子), 逐字节不可行, 二分在
-        O(log n) 次执行中取得近似最小化。
+        对巨型种子（>10MB），逐字节不可行，二分在 O(log n) 次执行中逼近最优。
         """
         raw = bytearray(data)
         iterations = 0
@@ -180,26 +170,25 @@ class InputMinimizer:
                 cov = set()
 
             if ref_cov.issubset(cov):
-                # 该区间可删除
+                # 区间可删除，递归处理右侧（被删除区间后移）
                 del raw[lo:mid]
                 hist.append((iterations, len(raw)))
-                # 递归右侧(被删除区间后移)
                 _bisect(lo, lo + (hi - mid))
             else:
-                # 不可删除, 递归更小区间
+                # 不可删除，递归更细粒度区间
                 _bisect(lo, mid)
                 _bisect(mid, hi)
 
         _bisect(0, len(raw))
         return bytes(raw)
 
-    # ---- 按行最小化 (文本输入) ----
+    # ---- 按行最小化（文本输入） ----
     def _minimize_linewise(self, data: bytes, ref_cov: Set[int],
                            hist: List[Tuple[int, int]],
                            start_time: float) -> bytes:
-        """将输入视为文本, 逐行尝试删除。
+        """将输入视为 UTF-8 文本，逐行尝试删除。
 
-        适用于 JSON/XML/HTTP 请求等以换行符分隔的输入。
+        适用于 JSON/XML/HTTP 请求等换行符分隔的结构化文本输入。
         """
         try:
             text = data.decode('utf-8', errors='replace')
@@ -232,9 +221,9 @@ class InputMinimizer:
     def _minimize_tokenwise(self, data: bytes, ref_cov: Set[int],
                             hist: List[Tuple[int, int]],
                             start_time: float) -> bytes:
-        """按空格分隔的 token 进行删除。
+        """按空白分隔的 token 逐项删除。
 
-        适用于自然语言/命令行参数等以空白分隔的输入。
+        适用于命令行参数、自然语言等空白分隔的输入格式。
         """
         try:
             text = data.decode('utf-8', errors='replace')
@@ -263,15 +252,15 @@ class InputMinimizer:
         return ' '.join(tokens).encode('utf-8')
 
 
-# ===== 辅助工具: 覆盖边指纹校验 =====
+# ===== 覆盖保持验证 =====
 
 def verify_coverage_preserved(
     original: bytes, minimized: bytes,
     executor: ExecutorFunc,
 ) -> Tuple[bool, float]:
-    """验证最小化后的输入是否仍保留了原始覆盖率。
+    """验证最小化结果是否保留了原始种子的全部覆盖边。
 
-    返回 (是否保留, 覆盖率保持比例)。
+    返回 (是否完全保留, 覆盖率交集占比)。
     """
     orig_cov = executor(original)
     min_cov = executor(minimized)
@@ -284,7 +273,7 @@ def verify_coverage_preserved(
     return ratio >= 1.0, ratio
 
 
-# ===== 批量最小化器 =====
+# ===== 语料批量最小化 =====
 
 def minimize_corpus(
     seed_dir: str,
@@ -292,10 +281,9 @@ def minimize_corpus(
     executor: ExecutorFunc,
     strategy: MinimizeStrategy = MinimizeStrategy.CHUNK_BINARY,
 ) -> Dict:
-    """对语料库目录下的所有种子文件进行最小化。
+    """对语料目录中所有种子文件独立执行最小化，返回聚合统计。
 
-    每个种子独立处理, 结果写入 output_dir。
-    返回聚合统计。
+    每个种子独立处理，输出写入 output_dir。
     """
     import os
     os.makedirs(output_dir, exist_ok=True)
@@ -321,8 +309,8 @@ def minimize_corpus(
 
         out_path = os.path.join(output_dir, fname)
         with open(out_path, 'wb') as f:
-            f.write(b'')  # 实际写入结果
-            # 注: 此处简化, 实际应将 result 数据写回
+            f.write(b'')  # 占位写入
+            # 注: 此处简化，实际流程应写入 result 数据
 
     return {
         "seeds_processed": total_seeds,

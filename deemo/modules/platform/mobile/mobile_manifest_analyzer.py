@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""移动应用 Manifest/Plist 安全分析。AndroidManifest.xml (二进制AXML) 解析 + iOS Info.plist 安全分析 + 危险权限组合检测 + GDPR隐私合规评分。"""
+"""移动端 Manifest/Plist 安全分析。AndroidManifest.xml (二进制AXML) 解析及iOS Info.plist 安全审计，含危险权限组合检测及GDPR隐私合规评分。"""
 import re, struct, logging, os, zipfile, plistlib
 from pathlib import Path
 from dataclasses import dataclass, field
@@ -13,12 +13,12 @@ class PermissionLevel(StrEnum): NORMAL="normal"; DANGEROUS="dangerous"; SIGNATUR
 class URISchemeType(StrEnum): DEEP_LINK="deep_link"; APP_LINK="app_link"; UNIVERSAL_LINK="universal_link"; CUSTOM_SCHEME="custom_scheme"
 class ManifestSeverity(StrEnum): CRITICAL="critical"; HIGH="high"; MEDIUM="medium"; LOW="low"; INFO="info"
 
-# ── GDPR隐私合规评分──
-# 基于Tang & Østvold (2026) 的privacy-relevant方法排名思想
-# 将危险权限映射到GDPR条款，计算合规风险评分
+# ── GDPR隐私合规评分 ──
+# 基于Tang & Østvold (2026) 隐私相关方法排名思想
+# 将危险权限映射至GDPR条款，计算合规风险评分
 
 _GDPR_ARTICLE_MAP:Dict[str,Tuple[str,int]]={
-    # (权限, (GDPR条款, 风险权重))
+    # (权限声明, (GDPR条款, 风险权重))
     'CAMERA':('Art.6/9——生物特征数据（面部/虹膜）合法处理基础',8),
     'RECORD_AUDIO':('Art.5(1)(c)——数据最小化原则：音频记录',8),
     'ACCESS_FINE_LOCATION':('Art.5(1)(c)——位置数据最小化',8),
@@ -41,7 +41,7 @@ _GDPR_ARTICLE_MAP:Dict[str,Tuple[str,int]]={
     'REQUEST_INSTALL_PACKAGES':('Art.5(1)(f)——应用安装完整性',6),
 }
 
-# PIChecker (ACM 2026) — 第三方SDK常见的数据收集类型与权限的对应关系
+# PIChecker (ACM 2026) — 第三方SDK常见数据收集类型与权限对应关系
 _TPL_DATA_COLLECTION_MAP:Dict[str,List[str]]={
     'com.google.android.gms':['location','device_id','advertising_id'],
     'com.google.firebase':['app_instance_id','device_info','analytics'],
@@ -162,7 +162,7 @@ class AndroidManifestAnalyzer:
     def _compute_gdpr_score(s):
         """基于Tang & Østvold (2026) 隐私相关方法排名思想。
 
-        根据声明的权限映射到GDPR条款并计算加权风险评分。
+        依声明的权限映射至GDPR条款并计算加权风险评分。
         PIChecker (ACM 2026) 的TPL数据收集映射用于识别第三方SDK的隐私影响。
         """
         score=10.0; gdpr_violations=[]
@@ -172,7 +172,7 @@ class AndroidManifestAnalyzer:
                 if key in short or key in perm:
                     score-=weight*0.5
                     gdpr_violations.append({"permission":perm,"article":article,"weight":weight})
-        # 如果应用包含已知高数据收集SDK，额外扣分
+        # 若应用包含已知高数据收集SDK，额外扣分
         raw_data=s.raw.decode('utf-8',errors='replace')
         for tpl_pkg,data_types in _TPL_DATA_COLLECTION_MAP.items():
             if tpl_pkg in raw_data:
@@ -195,7 +195,7 @@ class IOSInfoPlistAnalyzer:
     def __init__(s,pd):
         if isinstance(pd,bytes):
             try: s.plist=plistlib.loads(pd)
-            except: s.plist={}
+            except Exception: s.plist={}  # 修正：裸except收窄→Exception (plist parse)
         else: s.plist=pd
         s.findings:List[ManifestFinding]=[]; s._analyzed=False; s.gdpr_score=10.0
     def analyze(s)->List[ManifestFinding]:
@@ -239,7 +239,8 @@ class IOSInfoPlistAnalyzer:
 
 
 class MobileManifestAnalyzer:
-    def __init__(s,path:str=""): s.path=path; s.data:bytes=b""; s._manifest_xml:Optional[bytes]=None; s._info_plist:Optional[bytes]=None
+    def __init__(s,path:str=""):
+        s.path=path; s.data:bytes=b""; s._manifest_xml:Optional[bytes]=None; s._info_plist:Optional[bytes]=None
         if path and os.path.exists(path): s._load(path)
     def _load(s,path):
         p=Path(path); suf=p.suffix.lower()
@@ -247,13 +248,13 @@ class MobileManifestAnalyzer:
             try:
                 with zipfile.ZipFile(path,'r') as zf:
                     if 'AndroidManifest.xml' in zf.namelist(): s._manifest_xml=zf.read('AndroidManifest.xml')
-            except: pass
+            except zipfile.BadZipFile: pass  # 修正：裸except收窄→BadZipFile
         elif suf=='.ipa':
             try:
                 with zipfile.ZipFile(path,'r') as zf:
                     for name in zf.namelist():
                         if name.endswith('Info.plist'): s._info_plist=zf.read(name); break
-            except: pass
+            except zipfile.BadZipFile: pass  # 修正：裸except收窄→BadZipFile
         else: s.data=p.read_bytes()
     def analyze(s)->Dict[str,Any]:
         r:Dict[str,Any]={'file':s.path,'platform':'unknown','findings':[]}

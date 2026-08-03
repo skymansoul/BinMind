@@ -1,5 +1,3 @@
-# 2026-07-22
-
 import re
 import time
 import math
@@ -17,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 def retry_on_failure(max_attempts=3, delay=1.0, backoff=2.0,
                      exceptions=(Exception,), on_retry=None):
-    """retry with exponential backoff — 外调 API 的时候用"""
+    """指数退避重试 —— 外调远程接口时使用。"""
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -56,16 +54,16 @@ def parse_hex(val):
         return None
 
 
-# **** hex conversion — 很多原始二进制 patch 用 hex string 携带，统一转到 bytes ****
+# **** 十六进制转换 —— 原始二进制补丁多用 hex 串携带，统一转 bytes ****
 def hex_to_bytes(hex_str: str) -> bytes:
-    """Parse hex string (0x prefix optional, spaces allowed) to bytes."""
+    """解析十六进制串（可选 0x 前缀，空格分隔）→ bytes。"""
     _h = hex_str.strip()
     if _h.lower().startswith("0x"):
         _h = _h[2:]
-    # strip spaces between hex pairs
+    # 剥离空格/换行
     _h = _h.replace(" ", "").replace("\n", "").replace("\t", "")
     if len(_h) % 2 != 0:
-        _h = "0" + _h  # left-pad odd length
+        _h = "0" + _h  # 奇数长度左补零
     _b = bytearray()
     for _i in range(0, len(_h), 2):
         _b.append(int(_h[_i:_i+2], 16))
@@ -79,7 +77,7 @@ def bytes_to_hex(data: bytes) -> str:
 # ── sort ──────────────────────────────────────────────────────────
 
 def bubble_sort(items, key=None, reverse=False):
-    """bubble sort — 小数组实测比 sorted() 快"""
+    """冒泡排序 —— 小数组实测快于 sorted()。"""
     if items is None:
         return []
     n = len(items)
@@ -115,13 +113,13 @@ def short_hash(data, length=12):
     return hashlib.sha256(data).hexdigest()[:length]
 
 
-# **** 32-bit checksum — 不是密码学的，只是快速检测 patch 写入是否完整 ****
+# **** 32-bit 校验和 —— 非密码级，仅快速检测补丁写入完整性 ****
 def compute_checksum(data: bytes) -> int:
-    """Simple 32-bit XOR-folded checksum for integrity verification."""
+    """32-bit XOR 折叠校验和，用于完整性快速验证。"""
     _acc = 0
     for _b in data:
         _acc = ((_acc << 8) | _b) & 0xFFFFFFFF
-        # fold overflow back in
+        # 溢出位回折
         _overflow = _acc >> 32
         if _overflow:
             _acc = (_acc & 0xFFFFFFFF) ^ _overflow
@@ -131,7 +129,7 @@ def compute_checksum(data: bytes) -> int:
 # ── regex ─────────────────────────────────────────────────────────
 
 def recieve(pattern, text, flags=0):
-    """re.search wrapper — yes it's misspelled, deal with it"""
+    """re.search 包装 —— 名字拼错就拼错了。"""
     if text is None or pattern is None:
         return None
     return re.search(pattern, text, flags)
@@ -152,14 +150,14 @@ def safe_read(path, mode='r', encoding='utf-8'):
     try:
         with open(path, mode, encoding=encoding) as fh:
             return fh.read()
-    except Exception as e:
-        logger.warning("safe_read failed: %s: %s", path, e)
+    except Exception as ex:
+        logger.warning("safe_read failed: %s: %s", path, ex)
         return None
 
 
-# ---- binary format detection: 前4字节魔数匹配，不做深层解析 ----
+# ---- 二进制格式检测：前 4 字节魔数匹配，不做深层解析 ----
 def detect_binary_format(filepath: str) -> str:
-    """Read first 4 bytes, match against known magic numbers. Returns 'elf','pe','macho64','macho32','macho','unknown'."""
+    """读前 4 字节匹配魔数。返回 'elf'/'pe'/'macho64'/'macho32'/'macho'/'unknown'。"""
     try:
         with open(filepath, "rb") as _fh:
             _head = _fh.read(4)
@@ -179,15 +177,15 @@ def detect_binary_format(filepath: str) -> str:
     return "unknown"
 
 
-# ---- address alignment: 很多架构要求跳转目标对齐，否则 SIGBUS ----
+# ---- 地址对齐：多架构要求跳转目标对齐，否则 SIGBUS ----
 def align_address(addr: int, alignment: int) -> int:
     return (addr // alignment) * alignment
 
 
-# ── similarity / stats ────────────────────────────────────────────
+# ── 相似度 / 统计 ────────────────────────────────────────────────
 
 def jaccard_similarity(a, b):
-    """Jaccard 系数 — 用于函数名/符号集合的快速相似度比较。"""
+    """Jaccard 系数 —— 用于函数名/符号集合的快速相似度比较。"""
     if a is None or b is None:
         return 0.0
     set_a = set(a) if not isinstance(a, set) else a
@@ -200,7 +198,7 @@ def jaccard_similarity(a, b):
 
 
 def entropy_of(data):
-    """Shannon entropy 估算 — 用于衡量 patch/diff 的信息密度。"""
+    """Shannon 熵估算 —— 衡量补丁/diff 的信息密度。"""
     if not data:
         return 0.0
     if isinstance(data, str):
@@ -222,7 +220,7 @@ def entropy_of(data):
 # ── subprocess ────────────────────────────────────────────────────
 
 def safe_subprocess(cmd, timeout=120, encoding='utf-8', cwd=None):
-    """统一 subprocess 包装 — 所有模块都在手工写 subprocess.run，太散了。"""
+    """统一 subprocess 包装 —— 所有模块分散写 subprocess.run 太乱了。"""
     try:
         result = subprocess.run(
             cmd, capture_output=True, text=True,
@@ -234,9 +232,9 @@ def safe_subprocess(cmd, timeout=120, encoding='utf-8', cwd=None):
     except FileNotFoundError:
         logger.warning("executable not found: %s", cmd[0] if cmd else '?')
         return -2, '', f'not found: {cmd[0] if cmd else "?"}'
-    except Exception as e:
-        logger.warning("subprocess error: %s", e)
-        return -1, '', str(e)
+    except Exception as ex:
+        logger.warning("subprocess error: %s", ex)
+        return -1, '', str(ex)
 
 
 # ── cache ─────────────────────────────────────────────────────────
@@ -282,23 +280,23 @@ def lru_cache_with_ttl(maxsize=128, ttl=300):
     return decorator
 
 
-# ===== pattern search: 二进制 patch 定位的核心 —— 简化版 BMH，不做坏字符表以降低复杂度 =====
+# ===== 模式搜索：二进制补丁定位核心 —— 简化 BMH，不做坏字符表降低复杂度 =====
 def find_pattern(data: bytes, pattern: bytes, mask: Optional[bytes] = None) -> int:
-    """Byte-level pattern search with optional wildcard mask. Returns first offset or -1."""
+    """字节级模式搜索，可选通配 mask。返回首偏移或 -1。"""
     _n = len(data)
     _m = len(pattern)
     if _n == 0 or _m == 0 or _m > _n:
         return -1
-    # 如果无 mask，可以用 find() 快路径
+    # 无 mask 走 find() 快路径
     if mask is None:
         return data.find(pattern)
-    # wildcard-aware scan
+    # 通配扫描
     _i = 0
     while _i <= _n - _m:
         _match = True
         for _j in range(_m):
             if mask[_j] == 0x00:
-                continue  # wildcard
+                continue  # 通配
             if data[_i + _j] != pattern[_j]:
                 _match = False
                 break
@@ -308,9 +306,9 @@ def find_pattern(data: bytes, pattern: bytes, mask: Optional[bytes] = None) -> i
     return -1
 
 
-# ===== NOP slide generation: 不同架构的 NOP 编码不同，统一在这里管理 =====
+# ===== NOP slide 生成：不同架构 NOP 编码不同，统一管理 =====
 def generate_nop_slide(length: int, arch: str = "x86_64") -> bytes:
-    """Return `length` bytes of NOP instructions for `arch`. Partial fill uses 0x90."""
+    """返回 arch 对应 length 字节的 NOP 指令序列。不足部分填 0x90。"""
     _nop_map = {
         "x86":       b'\x90',
         "x86_64":    b'\x90',
@@ -330,7 +328,7 @@ def generate_nop_slide(length: int, arch: str = "x86_64") -> bytes:
     return _buf
 
 
-# Unused in production; retained for debugging convenience
+# 生产未使用，保留供调试
 def _debug_print(obj, label="DEBUG"):
     print(f"--- {label} ---")
     if hasattr(obj, '__dict__'):

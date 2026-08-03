@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Crypto module command-line interface.
+Crypto模块命令行接口.
 
-Usage:
+用法:
   python -m src.cli detect <file>
   python -m src.cli misuse <file>
   python -m src.cli hash <file> [--algo xxhash64]
@@ -20,7 +20,7 @@ Usage:
   python -m src.cli rsa <n> <e>
   python -m src.cli all <file>
 
--q quiet mode, -j compact single-line JSON, --parallel for all mode.
+-q 静默模式, -j 紧凑单行JSON, --parallel 用于all模式.
 """
 
 import sys
@@ -49,68 +49,68 @@ except ImportError:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="crypto")
 
-    parser.add_argument("-c", "--config", help="Path to configuration file")
+    parser.add_argument("-c", "--config", help="配置文件路径")
     parser.add_argument("-v", "--verbose", action="store_true")
     parser.add_argument("-q", "--quiet", action="store_true")
     parser.add_argument("-o", "--output", choices=["text", "json", "compact-json"], default="text")
-    parser.add_argument("--log-config", help="Path to logging configuration file")
+    parser.add_argument("--log-config", help="日志配置文件路径")
     parser.add_argument("--progress", action="store_true")
 
     sub = parser.add_subparsers(dest="command")
 
-    p = sub.add_parser("detect", help="Detect cryptographic algorithm signatures")
+    p = sub.add_parser("detect", help="检测密码算法特征")
     p.add_argument("file")
 
-    p = sub.add_parser("misuse", help="Detect cryptographic API misuse")
+    p = sub.add_parser("misuse", help="检测密码API误用")
     p.add_argument("file")
     p.add_argument("--min-severity", default="MEDIUM",
                    choices=["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"])
 
-    p = sub.add_parser("hash", help="Compute file hash")
+    p = sub.add_parser("hash", help="计算文件哈希")
     p.add_argument("file")
     p.add_argument("--algo", default="xxhash64")
 
-    p = sub.add_parser("pqc", help="Detect post-quantum cryptography")
+    p = sub.add_parser("pqc", help="检测后量子密码")
     p.add_argument("file")
 
-    p = sub.add_parser("stegano", help="Detect steganography / hidden data")
+    p = sub.add_parser("stegano", help="检测隐写/隐藏数据")
     p.add_argument("file")
     p.add_argument("--extract", action="store_true")
     p.add_argument("--output-dir", default=".")
 
-    p = sub.add_parser("traffic", help="Analyze encrypted traffic")
+    p = sub.add_parser("traffic", help="分析加密流量")
     p.add_argument("file")
 
-    p = sub.add_parser("signature", help="Detect signature tampering")
+    p = sub.add_parser("signature", help="检测签名篡改")
     p.add_argument("file", nargs="+")
 
-    p = sub.add_parser("cert", help="Analyze embedded X.509 certificates")
+    p = sub.add_parser("cert", help="分析嵌入式X.509证书")
     p.add_argument("file")
 
-    p = sub.add_parser("entropy", help="Entropy profiling for key detection")
+    p = sub.add_parser("entropy", help="熵分析以定位密钥")
     p.add_argument("file")
     p.add_argument("--window", type=int, default=4096)
 
-    p = sub.add_parser("jwt", help="Detect and analyze JWT tokens")
+    p = sub.add_parser("jwt", help="检测与分析JWT令牌")
     p.add_argument("file")
 
-    p = sub.add_parser("secrets", help="Scan for hardcoded secrets/keys")
+    p = sub.add_parser("secrets", help="扫描硬编码密钥/凭据")
     p.add_argument("file")
 
-    p = sub.add_parser("kdf", help="Detect KDF usage and audit parameters")
+    p = sub.add_parser("kdf", help="检测KDF使用并审计参数")
     p.add_argument("file")
 
-    p = sub.add_parser("libs", help="Fingerprint linked crypto libraries")
+    p = sub.add_parser("libs", help="指纹识别链接的密码库")
     p.add_argument("file")
 
-    p = sub.add_parser("rng", help="Run NIST randomness tests on data")
+    p = sub.add_parser("rng", help="对数据运行NIST随机性检验")
     p.add_argument("file")
 
-    p = sub.add_parser("rsa", help="Test RSA key for known weaknesses")
-    p.add_argument("n", type=int, help="Modulus (decimal)")
-    p.add_argument("e", type=int, nargs="?", default=65537, help="Public exponent")
+    p = sub.add_parser("rsa", help="检测RSA密钥已知弱点")
+    p.add_argument("n", type=int, help="模数 (十进制)")
+    p.add_argument("e", type=int, nargs="?", default=65537, help="公钥指数")
 
-    p = sub.add_parser("all", help="Run all detection modules")
+    p = sub.add_parser("all", help="运行所有检测模块")
     p.add_argument("file")
     p.add_argument("--parallel", action="store_true")
 
@@ -136,7 +136,7 @@ def format_json(obj, compact: bool = False) -> str:
                       default=str, separators=separators)
 
 
-# ── Command handlers (backward-compatible with rewritten modules) ──
+# -- 命令处理函数 (与重构后模块保持向后兼容) --
 
 def cmd_detect(args):
     from .crypto_detector import CryptoDetector
@@ -302,7 +302,8 @@ def cmd_rng(args):
     raw = safeReadBytes(args.file)
     if raw is None:
         return {"error": "Cannot read {}".format(args.file)}
-    sample = raw[:65536]  # cap at 64KB for performance
+    # 采样限制64KB以保证性能
+    sample = raw[:65536]
     return {"rng": test_randomness(sample)}
 
 

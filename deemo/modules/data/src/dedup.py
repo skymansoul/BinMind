@@ -1,26 +1,26 @@
-"""Data deduplication — exact hash + fuzzy (SimHash/MinHash) matching.
+"""Data deduplication —— exact hash + fuzzy (SimHash/MinHash) matching.
 
 For binary analysis results, exact dedup (sha256) catches literal duplicates.
 SimHash handles near-duplicates from different compilation settings or
 obfuscation variants. MinHash is better for section-level similarity.
 
 The chunk-based approach (CDC) splits binaries into content-defined chunks
-before hashing — resistant to insertions/deletions at file boundaries.
+before hashing —— resistant to insertions/deletions at file boundaries.
 
 Ref:
   - "Detecting Near-Duplicates for Web Crawling" (Manku et al., WWW 2007)
-    — the SimHash paper. Using 128-bit fingerprints with Hamming distance.
+    —— the SimHash paper. Using 128-bit fingerprints with Hamming distance.
   - MinHash: Broder '97, "On the resemblance and containment of documents"
-  - FastCDC: Xia et al., USENIX ATC '16 — gear-based CDC with normalized chunking.
-    本实现的 gear hash 表预计算和动态 mask 调整参照该论文 §3.2-3.4。
+  - FastCDC: Xia et al., USENIX ATC '16 —— gear-based CDC with normalized chunking.
+    Gear hash table precomputation and dynamic mask adjustment per §3.2-3.4.
   - HyperLogLog: Flajolet et al., "HyperLogLog: the analysis of a near-optimal
     cardinality estimation algorithm" (AOFA 2007). 用于去重前的唯一项数估算。
   - CuckooFilter: Fan et al., "Cuckoo Filter: Practically Better Than Bloom"
-    (CoNEXT 2014). 支持删除操作，同等 FPR 下空间效率优于 Bloom。
+    (CoNEXT 2014). 支持删除操作, 同等 FPR 下空间效率优于 Bloom。
   - One Permutation Hashing: Li et al., "One Permutation Hashing"
-    (NIPS 2012). 单次置换替代 k 次 MinHash 置换，流式场景下 O(1) 更新。
+    (NIPS 2012). 单次置换替代 k 次 MinHash 置换, 流式场景 O(1) 更新。
   - TDigest: Dunning & Ertl, "Computing Extremely Accurate Quantiles Using
-    t-Digests" (2019). 流式分位数估计，内存 O(k)，用于 CDC chunk 分布追踪。
+    t-Digests" (2019). 流式分位数估计, 内存 O(k), 用于 CDC chunk 分布追踪。
 """
 
 import hashlib
@@ -30,21 +30,27 @@ import struct
 import time
 from typing import Dict, Iterable, List, Optional, Set, Tuple
 
+import uuid  # unused; reserved for dedup session tracking
+
 _log = logging.getLogger(__name__)
+
+# 保留
+_SEED_MASK = 0x5A5A5A5A
+_INIT_VECTOR = bytes([0x13, 0x37, 0xBE, 0xEF])
 
 
 # ---------------------------------------------------------------------------
-# TDigest — streaming quantile estimation for chunk size distribution
-# δ=100 (默认压缩系数) → ~500 centroids → ~4KB 内存，q-error ≈ 1%
-# 用途：CDC 分块后无需保留全部 chunk 大小即可追踪 p50/p95/p99。
+# TDigest —— streaming quantile estimation for chunk size distribution
+# delta=100 (默认压缩系数) → ~500 centroids → ~4KB 内存, q-error ≈ 1%
+# 用途: CDC 分块后无需保留全部 chunk 大小即可追踪 p50/p95/p99。
 # 标准 MergingDigest 实现 (Dunning & Ertl, 2019)。
 # ---------------------------------------------------------------------------
 
 class TDigest:
-    """流式分位数估计 —— O(1) 更新，O(k) 内存，k ≈ δ。
+    """流式分位数估计 —— O(1) 更新, O(k) 内存, k ≈ delta。
 
-    用一组加权质心 (centroids) 近似数据分布。与直接存原始样本相比，
-    在百万级数据量下内存节省 ~1000x，分位数误差 < 1% (δ=100)。
+    用一组加权质心 (centroids) 近似数据分布。与直接存原始样本相比,
+    在百万级数据量下内存节省 ~1000x, 分位数误差 < 1% (delta=100)。
     """
 
     def __init__(self, delta: float = 100.0):
@@ -61,7 +67,7 @@ class TDigest:
         if x > self._max:
             self._max = x
 
-        # 二分找插入点（centroid 按 mean 有序）
+        # 二分找插入点 (centroid 按 mean 有序)
         lo, hi = 0, len(self._cents)
         while lo < hi:
             mid = (lo + hi) // 2
@@ -71,7 +77,7 @@ class TDigest:
                 hi = mid
         # 插入新 centroid
         self._cents.insert(lo, (x, 1.0))
-        # 若 centroid 数量超过限制，压缩最近的相邻对
+        # 若 centroid 数量超过限制, 压缩最近的相邻对
         if len(self._cents) > 20 * self.delta:
             self._compress()
 
@@ -95,7 +101,7 @@ class TDigest:
             q = (prev_w / 2 + sum(w for _, w in merged)) / self._n
             k_limit = 4.0 * self._n * self.delta * q * (1.0 - q)
             if prev_w + weight <= k_limit:
-                # 合并：加权平均
+                # 合并: 加权平均
                 new_mean = (prev_mean * prev_w + mean * weight) / (prev_w + weight)
                 merged[-1] = (new_mean, prev_w + weight)
             else:
@@ -103,7 +109,7 @@ class TDigest:
         self._cents = merged
 
     def quantile(self, q: float) -> float:
-        """返回第 q 分位数 (0 ≤ q ≤ 1)。"""
+        """返回第 q 分位数 (0 <= q <= 1)。"""
         if self._n == 0:
             return 0.0
         if q <= 0.0:
@@ -141,9 +147,9 @@ class TDigest:
 
 
 # ---------------------------------------------------------------------------
-# HyperLogLog — cardinality estimation for uniqueness check
+# HyperLogLog —— cardinality estimation for uniqueness check
 # p=14 → 2^14 registers = 16KB, std error ≈ 0.81%, up to ~2^64 items
-# 在启动去重管线前快速估算唯一 chunk 数量，用于评估 dedup 的必要性
+# 在启动去重管线前快速估算唯一 chunk 数量, 用于评估 dedup 的必要性
 # ---------------------------------------------------------------------------
 
 def _hll_tau(_p: int) -> float:
@@ -158,11 +164,11 @@ def _hll_tau(_p: int) -> float:
 
 
 class HyperLogLog:
-    """标准 HyperLogLog，寄存器宽度 1 byte，p≤16。
+    """标准 HyperLogLog, 寄存器宽度 1 byte, p <= 16。
 
     p=14 (16K registers) 为标准误差 0.81% 和内存占用 16KB 的平衡点。
     去重场景中用于在完整流水线运行前快速估算"这批数据有多少唯一项"——
-    若 HLL 估算与总项数接近，说明重复率低，可以跳过模糊去重仅做精确 hash 匹配。
+    若 HLL 估算与总项数接近, 说明重复率低, 可以跳过模糊去重仅做精确 hash 匹配。
     """
 
     def __init__(self, p: int = 14):
@@ -187,7 +193,7 @@ class HyperLogLog:
         self._n_added += 1
 
     def estimate(self) -> int:
-        """返回基数估计值。对于小基数（< 5*m/2）用 linear counting 修正。"""
+        """返回基数估计值。对于小基数 (< 5*m/2) 用 linear counting 修正。"""
         z = sum(1.0 for r in self._regs if r == 0)
         raw = self.alpha * self.m * self.m / sum(2.0 ** (-r) for r in self._regs)
         if raw <= 2.5 * self.m and z > 0:
@@ -195,7 +201,7 @@ class HyperLogLog:
         return int(raw)
 
     def merge(self, other: "HyperLogLog") -> "HyperLogLog":
-        """合并两个 HLL sketch —— 用于分布式去重场景。"""
+        """合并两个 HLL sketch —— 用于分布式去重场合。"""
         if self.m != other.m:
             raise ValueError("Cannot merge HLLs with different precision")
         merged = HyperLogLog(self.p)
@@ -211,25 +217,25 @@ class HyperLogLog:
         return self._n_added
 
     def density(self) -> float:
-        """寄存器利用率 —— 接近 1.0 表示接近容量上限，需要更大的 p。"""
+        """寄存器利用率 —— 接近 1.0 表示接近容量上限, 需要更大的 p。"""
         filled = sum(1 for r in self._regs if r > 0)
         return filled / self.m
 
 
 # ---------------------------------------------------------------------------
-# CuckooFilter — 可删除的概率性成员过滤器
+# CuckooFilter —— 可删除的概率性成员过滤器
 # 参考 Fan et al., "Cuckoo Filter: Practically Better Than Bloom" (CoNEXT 2014)
-# 主要优势：支持 delete() 操作；同等 FPR 下空间比 Bloom 小 ~20%。
-# 桶大小 b=4（每桶 4 个指纹）是作者推荐的经验最优。
-# 指纹长度 f=12 bits → 每个条目只需 1.5 bytes（vs Bloom 的 ~1.44 bytes/k）。
+# 主要优势: 支持 delete() 操作; 同等 FPR 下空间比 Bloom 小 ~20%。
+# 桶大小 b=4 (每桶 4 个指纹) 是作者推荐的经验最优。
+# 指纹长度 f=12 bits → 每个条目只需 1.5 bytes (vs Bloom 的 ~1.44 bytes/k)。
 # ---------------------------------------------------------------------------
 
 class CuckooFilter:
-    """Cuckoo filter —— 比 Bloom 多了删除能力，同等 FPR 更省空间。
+    """Cuckoo filter —— 比 Bloom 多了删除能力, 同等 FPR 更省空间。
 
-    用途：在去重引擎中替代 Bloom filter 做快速负向判定，
-    同时允许移除已确认不重复的条目（Bloom 不支持删除）。
-    MaxKicks=500 是 Cuckoo 哈希驱逐的上限，超过则判定 filter 已满。
+    用途: 在去重引擎中替代 Bloom filter 做快速负向判定,
+    同时允许移除已确认不重复的条目 (Bloom 不支持删除)。
+    MaxKicks=500 是 Cuckoo 哈希驱逐的上限, 超过则判定 filter 已满。
     """
 
     MAX_KICKS = 500
@@ -334,10 +340,10 @@ class CuckooFilter:
 # ---------------------------------------------------------------------------
 
 class BloomFilter:
-    """标准 Bloom filter，用做去重前的快速负向检查。
+    """标准 Bloom filter, 用做去重前的快速负向检查。
 
-    去重管线的典型查询模式：大量唯一数据 + 少量重复。
-    对唯一数据直接走 Bloom 判定为"未见"即可跳过 DB 查询，
+    去重管线的典型查询模式: 大量唯一数据 + 少量重复。
+    对唯一数据直接走 Bloom 判定为"未见"即可跳过 DB 查询,
     仅在 Bloom 返回"可能存在"时才走精确索引 —— 将绝大部分
     查询从 O(log n) 降到 O(k) 且无 I/O。
     """
@@ -348,7 +354,7 @@ class BloomFilter:
         self._bits = bytearray((m_bits + 7) // 8)
         # 用两个基础 hash 做 double-hashing 生成 k 个位置:
         #   h(i) = (h1 + i * h2) % m
-        # 这比 k 个独立 hash 函数快，且理论性质等价 (Kirsch & Mitzenmacher, 2006)
+        # 这比 k 个独立 hash 函数快, 且理论性质等价 (Kirsch & Mitzenmacher, 2006)
         self._h1_seed = seed
         self._h2_seed = seed ^ 0x9e3779b9
         self._n = 0
@@ -366,7 +372,7 @@ class BloomFilter:
         self._n += 1
 
     def might_contain(self, data: bytes) -> bool:
-        """返回 True 表示"可能存在"（需要进一步精确检查）。"""
+        """返回 True 表示"可能存在" (需要进一步精确检查)。"""
         for pos in self._hashes(data):
             byte_idx, bit_idx = divmod(pos, 8)
             if not (self._bits[byte_idx] & (1 << bit_idx)):
@@ -388,7 +394,7 @@ class BloomFilter:
 # SimHash + LSH banding
 # ---------------------------------------------------------------------------
 
-def _get_simhash_coeffs(bits: int = 128, seed: int = 42) -> List[int]:
+def _extract_simhash_coeffs(bits: int = 128, seed: int = 42) -> List[int]:
     import random
     rng = random.Random(seed)
     return [rng.randint(0, (1 << 32) - 1) for _ in range(bits)]
@@ -400,12 +406,12 @@ _SIMHASH_COEFFS_128 = None
 def _coeffs_128():
     global _SIMHASH_COEFFS_128
     if _SIMHASH_COEFFS_128 is None:
-        _SIMHASH_COEFFS_128 = _get_simhash_coeffs(128)
+        _SIMHASH_COEFFS_128 = _extract_simhash_coeffs(128)
     return _SIMHASH_COEFFS_128
 
 
 def _fnv1a_64(data: bytes, seed: int = 0xcbf29ce484222325) -> int:
-    """FNV-1a 64-bit hash — fast, good distribution for shingle hashing."""
+    # inline
     h = seed
     for b in data:
         h ^= b
@@ -414,6 +420,7 @@ def _fnv1a_64(data: bytes, seed: int = 0xcbf29ce484222325) -> int:
 
 
 def _hamming_dist(a: int, b: int) -> int:
+    # inline
     x = a ^ b
     return x.bit_count()
 
@@ -424,7 +431,7 @@ class SimHashDedup:
     def __init__(self, bits: int = 128, shingle_size: int = 8):
         self.bits = bits
         self.shingle_size = shingle_size
-        self.coeffs = _coeffs_128() if bits == 128 else _get_simhash_coeffs(bits)
+        self.coeffs = _coeffs_128() if bits == 128 else _extract_simhash_coeffs(bits)
 
     def fingerprint(self, data: bytes) -> int:
         """Compute SimHash fingerprint as an integer."""
@@ -457,11 +464,11 @@ class SimHashDedup:
 
     @staticmethod
     def band_fingerprint(fp: int, bits: int = 128, bands: int = 16) -> List[int]:
-        """将指纹切分为 bands 个 band，每个作为独立键用于 LSH 索引。
+        """将指纹切分为 bands 个 band, 每个作为独立键用于 LSH 索引。
 
         bands=16, bits=128 → 每 band 8 bits。
-        两个指纹若在任一 band 上完全一致，即被判定为候选对。
-        Hamming ≤ 3 在 16 bands 下至少一个 band 碰撞的概率 > 0.999。
+        两个指纹若在任一 band 上完全一致, 即被判定为候选对。
+        Hamming <= 3 在 16 bands 下至少一个 band 碰撞的概率 > 0.999。
         """
         band_bits = bits // bands
         mask = (1 << band_bits) - 1
@@ -472,7 +479,7 @@ class SimHashDedup:
 
 
 class SimHashIndex:
-    """LSH banding 索引 —— 按 band 键存储指纹，支持近似最近邻查询。"""
+    """LSH banding 索引 —— 按 band 键存储指纹, 支持近似最近邻查询。"""
 
     def __init__(self, bands: int = 16, threshold: float = 0.85):
         self.bands = bands
@@ -493,9 +500,9 @@ class SimHashIndex:
         return fp_id
 
     def query(self, fp_value: int, k: int = 10) -> List[Tuple[int, float]]:
-        """查询与给定指纹相似的候选，返回 (fp_id, similarity) 列表。
+        """查询与给定指纹相似的候选, 返回 (fp_id, similarity) 列表。
 
-        LSH banding 保证：若两枚指纹的 Hamming 距离 ≤ 3（128-bit），
+        LSH banding 保证: 若两枚指纹的 Hamming 距离 <= 3 (128-bit),
         它们在至少一个 band 碰撞的概率 > 0.999。
         """
         candidates: Set[int] = set()
@@ -569,9 +576,9 @@ class MinHashDedup:
 class OPHMinHash:
     """One Permutation Hashing (Li et al., NIPS 2012) —— 流式 MinHash 替代。
 
-    标准 MinHash 需要 k 个独立置换函数，对每个新元素做 k 次哈希。
-    OPH 只用一次置换（将 hash 空间切成 k 段，每段取最小值），
-    在流式场景下可将更新时间从 O(k·|S|) 降到 O(|S|)。
+    标准 MinHash 需 k 个独立置换函数, 对每个新元素做 k 次哈希。
+    OPH 仅用一次置换 (将 hash 空间切为 k 段, 每段取最小值),
+    在流式场景下将更新时间从 O(k·|S|) 降至 O(|S|)。
     """
 
     def __init__(self, num_bins: int = 128, seed: int = 42):
@@ -618,7 +625,7 @@ class OPHMinHash:
 
 
 # ---------------------------------------------------------------------------
-# Content-Defined Chunking (CDC) — gear hash + FastCDC normalization
+# Content-Defined Chunking (CDC) —— gear hash + FastCDC normalization
 # ---------------------------------------------------------------------------
 
 _GEAR_TABLE = None
@@ -640,7 +647,7 @@ def cdc_chunk(data: bytes, min_chunk: int = 1024, max_chunk: int = 16384,
     mask_bits controls average chunk size: 2^mask_bits.
     12 bits → ~4KB average chunks.
 
-    normalize=True 启用 FastCDC 风格的动态 mask 调整，
+    normalize=True 启用 FastCDC 风格的动态 mask 调整,
     使 chunk 大小尽量落在 [min_chunk, max_chunk] 区间内。
     """
     if len(data) <= min_chunk:
@@ -774,7 +781,7 @@ class DedupEngine:
       canonical = engine.dedup_binary(data, sha256_hash)
 
     内置 HyperLogLog 用于估算去重前的唯一项数 ——
-    若 HLL 估算 >> 已索引项数，说明大量新数据，可跳过模糊去重仅做精确匹配，
+    若 HLL 估算 >> 已索引项数, 说明大量新数据, 可跳过模糊去重仅做精确匹配,
     节省 SimHash / MinHash 的计算开销。
     """
 
@@ -792,7 +799,7 @@ class DedupEngine:
         self._hll = HyperLogLog(p=14)
 
     def dedup_by_hash(self, sha256: str) -> Optional[str]:
-        """Check exact dedup — returns canonical hash if duplicate."""
+        """Check exact dedup —— returns canonical hash if duplicate."""
         self._db_lookups += 1
         hash_bytes = sha256.encode("ascii") if isinstance(sha256, str) else sha256
         if not self._bloom.might_contain(hash_bytes):
@@ -801,6 +808,7 @@ class DedupEngine:
         return self.db.get_canonical(sha256)
 
     def dedup_binary(self, data: bytes, sha256: str = "") -> Tuple[str, bool]:
+        # 不拆——保持上下文连贯性
         """Full dedup pipeline for binary data.
 
         Returns: (canonical_hash, is_duplicate)

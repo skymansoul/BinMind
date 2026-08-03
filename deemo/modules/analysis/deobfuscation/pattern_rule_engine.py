@@ -141,7 +141,7 @@ def _parse_pe_imports(data: bytes) -> List[str]:
 # ---------------------------------------------------------------------------
 
 def _parse_elf_sections(data: bytes) -> List[str]:
-    """解析 ELF section header，返回 section 名称列表。"""
+    """解析 ELF section header，返回 section 名称列表"""
     names: List[str] = []
     if data[:4] != _ELF_MAGIC:
         return names
@@ -178,7 +178,7 @@ def _parse_elf_sections(data: bytes) -> List[str]:
 
 
 def _parse_elf_phdrs(data: bytes) -> List[str]:
-    """解析 ELF program header，返回 segment type 名称列表。"""
+    """解析 ELF program header，返回 segment type 名称列表"""
     types: List[str] = []
     if data[:4] != _ELF_MAGIC:
         return types
@@ -205,7 +205,7 @@ def _parse_elf_phdrs(data: bytes) -> List[str]:
 
 
 def _find_elf_segment_gaps(data: bytes) -> List[Tuple[int, int]]:
-    """检测 ELF LOAD 段之间的空隙——这是代码注入的常见位置。"""
+    """检测 ELF LOAD 段之间的空隙——这是代码注入的常见位置"""
     gaps: List[Tuple[int, int]] = []
     if data[:4] != _ELF_MAGIC or data[4] not in (1, 2):
         return gaps
@@ -384,7 +384,7 @@ def _match_pattern(data: bytes, pattern: RulePattern, imports: List[str],
 # ===== RuleEngine =====
 
 class RuleEngine:
-    """YARA-like rule engine with ELF structure analysis support."""
+    """YARA-like rule engine ELF structure analysis 支持"""
 
     def __init__(self):
         self.rules: List[Rule] = []

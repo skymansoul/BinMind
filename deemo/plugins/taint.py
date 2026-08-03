@@ -122,9 +122,9 @@ def _taint_frida(binary_path: str, input_data: bytes,
             'taint_sources': sources,
             'taint_sinks': sinks,
         }
-    except Exception as e:
-        logger.warning("Frida taint analysis failed: %s", e)
-        return {'success': False, 'engine': 'frida', 'error': str(e)}
+    except Exception as ex:
+        logger.warning("Frida taint analysis failed: %s", ex)
+        return {'success': False, 'engine': 'frida', 'error': str(ex)}
 
 
 def _taint_qbdi(path: str, data: bytes, timeout: int) -> Dict:

@@ -66,8 +66,8 @@ def find_gadgets(binary_path: str, arch: str = 'x86-64') -> List[Dict]:
                         'address': addr_match.group(1),
                         'raw_line': line[:120],
                     })
-        except Exception as e:
-            logger.debug("Gadget search failed for %s: %s", name, e)
+        except Exception as err:
+            logger.debug("Gadget search failed for %s: %s", name, err)
 
     return gadgets
 

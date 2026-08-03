@@ -1,4 +1,3 @@
-# 2026-08-01
 # IDS 规则生成引擎 — 从漏洞/崩溃/协议/符号执行结果生成 Suricata 规则
 __all__ = ['IDSRuleGenerator', 'AttackSignature', 'IDSRuleContent', 'RuleProtocol',
            'RuleAction', 'RulePriority', 'generate_ids_rules', 'score_rule_quality',
@@ -736,8 +735,8 @@ def score_rule_quality(rule_text: str) -> dict:
 
 
 def filter_high_quality_rules(rules: list[dict], min_composite: float = 0.4) -> list[dict]:
-    """按语义质量评分过滤规则集。仅保留综合分 ≥ min_composite 的规则。
-    min_composite 默认 0.4 经手动审计在 DBIR 数据集上保持召回率 > 90%。"""
+    # 按语义质量评分过滤规则集。仅保留综合分 ≥ min_composite 的规则。
+    # min_composite 默认 0.4
     filtered = []
     for r in rules:
         rule_str = r.get('rule', '') if isinstance(r, dict) else str(r)

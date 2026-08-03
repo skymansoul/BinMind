@@ -1,8 +1,6 @@
-# 2026-07-30 09:20
-# ml_guided_symbex.py
 # 机器学习引导的符号执行 — 用学习到的模式指导符号执行路径选择
-# 依据: SyML [Zotero: "Guiding Symbolic Execution Toward Vulnerable States Through Pattern Learning"]
-#       Learning to Explore Paths for Symbolic Execution [Zotero]
+# 基于: SyML [Zotero: "Guiding Symbolic Execution Toward Vulnerable States Through Pattern Learning"]
+# Learning to Explore Paths for Symbolic Execution [Zotero]
 # 核心: 从已知漏洞中学习路径特征 → 预测新程序中可能存在漏洞的路径 → 优先探索
 
 from __future__ import annotations

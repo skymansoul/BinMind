@@ -1,11 +1,10 @@
-# 2026-07-29
-"""ROP/JOP gadget chain analysis — ARCANIST [USENIX Security 2025] inspired.
+"""ROP/JOP gadget 链分析 —— 借鉴 ARCANIST [USENIX Security 2025]。
 
-ARCANIST 实现了跨栈/堆/寄存器的多样化 gadget chain 合成。
-本模块借鉴其 gadget 分类和可达性分析思路，对二进制中的 ROP/JOP gadget
-进行分类、评分和链式可达性分析。
+ARCANIST 实现跨栈/堆/寄存器的多样化 gadget 链合成。
+本模块沿用其 gadget 分类与可达性分析思路，对二进制中的
+ROP/JOP gadget 进行分类、评分、链式可达性评估。
 
-覆盖 x86_64 / ARM64 平台的常见 gadget 类型。
+覆盖 x86_64 / ARM64 常见 gadget 类型。
 """
 
 import re, struct, logging, os
@@ -17,7 +16,7 @@ _log = logging.getLogger(__name__)
 
 
 class GadgetKind:
-    """Gadget 类型常量 — 参考 ARCANIST §3 的分类法。"""
+    """Gadget 类型常量 —— 参考 ARCANIST 第三节分类法。"""
     RET = "ret"               # ret 结尾 (ROP)
     CALL_REG = "call_reg"     # call reg 结尾 (JOP)
     JMP_REG = "jmp_reg"       # jmp reg 结尾 (JOP dispatcher)
@@ -34,7 +33,7 @@ class GadgetKind:
 
 @dataclass
 class Gadget:
-    """单个 gadget 的元数据。"""
+    """单个 gadget 元数据。"""
     offset: int
     size: int
     kind: str
@@ -42,14 +41,14 @@ class Gadget:
     disasm: str = ""
     useful_regs: Set[str] = field(default_factory=set)
     clobber_regs: Set[str] = field(default_factory=set)
-    side_effects: str = ""     # "stack_pivot", "write_to_mem", "read_from_mem", etc.
-    usefulness_score: float = 0.0  # 0..1, 越高对 exploit 越有用
-    pac_protected: bool = False  # ARM64 PAC 保护的 gadget 更难利用
+    side_effects: str = ""     # "stack_pivot", "write_to_mem", "read_from_mem" 等
+    usefulness_score: float = 0.0  # 0..1, 越高对 exploit 越有利
+    pac_protected: bool = False  # ARM64 PAC 保护令 gadget 难以利用
 
 
 @dataclass
 class GadgetChainAnalysis:
-    """Gadget chain 可达性分析结果。"""
+    """Gadget 链可达性分析结果。"""
     binary_path: str = ""
     total_gadgets: int = 0
     rop_gadgets: int = 0
@@ -58,7 +57,7 @@ class GadgetChainAnalysis:
     pac_protected_count: int = 0
     chainable_pairs: List[Tuple[int, int]] = field(default_factory=list)
     longest_chain: int = 0
-    defense_score: float = 0.0  # 0..1, 越高越难利用
+    defense_score: float = 0.0  # 0..1, 越高越安全
     critical_gadgets: List[Gadget] = field(default_factory=list)
     stack_pivot_gadgets: List[Gadget] = field(default_factory=list)
 
@@ -92,8 +91,8 @@ class GadgetChainAnalysis:
         }
 
 
-# ── Gadget 终结束码表 ─────────────────────────────────────────────────
-# 每个终结束码对应一个 gadget 类型和一组 useful/clobber 寄存器
+# ── Gadget 终结束码查找表 ──────────────────────────────────────────
+# 每个 opcode 序列 → (类型, 有用寄存器集合, 是否栈 pivot)
 
 _GADGET_TERMINATORS_X86 = {
     # opcode: (kind, useful_regs_set, is_stack_pivot)
@@ -102,7 +101,7 @@ _GADGET_TERMINATORS_X86 = {
     b'\xcb':       (GadgetKind.RET,          set(), False),               # retf (far return)
     b'\xca':       (GadgetKind.RET,          set(), False),               # retf imm16
     b'\xc9':       (GadgetKind.LEAVE_RET,    set(), True),                # leave (stack pivot)
-    b'\xff':       (GadgetKind.UNKNOWN,      set(), False),               # jmp/call [mem] — 需要看 ModRM
+    b'\xff':       (GadgetKind.UNKNOWN,      set(), False),               # jmp/call [mem]——看 ModRM
     b'\xcd\x80':   (GadgetKind.INT80,        set(), False),               # int 0x80
     b'\x0f\x05':   (GadgetKind.SYSCALL,      set(), False),               # syscall
     b'\x0f\x34':   (GadgetKind.SYSCALL,      set(), False),               # sysenter
@@ -118,7 +117,7 @@ _GADGET_TERMINATORS_ARM64 = {
     b'\xff\x23\x03\xd5': (GadgetKind.PAC_RET, set(), False),              # autiasp
 }
 
-# 通过 ModRM 字节扩展的间接调用/跳转 gadget
+# ModRM 间接调用/跳转 opcode
 _MODRM_INDIRECT_CALL = [0xd0, 0xd1, 0xd2, 0xd3, 0xd4, 0xd5, 0xd6, 0xd7]  # call reg
 _MODRM_INDIRECT_JMP  = [0xe0, 0xe1, 0xe2, 0xe3, 0xe4, 0xe5, 0xe6, 0xe7]  # jmp reg
 
@@ -131,8 +130,8 @@ _REG_NAMES_INDIRECT = {
 class GadgetChainAnalyzer:
     """ARCANIST 风格 gadget 链分析器。
 
-    扫描二进制中的 ROP/JOP gadget 并评估其利用价值。
-    不合成完整 exploit chain，仅做 gadget 分类和 risk 评分。
+    扫描二进制 ROP/JOP gadget 并评估利用价值。
+    不合成完整 exploit chain，仅做分类与风险评分。
     """
 
     def __init__(self, arch: str = "x86_64"):
@@ -142,22 +141,22 @@ class GadgetChainAnalyzer:
             self._terminators = _GADGET_TERMINATORS_ARM64
 
     # ============================================================
-    # analyze: 主入口
+    # 主入口
     # ============================================================
     def analyze(self, binary_path: str,
                 code_sections: Optional[List[Tuple[int, int]]] = None) -> GadgetChainAnalysis:
-        """扫描二进制寻找 gadget 并进行链式分析。"""
+        """扫描二进制 gadget 并进行链式分析。"""
         _rpt = GadgetChainAnalysis(binary_path=binary_path)
 
         _data = self._load_binary(binary_path)
         if _data is None:
             return _rpt
 
-        # 确定扫描范围
+        # 确定扫描区间
         if code_sections is None:
             code_sections = self._guess_code_sections(_data)
 
-        # 收集所有 gadget
+        # 收集全部 gadget
         _all = []
         for _start, _end in code_sections:
             _section_data = _data[_start:_end]
@@ -166,7 +165,7 @@ class GadgetChainAnalyzer:
 
         _rpt.total_gadgets = len(_all)
 
-        # 分类统计
+        # 按类型统计
         for _g in _all:
             _k = _g.kind
             if _k in (GadgetKind.RET, GadgetKind.POP_RET, GadgetKind.POP_POP_RET,
@@ -183,11 +182,11 @@ class GadgetChainAnalyzer:
         for _g in _all:
             _g.usefulness_score = self._score_gadget_usefulness(_g)
 
-        # 提取关键 gadget (usefulness > 0.5)
+        # 筛出高利用价值 gadget (usefulness > 0.5)
         _rpt.critical_gadgets = [_g for _g in _all if _g.usefulness_score > 0.5]
         _rpt.critical_gadgets.sort(key=lambda g: g.usefulness_score, reverse=True)
 
-        # 提取栈 pivot gadget
+        # 筛出栈 pivot gadget
         _rpt.stack_pivot_gadgets = [
             _g for _g in _all
             if _g.side_effects == 'stack_pivot' or
@@ -195,10 +194,10 @@ class GadgetChainAnalyzer:
             if 'rsp' in _g.useful_regs or 'esp' in _g.useful_regs
         ]
 
-        # 链式分析: 检测可串联的 gadget 对
+        # 链式检测：找出可串联的 gadget 对
         _rpt.chainable_pairs = self._find_chainable_pairs(_all)
 
-        # 最长链估计
+        # 估算最长链
         _rpt.longest_chain = self._estimate_longest_chain(_all)
 
         # 防御评分
@@ -206,7 +205,7 @@ class GadgetChainAnalyzer:
 
         return _rpt
 
-    # ── 二进制加载与段检测 ────────────────────────────────────────────
+    # ── 二进制加载与段定位 ──────────────────────────────────────────
 
     def _load_binary(self, path: str) -> Optional[bytes]:
         try:
@@ -216,10 +215,10 @@ class GadgetChainAnalyzer:
             return None
 
     def _guess_code_sections(self, data: bytes) -> List[Tuple[int, int]]:
-        """简易 ELF .text 段定位 — 不做完整 ELF 解析。
-        若未检测到 ELF header，则扫描整个二进制。"""
+        """简易 ELF .text 定位 —— 不做完整 ELF 解析。
+        未检测到 ELF header 则全量扫描。"""
         if data[:4] == b'\x7fELF':
-            # 读取 program headers 找到 PT_LOAD | PF_X 的段
+            # 读 program headers，找 PT_LOAD | PF_X
             try:
                 _phoff = struct.unpack_from('<Q', data, 0x20)[0]
                 _phnum = struct.unpack_from('<H', data, 0x38)[0]
@@ -239,10 +238,10 @@ class GadgetChainAnalyzer:
                 pass
         return [(0, len(data))]
 
-    # ── gadget 扫描 ───────────────────────────────────────────────────
+    # ── gadget 逆向扫描 ─────────────────────────────────────────────
 
     def _scan_gadgets(self, data: bytes, base_offset: int) -> List[Gadget]:
-        """在字节流中逆向扫描 gadget：从终结束码向前回溯，收集所有可能的 gadget。"""
+        """逆向扫描：从终结束码向前回溯，收集所有可能 gadget。"""
         _gadgets = []
         _n = len(data)
 
@@ -255,10 +254,9 @@ class GadgetChainAnalyzer:
                 if _pos == -1:
                     break
 
-                # 向前回溯收集不同长度的 gadget (2-32 bytes)
+                # 向前回溯 2-32 字节
                 for _glen in range(2, min(33, _pos + 1)):
                     _gstart = _pos - _glen + 1 + _tlen
-                    # 跳过以 ret/控制流指令开头的 gadget（嵌套的gadget会影响分析但保留）
                     _gbytes = data[_gstart:_pos + _tlen]
 
                     _g = Gadget(
@@ -272,7 +270,7 @@ class GadgetChainAnalyzer:
                         pac_protected=(_kind == GadgetKind.PAC_RET),
                     )
 
-                    # 解析 useful regs (pop reg; ...; ret 序列中的寄存器)
+                    # 解析 useful/clobber regs 与副作用
                     _g.useful_regs = self._extract_useful_regs(_gbytes)
                     _g.clobber_regs = self._extract_clobber_regs(_gbytes)
                     _g.side_effects = self._classify_side_effects(_g)
@@ -284,7 +282,7 @@ class GadgetChainAnalyzer:
 
                 _pos += _tlen
 
-        # 去重（同一 offset 同一 kind 只保留最长版本）
+        # 同 offset + kind 只保留最长
         return self._deduplicate_gadgets(_gadgets)
 
     def _deduplicate_gadgets(self, gadgets: List[Gadget]) -> List[Gadget]:
@@ -296,7 +294,7 @@ class GadgetChainAnalyzer:
         return list(_seen.values())
 
     def _quick_disas(self, data: bytes) -> str:
-        """快速反汇编标签 — 不做完整解码，仅标记已知指令模式。"""
+        """快速反汇编标签 —— 不做完整解码，仅标记已知模式。"""
         _parts = []
         for _i in range(len(data)):
             _b = data[_i]
@@ -317,7 +315,7 @@ class GadgetChainAnalyzer:
         return '; '.join(_parts)
 
     def _extract_useful_regs(self, data: bytes) -> Set[str]:
-        """从 pop 序列中提取可控寄存器。"""
+        """从 pop 序列提取攻击者可写寄存器。"""
         _regs = set()
         _reg_names = ['rax','rcx','rdx','rbx','rsp','rbp','rsi','rdi',
                       'r8','r9','r10','r11','r12','r13','r14','r15']
@@ -325,13 +323,13 @@ class GadgetChainAnalyzer:
             if 0x58 <= _b <= 0x5f:
                 _regs.add(_reg_names[_b - 0x58])
             elif _b == 0x41:  # REX.B prefix → r8-r15
-                continue  # 简化处理，不做完整 REX 解码
+                continue  # 简化，不做完整 REX 解码
         return _regs
 
     def _extract_clobber_regs(self, data: bytes) -> Set[str]:
-        """检测被修改但不可控的寄存器。"""
+        """检测被修改但不可控的寄存器（如 xor 清零）。"""
         _clobber = set()
-        # xor reg, reg — 清零寄存器
+        # xor reg, reg — 清零
         for _i in range(len(data) - 1):
             if data[_i] == 0x31 and 0xc0 <= data[_i + 1] <= 0xff:
                 _clobber.add('eax')
@@ -340,7 +338,7 @@ class GadgetChainAnalyzer:
         return _clobber
 
     def _classify_side_effects(self, gadget: Gadget) -> str:
-        """分析 gadget 的副作用类型。"""
+        """归类 gadget 副作用：栈读写、寄存器到内存、算术等。"""
         _data = gadget.bytes
         if b'\x89' in _data or b'\x8b' in _data:  # mov reg, [reg] or mov [reg], reg
             if b'\x04\x24' in _data or b'\x24' in _data:  # stack reference
@@ -353,21 +351,20 @@ class GadgetChainAnalyzer:
         return 'none'
 
     def _score_gadget_usefulness(self, gadget: Gadget) -> float:
-        """评估 gadget 对 exploit 的利用价值 (0..1)。
-        参考 ARCANIST 的 primitive 分类和评分方法。"""
+        """评估 gadget 利用价值 (0..1)，参考 ARCANIST primitive 分类法。"""
         _s = 0.0
         _k = gadget.kind
-        # pop 序列越长越有用 (setup more regs)
+        # pop 序列越长越有价值（可设更多寄存器）
         if _k == GadgetKind.POP_RET:
             _s = min(0.6, len(gadget.useful_regs) * 0.15)
         elif _k == GadgetKind.POP_POP_RET:
             _s = min(0.8, len(gadget.useful_regs) * 0.20)
-        # syscall 非常有用
+        # syscall 极具价值
         elif _k == GadgetKind.SYSCALL:
             _s = 0.90
         elif _k == GadgetKind.INT80:
             _s = 0.85
-        # stack pivot 极有价值
+        # 栈 pivot 最重要
         elif gadget.side_effects == 'stack_pivot':
             _s = 0.95
         # 间接跳转
@@ -375,15 +372,15 @@ class GadgetChainAnalyzer:
             _s = 0.65
         elif _k == GadgetKind.CALL_REG:
             _s = 0.55
-        # PAC 保护降低价值
+        # PAC 保护打折扣
         if gadget.pac_protected:
             _s *= 0.30
         return round(min(_s, 1.0), 4)
 
-    # ── 链式分析 ──────────────────────────────────────────────────────
+    # ── 链式分析 ────────────────────────────────────────────────────
 
     def _find_chainable_pairs(self, gadgets: List[Gadget]) -> List[Tuple[int, int]]:
-        """检测可串联的 gadget 对: gadget A 的 useful_regs ∩ gadget B 的 clobber_regs 为空。"""
+        """检测可串联 gadget 对：A 的 useful_regs 与 B 的 clobber_regs 不冲突。"""
         _pairs = []
         _by_offset = {_g.offset: _g for _g in gadgets}
         _offsets = sorted(_by_offset.keys())
@@ -395,26 +392,26 @@ class GadgetChainAnalyzer:
             while _jdx < _n and _jdx - _idx < 10:
                 _ga = _by_offset[_offsets[_idx]]
                 _gb = _by_offset[_offsets[_jdx]]
-                # A 的 useful_regs 不能与 B 的 clobber_regs 冲突
+                # A.useful_regs 不能与 B.clobber_regs 冲突
                 if not (_ga.useful_regs & _gb.clobber_regs):
                     _pairs.append((_ga.offset, _gb.offset))
                 _jdx += 1
             _idx += 1
 
-        return _pairs[:500]  # 截断，太多对没有实际意义
+        return _pairs[:500]  # 截断，避免膨胀
 
     def _estimate_longest_chain(self, gadgets: List[Gadget]) -> int:
-        """通过贪心 BFS 估算最长可串联的 gadget 链长度。"""
+        """贪心 BFS 估算最长可串联 gadget 链。"""
         if len(gadgets) < 2:
             return min(len(gadgets), 1)
 
-        # 构建邻接表
+        # 邻接表
         _adj = defaultdict(set)
         _by_offset = {_g.offset: _g for _g in gadgets}
         for _o1, _o2 in self._find_chainable_pairs(gadgets):
             _adj[_o1].add(_o2)
 
-        # BFS 求最长路径（DAG 假设 — 实际可能有环，限制深度）
+        # BFS 求最长路径（DAG 假设，限制深度防环）
         _max_len = 0
         for _start in list(_adj.keys())[:100]:
             _visited = set()
@@ -422,7 +419,7 @@ class GadgetChainAnalyzer:
             while _q:
                 _cur, _depth = _q.popleft()
                 _max_len = max(_max_len, _depth)
-                if _depth < 20:  # 深度限制，避免无限链
+                if _depth < 20:  # 深度上限，防无限链
                     for _nxt in _adj.get(_cur, set()):
                         if _nxt not in _visited:
                             _visited.add(_nxt)
@@ -431,22 +428,24 @@ class GadgetChainAnalyzer:
 
     def _compute_defense_score(self, report: GadgetChainAnalysis,
                                binary_size: int) -> float:
-        """防御评分 — 越高越难利用。
-        综合：gadget 密度低、syscall gadget 少、PAC 覆盖高等因素。"""
+        """防御评分（越高越安全）。
+
+        综合 gauge 密度、syscall gadget 数量、PAC 覆盖率、最长链长度。
+        """
         _s = 1.0
         if binary_size > 0:
             _density = report.total_gadgets / binary_size
-            # gadget 密度每 0.001 扣 0.05
+            # 密度每 0.001 扣 0.05
             _s -= min(_density * 50, 0.40)
 
-        # syscall gadget 存在 → 大减分
+        # syscall gadget → 减分
         if report.syscall_gadgets > 0:
             _s -= min(report.syscall_gadgets * 0.05, 0.25)
 
-        # PAC 保护 → 加分
+        # PAC → 加分
         _s += min(report.pac_protected_count / max(report.total_gadgets, 1) * 0.30, 0.30)
 
-        # 长链能力 → 减分
+        # 长链 → 减分
         if report.longest_chain >= 10:
             _s -= 0.20
         elif report.longest_chain >= 5:
@@ -455,7 +454,7 @@ class GadgetChainAnalyzer:
         return round(min(max(_s, 0.0), 1.0), 4)
 
 
-# ── 便捷函数 ──────────────────────────────────────────────────────────
+# ── 便捷入口 ────────────────────────────────────────────────────────
 
 def analyze_gadget_chains(binary_path: str, arch: str = "x86_64") -> Dict:
     _analyzer = GadgetChainAnalyzer(arch=arch)

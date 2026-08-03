@@ -1,4 +1,3 @@
-# 2026-08-02
 # CI 集成 — 多平台检测、SARIF/JUnit/Markdown/JSON 报告、GitHub/GitLab 注解
 import os
 import json

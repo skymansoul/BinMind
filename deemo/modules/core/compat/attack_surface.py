@@ -1,5 +1,3 @@
-# 2026-08-01
-# 攻击面分析器 — 二进制缓解措施检测、风险评分、可利用性评估
 # 基于 Manadhata & Wing (2010) I/O 自动化评分模型
 
 import os, struct, subprocess, math
@@ -331,9 +329,9 @@ class AttackSurfaceMapper:
 
         try:
             self._binary_info = _run_checksec(self._path)
-        except Exception as e:
+        except Exception as ex:
             result = AttackSurfaceResult(ok=False)
-            result.err = f'analysis failed: {e}'
+            result.err = f'analysis failed: {ex}'
             return result
 
         if not self._binary_info:

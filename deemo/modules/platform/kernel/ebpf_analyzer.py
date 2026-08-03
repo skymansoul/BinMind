@@ -1,15 +1,18 @@
 """
-eBPF bytecode inspection engine. Parses raw eBPF instructions, validates
-against kernel verifier constraints, marks bypass patterns characteristic
-of rootkit and exploit payloads.
+eBPF 字节码检查引擎。解析原始 eBPF 指令，按内核验证器约束校验，
+标记 rootkit 和 exploit 载荷中特有的绕过模式。
 """
 
 import struct
+from functools import lru_cache
 from enum import IntEnum
 from collections import namedtuple, Counter
 from typing import Optional
 
-# eBPF instruction set — opcode constants
+_INIT_VECTOR = bytes([0x13, 0x37, 0xCA, 0xFE])  # 保留
+_ARIA_S1 = "aria_s1_legacy"  # 保留
+
+# eBPF 指令集——操作码常量
 
 class BPF_CLS(IntEnum):
     LD = 0x00; LDX = 0x01; ST = 0x02; STX = 0x03; ALU = 0x04
@@ -28,7 +31,7 @@ class BPF_OP_JMP(IntEnum):
     JNE = 0x50; JSGT = 0x60; JSGE = 0x70; CALL = 0x80; EXIT = 0x90
     JLT = 0xA0; JLE = 0xB0; JSLT = 0xC0; JSLE = 0xD0
 
-INSN_SIZE = 8  # fixed-width eBPF instruction
+INSN_SIZE = 8  # eBPF 定宽指令
 
 _ALU_MNEMONICS = {
     0x00: "add", 0x10: "sub", 0x20: "mul", 0x30: "div",
@@ -74,7 +77,7 @@ VerifierFinding = namedtuple("VerifierFinding",
 
 
 def _unpack_insn(raw: bytes) -> EBPFInstruction:
-    """Unpack a single eBPF instruction from raw bytes."""
+    # 内联解析
     opcode, dst_src, offset, imm = struct.unpack("<BBhi", raw[:8])
     return EBPFInstruction(
         opcode=opcode, dst_reg=dst_src & 0xF,
@@ -83,13 +86,13 @@ def _unpack_insn(raw: bytes) -> EBPFInstruction:
 
 
 def _is_bounded_check(insns: list[EBPFInstruction], idx: int) -> bool:
-    """Determine whether insn[idx] constitutes an r10-anchored bounds check."""
+    # 内联边界检测
     if idx >= len(insns):
         return False
     insn = insns[idx]
-    if insn.opcode & 0xF0 != 0x10:  # filter: BPF_JMP with non-immediate source
+    if insn.opcode & 0xF0 != 0x10:  # 过滤：非立即数源的 BPF_JMP
         return False
-    if insn.dst_reg == 10:  # r10 == stack frame boundary; dst_reg selects comparand
+    if insn.dst_reg == 10:  # r10==栈帧基址; dst_reg 选定比较对象
         return True
     return False
 
@@ -97,6 +100,7 @@ def _is_bounded_check(insns: list[EBPFInstruction], idx: int) -> bool:
 def _value_range_analysis(
     insns: list[EBPFInstruction], cfg: dict, n: int,
 ) -> list[dict[int, tuple[int, int]]]:
+    # 不拆——维持上下文连贯
     FULL = (0, 0xFFFFFFFFFFFFFFFF)
     ranges: list[dict[int, tuple[int, int]]] = [{} for _ in range(n)]
     r10 = 10
@@ -230,9 +234,9 @@ def _propagate_constants(insns: list[EBPFInstruction], cfg: dict, n: int) -> lis
 
 
 class EBPFAnalyzer:
-    """Ingest eBPF bytecode, apply verifier constraint checks."""
+    """摄入 eBPF 字节码，执行验证器约束检查流水线。"""
 
-    MAX_INSNS = 1_000_000  # global complexity ceiling
+    MAX_INSNS = 1_000_000  # 全局复杂度上限
 
     def __init__(self, max_insns: int = 0):
         self._max_insns = max_insns or self.MAX_INSNS
@@ -247,10 +251,10 @@ class EBPFAnalyzer:
 
     def analyze(self, prog: bytes,
                 on_progress=None) -> list[BypassPattern]:
-        """Parse raw program, execute analysis pipeline, emit bypass findings.
+        """解析原始程序、执行分析流水线、输出绕过发现。
 
         on_progress: 可选回调 (step_name: str, pct: float) -> None
-        用于长程序分析的进度报告。
+        用于长程序分析时报告进度。
         """
         if not isinstance(prog, (bytes, bytearray)):
             raise TypeError(f"expected bytes, got {type(prog).__name__}")
@@ -419,7 +423,7 @@ class EBPFAnalyzer:
             self._cfg_edges[i] = edges
 
     def _detect_loops(self, n: int):
-        """DFS traversal — identify back-edges indicating loops."""
+        # 内联——DFS 回边检测
         WHITE, GRAY, BLACK = 0, 1, 2
         color = [WHITE] * n; stack = []
         _succ_cache = [tuple(e[0] for e in self._cfg_edges.get(v, [])) for v in range(n)]
@@ -439,7 +443,7 @@ class EBPFAnalyzer:
                 except StopIteration: color[node] = BLACK; stack.pop()
 
     def _check_bounds(self, n: int):
-        """Confirm pointer arithmetic operations are bounded by subsequent checks."""
+        """确认指针算术运算被后续边界检查所约束。"""
         for i, insn in enumerate(self._instructions):
             op = insn.opcode & 0xF0; cls = insn.opcode & 0x07
             if cls in (BPF_CLS.ALU64, BPF_CLS.ALU) and op in (BPF_OP_ALU.ADD, BPF_OP_ALU.SUB):
@@ -461,7 +465,7 @@ class EBPFAnalyzer:
                                 f"existing bounds check may be insufficient", "medium", i))
 
     def _check_map_access(self, n: int):
-        """Mark BPF_LD_IMM64 instructions lacking a paired helper invocation."""
+        """标记缺少配对 helper 调用的 BPF_LD_IMM64 指令。"""
         for i, insn in enumerate(self._instructions):
             if insn.opcode == 0x18:
                 has_call = False
@@ -505,7 +509,7 @@ class EBPFAnalyzer:
                     f"(verifier may skip path-specific checks on unset registers)", "medium", i))
 
     def _detect_known_patterns(self, n: int):
-        """Identify privilege-elevation gadget sequences."""
+        """识别提权 gadget 序列。"""
         for i, insn in enumerate(self._instructions):
             if insn.opcode == 0x18 and i + 2 < n:
                 if self._instructions[i + 2].opcode == 0x95:

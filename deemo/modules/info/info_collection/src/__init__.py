@@ -1,6 +1,5 @@
-# 2026-07-14
-# info_collection/src — binary intelligence core
-# 单一入口，延迟加载所有子模块
+# info_collection/src — 二进制情报提取入口
+# 通过 __getattr__ 按需加载子模块，避免全量导入
 
 __version__ = "0.3.0"
 
@@ -18,12 +17,16 @@ _submodules = {
     "leak_analyzer": ".leak_analyzer",
     "pii": ".pii",
     "cli": ".cli",
+    "protection_interaction": ".protection_interaction",
+    "segment_risk": ".segment_risk",
+    "security_posture": ".security_posture",
+    "posture_pipeline": ".posture_pipeline",
 }
 
 def __getattr__(name):
     if name in _submodules:
         import importlib
         return importlib.import_module(_submodules[name], package=__package__)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    raise AttributeError("module {} has no attribute {}".format(__name__, name))
 
 __all__ = list(_submodules.keys()) + ["__version__"]

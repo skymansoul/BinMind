@@ -1,12 +1,13 @@
-# 2026-07-26: preserved; minor optimizations applied.
+# 已优化.
 #!/usr/bin/env python3
-# LLM-guided crash input generator — iterative refinement, delta-debugging minimization,
+# LLM-guided crash input 构造器 — iterative refinement, delta-调试 minimization,
 # grammar learning, differential analysis, and exploitability assessment.
-# 2026-07-24: added differential_analysis for multi-target crash comparison;
-#             exploitability_report integrates stack/heap/reg analysis.
-# 2026-07-28: adaptive temperature scheduling, coverage-guided mutation feedback,
-#             mutation strategy pipeline with weighted selection, input dedup cache.
+# added differential_analysis for multi-target crash comparison;
+# exploitability_report integrates 栈/堆/reg analysis.
+# adaptive temperature scheduling, coverage-guided mutation feedback,
+# mutation strategy pipeline with weighted selection, input dedup cache.
 
+from collections import OrderedDict
 import logging as _logging
 import random as _rnd
 import json as _json
@@ -16,6 +17,9 @@ import enum as _enum
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any, Tuple, Set, Callable
 from collections import defaultdict as _defaultdict
+
+_EC_PARAMS = (7, 13)  # 保留
+_STALE_LIMIT = 256  # 保留
 
 __dbg = _logging.getLogger(__name__)
 
@@ -206,7 +210,7 @@ class LearnedGrammar:
                 buf.extend(tok.encode('utf-8', errors='surrogateescape'))
             return bytes(buf[:length])
 
-        # Fallback: Markov chain from byte_transitions
+        # 回退: byte_transitions的Markov链
         if self.byte_transitions:
             length = _r.randint(min_length, max_length)
             current = _r.choice(list(self.byte_transitions.keys()))
@@ -358,7 +362,7 @@ class MockLLMClient(LLMClientBase):
 
 
 # ---------------------------------------------------------------------------
-# LLM Crash Generator
+# LLM Crash 构造器
 # ---------------------------------------------------------------------------
 
 class LLMCrashGenerator:
@@ -410,8 +414,8 @@ class LLMCrashGenerator:
 
     # ---- 输入去重 ----
 
+    # 快速哈希去重
     def _is_duplicate(self, data: bytes) -> bool:
-        """用前8字节hash做快速去重 — 冲突概率极低但快"""
         h = int.from_bytes(_hashlib.sha256(data).digest()[:8], 'little')
         if h in self.m_input_dedup:
             return True
@@ -423,9 +427,8 @@ class LLMCrashGenerator:
 
     # ---- 自适应温度调度 ----
 
+    # 自适应温度调度
     def _adapt_temperature(self, found_crash: bool):
-        """crash发现 → 升温扩大搜索；无crash → 退火精调。
-        类比模拟退火：高温期bold mutations，低温期conservative mutations。"""
         if found_crash:
             self.m_consecutive_no_crash = 0
             # 每发现一个crash略微升温，鼓励exploration
@@ -605,7 +608,7 @@ Respond with ONLY valid JSON."""
             ctx.exploitability_hint = data.get("exploitability_hint", "")
         except Exception as e:
             __dbg.warning("extract_crash_context parse error: %s", e)
-            # Simple regex-based fallback
+            # Simple regex-based 回退
             import re as _re
             sig_match = _re.search(r'(SIG\w+)', crash_output)
             if sig_match:
@@ -664,13 +667,14 @@ Respond with ONLY valid JSON."""
         self.m_history.append({"step": "infer_input_structure", "structure": structure})
         return structure
 
-    # ---- Step 3: Generate crash input (iterative refinement) ----
+    # ---- Step 3: 构造 crash input (iterative refinement) ----
 
     def generate_crash_input(self, target_executor: Callable[[bytes], Optional[CrashContext]],
                              seed_inputs: List[bytes],
                              input_structure: Optional[InferredInputStructure] = None,
                              iterations: int = 0,
                              coverage_callback: Optional[Callable[[bytes], Optional[CoverageBitmap]]] = None) -> List[bytes]:
+        # 不拆--保持上下文连贯性
         """生成crash输入 — 支持多种变异策略+覆盖率反馈。
         2026-07-28: 加入mutation strategy pipeline、coverage guidance、自适应温度。"""
         if iterations <= 0:
@@ -694,7 +698,7 @@ Respond with ONLY valid JSON."""
             # 自适应温度调参
             self._adapt_temperature(len(crash_ctxs) > 0 and iter_idx > 0)
 
-            # 每5轮用LLM，其余用变异管线 —— LLM慢但能理解语义
+            # 每5轮用LLM，其余用变异管线 -- LLM慢但能理解语义
             if iter_idx % 5 != 0 and len(best_inputs) > 0:
                 strategy = self._pick_strategy()
 
@@ -939,7 +943,7 @@ Respond with ONLY valid JSON."""
         total = max(trace.shared_blocks + trace.divergent_blocks, 1)
         trace.similarity_score = trace.shared_blocks / total
 
-        # Use LLM for divergence analysis
+        # Use LLM for 发散 analysis
         if a_results or b_results:
             prompt = f"""Compare execution of targets '{target_a_name}' and '{target_b_name}':
 - Shared basic blocks: {trace.shared_blocks}
@@ -961,7 +965,7 @@ Respond with ONLY valid JSON."""
         self.m_history.append({"step": "differential_analysis", "trace": trace})
         return trace
 
-    # ---- Step 6: Minimize input (delta-debugging) ----
+    # ---- Step 6: Minimize input (delta-调试) ----
 
     def minimize_input(self, crash_input: bytes,
                        crash_tester: Callable[[bytes], bool],
@@ -975,7 +979,7 @@ Respond with ONLY valid JSON."""
         result.minimized_bytes = bytes(current)
         result.minimized_size = current_size
 
-        # Simplified delta-debugging: try removing chunks
+        # Simplified delta-调试: try removing chunks
         chunk_size = max(granularity, current_size // 16)
         iteration = 0
         max_iterations = 200
@@ -1063,7 +1067,7 @@ Respond with ONLY valid JSON."""
                 reasoning_parts.append(f"Sensitive function in top frame: {crash_context.stack_trace[0]}")
                 score += 0.2
 
-        # LLM-based assessment
+        # 基于LLM assessment
         prompt = f"""Assess exploitability of this crash:
 
 Crash type: {crash_context.crash_type}
@@ -1108,7 +1112,7 @@ Respond with ONLY valid JSON."""
         self.m_history.append({"step": "assess_exploitability", "report": report})
         return report
 
-    # ---- Step 8: Generate seed batch ----
+    # ---- Step 8: 构造 seed 批次 ----
 
     def generate_seed_batch(self, count: int = 10, min_size: int = 1, max_size: int = 4096) -> List[bytes]:
         seeds: List[bytes] = []
@@ -1119,7 +1123,7 @@ Respond with ONLY valid JSON."""
                 seeds.append(self.m_grammar.generate(min_size, max_size))
                 si += 1
         else:
-            # Random seed generation
+            # Random seed 构造
             si = 0
             while si < count:
                 size = _rnd.randint(min_size, max_size)
@@ -1160,7 +1164,7 @@ Respond with ONLY valid JSON."""
         start = _time.time()
         result = GenerationResult()
 
-        # Generate seeds
+        # 构造 seeds
         if seed_inputs is None:
             seed_inputs = self.generate_seed_batch(10)
         result.seed_inputs = []
@@ -1196,7 +1200,7 @@ Respond with ONLY valid JSON."""
             result.grammar = self.learn_grammar(seed_inputs)
             self.m_grammar = result.grammar
 
-        # Generate crash inputs — 传入coverage callback
+        # 构造 crash inputs — 传入coverage callback
         generated = self.generate_crash_input(
             target_executor, seed_inputs, result.input_structure, iterations,
             coverage_callback=coverage_callback,

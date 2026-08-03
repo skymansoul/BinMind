@@ -1,14 +1,12 @@
-# 2026-07-29 ~ 2026-08-01
-# PURL ↔ CPE translator plus transitive risk propagation.
-# _ECO_VENDOR is intentionally incomplete — most ecosystems don't have a single
-# vendor mapping and the table would be enormous. This covers the common ones
-# that actually appear in SBOMs. TODO: maybe pull from a community dataset.
+# ~ 2026-08-01
+# PURL ↔ CPE转换器 + 传递风险传播。
+# _ECO_VENDOR有意不完整——多数生态系统没有单一vendor映射，完整表会极庞大。
+# 此处仅覆盖SBOM中实际出现的常见生态。后续可考虑从社区数据集拉取。
 #
-# propagate_risk uses BFS with a half-life decay — each hop halves the risk.
-# The internal _bfs_propagate was renamed (DEVEL_NOTE: "looks too clean")
-# because the original arg names made it look like textbook pseudocode.
-# transitive_risk_report handles the case where component dicts sometimes
-# lack a 'depth' field — dict.get with a default, because real data is messy.
+# propagate_risk使用BFS加半衰衰减——每跳风险减半。
+# 内部_bfs_propagate被重命名（DEVEL_NOTE: "看起来太干净"），
+# 因原始参数名过于教科书风格。
+# transitive_risk_report处理组件字典缺失'depth'字段的情况——dict.get保底，现实数据不规整。
 
 import re
 import math
@@ -19,12 +17,11 @@ from urllib.parse import unquote
 from .cve_models import CVEEntry, Severity
 
 
-# ---- ecosystem → default vendor mapping ----
-# This is incomplete by design. Many ecosystems have no single default vendor
-# (e.g., npm packages could be from anyone). Filling this out fully would mean
-# pulling from a package registry API at runtime, which is a future TODO.
+# ---- 生态系统 → 默认vendor映射 ----
+# 有意不完整。多数生态系统没有单一默认vendor（如npm包可能来自任何人）。
+# 完整填充意味着运行时从包注册API拉取，留作后续改进项。
 _ECO_VENDOR: Dict[str, str] = {
-    # ecosystems with a clear default vendor
+    # 无明确默认vendor的生态系统
     "maven": "",
     "gradle": "",
     "nuget": "",
@@ -44,56 +41,54 @@ _ECO_VENDOR: Dict[str, str] = {
     "cocoapods": "",
     "pub": "",
     "cran": "",
-    # a few that DO have semi-obvious vendor mappings
+    # 有半明确vendor映射的少数
     "alpine": "alpinelinux",
     "wolfi": "wolfi",
     "chainguard": "chainguard",
 }
-# DEVEL_NOTE: the empty-string entries above look wrong but they're intentional.
-# The mapping is ecosystem→vendor, and for ecosystems where the vendor depends
-# on the actual package, we leave it empty — the caller fills it in from context.
+# 开发备忘: 上方的空字符串条目看似错误但设计如此。
+# 映射是ecosystem→vendor，对于vendor取决于具体包的生态，留空——调用方从上下文填充。
 
 
-# ---- PURL parsing regex ----
-# purl format: pkg:<type>/<namespace>/<name>@<version>?<qualifiers>#<subpath>
-# Simplified regex that handles the common cases seen in SBOMs
+# ---- PURL解析正则 ----
+# purl格式: pkg:<type>/<namespace>/<name>@<version>?<qualifiers>#<subpath>
+# 简化正则，处理SBOM中常见的情况
 _PURL_RE = re.compile(
     r"^pkg:([^/]+)/?(.*)$"
 )
 
 
 def _split_purl_rest(rest: str) -> Tuple[str, str, str, str]:
-    """Split the rest of a purl (after pkg:type/) into name, version, qualifiers, subpath.
-    Handles npm scoped packages where name contains @ (e.g., @scope/name).
-    The version separator @ is the LAST @ before ? or # or end-of-string."""
+    """将purl剩余部分（pkg:type/之后）拆分为name、version、qualifiers、subpath。
+    处理npm作用域包中name含@的情况（如@scope/name）。
+    版本分隔符@取最后一个@在?或#或字符串末尾之前的位置。"""
 
     qualifiers = ""
     subpath = ""
 
-    # strip subpath (#...)
+    # 剥离subpath（#...）
     if "#" in rest:
         idx = rest.index("#")
         subpath = rest[idx + 1:]
         rest = rest[:idx]
 
-    # strip qualifiers (?...)
+    # 剥离qualifiers（?...）
     if "?" in rest:
         idx = rest.index("?")
         qualifiers = rest[idx + 1:]
         rest = rest[:idx]
 
-    # now rest = name@version (or just name)
-    # for scoped packages: @scope/name@version → name=@scope/name, version=version
-    # for regular: name@version
+    # 此时 rest = name@version（或仅name）
+    # 作用域包: @scope/name@version → name=@scope/name, version=version
+    # 常规: name@version
     if "@" in rest:
-        # find the last @ — that's the version separator
-        # but for @scope/name, the first @ is part of the name
-        # Strategy: split on @, the LAST segment is the version
+        # 找最后一个@——版本分隔符
+        # 对于@scope/name，第一个@是名字的一部分
+        # 策略: 按@分割，最后一段为版本
         parts = rest.split("@")
-        # if there are >2 parts, the first segment is empty (leading @)
-        # and the name is everything except the last part
+        # 若 >2段且第一段为空（前导@），则name为除最后段外其余部分
         if len(parts) > 2 and parts[0] == "":
-            # scoped package: @scope/name@version → parts = ['', 'scope/name', 'version']
+            # 作用域包: @scope/name@version → parts = ['', 'scope/name', 'version']
             name = "@" + "@".join(parts[1:-1])
             version = parts[-1]
         elif len(parts) == 2:
@@ -110,12 +105,11 @@ def _split_purl_rest(rest: str) -> Tuple[str, str, str, str]:
 
 
 def purl_to_cpe(purl_str: str) -> Optional[str]:
-    """Convert a Package URL (purl) to a CPE 2.3 string.
-    Handles ecosystem-specific quirks: npm scoped packages (@scope/name),
-    Go modules (which may have slashes), Maven group:artifact, and PyPI
-    case normalization.
+    """将Package URL（purl）转换为CPE 2.3字符串。
+    处理生态系统特性：npm作用域包（@scope/name）、Go模块（可能含斜杠）、
+    Maven group:artifact、PyPI大小写规范化。
 
-    Returns None if the purl can't be parsed."""
+    purl无法解析时返回None。"""
 
     if not purl_str or not purl_str.startswith("pkg:"):
         return None
@@ -130,7 +124,7 @@ def purl_to_cpe(purl_str: str) -> Optional[str]:
     raw_name, version_raw, qualifiers_str, subpath = _split_purl_rest(rest)
     version = version_raw or "*"
 
-    # parse qualifiers into a dict
+    # 将qualifiers解析为字典
     qualifiers = {}
     if qualifiers_str:
         for pair in qualifiers_str.split("&"):
@@ -138,7 +132,7 @@ def purl_to_cpe(purl_str: str) -> Optional[str]:
                 k, v = pair.split("=", 1)
                 qualifiers[unquote(k)] = unquote(v)
 
-    # ---- ecosystem-specific name handling ----
+    # ---- 生态特定名称处理 ----
     vendor = _ECO_VENDOR.get(eco, "")
     product = raw_name
 
@@ -149,94 +143,91 @@ def purl_to_cpe(purl_str: str) -> Optional[str]:
             vendor = parts[0]
             product = parts[1]
         else:
-            # just artifact name
+            # 仅artifact名称
             vendor = raw_name
             product = raw_name
 
     elif eco in ("npm",):
-        # npm scoped packages: @scope/name → vendor=scope, product=name
+        # npm作用域包: @scope/name → vendor=scope, product=name
         if raw_name.startswith("@") and "/" in raw_name:
             scope, name = raw_name.split("/", 1)
-            vendor = scope.lstrip("@")  # drop the @ for vendor
+            vendor = scope.lstrip("@")  # 去掉@作为vendor
             product = name
         else:
             product = raw_name
-            # npm — vendor stays as empty string from _ECO_VENDOR
+            # npm — vendor保留_ECO_VENDOR的空字符串
 
     elif eco in ("pypi", "pip"):
-        # PyPI: normalize case — packages are case-insensitive but
-        # CPEs conventionally use lowercase
+        # PyPI: 大小写规范化——包名大小写不敏感，但CPE惯用小写
         product = raw_name.lower()
-        # PyPI packages don't have a vendor, but if qualifier has one, use it
+        # PyPI包无vendor，但qualifier中有则使用
         if "vendor" in qualifiers:
             vendor = qualifiers["vendor"]
 
     elif eco in ("golang",):
-        # Go modules: fully qualified import path — use domain as vendor
+        # Go模块: 全限定导入路径——用域名作vendor
         product = raw_name
         if "/" in raw_name:
-            # e.g., github.com/gin-gonic/gin → vendor=gin-gonic, product=gin
-            # or cloud.google.com/go/storage → tricky
-            # Best effort: take the part before the first / as domain,
-            # last segment as product, middle as vendor-ish
+            # 如 github.com/gin-gonic/gin → vendor=gin-gonic, product=gin
+            # 或 cloud.google.com/go/storage → 较复杂
+            # 尽力而为：首段为域，倒数第二段为vendor，末段为product
             segments = raw_name.split("/")
             if len(segments) >= 2:
-                vendor = segments[-2]  # penultimate segment as vendor
+                vendor = segments[-2]  # 倒数第二段作vendor
                 product = segments[-1]
             elif len(segments) == 1:
                 product = segments[0]
-        # Go is weird. This is adequate for matching.
+        # Go的命名确实奇怪。此方案基本够用。
 
     elif eco in ("composer",):
-        # PHP Composer: vendor/package format
+        # PHP Composer: vendor/package格式
         if "/" in raw_name:
             parts = raw_name.split("/", 1)
             vendor = parts[0]
             product = parts[1]
 
     elif eco in ("cargo",):
-        # Rust crates — no vendor by default, just the crate name
+        # Rust crate — 默认无vendor，仅crate名称
         product = raw_name.lower()
 
     elif eco in ("gem",):
-        # Ruby gems — no vendor, just the gem name
+        # Ruby gem — 无vendor，仅gem名称
         product = raw_name
 
     elif eco in ("nuget",):
-        # NuGet — sometimes has a vendor prefix
+        # NuGet — 有时含vendor前缀
         product = raw_name
 
     elif eco in ("apk", "alpine", "wolfi"):
-        # Alpine/APK packages — vendor may be set
+        # Alpine/APK包 — vendor可能已设置
         product = raw_name
         if not vendor:
             vendor = _ECO_VENDOR.get(eco, "")
 
-    # ensure vendor and product aren't empty
+    # 确保vendor和product非空
     if not vendor:
         vendor = "*"
     if not product:
         product = "*"
 
-    # sanitize for CPE: replace special chars
+    # CPE清洗：替换特殊字符
     vendor = vendor.replace(" ", "_").replace("\\", "/")
     product = product.replace(" ", "_").replace("\\", "/")
 
-    # build CPE 2.3 string
+    # 构建CPE 2.3字符串
     cpe = f"cpe:2.3:a:{vendor}:{product}:{version}:*:*:*:*:*:*:*"
     return cpe
 
 
 def cpe_to_purl(cpe_str: str) -> Optional[str]:
-    """Convert a CPE 2.3 string to a Package URL (purl).
-    This is a lossy conversion — CPEs don't encode ecosystem information
-    so we default to a generic purl type. The result may not round-trip
-    perfectly through purl_to_cpe."""
+    """将CPE 2.3字符串转换为Package URL（purl）。
+    此为有损转换——CPE不编码生态信息，因此默认使用通用purl类型。
+    结果可能无法通过purl_to_cpe完美往返。"""
 
     if not cpe_str:
         return None
 
-    # strip the CPE prefix
+    # 剥离CPE前缀
     cpe = cpe_str
     for prefix in ("cpe:2.3:", "cpe:/", "cpe:"):
         if cpe.startswith(prefix):
@@ -252,7 +243,7 @@ def cpe_to_purl(cpe_str: str) -> Optional[str]:
     product = parts[2] if len(parts) > 2 else "*"
     version = parts[3] if len(parts) > 3 else "*"
 
-    # skip wildcards
+    # 跳过通配符
     if vendor == "*":
         vendor = ""
     if product == "*":
@@ -263,7 +254,7 @@ def cpe_to_purl(cpe_str: str) -> Optional[str]:
     if not product:
         return None
 
-    # guess ecosystem from vendor name (very rough heuristic)
+    # 从vendor名推测生态（很粗略的启发式）
     eco = "generic"
     v_lower = vendor.lower()
     if v_lower in ("apache", "maven", "org.apache"):
@@ -273,7 +264,7 @@ def cpe_to_purl(cpe_str: str) -> Optional[str]:
     elif v_lower == "npm":
         eco = "npm"
 
-    # build purl
+    # 构建purl
     name = f"{vendor}/{product}" if vendor else product
     purl = f"pkg:{eco}/{name}"
     if version:
@@ -282,58 +273,57 @@ def cpe_to_purl(cpe_str: str) -> Optional[str]:
     return purl
 
 
-# ---- transitive risk propagation ----
+# ---- 传递风险传播 ----
 
 def propagate_risk(dependency_graph: Dict[str, List[str]]) -> Dict[str, float]:
-    """Propagate risk scores through a dependency graph using BFS with
-    half-life decay. Each hop reduces the inherited risk by half.
+    """通过依赖图使用BFS加半衰衰减传播风险评分。
+    每跳继承风险减半。
 
-    dependency_graph: {package_name: [list of dependencies]}
-    Returns: {package_name: transitive_risk_score}
+    dependency_graph: {package_name: [依赖列表]}
+    返回: {package_name: transitive_risk_score}
 
-    The internal BFS was cleaned up — DEVEL_NOTE: "looks too clean" — the
-    original arg names looked like textbook pseudocode so they were renamed
-    to something less formal."""
+    内部BFS已清理——DEVEL_NOTE: "看起来太干净"——
+    原参数名过于教科书风格，已重命名为较不正式的形式。"""
 
     if not dependency_graph:
         return {}
 
-    # find root nodes (those that aren't depended on by anything)
+    # 找根节点（不被任何包依赖的节点）
     all_deps: set = set()
     for deps in dependency_graph.values():
         all_deps.update(deps)
 
     roots = [pkg for pkg in dependency_graph if pkg not in all_deps]
     if not roots:
-        # circular or empty graph — start from all nodes with base score 0
+        # 循环图或空图——从所有节点开始，基础评分0
         roots = list(dependency_graph.keys())
 
-    # BFS with half-life decay
+    # BFS加半衰衰减
     scores: Dict[str, float] = {}
     visited: set = set()
-    go_wide: deque = deque()  # DEVEL_NOTE: renamed from 'queue' — too clean
+    go_wide: deque = deque()  # 开发备忘: 从'queue'重命名——太干净
 
     for root in roots:
-        # root nodes start with a base score of 1.0 (they ARE the vulnerable thing)
+        # 根节点基础评分为1.0（它们就是漏洞所在）
         if root not in scores:
             scores[root] = 1.0
-        go_wide.append((root, 0))  # (node, depth_from_root)
+        go_wide.append((root, 0))  # (node, 距根深度)
 
     while go_wide:
-        current_node, how_deep = go_wide.popleft()  # renamed from current, depth
+        current_node, how_deep = go_wide.popleft()  # 从current, depth重命名
 
         if current_node in visited:
             continue
         visited.add(current_node)
 
-        # half-life: score halves each hop
+        # 半衰: 每跳评分减半
         current_score = 1.0 / (2 ** how_deep)
 
-        # update if we found a shorter path (higher score)
+        # 若发现更短路径（更高评分），更新
         if current_node not in scores or current_score > scores[current_node]:
             scores[current_node] = current_score
 
-        # explore dependents (packages that depend on this one)
+        # 探索依赖方（依赖此节点的包）
         dependents = dependency_graph.get(current_node, [])
         for dep in dependents:
             if dep not in visited:
@@ -343,16 +333,15 @@ def propagate_risk(dependency_graph: Dict[str, List[str]]) -> Dict[str, float]:
 
 
 def transitive_risk_report(components: List[Dict]) -> Dict:
-    """Build a transitive risk propagation tree from a list of components.
-    Component dicts may optionally have a 'depth' field — not all SBOM
-    generators include it, so dict.get handles missing keys.
+    """从组件列表构建传递风险传播树。
+    组件字典可选含'depth'字段——并非所有SBOM生成器都包含，dict.get处理缺失。
 
-    Returns a dict with the propagation tree and per-component risk scores."""
+    返回含传播树和逐组件风险评分的字典。"""
 
     if not components:
         return {"tree": {}, "scores": {}, "max_depth": 0}
 
-    # build dependency graph from components that list their deps
+    # 从列出了依赖的组件构建依赖图
     dep_graph: Dict[str, List[str]] = {}
 
     for comp in components:
@@ -364,16 +353,16 @@ def transitive_risk_report(components: List[Dict]) -> Dict:
         if deps:
             dep_graph[name] = deps
 
-    # if no explicit dependency info, build a flat graph from all components
+    # 若无显式依赖信息，从所有组件构建平坦图
     if not dep_graph:
         for i, comp in enumerate(components):
             name = comp.get("name", comp.get("component", f"comp_{i}"))
             dep_graph[name] = []
 
-    # propagate risk
+    # 传播风险
     scores = propagate_risk(dep_graph)
 
-    # build tree structure with depth
+    # 构建含深度的树结构
     max_depth = 0
     tree = {}
 
@@ -382,7 +371,7 @@ def transitive_risk_report(components: List[Dict]) -> Dict:
         if not name:
             continue
 
-        # handle missing depth field — real SBOMs are inconsistent
+        # 处理缺失depth字段——真实SBOM数据不一致
         depth = comp.get("depth", -1)
         if depth > max_depth:
             max_depth = depth
@@ -401,11 +390,10 @@ def transitive_risk_report(components: List[Dict]) -> Dict:
     }
 
 
-# ---- purl parsing helper (used by SBOM matcher) ----
+# ---- purl解析辅助（SBOM匹配器使用） ----
 
 def parse_purl(purl_str: str) -> Optional[Dict]:
-    """Parse a purl string into its components. Similar to purl_to_cpe
-    but returns raw parts instead of building a CPE."""
+    """将purl字符串解析为各组成部分。类似purl_to_cpe但返回原始部分而非构建CPE。"""
 
     if not purl_str or not purl_str.startswith("pkg:"):
         return None
@@ -426,7 +414,7 @@ def parse_purl(purl_str: str) -> Optional[Dict]:
                 k, v = pair.split("=", 1)
                 qualifiers[unquote(k)] = unquote(v)
 
-    # break name into namespace and name for ecosystem-specific handling
+    # 将名字拆分为namespace和name以适应生态特定处理
     namespace = ""
     name = raw_name
 

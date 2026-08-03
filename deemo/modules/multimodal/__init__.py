@@ -1,5 +1,4 @@
-# 2026-07-24
-# multimodal — cross-modal analysis & fusion
+# 跨模态分析子模块注册与懒加载入口
 
 __version__ = "0.4.0"
 
@@ -21,6 +20,6 @@ def __getattr__(name):
     if name in _submodules:
         import importlib
         return importlib.import_module(_submodules[name], package=__package__)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    raise AttributeError("module {} has no attribute {}".format(__name__, name))
 
 __all__ = list(_submodules.keys()) + ["__version__"]

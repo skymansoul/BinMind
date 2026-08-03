@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-# Binary classifier confidence calibration — Platt scaling, isotonic regression, temperature scaling.
-# 2026-07-03: added ECE (Expected Calibration Error) and MCE (Maximum Calibration Error) metrics.
-# 2026-07-15: 实现 Platt 对角 Hessian 近似 + BFGS 回退；等频自适应分箱替代均匀分箱。
-# 2026-07-22: Temperature scaler 数值稳定性加固 — logit clamping + logsumexp 归约。
+# 二分类置信度校准 — Platt缩放/保序回归/温度缩放.
+# 新增ECE与MCE (Maximum Calibration Error) metrics.
+# Platt对角Hessian+BFGS回退；等频自适应分箱替代均匀分箱。
+# 温度缩放数值加固 — logit截断+logsumexp归约。
 
 import logging as _logging
 import math as _math
@@ -40,7 +40,7 @@ def _logsumexp(values):
 
 
 # ═══════════════════════════════════════════════════════════════
-# Platt Scaling with Diagonal Hessian → BFGS fallback
+# Platt对角Hessian缩放 → BFGS 回退
 # ═══════════════════════════════════════════════════════════════
 
 class BinomialCalibrator:
@@ -73,7 +73,7 @@ class BinomialCalibrator:
             __dbg.warning("Platt fit: mismatched or empty arrays")
             return
 
-        # ── 目标正则化（Platt 原文：避免极端概率） ──
+        # ── 目标正则化: Platt原文避免极端概率 ──
         prior1 = max(sum(t) / float(len(t)), _MIN_PROB)
         prior0 = 1.0 - prior1
         target = []
@@ -93,7 +93,7 @@ class BinomialCalibrator:
         max_iters = 80
         tol = 1e-7
 
-        # ── 阶段一：对角 Hessian Newton 步 ──
+        # ── 阶段一: 对角Hessian Newton ──
         old_obj = float('inf')
         converged = False
 
@@ -135,7 +135,7 @@ class BinomialCalibrator:
         if converged:
             self._hessian_used = 'diag'
         else:
-            # ── 阶段二：对角 Hessian 未收敛 → 2×2 完整 Hessian 逆方向 ──
+            # ── 阶段二: 完整2×2 Hessian逆 ──
             __dbg.debug("Platt: diagonal Hessian stalled, switching to full 2×2 inverse")
             # 重置并重新开始，使用完整 Hessian
             a = 0.0
@@ -204,7 +204,7 @@ class BinomialCalibrator:
 
 
 # ═══════════════════════════════════════════════════════════════
-# Isotonic Regression (PAV)
+# PAV保序回归
 # ═══════════════════════════════════════════════════════════════
 
 class IsotonicCalibrator:
@@ -309,7 +309,7 @@ class IsotonicCalibrator:
 
 
 # ═══════════════════════════════════════════════════════════════
-# Temperature Scaling — 数值稳定性加固版
+# 温度缩放(数值稳定)
 # ═══════════════════════════════════════════════════════════════
 
 class TemperatureScaler:
@@ -429,7 +429,7 @@ class TemperatureScaler:
 
 
 # ═══════════════════════════════════════════════════════════════
-# Calibration Metrics — 等频自适应分箱
+# 校准指标(等频分箱)
 # ═══════════════════════════════════════════════════════════════
 
 class CalibrationMetrics:
@@ -582,7 +582,7 @@ class CalibrationMetrics:
 
 
 # ═══════════════════════════════════════════════════════════════
-# Unified Interface
+# 统一接口
 # ═══════════════════════════════════════════════════════════════
 
 class ConfidenceCalibrator:
@@ -655,7 +655,7 @@ class ConfidenceCalibrator:
         elif method == 'temperature':
             return self.m_temp.calibrate_ts(scores)
         else:
-            # auto fallback
+            # auto 回退
             if self.m_is_logits:
                 return self.m_temp.calibrate_ts(scores)
             return self.m_platt.predict_proba_cb(scores)

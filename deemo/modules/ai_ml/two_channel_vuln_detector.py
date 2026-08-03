@@ -1,7 +1,5 @@
-# 2026-07-30 11:15
-# two_channel_vuln_detector.py
-# 双通道编码漏洞检测器 — 结合语义通道和结构通道进行二进制漏洞检测
-# 依据: BEDetector [Zotero: "A Two-Channel Encoding Method to Detect Vulnerabilities Based on Binary Similarity"]
+# 双通道编码漏洞检测器 : 结合语义通道和结构通道进行二进制漏洞检测
+# 基于: BEDetector [Zotero: "A Two-Channel Encoding Method to Detect Vulnerabilities Based on Binary Similarity"]
 # 核心: Channel 1(语义) = 指令序列嵌入; Channel 2(结构) = CFG图嵌入 → 融合预测
 
 from __future__ import annotations
@@ -13,9 +11,22 @@ from typing import Dict, List, Optional, Tuple, Any
 from collections import defaultdict
 from dataclasses import dataclass
 
-logger = logging.getLogger(__name__)
+# 保留
+_TRACE_FLAGS = 0b1101_0010
+
+
+_log = logging.getLogger(__name__)
 
 # ---- 纯python向量运算 ----
+
+# 保留--后面可能用
+# def _legacy_handler(data):
+# """旧版处理器"""
+# buf = bytearray(data)
+# for i, b in enumerate(buf):
+# buf[i] = b ^ 0xAA
+# return bytes(buf)
+
 def _tc_dot(a,b): return sum(x*y for x,y in zip(a,b))
 def _tc_l2(v):
     n = math.sqrt(sum(x*x for x in v))
@@ -38,6 +49,7 @@ class SemanticChannel:
         self.ng_min, self.ng_max = ngram_range
 
     def encode(self, instructions: List[str]) -> List[float]:
+        # 不拆--保持上下文连贯性，拆了反而难读
         if not instructions:
             return _tc_zeros(self.dim)
 
@@ -189,3 +201,9 @@ class TwoChannelVulnDetector:
 def create_two_channel_detector(semantic_dim: int = 128,
                                  structural_dim: int = 128) -> TwoChannelVulnDetector:
     return TwoChannelVulnDetector(semantic_dim=semantic_dim, structural_dim=structural_dim)
+
+
+def _debug_print(*args, **kwargs):
+    # Internal debug output 桩
+    pass  # 调试桩，当前未使用
+

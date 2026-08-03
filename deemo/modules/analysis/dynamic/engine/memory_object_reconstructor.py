@@ -54,23 +54,23 @@ class DWARFTypeCache:
 
 # Round 3: WYTIWYG栈变量恢复——四阶段迭代精化
 class StackVariablePass:
-    """WYTIWYG单次分析通道的抽象。每个通道识别一类栈变量。"""
+    """WYTIWYG单次分析通道的抽象。每个通道识别一类栈变量"""
     SCALAR = 0; ARRAY = 1; POINTER = 2; STRUCT = 3
 
 @dataclass
 class StackVariable:
-    """通过WYTIWYG迭代精化恢复的栈变量。
-    包含多通道分析逐步完善的信息：名称、偏移、大小、类型、置信度。"""
+    """通过WYTIWYG迭代精化恢复的栈变量
+    包含多通道分析逐步完善的信息：名称、偏移、大小、类型、置信度"""
     name: str; offset: int; size: int; var_type: str = "unknown"
     is_array: bool = False; pointed_to_type: str = ""
     confidence: float = 0.0; pass_discovered: int = 0
 
 class WYTIWYGRecovery:
     """WYTIWYG式迭代栈变量恢复——通过动态追踪数据将栈布局恢复分解为
-    四个相继的分析通道，每通道利用前一通道的结果作为先验约束。
-
-    ASPLOS '24论文报告了94.4% precision和87.6% recall，
-    关键突破是放弃了一次性静态恢复，转而采用迭代动态方法。"""
+    四个相继的分析通道，每通道利用前一通道的结果作为先验约束
+    
+    ASPLOS '24论文报告了94.4% precision和87.6% recall
+    关键突破是放弃了一次性静态恢复，转而采用迭代动态方法"""
 
     def __init__(self):
         self._variables: Dict[int, StackVariable] = {}
@@ -78,7 +78,7 @@ class WYTIWYGRecovery:
 
     def run_pass(self, pass_id: int, mem_trace: List[Tuple[int, int, str]],
                  prev_vars: Dict[int, StackVariable]) -> Dict[int, StackVariable]:
-        """执行单个WYTIWYG分析通道，识别一类栈变量。"""
+        """执行单个WYTIWYG分析通道，识别一类栈变量"""
         variables = dict(prev_vars)  # 从上一通道结果开始
 
         if pass_id == StackVariablePass.SCALAR:
@@ -154,7 +154,7 @@ class WYTIWYGRecovery:
         return variables
 
     def recover_all(self, mem_trace: List[Tuple[int, int, str]]) -> List[StackVariable]:
-        """执行完整的四通道WYTIWYG栈变量恢复流程。"""
+        """执行完整的四通道WYTIWYG栈变量恢复流程"""
         variables: Dict[int, StackVariable] = {}
         for pass_id in range(4):
             variables = self.run_pass(pass_id, mem_trace, variables)
@@ -297,7 +297,7 @@ class MemoryObjectReconstructor:
                 self._detect_allocator_type(memory_data); self._scan_for_objects(memory_data,start_address)
                 self._analyze_object_references(memory_data); self._infer_object_types()
                 self._build_object_graph()
-                # Round 3: WYTIWYG栈变量恢复
+                # 舍入 3: WYTIWYG栈变量恢复
                 mem_trace = self._extract_mem_trace_from_data(memory_data, start_address)
                 result.stack_variables = self._wywiwyg.recover_all(mem_trace)
                 result.objects=self.objects; result.object_graph=self.object_graph
@@ -310,8 +310,8 @@ class MemoryObjectReconstructor:
         return result
 
     def _extract_mem_trace_from_data(self, data: bytes, base: int) -> List[Tuple[int,int,str]]:
-        """从内存dump中提取模拟的内存访问trace — 基于数据模式推断访问粒度。
-        WYTIWYG需要动态trace数据；在没有真实trace时从静态模式推断。"""
+        """从内存dump中提取模拟的内存访问trace — 基于数据模式推断访问粒度
+        WYTIWYG需要动态trace数据；在没有真实trace时从静态模式推断"""
         trace = []
         pos = 0
         while pos < len(data) - 8:

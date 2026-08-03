@@ -1,23 +1,23 @@
-# 2026-07-30
-# Fuzzing 字典构建器 — 从二进制/样本中自动提取变异 token
+# Fuzzing字典构建器 — 从二进制/样本中自动提取变异token
 # 核心方法:
-#   1. 字符串提取: 扫描二进制中长度 ≥3 的 ASCII/UTF-16 可打印序列
-#   2. 常量扫描: 识别 LE/BE 编码的常见整数边界值 (0, 0xFF, INT_MAX 等)
-#   3. 语料 token: 对多份样本做 n-gram 频率分析 → 高频 token → 字典条目
-#   4. 结构 token: 基于已知协议/格式模板注入分隔符、length 前缀等
+#   1. 字符串提取: 扫描二进制中长度>=3的ASCII/UTF-16可打印序列
+#   2. 常量扫描: 识别LE/BE编码的常见整数边界值
+#   3. 语料token: 对多份样本做n-gram频率分析 -> 高频token -> 字典条目
+#   4. 结构token: 基于已知协议/格式模板注入分隔符、length前缀等
 # 参考:
-#   - AFL/AFL++ dictionary 文件格式 (https://github.com/AFLplusplus/AFLplusplus)
-#   - LibFuzzer -dict 参数的字典驱动变异
-#   - ChatAFL (NDSS 2024) 的机器可读语法提取、AIFORE 的字段分类
+#   - AFL/AFL++字典文件格式
+#   - LibFuzzer -dict参数的字典驱动变异
+#   - ChatAFL (NDSS 2024)的语法提取、AIFORE的字段分类
 import re
 import struct
 import os
 from typing import List, Dict, Set, Optional, Tuple
 from collections import Counter, defaultdict
+from collections import OrderedDict  # 保留——未使用
 
 
 class TokenExtractor:
-    """从各类数据源中提取字典 token。各方法独立，可组合使用。"""
+    """从各类数据源中提取字典token。各方法独立，可组合使用。"""
 
     # 常见边界值常数 (little-endian & big-endian)
     _BOUNDARY_CONSTANTS = [
@@ -31,11 +31,13 @@ class TokenExtractor:
     def extract_strings(binary_data: bytes,
                         min_len: int = 3,
                         max_len: int = 128) -> List[str]:
-        """从二进制数据中提取可打印字符串（ASCII + UTF-16 LE/BE）。
-        返回去重并按长度排序的列表。"""
+        """从二进制数据中提取可打印字符串 (ASCII + UTF-16 LE/BE)。
+
+        返回去重并按长度排序的列表。
+        """
         strings: Set[str] = set()
 
-        # ASCII 可打印序列
+        # ASCII可打印序列
         current: List[str] = []
         for b in binary_data:
             if 0x20 <= b <= 0x7E:
@@ -48,7 +50,7 @@ class TokenExtractor:
         if len(current) >= min_len:
             strings.add(''.join(current[:max_len]))
 
-        # UTF-16 LE 可打印序列 (每 2 字节一个字符)
+        # UTF-16 LE可打印序列 (每2字节一个字符)
         if len(binary_data) >= 2:
             current_utf16: List[str] = []
             for i in range(0, len(binary_data) - 1, 2):
@@ -66,7 +68,7 @@ class TokenExtractor:
 
     @staticmethod
     def extract_constants(binary_data: bytes) -> List[bytes]:
-        """扫描常见整数边界值的 LE/BE 编码出现位置。"""
+        """扫描常见整数边界值的LE/BE编码出现位置。"""
         found: Set[bytes] = set()
         for const in TokenExtractor._BOUNDARY_CONSTANTS:
             for byte_len in (4, 8):
@@ -97,22 +99,23 @@ class TokenExtractor:
 
 
 class CorpusTokenAnalyzer:
-    """对语料集合做 token 频率分析，自动发现值得加入字典的重复片段。
-    同时支持 AFL 格式字典 (.dict) 的导入/导出。
+    """对语料集合做token频率分析，自动发现高频重复片段。
 
-    AFL 字典格式:
-      # comment
+    同时支持AFL格式字典 (.dict) 的导入/导出。
+
+    AFL字典格式:
+      # 注释
       key="value"
-      hex_key="hex_value"   (对于不可打印字节)
+      hex_key="hex_value"   (用于不可打印字节)
     """
 
     def __init__(self, min_frequency: int = 3):
         self._min_freq = min_frequency
-        self._tokens: Dict[str, Dict] = {}  # hex_key → {freq, raw, type}
-        self._ngram_range = (2, 16)  # token 长度范围
+        self._tokens: Dict[str, Dict] = {}  # hex_key -> {freq, raw, type}
+        self._ngram_range = (2, 16)  # token长度范围
 
     def analyze_corpus(self, samples: List[bytes]) -> Dict[str, Dict]:
-        """对样本集做 n-gram 频率分析，保留 ≥min_frequency 的 token。"""
+        """对样本集做n-gram频率分析，保留>=min_frequency的token。"""
         self._tokens.clear()
         freq: Dict[str, Counter] = defaultdict(Counter)
 
@@ -135,7 +138,7 @@ class CorpusTokenAnalyzer:
         return self._tokens
 
     def analyze_corpus_file(self, corpus_dir: str) -> int:
-        """从语料目录加载全部文件并分析。返回提取的 token 数。"""
+        """从语料目录加载全部文件并分析。返回提取的token数。"""
         samples = []
         if os.path.isdir(corpus_dir):
             for fname in os.listdir(corpus_dir):
@@ -152,7 +155,7 @@ class CorpusTokenAnalyzer:
         return len(self._tokens)
 
     def add_typed_token(self, raw: bytes, token_type: str) -> None:
-        """手工注入特定类型的 token（如协议分隔符、关键字）"""
+        """手工注入特定类型的token（如协议分隔符、关键字）。"""
         hex_key = raw.hex()
         if hex_key not in self._tokens:
             self._tokens[hex_key] = {
@@ -161,7 +164,7 @@ class CorpusTokenAnalyzer:
             }
 
     def export_afl_dict(self, output_path: str) -> int:
-        """导出为 AFL 兼容的 .dict 文件。返回写入的条目数。"""
+        """导出为AFL兼容的.dict文件。返回写入的条目数。"""
         count = 0
         with open(output_path, 'w', encoding='utf-8') as fh:
             fh.write('# Auto-generated dictionary by BinMind\n')
@@ -180,7 +183,7 @@ class CorpusTokenAnalyzer:
         return count
 
     def export_libfuzzer_dict(self) -> str:
-        """返回 LibFuzzer 风格的字典文本（可直接写入文件）"""
+        """返回LibFuzzer风格的字典文本（可直接写入文件）。"""
         lines = ['# LibFuzzer dictionary']
         for hex_key, info in self._tokens.items():
             lines.append(f'"{info["raw"].decode("ascii", errors="replace")}"')
@@ -213,11 +216,11 @@ class CorpusTokenAnalyzer:
                             'raw': raw, 'type': token_type,
                         }
         except Exception:
-            return count  # silently return partial count on parse error
+            return count  # 解析错误时静默返回部分计数
         return count
 
     def top_tokens(self, k: int = 20) -> List[Dict]:
-        """返回频率最高的前 k 个 token"""
+        """返回频率最高的前k个token。"""
         sorted_tokens = sorted(
             self._tokens.values(),
             key=lambda t: (-t['freq'], -t['length']))
@@ -229,17 +232,19 @@ class CorpusTokenAnalyzer:
 
 
 class StructuralTokenTemplates:
-    """根据常见二进制/网络协议结构生成 token 模板。
-    这些模板可直接注入 CorpusTokenAnalyzer 作为类型化 token。
+    """根据常见二进制/网络协议结构生成token模板。
+
+    可直接注入CorpusTokenAnalyzer作为类型化token。
 
     覆盖: 长度字段前缀 (1B/2B/4B LE/BE)、常见分隔符、终止符、
-    HTTP 头字段、TLS 记录类型等。"""
+    HTTP头字段、TLS记录类型等。
+    """
 
     @staticmethod
     def all_templates() -> List[Tuple[bytes, str]]:
         templates = []
 
-        # 长度字段模板 (纯结构 token，值为空，fuzzer 会在变异时填充)
+        # 长度字段模板 (纯结构token，值为空，fuzzer在变异时填充)
         templates.append((b'\x00\x00', 'len2_be'))
         templates.append((b'\x00\x00\x00\x00', 'len4_be'))
         templates.append((b'\x00\x00', 'len2_le'))
@@ -249,14 +254,14 @@ class StructuralTokenTemplates:
         for sep in (b'\r\n', b'\n', b'\t', b' ', b'\x00', b':', b'='):
             templates.append((sep, 'separator'))
 
-        # HTTP/网络协议 token
+        # HTTP/网络协议token
         for tok in (b'GET ', b'POST ', b'HTTP/1.1', b'Host: ',
                     b'Content-Type: ', b'User-Agent: ',
                     b'application/json', b'text/plain',
                     b'Connection: '):
             templates.append((tok, 'http'))
 
-        # 二进制格式 token
+        # 二进制格式token
         for tok in (b'\x00\x00\x00\x01', b'\xff\xff\xff\xff',
                     b'\x00\x01\x00\x00', b'\x00\x00\x00\x00'):
             templates.append((tok, 'binary_const'))
@@ -265,7 +270,7 @@ class StructuralTokenTemplates:
 
     @staticmethod
     def inject_into(analyzer: CorpusTokenAnalyzer) -> int:
-        """将所有模板注入一个 CorpusTokenAnalyzer 实例。返回注入数。"""
+        """将所有模板注入CorpusTokenAnalyzer实例。返回注入数。"""
         count = 0
         for raw, token_type in StructuralTokenTemplates.all_templates():
             analyzer.add_typed_token(raw, token_type)
@@ -274,13 +279,15 @@ class StructuralTokenTemplates:
 
 
 def _is_printable(data: bytes) -> bool:
-    """检查字节序列是否全部为可打印 ASCII（不含控制字符 < 0x20）"""
+    """检查字节序列是否全部为可打印ASCII（不含控制字符<0x20）。"""
     return all(0x20 <= b <= 0x7E for b in data)
 
 
 def quick_dict_from_binary(binary_path: str) -> CorpusTokenAnalyzer:
-    """便捷入口：从单个二进制文件快速生成 token 字典。
-    同时提取字符串 + 常量 + 魔数，合并返回。"""
+    """便捷入口: 从单个二进制文件快速生成token字典。
+
+    同时提取字符串+常量+魔数，合并返回。
+    """
     try:
         with open(binary_path, 'rb') as fh:
             data = fh.read()

@@ -15,7 +15,7 @@ class CodePageModification:
         self.protection_change=protection_change; self.timestamp=timestamp; self.func_triggering=func_triggering
     def to_dict(self)->Dict[str,Any]: return {'page':hex(self.page_addr),'before_hash':self.before_hash[:16],'after_hash':self.after_hash[:16],'protection':self.protection_change}
 
-# Round 2: JIT编译器签名数据库 — 检测libgccjit, LLVM ORC, V8, LuaJIT, PyPy, .NET CLR
+# 舍入 2: JIT编译器签名数据库 — 检测libgccjit, LLVM ORC, V8, LuaJIT, PyPy,.NET CLR
 _JIT_SIGNATURES = [
     ('libgccjit', ['gcc_jit_context_new_binary_op', 'gcc_jit_block_add_eval']),
     ('llvm_orc', ['llvm_orc_registerJITLoaderPerObject', 'LLJIT_construct']),
@@ -57,15 +57,15 @@ class SMCDynamicAnalyzer:
 
     # --- Round 2: SHA-256页面完整性基线 + 差异可视化 ---
     def compute_page_integrity_baseline(self, binary_path: str) -> Dict[int, str]:
-        """计算所有可执行页面的SHA-256完整性基线。
-        在二进制加载后立即调用，后续每次detect_modification与此基线比对。"""
+        """计算所有可执行页面的SHA-256完整性基线
+        在二进制加载后立即调用，后续每次detect_modification与此基线比对"""
         baseline = {}
         for addr, data in self._code_pages.items():
             baseline[addr] = hashlib.sha256(data).hexdigest()
         return baseline
 
     def verify_page_integrity(self, baseline: Dict[int, str]) -> List[str]:
-        """验证当前页面哈希是否与基线一致。返回不一致的页面地址列表。"""
+        """验证当前页面哈希是否与基线一致。返回不一致的页面地址列表"""
         violations = []
         for addr, expected_hash in baseline.items():
             current = self._code_pages.get(addr)
@@ -76,8 +76,8 @@ class SMCDynamicAnalyzer:
         return violations
 
     def diff_pages(self) -> List[PageDiff]:
-        """生成修改前后的页面差异 — 字节级变更记录，用于可视化分析。
-        每个PageDiff包含变更字节计数和具体位置列表（前20个差异）。"""
+        """生成修改前后的页面差异 — 字节级变更记录，用于可视化分析
+        每个PageDiff包含变更字节计数和具体位置列表（前20个差异）"""
         diffs = []
         for mod in self._modifications:
             before = self._page_snapshots.get(mod.page_addr, b'')
@@ -100,8 +100,8 @@ class SMCDynamicAnalyzer:
         return diffs
 
     def detect_jit_compiler(self, binary_path: str) -> List[Dict[str, Any]]:
-        """通过导出符号名和模块名检测JIT编译器引擎。
-        匹配预定义的JIT引擎签名数据库。"""
+        """通过导出符号名和模块名检测JIT编译器引擎
+        匹配预定义的JIT引擎签名数据库"""
         findings = []
         try:
             with open(binary_path, 'rb') as fh:

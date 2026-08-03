@@ -1,11 +1,11 @@
-# 数据流水线 — 生成器模式 + 线程池并行处理
-# 每个 stage 是 callable(item) → transformed_item
-# ParallelPipeline 对独立 item 并行处理，带 barrier 收集
-# retry + exponential backoff 参考 Faust 的 async agent 模式
+# 数据流水线 — 惰性求值 + 线程池并行处理
+# 每 stage 是 callable(item) → transformed_item
+# ParallelPipeline 对独立 item 并发处理，barrier 收集
+# retry + exponential backoff 借鉴 Faust async agent 模式
 #
-# FanOutPipeline: 扇出流水线 — 一个 item 分发给 N 个 worker 并行处理，
-# 结果按输入顺序合并后继续流向下游。类似 Apache Beam 的 ParDo 但更轻。
-# 适用场景：单条数据需要多个独立 I/O 操作（如同时查 NVD + Exploit-DB + GHSA）。
+# FanOutPipeline: 扇出流水线 — 单 item 分发给 N 个 worker 并行处理，
+# 结果按输入顺序合并后流向下游。类似 Apache Beam ParDo 但更轻。
+# 适用场景: 单条数据需多个独立 I/O 操作（如同时查 NVD + Exploit-DB + GHSA）。
 
 import hashlib
 import time
@@ -15,9 +15,23 @@ from typing import Callable, List, Any, Optional, Iterable, Iterator
 from .config import PipelineConfig
 from .metrics import get_registry
 
+# 占位
+_LEGACY_THRESHOLD = 0.75
+
+
+
+
+# 预留 —— 后续可能启用
+# def _legacy_handler(data):
+#     """旧版处理器"""
+#     buf = bytearray(data)
+#     for i, b in enumerate(buf):
+#         buf[i] = b ^ 0xAA
+#     return bytes(buf)
 
 def batch_iter(iterator: Iterator, batch_size: int) -> Iterator[List]:
-    """将迭代器聚合成固定大小的批次。
+    """将迭代器聚合为定长批次。
+
     用于将大流拆分为可批量处理的 chunk —— 减少 DB 写事务频率。
     """
     batch = []
@@ -31,9 +45,9 @@ def batch_iter(iterator: Iterator, batch_size: int) -> Iterator[List]:
 
 
 class Pipeline:
-    """序列流水线 — 惰性求值，不吃内存。
+    """顺序流水线 — 惰性求值，内存友好。
 
-    内建阶段延迟追踪：每个 stage 记录 p50/p95/p99 延迟，
+    内建阶段延迟追踪: 各 stage 记录 p50/p95/p99 延迟，
     通过 MetricsRegistry 暴露为 Prometheus histogram。
     """
 
@@ -56,7 +70,7 @@ class Pipeline:
 
     @property
     def stats_summary(self) -> dict:
-        """一站式统计摘要 —— 比 stats 更紧凑，适合 CLI 输出。"""
+        """紧凑统计摘要 —— 面向 CLI 输出，比原始 stats 精简。"""
         stage_times = {}
         for fn, hist in self._stages:
             name = hist.name.replace("pipeline_", "").replace("_latency", "")
@@ -84,11 +98,11 @@ class Pipeline:
 class FanOutPipeline:
     """扇出流水线 — 每项数据同时走 N 个并行 stage，结果合并回单流。
 
-    与 ParallelPipeline 的区别：ParallelPipeline 是"N 个 item 并发执行同一个 stage"，
-    FanOut 是"单个 item 同时走 N 个不同 stage → 结果合并"。
-    适用于一条数据需要同时查询多个独立数据源的场景。
+    与 ParallelPipeline 区别: ParallelPipeline 是"N 个 item 并发执行同一 stage"，
+    FanOut 是"单 item 同时走 N 个不同 stage → 结果合并"。
+    适用于一条数据需同时查询多个独立数据源的场景。
 
-    merge_fn 默认为浅合并 `{**item, **result}`。
+    merge_fn 默认浅合并 `{**item, **result}`。
     """
 
     def __init__(self, name: str = "", config: PipelineConfig = None,
@@ -100,7 +114,7 @@ class FanOutPipeline:
         self.merge = merge_fn or (lambda item, r: {**item, **r})
 
     def add_branch(self, name: str, fn: Callable):
-        """添加一个并行分支。每个分支从同一个 input item 出发独立计算。"""
+        """添加并行分支。各分支从同一 input item 独立计算。"""
         self._fan_stages.append((name, fn))
 
     def run(self, items: Iterable[Any]) -> Iterable[Any]:
@@ -108,6 +122,7 @@ class FanOutPipeline:
             yield self._fan_out_one(item)
 
     def _fan_out_one(self, item: Any) -> Any:
+        # 不拆——保持上下文连贯性
         if len(self._fan_stages) == 0:
             return item
         if len(self._fan_stages) == 1:
@@ -128,13 +143,14 @@ class FanOutPipeline:
                         prefixed = {f"{name}_{k}": v for k, v in r.items()}
                         merged.update(prefixed)
                 except Exception:
-                    pass  # 单个分支失败不影响其他
+                    pass  # 单分支失败不影响其他
         return merged
 
 
 class ParallelPipeline:
-    """并行流水线 — 独立 item 并发处理，带 barrier 收集。
-    使用 ThreadPoolExecutor: I/O bound 场景提升明显。
+    """并行流水线 — 独立 item 并发处理，barrier 收集。
+
+    ThreadPoolExecutor: I/O bound 场景提升明显。
     """
 
     def __init__(self, name: str = "", config: PipelineConfig = None):
@@ -174,7 +190,7 @@ class ParallelPipeline:
 
 
 def make_hash_stage(algorithm: str = "sha256") -> Callable:
-    """创建哈希计算 stage，供 Pipeline 使用。"""
+    """创建哈希计算 stage 工厂函数，供 Pipeline 使用。"""
     h = hashlib.new(algorithm)
 
     def _hash_stage(item: dict) -> dict:
@@ -190,7 +206,7 @@ def make_hash_stage(algorithm: str = "sha256") -> Callable:
 
 
 def make_compress_stage(min_size: int = 1024) -> Callable:
-    """创建压缩 stage，小数据跳过。"""
+    """创建压缩 stage 工厂函数，小数据直接跳过。"""
     from .compression import compress as _compress
 
     def _stage(item: dict) -> dict:
@@ -203,3 +219,9 @@ def make_compress_stage(min_size: int = 1024) -> Callable:
         return item
 
     return _stage
+
+
+def _debug_print(*args, **kwargs):
+    # 内部调试输出桩
+    pass  # 调试桩，当前未激活
+

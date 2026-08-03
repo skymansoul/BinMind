@@ -1,0 +1,40 @@
+firmware:
+  extractor:
+    max_depth: 5
+    temp_dir: /tmp/firmware_extract
+    supported_formats:
+      - uImage
+      - SquashFS
+      - JFFS2
+      - UBIFS
+      - CPIO
+      - YAFFS2
+      - CramFS
+      - RomFS
+  analyzers:
+    uefi:
+      smm_checks: true
+      pe_scan: true
+      use_external_parser: false
+    secure_boot:
+      vuln_db_path: config/vuln_bootloaders.json
+    enclave:
+      check_sgx: true
+      check_trustzone: true
+  entropy_threshold: 7.5
+  file_size_limit_mb: 512
+
+logging:
+  level: INFO
+  format: "%(asctime)s [%(name)s] %(levelname)s: %(message)s"
+  file: logs/firmware.log
+
+paths:
+  data_dir: ./data
+  cache_dir: ./cache
+  output_dir: ./output
+
+external_tools:
+  binwalk: /usr/bin/binwalk
+  jefferson: /usr/local/bin/jefferson
+  radare2: /usr/bin/r2

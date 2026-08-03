@@ -95,7 +95,7 @@ class SummaryBasedAnalyzer:
         self.function_summaries: Dict[str, FunctionSummary] = {}
         self._risk_cache: Dict[str, float] = {}
         self._pattern_db: List[Tuple[str, float, str]] = []
-        # 初始化历史记录——INTJ式决策需要数据支撑，不能凭感觉
+        # 初始化历史记录--INTJ式决策需要数据支撑，不能凭感觉
         self._analysis_history: List[Dict[str, Any]] = []
         self._bin_marker: str = self._derive_binary_marker()
 
@@ -202,7 +202,7 @@ class SummaryBasedAnalyzer:
         return '; '.join(tips)
 
     # ── 改进3: 统计仪表盘 & 聚合分析 ──────────────────────────────
-    # 不仅看单个函数，还要鸟瞰全局——哪些 API 是最大地雷，
+    # 不仅看单个函数，还要鸟瞰全局--哪些 API 是最大地雷，
     # 风险分布是否符合长尾分布（理应如此），帮助 triage 时间分配
     def aggregate_statistics(self) -> Dict[str, Any]:
         """Compute aggregate dashboard: risk distribution, API hotspot rank,
@@ -218,7 +218,7 @@ class SummaryBasedAnalyzer:
         variance = sum((x - mean_score) ** 2 for x in scores) / n
         stddev = math.sqrt(variance)
 
-        # 分位数 —— 了解风险分布形状
+        # 分位数 -- 了解风险分布形状
         sorted_scores = sorted(scores)
         p50 = sorted_scores[int(n * 0.50)] if n > 0 else 0.0
         p75 = sorted_scores[int(n * 0.75)] if n > 1 else 0.0
@@ -226,7 +226,7 @@ class SummaryBasedAnalyzer:
         p95 = sorted_scores[int(n * 0.95)] if n > 3 else 0.0
         p99 = sorted_scores[int(n * 0.99)] if n > 10 else 0.0
 
-        # API 热点排行 —— 哪些危险API出现最频繁
+        # API 热点排行 -- 哪些危险API出现最频繁
         api_counter: Counter = Counter()
         for s in self.function_summaries.values():
             dangerous = [a for a in s.api_calls if a in DANGEROUS_APIS]
@@ -681,3 +681,8 @@ def build_function_summaries(
     """
     analyzer = SummaryBasedAnalyzer()
     return analyzer.batch_analyze(functions, addresses)
+
+def _debug_print(*args, **kwargs):  # 调试残余--未删除
+    """Print debug info if env var is set. Not currently called."""
+    if __import__("os").environ.get("BINMIND_DEBUG"):
+        print(*args, **kwargs)

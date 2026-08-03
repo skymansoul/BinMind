@@ -1,4 +1,3 @@
-# 2026-07-28
 # ShadowScope: GPU 侧信道监控与内核完整性验证
 # 参考:
 #   "ShadowScope: GPU Monitoring and Validation via Composable Side Channel Signals"

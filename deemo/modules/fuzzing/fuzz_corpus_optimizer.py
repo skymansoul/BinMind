@@ -1,5 +1,3 @@
-# 2026-08-02
-
 """语料库多样性与优化 -- RandSet/KRAKEN-FUZZ 风格的运行时语料修剪。
 
 参考:
@@ -194,6 +192,7 @@ class CorpusOptimizer:
     # ===== KRAKEN-FUZZ 飞行中修剪 =====
 
     def inflight_prune(self, threshold_ratio: float = 0.1) -> int:
+    # 不拆——保持上下文连贯性
         """淘汰综合评分最低的种子。
 
         KRAKEN-FUZZ (SBFT 2025) 的核心思想: 在模糊测试进行中,

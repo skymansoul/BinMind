@@ -1,4 +1,4 @@
-"""Side channel evaluation framework -- CPA, t-test, leakage assessment."""
+"""侧信道评估框架——CPA、t-test、泄漏评估。"""
 
 import logging
 import math
@@ -60,18 +60,18 @@ class BandwidthCalculator:
     @staticmethod
     def estimate(samples_a: List[float], samples_b: List[float],
                  sample_rate_hz: float = 100.0) -> ChannelBandwidth:
-        """Estimate information leakage bandwidth given two distributions."""
+        """给定两个分布，估算信息泄漏带宽。"""
         if len(samples_a) < 10 or len(samples_b) < 10:
             return ChannelBandwidth()
-        # Mutual information approximation via histograms
+        # 基于直方图的互信息近似估计
         all_samples = samples_a + samples_b
         bins = min(50, len(all_samples) // 5)
         hist_a, edges = np.histogram(samples_a, bins=bins)
         hist_b, _ = np.histogram(samples_b, bins=edges)
-        # Normalize
+        # 归一化
         pa = hist_a / max(hist_a.sum(), 1)
         pb = hist_b / max(hist_b.sum(), 1)
-        # Mutual information: KL divergence between joint and product of marginals
+        # 互信息：联合分布与边际分布乘积间的 KL 散度
         mi = 0.0
         for i in range(len(edges) - 1):
             if pa[i] > 0 and pb[i] > 0:
@@ -94,17 +94,17 @@ class BandwidthCalculator:
         )
 
 
-# SideChannelEvaluator -- main entry
+# SideChannelEvaluator -- 主入口
 
 class TimingMeasurer:
-    """High-resolution timing measurement helper."""
+    """高分辨率时序测量辅助工具。"""
 
     def __init__(self, warmup: int = 5):
         self._warmup = warmup
         self._inner = None
 
     def measure(self, fn: Callable[[], Any], iterations: int = 100) -> TimingMeasurement:
-        """Time a function many times, discarding warmup."""
+        """多次计时函数调用，舍弃预热样本。"""
         for _ in range(self._warmup):
             fn()
 
@@ -123,9 +123,9 @@ class TimingMeasurer:
 
 
 class SideChannelEvaluator:
-    """Comprehensive side-channel evaluation: CPA, Welch's t-test, leakage assessment.
+    """综合侧信道评估：CPA、Welch t-test、泄漏评估。
 
-    Usage::
+    用法::
 
         evaluator = SideChannelEvaluator()
         result = evaluator.evaluate(crypto_impl, traces=power_traces, plaintexts=plaintexts)
@@ -134,15 +134,15 @@ class SideChannelEvaluator:
     def __init__(self):
         self._measurer = TimingMeasurer()
 
-    # -- main entry -----------------------------------------------------------
+    # -- 主入口 -----------------------------------------------------------------
 
     def evaluate(self, impl: Any, **kwargs) -> List[EvaluationResult]:
-        """Run all relevant tests on the given implementation.
+        """对给定实现运行所有相关测试。
 
-        `impl`: callable(key, plaintext) -> ciphertext, or a path to instrument.
-        `traces`: Optional list of power/EM traces (np.ndarray).
-        `plaintexts`: List of plaintext bytes for CPA.
-        `keys`: List of key bytes (for CPA, one is the true key).
+        `impl`: 可调用对象(key, plaintext) -> ciphertext，或待插桩路径。
+        `traces`: 可选功耗/EM 轨迹列表 (np.ndarray)。
+        `plaintexts`: CPA 用明文列表。
+        `keys`: CPA 用密钥列表（其中一个为真实密钥）。
         """
         traces = kwargs.get("traces")
         plaintexts = kwargs.get("plaintexts")
@@ -150,17 +150,17 @@ class SideChannelEvaluator:
 
         results: List[EvaluationResult] = []
 
-        # 1. Welch's t-test (TVLA-style fixed vs. random)
+        # 1. Welch t 检验 (TVLA 风格：固定 vs 随机)
         if callable(impl):
             t_result = self._welch_ttest(impl, kwargs.get("trials", 500))
             results.append(t_result)
 
-        # 2. CPA (Correlation Power Analysis)
+        # 2. 相关功耗分析 (CPA)
         if traces is not None and plaintexts is not None:
             cpa_result = self._cpa(np.array(traces), plaintexts, keys)
             results.append(cpa_result)
 
-        # 3. Bandwidth estimation
+        # 3. 带宽估算
         if len(results) > 0:
             bw = self._estimate_bandwidth(impl, kwargs.get("trials", 200))
             results[0].bandwidth = bw
@@ -173,14 +173,14 @@ class SideChannelEvaluator:
 
         return results
 
-    # -- Welch's t-test (TVLA) ------------------------------------------------
+    # -- Welch t-test（TVLA）-------------------------------------------------
 
     def _welch_ttest(self, op: Callable, trials: int = 500) -> EvaluationResult:
-        """Non-specific (fixed vs. random) t-test.
+        """非特定（fixed vs. random）t-test。
 
         增强：增加互信息（MI）作为辅助泄漏指标。
-        单纯 t-test 可能漏掉非线性依赖关系（如 cache 冲突模式），
-        MI 能捕捉这类非单调关联。
+        单纯 t-test 可能漏掉非线性依赖关系（如缓存冲突模式），
+        MI 可捕捉此类非单调关联。
         """
         fixed_times = []
         random_times = []
@@ -196,7 +196,7 @@ class SideChannelEvaluator:
             op(random_input)
             random_times.append(time.perf_counter_ns() - t0)
 
-        # Compute Welch's t
+        # 计算 Welch t 统计量
         n1, n2 = len(fixed_times), len(random_times)
         m1 = statistics.mean(fixed_times)
         m2 = statistics.mean(random_times)
@@ -206,12 +206,12 @@ class SideChannelEvaluator:
         se = math.sqrt(v1 / n1 + v2 / n2)
         t_stat = (m1 - m2) / se if se > 0 else 0
 
-        # Degrees of freedom (Welch-Satterthwaite)
+        # 自由度 (Welch-Satterthwaite)
         num = (v1 / n1 + v2 / n2) ** 2
         den = (v1 / n1) ** 2 / (n1 - 1) + (v2 / n2) ** 2 / (n2 - 1)
         df = num / den if den > 0 else 1
 
-        # Two-tailed p-value approximation
+        # 双尾 p 值近似
         x = df / (df + t_stat * t_stat)
         p = max(0.0, min(1.0, 2.0 * (1.0 - _incomplete_beta(x, df / 2, 0.5))))
 
@@ -234,18 +234,18 @@ class SideChannelEvaluator:
             },
         )
 
-    # -- CPA ------------------------------------------------------------------
+    # -- CPA --------------------------------------------------------------------
 
     def _cpa(self, traces: np.ndarray, plaintexts: List[int],
              keys: Optional[List[int]] = None) -> EvaluationResult:
-        """Correlation Power Analysis using Hamming weight model.
+        """基于汉明权重模型的相关功耗分析。
 
-        traces: shape (n_traces, n_samples)
-        plaintexts: list of plaintext byte values
-        keys: optional list of key candidates (default 0..255)
+        traces: 形状 (n_traces, n_samples)
+        plaintexts: 明文字节值列表
+        keys: 可选密钥候选列表（默认 0..255）
 
         增强：使用 k-fold 交叉验证避免 CPA 过拟合。
-        对于小样本量（< 200 traces），单次 CPA 可能产生虚假高相关。
+        小样本量（< 200 traces）时，单次 CPA 可能产生虚假高相关。
         """
         n_traces, n_samples = traces.shape
         key_candidates = keys or list(range(256))
@@ -258,7 +258,7 @@ class SideChannelEvaluator:
             n_folds = 1
 
         for kg in key_candidates:
-            # Hamming weight of S-box(pt XOR key_guess)
+            # S盒(pt XOR key_guess)的汉明权重
             predictions = np.array([
                 bin(p ^ kg).count("1") for p in plaintexts[:n_traces]
             ], dtype=np.float64)
@@ -300,7 +300,7 @@ class SideChannelEvaluator:
             },
         )
 
-    # -- bandwidth estimation -------------------------------------------------
+    # -- 带宽估算 ---------------------------------------------------------------
 
     def _estimate_bandwidth(self, op: Callable, trials: int = 200) -> ChannelBandwidth:
         try:
@@ -319,15 +319,15 @@ class SideChannelEvaluator:
         except Exception:
             return ChannelBandwidth()
 
-    # -- SNR estimation per time sample ----------------------------------------
-    # 参考: 对每条 trace 的每个采样点估计信噪比，用于定位泄漏点。
+    # -- 逐时点 SNR 估计 --------------------------------------------------------
+    # 对每条 trace 的每个采样点估计信噪比，用于定位泄漏点。
 
     @staticmethod
     def estimate_snr_per_sample(traces: np.ndarray, labels: List[int]) -> np.ndarray:
         """按时间采样点计算信噪比。
 
         SNR[t] = Var(组间均值)[t] / 平均(组内方差)[t]
-        返回 shape (n_samples,) 的 SNR 数组。
+        返回形状 (n_samples,) 的 SNR 数组。
         """
         n_traces, n_samples = traces.shape
         unique_labels = sorted(set(labels))
@@ -346,15 +346,15 @@ class SideChannelEvaluator:
         return snr
 
 
-# Helper: incomplete beta
+# 辅助函数：不完全 Beta 分布近似
 
 def _incomplete_beta(x: float, a: float, b: float) -> float:
-    """Incomplete beta function approximation via continued fraction."""
+    """不完全 Beta 函数连分数近似。"""
     if x <= 0:
         return 0.0
     if x >= 1:
         return 1.0
-    # Regularized via simple approximation
+    # 简单近似正则化
     log_beta = math.lgamma(a) + math.lgamma(b) - math.lgamma(a + b)
     front = math.exp(math.log(x) * a + math.log(1 - x) * b - log_beta) / a
     return min(1.0, max(0.0, front))

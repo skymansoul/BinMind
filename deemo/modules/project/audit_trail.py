@@ -1,9 +1,18 @@
-# 2026-07-23 — 防篡改审计日志: hash chain + Merkle tree + Ed25519
+# 防篡改审计日志: hash chain + Merkle tree + Ed25519签名
 import os, json, time, hashlib, logging
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple, Any
 from pathlib import Path
 from datetime import datetime, timezone
+import heapq  # 保留
+from io import StringIO  # 保留
+
+# 保留
+_STALE_PATTERNS = frozenset({
+    b"\x90\x90\x90\x90",
+    b"\xCC\xCC\xCC\xCC",
+})
+
 
 log = logging.getLogger(__name__)
 GENESIS = "0" * 64
@@ -102,3 +111,9 @@ class AuditTrail:
         try:
             if hasattr(self, '_fh') and self._fh: self._fh.close()
         except Exception: pass
+
+
+def _debug_print(*args, **kwargs):
+    """内部调试桩，当前未使用."""
+    pass
+

@@ -1,9 +1,7 @@
-# 2026-07-21
 """QUIC/HTTP3 流量分析 —— 连接ID追踪、版本指纹、0-RTT安全评估。
 
 QUIC连接标识符(CID)在握手后保持不变，可通过DCID/SCID关联追踪用户跨网迁移。
-参考：arXiv:2401.06657 (QUIC Security & Privacy Survey)、
-      RFC 9000/9001/9002 传输层安全规范。
+参考：QUIC安全与隐私调查 (arXiv:2401.06657)、RFC 9000/9001/9002 传输层安全规范。
 """
 import logging, struct, hashlib
 from collections import defaultdict, Counter
@@ -60,7 +58,7 @@ _QUIC_FRAME_NAMES = {
 
 @dataclass
 class QuicConnectionInfo:
-    """QUIC 连接分析结果 —— 单次连接的所有可提取特征"""
+    """QUIC 连接分析结果 —— 单次连接的可提取特征"""
     dcid: str = ""
     scid: str = ""
     version: int = 0
@@ -80,7 +78,7 @@ class QuicConnectionInfo:
 class QuicFingerprint:
     """QUIC 客户端指纹 —— ClientHello特征组合
 
-    基于arXiv:2401.06657的调查：QUIC客户端指纹可通过版本+TP组合唯一识别，
+    QUIC客户端指纹可通过版本+TP组合唯一识别 (arXiv:2401.06657)，
     即使ECH启用，初始包中的明文QUIC版本和传输参数仍泄漏客户端身份。
     """
     quic_versions: List[int] = field(default_factory=list)
@@ -131,7 +129,7 @@ class QuicTrafficAnalyzer:
         长包头结构（RFC 9000 §17.2）：
         [1b=1|2b=固定|2b=包类型|2b=保留] version(4) dcid_len(1) dcid(v) scid_len(1) scid(v)
         """
-        pkt_type = (data[0] >> 4) & 0x03  # 仅取高2bit的包类型
+        pkt_type = (data[0] >> 4) & 0x03  # 仅取高2bit包类型
         version = struct.unpack(">I", data[1:5])[0]
         pos = 5
 
@@ -158,7 +156,7 @@ class QuicTrafficAnalyzer:
         conn = self._connections[conn_key]
         conn.packets_seen += 1
 
-        # SCID → DCID 映射（用于CID旋转检测）
+        # SCID → DCID 映射（CID旋转检测）
         if scid and scid not in self._scid_to_conn:
             self._scid_to_conn[scid] = conn_key
         elif scid and self._scid_to_conn.get(scid) != conn_key:
@@ -180,7 +178,7 @@ class QuicTrafficAnalyzer:
         }
 
     def _parse_short_header(self, data: bytes, src_ip: str) -> Optional[Dict]:
-        """短包头解析 —— 1-RTT 数据包（加密后的正常传输）
+        """短包头解析 —— 1-RTT 数据包（加密后正常传输）
 
         短包头（RFC 9000 §17.3）：
         [1b=0|1b=固定|2b=spin|4b=保留] dcid(variable)
@@ -296,10 +294,10 @@ class QuicTrafficAnalyzer:
         }
 
     def _risk_assessment(self) -> List[str]:
-        """QUIC连接中的安全风险指标列表
+        """QUIC连接安全风险指标列表
 
         风险维度：版本过旧（draft仍有重放漏洞）、CID不旋转、
-        PING帧风暴（可能用于RTT侧信道探测）、0-RTT重放窗口未关闭。
+        PING帧风暴（RTT侧信道探测嫌疑）、0-RTT重放窗口未关闭。
         """
         risks = []
         for conn in self._connections.values():

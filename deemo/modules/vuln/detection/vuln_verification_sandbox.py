@@ -1,6 +1,6 @@
-# 2026-07-28 — 漏洞验证沙箱
-# PoC生成 + 受控环境执行 + 崩溃分类，验证漏洞可复现性
-# 增强：信号映射表补全SIGBUS/SIGFPE/SIGPIPE + 沙箱后端自动fallback检测
+# 漏洞验证沙箱
+# PoC生成 + 受控执行 + 崩溃分类，确认漏洞可复现性
+# 增强项：信号映射表补全SIGBUS/SIGFPE/SIGPIPE + 沙箱后端自动fallback检测
 
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
@@ -21,7 +21,7 @@ class SandboxBackend(str, Enum):
 
 @dataclass
 class VerificationResult:
-    """单次漏洞验证的执行结果"""
+    """单次漏洞验证执行结果。"""
     vulnerable: bool
     cve_id: str = ""
     vuln_type: str = ""
@@ -30,9 +30,9 @@ class VerificationResult:
     stdout: str = ""
     stderr: str = ""
     runtime_seconds: float = 0.0
-    crash_type: str = ""       # SIGSEGV, SIGABRT, SIGILL, etc.
-    crash_address: str = ""    # 崩溃地址（若能解析）
-    sanitizer_output: str = ""  # ASAN/UBSAN检测输出
+    crash_type: str = ""       # 崩溃信号类型（SIGSEGV/SIGABRT/SIGILL等）
+    crash_address: str = ""    # 崩溃地址（若可解析）
+    sanitizer_output: str = ""  # ASAN/UBSAN检测输出内容
     poc_payload: str = ""
     details: Dict = field(default_factory=dict)
 
@@ -42,12 +42,12 @@ class VerificationResult:
 class PoCGenerator:
     """按漏洞类型生成测试payload。
 
-    每种类型的payload都是经实际exploit验证的最小可触发输入。
-    不生成完整的exploit，仅做脆弱性确认。
+    各类型payload均为经验证的最小可触发输入。
+    仅做脆弱性确认，不生成完整exploit。
     """
 
     _TEMPLATES = {
-        "buffer_overflow": "A" * 2048,  # 长A串，触发栈/堆溢出
+        "buffer_overflow": "A" * 2048,  # 长A串触发栈/堆溢出
         "stack_overflow": "A" * 4096,
         "heap_overflow": "B" * 1024,
         "format_string": "%x." * 100 + "%n",
@@ -62,7 +62,7 @@ class PoCGenerator:
         "null_deref": "",
         "integer_overflow": "2147483648",  # INT_MAX + 1
         "use_after_free": "A" * 16 + "\x00" * 16,
-        "race_condition": "",  # 需并发测试，无法用静态payload
+        "race_condition": "",  # 需并发测试，静态payload不可用
         "deserialization": '{"__class__":"os.system","args":"id"}',
         "ssrf": "http://169.254.169.254/latest/meta-data/",
         "xxe": '<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY xxe SYSTEM "file:///etc/passwd">]><root>&xxe;</root>',
@@ -70,26 +70,26 @@ class PoCGenerator:
 
     @classmethod
     def generate(cls, vuln_type: str, size: int = 0) -> str:
-        """根据漏洞类型生成PoC payload。"""
+        """按漏洞类型生成PoC payload。"""
         vtype = vuln_type.lower().replace("-", "_").replace(" ", "_")
-        # 精确匹配优先
+        # 精确匹配优先于模糊匹配
         if vtype in cls._TEMPLATES:
             payload = cls._TEMPLATES[vtype]
         else:
-            # 模糊匹配
+            # 模糊匹配——子串包含判断
             for key, val in cls._TEMPLATES.items():
                 if key in vtype or vtype in key:
                     payload = val
                     break
             else:
-                payload = "A" * 256  # 通用fuzz payload
+                payload = "A" * 256  # 通用fuzz回退payload
         if size > 0 and isinstance(payload, str) and size > len(payload):
             payload = payload * (size // len(payload) + 1)
         return payload[:size] if size > 0 and size < len(payload) else payload
 
     @classmethod
     def generate_env(cls, vuln_type: str) -> Dict[str, str]:
-        """生成特定漏洞类型的环境变量注入"""
+        """生成特定漏洞类型对应的环境变量注入。"""
         env = {}
         if "overflow" in vuln_type.lower():
             env["MALLOC_CHECK_"] = "3"
@@ -119,10 +119,10 @@ _CRASH_ADDR_RE = re.compile(r'(?:at|address)\s+(0x[0-9a-fA-F]+)', re.IGNORECASE)
 
 
 def analyze_crash(stderr: str, exit_code: int) -> Tuple[str, str]:
-    """从stderr和退出码推断崩溃类型。
+    """从stderr与退出码推断崩溃类型。
 
-    返回 (crash_type, crash_address)。
-    对比简单的signum检查，此函数能识别ASAN/UBSAN的加固检测输出。
+    返回 (崩溃类型, 崩溃地址)。
+    相比简单signum检查，可识别ASAN/UBSAN加固检测输出。
     """
     if exit_code == 0 and not stderr.strip():
         return "NO_CRASH", ""
@@ -145,10 +145,10 @@ def analyze_crash(stderr: str, exit_code: int) -> Tuple[str, str]:
 # ==== 沙箱执行器 ====
 
 class SandboxRunner:
-    """受控环境下执行二进制+payload，捕获崩溃信息。
+    """受控环境执行二进制+payload，捕获崩溃信息。
 
     支持subprocess/docker/gvisor三种后端。
-    docker/gvisor需要宿主机预装对应运行时。
+    docker/gvisor需宿主机预装对应运行时。
     """
 
     def __init__(self, backend: SandboxBackend = SandboxBackend.SUBPROCESS,
@@ -167,7 +167,7 @@ class SandboxRunner:
 
     def run(self, binary_path: str, args: List[str] = None,
             stdin_input: str = "", env: Dict[str, str] = None) -> VerificationResult:
-        """在沙箱中执行二进制并收集结果。"""
+        """沙箱内执行二进制并收集执行结果。"""
         start_time = time.time()
         cmd = self._build_command(binary_path, args or [])
         result = VerificationResult(vulnerable=False)
@@ -230,11 +230,11 @@ def verify_vulnerability(binary_path: str, cve_id: str = "",
                          backend: SandboxBackend = SandboxBackend.SUBPROCESS,
                          custom_payload: str = "",
                          timeout: int = 10) -> VerificationResult:
-    """单次漏洞验证的完整流程：
+    """单次漏洞验证完整流程：
 
-    1. 生成对应类型的PoC payload
-    2. 在沙箱中执行二进制
-    3. 分析stderr/exit_code分类崩溃
+    1. 生成对应类型PoC payload
+    2. 沙箱中执行二进制
+    3. 分析stderr/exit_code进行崩溃分类
     4. 返回VerificationResult
     """
     runner = SandboxRunner(backend=backend, timeout=timeout)
@@ -246,7 +246,7 @@ def verify_vulnerability(binary_path: str, cve_id: str = "",
     result.vuln_type = vuln_type
     result.poc_payload = payload[:200]
 
-    # 有崩溃即标记为脆弱
+    # 检测到崩溃即判定为脆弱
     if result.crash_detected:
         result.vulnerable = True
 
@@ -255,7 +255,7 @@ def verify_vulnerability(binary_path: str, cve_id: str = "",
 
 def batch_verify(binary_path: str, vuln_list: List[Dict],
                  backend: SandboxBackend = SandboxBackend.SUBPROCESS) -> List[VerificationResult]:
-    """批量验证多个漏洞。每个漏洞尝试3种payload变体。"""
+    """批量验证多个漏洞——每个漏洞尝试3种payload变体。"""
     results = []
     for v in vuln_list:
         cid = v.get("cve_id", v.get("id", ""))
@@ -274,7 +274,7 @@ def batch_verify(binary_path: str, vuln_list: List[Dict],
 
 
 def crash_report(result: VerificationResult) -> str:
-    """生成崩溃报告字符串。"""
+    """生成崩溃报告文本。"""
     lines = [
         f"=== Crash Report: {result.cve_id or 'unknown'} ===",
         f"  Type       : {result.crash_type}",

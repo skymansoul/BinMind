@@ -306,7 +306,7 @@ class PseudocodeRenamer:
         re.compile(r'^unk_[0-9A-Fa-f]+$'),
     ]
 
-    # 调用点模式: func_name(...)  —— 用于在改名后同步替换调用处
+    # 调用点模式: func_name(...) -- 用于在改名后同步替换调用处
     _CALL_PATTERN = re.compile(
         r'(?<!\w)(sub_[0-9A-Fa-f]+)\s*\(',
     )
@@ -352,7 +352,7 @@ class PseudocodeRenamer:
         # First pass: rename functions
         result = self._rename_functions(result, function_map)
 
-        # 1.5 pass: rename function call sites —— 确保调用点也替换为新名
+        # 1.5 pass: rename function call sites -- 确保调用点也替换为新名
         result = self._rename_function_callsites(result)
 
         # Second pass: rename variables

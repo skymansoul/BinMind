@@ -1,15 +1,15 @@
-# 2026-07-17
-# binary_info — PE/ELF/Mach-O 元数据提取，纯 struct 解析无外部依赖
-# 设计取舍：不依赖 pefile/elftools — 目标环境可能无 pip 网络访问
-# 仅解析分析所需的关键字段，不追求 100% 格式覆盖率
+# binary_info — PE/ELF/Mach-O 元数据解析，纯 struct 零外部依赖
+# 目标环境可能无 pip，因此不依赖 pefile/elftools
+# 仅提取分析所需的核心字段，不追求全格式覆盖
 
 import os
 import struct
 import hashlib
 from datetime import datetime
 from typing import Dict, List, Optional
+from itertools import islice
 
-# ===== PE 常量 =====
+# ===== PE 常量表 =====
 _IMAGE_DOS_SIGNATURE = 0x5A4D
 _IMAGE_NT_SIGNATURE = 0x00004550
 _IMAGE_FILE_MACHINE_I386 = 0x014C
@@ -37,7 +37,7 @@ _IMAGE_SUBSYSTEM_MAP = {
     14: "XBOX", 16: "WINDOWS_BOOT_APPLICATION",
 }
 
-# Section characteristics
+# PE 节区属性位掩码
 _SECTION_CHAR_MAP = {
     0x00000020: "CNT_CODE", 0x00000040: "CNT_INITIALIZED_DATA",
     0x00000080: "CNT_UNINITIALIZED_DATA", 0x02000000: "MEM_DISCARDABLE",
@@ -46,7 +46,7 @@ _SECTION_CHAR_MAP = {
     0x40000000: "MEM_READ", 0x80000000: "MEM_WRITE",
 }
 
-# ===== ELF 常量 =====
+# ===== ELF 常量表 =====
 _ELF_MAGIC = b'\x7fELF'
 _ELF_CLASS_32 = 1
 _ELF_CLASS_64 = 2
@@ -76,7 +76,7 @@ _PT_NOTE = 4
 _PT_GNU_RELRO = 0x6474E552
 _PT_GNU_STACK = 0x6474E551
 
-# ===== Mach-O 常量 =====
+# ===== Mach-O 常量表 =====
 _MACHO_MAGIC_32 = 0xFEEDFACE
 _MACHO_MAGIC_64 = 0xFEEDFACF
 _MACHO_CIGAM_32 = 0xCEFAEDFE
@@ -95,16 +95,13 @@ _MACHO_FILETYPE = {
 
 
 def detect_format(data: bytes) -> str:
-    """检测二进制格式，返回 PE/ELF/MACHO/UNKNOWN。"""
+    """魔数检测：MZ→PE, \\x7fELF→ELF, FEEDFACx→MACHO，其余 UNKNOWN。"""
     if len(data) < 4:
         return "UNKNOWN"
-    # MZ (PE)
     if data[0:2] == b'MZ':
         return "PE"
-    # ELF
     if data[0:4] == _ELF_MAGIC:
         return "ELF"
-    # Mach-O (4个变体：32/64 × LE/BE)
     _magic = struct.unpack_from('<I', data, 0)[0]
     if _magic in (_MACHO_MAGIC_32, _MACHO_MAGIC_64, _MACHO_CIGAM_32, _MACHO_CIGAM_64):
         return "MACHO"
@@ -127,21 +124,16 @@ def _decode_section_flags(characteristics: int) -> list:
     return _flags
 
 
-# //// PE 解析 ////
 def parse_pe(data: bytes) -> dict:
-    """解析 PE 头，提取架构、区段、导入/导出表、入口点等关键信息。
-    不做完整 PE 解析（资源表、重定位表等），只取分析所需的核心字段。
-    """
+    """解析 PE 头：架构、区段、导入/导出表、入口点。省略资源表与重定位表。"""
     _info: dict = {"format": "PE", "sections": [], "imports": {}, "exports": []}
     if len(data) < 64:
         return _info
 
-    # DOS header: e_lfanew at offset 0x3C
     _e_lfanew = struct.unpack_from('<I', data, 0x3C)[0]
     if len(data) <= _e_lfanew + 4:
         return _info
 
-    # NT signature
     _nt_sig = struct.unpack_from('<I', data, _e_lfanew)[0]
     if _nt_sig != _IMAGE_NT_SIGNATURE:
         return _info
@@ -182,11 +174,9 @@ def parse_pe(data: bytes) -> dict:
         _info["image_size"] = _opt_fields[14]
         _data_dir_start = _opt_header_offset + 96
 
-    # data directories: export (0), import (1)
     _export_rva, _export_size = struct.unpack_from('<II', data, _data_dir_start)
     _import_rva, _import_size = struct.unpack_from('<II', data, _data_dir_start + 8)
 
-    # Section headers
     _section_offset = _file_header_offset + 20 + _opt_size
     _section_size = 40
     for _i in range(min(_num_sections, 96)):
@@ -203,10 +193,8 @@ def parse_pe(data: bytes) -> dict:
             "raw_ptr": _raw_ptr, "characteristics": _decode_section_flags(_chars),
         })
 
-    # 解析导入表（简化：遍历 IMAGE_IMPORT_DESCRIPTOR 链表）
     _info["imports"] = _parse_pe_imports(data, _import_rva, _import_size)
 
-    # 导出表
     if _export_rva and _export_size:
         _info["exports"] = _parse_pe_exports(data, _export_rva, _export_size)
 
@@ -214,9 +202,7 @@ def parse_pe(data: bytes) -> dict:
 
 
 def _rva_to_offset(data: bytes, rva: int, sections: list = None) -> Optional[int]:
-    """RVA 转文件偏移量。遍历区段找到包含此 RVA 的区段。"""
-    # 简化：很多小型 PE 文件区段对齐与文件对齐相同
-    # 此处不做完整转换，返回 rva 本身（对于小文件通常足够）
+    """RVA→文件偏移。小型 PE 通常区段对齐等于文件对齐，直接当偏移用。"""
     return rva if rva < len(data) else None
 
 
@@ -246,7 +232,6 @@ def _parse_pe_imports(data: bytes, import_rva: int, import_size: int) -> dict:
                 if _thunk_off + 8 > len(data):
                     break
                 _hint_name_rva = struct.unpack_from('<Q' if False else '<I', data, _thunk_off)[0] if False else struct.unpack_from('<I', data, _thunk_off)[0]
-                # 32-bit thunks only for simplicity
                 _hint_name_rva = struct.unpack_from('<I', data, _thunk_off)[0]
                 if _hint_name_rva == 0:
                     break
@@ -283,9 +268,8 @@ def _parse_pe_exports(data: bytes, export_rva: int, export_size: int) -> list:
     return _exports
 
 
-# //// ELF 解析 ////
 def parse_elf(data: bytes) -> dict:
-    """解析 ELF 头，提取 class、字节序、架构、节/段/符号信息。"""
+    """解析 ELF 头：class、字节序、架构、节/段/符号表。"""
     _info: dict = {"format": "ELF", "sections": [], "imports": {}, "exports": []}
     if len(data) < 52 or data[0:4] != _ELF_MAGIC:
         return _info
@@ -348,7 +332,6 @@ def parse_elf(data: bytes) -> dict:
                 "flags": _s_flags,
             })
 
-        # 解析 section name string table
         _shstr_section = _info["sections"][_shstrndx] if _shstrndx < len(_info["sections"]) else None
         if _shstr_section:
             _strtab_off = _shstr_section["offset"]
@@ -358,7 +341,6 @@ def parse_elf(data: bytes) -> dict:
                     _end = data.find(b'\x00', _nm_off)
                     _sec["name"] = data[_nm_off:_end].decode('ascii', errors='replace')
 
-    # 简化的符号表提取
     _symtab_off = None
     _symtab_size = 0
     _strtab_off = None
@@ -366,7 +348,6 @@ def parse_elf(data: bytes) -> dict:
         if _sec.get("type") == _ELF_SHT_SYMTAB or _sec.get("type") == _ELF_SHT_DYNSYM:
             _symtab_off = _sec["offset"]
             _symtab_size = _sec["size"]
-            # 符号表后紧接着字符串表（不对齐查找，遍历取 strtab section）
     for _sec in _info["sections"]:
         if _sec.get("type") == _ELF_SHT_STRTAB and _sec["offset"] != _shstr_section["offset"]:
             _strtab_off = _sec["offset"]
@@ -390,7 +371,7 @@ def parse_elf(data: bytes) -> dict:
                 _end = data.find(b'\x00', _strtab_off + _st_offset)
                 _sym_name = data[_strtab_off + _st_offset:_end].decode('ascii', errors='replace')
                 if _sym_name:
-                    if data[_eo + (_entsize - 2)] & 0x0F == 0:  # STB_LOCAL
+                    if data[_eo + (_entsize - 2)] & 0x0F == 0:
                         pass
                     else:
                         _info.setdefault("exports", []).append(_sym_name)
@@ -398,7 +379,6 @@ def parse_elf(data: bytes) -> dict:
     return _info
 
 
-# //// Mach-O 解析 ////
 def parse_macho(data: bytes) -> dict:
     _info: dict = {"format": "MACHO", "sections": [], "imports": {}}
     if len(data) < 28:
@@ -424,7 +404,7 @@ def parse_macho(data: bytes) -> dict:
         if _cmdsize < 8:
             break
 
-        if _cmd == 0x19:  # LC_SEGMENT_64
+        if _cmd == 0x19:
             _segname = data[_cmd_offset + 8:_cmd_offset + 24].rstrip(b'\x00').decode('ascii', errors='replace')
             _vmaddr, _vmsize, _fileoff, _filesize = struct.unpack_from(
                 f'{_e}QQQQ', data, _cmd_offset + 24
@@ -434,7 +414,6 @@ def parse_macho(data: bytes) -> dict:
                 "segment": _segname, "vmaddr": _vmaddr, "vmsize": _vmsize,
                 "fileoff": _fileoff, "filesize": _filesize,
             })
-            # 也解析 segment 内的 sections
             _sect_off = _cmd_offset + 72
             for _s in range(min(_nsects, 128)):
                 if _sect_off + 80 > len(data):
@@ -447,7 +426,7 @@ def parse_macho(data: bytes) -> dict:
                 })
                 _sect_off += 80
 
-        elif _cmd == 0x01:  # LC_SEGMENT (32-bit)
+        elif _cmd == 0x01:
             _segname = data[_cmd_offset + 8:_cmd_offset + 24].rstrip(b'\x00').decode('ascii', errors='replace')
             _vmaddr, _vmsize, _fileoff, _filesize = struct.unpack_from(
                 f'{_e}IIII', data, _cmd_offset + 24
@@ -458,13 +437,13 @@ def parse_macho(data: bytes) -> dict:
                 "fileoff": _fileoff, "filesize": _filesize,
             })
 
-        elif _cmd == 0x0C or _cmd == 0x8000000C:  # LC_DYLIB or LC_LOAD_WEAK_DYLIB
+        elif _cmd == 0x0C or _cmd == 0x8000000C:
             _name_off = _cmd_offset + struct.calcsize(f'{_e}III')
             _dylib_end = data.find(b'\x00', _name_off)
             _dylib_name = data[_name_off:_dylib_end].decode('ascii', errors='replace')
             _dylibs.append(_dylib_name)
 
-        elif _cmd == 0x05:  # LC_UNIXTHREAD (entry point)
+        elif _cmd == 0x05:
             _info["entry_point"] = "via_thread_command"
 
         _cmd_offset += _cmdsize
@@ -474,16 +453,11 @@ def parse_macho(data: bytes) -> dict:
     return _info
 
 
-# //// 统一入口 ////
 def get_binary_info(filepath: str) -> dict:
-    """读取文件，检测格式，解析并返回统一格式的二进制信息字典。
-
-    此为对外主要入口。返回结构：
-    {
-      "file": str, "sha256": str, "format": str, "size": int,
-      "machine": str, "entry_point": int, "sections": [...],
-      "imports": {...}, "exports": [...], "format_specific": {...}
-    }
+    """读取文件，识别格式并解析，返回统一二进制信息字典。
+    对外唯一入口。返回结构：
+    { "file", "sha256", "format", "size", "machine", "entry_point",
+      "sections", "imports", "exports" }
     """
     _r: dict = {"file": filepath, "format": "UNKNOWN"}
     if not os.path.isfile(filepath):

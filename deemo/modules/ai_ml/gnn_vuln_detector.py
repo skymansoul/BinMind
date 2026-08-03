@@ -1,5 +1,5 @@
-# 2026-07-18: CFG分支边解析/边类型语义化/检测器单例缓存+模型持久化 — 保持原有逻辑全量兼容
-# 2026-07-03: preserved; minor optimizations applied.
+# CFG分支边解析/边类型语义化/检测器单例缓存+模型持久化 — 保持原有逻辑全量兼容
+# 已优化.
 import logging, os, re, json, math, pickle, random
 from collections import defaultdict
 from typing import Dict, List, Optional, Any, Tuple, Set

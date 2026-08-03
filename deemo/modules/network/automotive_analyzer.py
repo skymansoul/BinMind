@@ -22,7 +22,7 @@ class UDSService(IntEnum):
     TESTER_PRESENT = 0x3E
     WRITE_DATA_BY_ID = 0x2E
 
-# security level init order matters: LOCKED must come before UNLOCKED
+# security level 初始化顺序依赖: LOCKED 必须排在 UNLOCKED 前
 class SecurityLevel(StrEnum):
     LOCKED = "locked"
     UNLOCKED = "unlocked"
@@ -30,8 +30,8 @@ class SecurityLevel(StrEnum):
 
 @dataclass
 class CANMessage:
-    """parsed from binary firmware — one CAN frame"""
-    can_id: int    # 11-bit masked on read, range 0x000-0x7FF
+    """从二进制固件解析的CAN帧"""
+    can_id: int    # 11-bit，读取时掩码，范围 0x000-0x7FF
     data: bytes
     dlc: int
     cycle_time_ms: int
@@ -46,7 +46,7 @@ class UDSCommand:
 
 @dataclass
 class SecurityBypass:
-    """result of UDS security bypass detection"""
+    """UDS 安全绕过检测结果"""
     service: int
     severity: str
     description: str
@@ -60,10 +60,10 @@ class CANAnalysisResult:
     bypasses: list
 
 
-# ---- CAN DBC signal fingerprint DB ----
-# compiled from ~300 ECU firmware images across VAG/Toyota/Ford powertrain ECUs.
-# The payload patterns are supplier-side DBC artifact — same signal layout
-# reused across OEMs because everyone sources from Bosch/Continental/Denso.
+# ---- CAN DBC 信号指纹库 ----
+# 编译自约300个ECU固件镜像（VAG/Toyota/Ford 动力总成ECU）。
+# 负载模式为供应商侧DBC遗留痕迹——同一信号布局跨OEM复用，
+# 因供应商均源自Bosch/Continental/Denso。
 _SIGNAL_FINGERPRINTS = {
     b"\x00\x00\x04\x00": "EngSpeed",
     b"\x00\x00\x0C\x00": "VehSpeed",
@@ -73,7 +73,7 @@ _SIGNAL_FINGERPRINTS = {
     b"\x00\x01\x0C\x00": "VehSpeed_HS",
 }
 
-# ISO 14229-1 Table A.1 — Negative Response Codes
+# ISO 14229-1 表A.1 —— 否定响应码
 _NRC = {
     0x10: "generalReject",
     0x11: "serviceNotSupported",
@@ -88,11 +88,11 @@ _NRC = {
     0x7F: "serviceNotSupportedInActiveSession",
 }
 
-# privileged diagnostic sessions — jumping into these without SecurityAccess = vuln
+# 特权诊断会话 —— 未经SecurityAccess跳入即漏洞
 _PRIVILEGED_SESSIONS = frozenset({0x02, 0x03, 0x04, 0x40, 0x5F})
 
-# weak seed/key patterns harvested from public ECU reverse-engineering writeups.
-# all five of these have been found IN THE WILD on production vehicles since 2020.
+# 弱seed/key模式 —— 提取自公开ECU逆向工程文献。
+# 以下五种模式均已在2020年后的量产车上实地确认。
 _WEAK_KEY_PATTERNS = [
     (re.compile(rb"key\s*=\s*~\s*seed", re.I), "bitwise NOT"),
     (re.compile(rb"key\s*=\s*seed\s*\^\s*0x[A-Fa-f0-9]{4,8}", re.I), "fixed XOR"),
@@ -103,13 +103,13 @@ _WEAK_KEY_PATTERNS = [
 
 
 class CANMatrixExtractor:
-    """scan firmware blob for CAN message patterns, match against signal DB"""
+    """扫描固件中的CAN消息模式，匹配信号数据库"""
 
-    MAX_CHUNKS = 0x10000   # 64KB — most ECU firmware images are <2MB
-    CHUNK_SIZE = 8         # 4 bytes ID + 4 bytes payload = one candidate CAN entry
-    MAX_MSGS = 100         # cap results, real ECUs have ~20-80 unique CAN IDs
+    MAX_CHUNKS = 0x10000   # 64KB —— 多数ECU固件镜像 <2MB
+    CHUNK_SIZE = 8         # 4字节ID + 4字节负载 = 一条候选CAN记录
+    MAX_MSGS = 100         # 结果上限，实际ECU约20-80个唯一CAN ID
 
-    # known high-frequency PGN-based CAN IDs (SAE J1939 derived)
+    # 已知高频PGN CAN ID (SAE J1939 派生)
     _COMMON_IDS = frozenset({
         0x0C0, 0x0C1, 0x0CF, 0x100, 0x18F, 0x200,
         0x280, 0x300, 0x400, 0x500,
@@ -139,7 +139,7 @@ class CANMatrixExtractor:
                 can_id = int.from_bytes(chunk[0:4], "little") & 0x7FF
                 payload = chunk[4:8]
 
-                # try signal DB first, fall back to known-ID heuristic
+                # 先查信号数据库，回落已知ID启发式
                 hint = _SIGNAL_FINGERPRINTS.get(chunk)
                 if hint is None and can_id in self._COMMON_IDS:
                     hint = f"CAN_{can_id:03X}"
@@ -152,13 +152,13 @@ class CANMatrixExtractor:
                     cycle_time_ms=100,
                     source_ecu=src,
                 ))
-                # most ECU CAN tables are 8-byte aligned — skip forward
+                # 多数ECU CAN表8字节对齐 —— 跳进
                 off += self.CHUNK_SIZE
                 continue
 
             off += 1
 
-        # dedup by CAN ID (keep first occurrence)
+        # 按CAN ID去重（保留首次出现）
         seen = set()
         deduped = []
         for m in msgs:
@@ -172,7 +172,7 @@ class CANMatrixExtractor:
 
 
 class UDSParser:
-    """convert CAN message sequence -> UDS command list, including NRC detection"""
+    """CAN消息序列 → UDS命令列表，含NRC检测"""
 
     _SVC_MAP = {
         0x10: UDSService.DIAGNOSTIC_SESSION_CONTROL,
@@ -193,7 +193,7 @@ class UDSParser:
 
             b0 = m.data[0]
 
-            # negative response: SID = 0x7F, data[1] = original SID, data[2] = NRC
+            # 否定响应: SID = 0x7F, data[1] = 原始SID, data[2] = NRC
             if b0 == 0x7F and len(m.data) >= 3:
                 orig_sid = m.data[1]
                 nrc = m.data[2]
@@ -219,20 +219,20 @@ class UDSParser:
 
 
 class BypassDetector:
-    """detect UDS operations performed without SecurityAccess handshake"""
+    """检测未经过SecurityAccess握手执行的UDS操作"""
 
     @staticmethod
     def detect(cmds):
         bypasses = []
-        authed = False   # track whether a successful sendKey occurred
+        authed = False   # 追踪是否发生过成功sendKey
 
         for c in cmds:
-            # SecurityAccess: even subfunction = requestSeed, odd = sendKey (auth success)
+            # SecurityAccess: 偶数子功能 = requestSeed, 奇数 = sendKey (认证成功)
             if c.service == UDSService.SECURITY_ACCESS:
                 authed = (c.sub_function % 2 == 1)
                 continue
 
-            # write & ECU reset without auth are critical
+            # 写入与ECU重置未经认证即关键风险
             if c.service in (UDSService.WRITE_DATA_BY_ID, UDSService.ECU_RESET):
                 sev = "critical" if c.service == UDSService.WRITE_DATA_BY_ID else "high"
                 bypasses.append(SecurityBypass(
@@ -242,8 +242,8 @@ class BypassDetector:
                     exploit_steps=["Connect to OBD-II", "Send " + hex(c.service)],
                 ))
 
-            # session escalation: jumping to a privileged session w/o SecurityAccess
-            # this is a CVE factory — every year 3-4 CVEs drop for this exact pattern
+            # 会话提升: 跳至特权会话未通过SecurityAccess
+            # 此即CVE工厂——每年3-4个CVE落在此精确模式上
             if c.service == UDSService.DIAGNOSTIC_SESSION_CONTROL:
                 tgt = c.sub_function
                 if tgt in _PRIVILEGED_SESSIONS and not authed:
@@ -261,7 +261,7 @@ class BypassDetector:
 
 
 class SeedKeyAuditor:
-    """scan ECU firmware blob for weak seed->key derivation patterns"""
+    """扫描ECU固件中弱seed→key推导模式"""
 
     @staticmethod
     def audit(binary_path: str) -> list[dict]:
@@ -269,7 +269,7 @@ class SeedKeyAuditor:
 
         try:
             with open(binary_path, "rb") as fh:
-                # 1st MB covers the UDS stack in virtually all 32-bit ECUs
+                # 首1MB覆盖几乎所有32位ECU的UDS栈
                 buf = fh.read(0x100000)
         except Exception:
             return findings
@@ -288,7 +288,7 @@ class SeedKeyAuditor:
 
 
 class AutomotiveAnalyzer:
-    """top-level orchestrator: CAN extraction -> UDS parse -> bypass detect"""
+    """顶层编排: CAN提取 → UDS解析 → 绕过检测"""
 
     def __init__(self, binary_path):
         self.binary_path = binary_path
@@ -298,7 +298,7 @@ class AutomotiveAnalyzer:
         self.auditor = SeedKeyAuditor()
 
     def run(self):
-        """execute full automotive security analysis pipeline"""
+        """执行完整汽车安全分析流水线"""
         try:
             msgs = self.extractor.extract()
             cmds = self.parser.parse_messages(msgs)
@@ -321,5 +321,5 @@ class AutomotiveAnalyzer:
 
 
 def create_automotive_analyzer(binary_path):
-    """factory — construct and return an AutomotiveAnalyzer instance"""
+    """工厂 —— 构造并返回 AutomotiveAnalyzer 实例"""
     return AutomotiveAnalyzer(binary_path)

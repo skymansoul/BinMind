@@ -1,5 +1,5 @@
-# 19 tests: tokenization (english, CJK, mixed, stopwords), index build/search/ranking,
-#           synonym expansion (xss/rce/dos), edge cases (empty KB, min_score, explain)
+# 19项测试: 分词（英文、CJK、混合、停用词）、索引构建/搜索/排序、
+#           同义词扩展（xss/rce/dos）、边界情况（空KB、min_score、explain）
 
 import pytest
 from modules.cve.src.cve_kb import CVEKnowledgeBase
@@ -108,7 +108,7 @@ class TestSearchEngine:
         assert "CVE-2024-0001" in [r["cve_id"] for r in results]
 
     def test_synonym_expansion(self, seeded_kb):
-        """Searching 'xss' should find XSS entries via synonym expansion."""
+        """搜索'xss'应通过同义词扩展找到XSS条目。"""
         engine = CVESearchEngine(seeded_kb)
         engine.build()
         results = engine.search("xss")  # abbreviation not in description text
@@ -118,14 +118,14 @@ class TestSearchEngine:
         assert "CVE-2024-0002" in cve_ids  # the XSS entry
 
     def test_rce_synonym(self, seeded_kb):
-        """Searching 'rce' should find RCE entries."""
+        """搜索'rce'应找到RCE条目。"""
         engine = CVESearchEngine(seeded_kb)
         engine.build()
         results = engine.search("rce")
         assert len(results) > 0
 
     def test_dos_synonym(self, seeded_kb):
-        """Searching 'dos' should find DoS entries."""
+        """搜索'dos'应找到DoS条目。"""
         engine = CVESearchEngine(seeded_kb)
         engine.build()
         results = engine.search("dos")

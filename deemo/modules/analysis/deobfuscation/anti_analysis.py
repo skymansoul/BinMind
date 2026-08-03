@@ -1,9 +1,9 @@
-"""Anti-analysis detection and bypass engine.
+"""反分析 detection bypass engine
 
-Detects common reverse-engineering countermeasures in Linux ELF binaries:
-ptrace, LD_PRELOAD hooks, /proc/self/status TracerPid, timing-based
-anti-debug, and debugger port scanning. Generates bypass strategies
-for each detected technique.
+检测 common reverse-engineering countermeasures Linux ELF binaries:
+ptrace, LD_PRELOAD 钩子s, /proc/self/status TracerPid, timing-based
+反调试, debugger port scanning. 构造 bypass strategies
+对每个 detected technique
 """
 
 import ctypes
@@ -69,7 +69,7 @@ def _check_seccomp_filter() -> bool:
 #   AT_UID (11), AT_EUID (12), AT_GID (13), AT_EGID (14),
 #   AT_SECURE (23), AT_RANDOM (25), AT_EXECFN (31)
 # 异常值（如 AT_UID=0 但 AT_SECURE=1，或缺失 AT_RANDOM）指示
-# 正在被 ptrace 或被沙箱修改。
+# 正在被 ptrace 或被沙箱修改
 # ---------------------------------------------------------------------------
 
 _AT_NAMES = {3: "PHDR", 4: "PHENT", 5: "PHNUM", 6: "PAGESZ",
@@ -83,9 +83,9 @@ _AUXV_ENTRY_SIZE = _WORD_SIZE * 2
 
 
 def _check_auxv_anomalies() -> Tuple[bool, str]:
-    """读取 /proc/self/auxv 并检测异常项。
-    auxv 格式: [a_type, a_val] 对的数组，以 a_type=AT_NULL(0) 终止。
-    每个条目均为 word_size 字节。
+    """读取 /proc/self/auxv 并检测异常项
+    auxv 格式: [a_type, a_val] 对的数组，以 a_type=AT_NULL(0) 终止
+    每个条目均为 word_size 字节
     """
     try:
         with open("/proc/self/auxv", "rb") as fh:
@@ -173,10 +173,10 @@ def _check_proc_exe_symlink() -> Tuple[bool, str]:
     return False, ""
 
 
-# Detection primitives -- each is a standalone check
+# Detection primitives -- a standalone 检查
 
 def _check_ptrace_call(binary_path: str) -> bool:
-    """Look for PTRACE_TRACEME (value 0) in the binary's import/plt."""
+    """Look for PTRACE_TRACEME (value 0) binary's import/plt"""
     try:
         with open(binary_path, "rb") as fh:
             raw = fh.read()
@@ -191,7 +191,7 @@ def _check_ld_preload(raw_data: bytes) -> bool:
 
 
 def _check_tracer_pid() -> bool:
-    """Read /proc/self/status on Linux; non-zero TracerPid => debugged."""
+    """读取 /proc/self/status Linux; non-zero TracerPid => debugged"""
     try:
         with open("/proc/self/status") as fh:
             content = fh.read()
@@ -202,7 +202,7 @@ def _check_tracer_pid() -> bool:
 
 
 def _check_ptrace_scope() -> bool:
-    """Return True if ptrace_scope != 0 (may block attach)."""
+    """返回 True ptrace_scope!= 0 (block attach)"""
     try:
         with open("/proc/sys/kernel/yama/ptrace_scope") as fh:
             return fh.read().strip() != "0"
@@ -211,7 +211,7 @@ def _check_ptrace_scope() -> bool:
 
 
 def _check_timing_anomaly() -> bool:
-    """Crude timing check: two successive clock reads are >2ms apart => breakpoint."""
+    """Crude timing 检查: two successive clock 读取 >2ms apart => breakpoint"""
     t1 = time.perf_counter()
     time.perf_counter()
     t2 = time.perf_counter()
@@ -252,7 +252,7 @@ def _check_maps_breakpoints(raw_data: bytes) -> bool:
 
 
 def _check_sigtrap_handler() -> bool:
-    """检测 SIGTRAP 处理器注册（需具体二进制上下文，此处保留接口）。"""
+    """检测 SIGTRAP 处理器注册（需具体二进制上下文，此处保留接口）"""
     return False
 
 
@@ -260,7 +260,7 @@ _DEBUGGER_PORTS = (23946, 4444, 5555, 31337, 1337, 27042, 27043, 9999)
 
 
 def _scan_debugger_ports() -> List[int]:
-    """Return list of open debugger-common ports via connect scan."""
+    """返回 list 打开 debugger-common ports via connect scan"""
     import socket
     open_ports = []
     for port in _DEBUGGER_PORTS:
@@ -397,7 +397,7 @@ class AntiAnalysisBypass:
 
 
 class AntiAnalysisDetector:
-    """Run all anti-analysis checks against a given binary."""
+    """运行 反分析 检查 against a binary"""
 
     def __init__(self):
         self._raw: Optional[bytes] = None
@@ -469,7 +469,7 @@ class AntiAnalysisDetector:
 
 
 class BypassSolver:
-    """Given detection results, produce concrete bypass steps."""
+    """detection results, produce concrete bypass steps"""
 
     _DIFFICULTY_MAP = {
         "ptrace_scope": "medium", "timing": "medium",

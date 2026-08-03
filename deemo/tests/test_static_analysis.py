@@ -1,7 +1,4 @@
-<<<<<<< HEAD
-=======
 
->>>>>>> d81973a (精简冗余模块)
 import os
 import sys
 import unittest
@@ -13,7 +10,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 class TestStaticDataFlowAnalyzer(unittest.TestCase):
 
     def setUp(self):
-        for mod in ['modules.static_analysis', 'angr', 'angr.analyses', 
+        for mod in ['modules.static_analysis', 'angr', 'angr.analyses',
                     'angr.knowledge_plugins', 'angr.knowledge_plugins.functions']:
             if mod in sys.modules:
                 del sys.modules[mod]
@@ -39,10 +36,10 @@ class TestStaticDataFlowAnalyzer(unittest.TestCase):
                 'angr.knowledge_plugins': mock_kp,
                 'angr.knowledge_plugins.functions': MagicMock()
             }):
-                from modules.static_analysis import StaticDataFlowAnalyzer
-                
+                from modules.analysis.static.static_analysis import StaticDataFlowAnalyzer
+
                 analyzer = StaticDataFlowAnalyzer('fake_binary', use_angr=True)
-                
+
                 call_args = mock_angr.Project.call_args
                 self.assertIsNotNone(call_args)
                 args, kwargs = call_args
@@ -59,10 +56,10 @@ class TestStaticDataFlowAnalyzer(unittest.TestCase):
                 'angr.knowledge_plugins': mock_kp,
                 'angr.knowledge_plugins.functions': MagicMock()
             }):
-                from modules.static_analysis import StaticDataFlowAnalyzer
-                
+                from modules.analysis.static.static_analysis import StaticDataFlowAnalyzer
+
                 analyzer = StaticDataFlowAnalyzer('nonexistent_file', use_angr=True)
-                
+
                 self.assertFalse(mock_angr.Project.called)
                 self.assertFalse(analyzer.use_angr)
                 self.assertIsNone(analyzer.project)
@@ -77,20 +74,20 @@ class TestStaticDataFlowAnalyzer(unittest.TestCase):
                 'angr.knowledge_plugins': mock_kp,
                 'angr.knowledge_plugins.functions': MagicMock()
             }):
-                from modules.static_analysis import StaticDataFlowAnalyzer
-                
+                from modules.analysis.static.static_analysis import StaticDataFlowAnalyzer
+
                 analyzer = StaticDataFlowAnalyzer('fake_binary', use_angr=True)
-                
+
                 self.assertIsNotNone(analyzer.project)
                 self.assertTrue(analyzer.use_angr)
 
     def test_load_binary_angr_not_available(self):
         with patch('os.path.exists', return_value=True):
             with patch.dict('sys.modules', {'angr': None}):
-                from modules.static_analysis import StaticDataFlowAnalyzer
-                
+                from modules.analysis.static.static_analysis import StaticDataFlowAnalyzer
+
                 analyzer = StaticDataFlowAnalyzer('fake_binary', use_angr=True)
-                
+
                 self.assertFalse(analyzer.use_angr)
                 self.assertIsNone(analyzer.project)
 
@@ -104,33 +101,22 @@ class TestStaticDataFlowAnalyzer(unittest.TestCase):
                 'angr.knowledge_plugins': mock_kp,
                 'angr.knowledge_plugins.functions': MagicMock()
             }):
-                from modules.static_analysis import StaticDataFlowAnalyzer
-                
+                from modules.analysis.static.static_analysis import StaticDataFlowAnalyzer
+
                 analyzer = StaticDataFlowAnalyzer('fake_binary', use_angr=True)
-                
-<<<<<<< HEAD
-=======
-lass字段完整性$/d
->>>>>>> d81973a (精简冗余模块)
+
                 self.assertGreater(len(analyzer.taint_sources), 0)
                 self.assertGreater(len(analyzer.taint_sinks), 0)
-                
+
                 source_names = [s.name for s in analyzer.taint_sources]
                 self.assertIn('read', source_names)
                 self.assertIn('recv', source_names)
-                
+
                 sink_names = [s.name for s in analyzer.taint_sinks]
                 self.assertIn('system', sink_names)
-<<<<<<< HEAD
-                self.assertIn('printf', sink_names)
-
-
-=======
-lass字段完整性$/d
                 self.assertIn('printf', sink_names)
 
 
 
->>>>>>> d81973a (精简冗余模块)
 if __name__ == '__main__':
     unittest.main()

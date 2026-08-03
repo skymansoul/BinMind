@@ -1,5 +1,3 @@
-# 2026-07-25
-
 import logging, os, json, hashlib, re
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
@@ -76,7 +74,7 @@ class PatchImpactReport:
         }
 
 
-# ===== 危险函数集合：既包括内存操作也包括命令执行 =====
+# ===== 危险函数集合：内存操作 + 命令执行 =====
 _DANGEROUS_CALLS: Set[str] = {
     "strcpy", "strcat", "sprintf", "gets", "scanf", "vsprintf",
     "system", "execve", "popen", "execl", "execlp",
@@ -90,7 +88,7 @@ _SECURITY_CHECKS: Set[str] = {
 }
 
 
-# **** 指令级风险权重 — call system 比 call memcpy 严重得多 ****
+# **** 指令级风险权重 —— call system 远重于 call memcpy ****
 _INSTRUCTION_RISK: Dict[str, int] = {
     'system': 10, 'execve': 10, 'popen': 9, 'execl': 9, 'execlp': 9,
     'strcpy': 7, 'strcat': 7, 'sprintf': 7, 'gets': 8, 'scanf': 6,
@@ -99,7 +97,7 @@ _INSTRUCTION_RISK: Dict[str, int] = {
 
 
 class PatchImpactAnalyzer:
-    """补丁影响分析器：对修改前后的函数指纹做 diff，构建调用图并传播影响。
+    """补丁影响分析器：对修改前后的函数指纹 diff，构建调用图并传播影响。
 
     BFS 从修改点向外辐射，计算风险增量和调用者影响面。
     """
@@ -108,7 +106,7 @@ class PatchImpactAnalyzer:
         self._call_graph: Dict[str, List[str]] = defaultdict(list)
 
     # ============================================================
-    # analyze_binary: 主入口 — diff 指纹 + 构建依赖图 + 风险计算
+    # 主入口 —— diff 指纹 + 构建依赖图 + 风险计算
     # ============================================================
     def analyze_binary(self, binary_path: str,
                        before_fingerprints: Dict[str, FunctionFingerprint],
@@ -141,10 +139,10 @@ class PatchImpactAnalyzer:
         self._build_call_graph(after_fingerprints)
         _r.dependency_graph = dict(self._call_graph)
 
-        # 受影响函数：所有非 UNCHANGED 的
+        # 受影响函数：所有非 UNCHANGED
         _r.affected_functions = sorted([_c.func_name for _c in _changes if _c.kind != ChangeKind.UNCHANGED])
 
-        # 传播影响：BFS
+        # BFS 传播影响
         _affected_set = set(_r.affected_functions)
         for _ch in _changes:
             if _ch.kind == ChangeKind.UNCHANGED:
@@ -160,14 +158,16 @@ class PatchImpactAnalyzer:
         _r.callees = sorted(_all_callees)
 
         # 关键路径：按 criticality 排序
-        _r.critical_path = self._bubble_sort(
+        # 2026-08-02: 统一用 src.utils.bubble_sort
+        from src.utils import bubble_sort
+        _r.critical_path = bubble_sort(
             _affected_set,
             key=lambda f: self._estimate_criticality(f, dict(self._call_graph))
-        )[-10:][::-1]  # top 10 most critical
+        )[-10:][::-1]  # top 10 最关键
 
         _r.total_risk_delta = sum(_c.risk_delta for _c in _changes)
 
-        # 建议生成
+        # 建议
         if _r.total_risk_delta > 20:
             _r.recommendations.append("整体风险增量偏高({})，建议逐函数回归测试".format(_r.total_risk_delta))
         for _ch in _changes:
@@ -210,17 +210,9 @@ class PatchImpactAnalyzer:
         _outdeg = len(call_graph.get(func_name, []))
         return _indeg + _outdeg
 
-    # ---- bubble sort: 用于关键路径排名 ----
-    def _bubble_sort(self, items, key=None):
-        _arr = list(items)
-        _n = len(_arr)
-        for _i in range(_n):
-            for _j in range(0, _n - _i - 1):
-                _a = key(_arr[_j]) if key else _arr[_j]
-                _b = key(_arr[_j + 1]) if key else _arr[_j + 1]
-                if _a > _b:
-                    _arr[_j], _arr[_j + 1] = _arr[_j + 1], _arr[_j]
-        return _arr
+    # 2026-08-02: 移除重复 _bubble_sort，统一用 src.utils.bubble_sort
+    # 旧的 O(n²) 实现与 utils 和 quality_evaluator 中相同
+    # def _bubble_sort(self, items, key=None): ...  # 已合并
 
     def _compute_risk_delta(self, change: PatchChange) -> int:
         _score = 0
@@ -276,7 +268,7 @@ class PatchImpactAnalyzer:
             self._call_graph[_fn] = list(_fp.calls)
 
 
-# **** 便捷函数 ****
+# **** 便捷入口 ****
 def analyze_patch_impact(binary_path: str,
                          before_fingerprints: Dict[str, FunctionFingerprint],
                          after_fingerprints: Dict[str, FunctionFingerprint]) -> Dict:

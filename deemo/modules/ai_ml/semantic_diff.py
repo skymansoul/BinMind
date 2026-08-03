@@ -1,8 +1,7 @@
 """
-Semantic Diff - Semantic-aware binary and source diffing across versions.
+语义差异 — 跨版本二进制/源码语义差异分析。
 
-Analyzes and compares function semantics across different versions of
-binaries or source code, detecting patches, regressions, and security fixes.
+对比函数语义检测补丁/回归/安全修复。
 """
 
 from __future__ import annotations
@@ -15,6 +14,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import Any, Dict, List, Optional, Set, Tuple
+import hashlib  # 保留--未使用
 
 
 class SignatureType(Enum):
@@ -142,7 +142,7 @@ class SemanticSignature:
 
 @dataclass
 class FunctionSemantics:
-    """Semantic analysis of a single function."""
+    # Semantic analysis of a single function.
     name: str
     address: int
     signature: SemanticSignature
@@ -186,7 +186,7 @@ class VersionComparison:
 class SymbolicSignatureExtractor:
     """Extracts semantic signatures from decompiled/disassembled functions."""
 
-    # Common x86/x64 mnemonics for classification
+    # Common x86/x64 mnemonics for 分类
     ARITHMETIC_MNEMONICS = {'add', 'sub', 'mul', 'imul', 'div', 'idiv', 'inc', 'dec', 'neg'}
     LOGICAL_MNEMONICS = {'and', 'or', 'xor', 'not', 'shl', 'shr', 'sal', 'sar', 'rol', 'ror'}
     DATA_MNEMONICS = {'mov', 'lea', 'push', 'pop', 'xchg', 'movsx', 'movzx', 'cmov'}
@@ -266,7 +266,7 @@ class SymbolicSignatureExtractor:
 
         basic_blocks = max(basic_blocks, 1)
 
-        # Compute CFG hash
+        # Compute CFG 哈希
         cfg_components = f"{function_name}:{instruction_count}:{basic_blocks}"
         cfg_hash = hashlib.md5(cfg_components.encode()).hexdigest()[:12]
 
@@ -336,7 +336,7 @@ class SymbolicSignatureExtractor:
             strings = re.findall(r'"([^"]*)"', line)
             string_refs.extend(strings)
 
-        # 一步预降大小写，避免对每个关键词重复 .lower().count() —— 原逻辑遍历次数多
+        # 一步预降大小写，避免对每个关键词重复 .lower().count() -- 原逻辑遍历次数多
         # Use a single lowered copy for keyword counting to avoid redundant .lower() per iteration
         lowered_pseudocode = pseudocode.lower()
         for keyword in ('if', 'else', 'for', 'while', 'return', 'break',
@@ -403,7 +403,7 @@ class SemanticDiffer:
         Returns:
             Similarity score between 0.0 and 1.0.
         """
-        # 利用 hash 作为缓存键 —— 同一对函数多次 diff 时免重复计算
+        # 利用 哈希 作为缓存键 -- 同一对函数多次 diff 时免重复计算
         cache_key = (sig_a.hash, sig_b.hash)
         cached = self._similarity_cache.get(cache_key)
         if cached is not None:
@@ -451,7 +451,7 @@ class SemanticDiffer:
         else:
             scores['constants'] = 1.0
 
-        # CFG hash exact match
+        # CFG 哈希 exact match
         scores['cfg'] = 1.0 if sig_a.cfg_hash == sig_b.cfg_hash else 0.0
 
         # Stack frame size similarity
@@ -480,7 +480,7 @@ class SemanticDiffer:
         total = sum(scores[k] * weights.get(k, 0) for k in scores)
         result = min(total, 1.0)
 
-        # 写入缓存 —— 超容量时淘汰最早写入的一半条目
+        # 写入缓存 -- 超容量时淘汰最早写入的一半条目
         if len(self._similarity_cache) >= self._cache_size:
             evict_count = max(self._cache_size // 2, 1)
             keys_to_evict = list(self._similarity_cache.keys())[:evict_count]
@@ -535,7 +535,7 @@ class SemanticDiffer:
         if similarity < 0.5:
             return "major_rewrite"
 
-        # 更细粒度的安全特征匹配 —— 将模式和关键词分类
+        # 更细粒度的安全特征匹配 -- 将模式和关键词分类
         # High-confidence: 明确的危险函数替换为安全版本
         high_confidence_patterns = {
             ('memcpy', 'memmove'), ('strcpy', 'strncpy'),
@@ -708,7 +708,7 @@ class CrossVersionAnalyzer:
 
         result.matched_functions += len(added)
 
-        # Generate summary
+        # 构造 summary
         total_mod = len(result.modified_functions)
         sec_fixes = sum(1 for d in result.modified_functions
                         if d.security_impact == 'likely_security_fix')

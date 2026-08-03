@@ -1,10 +1,9 @@
 """
-无线协议分析器——BLE广播包解析、Zigbee帧类型识别、WiFi管理帧检测、协议异常标记。
+无线协议分析。BLE广播包解析、Zigbee帧类型识别、WiFi管理帧检测、协议异常标记。
 
-EWMA adaptive deauth flood detection + 802.11w PMF (Protected Management Frames)
-analysis. Reference: CVE-2020-26139 — unauthenticated deauth frames are still
-accepted when PMF is disabled on the AP, which is ~60% of deployed APs per
-2023 wardriving surveys.
+EWMA自适应去认证洪水检测 + 802.11w PMF (Protected Management Frames) 分析。
+参考：CVE-2020-26139——PMF未启用时AP仍接受未认证的去认证帧，
+2023年wardriving调查显示约60%部署的AP存在此问题。
 """
 
 import struct
@@ -12,7 +11,7 @@ import math
 from enum import IntEnum
 from dataclasses import dataclass
 
-# ---- BLE constants ----
+# BLE常量定义
 BLE_ADV_CHANNELS = (37, 38, 39)
 BLE_ADV_PDU_TYPES = {
     0x00: "ADV_IND", 0x01: "ADV_DIRECT_IND",
@@ -31,10 +30,10 @@ BLE_AD_TYPES = {
     0xFF: "Manufacturer Data",
 }
 
-# Zigbee frame type (FCF bits 0-2)
+# Zigbee帧类型 (FCF bits 0-2)
 ZB_FRAME_TYPES = {0: "Beacon", 1: "Data", 2: "ACK", 3: "MAC Command"}
 
-# WiFi management frame subtypes
+# WiFi管理帧子类型 (802.11 FC subtype字段)
 WIFI_MGMT_SUBTYPES = {
     0x00: "Association Request", 0x01: "Association Response",
     0x02: "Reassociation Request", 0x03: "Reassociation Response",
@@ -50,10 +49,10 @@ WIFI_REASON_CODES = {
     7: "Class 3 frame from nonassoc STA", 8: "Disassociated (STA leaving)",
 }
 
-# RSN Capability field bit 6-7 = PMF (802.11w)
+# RSN Capability字段 bit 6-7 = PMF位 (802.11w)
 _PMF_CAP_MASK = 0x00C0
 
-# ---- anomaly data class ----
+# 异常数据结构
 @dataclass
 class WirelessAnomaly:
     protocol: str
@@ -64,28 +63,26 @@ class WirelessAnomaly:
 
 # =========================================================================
 class EwmaAnomalyScorer:
-    """adaptive deauth flood detection via exponential weighted moving average.
+    """EWMA自适应去认证洪水检测。指数加权移动平均异常评分。
 
-    Why EWMA instead of fixed threshold (>= 10 deauth frames)?
-    Fixed threshold has ~40% false positive rate during legitimate roaming
-    on a busy enterprise WiFi (200+ stations). In a quiet home network,
-    the same threshold misses slow-rate attacks at 5-8 frames/sec.
+    为何EWMA而非固定阈值（>=10个去认证帧）？
+    固定阈值在忙碌企业WiFi环境（200+站点）有~40%误报率（合法漫游），
+    安静家庭网络则会漏检5-8帧/秒的低速攻击。
 
-    EWMA tracks per-source-MAC frame rate with alpha=0.2. When instantaneous
-    rate exceeds EWMA prediction by 3 sigma, flag it. This adapts to the
-    environment's baseline without per-deployment tuning.
+    EWMA以alpha=0.2追踪每源MAC帧率。瞬时速率超EWMA预测值3倍标准差时
+    触发告警。自适应环境基线，无需逐部署调参。
     """
 
     def __init__(self, alpha: float = 0.2, threshold_sigma: float = 3.0):
         self._alpha = alpha
         self._threshold_sigma = threshold_sigma
-        self._state: dict[str, dict] = {}  # mac -> {ewma, ewma_sq, last_ts}
+        self._state: dict[str, dict] = {}  # mac → {ewma, ewma_sq, last_ts}
 
     def observe(self, mac: str, timestamp: float) -> bool:
-        """feed a frame observation. returns True if current rate is anomalous."""
+        """输入一次帧观察，返回True表示当前速率异常。"""
         entry = self._state.get(mac)
         if entry is None:
-            # first observation — initialize EWMA state
+            # 首次观察：初始化EWMA状态
             self._state[mac] = {"ewma": 1.0, "ewma_sq": 1.0, "last_ts": timestamp}
             return False
 
@@ -112,17 +109,17 @@ class EwmaAnomalyScorer:
 
 # =========================================================================
 class WirelessProtocolAnalyzer:
-    """wireless frame classifier + protocol-layer anomaly detection."""
+    """无线协议帧分类器+协议层异常检测引擎。"""
 
     def __init__(self):
         self._anomalies: list[WirelessAnomaly] = []
         self._statistics: dict[str, int] = {}
         self._deauth_counts: dict[str, int] = {}
         self._ewma = EwmaAnomalyScorer()
-        self._pmf_state: dict[str, bool] = {}  # bssid -> pmf_enabled
+        self._pmf_state: dict[str, bool] = {}  # bssid → pmf_enabled
 
     def analyze(self, capture: bytes | list[bytes]) -> list[WirelessAnomaly]:
-        """single frame or list of raw wireless captures."""
+        """分析单帧或帧列表。入口方法。"""
         self._anomalies.clear()
         frames = [capture] if isinstance(capture, bytes) else capture
 
@@ -134,23 +131,22 @@ class WirelessProtocolAnalyzer:
         self._check_aggregate()
         return list(self._anomalies)
 
-    # -- frame classification --
-
+    # 帧分类路由
     def _classify_and_check(self, frame: bytes, idx: int):
         if len(frame) < 1:
             return
 
-        # BLE: access address 0x8E89BED6 for advertising channels
+        # BLE: 广播信道access address = 0x8E89BED6
         if len(frame) >= 4:
             aa = struct.unpack_from("<I", frame, 0)[0]
             if aa == 0x8E89BED6:
                 return self._parse_ble(frame, idx)
 
-        # Zigbee: 15.4 MAC FCF bits 0-2 = frame type
+        # Zigbee: 15.4 MAC FCF (bits 0-2) = 帧类型
         if len(frame) >= 1 and (frame[0] & 0x07) in ZB_FRAME_TYPES:
             return self._parse_zigbee(frame, idx)
 
-        # WiFi: 802.11 frame control field
+        # WiFi: 802.11 Frame Control字段
         if len(frame) >= 2:
             fc = struct.unpack_from("<H", frame, 0)[0]
             frame_type = (fc >> 2) & 0x03
@@ -160,8 +156,7 @@ class WirelessProtocolAnalyzer:
 
         self._statistics["unknown"] = self._statistics.get("unknown", 0) + 1
 
-    # -- BLE --
-
+    # BLE解析
     def _parse_ble(self, frame: bytes, idx: int):
         if len(frame) < 10:
             return
@@ -175,7 +170,7 @@ class WirelessProtocolAnalyzer:
             if length == 0 or data_start + 1 + length > len(frame):
                 break
             # ad_type = frame[data_start + 1]
-            # (AD data parsing — placeholder, extend as needed)
+            # AD数据解析占位，按需扩展
             data_start += 1 + length
 
         if pdu_type not in BLE_ADV_PDU_TYPES:
@@ -188,8 +183,7 @@ class WirelessProtocolAnalyzer:
             self._statistics.get(f"ble_{pdu_name}", 0) + 1
         )
 
-    # -- Zigbee --
-
+    # Zigbee解析
     def _parse_zigbee(self, frame: bytes, idx: int):
         fcf = struct.unpack_from("<H", frame, 0)[0]
         frame_type = fcf & 0x07
@@ -215,12 +209,11 @@ class WirelessProtocolAnalyzer:
             self._statistics.get(f"zigbee_{ft_name}", 0) + 1
         )
 
-    # -- WiFi management --
-
+    # WiFi管理帧解析
     def _parse_wifi_mgmt(self, frame: bytes, fc: int, subtype: int, idx: int):
         mgmt_name = WIFI_MGMT_SUBTYPES.get(subtype, f"MgmtSubtype_{subtype}")
 
-        # deauth / disassociation
+        # 去认证/去关联帧分析
         if subtype in (0x0A, 0x0C):
             reason = (
                 struct.unpack_from("<H", frame, 24)[0]
@@ -232,7 +225,7 @@ class WirelessProtocolAnalyzer:
             self._deauth_counts.setdefault(src_mac, 0)
             self._deauth_counts[src_mac] += 1
 
-            # EWMA adaptive detection
+            # EWMA自适应检测
             ts = float(idx)
             if self._ewma.observe(src_mac, ts):
                 self._anomalies.append(WirelessAnomaly(
@@ -247,7 +240,7 @@ class WirelessProtocolAnalyzer:
                 "low",
             ))
 
-        # probe request SSID overflow
+        # Probe Request SSID长度溢出检测
         if subtype == 0x04 and len(frame) >= 26:
             ssid_len = frame[25]
             if ssid_len > 32:
@@ -257,12 +250,12 @@ class WirelessProtocolAnalyzer:
                     "medium",
                 ))
 
-        # Beacon: extract PMF capability from RSN IE
+        # Beacon: 从RSN IE提取PMF能力位
         if subtype == 0x08 and len(frame) >= 36:
             bssid = frame[16:22].hex(':')
             self._check_pmf_in_beacon(frame, bssid)
 
-        # truncated management frame
+        # 截断管理帧检测
         if len(frame) < 30:
             self._anomalies.append(WirelessAnomaly(
                 "WiFi", mgmt_name,
@@ -275,19 +268,18 @@ class WirelessProtocolAnalyzer:
         )
 
     def _check_pmf_in_beacon(self, frame: bytes, bssid: str):
-        """parse RSN IE (tag 0x30) from Beacon to extract PMF capability bits.
+        """解析Beacon帧RSN IE (tag 0x30)提取PMF能力位。
 
-        PMF bits are at bit 6-7 of the RSN Capabilities field, which sits
-        at the last 2 bytes of the RSN IE. PMF=0x00 means the AP accepts
-        unprotected management frames — CVE-2020-26139 is directly exploitable.
+        PMF位于RSN Capabilities字段最后2字节的bit 6-7。
+        PMF=0x00表示AP接受未保护管理帧——CVE-2020-26139可直接利用。
         """
-        pos = 36  # after fixed 802.11 mgmt header
+        pos = 36  # 跳过802.11管理帧固定头部
         ie_end = len(frame)
         while pos + 2 < ie_end:
             tag = frame[pos]
             ie_len = frame[pos + 1]
-            if tag == 0x30 and ie_len >= 8:  # RSN IE found
-                cap_off = pos + 2 + ie_len - 2  # last 2 bytes = RSN capabilities
+            if tag == 0x30 and ie_len >= 8:  # RSN IE
+                cap_off = pos + 2 + ie_len - 2  # 最后2字节 = RSN capabilities
                 if cap_off + 2 <= ie_end:
                     rsn_cap = struct.unpack_from("<H", frame, cap_off)[0]
                     pmf_bits = (rsn_cap & _PMF_CAP_MASK) >> 6
@@ -306,11 +298,9 @@ class WirelessProtocolAnalyzer:
             if ie_len == 0:
                 break
 
-    # -- aggregate anomaly detection --
-
+    # 跨帧聚合异常检测
     def _check_aggregate(self):
-        """cross-frame aggregate anomaly checks."""
-        # fixed-threshold fallback for deauth flooding
+        """跨帧聚合异常检查。去认证洪水固定阈值回退检测。"""
         spammers = [
             mac for mac, cnt in self._deauth_counts.items() if cnt >= 10
         ]

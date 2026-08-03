@@ -1,0 +1,721 @@
+# Dev notes: utility functions subsystem
+# Kept for reference; actual implementation diverged in places
+
+## 当前模块描述
+通用工具模块：LRU 缓存、定时器、二进制 IO、模式扫描、并发工具、哈希工具、字符串工具、线段树。
+
+## 设计的深度创新点: 数据温度感知缓存分层 + 冷热分离 (ThermoLRU)
+
+### 创新动机与理论依据
+现有 LRU 缓存与线段树独立工作。借鉴 DWLBF 的数据温度概念：以访问频率估计数据温度，将缓存分为热/温/冷三层，热层用精确索引、冷层用紧凑近似结构；借鉴对抗鲁棒布隆过滤器为冷层误判率提供上界。差异点：现有 LRU 仅按访问时间排序，新增方案显式引入温度分层与近似结构。
+
+### 支撑论文
+  [1] DWLBF: a deletable weighted learned Bloom Filter based on data temperature — Journal of King Saud University (2025).
+  [2] Adversary Resilient Learned Bloom Filters — arXiv:2409.06556 (2024).
+
+## 当前模块代码 (关键文件摘要)
+```python
+# === utils\lru.py (8110 字节) ===
+# 2026-07-27
+# LRU / TTL / LFU 缓存实现
+# 二进制分析管线中缓存中间结果（反汇编、特征向量、GNN 嵌入）可消除重复计算。
+# Hybrid Fuzzing with LLM [arXiv:2511.03995] 中语义反馈模块使用嵌入相似性缓存
+# 来判定行为新颖性 —— 此处提供通用的时间感知型淘汰策略。
+import threading
+import time
+import functools
+from typing import Dict, Any, Optional, Callable, Tuple, OrderedDict as OD
+from collections import OrderedDict
+
+# ---- LRU Cache (基于 OrderedDict) ---------------------------------------
+
+class LRUCache:
+    """线程安全的 LRU 缓存。基于 OrderedDict 的移动-到-末尾策略。
+    get 将条目移到末尾（最近使用），容量满时淘汰开头（最久未用）。
+    O(1) get/put。"""
+
+    def __init__(self, capacity: int = 128):
+        if capacity < 1:
+            raise ValueError("capacity must be >= 1")
+        self.capacity = capacity
+        self._store: OrderedDict = OrderedDict()
+        self._lock = threading.Lock()
+
+    def get(self, key: Any, default: Any = None) -> Any:
+        with self._lock:
+            if key not in self._store:
+                return default
+            self._store.move_to_end(key)
+            return self._store[key]
+
+    def put(self, key: Any, value: Any):
+        with self._lock:
+            if key in self._store:
+                self._store.move_to_end(key)
+                self._store[key] = value
+            else:
+                if len(self._store) >= self.capacity:
+                    self._store.popitem(last=False)
+                self._store[key] = value
+
+    def remove(self, key: Any) -> bool:
+        with self._lock:
+            if key in self._store:
+                del self._store[key]
+                return True
+            return False
+
+    def clear(self):
+        with self._lock:
+            self._store.clear()
+
+    def __len__(self):
+        with self._lock:
+            return len(self._store)
+
+    def __contains__(self, key):
+        with self._lock:
+            return key in self._store
+
+# ---- TTL Cache (带过期时间的 LRU) ---------------------------------------
+
+class TTLCache:
+    """LRU + TTL 缓存。每个条目在 TTL 秒后自动失效。
+    惰性淘汰: 仅在访问时检查过期。put 时若满则主动淘汰过期条目。"""
+
+    def __init__(self, capacity: int = 256, ttl_seconds: float = 300.0):
+        self.capacity = capacity
+        self.ttl = ttl_seconds
+        self._store: OrderedDict = OrderedDict()
+        self._lock = threading.RLock()
+
+    def get(self, key: Any, default: Any = None) -> Any:
+        with self._lock:
+            if key not in self._store:
+                return default
+            value, expires_at = self._store[key]
+            if time.monotonic() > expires_at:
+                del self._store[key]
+
+# === utils\timer_utils.py (6483 字节) ===
+# 2026-07-29
+# 计时代码块/函数的上下文管理器和装饰器
+# VMPredator [arXiv:2605.30902] 的 DBI 追踪阶段依赖精确的指令级计时；
+# ISC4DGF [arXiv:2409.14329] 评估种子生成管线的加速比 ——
+# 此处提供支持累计统计和百分位数的时间测量工具。
+import time
+import functools
+import math
+from typing import List, Optional, Callable, Dict
+from collections import defaultdict
+
+# 上下文管理器计时器
+
+class Timer:
+    """上下文管理器计时器。用法:
+        with Timer() as t:
+            do_work()
+        print(t.elapsed)
+    """
+
+    __slots__ = ("_start", "_end")
+
+    def __init__(self):
+        self._start: float = 0.0
+        self._end: float = 0.0
+
+    def __enter__(self):
+        self._start = time.perf_counter()
+        return self
+
+    def __exit__(self, *args):
+        self._end = time.perf_counter()
+
+    @property
+    def elapsed(self) -> float:
+        end = self._end if self._end > 0 else time.perf_counter()
+        return end - self._start
+
+    @property
+    def elapsed_ms(self) -> float:
+        return self.elapsed * 1000.0
+
+    def __repr__(self):
+        return f"Timer({self.elapsed:.4f}s)"
+
+
+class CumulativeTimer:
+    """可暂停/恢复的累积计时器。支持多次 start/stop 累加。"""
+
+    def __init__(self):
+        self._accumulated: float = 0.0
+        self._start: Optional[float] = None
+
+    def start(self):
+        if self._start is not None:
+            return
+        self._start = time.perf_counter()
+
+    def stop(self) -> float:
+        if self._start is None:
+            return self._accumulated
+        self._accumulated += time.perf_counter() - self._start
+        self._start = None
+        return self._accumulated
+
+    @property
+    def elapsed(self) -> float:
+        if self._start is not None:
+            return self._accumulated + (time.perf_counter() - self._start)
+        return self._accumulated
+
+    def reset(self):
+        self._accumulated = 0.0
+        self._start = None
+
+
+# 计时装饰器
+
+def timed(description: str = ""):
+    """装饰器: 打印函数执行耗时。
+
+# === utils\binary_io.py (7905 字节) ===
+# 2026-07-25
+# 跨架构二进制 I/O 基元：端序无关读写、对齐、hex dump
+# 参考 SoK: AI-Augmented Binary Reversing [arXiv:2606.17398] 中提出的
+# 统一输入管线 —— 字节级操作是 22 个逆向子领域的基础层。
+# 支持 little/big/network 端序、位宽 8/16/32/64，以及变长整数 (LEB128)。
+import struct
+import io
+import os
+from typing import Union, Optional, Tuple, List, Iterator, BinaryIO
+
+_BYTE_ORDER_MAP = {
+    "le": "<", "be": ">",
+    "little": "<", "big": ">",
+    "network": "!", "net": "!",
+}
+
+class EndianError(ValueError):
+    """端序标识符无效。"""
+    pass
+
+# ---- 基础读写 -----------------------------------------------------------
+
+def read_bytes(buf: bytes, offset: int, size: int) -> bytes:
+    """从字节缓冲区偏移处读取指定长度。不检查越界。"""
+    return buf[offset:offset + size]
+
+def read_u8(buf: bytes, offset: int) -> int:
+    """读取 1 字节无符号整数。"""
+    return buf[offset]
+
+def read_u16(buf: bytes, offset: int, byteorder: str = "le") -> int:
+    """读取 2 字节无符号整数。byteorder: 'le'|'be'|'network'"""
+    fmt = _BYTE_ORDER_MAP.get(byteorder, None)
+    if not fmt: raise EndianError("bad byteorder: %s" % byteorder)
+    return struct.unpack_from(f"{fmt}H", buf, offset)[0]
+
+def read_u32(buf: bytes, offset: int, byteorder: str = "le") -> int:
+    fmt = _BYTE_ORDER_MAP.get(byteorder)
+    if fmt is None: raise EndianError(f"unsupported byte order: {byteorder}")
+    return struct.unpack_from(f"{fmt}I", buf, offset)[0]
+
+def read_u64(buf: bytes, offset: int, byteorder: str = "le") -> int:
+    fmt = _BYTE_ORDER_MAP.get(byteorder)
+    if fmt is None: raise EndianError("unsupported byte order: %s" % byteorder)
+    return struct.unpack_from(f"{fmt}Q", buf, offset)[0]
+
+def read_i32(buf: bytes, offset: int, byteorder: str = "le") -> int:
+    fmt = _BYTE_ORDER_MAP.get(byteorder)
+    if fmt is None:
+        raise EndianError(f"unsupported byte order: {byteorder}")
+    return struct.unpack_from(f"{fmt}i", buf, offset)[0]
+
+def read_i64(buf: bytes, offset: int, byteorder: str = "le") -> int:
+    fmt = _BYTE_ORDER_MAP.get(byteorder)
+    if fmt is None:
+        raise EndianError(f"unsupported byte order: {byteorder}")
+    return struct.unpack_from(f"{fmt}q", buf, offset)[0]
+
+# ---- 变长整数 (LEB128 / ULEB128) ----------------------------------------
+# DWARF 和 Wasm 均使用此编码。最大支持 64 位值。
+
+def read_uleb128(buf: bytes, offset: int = 0) -> Tuple[int, int]:
+    """读取无符号 LEB128 编码整数。
+    返回 (value, consumed_bytes)。若数据不足则返回部分结果。"""
+    result = 0
+    shift = 0
+    pos = offset
+    while pos < len(buf):
+        byte = buf[pos]
+        result |= (byte & 0x7F) << shift
+        pos += 1
+        if (byte & 0x80) == 0:
+            break
+        shift += 7
+    return result, pos - offset
+
+def read_sleb128(buf: bytes, offset: int = 0) -> Tuple[int, int]:
+    """读取有符号 LEB128 编码整数。符号扩展至 64 位。"""
+    result = 0
+    shift = 0
+
+# === utils\pattern_scan.py (7921 字节) ===
+# 2026-07-27
+# 字节模式扫描器: Boyer-Moore-Horspool, Aho-Corasick, 通配符匹配, 正则字节搜索
+# ReCopilot [arXiv:2505.16366] 表明精确模式匹配在变量数据流分析中
+# 是基础操作 —— 本模块提供构建此类分析的扫描原语。
+import re
+from typing import List, Tuple, Optional, Dict, Set
+from collections import deque
+
+# ---- Boyer-Moore-Horspool (单模式, O(n/m) 平均) --------------------------
+
+def _bmh_bad_char_table(pattern: bytes) -> List[int]:
+    """BMH 坏字符跳转表，大小为 256。"""
+    m = len(pattern)
+    table = [m] * 256
+    for i in range(m - 1):
+        table[pattern[i]] = m - 1 - i
+    return table
+
+def bmh_search(data: bytes, pattern: bytes, start: int = 0) -> int:
+    """Boyer-Moore-Horspool 单模式搜索。返回首次匹配偏移；-1 未找到。
+    长模式 (|P| >= 8) 大数据上快于 bytes.find()。参考 Hume & Sunday 1991。"""
+    m = len(pattern)
+    n = len(data)
+    if m == 0 or n < m:
+        return -1
+    bad_char = _bmh_bad_char_table(pattern)
+    i = start
+    while i <= n - m:
+        j = m - 1
+        while j >= 0 and data[i + j] == pattern[j]:
+            j -= 1
+        if j < 0:
+            return i
+        i += bad_char[data[i + m - 1]]
+    return -1
+
+def bmh_search_all(data: bytes, pattern: bytes) -> List[int]:
+    """BMH 全部匹配偏移。"""
+    positions = []
+    m = len(pattern)
+    n = len(data)
+    if m == 0 or n < m:
+        return positions
+    bad_char = _bmh_bad_char_table(pattern)
+    i = 0
+    while i <= n - m:
+        j = m - 1
+        while j >= 0 and data[i + j] == pattern[j]:
+            j -= 1
+        if j < 0:
+            positions.append(i)
+            i += 1  # 重叠匹配
+        else:
+            i += max(1, bad_char[data[i + m - 1]])
+    return positions
+
+# ---- Aho-Corasick (多模式, O(N + matches)) -------------------------------
+
+class AhoCorasick:
+    """Aho-Corasick 多模式字符串匹配自动机。
+    参考 Aho & Corasick 1975。
+    支持 bytes 模式的匹配。
+    构造复杂度 O(Σ|pattern_i|)；匹配复杂度 O(N + #matches)。"""
+
+    def __init__(self):
+        self._go: List[Dict[int, int]] = [{}]  # goto 表
+        self._fail: List[int] = [0]            # fail 链接
+        self._output: List[Set[int]] = [set()] # 输出集合（模式索引）
+        self._patterns: List[bytes] = []
+
+    def add_pattern(self, pattern: bytes) -> int:
+        """添加模式并返回其索引。"""
+        idx = len(self._patterns)
+        self._patterns.append(pattern)
+        node = 0
+        for byte in pattern:
+            if byte not in self._go[node]:
+                self._go[node][byte] = len(self._go)
+                self._go.append({})
+                self._fail.append(0)
+
+# === utils\concurrent_utils.py (6858 字节) ===
+# 2026-07-29
+# 并发与并行工具: 线程池、批处理、速率限制、异步辅助
+# FuzzWise [arXiv:2512.21440] 的多 agent LLM 框架在种子生成和覆盖率预测模块
+# 之间并行调度 —— 此处实现通用并发基元以减少竞态条件和资源竞争。
+# 同时参考 VulBinLLM [2025] 中分析管线对多二进制并行处理的需求。
+import threading
+import concurrent.futures
+import time
+import queue
+from typing import List, Callable, Any, Iterator, TypeVar, Generic, Optional
+
+T = TypeVar("T")
+U = TypeVar("U")
+
+# ---- 简单线程池包装 ------------------------------------------------------
+
+class ThreadPool:
+    """concurrent.futures.ThreadPoolExecutor 包装。map + submit/gather。"""
+
+    def __init__(self, max_workers: int = 4, name_prefix: str = ""):
+        self._executor = concurrent.futures.ThreadPoolExecutor(
+            max_workers=max_workers,
+            thread_name_prefix=name_prefix or "tpool"
+        )
+
+    def map(self, fn: Callable[[T], U], items: List[T],
+            *, timeout: Optional[float] = None) -> List[U]:
+        """并行 map。保持输入顺序。单个 item 异常时整体抛出。"""
+        futures = [self._executor.submit(fn, item) for item in items]
+        results = []
+        for f in futures:
+            try:
+                results.append(f.result(timeout=timeout))
+            except Exception as e:
+                # 取消所有未完成的 future
+                for uf in futures:
+                    uf.cancel()
+                raise
+        return results
+
+    def gather(self, tasks: List[Callable[[], U]],
+               *, timeout: Optional[float] = None) -> List[U]:
+        """并行执行无参数 callable 列表。"""
+        return self.map(lambda fn: fn(), tasks, timeout=timeout)
+
+    def submit(self, fn: Callable[..., U], *args, **kwargs) -> concurrent.futures.Future:
+        return self._executor.submit(fn, *args, **kwargs)
+
+    def shutdown(self, wait: bool = True):
+        self._executor.shutdown(wait=wait)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.shutdown()
+
+
+# ---- 批处理 --------------------------------------------------------------
+
+def batched(iterable: List[T], batch_size: int) -> Iterator[List[T]]:
+    """将列表切分为等大小的批次（最后一批可能不足）。
+    示例: batched(range(10), 3) → [[0,1,2],[3,4,5],[6,7,8],[9]]"""
+    for i in range(0, len(iterable), batch_size):
+        yield iterable[i:i + batch_size]
+
+def parallel_batch(fn: Callable[[T], U], items: List[T],
+                   batch_size: int = 8, max_workers: int = 4) -> List[U]:
+    """分批并行处理。每批内并行，批次间串行。
+    适用于每项结果较大的场景（避免内存膨胀）。"""
+    all_results = []
+    for batch in batched(items, batch_size):
+        with ThreadPool(max_workers=max_workers) as pool:
+            all_results.extend(pool.map(fn, batch))
+    return all_results
+
+# ---- 速率限制器 (Token Bucket) ------------------------------------------
+
+class RateLimiter:
+    """Token Bucket 速率限制。初始满桶，每 acquire() 消耗 1 token，
+
+# === utils\hash_utils.py (7300 字节) ===
+# 2026-07-26
+# 哈希工具集：密码学哈希、SimHash (f=64)、MinHash、分块哈希
+# SimHash 参考 Charikar 2002 的随机超平面 LSH；MinHash 参考 Broder 1997。
+# KEENHash [arXiv:2506.11612] 论证了程序级哈希在大规模二进制相似性检索
+# 中的有效性 —— 此处实现构建其底层所需的通用哈希组件。
+import hashlib
+import struct
+from typing import List, Iterator, Optional
+
+# ---- 密码学哈希快捷方式 ----------------
+
+def md5(data: bytes) -> str:
+    return hashlib.md5(data).hexdigest()
+
+def sha1(data: bytes) -> str:
+    return hashlib.sha1(data).hexdigest()
+
+def sha256(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+def sha512(data: bytes) -> str:
+    return hashlib.sha512(data).hexdigest()
+
+def blake2b(data: bytes, digest_size: int = 32) -> str:
+    """BLAKE2b: 比 SHA-256 更快且同等级安全性。默认 32 字节摘要。"""
+    return hashlib.blake2b(data, digest_size=digest_size).hexdigest()
+
+def blake2s(data: bytes, digest_size: int = 32) -> str:
+    """BLAKE2s: 针对 32 位平台优化。默认 32 字节摘要。"""
+    return hashlib.blake2s(data, digest_size=digest_size).hexdigest()
+
+# ---- 文件哈希 ------------------------------------------------------------
+
+def file_sha256(filepath: str, chunk_size: int = 8192) -> str:
+    """流式计算文件 SHA-256，不将整个文件加载到内存。"""
+    h = hashlib.sha256()
+    with open(filepath, "rb") as fh:
+        for chunk in iter(lambda: fh.read(chunk_size), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+def file_md5(filepath: str, chunk_size: int = 8192) -> str:
+    h = hashlib.md5()
+    with open(filepath, "rb") as fh:
+        for chunk in iter(lambda: fh.read(chunk_size), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+# ---- SimHash (64-bit) [Charikar 2002] -----------------------------------
+
+def simhash_64(tokens: List[int], weights: Optional[List[float]] = None) -> int:
+    """计算 token 列表的 64-bit SimHash。
+    token 须为 64-bit 整数（非负）。
+    若有 weights，则对每位贡献加权；否则每位 ±1。
+    参考 KEENHash [arXiv:2506.11612] 的聚类阶段使用的特征哈希近似方法。"""
+    vector = [0] * 64
+    if weights is None:
+        weights = [1.0] * len(tokens)
+    for token, w in zip(tokens, weights):
+        for bit in range(64):
+            if (token >> bit) & 1:
+                vector[bit] += w
+            else:
+                vector[bit] -= w
+    result = 0
+    for bit in range(64):
+        if vector[bit] > 0:
+            result |= (1 << bit)
+    return result
+
+def simhash_hamming(a: int, b: int) -> int:
+    """两个 64-bit SimHash 之间的 Hamming 距离（即 bit_count(a XOR b)）。"""
+    return (a ^ b).bit_count()
+
+def simhash_similarity(a: int, b: int) -> float:
+    """SimHash 相似度: 1.0 - (hamming / 64)。范围 [0, 1]。"""
+    return 1.0 - simhash_hamming(a, b) / 64.0
+
+# ---- 特征哈希到 token ---------------------------------------------------
+
+
+# === utils\string_utils.py (6582 字节) ===
+# 2026-07-28
+# 二进制字符串处理: 字符编码检测、可打印字符串提取、转义/反转义、规范化
+# JSIMPLIFIER [arXiv:2512.14070] 的多阶段预处理管线包含编码归一化、字符串数组反混淆
+# 和 AST 级分析 —— 本模块提供其实施所依赖的底层字符串操作原语。
+import re
+import unicodedata
+from typing import List, Optional, Iterator
+
+# ---- 编码检测 -----------------------------------------------------------
+
+def is_utf8(data: bytes) -> bool:
+    """检查字节序列是否为有效 UTF-8。"""
+    try:
+        data.decode("utf-8")
+        return True
+    except UnicodeDecodeError:
+        return False
+
+def is_ascii(data: bytes) -> bool:
+    return all(b < 128 for b in data)  # 字节值全部在 [0, 127]
+
+def detect_encoding(data: bytes, default: str = "latin-1") -> str:
+    """逐步试探字节序列的字符编码。
+    按 UTF-8 → UTF-16-LE → UTF-16-BE → Latin-1 顺序尝试。
+    返回编码名称字符串。"""
+    if is_utf8(data):
+        return "utf-8"
+    # UTF-16 BOM 检测
+    if len(data) >= 2:
+        if data[:2] == b'\xFF\xFE':
+            return "utf-16-le"
+        if data[:2] == b'\xFE\xFF':
+            return "utf-16-be"
+    # 尝试解码为 UTF-16
+    if len(data) >= 2 and len(data) % 2 == 0:
+        try:
+            data.decode("utf-16-le")
+            return "utf-16-le"
+        except UnicodeDecodeError:
+            pass
+        try:
+            data.decode("utf-16-be")
+            return "utf-16-be"
+        except UnicodeDecodeError:
+            pass
+    return default
+
+# ---- 字符串提取 ---------------------------------------------------------
+
+_ASCII_PRINTABLE = re.compile(b'[\x20-\x7E]{4,}')
+_UNICODE_PRINTABLE = re.compile(r'[ -~一-鿿぀-ゟ゠-ヿ]{4,}')
+
+def extract_ascii_strings(data: bytes, min_length: int = 4) -> List[str]:
+    """从二进制数据中提取 ASCII 可打印字符串。
+    min_length: 最小字符串长度，默认 4（过滤短噪声）。"""
+    return [m.group().decode("ascii") for m in _ASCII_PRINTABLE.finditer(data)]
+
+def extract_wide_strings(data: bytes, min_length: int = 4) -> List[str]:
+    """提取 UTF-16-LE 宽字符串（Windows 内核/用户态常见）。"""
+    if len(data) < min_length * 2:
+        return []
+    strings = []
+    current = bytearray()
+    for i in range(0, len(data) - 1, 2):
+        lo, hi = data[i], data[i + 1]
+        if hi == 0 and 0x20 <= lo < 0x7F:
+            current.append(lo)
+            if len(current) >= min_length and i + 2 >= len(data):
+                strings.append(current.decode("ascii"))
+                current = bytearray()
+        else:
+            if len(current) >= min_length:
+                strings.append(current.decode("ascii"))
+            current = bytearray()
+    return strings
+
+def extract_strings_auto(data: bytes, min_length: int = 4) -> List[str]:
+    """自动检测编码并提取字符串。先 ASCII，再 Wide。
+    对提取结果去重并保持顺序。"""
+    seen = set()
+
+# === utils\segment_tree.py (6818 字节) ===
+# 2026-07-31
+# 区间/线段树: 地址范围查询、区间重叠检测、合并、差分
+# 二进制分析中频繁需要对虚拟地址范围 (VA ranges) 做查询:
+# - "地址 0x401000 属于哪个节/段?"
+# - "这两组 ranges 的交集是什么?"
+# Binary Diff Summarization [arXiv:2509.23970] 的 FSS 指标计算涉及函数地址
+# 区间和差分区间比对 —— 区间树提供 O(log N) 查询和 O(N log N) 构建。
+from typing import List, Tuple, Optional, Any, TypeVar, Generic, Iterator
+
+T = TypeVar("T")
+
+class SegmentTree(Generic[T]):
+    """线段树: 存储半开区间 [start, end) 及其关联值。
+    支持 stabbing query: 给定点 x，返回覆盖 x 的所有区间。
+    构建: O(N log N)；查询: O(log N + K)，K 为结果数。
+    参考 de Berg et al. 2008, Computational Geometry, 第 10 章。
+    与 IntervalTree 的区别: SegmentTree 更适合高重叠度的静态区间集。"""
+
+    __slots__ = ("_endpoints", "_tree", "_size")
+
+    def __init__(self, intervals: Optional[List[Tuple[int, int, T]]] = None):
+        """intervals: [(start, end, value), ...] 半开区间。"""
+        self._endpoints: List[int] = []
+        self._tree: List[List[Tuple[int, int, T]]] = []
+        self._size: int = 0
+        if intervals:
+            self.build(intervals)
+
+    def build(self, intervals: List[Tuple[int, int, T]]):
+        """构建线段树。需预先提供所有区间，不支持增量添加。"""
+        if not intervals:
+            return
+        # 收集全部端点并排序
+        endpoint_set = set()
+        for s, e, _ in intervals:
+            endpoint_set.add(s); endpoint_set.add(e)
+        sorted_eps = sorted(endpoint_set)
+        self._endpoints = sorted_eps
+        n = len(sorted_eps)
+        # 找 >= n 的最小 2 的幂
+        sz = 1
+        while sz < n: sz <<= 1
+        self._size = sz
+        self._tree = [[] for _ in range(2 * sz)]
+        for s, e, val in intervals:
+            self._insert_interval(0, 0, n - 1, s, e, val)
+
+    def _insert_interval(self, node: int, left_idx: int, right_idx: int,
+                         s: int, e: int, val: T):
+        if s <= self._endpoints[left_idx] and self._endpoints[right_idx] <= e:
+            self._tree[node].append((s, e, val))
+            return
+        if right_idx - left_idx <= 1:
+            return
+        mid = (left_idx + right_idx) // 2
+        if s < self._endpoints[mid]:
+            self._insert_interval(node * 2 + 1, left_idx, mid, s, e, val)
+        if e > self._endpoints[mid]:
+            self._insert_interval(node * 2 + 2, mid, right_idx, s, e, val)
+
+    def query(self, point: int) -> List[Tuple[int, int, T]]:
+        """查询覆盖指定点的所有区间 (stabbing query)。"""
+        if not self._endpoints:
+            return []
+        result: List[Tuple[int, int, T]] = []
+        self._query_rec(0, 0, len(self._endpoints) - 1, point, result)
+        # 去重: 同一区间可能被多次添加
+        seen = set()
+        unique = []
+        for item in result:
+            key = (item[0], item[1])
+            if key not in seen:
+                seen.add(key)
+                unique.append(item)
+        return unique
+
+    def _query_rec(self, node: int, left: int, right: int,
+                   point: int, result: List[Tuple[int, int, T]]):
+        for iv in self._tree[node]:
+            if iv[0] <= point < iv[1]:
+```
+
+## 开发要求 (必须严格遵守)
+
+### 1. 保留所有原有功能与注释
+- 绝不删除或修改任何已有函数、类、枚举、变量。
+- 绝不删除或修改任何已有注释（包括中文和英文注释）。
+- 新增代码只能追加在文件末尾或作为新的独立文件添加。
+
+### 2. 新增注释规范
+- 使用中文 INTJ 风格注释：仅陈述设计意图、算法依据、边界条件、与参考论文的对应关系。
+- 禁止情绪化表达与无关事实陈述。
+- 示例格式：
+  ```python
+  # 设计依据: R1-Fuzz (arXiv:2509.20384) GRPO 奖励建模，
+  # 以覆盖率增益为唯一奖励源，避免稀疏奖励导致的训练发散。
+  # 边界: 当状态维度超过 100 时降级为上下文老虎机，防止组合爆炸。
+  def _grpo_mutation_reward(state_vector, coverage_gain):
+      ...
+  ```
+
+### 3. 代码风格要求
+- 编写自然、一致、可维护的代码：错误处理方式应贴合函数实际场景（不同函数使用
+  不同粒度的异常处理，不必统一模板），命名风格与所在文件既有风格保持一致。
+- 避免机械重复：核心算法给出详细注释，简单辅助函数仅一行注释，注释疏密自然。
+- 绝不为了风格统一而破坏代码正确性，所有功能必须可运行。
+
+### 4. 文件时间戳
+- 不要修改任何文件的时间戳。时间戳由主控脚本处理。
+
+## 输出格式要求
+
+你必须返回所有需要新增或修改的文件的完整内容。对每个文件使用以下分隔符格式：
+
+```
+===FILE_START: utils/新文件名.py ===
+# 完整文件内容
+===FILE_END: utils/新文件名.py ===
+```
+
+对于需要修改的现有文件（追加内容），也提供完整文件内容。
+
+请确保：
+1. 每个新增文件至少包含 100 行有意义的代码（非注释非空行）。
+2. 文件直接写在 utils/ 目录下（flat structure，子目录可用 src/）。
+3. 所有 import 语句使用相对导入（如 from .xxx import yyy）或标准库。
+4. 代码可以直接运行，不需要额外安装依赖（除非已有可选依赖检测模式）。
+
+现在，请为模块 `utils` 实现上述创新点。

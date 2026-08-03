@@ -1,9 +1,7 @@
-# 2026-07-21
-"""SNMP 协议安全分析 —— 团体字符串弱点、MIB遍历检测、SNMPv3安全评估。
+"""SNMP 协议安全分析 —— 团体字符串弱点检测、MIB遍历发现、SNMPv3安全评估。
 
-SNMP v1/v2c 使用明文团体字符串(community string)作为唯一认证手段，
-默认值public/private至今仍被大量网络设备使用。SNMPv3引入USM安全模型
-（基于用户的安全模型），但配置不当仍可被降级攻击至v1/v2c。
+SNMP v1/v2c 以明文团体字符串作为认证手段，默认值public/private在现网设备中普遍存在。
+SNMPv3引入USM安全模型（User-based Security Model），但配置不当可被降级攻击至v1/v2c。
 
 参考：
 - RFC 3411-3418 (SNMPv3 architecture)
@@ -16,7 +14,7 @@ from typing import List, Dict, Optional, Tuple, Any
 
 _log = logging.getLogger(__name__)
 
-# SNMP PDU 类型 (RFC 3416 §4)
+# SNMP PDU 类型枚举 (RFC 3416 §4)
 _SNMP_GET_REQUEST = 0xA0; _SNMP_GETNEXT_REQUEST = 0xA1
 _SNMP_GET_RESPONSE = 0xA2; _SNMP_SET_REQUEST = 0xA3
 _SNMP_GETBULK_REQUEST = 0xA5; _SNMP_INFORM_REQUEST = 0xA6
@@ -27,18 +25,18 @@ _SNMP_PDU_NAMES = {
     0xA5: "GETBULK", 0xA6: "INFORM", 0xA7: "TRAPv2", 0xA8: "REPORT",
 }
 
-# 默认团体字符串（最常见的弱口令）
+# 高频默认团体字符串库
 _DEFAULT_COMMUNITIES = frozenset({
     "public", "private", "snmp", "admin", "cisco", "default",
     "root", "secret", "monitor", "manager", "read", "write",
     "tivoli", "openview", "security", "agent", "system",
 })
 
-# GETBULK 遍历检测 —— 短时间内大量GETNEXT/GETBULK请求
-_BULK_WALK_THRESHOLD = 50    # 同一源IP在窗口内的SNMP请求数
-_BULK_WALK_WINDOW = 10.0      # 窗口大小（秒）
+# GETBULK MIB遍历检测参数——同源IP在时间窗口内的请求数阈值
+_BULK_WALK_THRESHOLD = 50
+_BULK_WALK_WINDOW = 10.0
 
-# SNMPv3 USM 安全级别 (msgFlags byte)
+# SNMPv3 USM 安全级别位掩码 (msgFlags byte)
 _SNMPV3_NOAUTH_NOPRIV = 0x00
 _SNMPV3_AUTH_NOPRIV = 0x01
 _SNMPV3_AUTH_PRIV = 0x03
@@ -46,7 +44,7 @@ _SNMPV3_AUTH_PRIV = 0x03
 
 @dataclass
 class SnmpPacket:
-    """解析后的SNMP包"""
+    """解析后的SNMP报文结构体"""
     version: int = 0          # 0=v1, 1=v2c, 3=v3
     community: str = ""       # v1/v2c 团体字符串
     pdu_type: int = 0
@@ -54,7 +52,7 @@ class SnmpPacket:
     request_id: int = 0
     error_status: int = 0
     oid_count: int = 0
-    # v3 特有
+    # SNMPv3 扩展字段
     msg_id: int = 0
     security_level: int = 0   # noAuthNoPriv=0, authNoPriv=1, authPriv=3
     security_model: int = 0   # USM=3
@@ -71,10 +69,9 @@ class SnmpAlert:
 
 
 class SnmpPduParser:
-    """SNMP BER/DER 编码解析器 —— 支持v1/v2c/v3。
+    """SNMP BER/DER 编码解析——轻量级实现，支持v1/v2c/v3版本识别。
 
-    仅做轻量级解析（版本识别、团体字符串提取、PDU类型），
-    不完整解析OID树（避免引入ASN.1库依赖）。
+    仅提取版本、团体字符串和PDU类型，不完整解析OID树以避免引入ASN.1库依赖。
     """
 
     @staticmethod
@@ -85,12 +82,12 @@ class SnmpPduParser:
         pkt = SnmpPacket()
         pos = 0
 
-        # 外部SEQUENCE
+        # 确认外层SEQUENCE标签
         if data[pos] != 0x30:
             return None
-        pos = SnmpPduParser._skip_tlv(data, pos)  # 跳到version
+        pos = SnmpPduParser._skip_tlv(data, pos)
 
-        # version (INTEGER)
+        # 解析version字段 (INTEGER)
         if pos >= len(data) or data[pos] != 0x02:
             return None
         ver_len = data[pos + 1] if pos + 1 < len(data) else 0
@@ -99,7 +96,7 @@ class SnmpPduParser:
         pkt.version = data[pos + 2] if ver_len == 1 else 0
         pos += 2 + ver_len
 
-        # v1/v2c: community string (OCTET STRING)
+        # v1/v2c: 提取community string (OCTET STRING)
         if pkt.version in (0, 1) and pos < len(data) and data[pos] == 0x04:
             comm_len = data[pos + 1]
             if pos + 2 + comm_len <= len(data):
@@ -108,21 +105,17 @@ class SnmpPduParser:
                 )
             pos += 2 + comm_len
 
-        # v3: msgGlobalData + msgSecurityParameters (更复杂)
+        # v3: msgGlobalData + msgSecurityParameters 层级解析
         if pkt.version == 3 and pos + 1 < len(data):
-            # msgGlobalData SEQUENCE
             if data[pos] == 0x30:
                 pos = SnmpPduParser._skip_tlv(data, pos)
-            # msgSecurityParameters OCTET STRING → 内部为SEQUENCE
             if pos < len(data) and data[pos] == 0x04:
                 pos = SnmpPduParser._skip_tlv(data, pos)
-            # msgData → 内部有PDU
             if pos < len(data) and data[pos] == 0x30:
                 inner = pos + 1
                 inner_len = data[inner] if inner < len(data) else 0
                 inner_start = inner + 1 if data[pos + 1] < 0x80 else inner + 1 + (data[pos + 1] & 0x7F)
                 if inner_start < len(data):
-                    # ctxEngineID + ctxName
                     inner_start = SnmpPduParser._skip_tlv(data, inner_start)
                     inner_start = SnmpPduParser._skip_tlv(data, inner_start)
                     if inner_start < len(data):
@@ -131,7 +124,7 @@ class SnmpPduParser:
                 pos = inner_start
                 return pkt
 
-        # PDU 解析
+        # 标准PDU类型识别
         if pos < len(data) and data[pos] in _SNMP_PDU_NAMES:
             pkt.pdu_type = data[pos]
             pkt.pdu_name = _SNMP_PDU_NAMES[pkt.pdu_type]
@@ -147,7 +140,7 @@ class SnmpPduParser:
             return pos
         length = data[pos]
         pos += 1
-        if length & 0x80:  # 多字节长度
+        if length & 0x80:  # 多字节长度编码
             nbytes = length & 0x7F
             length = int.from_bytes(data[pos:pos + nbytes], "big")
             pos += nbytes
@@ -155,22 +148,21 @@ class SnmpPduParser:
 
 
 class SnmpAnalyzer:
-    """SNMP 安全分析引擎 —— 弱密码检测+MIB遍历检测+版本安全评估。
+    """SNMP 安全分析引擎——弱团体字符串+ MIB遍历+版本降级并行检测。
 
-    架构：对每个SNMP包进行轻量解析 → 聚合团体字符串/IP的统计 →
-    触发弱密码、MIB遍历、v1/v2c降级风险告警。
+    处理流程：逐包轻量解析 → 聚合团体字符串/IP计数 → 触发告警。
     """
 
     def __init__(self):
         self._parser = SnmpPduParser()
         self._communities: Dict[str, Counter] = defaultdict(Counter)
-        self._requests: Dict[str, List[float]] = defaultdict(list)  # IP → [timestamps]
+        self._requests: Dict[str, List[float]] = defaultdict(list)
         self._alerts: List[SnmpAlert] = []
         self._packet_count = 0
 
     def feed(self, data: bytes, src_ip: str = "",
              dst_ip: str = "", timestamp: float = 0.0) -> Optional[SnmpPacket]:
-        """输入SNMP UDP负载（port 161/162）"""
+        """输入SNMP UDP负载（端口161/162）进行逐包分析"""
         pkt = self._parser.parse(data)
         if pkt is None:
             return None
@@ -208,10 +200,9 @@ class SnmpAnalyzer:
             ))
 
     def detect_mib_walk(self) -> List[SnmpAlert]:
-        """检测MIB遍历行为 —— 阈值窗口内的密集GETNEXT/GETBULK
+        """MIB遍历行为检测——时间窗口内GETNEXT/GETBULK密集度超过阈值。
 
-        MIB walking通过反复调用GETNEXT遍历整个OID树，是攻击者信息收集
-        的典型前奏。返回告警列表。
+        MIB walking通过反复GETNEXT遍历OID树，是攻击者信息收集的典型前置动作。
         """
         alerts = []
         now = __import__("time").time()
@@ -239,7 +230,7 @@ class SnmpAnalyzer:
         type_dist = Counter(a.alert_type for a in self._alerts)
         sev_dist = Counter(a.severity for a in self._alerts)
 
-        # 收集所有使用的团体字符串
+        # 聚合全部已使用团体字符串，标记弱密码
         all_communities = Counter()
         for ip_comms in self._communities.values():
             all_communities.update(ip_comms)
@@ -267,7 +258,7 @@ class SnmpAnalyzer:
 
 
 def analyze_snmp_traffic(packets: List[Dict]) -> Dict[str, Any]:
-    """便捷入口 —— 从UDP包列表分析SNMP流量"""
+    """从UDP包字典列表批量分析SNMP流量——便捷入口函数"""
     analyzer = SnmpAnalyzer()
     for pkt in packets:
         analyzer.feed(

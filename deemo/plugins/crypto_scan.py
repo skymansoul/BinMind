@@ -12,6 +12,8 @@ from typing import Dict, List, Set
 logger = logging.getLogger(__name__)
 
 # Well-known crypto constants
+# TODO: SM4 constants (Chinese national standard) — ZUC has been requested
+# by several users analyzing IoT firmware from CN vendors
 AES_SBOX = bytes([
     0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5,
     0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,

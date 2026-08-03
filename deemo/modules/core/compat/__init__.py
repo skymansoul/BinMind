@@ -14,3 +14,10 @@
 #   heap_analyzer     — 堆利用原语与风水检测 (Gollum 2019 CCS, FUZE 2018 USENIX, HeapMD 2022)
 #   directed_fuzzer   — 定向灰盒模糊测试基元 (BEACON 2022 S&P, Hawkeye 2018 CCS, MC2 2023 USENIX)
 #   uaf_detector      — UAF 静态/动态/并发检测 (Undangle 2012 ISSTA, UAFL 2020 ICSE, UFO 2018 ICSE)
+# --- 2025-07 深度拓展 ---
+#   subreg_taint             — 子寄存器级污点追踪, x86/x64/ARM64 字节槽位模型
+#   drift_calibrator         — 在线约束复杂度校准器, CUSUM 漂移检测 + SGD 重校准
+#   cfg_entropy_fingerprint  — CFG 感知熵指纹, 拉普拉斯谱特征 + 熵加权邻接矩阵
+# --- 2025-08 跨层/归一化拓展 ---
+#   compiler_artifact_normalizer — 编译器产物归一化, 展开折叠 + 惯用法替换 + 寄存器类映射
+#   cross_layer_taint_router     — 跨层污点路由, 网络协议字段 ↔ CPU 寄存器字节槽映射

@@ -14,7 +14,7 @@ from typing import Dict, Optional
 
 from config import SUBPROCESS_TIMEOUT
 
-logger = logging.getLogger(__name__)
+_log = logging.getLogger(__name__)
 
 
 def detect_packer(path: str) -> Optional[str]:
@@ -52,7 +52,7 @@ def unpack_upx(path: str, output_dir: str = None) -> Optional[str]:
     """Unpack a UPX-compressed binary. Returns path to unpacked file."""
     upx = shutil.which('upx')
     if not upx:
-        logger.debug("upx not installed; skipping UPX unpack")
+        _log.debug("upx not installed; skipping UPX unpack")
         return None
 
     if output_dir is None:
@@ -71,7 +71,7 @@ def unpack_upx(path: str, output_dir: str = None) -> Optional[str]:
     except subprocess.CalledProcessError:
         pass  # UPX failed — might be a modified packer
     except Exception as e:
-        logger.debug("UPX unpack failed: %s", e)
+        _log.debug("UPX unpack failed: %s", e)
 
     return None
 
@@ -133,5 +133,5 @@ def unpack_pyinstaller(path: str, output_dir: str = None) -> Dict:
         result['success'] = pyc_count > 0
         return result
     except Exception as e:
-        logger.warning("PyInstaller extraction failed: %s", e)
+        _log.warning("PyInstaller extraction failed: %s", e)
         return result

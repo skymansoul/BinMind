@@ -1,12 +1,10 @@
-# 2026-08-02 — 发现富化引擎: 外部数据源交叉引用 / CVSS推断 / CWE细化 / MITRE ATT&CK映射
-# 参考: Şimşek et al. "FixV2W: Correcting Invalid CVE-CWE Mappings with KG Embeddings" (arXiv:2604.22176)
+# 发现富化引擎: 外部数据源交叉引用/CVSS推断/CWE细化/MITRE ATT&CK映射
+# 参考: Simsek et al. "FixV2W: Correcting Invalid CVE-CWE Mappings with KG Embeddings" (arXiv:2604.22176)
 #       McCoy et al. "A Relevance Model for Threat-Centric Ranking of Cybersecurity Vulnerabilities" (arXiv:2406.05933)
 #       VulnScopper "Unveiling Hidden Links Between Unseen Security Entities" (arXiv:2403.02014)
 #       Baird & Moin "Cascaded Vulnerability Attacks in Software Supply Chains" (arXiv:2601.20158)
 #       Wu & Feng "Association Analysis of Network Security Vulnerabilities Based on KG" (JCSANDM 2025)
-#       Zotero: Jacobs et al. "Exploit Prediction Scoring System (EPSS)" (2021)
-#       Zotero: Sheng et al. "LLMs in Software Security: A Survey of Vulnerability Detection Techniques" (arXiv, 2026)
-#       Zotero: Javed et al. "Binary Code Analysis for Cybersecurity: A Systematic Review" (2025)
+#       Jacobs et al. "Exploit Prediction Scoring System (EPSS)" (2021)
 import json, logging, os, re, time, hashlib
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple, Any
@@ -15,22 +13,20 @@ from pathlib import Path
 
 log = logging.getLogger(__name__)
 
-# ——————————————————————————————————————————————————————————
-# CVSS 推断 — 基于漏洞描述的启发式评分 [FIRST CVSS v3.1 规范]
-# ——————————————————————————————————————————————————————————
+# CVSS推断，基于描述文本的启发式评分 [FIRST CVSS v3.1]
 
 class CVSSInferrer:
-    """基于描述文本推断 CVSS 向量.
+    """描述文本→CVSS向量推断.
 
-    方法: 关键词匹配 + 上下文规则 (非完整 NLP, 避免外部依赖).
-    目标: 为缺少 CVSS 的内部发现提供近似评分以供排序 [McCoy et al. 2024].
+    关键词匹配+上下文规则，避免外部依赖.
+    为缺少CVSS的内部发现提供近似评分 [McCoy et al. 2024].
 
-    关键词按 CVSS 指标分组:
-      - AV (Attack Vector):  network > adjacent > local > physical
-      - AC (Attack Complexity): low > high (关键词: 'easy'/'trivial' → low)
-      - PR (Privileges Required): none > low > high
-      - UI (User Interaction): none > required
-      - C/I/A (Impact): high > low > none
+    关键词按CVSS指标分组:
+      - AV: network > adjacent > local > physical
+      - AC: low > high
+      - PR: none > low > high
+      - UI: none > required
+      - C/I/A: high > low > none
     """
 
     _AV_KW = {
@@ -48,27 +44,27 @@ class CVSSInferrer:
         'L': ['partial', 'limited', 'information disclosure', 'minor', 'low impact'],
     }
 
-    # CWE → 默认 CVSS 基础向量 (基于 NVD 统计均值) [FixV2W 2025]
+    # CWE→默认CVSS基础向量 (NVD统计均值) [FixV2W 2025]
     _CWE_DEFAULT_CVSS = {
-        'CWE-787': (8.8, 'AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H'),   # Out-of-bounds Write
-        'CWE-89':  (9.8, 'AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H'),   # SQL Injection
-        'CWE-78':  (9.8, 'AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H'),   # OS Command Injection
-        'CWE-79':  (6.1, 'AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N'),   # XSS
-        'CWE-125': (7.1, 'AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N'),   # Out-of-bounds Read
-        'CWE-20':  (7.5, 'AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N'),   # Improper Input Validation
-        'CWE-416': (8.8, 'AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H'),   # Use After Free
-        'CWE-476': (7.5, 'AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H'),   # NULL Pointer Dereference
-        'CWE-200': (5.3, 'AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N'),   # Information Exposure
-        'CWE-119': (9.8, 'AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H'),   # Buffer Overflow
-        'CWE-352': (8.8, 'AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H'),   # CSRF
-        'CWE-22':  (7.5, 'AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N'),   # Path Traversal
-        'CWE-287': (9.8, 'AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H'),   # Improper Authentication
-        'CWE-798': (9.8, 'AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H'),   # Hard-coded Credentials
-        'CWE-190': (7.8, 'AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H'),   # Integer Overflow
+        'CWE-787': (8.8, 'AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H'),
+        'CWE-89':  (9.8, 'AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H'),
+        'CWE-78':  (9.8, 'AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H'),
+        'CWE-79':  (6.1, 'AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N'),
+        'CWE-125': (7.1, 'AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N'),
+        'CWE-20':  (7.5, 'AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N'),
+        'CWE-416': (8.8, 'AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H'),
+        'CWE-476': (7.5, 'AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H'),
+        'CWE-200': (5.3, 'AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N'),
+        'CWE-119': (9.8, 'AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H'),
+        'CWE-352': (8.8, 'AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H'),
+        'CWE-22':  (7.5, 'AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N'),
+        'CWE-287': (9.8, 'AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H'),
+        'CWE-798': (9.8, 'AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H'),
+        'CWE-190': (7.8, 'AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H'),
     }
 
     def infer_cvss(self, finding: Dict) -> Dict:
-        # 推断优先级: 已有 cvss > CWE 默认 > 关键词启发式
+        # 推断优先级: 已有cvss > CWE默认 > 关键词启发式
         if finding.get('cvss') and isinstance(finding['cvss'], (int, float)):
             return {'score': float(finding['cvss']), 'vector': finding.get('cvss_vector', ''),
                     'source': 'provided'}
@@ -76,36 +72,30 @@ class CVSSInferrer:
         cwe = finding.get('cwe', '')
         desc = finding.get('description', finding.get('message', ''))
 
-        # CWE 默认值
         if cwe in self._CWE_DEFAULT_CVSS:
             score, vector = self._CWE_DEFAULT_CVSS[cwe]
             return {'score': score, 'vector': vector, 'source': 'cwe_default'}
 
-        # 关键词推断
         return self._keyword_infer(desc)
 
     def _keyword_infer(self, description: str) -> Dict:
         desc_lower = description.lower()
 
-        # AV
         av = 'L'
         for level, keywords in self._AV_KW.items():
             if any(kw in desc_lower for kw in keywords):
                 av = level; break
 
-        # AC
         ac = 'L'
         if any(kw in desc_lower for kw in self._AC_KW['H']):
             ac = 'H'
 
-        # Impact: 找最高影响级别
         impact = 'M'
         if any(kw in desc_lower for kw in self._IMPACT_KW['H']):
             impact = 'H'
         elif any(kw in desc_lower for kw in self._IMPACT_KW['L']):
             impact = 'L'
 
-        # 粗略评分映射
         score_map = {
             ('N', 'L', 'H'): 9.8, ('N', 'L', 'M'): 7.5, ('N', 'L', 'L'): 5.3,
             ('N', 'H', 'H'): 8.1, ('N', 'H', 'M'): 6.5, ('N', 'H', 'L'): 4.2,
@@ -126,14 +116,11 @@ class CVSSInferrer:
         return enriched
 
 
-# ——————————————————————————————————————————————————————————
-# CWE 细化引擎 — 从描述文本推断更精确的 CWE [FixV2W 2025]
-# ——————————————————————————————————————————————————————————
+# CWE细化引擎 [FixV2W 2025]
 
 class CWERefiner:
-    """CWE 细化引擎: 基于描述模式匹配, 建议更精确的 CWE 分类."""
+    """描述模式匹配→精确CWE分类."""
 
-    # 常见误分类模式: {current_cwe: [(pattern, suggested_cwe, confidence)]}
     _REFINEMENT_RULES = {
         'CWE-200': [
             (r'(?:hard.?coded|hardcoded)\s*(?:password|secret|key|credential|token)', 'CWE-798', 0.85),
@@ -176,14 +163,11 @@ class CWERefiner:
         return findings
 
 
-# ——————————————————————————————————————————————————————————
-# MITRE ATT&CK 映射引擎 [McCoy et al. 2024]
-# ——————————————————————————————————————————————————————————
+# MITRE ATT&CK映射 [McCoy et al. 2024]
 
 class MITREAttackMapper:
-    """将漏洞发现映射到 MITRE ATT&CK 战术和技术."""
+    """漏洞发现→MITRE ATT&CK战术技术."""
 
-    # CWE → ATT&CK Technique 映射 (来自 CWE-ATT&CK 交叉引用)
     _CWE_TO_ATTACK = {
         'CWE-787': [('T1059', 'Command and Scripting Interpreter'), ('T1203', 'Exploitation for Client Execution')],
         'CWE-89':  [('T1190', 'Exploit Public-Facing Application'), ('T1505', 'Server Software Component')],
@@ -227,7 +211,7 @@ class MITREAttackMapper:
         return results
 
     def generate_attack_navigator_layer(self, findings: List[Dict]) -> Dict:
-        """生成 MITRE ATT&CK Navigator 兼容的 layer JSON."""
+        """MITRE ATT&CK Navigator兼容layer JSON."""
         techniques = defaultdict(lambda: {'score': 0, 'enabled': False, 'metadata': []})
         for f in findings:
             mappings = self.map_finding(f)
@@ -253,12 +237,10 @@ class MITREAttackMapper:
         }
 
 
-# ——————————————————————————————————————————————————————————
-# 富化管道 — 一个入口, 全部富化
-# ——————————————————————————————————————————————————————————
+# 富化管道，一站式富化
 
 class FindingEnrichmentPipeline:
-    # 一站式富化: CVSS推断 + CWE细化 + ATT&CK映射
+    # CVSS推断+CWE细化+ATT&CK映射
     def __init__(self):
         self.cvss = CVSSInferrer()
         self.cwe_refiner = CWERefiner()

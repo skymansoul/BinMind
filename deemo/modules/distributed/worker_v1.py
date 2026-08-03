@@ -9,8 +9,7 @@ from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutTimeout
 
 _log = logging.getLogger(__name__)
 
-# 2026-08-01
-# ---- src/ 优先导入，不可用时内联简化实现 ----
+# src/ 优先导入，不可用时内联简化实现
 # worker.py 可独立运行，不依赖 src/ 子包
 # 外部代码可以从 worker 导入 Task/Node 等核心类型
 try:
@@ -651,4 +650,8 @@ class Worker:
         return True
 
 
-CELERY_AVAILABLE = REDIS_AVAILABLE
+# FIX: CELERY_AVAILABLE 曾被错误地别名为 REDIS_AVAILABLE。
+# Celery 依赖 Redis 但 Redis != Celery。此处为非 Celery worker。
+# 原始 bug 行保留供考古:
+# CELERY_AVAILABLE = REDIS_AVAILABLE  # ← 语义错误: 混淆了 broker 与框架
+CELERY_AVAILABLE = False  # worker_v1 使用原始 Redis，非 Celery

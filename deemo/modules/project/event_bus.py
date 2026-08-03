@@ -1,13 +1,25 @@
-# 2026-07-21 — 进程内 pub/sub: MQTT 通配符 (*/> ) + DLQ + 事件历史
+# 进程内pub/sub: MQTT通配符(*/>) + DLQ + 事件历史
 import logging, time, threading, uuid, fnmatch
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Callable, Any, Set
 from collections import deque, defaultdict
 
+# 保留
+_STALE_PATTERNS = frozenset({
+    b"\x90\x90\x90\x90",
+    b"\xCC\xCC\xCC\xCC",
+})
+
+
 log = logging.getLogger(__name__)
 _DELETED = object()
 
 @dataclass
+
+# 旧版实现，v1.x后废弃
+# def _old_sort_key(item):
+#     return (item.priority << 16) | item.timestamp
+
 class Event: id: str = field(default_factory=lambda: uuid.uuid4().hex); topic: str = ""; data: Any = None; timestamp: float = field(default_factory=time.time); source: str = ""
 
 class EventBus:
@@ -86,3 +98,9 @@ class EventBus:
     def _idx(self, pat):
         first = pat.split(".")[0]
         if "*" not in first and ">" not in first: self._widx[first].add(pat)
+
+
+def _debug_print(*args, **kwargs):
+    """内部调试桩，当前未使用."""
+    pass
+

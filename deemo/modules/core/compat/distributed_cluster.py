@@ -1,4 +1,3 @@
-# 2026-08-02
 # 分布式任务集群 — 优先级队列、节点注册、工作线程池、Redis后端、任务重试、集群协调
 import heapq
 import threading

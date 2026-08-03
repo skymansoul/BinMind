@@ -1,16 +1,15 @@
-# 2026-08-02
-# ARM PAC 差分密码分析器 — FEAT_PACQARMA3 的安全边界评估
-# 参考:
+# ARM PAC差分密码分析器。FEAT_PACQARMA3安全边界评估。
+# 参考：
 #   "Differential Cryptanalysis of the Reduced Pointer Authentication Code
 #    Function used in Arm's FEAT_PACQARMA3 Feature"
 #    (IACR FSE 2025, ePrint 2025/321) — Avanzi, Dunkelman, Ghosh
-#    发现: ARM 后期将 QARMA-64 从 12 轮降为 8 轮后, 部分 PAC 配置
-#    不满足原安全目标; 不同 PAC 长度和轮数的组合存在安全性差异
+#    ARM后期将QARMA-64从12轮缩减至8轮，部分PAC配置不再满足
+#    原始安全目标；不同PAC长度与轮数组合的安全性存在差异。
 #   "PACMAN: Attacking ARM Pointer Authentication with Speculative Execution"
 #    (ISCA 2022) — Ravichandran et al. (MIT)
-#    投机执行暴力破解 PAC: 16 位 PAC < 3 分钟, 每个 PAC 猜测 ~2.69ms
+#    推测执行暴力破解PAC：16位PAC < 3分钟，单次猜测约2.69ms。
 #   "Limitations and Opportunities of Modern Hardware Isolation Mechanisms"
-#    (USENIX ATC 2024) — PAC/MTE/CHERI 的局限性和机遇
+#    (USENIX ATC 2024) — PAC/MTE/CHERI的局限与机遇。
 
 import struct
 import hashlib
@@ -23,33 +22,33 @@ logger = logging.getLogger(__name__)
 
 
 class PACKey(IntEnum):
-    """ARM PAC 的五种密钥类型。"""
-    IA = 0  # Instruction A-key
-    IB = 1  # Instruction B-key
-    DA = 2  # Data A-key
-    DB = 3  # Data B-key
-    GA = 4  # General A-key
+    """ARM PAC五种密钥类型。"""
+    IA = 0  # 指令A密钥
+    IB = 1  # 指令B密钥
+    DA = 2  # 数据A密钥
+    DB = 3  # 数据B密钥
+    GA = 4  # 通用密钥
 
 
 class QARMAConfig(IntEnum):
-    """QARMA-64 配置 — 轮数和 PAC 长度。"""
-    R8_PAC16 = 1   # 8 轮, 16-bit PAC → FEAT_PACQARMA3 默认
-    R8_PAC24 = 2   # 8 轮, 24-bit PAC
-    R8_PAC32 = 3   # 8 轮, 32-bit PAC
-    R12_PAC16 = 4  # 12 轮 (原始 QARMA-64)
-    R12_PAC32 = 5  # 12 轮, 32-bit PAC
+    """QARMA-64配置，轮数与PAC长度。"""
+    R8_PAC16 = 1   # 8轮，16-bit PAC，FEAT_PACQARMA3默认
+    R8_PAC24 = 2   # 8轮，24-bit PAC
+    R8_PAC32 = 3   # 8轮，32-bit PAC
+    R12_PAC16 = 4  # 12轮，16-bit PAC
+    R12_PAC32 = 5  # 12轮，32-bit PAC
 
 
 @dataclass
 class PACSecurityBound:
-    """特定 PAC 配置的安全边界评估。"""
+    """特定PAC配置的安全边界评估。"""
     config: QARMAConfig
     rounds: int
     pac_bits: int
-    brute_force_time_ms: float       # 单次暴力破解所需时间 (ms)
-    collision_probability: float      # 生日碰撞概率 (2^16 次尝试)
-    diff_attack_complexity: int       # 差分攻击复杂度 (FSE 2025)
-    security_margin: int              # 安全余量 (bits), 负数=不安全
+    brute_force_time_ms: float       # 单次暴力破解耗时（ms）
+    collision_probability: float      # 生日碰撞概率（2^16次尝试）
+    diff_attack_complexity: int       # 差分攻击复杂度（FSE 2025）
+    security_margin: int              # 安全余量（bits），负值即不安全
     is_practically_secure: bool = True
 
 
@@ -65,41 +64,40 @@ class PACVulnerabilityAssessment:
 
 
 class ARMPACDifferentialAnalyzer:
-    """ARM PAC 指针认证安全性评估器。
+    """ARM PAC指针认证安全性评估器。
 
-    基于 IACR FSE 2025 的 QARMA-64 差分密码分析结果,
-    评估给定二进制中 PAC 使用的实际安全性。
+    基于IACR FSE 2025 QARMA-64差分密码分析结果，
+    评估二进制中PAC使用的实际安全性。
 
-    分析阶段:
-    1. 反汇编扫描: 统计 PAC 相关指令 (PACI*, AUTI*, XPAC*, RETAA)
-    2. 配置推断: 从二进制特征推断实际 QARMA 配置
-    3. 安全边界计算: 基于 FSE 2025 论文的复杂度数据评估风险
-    4. PACMAN 投机场检测: 是否存在可供投机执行利用的 PAC gadget
+    分析阶段：
+    1. 反汇编扫描：统计PAC指令（PACI*、AUTI*、XPAC*、RETAA）
+    2. 配置推断：由二进制特征推断QARMA配置
+    3. 安全边界：基于FSE 2025复杂度数据评估风险
+    4. PACMAN检测：是否存在可供推测执行利用的PAC gadget
     """
 
-    # PAC 指令匹配模式 — 覆盖 ARMv8.3-A PAC + ARMv8.5-A BTI
+    # PAC指令匹配模式，覆盖ARMv8.3-A PAC与ARMv8.5-A BTI
     _PAC_INSTRUCTION_PATTERNS = {
         "pacia":  r'\bpaciasp\b|\bpacia\b|\bpaciaz\b',     # PAC IA
         "pacib":  r'\bpacibsp\b|\bpacib\b|\bpacibz\b',     # PAC IB
         "pacda":  r'\bpacdza\b',                            # PAC DA
         "pacdb":  r'\bpacdzb\b',                            # PAC DB
-        "pacga":  r'\bpacga\b',                             # PAC GA (通用)
+        "pacga":  r'\bpacga\b',                             # PAC GA，通用
         "autia":  r'\bautiasp\b|\bautia\b|\bautiaz\b',     # AUT IA
         "autib":  r'\bautibsp\b|\bautib\b|\bautibz\b',     # AUT IB
         "autda":  r'\bautdza\b',                            # AUT DA
         "autdb":  r'\bautdzb\b',                            # AUT DB
-        "xpaci":  r'\bxpaci\b|\bxpacd\b',                  # XPAC (strip PAC)
-        "retaa":  r'\bretaasb\b|\bretaa\b|\bretab\b',      # RET with PAC check
+        "xpaci":  r'\bxpaci\b|\bxpacd\b',                  # XPAC，剥离签名
+        "retaa":  r'\bretaasb\b|\bretaa\b|\bretab\b',      # RET，含PAC校验
     }
 
-    # FSE 2025 的安全性数据: (轮数, PAC长度, 差分攻击复杂度 (log2))
+    # FSE 2025安全性数据：(轮数, PAC长度, 暴力耗时ms, 差分攻击复杂度log2)
     _FSE2025_SECURITY_DATA: list[tuple[int, int, float, int]] = [
-        # (rounds, pac_bits, brute_force_ms, diff_complexity_log2)
-        (12, 32, 1.2, 64),     # 原始 QARMA-64: 安全
-        (12, 16, 0.15, 32),    # 12轮 16-bit: 16-bit PAC 过于短
-        (8,  32, 0.8, 40),     # 8轮 32-bit PAC: 论文认为边界安全
-        (8,  24, 0.3, 28),     # 8轮 24-bit: 安全性不足
-        (8,  16, 0.05, 20),    # 8轮 16-bit PAC: 论文认为不安全 (FEAT_PACQARMA3 默认)
+        (12, 32, 1.2, 64),     # 原始QARMA-64，安全
+        (12, 16, 0.15, 32),    # 12轮16-bit，PAC长度不足
+        (8,  32, 0.8, 40),     # 8轮32-bit，论文判为边界安全
+        (8,  24, 0.3, 28),     # 8轮24-bit，安全性不足
+        (8,  16, 0.05, 20),    # 8轮16-bit，FEAT_PACQARMA3默认，论文判为不安全
     ]
 
     def __init__(self, asm_text: str = "", binary_path: str = "",
@@ -112,7 +110,7 @@ class ARMPACDifferentialAnalyzer:
             self._path = binary_path
 
     def count_pac_instructions(self) -> dict[str, int]:
-        """统计 PAC 相关指令数量 — 衡量 PAC 使用密度。"""
+        """统计PAC相关指令数量，衡量PAC使用密度。"""
         if not self._asm:
             self._pac_counts = {}
             return self._pac_counts
@@ -125,33 +123,33 @@ class ARMPACDifferentialAnalyzer:
         return counts
 
     def infer_qarma_config(self) -> QARMAConfig:
-        """从二进制特征推断 QARMA-64 配置。
+        """由二进制特征推断QARMA-64配置。
 
-        启发式规则:
-        - iOS 17+/macOS 14+ arm64e → 倾向于 FEAT_PACQARMA3 (8轮)
-        - Android arm64 通常 → 原始 12 轮 QARMA-64
-        - 32-bit PAC 可通过指针格式推断 (bit[62:61] 保留)
+        启发式规则：
+        - iOS 17+/macOS 14+ arm64e，倾向FEAT_PACQARMA3（8轮）
+        - Android arm64，通常为原始12轮QARMA-64
+        - 32-bit PAC可通过指针格式推断（bit[62:61]保留）
         """
         counts = self._pac_counts or self.count_pac_instructions()
         total_pac = sum(counts.get(k, 0) for k in ("pacia", "pacib", "pacda", "pacdb"))
         has_pacga = counts.get("pacga", 0) > 0  # PACGA 是 ARMv8.6-A 引入的
         total_aut = sum(counts.get(k, 0) for k in ("autia", "autib", "autda", "autdb"))
         if total_pac == 0 and total_aut == 0:
-            return QARMAConfig.R12_PAC32  # 默认保守估计
-        # 若包含 XPAC 指令, 暗示 strip PAC 操作 → 偏向新芯片
+            return QARMAConfig.R12_PAC32  # 无PAC指令时取保守估计
+        # XPAC指令暗示签名剥离操作，趋向新芯片
         if counts.get("xpaci", 0) > 0:
             return QARMAConfig.R8_PAC16  # 假设为 FEAT_PACQARMA3
         return QARMAConfig.R12_PAC32
 
     def evaluate_security_bounds(self) -> list[PACSecurityBound]:
-        """基于 FSE 2025 数据计算所有可能配置的安全边界。"""
+        """基于FSE 2025数据，计算所有配置的安全边界。"""
         bounds = []
-        default_attempts = 65536  # 2^16 (16-bit PAC 的暴力搜索空间)
+        default_attempts = 65536  # 2^16，16-bit PAC暴力搜索空间
         for rounds, pac_bits, bf_ms, diff_log2 in self._FSE2025_SECURITY_DATA:
             collision_prob = 1.0 - (1.0 - 1.0 / (2 ** pac_bits)) ** default_attempts
             margin = pac_bits - diff_log2
             bounds.append(PACSecurityBound(
-                config=QARMAConfig.R8_PAC16,  # 将在外部覆写
+                config=QARMAConfig.R8_PAC16,  # 占位，外部覆写
                 rounds=rounds, pac_bits=pac_bits,
                 brute_force_time_ms=bf_ms,
                 collision_probability=round(collision_prob, 4),
@@ -159,7 +157,7 @@ class ARMPACDifferentialAnalyzer:
                 security_margin=int(margin),
                 is_practically_secure=(margin > 4),
             ))
-        # 覆盖正确的配置枚举
+        # 覆写为正确的配置枚举值
         config_order = [QARMAConfig.R8_PAC16, QARMAConfig.R8_PAC24,
                        QARMAConfig.R8_PAC32, QARMAConfig.R12_PAC16,
                        QARMAConfig.R12_PAC32]
@@ -168,12 +166,12 @@ class ARMPACDifferentialAnalyzer:
         return bounds
 
     def detect_pacman_gadgets(self) -> list[dict]:
-        """检测 PACMAN 攻击可利用的投机执行 gadget。
+        """检测PACMAN攻击可用的推测执行gadget。
 
-        PACMAN 的 gadget 模式 (ISCA 2022):
-        - AUTIA/AUTIB 后紧跟 load/store (投机窗口内可访问 PAC 验证后的指针)
-        - RETAA/RETAB 前有 load (投机返回地址验证可被绕过)
-        每条 gadget 标记 window_size (AUT 到 fence 的指令数)
+        PACMAN gadget模式（ISCA 2022）：
+        - AUTIA/AUTIB后紧跟load/store，推测窗口内可访问验证后的指针
+        - RETAA/RETAB前有load，推测返回地址验证可被绕过
+        每条gadget标注window_size（AUT到fence的指令数）
         """
         if not self._asm:
             return []
@@ -185,7 +183,7 @@ class ARMPACDifferentialAnalyzer:
             if _re.search(r'\bauti[ab]\b', stripped, _re.IGNORECASE):
                 aut_lines.append((i, stripped))
         for line_no, line_text in aut_lines:
-            # 查找 AUT 后 1-10 条指令内的 load (ldr/ldp)
+            # 查找AUT后1~10条指令范围内的load（ldr/ldp）
             window = self._asm.split("\n")[line_no:line_no + 10]
             has_load = any(_re.search(r'\bldr\b|\bldp\b|\bldur\b', l, _re.IGNORECASE)
                           for l in window)
@@ -207,7 +205,7 @@ class ARMPACDifferentialAnalyzer:
         qarma_config = self.infer_qarma_config()
         bounds = self.evaluate_security_bounds()
         pac_gadgets = self.detect_pacman_gadgets()
-        # 总体风险评估
+        # 综合风险评估
         current_bound = next(
             (b for b in bounds if b.config == qarma_config), bounds[0])
         total_pac = sum(self._pac_counts.values())

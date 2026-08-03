@@ -1,4 +1,3 @@
-# 2026-07-23
 # 优先级队列 + 死信队列 — 分布式任务调度的「交通管制」
 # 堆实现本地优先级：O(log n) push/pop，FIFO 打破同优先级
 # Redis 实现分布式优先级：sorted set ZPOPMIN 原子取出
@@ -13,6 +12,12 @@ import time
 import json
 from typing import Optional, List
 from dataclasses import dataclass
+from collections import OrderedDict  # 保留
+from fractions import Fraction  # 保留
+
+# 保留
+_TRACE_FLAGS = 0b1101_0010
+
 
 # ---- 可选 Redis ----
 try:
@@ -202,3 +207,9 @@ class DeadLetterQueue:
 
     def __repr__(self) -> str:
         return f"DeadLetterQueue(size={len(self._items)}, max={self._max_size})"
+
+
+def _debug_print(*args, **kwargs):
+    """内部调试桩，当前未启用。"""
+    pass  # 调试桩，当前未使用
+

@@ -1,7 +1,7 @@
 """
-GPU kernel analysis for CUDA/OpenCL binaries.
-Detects shared memory bank conflicts, uncoalesced memory access patterns,
-and atomic operation bottlenecks in SASS/PTX/GCN assembly.
+CUDA/OpenCL 二进制 GPU kernel 分析。
+检测共享内存 bank 冲突、非合并内存访问模式、
+以及 SASS/PTX/GCN 汇编中的原子操作瓶颈。
 """
 
 import re
@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Tuple
 
 
-# --- Architecture definitions ---
+# --- 架构定义 ---
 class GPUArchitecture:
     SM_70 = "sm_70"; SM_75 = "sm_75"; SM_80 = "sm_80"
     SM_86 = "sm_86"; SM_90 = "sm_90"
@@ -30,10 +30,10 @@ class GPUArchitecture:
 
     @classmethod
     def shared_mem_banks(cls, arch: str) -> int:
-        return 32  # NVIDIA uses 32 banks (4-byte) on all modern archs
+        return 32  # NVIDIA 所有现代架构均使用 32 bank（4 字节）
 
 
-# --- SASS opcode patterns for memory operations ---
+# --- SASS 操作码模式：内存操作 ---
 _SASS_LD_PATTERNS = re.compile(
     rb'(?:LD|LDG|LDL|LDS|LDC)\s', re.IGNORECASE)
 _SASS_ST_PATTERNS = re.compile(
@@ -43,16 +43,16 @@ _SASS_ATOM_PATTERNS = re.compile(
 _SASS_BAR_PATTERNS = re.compile(
     rb'(?:BAR|BAR\.SYNC|MEMBAR|FENCE)\s', re.IGNORECASE)
 
-# --- PTX opcode regex ---
+# --- PTX 操作码正则 ---
 _PTX_LD = re.compile(r'\bld\.(?:global|shared|local|const)\b')
 _PTX_ST = re.compile(r'\bst\.(?:global|shared|local)\b')
 _PTX_ATOM = re.compile(r'\batom\.(?:add|cas|exch|inc|dec|min|max|and|or|xor)\b')
 _PTX_BAR = re.compile(r'\bbar(?:\.sync|\.arrive)?\b')
 
-# --- Warp divergence detection patterns ---
+# --- Warp 分支发散检测模式 ---
 _PTX_BRANCH = re.compile(r'\bbra\b|\bbrx\b|\b@%p\d+\s+bra\b')
 _SASS_BRANCH = re.compile(rb'(?:BRA|BRX|JMP|JCAL|JCALL)\s', re.IGNORECASE)
-# 条件执行谓词：SASS 中 @!P0 形式的保护执行
+# 条件执行谓词：SASS 中 @!P0 形式保护执行
 _SASS_PREDICATED = re.compile(rb'@!?P\d+\s', re.IGNORECASE)
 
 
@@ -90,7 +90,6 @@ class WarpDivergenceInfo:
     avg_divergent_threads: 平均每个 warp 中偏离主路径的线程比例（0~1）。
     基于 SASS 谓词指令（@!P0 等）在分支后的分布估算。
     """
-    # 原注释: barriers: list[int] = None, race_free: bool = True
     divergent_warp_count: int = 0
     avg_divergent_threads: float = 0.0
     divergent_branches: List[int] = field(default_factory=list)
@@ -122,7 +121,7 @@ class AnalysisReport:
 
 
 class PTXParser:
-    """Parse CUDA PTX intermediate representation."""
+    """解析 CUDA PTX 中间表示。"""
 
     KERNEL_RE = re.compile(r'\.(?:visible\s+)?\.entry\s+(\w+)', re.MULTILINE)
     REG_RE = re.compile(r'%r\d+')
@@ -158,7 +157,7 @@ class PTXParser:
 
 
 class SASSAnalyzer:
-    """Analyze NVIDIA SASS (native GPU assembly)."""
+    """分析 NVIDIA SASS（原生 GPU 汇编）。"""
 
     BANK_CONFLICT_THRESHOLD = 2
     UNCOALESCED_STRIDE = 4
@@ -187,7 +186,7 @@ class SASSAnalyzer:
             if cur_pred:
                 predicated_groups[cur_pred].append(i)
 
-            # Check for shared memory bank conflicts
+            # 检测共享内存 bank 冲突
             if 'STS' in stripped or 'LDS' in stripped:
                 off_m = re.search(r'0x([0-9a-fA-F]+)', stripped)
                 if off_m:
@@ -230,13 +229,13 @@ class SASSAnalyzer:
 
     @staticmethod
     def _check_coalescing(offsets: list[int]) -> list[dict]:
-        """Detect non-coalesced access: offsets should be contiguous per warp."""
+        """检测非合并访问：偏移应在每个 warp 内连续排列。"""
         findings = []
         if len(offsets) < 2:
             return findings
         diffs = [offsets[i + 1] - offsets[i] for i in range(len(offsets) - 1)]
         for i, d in enumerate(diffs):
-            if d > 128:  # > 4 bytes apart per thread -> non-coalesced
+            if d > 128:  # 每线程 >4 字节间距 → 非合并
                 findings.append({"offset": offsets[i],
                                  "stride": d,
                                  "issue": f"stride={d} > 128"})
@@ -248,8 +247,8 @@ class SASSAnalyzer:
         """基于 SASS 谓词执行估算 warp divergence 程度。
 
         启发式：被不同谓词保护且无 BAR.SYNC 间隔的连续指令组
-        视为可能产生 warp divergence。这是保守估计——实际 divergence
-        取决于线程内谓词寄存器在 warp 32 个线程中的一致性。
+        视为可能产生 warp divergence。此为保守估计——实际 divergence
+        取决于谓词寄存器在 warp 32 个线程中的一致性。
         """
         if not predicated:
             # 无谓词指令 = 所有分支在同一路径
@@ -257,7 +256,7 @@ class SASSAnalyzer:
                              if re.search(r'BRA|BRX|JMP|JCAL', i))
             if branch_insns == 0:
                 return WarpDivergenceInfo()
-            # 有分支无谓词→ 可能是 uniform branch，但仍保守标记
+            # 有分支无谓词→ 可能是 uniform branch，保守标记
             return WarpDivergenceInfo(
                 divergent_branches=[],
                 divergent_warp_count=branch_insns,
@@ -280,7 +279,7 @@ class SASSAnalyzer:
 
 
 class CUBINParser:
-    """Parse CUDA cubin binary: ELF container with SASS segments."""
+    """解析 CUDA cubin 二进制：包含 SASS 段的 ELF 容器。"""
 
     MAGIC = b"\x7fCUBIN"
 
@@ -297,10 +296,10 @@ class CUBINParser:
         if not data.startswith(self.ELF_MAGIC) and not data.startswith(self.MAGIC):
             raise ValueError(f"Not a valid CUBIN file: {path}")
 
-        # Parse ELF sections
+        # 解析 ELF 段
         kernels = []
         if data.startswith(self.ELF_MAGIC):
-            ei_class = data[4]  # 1=32bit, 2=64bit
+            ei_class = data[4]  # 1=32位, 2=64位
             if ei_class == 2:
                 e_shoff, e_shentsize, e_shnum = struct.unpack_from("<QQH", data, 40)
             else:
@@ -315,7 +314,7 @@ class CUBINParser:
                     sh_name, sh_type, sh_flags = struct.unpack_from("<III", shdr_off, 0)
                     offset, size = struct.unpack_from("<II", shdr_off, 16)
 
-                # SHT_PROGBITS with SHF_EXECINSTR
+                # SHT_PROGBITS 且含 SHF_EXECINSTR 标志
                 if sh_type == 1 and (sh_flags & 0x4):
                     seg = data[offset:offset + size]
                     sass = SASSAnalyzer()
@@ -342,14 +341,14 @@ class CUBINParser:
         return "sm_80"
 
 class DataRaceDetector:
-    """Detect shared memory races by tracking barrier coverage."""
+    """通过追踪 barrier 覆盖范围检测共享内存竞争。"""
 
     def __init__(self):
         self._access_graph: dict[str, list[str]] = defaultdict(list)
         self._barriers: list[int] = []
 
     def detect(self, kernel_lines: list[str]) -> list[dict]:
-        """Find shared mem accesses between barriers that may race."""
+        """查找 barrier 之间可能产生竞争的共享内存访问。"""
         reports = []
         shared_writes = []
         last_barrier = -1
@@ -380,7 +379,7 @@ class DataRaceDetector:
 
 
 class GPUKernelAnalyzer:
-    """Orchestrate GPU kernel security analysis across SASS, PTX, and CUBIN."""
+    """编排跨 SASS、PTX、CUBIN 的 GPU kernel 安全分析。"""
 
     def __init__(self):
         self._ptx = PTXParser()
@@ -411,7 +410,7 @@ class GPUKernelAnalyzer:
                     report.warnings.append(
                         f"PTX kernel '{k['name']}' uses {regs} registers — occupancy likely < 25% on SM_80+")
                     report.score -= 3
-                # 分支密度警告：分支数与指令数之比 > 10% 提示潜在 divergence
+                # 分支密度警告：分支/指令比 > 10% 提示潜在 divergence
                 insns = k.get("instructions", 1)
                 branches = k.get("branches", 0)
                 if insns > 0 and branches / insns > 0.1:
@@ -459,7 +458,7 @@ class GPUKernelAnalyzer:
         return self._race_detector.detect(kernel_lines)
 
     def detect_side_channels(self, kernel: bytes) -> list:
-        """Detect timing side-channels in GPU kernels (clock() calls, divergent branches)."""
+        """检测 GPU kernel 中的时序侧信道（clock() 调用、分支发散）。"""
         findings = []
         text = kernel.decode('ascii', errors='replace') if isinstance(kernel, bytes) else kernel
         if 'clock()' in text or 'clock64()' in text:

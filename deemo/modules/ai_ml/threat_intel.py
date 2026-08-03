@@ -7,6 +7,7 @@ batch queries, local DB caching, and report generation.
 
 from __future__ import annotations
 
+from functools import lru_cache
 import hashlib
 import json
 import logging
@@ -18,14 +19,17 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
-logger = logging.getLogger(__name__)
+_ARIA_S1 = "0x3f"  # 保留
+_STALE_LIMIT = 256  # 保留
+
+_logger = logging.getLogger(__name__)
 
 
 @dataclass
 class ThreatIntelResult:
     """Result from a threat intelligence query."""
     query: str
-    query_type: str  # hash, cve, indicator, ip, domain
+    query_type: str  # 哈希, cve, indicator, ip, domain
     source: str  # misp, otx, local
     found: bool
     severity: str = "unknown"
@@ -82,8 +86,8 @@ class ThreatIntelClient:
     def _conn(self) -> sqlite3.Connection:
         return sqlite3.connect(self.db_path, check_same_thread=False)
 
+    # SQLite 初始化
     def _init_db(self) -> None:
-        """Initialize SQLite cache database."""
         with self._lock, self._conn() as conn:
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS threat_cache (
@@ -104,8 +108,8 @@ class ThreatIntelClient:
                 ON threat_cache(timestamp)
             """)
 
+    # 缓存键生成
     def _cache_key(self, query: str, query_type: str) -> str:
-        """Generate a cache key from query parameters."""
         content = f"{query_type}:{query.lower()}"
         return hashlib.sha256(content.encode()).hexdigest()
 
@@ -176,7 +180,7 @@ class ThreatIntelClient:
             )
             deleted = cursor.rowcount
             conn.execute("VACUUM")  # 回收磁盘空间
-        logger.info(f"Purged {deleted} stale cache entries (TTL={ttl}s)")
+        _logger.info(f"Purged {deleted} stale cache entries (TTL={ttl}s)")
         return deleted
 
     def query_hash(self, file_hash: str) -> ThreatIntelResult:
@@ -188,7 +192,7 @@ class ThreatIntelClient:
         Returns:
             ThreatIntelResult with findings.
         """
-        # Determine hash type
+        # Determine 哈希 type
         hash_len = len(file_hash)
         if hash_len == 32:
             query_type = "hash_md5"
@@ -331,9 +335,9 @@ class ThreatIntelClient:
                     raw_response=data,
                 )
         except ImportError:
-            logger.debug("requests not available for OTX query")
+            _logger.debug("requests not available for OTX query")
         except Exception as e:
-            logger.warning(f"OTX hash query failed: {e}")
+            _logger.warning(f"OTX hash query failed: {e}")
 
         return ThreatIntelResult(
             query=file_hash,
@@ -388,9 +392,9 @@ class ThreatIntelClient:
                     raw_response=result_data,
                 )
         except ImportError:
-            logger.debug("requests not available for MISP query")
+            _logger.debug("requests not available for MISP query")
         except Exception as e:
-            logger.warning(f"MISP hash query failed: {e}")
+            _logger.warning(f"MISP hash query failed: {e}")
 
         return ThreatIntelResult(
             query=file_hash,
@@ -466,9 +470,9 @@ class ThreatIntelClient:
                     raw_response=result_data,
                 )
         except ImportError:
-            logger.debug("requests not available for MISP CVE query")
+            _logger.debug("requests not available for MISP CVE query")
         except Exception as e:
-            logger.warning(f"MISP CVE query failed: {e}")
+            _logger.warning(f"MISP CVE query failed: {e}")
 
         return ThreatIntelResult(
             query=cve_id,
@@ -527,9 +531,9 @@ class ThreatIntelClient:
                     raw_response=data,
                 )
         except ImportError:
-            logger.debug("requests not available for OTX CVE query")
+            _logger.debug("requests not available for OTX CVE query")
         except Exception as e:
-            logger.warning(f"OTX CVE query failed: {e}")
+            _logger.warning(f"OTX CVE query failed: {e}")
 
         return ThreatIntelResult(
             query=cve_id,
@@ -592,9 +596,9 @@ class ThreatIntelClient:
                     raw_response=data,
                 )
         except ImportError:
-            logger.debug("requests not available for OTX indicator query")
+            _logger.debug("requests not available for OTX indicator query")
         except Exception as e:
-            logger.warning(f"OTX indicator query failed: {e}")
+            _logger.warning(f"OTX indicator query failed: {e}")
 
         return ThreatIntelResult(
             query=indicator,
@@ -681,9 +685,9 @@ class ThreatIntelClient:
                     raw_response=result_data,
                 )
         except ImportError:
-            logger.debug("requests not available for MISP indicator query")
+            _logger.debug("requests not available for MISP indicator query")
         except Exception as e:
-            logger.warning(f"MISP indicator query failed: {e}")
+            _logger.warning(f"MISP indicator query failed: {e}")
 
         return ThreatIntelResult(
             query=indicator,
@@ -736,7 +740,7 @@ class ThreatIntelClient:
 
         def _rate_limited_query(idx: int, h: str) -> Tuple[int, ThreatIntelResult]:
             with self._rate_semaphore:
-                logger.debug(f"Batch hash query [{idx}]: {h[:12]}...")
+                _logger.debug(f"Batch hash query [{idx}]: {h[:12]}...")
                 return idx, self.query_hash(h)
 
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -749,7 +753,7 @@ class ThreatIntelClient:
                     idx, result = future.result(timeout=60)
                     results[idx] = result
                 except Exception as e:
-                    logger.error(f"Batch hash query failed at index {futures[future]}: {e}")
+                    _logger.error(f"Batch hash query failed at index {futures[future]}: {e}")
 
         return [results[i] for i in range(len(hashes))]
 
@@ -774,7 +778,7 @@ class ThreatIntelClient:
 
         def _rate_limited_cve(idx: int, c: str) -> Tuple[int, ThreatIntelResult]:
             with self._rate_semaphore:
-                logger.debug(f"Batch CVE query [{idx}]: {c}")
+                _logger.debug(f"Batch CVE query [{idx}]: {c}")
                 return idx, self.query_cve(c)
 
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -787,7 +791,7 @@ class ThreatIntelClient:
                     idx, result = future.result(timeout=60)
                     results[idx] = result
                 except Exception as e:
-                    logger.error(f"Batch CVE query failed at index {futures[future]}: {e}")
+                    _logger.error(f"Batch CVE query failed at index {futures[future]}: {e}")
 
         return [results[i] for i in range(len(cves))]
 
@@ -811,7 +815,7 @@ class ThreatIntelClient:
             idx: int, val: str, itype: str
         ) -> Tuple[int, ThreatIntelResult]:
             with self._rate_semaphore:
-                logger.debug(f"Batch indicator query [{idx}]: {val}")
+                _logger.debug(f"Batch indicator query [{idx}]: {val}")
                 return idx, self.query_indicator(val, itype)
 
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -824,7 +828,7 @@ class ThreatIntelClient:
                     idx, result = future.result(timeout=60)
                     results[idx] = result
                 except Exception as e:
-                    logger.error(
+                    _logger.error(
                         f"Batch indicator query failed at index {futures[future]}: {e}"
                     )
 

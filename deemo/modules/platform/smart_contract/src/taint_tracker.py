@@ -1,7 +1,6 @@
-# 2026-07-20
-# Taint tracking —— 栈级数据流追踪
-# 策略：intra-block 用符号执行栈模拟（轻量），inter-block 用 BFS 传播。
-# 不追求完备（solver 太慢），只追踪直接数据流——适合 99% 的 EVM 漏洞场景。
+# Taint tracking —— 栈级数据流追踪，intra-block 符号模拟 + inter-block BFS
+# 不拆: dispatch table 在文件末尾动态构建，拆了会丢初始化逻辑
+# 策略：不追求完备（solver 太慢），只追踪直接数据流
 from dataclasses import dataclass, field
 from typing import List, Dict, Set, Optional, Tuple
 from collections import deque

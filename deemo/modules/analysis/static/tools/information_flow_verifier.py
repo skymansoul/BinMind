@@ -7,44 +7,44 @@ logger = logging.getLogger(__name__)
 
 # ── Bell-LaPadula 格模型 ───────────────────────────────────────────────────
 # 参考: Bell & LaPadula (1973) "Secure Computer Systems"
-# 核心规则: (1) no read up (简单安全属性) (2) no write down (*属性)
-# 本实现将安全标签建模为完全偏序格——Unclassified < Confidential < Secret < TopSecret。
-# 格的 join 操作用来确定两个标签合并后的最低允许级别。
+# 核心规则: (1) 读取 up (简单安全属性) (2) 写入 down (*属性)
+# 本实现将安全标签建模为完全偏序格——Unclassified < Confidential < Secret < TopSecret
+# 格的 join 操作用来确定两个标签合并后的最低允许级别
 
 class SecurityLattice:
-    """Bell-LaPadula 安全格——对安全标签进行偏序比较和合并。"""
+    """Bell-LaPadula 安全格——对安全标签进行偏序比较和合并"""
     _ORDER = {"public": 0, "confidential": 1, "secret": 2, "top_secret": 3}
     _NAMES = {0: "public", 1: "confidential", 2: "secret", 3: "top_secret"}
 
     @classmethod
     def compare(cls, level_a: str, level_b: str) -> int:
-        """比较两个安全级别: -1=a<b, 0=a==b, 1=a>b。"""
+        """比较两个安全级别: -1=a<b, 0=a==b, 1=a>b"""
         a = cls._ORDER.get(str(level_a).lower(), 0)
         b = cls._ORDER.get(str(level_b).lower(), 0)
         return (a > b) - (a < b)
 
     @classmethod
     def join(cls, level_a: str, level_b: str) -> str:
-        """格的最小上界——两个标签的 join 是较高级别的那个。"""
+        """格的最小上界——两个标签的 join 是较高级别的那个"""
         a = cls._ORDER.get(str(level_a).lower(), 0)
         b = cls._ORDER.get(str(level_b).lower(), 0)
         return cls._NAMES[max(a, b)]
 
     @classmethod
     def meet(cls, level_a: str, level_b: str) -> str:
-        """格的最大下界。"""
+        """格的最大下界"""
         a = cls._ORDER.get(str(level_a).lower(), 0)
         b = cls._ORDER.get(str(level_b).lower(), 0)
         return cls._NAMES[min(a, b)]
 
     @classmethod
     def validate_write(cls, src_level: str, dst_level: str) -> bool:
-        """Bell-LaPadula *属性: 不能向低于自身级别的目标写入。"""
+        """Bell-LaPadula *属性: 不能向低于自身级别的目标写入"""
         return cls.compare(src_level, dst_level) <= 0
 
     @classmethod
     def validate_read(cls, src_level: str, dst_level: str) -> bool:
-        """简单安全属性: 不能读取高于自身级别的源。"""
+        """简单安全属性: 不能读取高于自身级别的源"""
         return cls.compare(dst_level, src_level) >= 0
 
 
@@ -163,8 +163,8 @@ class InformationFlowVerifier(BaseAnalyzer):
         return violations
 
     def _verify_bell_lapadula(self) -> List[FlowViolation]:
-        """使用 Bell-LaPadula 格模型进行形式化信息流验证。
-        比简单的非干扰检查更精确——明确验证 *属性 和简单安全属性。
+        """使用 Bell-LaPadula 格模型进行形式化信息流验证
+        比简单的非干扰检查更精确——明确验证 *属性 和简单安全属性
         """
         violations: List[FlowViolation] = []
         variables = list(self._security_labels.keys())

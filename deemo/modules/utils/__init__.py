@@ -1,7 +1,7 @@
-# utils/ — 运维工具脚本，非核心分析流水线
-# 2026-07-25 ~ 2026-07-31
-# 广度优先拓展: 二进制I/O、哈希/SimHash/MinHash、熵分析、模式扫描、
-# LRU/TTL/LFU 缓存、序列差分、字符串处理、并发工具、计时/统计、
+# utils/ 运维工具集，非核心分析流水线
+# ~ 2026-07-31
+# 广度优先拓展: 二进制I/O、哈希(SimHash/MinHash)、熵分析、模式扫描、
+# LRU/TTL/LFU 缓存、序列差分、字符串处理、并发工具、计时统计、
 # 安全文件系统操作、序列化+压缩、结构化日志、魔数检测、线段树区间查询
 
 # 二进制读写与 hex dump
@@ -125,7 +125,7 @@ from modules.utils.magic_bytes import (
     find_magic_offset, add_custom_magic,
 )
 
-# 线段树 & 区间运算
+# 线段树与区间运算
 from modules.utils.segment_tree import (
     SegmentTree,
     merge_intervals, intersect_intervals, subtract_intervals,

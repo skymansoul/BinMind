@@ -5,12 +5,12 @@ from collections import defaultdict
 
 
 class RaceConditionDetector:
-    """TOCTOU, lock ordering, signal handler race, kernel double-fetch detection"""
+    """TOCTOU, lock ordering, 信号处理 race, kernel double-fetch detection"""
 
     # ---- 初始化: TOCTOU API对 + 锁API + 信号API ----
 
     def __init__(self):
-        # TOCTOU check-use API pairs
+        # TOCTOU 检查-使用 API pairs
         self._toctou_pairs = [
             # (check, use) - check存在性/权限，use直接操作（无原子性保证）
             # POSIX
@@ -77,7 +77,7 @@ class RaceConditionDetector:
             'EnterCriticalSection', 'LeaveCriticalSection',
         ]
 
-    # ---- TOCTOU检测: check->use API对分析 ----
+    # ---- TOCTOU检测: 检查->使用 API对分析 ----
 
     def detect_toctou(self, imports: Dict[str, List[str]]) -> List[Dict]:
         _findings = []
@@ -96,7 +96,7 @@ class RaceConditionDetector:
 
             if _chk_found and _use_found:
                 _conf = 0.65
-                # Windows TOCTOU pattern is more exploitable
+                # Windows TOCTOU pattern 漏洞利用able
                 if 'fileattribute' in _chk_lower or 'pathfile' in _chk_lower:
                     _conf = 0.75
 
@@ -223,7 +223,7 @@ class RaceConditionDetector:
     def detect_double_fetch(self, strings: List[str],
                              imports: Dict[str, List[str]]) -> List[Dict]:
         """
-        Kernel double-fetch pattern: 同一用户态地址以copy_from_user读取两次，
+        Kernel double-fetch pattern: 同一用户态地址以copy_from_user读取两次
         第一次校验，第二次使用，但两次读取之间值可能被另一个线程修改
         """
         _findings = []

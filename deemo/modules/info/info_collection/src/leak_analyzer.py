@@ -1,15 +1,13 @@
-# 2026-07-25
-# leak_analyzer — 信息泄露分析：格式化字符串 / OOB 读 / 未初始化内存
-# 检测方法：导入表扫描 + 字符串模式匹配 + section 特征交叉验证
-# 权衡：不做数据流分析（需要控制流图），仅静态特征检测
+# leak_analyzer — 格式化字符串泄露 + OOB 读检测
+# 双层检测：导入表扫描 + 字符串模式匹配
+# 不做数据流分析（需 CFG），仅静态特征
 
 import os
 import re
 from typing import List, Dict, Tuple, Set
 
-# ---- 格式化字符串函数 ----
+# 格式化函数列表：(函数名, fmt参数位置, 风险权重)
 _FORMAT_FUNC_PATTERNS = [
-    # (函数名, fmt_arg_position, 风险权重)
     ("printf", 0, 7),
     ("fprintf", 1, 7),
     ("sprintf", 1, 7),
@@ -36,14 +34,14 @@ _FORMAT_FUNC_PATTERNS = [
     ("warnx", 1, 4),
 ]
 
-# 检测非字面量格式字符串的指标
+# 非字面量格式字符串的识别模式
 _NON_LITERAL_FORMAT_INDICATORS = [
-    r'%\d*\$\w',  # 位置参数 %1$d
-    r'%[nN]',  # %n 写入攻击
-    r'%\*',  # 宽度/精度来自参数而非字面量
+    r'%\d*\$\w',
+    r'%[nN]',
+    r'%\*',
 ]
 
-# ---- OOB 读相关函数 ----
+# OOB 读相关内存操作函数
 _OOB_READ_FUNCTIONS = [
     "memcpy", "memmove", "bcopy", "strcpy", "strcat", "strncpy",
     "strncat", "sprintf", "vsprintf", "snprintf", "gets",
@@ -52,13 +50,13 @@ _OOB_READ_FUNCTIONS = [
     "wmemcpy", "wcscpy", "wcscat",
 ]
 
+# 无边界检查的调用模式
 _OOB_READ_STRINGS_PATTERNS = [
     r"(memcpy|memmove|strcpy|strcat)\s*\([^,]*,\s*[^,]*,\s*(?!sizeof)",
-    r"(gets|scanf)\(",  # 无条件危险
+    r"(gets|scanf)\(",
     r"(recv|recvfrom|recvmsg)\(",
     r"copy_from_user\s*\(",
     r"copy_to_user\s*\(",
-    # sprintf 到局部缓冲区时无长度检查
     r"sprintf\s*\(\s*\w+,\s*\"[^\"]*%[^\"]*\"",
 ]
 
@@ -79,12 +77,10 @@ def _get_strings_text(strings: list) -> str:
     return " ".join(_s)
 
 
-# //// 格式化字符串泄露检测 ////
 def detect_format_string_leaks(imports: dict = None, strings: list = None) -> List[dict]:
-    """检测格式化字符串函数调用中潜在的非字面量格式字符串。
-
-    原理：如果导入表中包含 printf 族函数 + 字符串中没有明显的格式字面量模式，
-    则标记为潜在风险 —— 攻击者可能通过用户输入控制格式字符串。
+    """检测 printf 族调用中的非字面量格式串。
+    原理：导入表含格式化函数 + 字符串中无显式格式字面量 → 存在用户输入控
+    制格式字符串的风险面。
     """
     _findings = []
     _api_set = set()
@@ -106,9 +102,7 @@ def detect_format_string_leaks(imports: dict = None, strings: list = None) -> Li
         _risk = "LOW"
         _detail = f"Format function '{_fn}' detected"
 
-        # 检查是否有明显的格式字面量
         _has_format_literal = bool(re.search(r'\"[^\"]*%[^\"]*\"', _str_text))
-        # 检查 %n 危险标记
         _has_percent_n = bool(re.search(r'%n', _str_text))
 
         if _has_percent_n:
@@ -118,7 +112,6 @@ def detect_format_string_leaks(imports: dict = None, strings: list = None) -> Li
             _risk = "MEDIUM"
             _detail = f"Format function '{_fn}' without visible format literal - potential fmtstr vulnerability"
 
-        # 位置参数泄露
         _has_positional = any(re.search(p, _str_text) for p in _NON_LITERAL_FORMAT_INDICATORS)
         if _has_positional:
             _risk = "MEDIUM"
@@ -132,13 +125,9 @@ def detect_format_string_leaks(imports: dict = None, strings: list = None) -> Li
     return _findings
 
 
-# //// OOB 读检测 ////
 def detect_oob_reads(imports: dict = None, strings: list = None, sections: list = None) -> List[dict]:
-    """检测潜在的越界读/写模式。
-
-    双层检测：
-    1) 导入表中有危险内存操作函数
-    2) 字符串中出现了无边界检查的调用模式 (memcpy 无 sizeof、strcpy 无长度限制)
+    """检测越界读写模式。
+    导入表危险函数 + 字符串中无 sizeof/长度限制的调用 + W+X 段叠加判定。
     """
     _findings = []
     _api_set = set()
@@ -149,7 +138,6 @@ def detect_oob_reads(imports: dict = None, strings: list = None, sections: list 
     if strings:
         _str_text = _get_strings_text(strings)
 
-    # 导入表检测
     _found_funcs = []
     for _f in _OOB_READ_FUNCTIONS:
         if _f.lower() in _api_set:
@@ -165,7 +153,6 @@ def detect_oob_reads(imports: dict = None, strings: list = None, sections: list 
             "detail": f"Memory copy functions without bounds checking: {', '.join(_found_funcs[:5])}",
         })
 
-    # 字符串模式检测
     for _pat in _OOB_READ_STRINGS_PATTERNS:
         _matches = re.findall(_pat, _str_text, re.IGNORECASE)
         if _matches:
@@ -178,7 +165,6 @@ def detect_oob_reads(imports: dict = None, strings: list = None, sections: list 
                     "detail": f"Unbounded memory operation: {_str_val[:80]}",
                 })
 
-    # 结合 section 特征：可写 + 可执行段 = 更危险
     if sections:
         _wx_sections = [s for s in sections if isinstance(s, dict) and
                         "MEM_WRITE" in str(s.get("characteristics", "")) and
@@ -194,15 +180,9 @@ def detect_oob_reads(imports: dict = None, strings: list = None, sections: list 
     return _findings
 
 
-# //// 综合分析入口 ////
 def analyze(filepath: str, imports: dict = None, strings: list = None, sections: list = None) -> dict:
-    """对二进制文件进行信息泄露综合分析。
-
-    如果提供了 imports/strings/sections 则直接使用；否则尝试从文件路径提取基本信息。
-
-    返回:
-        { "format_string_leaks": [...], "oob_reads": [...],
-          "total_issues": int, "risk_level": str }
+    """信息泄露综合分析入口。
+    汇总格式化串泄露 + OOB 读发现，按 HIGH/MEDIUM 数量定级。
     """
     _fmt_leaks = detect_format_string_leaks(imports, strings)
     _oob = detect_oob_reads(imports, strings, sections)
@@ -234,7 +214,6 @@ def analyze(filepath: str, imports: dict = None, strings: list = None, sections:
         "risk_level": _level,
     }
 
-    # 如果可以，读取文件基本信息
     if os.path.isfile(filepath):
         _r["size"] = os.path.getsize(filepath)
 

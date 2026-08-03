@@ -1,4 +1,4 @@
-"""Extract Python bytecode from PyInstaller-packed executables (CArchive + PYZ)."""
+"""提取 Python 字节码 PyInstaller-packed 可执行文件s (CArchive + PYZ)"""
 
 import io
 import logging
@@ -86,12 +86,12 @@ class PyInstallerUnpacker:
 
     # -------------------------------------------------------------------
     # 多 CArchive 叠加扫描 —— 某些 PyInstaller 打包器会在 PE overlay
-    # 区域附加多个 CArchive（典型场景：多阶段解包器）。
-    # 主 CArchive 解析后继续向后扫描额外的 MAGIC 标记。
+    # 区域附加多个 CArchive（典型场景：多阶段解包器）
+    # 主 CArchive 解析后继续向后扫描额外的 MAGIC 标记
     # -------------------------------------------------------------------
 
     def _find_all_carchive_headers(self, data: bytes) -> List[Tuple[int, CArchiveHeader]]:
-        """扫描所有 CArchive MAGIC 位置，返回多个 header。"""
+        """扫描所有 CArchive MAGIC 位置，返回多个 header"""
         headers = []
         idx = 0
         while True:

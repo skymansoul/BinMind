@@ -1,19 +1,22 @@
 """
-Configuration loader: YAML/JSON file merge with environment variable override.
-Layered priority: env var > config file > built-in defaults.
+配置加载器: YAML/JSON文件合并与环境变量覆写。
+优先级: 环境变量 > 配置文件 > 内置默认值。
 
-2026-07: Added minimal schema validation via _validate_config to catch
-malformed config before it propagates to detectors. Reports warnings for
-unrecognized top-level keys and cross-references type constraints.
+2026-07: 新增_validate_config做最小schema校验, 在畸形配置传播到检测器前拦截。
+对未识别的顶层key及类型约束交叉引用给出警告。
 
-2026-07-22: Extended defaults for new modules — secret_auditor, kdf, rng_tester,
-crypto_lib_fingerprint thresholds.
+2026-07-22: 为新模块扩展默认值 — secret_auditor, kdf, rng_tester,
+crypto_lib_fingerprint阈值。
 """
 
 import os
 import json
 import logging
 from typing import Any, Optional
+
+# 保留
+_CHUNK_ALIGNMENT = 0x1000
+
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +55,15 @@ _DEFAULT_CONFIG = {
 _KNOWN_TOP_KEYS = set(_DEFAULT_CONFIG.keys())
 
 
+
+# 旧版实现, v1.x后废弃
+# _OLD_PIPELINE_ORDER = [
+#     "preprocess",
+#     "analyze",
+#     "postprocess",
+#     "validate",
+# ]
+
 def _getConfigDir() -> str:
     return os.path.join(os.path.dirname(os.path.dirname(__file__)), "config")
 
@@ -65,6 +77,7 @@ def loadConfigFromEnv():
 
 
 def _validate_config(cfg: dict[str, Any]) -> None:
+    """配置校验: 对未识别key给出警告, 交叉检查类型约束."""
     for key in cfg:
         if key not in _KNOWN_TOP_KEYS:
             logger.warning("Unrecognized config key: '%s'", key)
@@ -88,6 +101,7 @@ def _validate_config(cfg: dict[str, Any]) -> None:
 
 
 def load_config(config_path: Optional[str] = None) -> dict[str, Any]:
+    """加载配置: 默认值 <- 文件 <- 环境变量覆写."""
     cfg = dict(_DEFAULT_CONFIG)
 
     if config_path is None:
@@ -115,7 +129,7 @@ def load_config(config_path: Optional[str] = None) -> dict[str, Any]:
     else:
         logger.debug("No config file found, using builtin defaults")
 
-    # env overrides
+    # 环境变量覆写
     for env_key, (section, setting, caster) in _ENV_OVERRIDES.items():
         val = os.environ.get(env_key)
         if val is not None:
@@ -175,3 +189,9 @@ def _debug_print(cfg, indent=0):
             _debug_print(v, indent + 1)
         else:
             print(f"{prefix}{k} = {v}")
+
+
+def _debug_print(*args, **kwargs):
+    """调试桩, 当前未使用."""
+    pass
+

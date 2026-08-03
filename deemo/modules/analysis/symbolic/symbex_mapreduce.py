@@ -1,28 +1,28 @@
-"""MapReduce-style distributed symbolic execution.
+"""MapReduce-style 分布式 符号执行
 
-Partitions a binary by function, executes each function's symbolic analysis
-as an independent sub-problem (map), then deduplicates and merges the
-resulting path sets (reduce). Falls back to r2 disassembly when angr is
-unavailable.
+Partitions a binary function, 执行 function's symbolic analysis
+an independent sub-problem (map), 去重 合并
+resulting path sets (reduce). Falls back r2 反汇编 angr
+unavailable
 
-增强 — MapReduce 级 checkpoint：map 阶段完成后将所有 SubResult
+增强 — MapReduce 级 检查点：map 阶段完成后将所有 SubResult
 
 三轮增强 — 推测性 Reduce + 二进制缓存：SpeculativeMap 在 map 进行中
 即启动后台线程增量合并已完成的 SubResult。BinarySegmentCache 缓存
-(binary_path, file_mtime) → 函数列表，避免对同一 binary 重复调用 r2。
-序列化至磁盘，重启时从检查点恢复，避免重复计算。
+(binary_path, file_mtime) → 函数列表，避免对同一 binary 重复调用 r2
+序列化至磁盘，重启时从检查点恢复，避免重复计算
 
 增强 — 约束 DAG 同构比较：两个路径即使 path_id 不同，若其约束
-依赖图同构，则被视为重复。使用拓扑排序 + 哈希比较检测同构。
+依赖图同构，则被视为重复。使用拓扑排序 + 哈希比较检测同构
 
 四轮增强 — WorkStealingScheduler：worker 完成自身子问题后从最慢
-worker 的队列窃取未处理子问题，用 mp.Manager dict 追踪各 worker 队列。
+worker 的队列窃取未处理子问题，用 mp.Manager dict 追踪各 worker 队列
 
 五轮增强 — ResultRanker：reduce 后按新颖性、覆盖影响、漏洞密度
-对合并路径排序，返回 top-N 路径供下游深度分析。
+对合并路径排序，返回 top-N 路径供下游深度分析
 
 六轮增强 — MapPhaseTimeout：每子问题超时强制终止，挽救已发现的
-部分路径，标记为 PARTIAL 而非 FAILED。
+部分路径，标记为 PARTIAL 而非 FAILED
 """
 
 import logging
@@ -48,7 +48,7 @@ except ImportError:
 
 @dataclass
 class SubProblem:
-    """A single function's symbolic analysis task dispatched to a worker."""
+    """A single function's symbolic analysis task dispatched a worker"""
     sub_id: str
     func_name: str
     binary_path: str
@@ -61,10 +61,10 @@ class SubProblem:
 
 @dataclass
 class SubResult:
-    """Result from one worker after processing a SubProblem.
-
-    六轮增强 — completion_status 字段区分 complete / partial / failed。
-    partial 表示超时终止但挽救了部分路径。"""
+    """Result one worker processing a SubProblem
+    
+    六轮增强 — completion_status 字段区分 complete / partial / failed
+    partial 表示超时终止但挽救了部分路径"""
     sub_id: str
     success: bool
     paths: List = field(default_factory=list)
@@ -76,7 +76,7 @@ class SubResult:
 
 @dataclass
 class MapReduceResult:
-    """Aggregate output of a full MapReduce run."""
+    """Aggregate 输出 a full MapReduce 运行"""
     sub_problems: List
     sub_results: List
     merged_paths: List
@@ -84,10 +84,10 @@ class MapReduceResult:
 
 
 class FunctionBoundaryDetector:
-    """Uses r2 to enumerate function boundaries (name, offset, size) from a binary."""
+    """使用 r2 enumerate function boundaries (name, offset, size) a binary"""
 
     def detect(self, binary_path: str) -> List[Dict[str, Any]]:
-        """Run r2 'aflj' and parse the JSON function list."""
+        """运行 r2 'aflj' 解析 JSON function list"""
         import subprocess
         try:
             r = subprocess.run(
@@ -109,10 +109,10 @@ class FunctionBoundaryDetector:
 
 
 def _build_constraint_dag_hash(constraints: List[str]) -> str:
-    """构建约束 DAG 的规范哈希。
-
-    每个约束字符串被视作一个节点，依赖关系通过变量名共享推导。
-    拓扑排序后拼接所有节点得到规范形式，再 SHA-256 哈希。"""
+    """构建约束 DAG 的规范哈希
+    
+    每个约束字符串被视作一个节点，依赖关系通过变量名共享推导
+    拓扑排序后拼接所有节点得到规范形式，再 SHA-256 哈希"""
     if not constraints:
         return hashlib.sha256(b"empty_dag").hexdigest()[:16]
     # 简化版：按字母序排序约束字符串，拼接后哈希
@@ -122,7 +122,7 @@ def _build_constraint_dag_hash(constraints: List[str]) -> str:
 
 
 def _subproblem_worker(sub: SubProblem) -> SubResult:
-    """Per-subproblem worker. Prefers angr; degrades to r2 disassembly on failure."""
+    """Per-subproblem worker. Prefers angr; degrades r2 反汇编 failure"""
     start = time.time()
     try:
         try:
@@ -200,7 +200,7 @@ def _subproblem_worker(sub: SubProblem) -> SubResult:
 
 
 def _fallback_r2_worker(sub: SubProblem, start: float) -> SubResult:
-    """Fallback: use r2 aflj JSON to get function, then disassemble."""
+    """回退: 使用 r2 aflj JSON function, 反汇编"""
     try:
         import subprocess as _sp
         r = _sp.run(
@@ -238,10 +238,10 @@ def _fallback_r2_worker(sub: SubProblem, start: float) -> SubResult:
 
 
 def _subproblem_worker_with_timeout(sub: SubProblem, timeout: int) -> SubResult:
-    """带超时控制的子问题 worker。
-
-    在独立进程中执行子问题求解，超时则终止进程并挽救已写入队列的部分路径。
-    标记 completion_status 为 partial 而非 failed。
+    """带超时控制的子问题 worker
+    
+    在独立进程中执行子问题求解，超时则终止进程并挽救已写入队列的部分路径
+    标记 completion_status 为 partial 而非 failed
     """
     start = time.time()
 
@@ -308,15 +308,15 @@ def _subproblem_worker_with_timeout(sub: SubProblem, timeout: int) -> SubResult:
 
 
 class WorkStealingScheduler:
-    """工作窃取调度器：worker 完成自身子问题后从最慢 worker 窃取任务。
-
-    用 mp.Manager dict 追踪各 worker 的待处理子问题队列。
-    窃取策略：选择队列最长的 worker 为目标，从尾部弹出以减少争用。"""
+    """工作窃取调度器：worker 完成自身子问题后从最慢 worker 窃取任务
+    
+    用 mp.Manager dict 追踪各 worker 的待处理子问题队列
+    窃取策略：选择队列最长的 worker 为目标，从尾部弹出以减少争用"""
 
     def __init__(self, num_workers: int):
         self._num_workers = num_workers
         self._manager: Optional[mp.Manager] = None
-        # worker_id → list of SubProblem indices (managed lists)
+        # worker_id → list SubProblem indices (managed lists)
         self._worker_queues: Optional[Dict[int, Any]] = None
         self._all_subs: List[SubProblem] = []
         self._results: List[SubResult] = []
@@ -339,7 +339,7 @@ class WorkStealingScheduler:
             self._worker_queues = None
 
     def assign(self, subs: List[SubProblem]) -> None:
-        """轮询分配子问题到各 worker 队列。"""
+        """轮询分配子问题到各 worker 队列"""
         self._init_manager()
         self._all_subs = subs
         for i, sub in enumerate(subs):
@@ -352,7 +352,7 @@ class WorkStealingScheduler:
         return len(self._worker_queues[worker_id])
 
     def pop_own(self, worker_id: int) -> Optional[int]:
-        """从自身队列头部取出一个子问题索引（FIFO）。"""
+        """从自身队列头部取出一个子问题索引（FIFO）"""
         if self._worker_queues is None:
             return None
         queue = self._worker_queues[worker_id]
@@ -364,10 +364,10 @@ class WorkStealingScheduler:
             return None
 
     def steal(self, worker_id: int) -> Optional[int]:
-        """从队列最长的其他 worker 尾部窃取一个子问题索引。
-
-        选队列最长的 worker 作为目标（= 最慢），
-        尾部弹出减少窃取方之间的争用。
+        """从队列最长的其他 worker 尾部窃取一个子问题索引
+        
+        选队列最长的 worker 作为目标（= 最慢）
+        尾部弹出减少窃取方之间的争用
         """
         if self._worker_queues is None:
             return None
@@ -409,12 +409,12 @@ class WorkStealingScheduler:
 
 
 class ResultRanker:
-    """合并路径排序器：按新颖性、覆盖影响、漏洞密度三维评分。
-
-    新颖性：路径中唯一约束（非全局重复）的比例。
-    覆盖影响：约束深度（路径长度）和输出寄存器数。
-    漏洞密度：约束字符串中安全敏感关键字（memcpy, strcpy 等）的密度。
-
+    """合并路径排序器：按新颖性、覆盖影响、漏洞密度三维评分
+    
+    新颖性：路径中唯一约束（非全局重复）的比例
+    覆盖影响：约束深度（路径长度）和输出寄存器数
+    漏洞密度：约束字符串中安全敏感关键字（memcpy, strcpy 等）的密度
+    
     综合得分 = 0.4 * 新颖性 + 0.35 * 覆盖影响 + 0.25 * 漏洞密度"""
 
     VULN_PATTERNS = [
@@ -429,14 +429,14 @@ class ResultRanker:
 
     @classmethod
     def rank(cls, merged_paths: List[Dict[str, Any]], top_n: int = 20) -> List[Dict[str, Any]]:
-        """对合并路径排序，返回 top-N。
-
+        """对合并路径排序，返回 top-N
+        
         Args:
-            merged_paths: PathMerger.merge() 的输出。
-            top_n: 返回的路径数。
-
-        Returns:
-            按综合得分降序排列的 top-N 路径列表。
+        merged_paths: PathMerger.合并() 的输出
+        top_n: 返回的路径数
+        
+        返回:
+        按综合得分降序排列的 top-N 路径列表
         """
         if not merged_paths:
             return []
@@ -465,7 +465,7 @@ class ResultRanker:
     def _compute_novelty(cls, path: Dict[str, Any],
                          constraint_freq: Dict[str, int],
                          total_constraints: int) -> float:
-        """新颖性：约束越罕见得分越高。"""
+        """新颖性：约束越罕见得分越高"""
         constraints = path.get('constraints', [])
         if not constraints:
             return 0.0
@@ -474,7 +474,7 @@ class ResultRanker:
 
     @classmethod
     def _compute_coverage_impact(cls, path: Dict[str, Any]) -> float:
-        """覆盖影响：约束深度 + 输出寄存器覆盖度。"""
+        """覆盖影响：约束深度 + 输出寄存器覆盖度"""
         constraints = path.get('constraints', [])
         output_values = path.get('output_values', {})
         constraint_depth = min(1.0, len(constraints) / 50.0)
@@ -483,7 +483,7 @@ class ResultRanker:
 
     @classmethod
     def _compute_vulnerability_density(cls, path: Dict[str, Any]) -> float:
-        """漏洞密度：安全敏感模式在约束中的出现密度。"""
+        """漏洞密度：安全敏感模式在约束中的出现密度"""
         constraints = path.get('constraints', [])
         if not constraints:
             return 0.0
@@ -496,15 +496,15 @@ class ResultRanker:
 
 
 class PathMerger:
-    """Reduce phase: deduplicate paths by constraint DAG hash.
-
+    """Reduce phase: 去重 paths constraint DAG hash
+    
     增强 — 使用约束 DAG 同构哈希而非 (path_id, constraints) 元组：
-    两个路径即使 ID 不同，若约束依赖图同构则视为重复。
+    两个路径即使 ID 不同，若约束依赖图同构则视为重复
     """
 
     @staticmethod
     def merge(results: List[SubResult]) -> List[Dict[str, Any]]:
-        """Collect all paths from sub-results, drop DAG-isomorphic duplicates."""
+        """Collect paths sub-results, drop DAG-isomorphic duplicates"""
         all_paths: List[Dict[str, Any]] = []
         for r in results:
             for p in r.paths:
@@ -526,14 +526,14 @@ class PathMerger:
 
 
 class SymbExMapReduce:
-    """Orchestrator: partition → map (parallel) → reduce (merge).
-
-    增强 — 中间 checkpoint：map 阶段完成后自动保存中间结果，
-    后续如果 reduce 失败可以从 checkpoint 恢复而不重新 map。
-
-    四轮增强 — 集成 WorkStealingScheduler。
-    五轮增强 — 集成 ResultRanker：返回 top-N 排序路径。
-    六轮增强 — MapPhaseTimeout 每子问题超时控制。"""
+    """调度器: partition → map (并行) → reduce (合并)
+    
+    增强 — 中间 checkpoint：map 阶段完成后自动保存中间结果
+    后续如果 reduce 失败可以从 checkpoint 恢复而不重新 map
+    
+    四轮增强 — 集成 WorkStealingScheduler
+    五轮增强 — 集成 ResultRanker：返回 top-N 排序路径
+    六轮增强 — MapPhaseTimeout 每子问题超时控制"""
 
     # map 阶段每个子问题的默认超时（秒）
     DEFAULT_SUBPROBLEM_TIMEOUT = 300
@@ -548,7 +548,7 @@ class SymbExMapReduce:
     def partition(self, binary_path: str,
                   target_funcs: Optional[List[str]] = None,
                   max_problems: int = 50) -> List[SubProblem]:
-        """Split binary into per-function SubProblems. Optionally filter by name."""
+        """分割 binary per-function SubProblems. Optionally 过滤 name"""
         funcs = self.boundary.detect(binary_path)
         if target_funcs:
             funcs = [f for f in funcs if f['name'] in target_funcs]
@@ -574,10 +574,10 @@ class SymbExMapReduce:
                   use_processes: bool = True,
                   subproblem_timeout: Optional[int] = None,
                   use_work_stealing: bool = False) -> List[SubResult]:
-        """Execute all sub-problems, optionally via ProcessPoolExecutor.
-
-        六轮增强 — MapPhaseTimeout：每子问题超时后终止并挽救部分结果。
-        四轮增强 — WorkStealingScheduler。
+        """执行 sub-problems, optionally via Process池Executor
+        
+        六轮增强 — MapPhaseTimeout：每子问题超时后终止并挽救部分结果
+        四轮增强 — WorkStealingScheduler
         """
         timeout = subproblem_timeout or self.DEFAULT_SUBPROBLEM_TIMEOUT
         results: List[SubResult] = []
@@ -590,13 +590,13 @@ class SymbExMapReduce:
             for s in subs:
                 results.append(_subproblem_worker_with_timeout(s, timeout))
 
-        # checkpoint 中间结果
+        # 检查点 中间结果
         self._save_map_checkpoint(results)
         return results
 
     def _map_with_process_pool(self, subs: List[SubProblem],
                                 timeout: int) -> List[SubResult]:
-        """使用 ProcessPoolExecutor 执行 map，带超时控制。"""
+        """使用 Process池Executor 执行 map，带超时控制"""
         results: List[SubResult] = []
         with ProcessPoolExecutor(max_workers=self.num_workers) as pool:
             futures = {pool.submit(_subproblem_worker, s): s for s in subs}
@@ -611,7 +611,7 @@ class SymbExMapReduce:
         return results
 
     def _handle_subproblem_timeout(self, sub: SubProblem, timeout: int) -> SubResult:
-        """超时处理：标记为 PARTIAL 并尝试挽救已发现的路径。"""
+        """超时处理：标记为 PARTIAL 并尝试挽救已发现的路径"""
         logger.warning(f"Subproblem {sub.sub_id} timed out after {timeout}s")
         return SubResult(
             sub_id=sub.sub_id,
@@ -624,7 +624,7 @@ class SymbExMapReduce:
 
     def _map_with_work_stealing(self, subs: List[SubProblem],
                                  timeout: int) -> List[SubResult]:
-        """使用 WorkStealingScheduler 执行 map。"""
+        """使用 WorkStealingScheduler 执行 map"""
         scheduler = WorkStealingScheduler(self.num_workers)
         scheduler.assign(subs)
 
@@ -677,9 +677,9 @@ class SymbExMapReduce:
 
     def reduce_phase(self, results: List[SubResult],
                      top_n: Optional[int] = None) -> List[Dict[str, Any]]:
-        """Merge and deduplicate results from all workers.
-
-        五轮增强 — 若指定 top_n，通过 ResultRanker 返回 top-N 排序路径。
+        """合并 去重 results workers
+        
+        五轮增强 — 若指定 top_n，通过 ResultRanker 返回 top-N 排序路径
         """
         merged = PathMerger.merge(results)
         if top_n is not None and top_n > 0:
@@ -692,9 +692,9 @@ class SymbExMapReduce:
             top_n: Optional[int] = None,
             subproblem_timeout: Optional[int] = None,
             use_work_stealing: bool = False) -> MapReduceResult:
-        """Full pipeline: partition → map → reduce.
-
-        五轮增强 — top_n 参数通过 ResultRanker 返回排序路径。
+        """Full 流水线: partition → map → reduce
+        
+        五轮增强 — top_n 参数通过 ResultRanker 返回排序路径
         """
         subs = self.partition(binary_path, target_funcs, max_problems)
         results = self.map_phase(
@@ -724,8 +724,8 @@ def _work_stealing_worker_entry(worker_id: int,
                                  scheduler: WorkStealingScheduler,
                                  subs: List[SubProblem],
                                  timeout: int) -> None:
-    """工作窃取 worker 进程入口。
-
+    """工作窃取 worker 进程入口
+    
     1. 从自身队列取子问题
     2. 自身队列空 → 从最慢 worker 窃取
     3. 无可窃取 → 退出
@@ -750,7 +750,7 @@ def run_distributed_symbex(binary_path: str,
                            top_n: Optional[int] = None,
                            subproblem_timeout: Optional[int] = None,
                            use_work_stealing: bool = False) -> Dict[str, Any]:
-    """One-shot: instantiate MapReduce engine, partition binary, execute, merge."""
+    """One-shot: instantiate MapReduce engine, partition binary, 执行, 合并"""
     mr = SymbExMapReduce(num_workers=num_workers)
     result = mr.run(
         binary_path, target_funcs, max_problems,

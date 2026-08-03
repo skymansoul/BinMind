@@ -1,4 +1,4 @@
-# 17 tests: parse, cache, sync, priority sort, ssvc integration, fix suggestions
+# 17项测试: 解析、缓存、同步、优先级排序、SSVC集成、修复建议
 
 import json
 import os
@@ -113,7 +113,7 @@ class TestKEVCache:
         assert entries[0]["cveID"] == "CVE-2024-0001"
 
     def test_is_kev_check(self, temp_dir):
-        """Check if CVE is in KEV after caching."""
+        """缓存后检查CVE是否在KEV中。"""
         client = KEVClient(cache_dir=temp_dir)
         client._save_to_cache(
             _SAMPLE_KEV_FEED["vulnerabilities"],

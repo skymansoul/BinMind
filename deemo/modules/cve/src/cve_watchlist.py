@@ -1,16 +1,15 @@
-# 2026-10-05 ~ 2026-10-08
-# CVE Watchlist — operational monitoring of new CVEs matching your inventory.
-# Maintains a list of products/SBOMs to watch. On each check cycle, searches
-# the KB for new matches and compares against the previous state (via changelog
-# module if available, or simple timestamp tracking otherwise).
+# ~ 2026-10-08
+# CVE监视列表——匹配资产清单的新CVE运营监控。
+# 维护需监控的产品/SBOM列表。每次检查周期搜索知识库获取新匹配，
+# 并与先前状态比较（通过变更日志模块或简单时间戳跟踪）。
 #
-# The watchlist is stored in sqlite (same pattern as everything else).
-# Each entry is (name, ecosystem, version, last_checked_at, last_match_count).
-# On check, we search the KB for that product@version, compare the number of
-# matches to last_match_count, and report new matches as alerts.
+# 监视列表存储于sqlite（与其他模块模式一致）。
+# 每条目为 (name, ecosystem, version, last_checked_at, last_match_count)。
+# 检查时搜索该product@version的知识库，比较匹配数与last_match_count，
+# 将新匹配报告为告警。
 #
-# If cve_changelog is available, alerts also include field-level changes
-# to previously matched CVEs (severity bumps, new EPSS scores, KEV additions).
+# 若cve_changelog可用，告警还包括对先前匹配CVE的字段级变更
+# （严重度提升、新EPSS评分、KEV新增）。
 
 import json
 import os
@@ -26,7 +25,7 @@ _DEFAULT_WATCH_PATH = os.path.join(
     os.path.expanduser("~"), ".binmind", "watchlist.db"
 )
 
-# try importing changelog for rich alerts
+# 尝试导入变更日志以支持富告警
 try:
     from .cve_changelog import CVEChangelog, diff_entries
     _HAS_CHANGELOG = True
@@ -35,7 +34,7 @@ except ImportError:
 
 
 class CVEWatchlist:
-    """Product watchlist — tracks what you're monitoring and alerts on new matches."""
+    """产品监视列表——跟踪监控目标并对新匹配发出告警。"""
 
     def __init__(self, db_path: Optional[str] = None):
         self._db_path = db_path or _DEFAULT_WATCH_PATH
@@ -82,12 +81,12 @@ class CVEWatchlist:
             """)
             conn.commit()
 
-    # ---- manage watchlist ----
+    # ---- 管理监视列表 ----
 
     def add(
         self, name: str, ecosystem: str = "", version: str = ""
     ) -> int:
-        """Add a product to the watchlist. Returns the watch_id."""
+        """添加产品到监视列表。返回watch_id。"""
         conn = self._get_conn()
         now = time.time()
         with self._lock:
@@ -100,7 +99,7 @@ class CVEWatchlist:
             return cur.lastrowid
 
     def remove(self, watch_id: int) -> bool:
-        """Remove a watchlist entry by ID."""
+        """按ID移除监视条目。"""
         conn = self._get_conn()
         with self._lock:
             cur = conn.execute("DELETE FROM watchlist WHERE id = ?", (watch_id,))
@@ -108,7 +107,7 @@ class CVEWatchlist:
             return cur.rowcount > 0
 
     def list_all(self) -> List[Dict[str, Any]]:
-        """List all watchlist entries."""
+        """列出所有监视条目。"""
         conn = self._get_conn()
         with self._lock:
             rows = conn.execute(
@@ -117,7 +116,7 @@ class CVEWatchlist:
         return [dict(r) for r in rows]
 
     def get(self, watch_id: int) -> Optional[Dict[str, Any]]:
-        """Get a single watchlist entry."""
+        """获取单个监视条目。"""
         conn = self._get_conn()
         with self._lock:
             row = conn.execute(
@@ -125,12 +124,12 @@ class CVEWatchlist:
             ).fetchone()
         return dict(row) if row else None
 
-    # ---- check for new matches ----
+    # ---- 检查新匹配 ----
 
     def check_all(self, kb, min_severity: str = "LOW") -> Dict[str, Any]:
-        """Check all watchlist entries against the KB.
-        For each entry, search for matching CVEs and compare against previous state.
-        Returns {alerts, summary}."""
+        """对照知识库检查所有监视条目。
+        对每条目搜索匹配CVE并与先前状态比较。
+        返回 {alerts, summary}。"""
         entries = self.list_all()
         all_alerts: List[Dict] = []
         summary_parts: List[Dict] = []
@@ -156,19 +155,19 @@ class CVEWatchlist:
         }
 
     def _check_one(self, kb, entry: Dict, min_severity: str) -> Dict[str, Any]:
-        """Check a single watchlist entry."""
+        """检查单条监视条目。"""
         watch_id = entry["id"]
         name = entry["name"]
         eco = entry["ecosystem"]
         ver = entry["version"]
 
-        # search KB for matches
+        # 搜索知识库匹配
         query = name
         if ver:
             query = f"{name} {ver}"
         kb_results, total = kb.search(query=query, limit=200) if hasattr(kb, 'search') else ([], 0)
 
-        # filter by severity
+        # 按严重度过滤
         sev_order = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "NONE": 4, "UNKNOWN": 5}
         min_sev_val = sev_order.get(min_severity.upper(), 99)
         filtered = [
@@ -181,7 +180,7 @@ class CVEWatchlist:
         current_ids = [e.cve_id if hasattr(e, 'cve_id') else e.get('cve_id', '') for e in filtered]
         current_count = len(current_ids)
 
-        # compare with previous state
+        # 与先前状态比较
         prev_ids = json.loads(entry.get("last_match_ids", "[]"))
         prev_count = entry.get("last_match_count", 0)
         new_ids = [cid for cid in current_ids if cid not in prev_ids]
@@ -189,7 +188,7 @@ class CVEWatchlist:
         alerts: List[Dict] = []
         now = time.time()
 
-        # alert: new matches
+        # 告警: 新匹配
         for cid in new_ids:
             matched = next((e for e in filtered if (e.cve_id if hasattr(e, 'cve_id') else e.get('cve_id', '')) == cid), None)
             sev = matched.severity if matched and hasattr(matched, 'severity') else "UNKNOWN"
@@ -202,7 +201,7 @@ class CVEWatchlist:
                 "ecosystem": eco,
             })
 
-        # alert: severity changes on previously matched CVEs
+        # 告警: 先前匹配CVE的严重度变更
         severity_changes = 0
         if _HAS_CHANGELOG and prev_ids:
             try:
@@ -222,7 +221,7 @@ class CVEWatchlist:
             except Exception:
                 pass
 
-        # persist alerts
+        # 持久化告警
         conn = self._get_conn()
         with self._lock:
             for a in alerts:
@@ -232,7 +231,7 @@ class CVEWatchlist:
                     (watch_id, a["cve_id"], a["alert_type"],
                      a.get("details", ""), now),
                 )
-            # update watchlist state
+            # 更新监视状态
             conn.execute(
                 "UPDATE watchlist SET last_checked_at = ?, last_match_count = ?, "
                 "last_match_ids = ? WHERE id = ?",
@@ -247,12 +246,12 @@ class CVEWatchlist:
             "severity_changes": severity_changes,
         }
 
-    # ---- import SBOM components as watchlist ----
+    # ---- 从SBOM组件导入监视列表 ----
 
     def import_from_sbom(self, components: List[Dict]) -> int:
-        """Import components from an SBOM into the watchlist.
-        Each component should have: name, version, ecosystem (or purl_type).
-        Returns number of entries added."""
+        """将SBOM组件导入监视列表。
+        每个组件需含: name, version, ecosystem（或purl_type）。
+        返回新增条目数。"""
         count = 0
         for comp in components:
             name = comp.get("name", comp.get("component", ""))
@@ -264,12 +263,12 @@ class CVEWatchlist:
             count += 1
         return count
 
-    # ---- alert management ----
+    # ---- 告警管理 ----
 
     def get_alerts(
         self, acknowledged: Optional[bool] = None, limit: int = 100
     ) -> List[Dict[str, Any]]:
-        """Get alerts, optionally filtered by acknowledged status."""
+        """获取告警，可选按确认状态过滤。"""
         conn = self._get_conn()
         with self._lock:
             if acknowledged is None:
@@ -287,7 +286,7 @@ class CVEWatchlist:
         return [dict(r) for r in rows]
 
     def acknowledge_alert(self, alert_id: int):
-        """Mark an alert as acknowledged."""
+        """将告警标记为已确认。"""
         conn = self._get_conn()
         with self._lock:
             conn.execute(
@@ -297,7 +296,7 @@ class CVEWatchlist:
             conn.commit()
 
     def alert_stats(self) -> Dict[str, Any]:
-        """Summary stats for alerts."""
+        """告警摘要统计。"""
         conn = self._get_conn()
         with self._lock:
             total = conn.execute(

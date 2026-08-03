@@ -1,6 +1,6 @@
-# YARA规则自动生成器——从二进制样本中提取字符串、字节模式、熵值与魔数特征。
-# Shannon熵计算基于log2，高熵区域(>7.0)标记为潜在加密/压缩载荷。
-# 优化策略：置信度<0.5的特征丢弃，特征≥3时收紧条件以降低误报。
+# YARA规则自动生成——从二进制样本提取字符串、字节模式、熵值、魔数特征。
+# Shannon熵基于log2计算，高熵区(>7.0)标记为潜在加密/压缩载荷。
+# 优化策略：丢弃置信度<0.5特征，特征>=3时收紧匹配条件以降低误报。
 
 import os, re, logging
 from typing import List, Optional
@@ -28,9 +28,7 @@ class FeatureType:
     def __init__(self, value):
         self._val = value
 
-    @property
-    def value(self):
-        return self._val
+    value = property(lambda self: self._val)
 
     def __str__(self):
         return self._val
@@ -223,7 +221,7 @@ class YaraAutoGenerator:
         self.rules.append(rule)
 
     def _optimize_rules(self) -> None:
-        """裁剪低置信度特征(<0.5)，特征充足时收紧匹配条件以降低误报。"""
+        """裁剪低置信度特征（<0.5），特征充足时收紧匹配条件以抑制误报。"""
         for rule in self.rules:
             rule.features = [f for f in rule.features if f.confidence >= 0.5]
             n = len(rule.features)

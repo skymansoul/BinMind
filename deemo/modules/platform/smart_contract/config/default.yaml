@@ -1,0 +1,35 @@
+smart_contract:
+  evm:
+    max_bytecode_size: 24576
+    supported_forks:
+      - istanbul
+      - berlin
+      - london
+      - paris
+      - shanghai
+  wasm:
+    max_sections: 50
+    max_functions: 5000
+  detectors:
+    reentrancy:
+      enabled: true
+      check_sstore_after_call: true
+    integer_overflow:
+      enabled: true
+      check_safemath: true
+    unchecked_call:
+      enabled: true
+      check_return_value: true
+    tx_origin:
+      enabled: true
+      check_authorization: true
+  severity_threshold: LOW
+
+logging:
+  level: INFO
+  format: "%(asctime)s [%(name)s] %(levelname)s: %(message)s"
+  file: logs/smart_contract.log
+
+paths:
+  data_dir: ./data
+  output_dir: ./output

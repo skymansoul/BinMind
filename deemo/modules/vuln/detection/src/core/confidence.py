@@ -1,5 +1,5 @@
-# 2026-07-27 — Bayesian置信度评分 (BiNLLM-inspired)
-# 朴素贝叶斯+Laplace平滑+独立性奖励，用于CVE匹配的可信度量化
+# Bayesian置信度评分（BiNLLM参考）
+# 朴素贝叶斯+Laplace平滑+独立性奖励，CVE匹配置信度量化
 
 from typing import Dict, List, Tuple
 from dataclasses import dataclass, field
@@ -18,8 +18,8 @@ class BayesianConfidenceScorer:
     """朴素贝叶斯置信度评分器。
 
     核心思路:
-    - 每个证据源(string_match, symbol_match, disasm_match)视为独立特征
-    - 先验概率P(Vuln) = base_rate (默认0.1)
+    - 各证据源视为独立特征（string_match/symbol_match/disasm_match）
+    - 先验概率P(Vuln)=base_rate（默认0.1）
     - Laplace平滑处理零频问题
     - 独立性奖励: 多特征同时命中时加分
 
@@ -36,7 +36,7 @@ class BayesianConfidenceScorer:
         self._total_neg = 0
 
     def fit(self, training_data: List[Tuple[Dict[str, bool], bool]]):
-        """训练：输入(features_dict, is_vulnerable)对"""
+        """训练——输入(features_dict, is_vulnerable)对"""
         for features, is_vuln in training_data:
             if is_vuln:
                 self._total_pos += 1
@@ -50,7 +50,7 @@ class BayesianConfidenceScorer:
                         self._neg_counts[k] += 1
 
     def score(self, features: Dict[str, bool]) -> ConfidenceResult:
-        """计算给定证据特征集下的漏洞置信度。"""
+        """计算给定证据特征集下的漏洞置信度"""
         prior_pos = self.base_rate
         prior_neg = 1.0 - self.base_rate
 
@@ -93,10 +93,10 @@ class BayesianConfidenceScorer:
         self._total_neg = 0
 
 
-# 便捷函数
+# 便捷接口
 def confidence_score(features: Dict[str, bool],
                      base_rate: float = 0.1) -> float:
-    """单次快速置信度评分（使用默认先验）。"""
+    """单次快速置信度评分——使用默认先验"""
     scorer = BayesianConfidenceScorer(base_rate=base_rate)
     return scorer.score(features).score
 

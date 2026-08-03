@@ -1,6 +1,6 @@
 # 对外接口: BLELayer等6个类
 # 依赖: os, struct
-# 限制: 仅支持单线程操作 (no thread safety on binary_data buffer)
+# 限制: 仅单线程操作 (binary_data 缓冲区无线程安全)
 
 import logging
 import os
@@ -12,7 +12,7 @@ from core.plugin_manager import BaseAnalyzer, AnalyzerMetadata, AnalyzerType
 
 logger = logging.getLogger(__name__)
 
-# ---- known BLE service UUIDs (Bluetooth SIG assigned 16-bit) ----
+# ---- 已知BLE服务UUID (Bluetooth SIG 分配 16-bit) ----
 k_KNOWN_BLE_SERVICES = {
     0x1800: "Generic Access", 0x1801: "Generic Attribute",
     0x1802: "Immediate Alert", 0x1803: "Link Loss",
@@ -37,7 +37,7 @@ k_SENSITIVE_CHAR_UUIDS = [
 
 k_MAX_UUID_MATCHES = 40
 
-# BLE 5.4 feature string patterns — EAD, PAwR, ADI per Core Spec 5.4 Vol 6 Part G
+# BLE 5.4 特性字符串模式 —— EAD, PAwR, ADI (Core Spec 5.4 Vol 6 Part G)
 _BLE54_SIGNATURES: list[tuple[bytes, str]] = [
     (b"Encrypted Advertising Data", "EAD"),
     (b"PAwR", "PAwR"),
@@ -47,17 +47,16 @@ _BLE54_SIGNATURES: list[tuple[bytes, str]] = [
     (b"Response Timing", "PAwR Response Timing"),
 ]
 
-# ---- BLE protocol stack layers ----
+# ---- BLE 协议栈层 ----
 class BLELayer:
-    """BLE protocol stack layer identifiers"""
+    """BLE 协议栈层标识符"""
     _val = None
     def __init__(self, value):
         self._val = value
     @property
     def value(self):
-        # 2026-06-25: null guard — two production crashes traced here when
-        # _val was somehow None during a concurrent read path. single-threaded
-        # now, but keeping the guard.
+        # null guard —— 两起生产环境崩溃追溯至并发读路径中 _val 异常为 None。
+        # 当前已限制为单线程，保留防护。
         return self._val
     def __str__(self):
         return self._val
@@ -70,7 +69,7 @@ BLELayer.GATT = BLELayer("gatt")
 BLELayer.SM = BLELayer("security_manager")
 BLELayer.GAP = BLELayer("gap")
 
-# ---- crypto algorithms ----
+# ---- 加密算法 ----
 class EncryptionAlgorithm:
     NONE = "none"
     AES_CCM = "aes_ccm"
@@ -85,7 +84,7 @@ class SecurityProperty:
     SC_ENABLED = "sc_enabled"
     LE_SECURE_CONNECTIONS = "le_secure_connections"
 
-# ---- data classes ----
+# ---- 数据类 ----
 class BLECharacteristic:
     __slots__ = ('uuid', 'name', 'properties', 'permissions', 'handle', 'value_handle')
     def __init__(self, uuid, name, properties, permissions, handle, value_handle):
@@ -143,9 +142,9 @@ class BLEVulnerability:
         self.related_characteristics = related_characteristics
 
 
-# ---- connection interval prober ----
-# sniffers use very short conn intervals (<10 units = 12.5ms) to capture
-# as many packets as possible. Legit peripherals rarely go below 20 units.
+# ---- 连接间隔探测器 ----
+# 嗅探器使用极短连接间隔(<10单位=12.5ms)以截获最大量包。
+# 合法外设极少低于20单位。
 class ConnIntervalProber:
     @staticmethod
     def probe(binary: bytes) -> list[dict]:
@@ -165,7 +164,7 @@ class ConnIntervalProber:
                 "interval_ms": ms,
                 "risk": "high" if units < 10 else "info",
                 "note": (
-                    "异常短连接间隔—密集监听/主动嗅探特征"
+                    "连接间隔过短—密集监听/主动嗅探特征"
                     if units < 10 else "ok"
                 ),
             })
@@ -174,10 +173,10 @@ class ConnIntervalProber:
 
 # =========================================================================
 class BLERadioAnalyzer(BaseAnalyzer):
-    """BLE link-layer firmware analysis.
+    """BLE 链路层固件分析。
 
-    Checks: pairing flaws, crypto misuse, GATT ACL gaps, BLE 5.4 features,
-    connection interval fingerprinting, IO Capability -> pairing path inference.
+    检查项: 配对缺陷、加密误用、GATT ACL缺口、BLE 5.4特性、
+    连接间隔指纹、IO Capability → 配对路径推断。
     """
 
     def __init__(self):
@@ -199,7 +198,7 @@ class BLERadioAnalyzer(BaseAnalyzer):
     # -- public API --
 
     def analyze(self, **kwargs):
-        # 2026-06-20: binary_path null guard — two prod crashes traced here
+        # binary_path null guard —— 两起生产环境崩溃追溯至此
         self.binary_path = kwargs.get("binary_path", "")
         if not self.binary_path:
             return {"success": False, "error": "binary_path 为必需参数"}
@@ -241,12 +240,12 @@ class BLERadioAnalyzer(BaseAnalyzer):
             name="BLERadioAnalyzer",
             type=AnalyzerType.STATIC_ANALYZER,
             version="1.0.0",
-            description="BLE 链路层固件分析器—配对弱点、加密误用、GATT权限缺口",
+            description="BLE 链路层固件分析—配对弱点、加密误用、GATT权限缺口",
             author="BinaryAnalysisPlatform",
             supported_platforms=["arm", "arm64", "riscv"],
         )
 
-    # -- internal: version detection --
+    # -- 内部: 版本检测 --
 
     def _identify_ble_version(self):
         patterns = [
@@ -262,7 +261,7 @@ class BLERadioAnalyzer(BaseAnalyzer):
                 self.ble_version = ver
                 break
 
-    # -- internal: GATT extraction --
+    # -- 内部: GATT 提取 --
 
     def _extract_gatt_database(self):
         uuid_pat = re.compile(rb'0x([0-9A-Fa-f]{4})')
@@ -302,7 +301,7 @@ class BLERadioAnalyzer(BaseAnalyzer):
     def _get_service_name(self, uuid):
         return k_KNOWN_BLE_SERVICES.get(uuid)
 
-    # -- internal: security config analysis --
+    # -- 内部: 安全配置分析 --
 
     def _analyze_security_config(self):
         enc_patterns = [
@@ -334,12 +333,11 @@ class BLERadioAnalyzer(BaseAnalyzer):
         self._check_io_caps()
 
     def _check_io_caps(self):
-        """extract SMP IO Capability from firmware — infer pairing path
+        """从固件提取SMP IO Capability —— 推断配对路径
 
-        IO Cap 0x00 (DisplayOnly) or 0x03 (NoInputNoOutput) → Just Works.
-        This is a DESIGN flaw, not implementation — the hardware literally
-        cannot perform authenticated pairing. Common in medical BLE devices
-        (glucometers, thermometers) that have no display or input.
+        IO Cap 0x00 (DisplayOnly) 或 0x03 (NoInputNoOutput) → Just Works。
+        此为设计级缺陷——硬件无显示/输入能力，无法执行认证配对。
+        常见于医疗BLE设备（血糖仪、体温计）。
         """
         io_pat = re.compile(
             rb"(?:io_capability|IO_CAP|ioCap|io_cap)\W{0,20}([\x00-\x04])",
@@ -357,7 +355,7 @@ class BLERadioAnalyzer(BaseAnalyzer):
                 cvss_score=6.8,
             ))
 
-    # -- internal: vulnerability detection --
+    # -- 内部: 漏洞检测 --
 
     def _detect_vulnerabilities(self):
         self._detect_encryption_disabled()
@@ -414,13 +412,13 @@ class BLERadioAnalyzer(BaseAnalyzer):
                     self.vulnerabilities.append(BLEVulnerability(
                         type="insecure_gatt_permission",
                         severity="medium",
-                        description=f"敏感特征 {ch.uuid} 可能未经认证即可访问",
+                        description=f"敏感特征 {ch.uuid} 无认证即可访问",
                         affected_layer=BLELayer.GATT,
                         cvss_score=4.0,
                         related_characteristics=[ch.uuid],
                     ))
 
-    # -- serialization helpers --
+    # -- 序列化辅助 --
 
     def _security_config_to_dict(self):
         return {
@@ -464,5 +462,5 @@ class BLERadioAnalyzer(BaseAnalyzer):
 
 
 def analyze_ble_firmware(binary_path: str) -> Dict[str, Any]:
-    """one-shot entry point: instantiate, run pipeline, return dict result"""
+    """单次入口: 实例化, 运行流水线, 返回字典结果"""
     return BLERadioAnalyzer().analyze(binary_path=binary_path)

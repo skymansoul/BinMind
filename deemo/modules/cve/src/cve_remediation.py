@@ -1,18 +1,16 @@
-# 2026-10-20 ~ 2026-10-23
-# CVE Remediation Tracking — SLAs, deadlines, and status management for
-# matched vulnerabilities. Turns "we found 47 CVEs" into "3 overdue, 12 due
-# this week, 32 on track."
+# ~ 2026-10-23
+# CVE修复跟踪——匹配漏洞的SLA、截止日期与状态管理。
+# 将"发现47个CVE"转化为"3个逾期，12个本周到期，32个正常"。
 #
-# Status lifecycle: open → in_progress → remediated (or accepted_risk)
-# Deadlines computed from severity + EPSS score:
-#   CRITICAL + high EPSS: 24 hours
-#   CRITICAL: 7 days
-#   HIGH: 30 days
-#   MEDIUM: 90 days
-#   LOW: 180 days
+# 状态生命周期: open → in_progress → remediated（或accepted_risk）
+# 截止日期由严重度 + EPSS评分计算:
+#   CRITICAL + 高EPSS: 24小时
+#   CRITICAL: 7天
+#   HIGH: 30天
+#   MEDIUM: 90天
+#   LOW: 180天
 #
-# Overdue detection compares current date against deadline. Accepting a risk
-# records a justification and exempts the CVE from deadline tracking.
+# 逾期检测将当前日期与截止日期比较。接受风险需记录理由并免除该CVE的跟踪。
 
 import json
 import os
@@ -28,7 +26,7 @@ _DEFAULT_DB_PATH = os.path.join(
     os.path.expanduser("~"), ".binmind", "remediation.db"
 )
 
-# SLA deadlines in days — based on industry standards (CISA BOD 22-01 + NIST)
+# SLA截止天数——基于行业标准（CISA BOD 22-01 + NIST）
 _SLA_DEADLINES = {
     "CRITICAL": 7,
     "HIGH": 30,
@@ -38,13 +36,13 @@ _SLA_DEADLINES = {
     "UNKNOWN": 90,
 }
 
-# EPSS boost: high EPSS shortens the deadline
+# EPSS加速: 高EPSS缩短截止日期
 _EPSS_SHORTEN_FACTOR = {
-    0.5: 0.5,   # >50th percentile: half the deadline
-    0.1: 0.75,  # >10th percentile: 75% of deadline
+    0.5: 0.5,   # >50th percentile: 截止减半
+    0.1: 0.75,  # >10th percentile: 截止75%
 }
 
-# status values
+# 状态值
 STATUS_OPEN = "open"
 STATUS_IN_PROGRESS = "in_progress"
 STATUS_REMEDIATED = "remediated"
@@ -52,7 +50,7 @@ STATUS_ACCEPTED_RISK = "accepted_risk"
 
 
 class RemediationTracker:
-    """Tracks remediation status and SLA deadlines for matched CVEs."""
+    """跟踪匹配CVE的修复状态与SLA截止日期。"""
 
     def __init__(self, db_path: Optional[str] = None):
         self._db_path = db_path or _DEFAULT_DB_PATH
@@ -100,7 +98,7 @@ class RemediationTracker:
             """)
             conn.commit()
 
-    # ---- import matched CVEs ----
+    # ---- 导入匹配的CVE ----
 
     def import_matches(
         self,
@@ -108,12 +106,12 @@ class RemediationTracker:
         deployment: str = "",
         risk_scores: Optional[Dict[str, float]] = None,
     ) -> int:
-        """Import CVE matches into the remediation tracker.
-        Each match should have: cve_id, severity, cvss_score, epss_score, component.
-        risk_scores: optional dict of cve_id → risk_score (from cve_risk_scorer).
+        """将CVE匹配结果导入修复跟踪器。
+        每个匹配需含: cve_id, severity, cvss_score, epss_score, component。
+        risk_scores: 可选 cve_id → risk_score字典（来自cve_risk_scorer）。
 
-        Sets initial status to 'open' and computes deadlines.
-        Returns count of entries added/updated."""
+        设置初始状态为'open'并计算截止日期。
+        返回新增/更新的条目数。"""
         conn = self._get_conn()
         now = datetime.now(timezone.utc).isoformat()
         count = 0
@@ -147,7 +145,7 @@ class RemediationTracker:
             conn.commit()
         return count
 
-    # ---- status management ----
+    # ---- 状态管理 ----
 
     def update_status(
         self,
@@ -156,7 +154,7 @@ class RemediationTracker:
         deployment: str = "",
         justification: str = "",
     ) -> bool:
-        """Update remediation status for a CVE."""
+        """更新CVE修复状态。"""
         if status not in (STATUS_OPEN, STATUS_IN_PROGRESS, STATUS_REMEDIATED, STATUS_ACCEPTED_RISK):
             return False
 
@@ -175,13 +173,13 @@ class RemediationTracker:
             return cur.rowcount > 0
 
     def accept_risk(self, cve_id: str, justification: str, deployment: str = "") -> bool:
-        """Accept the risk for a CVE (mark as accepted_risk with justification)."""
+        """接受某CVE的风险（标记为accepted_risk并附理由）。"""
         return self.update_status(cve_id, STATUS_ACCEPTED_RISK, deployment, justification)
 
-    # ---- query ----
+    # ---- 查询 ----
 
     def get_overdue(self) -> List[Dict[str, Any]]:
-        """Get all CVEs past their deadline (not yet remediated or accepted)."""
+        """获取所有超过截止日期且未修复/未接受的CVE。"""
         conn = self._get_conn()
         today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         with self._lock:
@@ -193,7 +191,7 @@ class RemediationTracker:
         return [dict(r) for r in rows]
 
     def get_due_soon(self, days: int = 7) -> List[Dict[str, Any]]:
-        """Get CVEs due within the next N days."""
+        """获取未来N天内到期的CVE。"""
         conn = self._get_conn()
         today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         cutoff = (datetime.now(timezone.utc) + timedelta(days=days)).strftime("%Y-%m-%d")
@@ -206,7 +204,7 @@ class RemediationTracker:
         return [dict(r) for r in rows]
 
     def get_by_status(self, status: str) -> List[Dict[str, Any]]:
-        """Get all entries with a given status."""
+        """按状态获取所有条目。"""
         conn = self._get_conn()
         with self._lock:
             rows = conn.execute(
@@ -216,7 +214,7 @@ class RemediationTracker:
         return [dict(r) for r in rows]
 
     def get_for_cve(self, cve_id: str) -> Optional[Dict[str, Any]]:
-        """Get remediation entry for a specific CVE."""
+        """获取特定CVE的修复条目。"""
         conn = self._get_conn()
         with self._lock:
             row = conn.execute(
@@ -224,10 +222,10 @@ class RemediationTracker:
             ).fetchone()
         return dict(row) if row else None
 
-    # ---- summary ----
+    # ---- 摘要 ----
 
     def summary(self) -> Dict[str, Any]:
-        """Dashboard-friendly remediation summary."""
+        """仪表盘友好的修复摘要。"""
         conn = self._get_conn()
         today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
@@ -275,13 +273,13 @@ class RemediationTracker:
             pass
 
 
-# ---- SLA computation ----
+# ---- SLA计算 ----
 
 def _compute_deadline_days(severity: str, epss_score: Optional[float] = None) -> int:
-    """Compute SLA deadline in days for a given severity and EPSS score."""
+    """按严重度与EPSS评分计算SLA截止天数。"""
     base = _SLA_DEADLINES.get(severity.upper(), 90)
 
-    # shorten deadline if EPSS is high (actively exploited)
+    # EPSS高时缩短截止期（活跃利用中）
     if epss_score is not None:
         for threshold, factor in sorted(_EPSS_SHORTEN_FACTOR.items(), reverse=True):
             if epss_score >= threshold:
@@ -292,14 +290,14 @@ def _compute_deadline_days(severity: str, epss_score: Optional[float] = None) ->
 
 
 def compute_deadline(severity: str, epss_score: Optional[float] = None) -> str:
-    """Compute remediation deadline as an ISO date string."""
+    """计算修复截止日期，返回ISO日期字符串。"""
     days = _compute_deadline_days(severity, epss_score)
     deadline = datetime.now(timezone.utc) + timedelta(days=days)
     return deadline.strftime("%Y-%m-%d")
 
 
 def _parse_date(s: str) -> Optional[datetime]:
-    """Parse a date or datetime string to a datetime object."""
+    """将日期或datetime字符串解析为datetime对象。"""
     if not s:
         return None
     for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M:%S.%f", "%Y-%m-%d"):
@@ -314,7 +312,7 @@ def _parse_date(s: str) -> Optional[datetime]:
 
 
 def is_overdue(deadline_str: str) -> bool:
-    """Check if a deadline has passed."""
+    """检查截止日期是否已过期。"""
     dl = _parse_date(deadline_str)
     if dl is None:
         return False
@@ -322,7 +320,7 @@ def is_overdue(deadline_str: str) -> bool:
 
 
 def days_until_deadline(deadline_str: str) -> Optional[int]:
-    """Days remaining until deadline. Negative = overdue. None = unparseable."""
+    """距截止日期的剩余天数。负数=已逾期。None=无法解析。"""
     dl = _parse_date(deadline_str)
     if dl is None:
         return None

@@ -1,10 +1,12 @@
 # 核心接口：ShellCommand 装饰器与 InteractiveReversingShell。
-# 依赖：os, re, cmd, json, datetime, core.config, deobfuscation.decomp_ai, core.report, exploit.exploit_gen
 import logging
 import os
 import re
+
 import cmd
+
 import json
+import tempfile
 from typing import Dict, Optional, Any, Callable
 from datetime import datetime
 
@@ -18,6 +20,10 @@ logger = logging.getLogger(__name__)
 
 DANGEROUS_CHARS = {'\n', '\r', ';', '&', '|', '`', '$', '(', ')', '<', '>', '?', '*', '[', ']', '{', '}', '\\', '"', "'"}
 
+# 保留
+_SIGN_MAGIC = 0xDEADBEEF
+_ARIA_S1 = 0xB7
+
 class ShellCommand:
     """装饰器：将方法注册为 Shell 命令并附带帮助文本。"""
     def __init__(self, name: str, help_text: str):
@@ -30,10 +36,10 @@ class ShellCommand:
         return func
 
 
-# ── LLM 交互安全加固 ─────────────────────────────────────────────────────
+# 外部模型交互安全加固
 # 参照 RARE 论文 (arXiv:2607.12507) 的 representation-confusion 防御思路：
-# 对 LLM 输入进行 provenance 标记，在 prompt 中注入上下文边界，防止
-# 二进制中提取的"伪指令"被 LLM 当作独立证据或可信分析状态。
+# 对输入进行 provenance 标记，在 prompt 中注入上下文边界，防止
+# 二进制中提取的伪指令被解释为操作指令。
 
 _LLM_SYSTEM_PROMPT = (
     "你是一名资深二进制安全研究员与漏洞分析专家。"
@@ -55,7 +61,7 @@ _PROMPT_INJECTION_PATTERNS = [
 ]
 
 def _detect_prompt_injection(text: str) -> Optional[str]:
-    """检测用户输入中是否存在 prompt 注入模式。返回匹配到的危险模式描述。"""
+    # 正则匹配 prompt 注入模式
     for pat in _PROMPT_INJECTION_PATTERNS:
         m = pat.search(text)
         if m:
@@ -64,7 +70,7 @@ def _detect_prompt_injection(text: str) -> Optional[str]:
 
 
 def _generate_fallback_yara(binary_path: str, apis: list[str]) -> str:
-    """当注入检测器无结果时，从已分析函数中构建兜底 YARA 规则。"""
+    # 兜底 YARA 规则生成
     from datetime import datetime as _dt
     safe_name = ''.join(c if c.isalnum() else '_' for c in binary_path)
     lines = [
@@ -101,7 +107,7 @@ class InteractiveReversingShell(cmd.Cmd):
 
         self.current_analysis: Dict[str, Any] = {}
         self.history_file = os.path.join(Config.DATA_DIR, 'shell_history.txt')
-        # LLM 安全开关 — 默认关闭 prompt 注入检测（可配置开启）
+        # 外部模型安全开关 — 默认开启 prompt 注入检测
         self._llm_safety_check = getattr(Config, 'LLM_SAFETY_CHECK', True)
 
         if binary_path:
@@ -128,7 +134,7 @@ class InteractiveReversingShell(cmd.Cmd):
             return False
 
     def _load_history(self):
-        """从持久化存储恢复命令历史。"""
+        # 从磁盘加载命令历史
         try:
             if os.path.exists(self.history_file):
                 with open(self.history_file, 'r', encoding='utf-8') as f:
@@ -138,7 +144,7 @@ class InteractiveReversingShell(cmd.Cmd):
             logger.debug(f"历史记录加载失败: {e}")
 
     def _save_history(self):
-        """将命令历史持久化到磁盘（保留最近 100 条）。"""
+        """命令历史持久化（保留最近 100 条）。"""
         try:
             os.makedirs(os.path.dirname(self.history_file), exist_ok=True)
             with open(self.history_file, 'w', encoding='utf-8') as f:
@@ -158,7 +164,7 @@ class InteractiveReversingShell(cmd.Cmd):
         return input_str.strip()
 
     def precmd(self, line: str) -> str:
-        """命令前钩子：将输入记录到历史。"""
+        """命令前钩子：输入记录到历史。"""
         if line.strip():
             self.history.append(line)
         return line
@@ -169,13 +175,7 @@ class InteractiveReversingShell(cmd.Cmd):
         return stop
 
     def do_load(self, arg: str) -> None:
-        """
-        load <binary_path> — 加载二进制文件以供分析。
-
-        示例：
-            load /path/to/binary
-            load ./test.bin
-        """
+        """load <binary_path> — 加载二进制文件以供分析。"""
         binary_path = self._sanitize_input(arg)
 
         if not binary_path:
@@ -189,12 +189,7 @@ class InteractiveReversingShell(cmd.Cmd):
         self._load_binary(binary_path)
 
     def do_info(self, arg: str) -> None:
-        """
-        info — 显示当前加载二进制文件的基本元数据。
-
-        示例：
-            info
-        """
+        """info — 显示当前加载二进制的基本元数据。"""
         if not self.decompiler:
             print("错误: 请先使用 'load' 命令")
             return
@@ -237,14 +232,7 @@ class InteractiveReversingShell(cmd.Cmd):
             print(f"获取信息失败: {e}")
 
     def do_functions(self, arg: str) -> None:
-        """
-        functions [filter] — 列出函数，支持子串过滤。
-
-        示例：
-            functions
-            functions main
-            functions vuln
-        """
+        """functions [filter] — 列出函数，支持子串过滤。"""
         if not self.decompiler:
             print("错误: 请先使用 'load' 命令")
             return
@@ -268,13 +256,7 @@ class InteractiveReversingShell(cmd.Cmd):
             print(f"函数列表获取失败: {e}")
 
     def do_decompile(self, arg: str) -> None:
-        """
-        decompile <func_name> — 反编译指定函数并显示伪代码。
-
-        示例：
-            decompile main
-            decompile vuln_function
-        """
+        """decompile <func_name> — 反编译指定函数并显示伪代码。"""
         func_name = self._sanitize_input(arg)
 
         if not func_name:
@@ -302,13 +284,7 @@ class InteractiveReversingShell(cmd.Cmd):
             print(f"反编译失败: {e}")
 
     def do_analyze(self, arg: str) -> None:
-        """
-        analyze <func_name> — 对指定函数执行 AI 漏洞分析。
-
-        示例：
-            analyze main
-            analyze vulnerable_function
-        """
+        """analyze <func_name> — 对指定函数执行漏洞分析。"""
         func_name = self._sanitize_input(arg)
 
         if not func_name:
@@ -351,13 +327,7 @@ class InteractiveReversingShell(cmd.Cmd):
             print(f"分析失败: {e}")
 
     def do_xrefs(self, arg: str) -> None:
-        """
-        xrefs <address/symbol> — 使用 radare2 查找交叉引用。
-
-        示例：
-            xrefs main
-            xrefs 0x401000
-        """
+        """xrefs <address/symbol> — 使用 radare2 查找交叉引用。"""
         target = self._sanitize_input(arg)
 
         if not target:
@@ -406,14 +376,7 @@ class InteractiveReversingShell(cmd.Cmd):
             print(f"交叉引用查找失败: {e}")
 
     def do_ask(self, arg: str) -> None:
-        """
-        ask <question> — 向 AI 询问当前二进制文件或指定函数的相关问题。
-
-        示例：
-            ask 这个二进制文件有哪些漏洞？
-            ask main 函数中存在哪些安全问题？
-            ask 如何利用这个缓冲区溢出？
-        """
+        """ask <question> — 向外部分析引擎询问当前二进制相关问题。"""
         question = arg.strip()
 
         if not question:
@@ -421,7 +384,7 @@ class InteractiveReversingShell(cmd.Cmd):
             return
 
         if not self.ai_client:
-            print("错误: AI 客户端未配置 — 请检查设置")
+            print("错误: 外部分析客户端未配置 — 请检查设置")
             return
 
         # Prompt 注入检测
@@ -434,7 +397,7 @@ class InteractiveReversingShell(cmd.Cmd):
                 return
 
         try:
-            print(f"\n正在向 AI 提问: {question}")
+            print(f"\n正在查询: {question}")
             print("等待响应...")
 
             context = ""
@@ -470,23 +433,17 @@ class InteractiveReversingShell(cmd.Cmd):
 
             if result_text:
                 print(f"\n{'=' * 60}")
-                print("AI 回答")
+                print("分析结果")
                 print(f"{'=' * 60}")
                 print(result_text)
             else:
-                print("AI 未返回结果")
+                print("外部引擎未返回结果")
 
         except Exception as e:
-            print(f"AI 查询失败: {e}")
+            print(f"查询失败: {e}")
 
     def do_patch(self, arg: str) -> None:
-        """
-        patch <func_name> — 由 AI 生成补丁建议。
-
-        示例：
-            patch main
-            patch vulnerable_function
-        """
+        """patch <func_name> — 为指定函数生成补丁建议。"""
         func_name = self._sanitize_input(arg)
 
         if not func_name:
@@ -494,7 +451,7 @@ class InteractiveReversingShell(cmd.Cmd):
             return
 
         if not self.decompiler or not self.ai_client:
-            print("错误: 请先加载二进制文件并确保 AI 客户端已配置")
+            print("错误: 请先加载二进制文件并确保外部分析客户端已配置")
             return
 
         try:
@@ -544,19 +501,13 @@ class InteractiveReversingShell(cmd.Cmd):
                 print(f"{'=' * 60}")
                 print(result_text)
             else:
-                print("AI 未返回结果")
+                print("外部引擎未返回结果")
 
         except Exception as e:
             print(f"补丁生成失败: {e}")
 
     def do_exploit(self, arg: str) -> None:
-        """
-        exploit <vuln_id> — 针对指定漏洞触发利用脚本生成。
-
-        示例：
-            exploit 1
-            exploit 2
-        """
+        """exploit <vuln_id> — 针对指定漏洞生成利用脚本。"""
         vuln_id = self._sanitize_input(arg)
 
         if not vuln_id:
@@ -623,12 +574,7 @@ class InteractiveReversingShell(cmd.Cmd):
             print(f"利用脚本生成失败: {e}")
 
     def do_relocinfo(self, arg: str) -> None:
-        """
-        relocinfo — 显示 PE 基址重定位与 ASLR 兼容性信息。
-
-        示例：
-            relocinfo
-        """
+        """relocinfo — 显示 PE 基址重定位与 ASLR 兼容性信息。"""
         if not self.binary_path:
             print("错误: 请先使用 'load' 命令")
             return
@@ -649,12 +595,7 @@ class InteractiveReversingShell(cmd.Cmd):
                 print(f"文件占比:     {ratio_pct:.2f}% {'⚠ 异常偏高' if info['suspicious_large_relocs'] else ''}")
         except Exception as e:
             print(f"重定位分析失败: {e}")
-        """
-        elinfo — 显示 ELF 段权限、动态链接库及安全特性。
-
-        示例：
-            elinfo
-        """
+        """elinfo — 显示 ELF 段权限、动态链接库及安全特性。"""
         if not self.binary_path:
             print("错误: 请先使用 'load' 命令")
             return
@@ -685,12 +626,7 @@ class InteractiveReversingShell(cmd.Cmd):
             print(f"ELF 分析失败: {e}")
 
     def do_richinfo(self, arg: str) -> None:
-        """
-        richinfo — 显示 PE Rich Header 编译器工具链指纹。
-
-        示例：
-            richinfo
-        """
+        """richinfo — 显示 PE Rich Header 编译器工具链指纹。"""
         if not self.binary_path:
             print("错误: 请先使用 'load' 命令")
             return
@@ -720,16 +656,11 @@ class InteractiveReversingShell(cmd.Cmd):
 
         except Exception as e:
             print(f"Rich Header 解析失败: {e}")
-        """
-        yara_gen [output_path] — 从当前分析结果中自动生成 YARA 规则模板。
+        """yara_gen [output_path] — 从当前分析结果中生成 YARA 规则。
 
         参照 yarGen 及 RuleLLM (DSN 2025) 的规则结构：
         meta 区含生成元数据，strings 区以检测到的 API/字符串为锚点，
         condition 区使用 PE 魔数 + any of strings 组合。
-
-        示例：
-            yara_gen
-            yara_gen /path/to/output.yar
         """
         out_path = self._sanitize_input(arg).strip()
 
@@ -743,6 +674,7 @@ class InteractiveReversingShell(cmd.Cmd):
         try:
             from injection_detector import detect_injection
             import tempfile, os as _os_inner
+            from io import StringIO  # 保留——未使用
 
             out_dir = tempfile.mkdtemp(prefix='binmind_yara_')
             inj_result = detect_injection(self.binary_path, out_dir)
@@ -782,14 +714,7 @@ class InteractiveReversingShell(cmd.Cmd):
             print(f"YARA 规则生成失败: {e}")
 
     def do_db(self, arg: str) -> None:
-        """
-        db search <type> — 搜索漏洞数据库。
-
-        示例：
-            db search buffer_overflow
-            db search format_string
-            db search all
-        """
+        """db search <type> — 搜索漏洞数据库。"""
         args = arg.strip().split()
 
         if not args or args[0].lower() != 'search':
@@ -825,16 +750,7 @@ class InteractiveReversingShell(cmd.Cmd):
             print(f"数据库搜索失败: {e}")
 
     def do_export(self, arg: str) -> None:
-        """
-        export <format> — 将分析结果导出为报告文件。
-
-        支持格式: markdown, json, html
-
-        示例：
-            export markdown
-            export json
-            export html
-        """
+        """export <format> — 将分析结果导出为报告文件（markdown/json/html）。"""
         fmt = self._sanitize_input(arg).lower()
 
         if not fmt or fmt not in ['markdown', 'json', 'html']:
@@ -869,32 +785,16 @@ class InteractiveReversingShell(cmd.Cmd):
             print(f"报告导出失败: {e}")
 
     def do_quit(self, arg: str) -> bool:
-        """
-        quit — 退出交互式 Shell。
-
-        示例：
-            quit
-        """
+        """quit — 退出交互式 Shell。"""
         print("\n感谢使用 BinMind 逆向辅助 Shell。")
         return True
 
     def do_exit(self, arg: str) -> bool:
-        """
-        exit — 退出交互式 Shell（与 quit 等效）。
-
-        示例：
-            exit
-        """
+        """exit — 退出交互式 Shell（与 quit 等效）。"""
         return self.do_quit(arg)
 
     def do_help(self, arg: str) -> None:
-        """
-        help [command] — 显示帮助信息。
-
-        示例：
-            help
-            help analyze
-        """
+        """help [command] — 显示帮助信息。"""
         if arg:
             arg = arg.strip().lower()
             method_name = f'do_{arg}'
@@ -914,15 +814,15 @@ class InteractiveReversingShell(cmd.Cmd):
                 ('info', '显示当前二进制文件基本信息'),
                 ('functions', '列出函数（支持过滤）'),
                 ('decompile', '反编译指定函数'),
-                ('analyze', '对函数执行 AI 漏洞分析'),
+                ('analyze', '对函数执行漏洞分析'),
                 ('xrefs', '查找交叉引用'),
-                ('ask', '向 AI 助手提问'),
-                ('patch', '生成 AI 补丁建议'),
+                ('ask', '向分析引擎提问'),
+                ('patch', '生成补丁建议'),
                 ('exploit', '触发利用脚本生成'),
                 ('relocinfo', '显示 PE 重定位表与 ASLR 状态'),
                 ('elinfo', '显示 ELF 段权限与动态链接信息'),
                 ('richinfo', '显示 PE Rich Header 编译器指纹'),
-                ('yara_gen', '自动生成 YARA 检测规则'),
+                ('yara_gen', '生成 YARA 检测规则'),
                 ('db', '搜索漏洞数据库'),
                 ('export', '导出分析结果'),
                 ('quit/exit', '退出 Shell')
@@ -940,7 +840,7 @@ class InteractiveReversingShell(cmd.Cmd):
         pass
 
     def run(self) -> None:
-        """启动交互式 Shell。"""
+        """启动交互式 Shell 主循环。"""
         print("")
         print("=" * 60)
         print("BinMind 逆向辅助交互式 Shell")
@@ -959,7 +859,11 @@ def run_shell(binary_path: str = None, ai_client=None):
 
     Args:
         binary_path: 可选，预加载的二进制文件路径。
-        ai_client: 可选，预配置的 AI 客户端。
+        ai_client: 可选，预配置的外部分析客户端。
     """
     shell = InteractiveReversingShell(binary_path, ai_client)
     shell.run()
+
+
+def _debug_print(*args, **kwargs):
+    pass

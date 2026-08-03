@@ -1,8 +1,7 @@
 """
-Vulnerability ML - Machine learning for vulnerability severity prediction.
+漏洞机器学习 — 漏洞严重度预测。
 
-Provides model/rules hybrid prediction, ensemble blending with multiple
-sub-scores, threshold calibration, and default model management.
+模型/规则混合预测 + 多子分集成融合 + 阈值校准 + 默认模型管理。
 """
 
 from __future__ import annotations
@@ -49,7 +48,7 @@ _TYPE_SCORES_: Dict[str, float] = {
     'default': 0.5,
 }
 
-# 漏洞可利用性预估基准 —— 基于历史CVE数据中各类漏洞被野外利用的比例
+# 漏洞可利用性预估基准 -- 基于历史CVE数据中各类漏洞被野外利用的比例
 _EXPLOITABILITY_PRIORS_: Dict[str, float] = {
     'buffer_overflow': 0.12,
     'heap_overflow': 0.15,
@@ -132,7 +131,7 @@ class VulnSeverityPredictor:
 
         return self._predict_via_rules(features)
 
-    # 批量预测 —— 一次处理多条漏洞记录，避免重复的Python函数调用开销
+    # 批量预测 -- 一次处理多条漏洞记录，避免重复的Python函数调用开销
     def predict_batch(
         self,
         features_list: List[Dict[str, Any]],
@@ -307,7 +306,7 @@ class VulnSeverityPredictor:
             logger.warning(f"Model prediction failed: {e}")
             return self._predict_via_rules(features)
 
-    # 模型可解释性 —— 对于审计和调参非常有价值，尤其是RF模型自带feature_importances_
+    # 模型可解释性 -- 对于审计和调参非常有价值，尤其是RF模型自带feature_importances_
     def explain_prediction(
         self,
         features: Dict[str, Any],
@@ -383,7 +382,7 @@ class VulnSeverityPredictor:
 
         return vec
 
-    # EPSS启发式 —— 预估漏洞在30天内被野外利用的概率，用于优先级排序
+    # EPSS启发式 -- 预估漏洞在30天内被野外利用的概率，用于优先级排序
     def estimate_exploit_probability(
         self,
         features: Dict[str, Any],
@@ -428,11 +427,11 @@ class VulnSeverityPredictor:
         if features.get('is_exported', False):
             log_odds += 0.25
 
-        # APT关注度附加因子 —— 高价值目标漏洞更可能被利用
+        # APT关注度附加因子 -- 高价值目标漏洞更可能被利用
         if features.get('apt_relevant', False):
             log_odds += 1.2
 
-        # CVE 年龄衰减 —— 越老的漏洞如果还没被利用，概率应下调
+        # CVE 年龄衰减 -- 越老的漏洞如果还没被利用，概率应下调
         cve_age_days = features.get('cve_age_days', 0)
         if cve_age_days > 365:
             log_odds -= 0.8
@@ -546,7 +545,7 @@ class VulnSeverityPredictor:
 
         classes = sorted(set(y_true))
 
-        # 宏精确率：对每个类别单独算 precision，再取平均
+        # 宏精确率：对每个类别单独算 精确率，再取平均
         if metric == "precision":
             precisions = []
             for c in classes:
@@ -555,7 +554,7 @@ class VulnSeverityPredictor:
                 precisions.append(tp / max(tp + fp, 1))
             return sum(precisions) / max(len(precisions), 1)
 
-        # 宏召回率：对每个类别单独算 recall，再取平均
+        # 宏召回率：对每个类别单独算 召回率，再取平均
         if metric == "recall":
             recalls = []
             for c in classes:
@@ -709,3 +708,9 @@ def get_default_predictor() -> VulnSeverityPredictor:
     if _default_predictor is None:
         _default_predictor = create_vuln_severity_predictor()
     return _default_predictor
+
+
+def _debug_print(*args, **kwargs):  # 调试残余--未删除
+    """Print debug info if env var is set. Not currently called."""
+    if __import__("os").environ.get("BINMIND_DEBUG"):
+        print(*args, **kwargs)

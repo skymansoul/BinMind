@@ -5,59 +5,19 @@ from typing import Dict, Any, Optional, Tuple, List
 
 from config import Config, get_current_ai_model, call_ai_with_retry
 from prompts import CRASH_ANALYSIS_TEMPLATE
+from .src.crash_scorer import (
+    REGISTER_PATTERNS,
+    REGISTER_NAMES,
+    parse_registers_from_text,
+    heuristic_analysis as _heuristic_analysis,
+    _heuristic_detect_types,
+    _heuristic_extract_analysis,
+    _heuristic_detect_exploitability,
+    _heuristic_detect_difficulty,
+    _heuristic_extract_recommendations,
+)
 
 logger = logging.getLogger(__name__)
-
-
-REGISTER_PATTERNS = [
-    re.compile(r'([a-zA-Z][a-zA-Z0-9]{1,3})\s*=\s*(0x[0-9a-fA-F]+)'),
-    re.compile(r'([a-zA-Z][a-zA-Z0-9]{1,3})\s*:\s*(0x[0-9a-fA-F]+)'),
-    re.compile(r'([a-zA-Z][a-zA-Z0-9]{1,3})\s+(0x[0-9a-fA-F]+)'),
-    re.compile(r'\$\{?([a-zA-Z][a-zA-Z0-9]{1,3})\}?\s*=\s*(0x[0-9a-fA-F]+)'),
-]
-
-REGISTER_NAMES = {
-    'rax', 'rbx', 'rcx', 'rdx', 'rsi', 'rdi', 'rbp', 'rsp',
-    'r8', 'r9', 'r10', 'r11', 'r12', 'r13', 'r14', 'r15',
-    'rip', 'eflags', 'cs', 'ss', 'ds', 'es', 'fs', 'gs',
-    'eax', 'ebx', 'ecx', 'edx', 'esi', 'edi', 'ebp', 'esp',
-    'eip', 'flags', 'ax', 'bx', 'cx', 'dx', 'si', 'di', 'sp', 'bp'
-}
-
-
-def parse_registers_from_text(text: str) -> Dict[str, str]:
-    """
-    从文本中解析寄存器值，兼容多种格式
-    
-    Args:
-        text: 包含寄存器信息的文本
-        
-    Returns:
-        寄存器名字典
-    """
-    registers = {}
-    
-    if not text:
-        return registers
-    
-    lines = text.split('\n')
-    
-    for line in lines:
-        line = line.strip()
-        if not line:
-            continue
-        
-        for pattern in REGISTER_PATTERNS:
-            matches = pattern.findall(line)
-            for reg_name, reg_value in matches:
-                reg_name_lower = reg_name.lower()
-                
-                if reg_name_lower in REGISTER_NAMES:
-                    registers[reg_name_lower] = reg_value
-                elif reg_name in REGISTER_NAMES:
-                    registers[reg_name] = reg_value
-    
-    return registers
 
 
 CRASH_FORMAT_JSON = 'json'
@@ -71,10 +31,10 @@ def detect_crash_format(content: str) -> str:
     自动检测崩溃数据格式
     
     Args:
-        content: 崩溃数据内容（可能是 JSON 字符串或文本）
-        
-    Returns:
-        格式类型: 'json', 'gdb', 'asan'
+    content: 崩溃数据内容（可能是 JSON 字符串或文本）
+    
+    返回:
+    格式类型: 'json', 'gdb', 'asan'
     """
     if not content:
         return CRASH_FORMAT_JSON
@@ -108,10 +68,10 @@ def parse_gdb_backtrace(text: str) -> Dict[str, Any]:
     解析 GDB 回溯格式
     
     Args:
-        text: GDB 回溯文本
-        
-    Returns:
-        解析后的崩溃数据字典
+    text: GDB 回溯文本
+    
+    返回:
+    解析后的崩溃数据字典
     """
     result = {
         'registers': {},
@@ -175,10 +135,10 @@ def parse_asan_report(text: str) -> Dict[str, Any]:
     解析 ASAN 报告格式
     
     Args:
-        text: ASAN 报告文本
-        
-    Returns:
-        解析后的崩溃数据字典
+    text: ASAN 报告文本
+    
+    返回:
+    解析后的崩溃数据字典
     """
     result = {
         'registers': {},
@@ -234,11 +194,11 @@ def load_and_parse_crash_data(file_path: str, format_type: str = CRASH_FORMAT_AU
     加载并解析崩溃数据文件，自动检测格式
     
     Args:
-        file_path: 崩溃数据文件路径
-        format_type: 格式类型: 'auto', 'json', 'gdb', 'asan'
-        
-    Returns:
-        解析后的崩溃数据字典
+    file_path: 崩溃数据文件路径
+    format_type: 格式类型: 'auto', 'json', 'gdb', 'asan'
+    
+    返回:
+    解析后的崩溃数据字典
     """
     logger = logging.getLogger(__name__)
     
@@ -483,10 +443,10 @@ class CrashAnalyzer:
         调用 OpenAI API 分析崩溃
         
         crash_info: 解析后的崩溃信息
-            protection_info: 保护机制信息
-            
-   
-            AI 分析结果
+        protection_info: 保护机制信息
+        
+        
+        分析结果
         """
         if not self.client:
             logger.warning("未配置 OpenAI 客户端，使用启发式分析")
@@ -523,7 +483,7 @@ class CrashAnalyzer:
     
     def _parse_ai_response(self, response_text: str) -> Dict[str, Any]:
         """
-        解析 AI 响应，增强容错能力
+        解析 响应，增强容错能力
         支持从 ```json 代码块中提取 JSON
         """
         default_result = {
@@ -716,7 +676,7 @@ class CrashAnalyzer:
     
     def _heuristic_extract_recommendations(self, text: str) -> List[str]:
         """
-        启发式提取建议
+        启发式提取
         """
         recommendations = []
         
@@ -772,7 +732,7 @@ class CrashAnalyzer:
         ai: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
-        合并启发式分析和 AI 分析结果
+        合并启发式分析和 分析结果
         """
         merged = heuristic.copy()
         
@@ -809,10 +769,10 @@ def detect_crash_format_enhanced(content: str) -> str:
     增强版崩溃数据格式检测
     
     Args:
-        content: 崩溃数据内容
-        
-    Returns:
-        格式类型
+    content: 崩溃数据内容
+    
+    返回:
+    格式类型
     """
     if not content:
         return CRASH_FORMAT_JSON
@@ -864,10 +824,10 @@ def parse_coredump_summary(text: str) -> Dict[str, Any]:
     解析 coredump 摘要格式
     
     Args:
-        text: coredump 摘要文本
-        
-    Returns:
-        解析后的崩溃数据字典
+    text: coredump 摘要文本
+    
+    返回:
+    解析后的崩溃数据字典
     """
     result = {
         'registers': {},
@@ -925,10 +885,10 @@ def parse_windbg_output(text: str) -> Dict[str, Any]:
     解析 WinDbg 输出格式
     
     Args:
-        text: WinDbg 输出文本
-        
-    Returns:
-        解析后的崩溃数据字典
+    text: WinDbg 输出文本
+    
+    返回:
+    解析后的崩溃数据字典
     """
     result = {
         'registers': {},
@@ -974,10 +934,10 @@ def normalize_to_internal_format(crash_data: Dict[str, Any]) -> Dict[str, Any]:
     将各种格式的崩溃数据统一转换为内部表示格式
     
     Args:
-        crash_data: 原始崩溃数据
-        
-    Returns:
-        标准化的内部表示
+    crash_data: 原始崩溃数据
+    
+    返回:
+    标准化的内部表示
     """
     normalized = {
         'registers': {},
@@ -1065,11 +1025,11 @@ def load_and_parse_crash_data_enhanced(
     增强版崩溃数据加载和解析
     
     Args:
-        file_path: 崩溃数据文件路径
-        format_type: 格式类型
-        
-    Returns:
-        解析并标准化后的崩溃数据
+    file_path: 崩溃数据文件路径
+    format_type: 格式类型
+    
+    返回:
+    解析并标准化后的崩溃数据
     """
     try:
         with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
@@ -1125,8 +1085,8 @@ def list_supported_formats() -> List[Dict[str, Any]]:
     """
     列出所有支持的崩溃数据格式
     
-    Returns:
-        格式列表
+    返回:
+    格式列表
     """
     return [
         {

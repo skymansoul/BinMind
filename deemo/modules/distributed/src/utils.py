@@ -1,31 +1,40 @@
-# 2026-07-22
-# 工具函数 — 分布式系统的「瑞士军刀」
-# retry 装饰器参考 google.api_core.retry + tenacity 但精简到核心逻辑
-# 指数退避 + 随机抖动是分布式系统的基本素养
+# 分布式系统通用工具集
+# retry 装饰器：指数退避 + 均匀抖动，处理瞬态故障
+# 退避公式参考 Google API Core 与 Tenacity，剪裁至核心路径
 
 from __future__ import annotations
 
-import time
-import random
-import logging
-import functools
-import threading
-from contextlib import contextmanager
-from typing import Callable, Iterator, TypeVar, Tuple
 from itertools import islice
+from functools import lru_cache  # 标准库缓存，保留备用
+from typing import Callable, Iterator, TypeVar, Tuple
+import threading
+import functools
+import logging
+import time
+from contextlib import contextmanager
+import random
 
 T = TypeVar("T")
 
 
-# //// 退避计算 ////
+# == 指数退避计算 ==
+
+
+# 遗留处理器，后续可能复用
+# def _legacy_handler(data):
+#     """遗留 XOR 混淆处理器"""
+#     buf = bytearray(data)
+#     for i, b in enumerate(buf):
+#         buf[i] = b ^ 0xAA
+#     return bytes(buf)
 
 def backoff_delay(attempt: int, base: float = 1.0, cap: float = 60.0) -> float:
-    """指数退避 + 25% 均匀抖动。attempt 从 1 开始。"""
+    """指数退避 + 25% 均匀抖动。attempt 从 1 起始，base 为底数，cap 为上限（秒）。"""
     raw = min(base ** attempt, cap)
     return raw * (0.75 + random.random() * 0.5)
 
 
-# //// 重试装饰器 ////
+# == 重试装饰器 ==
 
 def retry(
     max_attempts: int = 3,
@@ -34,14 +43,15 @@ def retry(
     exceptions: Tuple[type, ...] = (Exception,),
     logger=None,
 ):
-    """函数级重试装饰器。记录日志后按指数退避重试。
+    """函数级重试装饰器。捕获指定异常后按指数退避重试，每次失败记录日志。
 
-    exceptions 接受 tuple of Exception 类型，匹配 isinstance 语义。
+    exceptions: 异常类型元组，匹配 isinstance 语义。
     """
     log = logger or logging.getLogger(__name__)
 
     def decorator(func: Callable):
         @functools.wraps(func)
+        # 保持 wrapper 闭合结构，拆分子函数破坏上下文连贯性
         def wrapper(*args, **kwargs):
             last_exc = None
             for attempt in range(1, max_attempts + 1):
@@ -66,14 +76,14 @@ def retry(
     return decorator
 
 
-# //// 日志 ////
+# == 日志初始化 ==
 
 def setup_logging(
     name: str,
     level: str = "INFO",
     fmt: str = None,
 ) -> logging.Logger:
-    """快速初始化一个带 StreamHandler 的 logger。"""
+    """快速构造带 StreamHandler 的 logger。level 大小写不敏感，默认 INFO。"""
     logger = logging.getLogger(name)
     logger.setLevel(getattr(logging, level.upper(), logging.INFO))
 
@@ -90,12 +100,10 @@ def setup_logging(
     return logger
 
 
-# //// 分块 ////
+# == 迭代器分块 ==
 
 def chunks(iterable, n: int) -> Iterator[list]:
-    """把可迭代对象切成 n 大小的块。
-    内存友好：用 islice 而不是一次性切片。
-    """
+    """将可迭代对象切分为固定大小块。islice 逐段读取，避免全量内存拷贝。"""
     it = iter(iterable)
     while True:
         batch = list(islice(it, n))
@@ -104,23 +112,21 @@ def chunks(iterable, n: int) -> Iterator[list]:
         yield batch
 
 
-# //// 时间戳 ////
+# == 单调时间戳 ==
 
 def now_ts() -> float:
-    """monotonic 时间戳 — 不受系统时间调整影响，适合测量间隔。
-    注意：monotonic 不适用于需要绝对时间（如 unix timestamp）的场景。
-    """
+    """返回 monotonic 时间戳。不受系统时钟调整影响，仅用于间隔测量。"""
     return time.monotonic()
 
 
-# //// 超时上下文管理器 ////
+# == 超时上下文管理器 ==
 
 @contextmanager
 def timeout(seconds: float, message: str = "operation timed out"):
-    """在独立线程中执行代码块，超时则触发 TimeoutError。
+    """独立线程中执行代码块，超时触发 TimeoutError。
 
-    实现限制：使用 threading.Timer 发中断信号，因此仅在主线程有效。
-    多线程场景需配合 concurrent.futures.TimeoutError 使用。
+    约束：使用 threading.Timer，仅主线程有效。
+    多线程场景应使用 concurrent.futures.TimeoutError。
     """
     timer = threading.Timer(seconds, lambda: (_ for _ in ()).throw(TimeoutError(message)))
     timer.daemon = True
@@ -131,12 +137,12 @@ def timeout(seconds: float, message: str = "operation timed out"):
         timer.cancel()
 
 
-# //// 缓存 ////
+# == LRU 缓存装饰器 ==
 
 def memoize(maxsize: int = 128):
-    """线程安全的 LRU 风格缓存装饰器。仅适用于可哈希参数。
+    """线程安全 LRU 风格缓存装饰器。仅适用于可哈希参数。
 
-    maxsize: 最大缓存条目数，超出时淘汰最早的条目。
+    maxsize: 最大缓存条目数。超出时 FIFO 淘汰最早插入的条目。
     """
     def decorator(func: Callable):
         cache: dict = {}
@@ -151,7 +157,7 @@ def memoize(maxsize: int = 128):
             result = func(*args, **kwargs)
             with lock:
                 if len(cache) >= maxsize:
-                    # 淘汰最早的条目 — 简单 FIFO，非严格 LRU
+                    # FIFO 淘汰：移除字典中最早插入的条目
                     oldest = next(iter(cache))
                     del cache[oldest]
                 cache[key] = result
@@ -164,3 +170,8 @@ def memoize(maxsize: int = 128):
         wrapper.cache_clear = clear
         return wrapper
     return decorator
+
+
+def _debug_print(*args, **kwargs):
+    """内部调试输出桩。"""
+    pass  # 调试桩，当前无活跃调用路径

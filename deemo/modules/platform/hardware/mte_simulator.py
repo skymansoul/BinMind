@@ -126,9 +126,9 @@ class TagSpace:
 
 
 class MTEState:
-    """MTE ??"""
+    """MTE 内存标签状态机 — 管理标签分配、内存标签映射和访问校验。"""
 
-    TAG_GRANULE = 16  # ? 16 ??????
+    TAG_GRANULE = 16  # 每 16 字节一个标签颗粒
 
     def __init__(self):
         self.tag_space = TagSpace()
@@ -190,7 +190,7 @@ class MTEState:
                     pc=0,
                     access_size=0,
                     is_write=True,
-                    message=f"????????? 0x{addr:x}",)
+                    message=f"野指针释放 0x{addr:x}",)
                 self.violations.append(v)
                 return False, v
             if a.freed:
@@ -202,7 +202,7 @@ class MTEState:
                     pc=0,
                     access_size=0,
                     is_write=True,
-                    message=f"???? 0x{addr:x}",)
+                    message=f"双重释放 0x{addr:x}",)
                 self.violations.append(v)
                 return False, v
             a.freed = True
@@ -226,7 +226,7 @@ class MTEState:
             for off in range(0, size, self.TAG_GRANULE):
                 cur = addr + off
                 expected = self.tag_of(cur)
-                # ??????
+                # 未初始化内存检查
                 if expected == 0:
                     v = MTEViolation(
                         vtype=MTEViolationType.UNINIT_READ,
@@ -236,9 +236,9 @@ class MTEState:
                         pc=pc,
                         access_size=min(self.TAG_GRANULE, size - off),
                         is_write=is_write,
-                        message=f"??????/???? 0x{cur:x}",)
+                        message=f"未初始化读/野指针 0x{cur:x}",)
                     violations.append(v)
-                # ?????????? alloc
+                # 检查已释放的 alloc 对象
                 for a_addr, a in list(self.active_allocs.items()):
                     if a.freed and a.addr <= cur < a.addr + a.size:
                         v = MTEViolation(
@@ -249,7 +249,7 @@ class MTEState:
                             pc=pc,
                             access_size=min(self.TAG_GRANULE, size - off),
                             is_write=is_write,
-                            message=f"UAF ?? 0x{cur:x} (?? 0x{a.addr:x} ???)",)
+                            message=f"UAF 访问 0x{cur:x} (分配于 0x{a.addr:x} 已释放)",)
                         violations.append(v)
                         break
             # 推测执行绕过检测
@@ -262,7 +262,7 @@ class MTEState:
 
 
 class UnicornMTEHook:
-    """Unicorn ?? MTE ??"""
+    """Unicorn 挂钩 MTE 内存访问检查 — 将 MTE 标签校验注入 Unicorn 模拟器。"""
 
     def __init__(self, uc, mte_state: MTEState):
         self.uc = uc
@@ -270,7 +270,7 @@ class UnicornMTEHook:
         self._installed = False
 
     def install(self):
-        """??? Unicorn ??"""
+        """安装 Unicorn 挂钩 — 注册内存读写和未映射访问回调。"""
         if self._installed:
             return
         try:
@@ -282,7 +282,7 @@ class UnicornMTEHook:
                 self._hook_mem_invalid,)
             self._installed = True
         except Exception as e:
-            logger.warning(f"?? MTE ????: {e}")
+            logger.warning(f"安装 MTE 挂钩失败: {e}")
 
     def _hook_mem_access(self, uc, access, address, size, value, user_data):
         is_write = bool(access & unicorn.UC_HOOK_MEM_WRITE)
@@ -295,7 +295,7 @@ class UnicornMTEHook:
         self.mte.check_access(address, size, is_write, pc=pc)
 
     def _hook_mem_invalid(self, uc, access, address, size, value, user_data):
-        logger.debug(f"???????: 0x{address:x}, size={size}")
+        logger.debug(f"无效内存访问: 0x{address:x}, size={size}")
 
 
 try:
@@ -306,7 +306,7 @@ except ImportError:
 
 
 class MTEViolationClassifier:
-    """MTE ?????"""
+    """MTE 违规分类器 — 根据函数调用名称和参数分类违规类型。"""
 
     HEAP_ALLOC_FUNCS = {"malloc", "calloc", "realloc", "operator new", "_Znwm", "_Znam"}
     HEAP_FREE_FUNCS = {"free", "operator delete", "_ZdlPv", "_ZdaPv"}
@@ -323,7 +323,7 @@ class MTEViolationClassifier:
 
 
 class MTEAnalyzer:
-    """MTE ??? (???)"""
+    """MTE 分析器 (主入口) — 记录分配/释放/访问事件，生成违规报告。"""
 
     def __init__(self):
         self.state = MTEState()
@@ -358,9 +358,9 @@ class MTEAnalyzer:
         return self.state.check_access(addr, size, is_write, pc=pc)
 
     def attach_unicorn(self, uc) -> Optional[UnicornMTEHook]:
-        """??? Unicorn ??"""
+        """附加 Unicorn 挂钩 — 将 MTE 检测注入到 Unicorn 模拟器中。"""
         if not _UNICORN_AVAILABLE:
-            logger.warning("unicorn ???")
+            logger.warning("unicorn 不可用 — 无法附加 MTE 挂钩")
             return None
         hook = UnicornMTEHook(uc, self.state)
         hook.install()
@@ -372,7 +372,7 @@ class MTEAnalyzer:
             accesses: List[Dict[str, Any]],
             frees: List[Dict[str, Any]]
         ) -> MTEReport:
-        """?????"""
+        """运行时模拟 — 按时间线重放分配/访问/释放事件并生成报告。"""
         timeline: List[Tuple[float, str, Dict[str, Any]]] = []
         for a in allocs:
             timeline.append((a.get("ts", 0), "alloc", a))
@@ -411,10 +411,10 @@ class MTEAnalyzer:
         for a in self.state.allocations:
             alloc_by_type[a.alloc_type or "unknown"] += 1
         coverage = min(1.0, total_allocs / 100.0)
-        notes_parts = [f"??? {total_allocs} ?, ??? {total_frees} ?"]
+        notes_parts = [f"共 {total_allocs} 次分配, {total_frees} 次释放"]
         if alloc_by_type:
             type_summary = ", ".join(f"{k}:{v}" for k, v in sorted(alloc_by_type.items()))
-            notes_parts.append(f"????: {type_summary}")
+            notes_parts.append(f"分配类型: {type_summary}")
         return MTEReport(
             total_allocs=total_allocs,
             total_frees=total_frees,

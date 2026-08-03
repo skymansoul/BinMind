@@ -1,26 +1,43 @@
-# patching 模块默认配置
-# 可通过环境变量 BINMIND_* 覆盖对应项
+# patching 模块默认配置 (2026-08-02 deep rebuild)
+# 可通过环境变量 BINMIND_PATCH_* 覆盖对应项
+# 优先级: CLI args > env vars > YAML file > code defaults
 
+# ── AI provider ──────────────────────────────────────────────────────
 ai_provider: "openai"
 openai_model: "gpt-4"
 anthropic_model: "claude-sonnet-4-20250514"
 openai_api_key: ""
 anthropic_api_key: ""
 
+# ── subprocess & retry ───────────────────────────────────────────────
 subprocess_timeout: 120
 max_retries: 3
 retry_delay: 1.0
 
-# 路径配置 (可 override via env)
+# ── 路径配置 ─────────────────────────────────────────────────────────
 reports_dir: "~/.binmind/reports"
 data_dir: "~/.binmind/data"
 log_level: "INFO"
 log_file: "~/.binmind/logs/patching.log"
 
-# 外部工具路径
+# ── 外部工具路径 ─────────────────────────────────────────────────────
 r2_path: "r2"
 compiler_path: "gcc"
 
-# sandbox & performance
+# ── sandbox & performance ────────────────────────────────────────────
 sandbox_enabled: true
 performance_threshold: 10.0
+
+# ── patch-specific defaults ──────────────────────────────────────────
+r2_timeout: 30
+cc_flags: "-O2 -fPIC"
+backup_dir: ".patch_backups"
+verify_enabled: true
+rollback_enabled: true
+max_patch_size: 4096
+arch: "auto"
+base_addr: 0
+debug_mode: false
+
+# 2026-08-02: added fields for CLI integration
+# These were previously hardcoded in src/config.py _DEFAULTS only

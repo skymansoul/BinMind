@@ -8,7 +8,7 @@ import struct
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
-    from modules.info_collect import (
+    from modules.info.info_collect import (
         validate_elf_file,
         DANGEROUS_FUNCTIONS,
         KEY_STRING_PATTERNS
@@ -88,12 +88,12 @@ class TestDangerousFunctions(unittest.TestCase):
 class TestFormatInfoForReport(unittest.TestCase):
 
     def test_format_empty_info(self):
-        from modules.info_collect import format_info_for_report
+        from modules.info.info_collect import format_info_for_report
         result = format_info_for_report({})
         self.assertIn('二进制信息', result)
 
     def test_format_basic_info(self):
-        from modules.info_collect import format_info_for_report
+        from modules.info.info_collect import format_info_for_report
         info = {
             'binary_path': '/path/to/binary',
             'arch': 'amd64',
@@ -116,7 +116,7 @@ class TestFormatInfoForReport(unittest.TestCase):
         self.assertIn('Canary', result)
 
     def test_format_with_dangerous_functions(self):
-        from modules.info_collect import format_info_for_report
+        from modules.info.info_collect import format_info_for_report
         info = {
             'binary_path': '/path/to/binary',
             'arch': 'amd64',
@@ -133,7 +133,7 @@ class TestFormatInfoForReport(unittest.TestCase):
         self.assertIn('system', result)
 
     def test_format_with_key_strings(self):
-        from modules.info_collect import format_info_for_report
+        from modules.info.info_collect import format_info_for_report
         info = {
             'binary_path': '/path/to/binary',
             'arch': 'amd64',
@@ -148,7 +148,7 @@ class TestFormatInfoForReport(unittest.TestCase):
         self.assertIn('password', result)
 
     def test_format_with_symbols(self):
-        from modules.info_collect import format_info_for_report
+        from modules.info.info_collect import format_info_for_report
         info = {
             'binary_path': '/path/to/binary',
             'arch': 'amd64',

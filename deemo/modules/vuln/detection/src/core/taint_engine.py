@@ -1,5 +1,4 @@
-# 2026-07-26 — 轻量级污点追踪引擎
-# 用于漏洞分析中的数据流溯源，不依赖重量级符号执行
+# 轻量级污点追踪引擎——漏洞分析数据流溯源，不依赖重量级符号执行
 
 from enum import Enum, auto
 from dataclasses import dataclass, field
@@ -8,7 +7,7 @@ from collections import defaultdict, deque
 
 
 class TaintSource(Enum):
-    """污点源类型"""
+    """污点源类型枚举"""
     USER_INPUT = auto()
     NETWORK = auto()
     FILE_READ = auto()
@@ -19,7 +18,7 @@ class TaintSource(Enum):
 
 
 class TaintSink(Enum):
-    """危险汇点类型"""
+    """危险汇点类型枚举"""
     MEMCPY = auto()
     STRCPY = auto()
     SPRINTF = auto()
@@ -32,7 +31,7 @@ class TaintSink(Enum):
 
 @dataclass
 class TaintNode:
-    """污点传播图中的节点"""
+    """污点传播图节点"""
     addr: int
     source: Optional[TaintSource] = None
     sink: Optional[TaintSink] = None
@@ -42,7 +41,7 @@ class TaintNode:
 
 @dataclass
 class TaintPath:
-    """从源到汇的完整污点传播路径"""
+    """源到汇完整污点传播路径"""
     source_addr: int
     sink_addr: int
     path: List[int]
@@ -50,13 +49,13 @@ class TaintPath:
 
 
 class TaintTracker:
-    """轻量级污点追踪：跟踪数据从源到危险汇的流动。
+    """轻量级污点追踪——跟踪数据从源到危险汇的流动。
 
     方法:
         mark_source(addr, source_type) -- 标记污点源
         mark_sink(addr, sink_type) -- 标记危险汇点
         add_data_flow(src_addr, dst_addr) -- 添加数据流边
-        find_paths() -- 查找所有污点路径
+        find_paths() -- 查找全部污点路径
         is_sink_tainted(addr) -- 检查汇点是否被污染
     """
 
@@ -80,15 +79,15 @@ class TaintTracker:
         return node
 
     def add_data_flow(self, src_addr: int, dst_addr: int) -> None:
-        """添加从src到dst的数据流边。污点会自动沿边传播。"""
+        """添加src→dst数据流边——污点自动沿边传播"""
         self.edges[src_addr].append(dst_addr)
         self._reverse_edges[dst_addr].append(src_addr)
-        # forward taint propagation
+        # 前向污点传播
         if src_addr in self._tainted:
             self._propagate_taint(src_addr)
 
     def _propagate_taint(self, start: int) -> None:
-        """BFS前向传播污点标记。"""
+        """BFS前向传播污点标记"""
         q = deque([start])
         while q:
             cur = q.popleft()
@@ -100,7 +99,7 @@ class TaintTracker:
                     q.append(nxt)
 
     def find_paths(self, max_depth: int = 20) -> List[TaintPath]:
-        """查找所有从污点源到危险汇的路径。"""
+        """查找所有污点源到危险汇的路径"""
         results = []
         for src_addr in self._tainted:
             src_node = self.nodes.get(src_addr)
@@ -152,7 +151,7 @@ class TaintTracker:
         self._tainted.clear()
 
 
-# ======== disasm辅助: 从objdump行推断数据流 ========
+# disasm辅助——从objdump行推断数据流
 
 _DEF_MNEMONICS = {"mov", "lea", "add", "sub", "xor", "and", "or",
                   "shl", "shr", "pop", "call", "xchg"}
@@ -166,14 +165,14 @@ _SINK_CALLS = {"strcpy", "strncpy", "memcpy", "sprintf", "snprintf",
 
 
 def extract_data_flow_from_disasm(disasm_text: str) -> TaintTracker:
-    """从objdump反汇编文本中提取数据流到轻量级TaintTracker。
+    """从objdump反汇编文本提取数据流至轻量级TaintTracker。
 
     启发式逻辑:
     - 调用read/recv等函数标记为USER_INPUT源
     - 调用strcpy/system等标记为对应汇点
     - call指令后的mov/lea在16字节内视为数据传播
 
-    这不是精确的寄存器污点分析，而是快速的可达性估算。
+    非精确寄存器污点分析，为快速可达性估算。
     """
     import re
     tracker = TaintTracker()
@@ -186,7 +185,7 @@ def extract_data_flow_from_disasm(disasm_text: str) -> TaintTracker:
         if m:
             lines.append((int(m.group(1), 16), ln.strip()))
 
-    # 第一遍: 标记源和汇
+    # 第一遍——标记源与汇
     last_call = 0
     last_call_target = ""
     for addr, text in lines:
@@ -207,7 +206,7 @@ def extract_data_flow_from_disasm(disasm_text: str) -> TaintTracker:
                     elif sink_call in ("system", "execve", "execl", "execvp", "popen"):
                         tracker.mark_sink(addr, TaintSink.SYSTEM, label=sink_call)
 
-    # 第二遍: 连接相邻的def-use对
+    # 第二遍——连接相邻def-use对
     for i, (addr_a, _) in enumerate(lines):
         for j in range(i + 1, min(i + 8, len(lines))):
             addr_b = lines[j][0]

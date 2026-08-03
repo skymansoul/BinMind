@@ -12,7 +12,7 @@ class FirmwareAnalyzer:
     # ---- 初始化: 固件特征库 ----
 
     def __init__(self):
-        # Bootloader magics
+        # Boot加载器 magics
         self._bootloader_magics = {
             b'\x27\x05\x19\x56': 'U-Boot (legacy uImage)',
             b'\xd0\x0d\xfe\xed': 'DTB (Device Tree Blob)',
@@ -26,7 +26,7 @@ class FirmwareAnalyzer:
                 'Possible padding/empty region',
         }
 
-        # Filesystem magic bytes
+        # 文件系统 magic bytes
         self._fs_magics = {
             b'hsqs': 'SquashFS (little-endian)',
             b'sqsh': 'SquashFS (big-endian)',
@@ -50,7 +50,7 @@ class FirmwareAnalyzer:
             b'\x00\x00\x00\x01': 'ISO9660 (CD001 signature offset)',
         }
 
-        # IoT vulnerability patterns
+        # IoT 漏洞 patterns
         self._iot_vuln_patterns = {
             'hardcoded_password': {
                 'patterns': [
@@ -133,7 +133,7 @@ class FirmwareAnalyzer:
             },
         }
 
-    # ---- Bootloader检测: U-Boot/DTB/UEFI/ATF ----
+    # ---- Boot加载器检测: U-Boot/DTB/UEFI/ATF ----
 
     def detect_bootloader(self, data: bytes) -> List[Dict]:
         _findings = []
@@ -159,12 +159,12 @@ class FirmwareAnalyzer:
         # DTB magic
         for _magic, _desc in self._bootloader_magics.items():
             if _magic == b'\x27\x05\x19\x56':
-                continue  # already handled above
+                continue  # handled above
             _pos = data.find(_magic)
             if _pos != -1:
                 _dtb_info = {'type': _desc, 'offset': _pos, 'confidence': 0.9}
                 if 'DTB' in _desc:
-                    # Parse DTB header
+                    # 解析 DTB header
                     if _pos + 40 <= len(data):
                         try:
                             _total_size = struct.unpack('>I', data[_pos + 4:_pos + 8])[0]
@@ -211,7 +211,7 @@ class FirmwareAnalyzer:
                     'confidence': 0.85 if _found_count == 1 else 0.7,
                 }
 
-                # SquashFS: try to read superblock
+                # SquashFS: try 读取 superblock
                 if 'SquashFS' in _desc and _pos + 100 <= len(data):
                     try:
                         _s = data[_pos:_pos + 96]
@@ -235,7 +235,7 @@ class FirmwareAnalyzer:
                 _findings.append(_info)
                 _pos += 1  # continue scan (embedded FS may repeat)
 
-        # Dedup by type + offset proximity
+        # Dedup type + offset proximity
         _dedup = []
         for _f in _findings:
             _dup = False

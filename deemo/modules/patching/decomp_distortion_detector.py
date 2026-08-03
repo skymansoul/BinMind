@@ -1,23 +1,23 @@
-# 2026-07-31
-"""Decompilation distortion detection — FidelityGPT [arXiv:2510.19615] inspired.
+"""反编译失真检测 — FidelityGPT [arXiv:2510.19615] 启发的模式匹配引擎。
 
-FidelityGPT 使用 LLM+RAG 检测和修复六类反编译失真。本模块将其中的模式匹配
-方法工程化为可独立运行的检测器，不需要 LLM 即可识别常见反编译器（Ghidra/IDA/Hex-Rays）
-的输出伪影。
+FidelityGPT 定义六类反编译失真并通过 RAG 修复。本模块将其模式匹配
+部分工程化为独立检测器，不依赖外部调用即可识别 Ghidra/IDA/Hex-Rays
+输出中的常见伪影。
 
 六类失真 (FidelityGPT §3):
-  D1: 类型信息丢失 (undefined4/byte/dword 等伪类型)
-  D2: 控制流结构退化 (goto 泛滥、循环结构缺失)
+  D1: 类型信息丢失 (undefined4/byte/dword 等占位类型)
+  D2: 控制流退化 (goto 泛滥、循环结构缺失)
   D3: 函数内联展开 (call 被替换为内联体)
-  D4: 常量/字符串混淆 (magic number 未恢复为常量名)
-  D5: 变量命名丢失 (v1/v2/var_* 等自动生成的变量名)
-  D6: 复合操作拆分 (一条高级语言语句被拆为数条低级操作)
+  D4: 常量/字符串混淆 (magic number 未恢复)
+  D5: 变量命名丢失 (v1/v2/var_* 等自动命名)
+  D6: 复合操作拆分 (单条高级语句被拆为多条低级操作)
 """
 
 import re, logging, os
 from dataclasses import dataclass, field
 from typing import List, Dict, Optional, Tuple
 from enum import IntEnum
+from functools import lru_cache
 
 _llog = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ class DistortionKind:
 
 @dataclass
 class DistortionInstance:
-    """单个失真实例的位置和描述。"""
+    """单条失真实例 — 位置、片段、置信度。"""
     kind: str
     line_number: int
     snippet: str
@@ -44,14 +44,14 @@ class DistortionInstance:
 
 @dataclass
 class DistortionReport:
-    """FidelityGPT 风格失真分析报告。"""
-    source: str = ""  # 反编译器输出源
+    """失真分析报告 — 汇总六类统计与整体质量评分。"""
+    source: str = ""  # 反编译器输出来源
     total_functions: int = 0
     distorted_functions: int = 0
     total_instances: int = 0
     by_kind: Dict[str, int] = field(default_factory=dict)
     instances: List[DistortionInstance] = field(default_factory=list)
-    fixable_count: int = 0  # 可以自动修复的失真数量
+    fixable_count: int = 0  # 可自动修复的实例数
     overall_quality_score: float = 0.0
 
     def to_dict(self) -> Dict:
@@ -70,11 +70,11 @@ class DistortionReport:
         }
 
 
-# ── D1: 类型信息丢失检测 ────────────────────────────────────────────
-# 反编译器无法推断类型时生成的占位符
+# ── D1: 类型信息丢失 ────────────────────────────────────────────
+# 反编译器无法推断类型时填充的占位符模式
 
 _D1_PATTERNS = [
-    # Ghidra/IDA 的常见伪类型
+    # Ghidra/IDA 常见伪类型
     (r'\bundefined4\b', 'undefined4 → uint32_t', 0.90),
     (r'\bundefined8\b', 'undefined8 → uint64_t', 0.90),
     (r'\bundefined\b(?![\d_])', 'undefined → uint8_t', 0.90),
@@ -86,17 +86,17 @@ _D1_PATTERNS = [
     (r'\bZEXT\d*\b', 'zero-extension not normalized', 0.65),
     (r'\bSEXT\d*\b', 'sign-extension not normalized', 0.65),
     (r'\bSUB\d+\b', 'subtraction result unresolved', 0.60),
-    # IDA 特定
+    # IDA 特有
     (r'\b__byte\b', '__byte → uint8_t', 0.85),
     (r'\b__word\b', '__word → uint16_t', 0.85),
     (r'\b__dword\b', '__dword → uint32_t', 0.85),
     (r'\b__qword\b', '__qword → uint64_t', 0.85),
 ]
 
-# ── D2: 控制流结构退化检测 ───────────────────────────────────────────
+# ── D2: 控制流退化 ───────────────────────────────────────────
 
 _D2_PATTERNS = [
-    (r'\bgoto\b', 'goto usage', 0.40),  # 单个 goto 权重低
+    (r'\bgoto\b', 'goto usage', 0.40),  # 单 goto 权重低
     (r'\bgoto\b.*\n.*\bgoto\b', 'multiple gotos — CFG degradation', 0.70),
     (r'\bLAB_\d+\b', 'IDA label — unresolved branch target', 0.65),
     (r'\bloc_[0-9a-fA-F]+\b', 'Ghidra label — unresolved target', 0.60),
@@ -105,20 +105,20 @@ _D2_PATTERNS = [
     (r'// WARNING:.*unreachable', 'unreachable code — CFG error', 0.85),
 ]
 
-# ── D3: 函数内联展开检测 ─────────────────────────────────────────────
-# 特点：函数体内嵌大量寄存器操作和直接内存访问
+# ── D3: 函数内联展开 ─────────────────────────────────────────────
+# 特征：函数体内嵌大量寄存器操作和直接内存访问
 
 _D3_PATTERNS = [
     (r'^\s*(v\d+|var_\w+)\s*=\s*\*\((\w+\s*\*)?\s*\)\(0x[0-9a-fA-F]+\)',
      'direct memory dereference — likely inlined', 0.50),
     (r'0x[0-9a-fA-F]+\s*\|\s*0x[0-9a-fA-F]+',
      'magic constant OR — inline bit manipulation', 0.45),
-    # 大量 inline asm 标记
+    # 内联 asm 标记
     (r'__asm\s*\{', 'inline asm block', 0.60),
     (r'__emit\s*\(', 'inline byte emission', 0.70),
 ]
 
-# ── D4: 常量/字符串混淆检测 ──────────────────────────────────────────
+# ── D4: 常量/字符串混淆 ──────────────────────────────────────────
 
 _D4_PATTERNS = [
     (r'0x[0-9a-fA-F]{8,16}', 'large magic constant — unresolved', 0.30),
@@ -153,9 +153,9 @@ _D6_PATTERNS = [
 class DistortionDetector:
     """FidelityGPT 风格反编译失真检测器。
 
-    对反编译器输出做逐行扫描，匹配六类失真模式，输出结构化报告。
-    支持 Ghidra、IDA Pro Hex-Rays 和 radare2 的输出格式。
-    不调用 LLM，纯模式匹配 + 启发式。
+    对反编译器输出逐行扫描，匹配六类失真模式，生成结构化报告。
+    兼容 Ghidra、IDA Pro Hex-Rays 和 radare2 输出格式。
+    仅依赖模式匹配与启发式规则，不调用外部服务。
     """
 
     def __init__(self):
@@ -169,11 +169,11 @@ class DistortionDetector:
         }
 
     # ============================================================
-    # analyze: 主入口
+    # 主分析入口
     # ============================================================
     def analyze(self, decompiled_code: str,
                 source_path: str = "") -> DistortionReport:
-        """分析反编译输出中的所有失真。"""
+        """分析反编译输出，返回完整失真报告。"""
         _rpt = DistortionReport(source=source_path)
         if not decompiled_code:
             return _rpt
@@ -181,7 +181,7 @@ class DistortionDetector:
         _lines = decompiled_code.split('\n')
         _rpt.total_functions = self._count_functions(decompiled_code)
 
-        # 逐类检测
+        # 逐类扫描
         for _kind, _patterns in self._all_patterns.items():
             _rpt.by_kind.setdefault(_kind, 0)
             _idx = 0
@@ -199,21 +199,21 @@ class DistortionDetector:
                                 suggestion=_desc if '→' in str(_desc) else "")
                             _rpt.instances.append(_i)
                             _rpt.by_kind[_kind] += 1
-                            break  # 每行最多匹配一种失真
+                            break  # 每行至多归入一类
                     except re.error:
                         continue
                 _idx += 1
 
         _rpt.total_instances = sum(_rpt.by_kind.values())
 
-        # 受影响的函数计数（简化：基于 instance 位置估算）
+        # 受影响函数计数 — 基于实例行号估算函数边界
         _func_lines = set()
         for _i in _rpt.instances:
-            # 找到该行所在的函数边界
+            # 定位该行所属函数入口
             _func_lines.add(self._find_function_boundary(_lines, _i.line_number - 1))
         _rpt.distorted_functions = len(_func_lines)
 
-        # 可自动修复计数
+        # 可自动修复实例计数
         _rpt.fixable_count = sum(
             1 for _i in _rpt.instances
             if _i.kind == DistortionKind.TYPE_LOSS and _i.confidence >= 0.85)
@@ -224,16 +224,16 @@ class DistortionDetector:
         return _rpt
 
     # ── 自动修复：D1 类型替换 ────────────────────────────────────────
-    # 对可安全替换的类型失真，生成修复后的代码
+    # 对可安全替换的类型失真执行替换
 
     def auto_fix(self, decompiled_code: str) -> Tuple[str, int]:
-        """对 D1 类型失真做自动替换，返回 (fixed_code, num_fixes)。
-        只处理明确且安全的替换（undefinedN → uintN_t），不确定的不动。"""
+        """D1 类型自动替换，返回 (修复后代码, 替换次数)。
+        仅处理确定安全的映射（undefinedN → uintN_t）。"""
         _fixed = decompiled_code
         _count = 0
 
         _replacements = [
-            # (pattern, replacement, require_word_boundary)
+            # (模式, 替换值, 需词边界)
             (r'\bundefined8\b', 'uint64_t', True),
             (r'\bundefined4\b', 'uint32_t', True),
             (r'\bundefined2\b', 'uint16_t', True),
@@ -246,7 +246,7 @@ class DistortionDetector:
             (r'\b__int32\b', 'int32_t', True),
             (r'\b__int16\b', 'int16_t', True),
             (r'\b__int8\b', 'int8_t', True),
-            (r'\bbyte\b(?!\s*=)', 'uint8_t', True),  # 小心: 'byte' = ... 才替换
+            (r'\bbyte\b(?!\s*=)', 'uint8_t', True),  # 仅替换类型声明，不碰赋值
         ]
 
         for _pat, _repl, _wb in _replacements:
@@ -257,14 +257,14 @@ class DistortionDetector:
 
         return _fixed, _count
 
-    # ── 辅助方法 ──────────────────────────────────────────────────────
+    # ── 辅助 ──────────────────────────────────────────────────────
 
     def _count_functions(self, code: str) -> int:
-        """估算函数数量 — 通过函数声明特征。"""
+        """通过函数声明模式估算函数数量。"""
         _cnt = 0
         for _line in code.split('\n'):
             _stripped = _line.strip()
-            # 匹配常见函数签名模式
+            # 匹配常见函数签名
             if re.match(
                 r'^(?:static\s+|extern\s+|inline\s+|__\w+\s+)*'
                 r'(?:void|int|char|long|short|float|double|bool|'
@@ -287,23 +287,23 @@ class DistortionDetector:
 
     def _compute_quality(self, report: DistortionReport,
                         lines: List[str]) -> float:
-        """FidelityGPT 风格的整体质量评分。
-        基础分 1.0，按失真密度扣分。"""
+        """FidelityGPT 风格质量分：基准 1.0，按失真密度扣分。
+        高置信度失真和控制流退化惩罚权重更大。"""
         if not lines:
             return 1.0
         _density = report.total_instances / max(len(lines), 1)
         _q = 1.0
-        # 高置信度失真惩罚更大
+        # 高置信度失真惩罚
         _high_conf = sum(1 for _i in report.instances if _i.confidence > 0.8)
         _q -= _density * 0.5
         _q -= (_high_conf / max(len(lines), 1)) * 0.3
-        # 控制流退化是最严重的
+        # 控制流退化最严重
         _cfg_count = report.by_kind.get(DistortionKind.CFG_DEGRADATION, 0)
         _q -= (_cfg_count / max(len(lines), 1)) * 0.2
         return round(min(max(_q, 0.0), 1.0), 4)
 
 
-# ── 便捷函数 ──────────────────────────────────────────────────────────
+# ── 便捷入口 ──────────────────────────────────────────────────────────
 
 def detect_distortions(decompiled_code: str,
                        source_path: str = "") -> Dict:
@@ -313,16 +313,16 @@ def detect_distortions(decompiled_code: str,
 
 
 def auto_fix_distortions(decompiled_code: str) -> Tuple[str, Dict]:
-    """对反编译代码应用自动修复并返回修复后的代码和统计。"""
+    """应用自动修复并返回修复后代码与统计摘要。"""
     _detector = DistortionDetector()
     _rpt = _detector.analyze(decompiled_code)
     _fixed, _n = _detector.auto_fix(decompiled_code)
     _info = {
         'original_distortions': _rpt.total_instances,
         'fixes_applied': _n,
-        'remaining_distortions': 0,  # 需要在修复后重新分析
+        'remaining_distortions': 0,  # 修复后重新分析填充
     }
-    # 修复后重新分析
+    # 修复后重新扫描
     _rpt2 = _detector.analyze(_fixed)
     _info['remaining_distortions'] = _rpt2.total_instances
     return _fixed, _info

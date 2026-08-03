@@ -82,9 +82,9 @@ COLLAPSE_THRESHOLD = 0.5  # 超过 50% 同质即折叠
 
 class MemTaintMap:
     """
-    字节粒度内存污点图.
-    用 4KB page chunk，每个 chunk 是 bytearray of taint flags.
-    折叠优化: 若 chunk 内 >50% 字节有相同 taint，替换为 uniform 表示.
+    字节粒度内存污点图
+    用 4KB page chunk，每个 chunk 是 bytearray taint flags
+    折叠优化: 若 chunk 内 >50% 字节有相同 taint，替换为 uniform 表示
     """
 
     def __init__(self):
@@ -208,8 +208,8 @@ class BBTaintRule:
 
     def apply(self, ctx: 'TaintContext') -> None:
         """
-        根据规则传播污点。
-        output_regs 继承 input_regs 的污点并集.
+        根据规则传播污点
+        output_regs 继承 input_regs 的污点并集
         """
         if not self.output_regs:
             return
@@ -236,8 +236,8 @@ class BBTaintRule:
 
 class TaintContext:
     """
-    持有寄存器污点映射和内存污点映射。
-    提供常见操作的传播方法.
+    持有寄存器污点映射和内存污点映射
+    提供常见操作的传播方法
     """
 
     def __init__(self):
@@ -252,7 +252,7 @@ class TaintContext:
     def propagate_binary_op(self, dst: str, src1: str, src2: str) -> None:
         self.reg_taint.union(dst, src1, src2)
 
-    # //// load: mem→reg ////
+    # //// 加载: mem→reg ////
     def propagate_load(self, dst_reg: str, mem_addr: int, size: int) -> None:
         tags = self.mem_taint.get(mem_addr, size)
         combined = 0
@@ -261,7 +261,7 @@ class TaintContext:
         if combined:
             self.reg_taint.set(dst_reg, TaintTag(combined))
 
-    # //// store: reg→mem ////
+    # //// 存储: reg→mem ////
     def propagate_store(self, mem_addr: int, src_reg: str, size: int) -> None:
         tag = self.reg_taint.get(src_reg)
         if tag != TaintTag(0):
@@ -287,7 +287,7 @@ class TraceEvent:
     """单条 trace 记录"""
     address: int = 0
     instruction: str = ""
-    type: str = ""  # "reg_write", "mem_read", "mem_write", "branch", "call", "syscall"
+    type: str = ""  # "reg_write", "mem_read", "mem_write", "branch", "call", "系统调用"
     operands: Dict[str, Any] = field(default_factory=dict)
 
 
@@ -305,8 +305,8 @@ class TaintEvent:
 
 class TaintEngineV2:
     """
-    从执行 trace 中计算污点传播。
-    内置 Unix syscall 和 Win32 API 的默认策略.
+    从执行 trace 中计算污点传播
+    内置 Unix 系统调用 和 Win32 API 的默认策略
     """
 
     def __init__(self):
@@ -319,7 +319,7 @@ class TaintEngineV2:
 
     @staticmethod
     def default_unix_policy() -> Dict[str, BBTaintRule]:
-        """read/recv/recvfrom → taint buffer; open → taint fd"""
+        """读取/recv/recvfrom → taint 缓冲区; 打开 → taint fd"""
         rules: Dict[str, BBTaintRule] = {}
         # read(fd, buf, count)
         rules["read"] = BBTaintRule(
@@ -336,7 +336,7 @@ class TaintEngineV2:
 
     @staticmethod
     def default_win32_policy() -> Dict[str, BBTaintRule]:
-        """ReadFile → taint lpBuffer; recv → taint buf; URLDownloadToFile → taint file"""
+        """ReadFile → taint lp缓冲区; recv → taint buf; URLDownloadToFile → taint file"""
         rules: Dict[str, BBTaintRule] = {}
         rules["ReadFile"] = BBTaintRule(
             name="ReadFile", input_regs={"rcx"}, output_regs={"rdx"},
@@ -369,8 +369,8 @@ class TaintEngineV2:
     # ===== trace 处理 =====
     def process_trace(self, trace: 'List[TraceEvent]') -> List[TaintEvent]:
         """
-        核心方法: 逐条处理 trace，计算污点传播。
-        返回带污点信息的 TaintEvent 列表.
+        核心方法: 逐条处理 trace，计算污点传播
+        返回带污点信息的 TaintEvent 列表
         """
         results: List[TaintEvent] = []
         for ev in trace:
@@ -416,10 +416,10 @@ class TaintEngineV2:
                     rule.apply(self.ctx)
 
             elif ev.type == "syscall":
-                # 通过 syscall number 匹配
+                # 通过 系统调用 number 匹配
                 sysnum = ev.operands.get("number", -1)
                 # 简化的 Unix syscall 映射
-                if sysnum in (0,):    # read
+                if sysnum in (0,):    # 读取
                     self.ctx.reg_taint.set("rsi", TaintTag.INPUT)
                 elif sysnum in (1,):  # write (不 taint)
                     pass

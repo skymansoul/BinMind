@@ -1,5 +1,5 @@
-# api_diff.py — API 版本差异分析
-# 对比两个 compat 版本之间的公开 API 变化，生成变更日志。
+# api_diff.py — API 版本差异对比
+# 对比两个兼容版本的公开 API 符号变化，输出变更记录。
 # 参考: BinEGA (SANER 2025) 图对齐过滤 & Binary2vec (2025) 跨架构对比学习
 import inspect as _inspect
 from dataclasses import dataclass as _dc, field as _field

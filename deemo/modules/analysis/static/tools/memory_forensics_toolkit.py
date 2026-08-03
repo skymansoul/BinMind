@@ -66,7 +66,7 @@ REFLECTIVE_PATTERNS = [
 
 class MemoryForensicsToolkit:
     """Memory forensics analysis engine: process enumeration, injection
-    detection, rootkit hunting, hidden module scanning."""
+    detection, rootkit hunting, hidden module scanning"""
 
     def __init__(self, dump_path: str, platform: Optional[str] = None) -> None:
         with open(dump_path, "rb") as fh:
@@ -84,7 +84,7 @@ class MemoryForensicsToolkit:
 
     @staticmethod
     def detect_platform(data: bytes) -> str:
-        """Check MZ+PE first (Windows), then LiME magic (Linux)."""
+        """检查 MZ+PE first (Windows), LiME magic (Linux)"""
         for off in range(0, min(len(data), 32 * 1024 * 1024), 0x1000):
             if off + 2 > len(data):
                 break
@@ -100,12 +100,12 @@ class MemoryForensicsToolkit:
     # ---- Windows process enumeration ----
 
     def parse_windows_processes(self, data: Optional[bytes] = None) -> List[Process]:
-        """EPROCESS chain walk: PsActiveProcessHead -> ActiveProcessLinks."""
+        """EPROCESS chain walk: PsActiveProcessHead -> ActiveProcessLinks"""
         if data is None:
             data = self._data
         procs: Dict[int, Process] = {}
 
-        # Scan for EPROCESS-like structures by ImageFileName heuristics
+        # Scan for EPROCESS-like structures ImageFileName heuristics
         stop = min(len(data), 128 * 1024 * 1024)
         i = 0
         while i < stop - EP_NAME - 16:
@@ -195,7 +195,7 @@ class MemoryForensicsToolkit:
     # ---- Linux (LiME) process enumeration ----
 
     def parse_linux_processes(self, data: Optional[bytes] = None) -> List[Process]:
-        """Walk task_struct list via LiME header."""
+        """Walk task_struct list via LiME header"""
         if data is None:
             data = self._data
         lime = data.find(LIME_MAGIC)
@@ -240,7 +240,7 @@ class MemoryForensicsToolkit:
 
     def detect_injection(self, data: Optional[bytes] = None,
                          processes: Optional[List[Process]] = None) -> List[Dict[str, Any]]:
-        """Detect reflective DLL stubs, process hollowing, RWX regions."""
+        """检测 reflective DLL stubs, process hollowing, RWX regions"""
         if data is None:
             data = self._data
         if processes is None:
@@ -302,7 +302,7 @@ class MemoryForensicsToolkit:
 
     def hunt_rootkits(self, data: Optional[bytes] = None,
                       processes: Optional[List[Process]] = None) -> List[Dict[str, Any]]:
-        """SSDT hooks + IDT checks + DKOM hidden process detection."""
+        """SSDT 钩子s + IDT 检查 + DKOM hidden process detection"""
         if data is None:
             data = self._data
         if processes is None:
@@ -403,7 +403,7 @@ class MemoryForensicsToolkit:
     # ---- Hidden module scanning ----
 
     def scan_hidden_modules(self, data: Optional[bytes] = None) -> List[Dict[str, Any]]:
-        """Compare known driver strings against PE export names to find unlinked modules."""
+        """比较 驱动 strings against PE export names 查找 unlinked modules"""
         if data is None:
             data = self._data
         findings: List[Dict[str, Any]] = []
@@ -439,7 +439,7 @@ class MemoryForensicsToolkit:
             })
         return findings
 
-    # ---- Primitive helpers ----
+    # ---- Primitive 辅助函数 ----
 
     def _read_ptr(self, data: bytes, addr: int) -> int:
         if addr < 0 or addr + 8 > len(data):
@@ -458,7 +458,7 @@ class MemoryForensicsToolkit:
         return raw.decode("ascii", errors="replace").strip()
 
     def _scan(self, data: bytes, pattern: bytes, start: int = 0) -> List[int]:
-        """Byte scan; 0xCC in pattern = wildcard (any byte)."""
+        """Byte scan; 0xCC pattern = wildcard (byte)"""
         results: List[int] = []
         pl = len(pattern)
         dl = len(data)

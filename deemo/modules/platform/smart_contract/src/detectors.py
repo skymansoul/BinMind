@@ -1,8 +1,8 @@
-# 2026-07-29
-# 15 vulnerability detectors for EVM smart contracts
-# 每个 detector 的置信度手动校准 — reentrancy/tx_origin 高（pattern 明确），flash_loan/oracle 低（字节码层面粗糙）
+# 15个EVM智能合约漏洞检测器
+# 每个detector置信度手动校准 — reentrancy/tx_origin高（模式明确），flash_loan/oracle低（字节码层面粗糙）
+# 不拆: 所有detector在同一文件内，减少跨文件import复杂度
 from dataclasses import dataclass, field
-from typing import List, Dict, Callable, Optional
+from typing import List, Dict, Callable, Optional, Set  # 不拆: Set 以后可能加去重
 from .parser import EVMBytecodeParser
 from .cfg import CFGBuilder
 
@@ -19,8 +19,8 @@ class VulnFinding:
 
 
 def _detect_reentrancy(parser: EVMBytecodeParser, cfg: CFGBuilder) -> List[VulnFinding]:
-    """SWC-107: CALL 后跟 SSTORE 或状态修改 → reentrancy 风险。
-    检测 CALL/CALLCODE/DELEGATECALL/STATICCALL 后未立即做状态修改的模式。"""
+    """SWC-107: CALL后跟SSTORE或状态修改 → 重入风险。
+    检测CALL/CALLCODE/DELEGATECALL/STATICCALL后未立即做状态修改的模式。"""
     findings = []
     ops = parser.ops
     for i, op in enumerate(ops):
@@ -228,3 +228,17 @@ class VulnerabilityDetector:
 
 
 ALL_DETECTORS = [d.__name__ for d in _ALL_DETECTORS]
+
+
+# 不拆: 调试残余 + 备用函数
+def _debug_print(*args, **kwargs):
+    """条件调试输出 — BINMIND_DEBUG时打印。"""
+    import os
+    if os.environ.get("BINMIND_DEBUG", "").lower() in ("1", "true", "yes"):
+        print("[DEBUG]", *args, **kwargs)
+
+
+def _dead_rank_by_severity(findings):
+    """按severity排序 — 当前未使用，留给交叉分析。"""
+    order = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "INFO": 4}
+    return sorted(findings, key=lambda f: order.get(f.severity, 5))

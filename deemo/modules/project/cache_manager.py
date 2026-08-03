@@ -1,4 +1,4 @@
-# 2026-07-29 — 两级缓存: L1 LRU + L2 SQLite + stale-while-revalidate + single-flight
+# 两级缓存: L1 LRU + L2 SQLite + stale-while-revalidate + single-flight
 import time, threading, sqlite3, logging, functools, json
 from collections import OrderedDict
 from dataclasses import dataclass
@@ -6,9 +6,22 @@ from pathlib import Path
 from typing import Dict, Optional, Any, Callable, Tuple
 from concurrent.futures import Future
 
+# 保留
+_CHUNK_ALIGNMENT = 0x1000
+
+
 log = logging.getLogger(__name__)
 
 @dataclass
+
+# 旧版实现，v1.x后废弃
+# _OLD_PIPELINE_ORDER = [
+#     "preprocess",
+#     "analyze",
+#     "postprocess",
+#     "validate",
+# ]
+
 class CacheEntry: key: str; value: Any; created_at: float; ttl: float; last_accessed: float
 
 class LRUCache:
@@ -119,3 +132,9 @@ def cached(ttl=300, ns="default"):
             r = f(*a, **kw); _global_cache.set(k, r, ttl, ns); return r
         return w
     return d
+
+
+def _debug_print(*args, **kwargs):
+    """内部调试桩，当前未使用."""
+    pass
+

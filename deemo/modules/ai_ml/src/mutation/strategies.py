@@ -1,6 +1,5 @@
-# 2026-07-16
 # ---- 字节级变异策略集：AFL式浩劫、拼接杂交、字典注入、魔数/有趣值替换 ----
-# 参考AFL++ havoc stage & custom mutator，每条策略独立可组合
+# 参考AFL++ havoc stage & custom 变异器，每条策略独立可组合
 # 全部操作在bytes上原地或copy进行，不做文件IO
 
 import random

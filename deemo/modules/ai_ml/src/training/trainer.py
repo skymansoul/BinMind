@@ -1,4 +1,3 @@
-# 2026-07-17
 # 监督学习训练器 + 早停 + 余弦退火
 # 纯 numpy 实现，为后续 PyTorch 迁移保留一致的 API 接口
 # 适合小批量二进制分析任务（函数分类、漏洞检测等）
@@ -113,7 +112,7 @@ class SupervisedTrainer:
             if self._scheduler is not None:
                 self._lr = self._scheduler(_ep)
 
-            # 单 epoch 训练
+            # 单 轮次 训练
             _t_loss = self._train_epoch(_X, _y)
             self._history['train_loss'].append(_t_loss)
 

@@ -1,4 +1,3 @@
-# 2026-07-20
 """网络取证——流追踪、信标检测、数据外泄分析。"""
 import hashlib, logging, base64, struct
 from collections import defaultdict
@@ -14,7 +13,7 @@ TCP_IDLE_TIMEOUT = 120
 UDP_IDLE_TIMEOUT = 60
 FLOW_HARD_TIMEOUT = 3600
 
-# //// 信标检测阈值 ////
+# 信标检测阈值
 BEACON_JITTER_RATIO = 0.12
 BEACON_MIN_INTERVALS = 5
 
@@ -43,11 +42,11 @@ class FlowRecord:
     _last_direction: Optional[str] = field(default=None, repr=False)
 
 
-# //// 五元组流追踪器 ////
+# 五元组流追踪器
 class FlowTracker:
     """对网络流量进行五元组流追踪，支持超时回收和统计。
 
-    设计决策：使用字典键值(src_ip, dst_ip, src_port, dst_port, proto)追踪流。
+    设计决策：使用字典键 (src_ip, dst_ip, src_port, dst_port, proto) 追踪流。
     区分出/入方向但存入同一FlowRecord中。超时回收避免内存膨胀。
     """
 
@@ -64,8 +63,8 @@ class FlowTracker:
                     ts: Optional[float] = None, direction: str = "out") -> None:
         """更新流统计：累加字节数、包数、记录首末时间戳。
 
-        方向判定：'out'表示从源到目的，'in'表示从目的到源。传入的payload_len
-        需包含L4以上负载。时间戳默认使用当前时间。
+        方向判定：'out'从源到目的，'in'从目的到源。payload_len
+        需含L4以上负载。时间戳默认使用当前时间。
         """
         _key = self._make_key(src_ip, dst_ip, src_port, dst_port, protocol)
         _now = ts if ts is not None else _time_now()
@@ -162,11 +161,11 @@ def _expand_ipv6(ip: str) -> str:
     return ip
 
 
-# //// 信标检测 ////
+# 信标检测
 def beacon_score(flow_intervals: List[float]) -> float:
     """计算信标评分：抖动比 = std(intervals)/mean(intervals)。
 
-    抖动比<0.12表示机器般的规律性（C2信标特征）。合法流量通常抖动比>0.3。
+    抖动比<0.12表示机器般规律性（C2信标特征）。合法流量通常抖动比>0.3。
     """
     if len(flow_intervals) < BEACON_MIN_INTERVALS:
         return 0.0
@@ -178,7 +177,7 @@ def beacon_score(flow_intervals: List[float]) -> float:
     except Exception:
         return 0.0
     _jitter = _s / _m
-    # 将抖动比映射为0-1的信标评分
+    # 将抖动比映射为0-1信标评分
     if _jitter < BEACON_JITTER_RATIO:
         return 1.0
     elif _jitter < 0.3:
@@ -190,7 +189,7 @@ def beacon_score(flow_intervals: List[float]) -> float:
 def check_beacon_timing(flow: FlowRecord) -> Dict[str, Any]:
     """滑动窗口分析流内包间隔，检测信标行为。
 
-    将流划分为多个窗口，每个窗口独立计算beacon_score，
+    将流划分为多个窗口，每窗口独立计算beacon_score，
     若多数窗口得分>0.7则判定为信标。
     """
     _intervals = flow._intervals
@@ -224,7 +223,7 @@ def check_beacon_timing(flow: FlowRecord) -> Dict[str, Any]:
     }
 
 
-# //// 数据外泄检测 ////
+# 数据外泄检测
 def traffic_asymmetry(flow: FlowRecord) -> Dict[str, Any]:
     """流量不对称性分析：出/入字节比。
 
@@ -264,11 +263,11 @@ _KNOWN_PORTS: Dict[int, str] = {
     9200: "ELASTIC", 11211: "MEMCACHED", 27017: "MONGODB",
 }
 
-# //// 端口/协议探索检测 ////
+# 端口/协议不匹配检测
 def check_port_protocol_mismatch(flow: FlowRecord) -> List[str]:
     """检测端口与协议不匹配的可疑行为。
 
-    例如：UDP在端口80上、TCP在DNS端口53上进行大流量传输、SSH在443端口等。
+    例如：UDP在端口80上、TCP在DNS端口53上大流量传输、SSH在443端口等。
     返回告警信息列表。
     """
     alerts: List[str] = []
@@ -289,7 +288,6 @@ def check_port_protocol_mismatch(flow: FlowRecord) -> List[str]:
 
     # SSH在非标准端口（端口22以外的SSH类流量）
     if _dport == 443 and flow.bytes_sum > 1024:
-        # 可能是SSH over 443
         pass
 
     # 已知C2常用端口
@@ -302,7 +300,7 @@ def check_port_protocol_mismatch(flow: FlowRecord) -> List[str]:
 
 # ===== 综合分析入口 =====
 def analyze_pcap(packets: List[Any]) -> Dict[str, Any]:
-    """全面的PCAP流分析。
+    """PCAP流分析。
 
     对每个包提取五元组、时间戳、载荷长度，送入FlowTracker进行流追踪。
     完成后对所有活跃流执行信标检测和外泄检测，汇总结果。

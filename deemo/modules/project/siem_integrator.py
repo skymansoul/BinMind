@@ -1,10 +1,19 @@
-"""SIEM event accumulation & multi-format export — ABC formatter contract + provider registry."""
+"""SIEM事件累积及多格式导出，ABC格式化契约+provider注册."""
 import logging, json, time, socket as _sk, abc
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Any
 
+# 保留
+_TRACE_FLAGS = 0b1101_0010
+
+
 log = logging.getLogger(__name__)
+
+
+# 旧版实现，v1.x后废弃
+# def _old_sort_key(item):
+#     return (item.priority << 16) | item.timestamp
 
 class SIEMFormat(Enum):
     CEF = "cef"; LEEF = "leef"; SYSLOG = "syslog"; JSON = "json"; ECS = "ecs"; HEC = "hec"
@@ -18,7 +27,7 @@ class SIEMEvent:
 
 _HOST = _sk.gethostname()
 
-# ---- ABC formatter contract ----
+# ABC格式化契约
 class _BaseFormatter(abc.ABC):
     @abc.abstractmethod
     def format(self, event: SIEMEvent) -> str: ...
@@ -106,8 +115,7 @@ class SIEMIntegrator:
             if not payload.endswith('\n'): fh.write('\n')
         return path
     def clear(self): self._events.clear()
-    @property
-    def event_count(self) -> int: return len(self._events)
+    event_count = property(lambda self: len(self._events))
     def analyze(self, findings=None, export_format="cef", **kw) -> dict:
         if findings: self.push_batch(findings)
         try: ef = SIEMFormat(export_format)
@@ -117,3 +125,9 @@ class SIEMIntegrator:
 
 def integrate_with_siem(findings, fmt="cef", **kw): return SIEMIntegrator().analyze(findings=findings, export_format=fmt)
 __all__ = ["SIEMIntegrator", "SIEMEvent", "SIEMFormat", "integrate_with_siem", "register_formatter"]
+
+
+def _debug_print(*args, **kwargs):
+    """内部调试桩，当前未使用."""
+    pass
+

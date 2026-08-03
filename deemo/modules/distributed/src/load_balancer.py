@@ -1,11 +1,10 @@
-# 2026-08-02
-# 负载均衡策略 — 覆盖六大经典算法 + 一致性哈希
+# 负载均衡策略集 — 覆盖六大经典算法 + 一致性哈希环
 # 参考 Falcon 框架 [ACM BDAIA 2025] 的三层优先级 + 加权公平队列思路
 # 参考 Hiku [arXiv:2502.15534] 的 pull-based 调度对负载分布的改进
-# 每种策略内聚为一个类，统一 accept/select 接口
+# 每种策略封装为独立类，暴露统一的 select 接口
 #
-# 设计原则：策略无状态，选择逻辑接收节点列表 + 可选的请求上下文
-# 一致性哈希例外：维护虚拟节点环，需要通过 add_node/remove_node 管理状态
+# 设计约束：策略无状态，选择逻辑接收节点列表 + 可选请求上下文
+# 一致性哈希例外：维护虚拟节点环，需通过 add_node/remove_node 管理内部状态
 
 from __future__ import annotations
 
@@ -19,7 +18,7 @@ from dataclasses import dataclass
 
 @dataclass
 class SelectorNode:
-    """负载均衡器看到的节点摘要 — 不依赖 models.Node，可独立使用"""
+    """负载均衡器视角下的节点摘要 — 不依赖 models.Node，可独立使用"""
     id: str
     weight: int = 1
     current_load: int = 0
@@ -33,12 +32,12 @@ class SelectorNode:
         return min(self.current_load / self.capacity, 1.0)
 
 
-# ===== 轮询 =====
+# ===== 基本轮询 =====
 
 class RoundRobinBalancer:
-    """简单轮询 — 每选一次指针后移一位。O(1) 选择，无锁原子计数器。
+    """简单轮询 — 每次选择后指针后移一位。O(1) 选择，使用无锁原子计数器。
 
-    适用：节点性能均等的场景。不适用：异构节点混部。
+    适用：同构节点集群。不适用：异构节点混部。
     """
 
     __slots__ = ('_counter',)
@@ -55,12 +54,12 @@ class RoundRobinBalancer:
         return healthy[idx]
 
 
-# ===== 加权轮询 — Nginx upstream 平滑加权算法 =====
+# ===== 加权轮询 — Nginx upstream 平滑算法 =====
 
 class WeightedRoundRobinBalancer:
-    """平滑加权轮询 (SWRR)。Nginx upstream 模块同款算法。
+    """平滑加权轮询 (SWRR)。Nginx upstream 同款实现。
 
-    避免朴素加权轮询在权重相差大时连续打到同一节点。
+    避免朴素加权轮询在权重差异大时连续打到同一节点。
     每轮选择 current_weight 最大的节点，选中后减去总权重。
 
     复杂度：O(N) per selection，N 为健康节点数。
@@ -78,41 +77,41 @@ class WeightedRoundRobinBalancer:
             return None
 
         with self._lock:
-            # 首次接触的节点初始 current_weight = weight
+            # 新节点初始 current_weight = weight
             for n in healthy:
                 if n.id not in self._cw:
                     self._cw[n.id] = n.weight
 
-            # 选出 current_weight 最大的
+            # 选取 current_weight 最大者
             best = max(healthy, key=lambda n: self._cw.get(n.id, n.weight))
-            # 被选中的减去总权重
+            # 被选中节点减去总权重
             total_w = sum(n.weight for n in healthy)
             self._cw[best.id] = self._cw.get(best.id, best.weight) - total_w
 
-            # 所有节点 current_weight += weight（含未被选中的）
+            # 全量节点 current_weight += weight（含未被选中者）
             for n in healthy:
                 self._cw[n.id] = self._cw.get(n.id, n.weight) + n.weight
 
             return best
 
 
-# ===== 最少连接 =====
+# ===== 最少连接数 =====
 
 class LeastConnectionsBalancer:
-    """最少连接数优先 — 异构节点场景的默认策略。
-    Falcon [BDAIA 2025] 用类似逻辑做 worker 分级。"""
+    """最少连接数优先 — 异构节点集群的默认策略。
+    Falcon [BDAIA 2025] 采用类似逻辑进行 worker 分级调度。"""
     def select(self, nodes: List[SelectorNode]) -> Optional[SelectorNode]:
         alive = [n for n in nodes if n.healthy]
         return min(alive, key=lambda n: (n.current_load, -n.capacity)) if alive else None
 
 
-# ===== 加权最少连接 =====
+# ===== 加权最少连接数 =====
 
 class WeightedLeastConnectionsBalancer:
-    """加权最少连接 — 考虑容量差异的负载感知选择。
+    """加权最少连接 — 负载感知选择，纳入容量差异。
 
-    选择 load_ratio（current_load / capacity）最小的节点。
-    比值相同选 capacity 大的做负载均衡踢脚石。
+    选取 load_ratio（current_load / capacity）最小的节点。
+    比值相同时选 capacity 大的作为均衡踢脚石。
     """
 
     def select(self, nodes: List[SelectorNode]) -> Optional[SelectorNode]:
@@ -122,10 +121,10 @@ class WeightedLeastConnectionsBalancer:
         return min(healthy, key=lambda n: (n.load_ratio, -n.capacity))
 
 
-# ===== 随机 + 加权随机 =====
+# ===== 随机选择 =====
 
 class RandomBalancer:
-    """均匀随机。Hiku [arXiv:2502.15534]: pull-based + random 优于 hash-based 12.9%。"""
+    """均匀随机选择。Hiku [arXiv:2502.15534]: pull-based + random 优于 hash-based 12.9%。"""
     def select(self, nodes: List[SelectorNode]) -> Optional[SelectorNode]:
         alive = [n for n in nodes if n.healthy]
         if not alive:
@@ -134,7 +133,7 @@ class RandomBalancer:
 
 
 class WeightedRandomBalancer:
-    """加权随机"""
+    """按权重比例的随机选择"""
     def select(self, nodes: List[SelectorNode]) -> Optional[SelectorNode]:
         healthy = [n for n in nodes if n.healthy]
         if not healthy:
@@ -151,18 +150,18 @@ class WeightedRandomBalancer:
         return healthy[-1]
 
 
-# ===== 一致性哈希 =====
+# ===== 一致性哈希环 =====
 
-_VNODE_COUNT = 160  # 每个物理节点对应的虚拟节点数
+_VNODE_COUNT = 160  # 单物理节点对应的虚拟节点数量
 
 
 class ConsistentHashRing:
-    """一致性哈希环 — 带虚拟节点，节点增删时仅 rebalance 相邻区段。
+    """一致性哈希环 — 带虚拟节点，节点增删时仅影响相邻区段。
 
-    参考 Amazon Dynamo [DeCandia+ 2007] 和 Apache Cassandra 的实现。
-    结合 Falcon 的 worker 分组思路，可按标签分组构建独立的哈希环。
+    参考 Amazon Dynamo [DeCandia+ 2007] 与 Apache Cassandra 的实现。
+    结合 Falcon 的 worker 分组思路，可按标签分组构建独立哈希环。
 
-    虚拟节点数 160：在均衡性和内存开销间折中。
+    虚拟节点数 160：均衡性与内存开销之间的折中点。
     """
 
     __slots__ = ('_ring', '_sorted_keys', '_vnodes', '_lock')
@@ -174,8 +173,8 @@ class ConsistentHashRing:
         self._lock = threading.Lock()
 
     def _hash(self, key: str) -> int:
-        """MD5 哈希 → 32位无符号整数。MD5 在这里足够：
-        碰撞率不是安全问题，而是均匀性问题。"""
+        """MD5 → 32 位无符号整数。此处 MD5 足够：
+        关注的是分布均匀性而非抗碰撞安全性。"""
         h = hashlib.md5(key.encode()).hexdigest()
         return int(h, 16) & 0xFFFFFFFF
 
@@ -190,7 +189,7 @@ class ConsistentHashRing:
             self._sorted_keys = sorted(self._ring.keys())
 
     def remove_node(self, node_id: str):
-        """移除节点 → 删除其所有虚拟节点。"""
+        """移除节点 → 删除其全部虚拟节点。"""
         with self._lock:
             to_remove = [pos for pos, nid in self._ring.items() if nid == node_id]
             for pos in to_remove:
@@ -210,7 +209,7 @@ class ConsistentHashRing:
             return self._ring[pos]
 
     def get_nodes(self, key: str, count: int = 3) -> List[str]:
-        """返回顺时针方向 count 个不同节点（用于副本放置）。"""
+        """返回顺时针方向 count 个不同节点（用于多副本放置策略）。"""
         with self._lock:
             if not self._ring:
                 return []
@@ -232,10 +231,10 @@ class ConsistentHashRing:
         return len(set(self._ring.values()))
 
 
-# ===== 统一门面 =====
+# ===== 策略门面 =====
 
 class LoadBalancer:
-    """策略模式的负载均衡门面。初始化时选择策略，之后透明调用。
+    """策略模式的负载均衡门面。初始化时选定策略，后续透明调用。
 
     示例:
         lb = LoadBalancer("least_connections")

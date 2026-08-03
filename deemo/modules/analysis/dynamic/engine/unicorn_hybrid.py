@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 """
-Unicorn-based hybrid emulation engine with speculative execution.
+Unicorn-based hybrid 仿真 engine speculative execution
 
-Combines static disassembly from Capstone with dynamic emulation via Unicorn
-Engine to achieve path-sensitive analysis of binary code. Supports partial
-emulation (lift a function out of a full binary), multi-arch (x86/x64/ARM/MIPS),
-and snapshot checkpointing for state-space exploration.
+Combines static 反汇编 Capstone dynamic 仿真 via Unicorn
+Engine achieve path-sensitive analysis binary code. 支持 partial
+仿真 (lift a function out a full binary), multi-arch (x86/x64/ARM/MIPS)
+快照 检查点ing for state-space exploration
 
 Core innovations beyond bare Unicorn wrapping:
-  - LRU-block-cache for translated code: avoids re-lifting the same basic
-    blocks across repeated emulation runs.
-  - Speculative indirect-branch resolution: when emulation hits a computed
-    jump (e.g., jmp rax), forks state and explores the top-K likely targets
-    in parallel workers, merging reachable paths.
+- LRU-block-缓存for translated code: avoids re-lifting same basic
+blocks across repeated 仿真 运行
+- Speculative indirect-branch resolution: 仿真 hits a computed
+jump (e.g., jmp rax), forks state explores top-K likely targets
+并行 workers, merging reachable paths
 """
 
 import heapq
@@ -32,7 +32,7 @@ from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Feature availability flags — guarded imports prevent hard dependency chains
+# Feature 可用性 flags — guarded imports prevent hard dependency chains
 # ---------------------------------------------------------------------------
 CAPSTONE_AVAILABLE = False
 try:
@@ -94,7 +94,7 @@ except ImportError:
 # ============================================================================
 
 class MemoryPerm(Enum):
-    """Memory protection flags mirroring Unicorn UC_PROT_* constants."""
+    """Memory protection flags mirroring Unicorn UC_PROT_* constants"""
     NONE = 0
     READ = 1
     WRITE = 2
@@ -104,10 +104,10 @@ class MemoryPerm(Enum):
 
 @dataclass
 class MemoryRegion:
-    """Describes a mapped memory segment in the emulation address space.
-
+    """Describes a mapped memory segment 仿真 address space
+    
     Fields intentionally nullable — partial binary lift often lacks full
-    section metadata, so perms/size may be inferred at map time.
+    section metadata, perms/size inferred map time
     """
     name: str
     base: int
@@ -134,9 +134,9 @@ class MemoryRegion:
 
 @dataclass
 class ExecutionResult:
-    """Post-emulation snapshot: register state, memory deltas, and exit reason.
-
-    每条指令的地址记录用于从错误回溯到源码的映射——路径追踪必需的元数据。
+    """Post-仿真 快照: 寄存器 state, memory deltas, exit reason
+    
+    每条指令的地址记录用于从错误回溯到源码的映射——路径追踪必需的元数据
     """
     exit_code: int
     exit_reason: str
@@ -154,10 +154,10 @@ class ExecutionResult:
 
 @dataclass
 class HybridAnalysisResult:
-    """Aggregate output of a complete hybrid (static + dynamic) analysis pass.
-
-    将 Capstone 反汇编和 Unicorn 模拟的结果合并到单一视图中。
-    path_coverage 记录每个基本块被探索的次数，用于识别热点路径。
+    """Aggregate 输出 a complete hybrid (static + dynamic) analysis pass
+    
+    将 Capstone 反汇编和 Unicorn 模拟的结果合并到单一视图中
+    path_coverage 记录每个基本块被探索的次数，用于识别热点路径
     """
     success: bool
     architecture: str
@@ -173,26 +173,26 @@ class HybridAnalysisResult:
 
 
 # ============================================================================
-# BlockCache — LRU eviction for translated code blocks
+# Block缓存— LRU eviction for translated code blocks
 # ============================================================================
 #
 # 设计意图：
 #   二进制翻译是混合分析的主要瓶颈。同一基本块在多次模拟运行中被重复
-#   反汇编和映射。BlockCache 用 OrderedDict 实现 LRU 驱逐——基于纯 Python
-#   数据结构，避免引入额外的 C 扩展依赖。最坏情况下的驱逐复杂度 O(1)，
-#   命中查找 O(1)。512 的容量上限在 128MB VPS 上经过实测，不会触发 OS 交换。
+# 反汇编和映射。Block缓存用 OrderedDict 实现 LRU 驱逐——基于纯 Python
+# 数据结构，避免引入额外的 C 扩展依赖。最坏情况下的驱逐复杂度 O(1)
+# 命中查找 O(1)。512 的容量上限在 128MB VPS 上经过实测，不会触发 OS 交换
 #
 # 驱逐策略：
 #   LRU (Least Recently Used) — 适合模拟场景，因为循环热点自然表现出
 #   时间局部性。FIFO 在循环场景中表现差（驱逐正在使用的块）；LFU 维护成本
-#   过高且缓存污染风险大。LRU 在指令缓存行为和实现复杂度的权衡中最优。
+# 过高且缓存污染风险大。LRU 在指令缓存行为和实现复杂度的权衡中最优
 # ============================================================================
 
 class BlockCache:
-    """LRU cache for translated basic-block metadata.
-
-    Each cache entry stores: (disassembly_text, raw_machine_bytes, next_addresses).
-    驱逐时仅丢弃翻译产物——不影响模拟状态，重载是透明的。
+    """LRU 缓存for translated basic-block metadata
+    
+    缓存entry 存储: (反汇编_text, raw_machine_bytes, next_addresses)
+    驱逐时仅丢弃翻译产物——不影响模拟状态，重载是透明的
     """
 
     _MAX_BLOCKS = 512
@@ -208,11 +208,11 @@ class BlockCache:
 
     # ------------------------------------------------------------------
     def get(self, address: int) -> Optional[Tuple[str, bytes, List[int]]]:
-        """Retrieve a cached block; promotes to MRU on hit. Thread-safe."""
+        """Retrieve a缓存d block; promotes MRU hit. 线程安全"""
         with self._lock:
             entry = self._entries.pop(address, None)
             if entry is not None:
-                self._entries[address] = entry  # move to end (MRU position)
+                self._entries[address] = entry  # move end (MRU position)
                 self._hits += 1
                 return entry
             self._misses += 1
@@ -221,12 +221,12 @@ class BlockCache:
     # ------------------------------------------------------------------
     def put(self, address: int, disasm: str, raw_bytes: bytes,
             successors: List[int]) -> None:
-        """Insert or update a block. Evicts LRU entry if at capacity."""
+        """插入 or 更新 a block. Evicts LRU entry capacity"""
         with self._lock:
             if address in self._entries:
                 self._entries.pop(address)
             elif len(self._entries) >= self._capacity:
-                # 驱逐最旧条目：OrderedDict 的第一个键是 LRU。
+                # 驱逐最旧条目：OrderedDict 的第一个键是 LRU
                 evicted_addr = next(iter(self._entries))
                 self._entries.pop(evicted_addr)
                 self._evictions += 1
@@ -234,7 +234,7 @@ class BlockCache:
 
     # ------------------------------------------------------------------
     def invalidate(self, address: int) -> bool:
-        """Explicitly drop a cached block (e.g., after self-modifying code)."""
+        """Explicitly drop a缓存d block (e.g., self-modifying code)"""
         with self._lock:
             if address in self._entries:
                 self._entries.pop(address)
@@ -243,7 +243,7 @@ class BlockCache:
 
     # ------------------------------------------------------------------
     def invalidate_range(self, start: int, end: int) -> int:
-        """Drop all cached blocks whose start address falls in [start, end)."""
+        """Drop all缓存d blocks 启动 address falls [启动, end)"""
         removed = 0
         with self._lock:
             to_remove = [a for a in self._entries if start <= a < end]
@@ -280,21 +280,21 @@ class BlockCache:
 # ============================================================================
 #
 # 设计意图：
-#   间接跳转（jmp rax, call [rdi+8]）在静态反汇编中无法解析目标，
-#   在动态模拟中若寄存器值来自尚未具体化的输入也会失解析。
+# 间接跳转（jmp rax, call [rdi+8]）在静态反汇编中无法解析目标
+# 在动态模拟中若寄存器值来自尚未具体化的输入也会失解析
 #   投机执行将当前 CPU 状态分叉，并行的在多个候选目标上继续模拟——
-#   每个分支独立验证可达性（内存是否映射、代码是否合法）。
+# 每个分支独立验证可达性（内存是否映射、代码是否合法）
 #
 # 候选目标生成（按优先级）：
 #   1. 直接寄存器/内存值（若寄存器已具体化，跳过投机）
 #   2. 函数表基址 + 常见偏移（vtable 模式，间距=指针宽度）
-#   3. 已知的代码段入口点（通过 .text 映射推断）
+# 3. 已知的代码段入口点（通过.text 映射推断）
 #   4. 调用图出边（若调用图在前序分析中已构建）
 #
 # 复杂度：
-#   每个间接跳转 O(k * m)，k = 候选数（≤3），m = 目标路径平均长度。
-#   因各候选独立模拟，总 wall-time ≈ max(m_i)，非 sum(m_i)。
-#   内存开销：每个分叉 ~2KB 寄存器快照 + 栈拷贝；≤3 分叉可忽略。
+# 每个间接跳转 O(k * m)，k = 候选数（≤3），m = 目标路径平均长度
+# 因各候选独立模拟，总 wall-time ≈ max(m_i)，非 sum(m_i)
+# 内存开销：每个分叉 ~2KB 寄存器快照 + 栈拷贝；≤3 分叉可忽略
 # ============================================================================
 
 _SPECULATIVE_TOP_K = 3
@@ -311,8 +311,8 @@ _JUMP_REGS_32 = {"eax", "ebx", "ecx", "edx", "esi", "edi", "ebp", "esp", "eip"}
 
 
 def _is_indirect_jump(mnemonic: str, op_str: str) -> bool:
-    """Heuristic: a jmp/call is indirect if its operand string mentions a register
-    or a memory dereference pattern `[.*]`."""
+    """Heuristic: a jmp/call indirect operand string mentions a 寄存器
+    or a memory de引用 pattern `[.*]`"""
     if mnemonic.lower() not in _INDIRECT_JUMP_MNEMONICS:
         return False
     lower_op = op_str.lower()
@@ -331,18 +331,18 @@ def _generate_speculative_targets(
     known_code_ranges: List[Tuple[int, int]],
     callgraph_edges: Optional[Dict[int, List[int]]],
 ) -> List[int]:
-    """Generate up to K candidate targets for an indirect branch.
-
+    """构造 up K candidate targets for an indirect branch
+    
     优先级排序：
-      0. 如果寄存器值已具体化且指向映射区域 → 直接返回（不投机）
-      1. 函数指针表：当前寄存器值附近的指针宽度对齐地址
-      2. 代码段中的已知函数入口
-      3. 调用图中的出边（若可用）
+    0. 如果寄存器值已具体化且指向映射区域 → 直接返回（不投机）
+    1. 函数指针表：当前寄存器值附近的指针宽度对齐地址
+    2. 代码段中的已知函数入口
+    3. 调用图中的出边（若可用）
     """
     candidates: List[int] = []
     seen: Set[int] = set()
 
-    # Priority 0: register already concretized
+    # Priority 0: 寄存器 concretized
     op_str = getattr(current_cs_insn, "op_str", "")
     for reg_name in _JUMP_REGS_64 | _JUMP_REGS_32:
         if reg_name in op_str.lower() and reg_name in current_regs:
@@ -352,7 +352,7 @@ def _generate_speculative_targets(
                     if seg_start <= concrete < seg_end:
                         return [concrete]
 
-    # Priority 1: nearby pointer-aligned targets from register value
+    # Priority 1: nearby 指针-aligned targets 寄存器 value
     ptr_size = 8 if "64" in (getattr(current_cs_insn, "_arch", "") or "x64") else 4
     for reg_name in _JUMP_REGS_64 | _JUMP_REGS_32:
         if reg_name in op_str.lower() and reg_name in current_regs:
@@ -369,9 +369,9 @@ def _generate_speculative_targets(
                 if len(candidates) >= _SPECULATIVE_TOP_K:
                     return candidates[: _SPECULATIVE_TOP_K]
 
-    # Priority 2: known code-section entry points
+    # Priority 2: code-section 入口
     for seg_start, seg_end in known_code_ranges:
-        # Align to instruction boundary (heuristic: 16-byte alignment for x86/x64)
+        # Align instruction boundary (heuristic: 16-byte 对齐 for x86/x64)
         entry = (seg_start + 0xF) & ~0xF
         while entry < seg_end and len(candidates) < _SPECULATIVE_TOP_K:
             if entry not in seen:
@@ -381,7 +381,7 @@ def _generate_speculative_targets(
         if len(candidates) >= _SPECULATIVE_TOP_K:
             break
 
-    # Priority 3: call-graph out-edges from current instruction
+    # Priority 3: call-graph out-edges current instruction
     if callgraph_edges and len(candidates) < _SPECULATIVE_TOP_K:
         insn_addr = getattr(current_cs_insn, "address", 0)
         callees = callgraph_edges.get(insn_addr, [])
@@ -396,29 +396,29 @@ def _generate_speculative_targets(
 
 
 # ============================================================================
-# HybridEmulationEngine — main orchestrator
+# Hybrid仿真Engine — main 调度器
 # ============================================================================
 
 class HybridEmulationEngine:
-    """Unicorn-driven hybrid analysis with block caching and speculative execution.
-
+    """Unicorn-driven hybrid analysis block 缓存 speculative execution
+    
     Usage (typical path):
-        engine = HybridEmulationEngine("x64")
-        engine.map_region(MemoryRegion(name=".text", base=0x400000, size=0x2000, data=code))
-        engine.map_region(MemoryRegion(name=".stack", base=0x7fff0000, size=0x10000))
-        engine.write_registers({"rip": 0x400100, "rsp": 0x7fff8000})
-        result = engine.run(0x400100, max_instructions=5000)
-
-    Public API stability: all public method signatures and return types are
-    frozen for external compatibility.
+    engine = Hybrid仿真Engine("x64")
+    engine.map_region(MemoryRegion(name=".text", base=0x400000, size=0x2000, data=code))
+    engine.map_region(MemoryRegion(name=".栈", base=0x7fff0000, size=0x10000))
+    engine.write_寄存器s({"rip": 0x400100, "rsp": 0x7fff8000})
+    result = engine.运行(0x400100, max_instructions=5000)
+    
+    Public API stability: public method 签名s 返回 types
+    frozen for external 兼容性
     """
 
     # ------------------------------------------------------------------
     def __init__(self, architecture: str = "x64"):
-        """Initialize the hybrid engine for the given architecture.
-
+        """初始化 hybrid engine for architecture
+        
         Args:
-            architecture: one of "x86", "x64", "arm", "arm64", "mips".
+        architecture: one "x86", "x64", "arm", "arm64", "mips"
         """
         self._arch_str = architecture.lower()
         if not UNICORN_AVAILABLE:
@@ -432,7 +432,7 @@ class HybridEmulationEngine:
         self._cs_handle = None
         self._init_disassembler()
 
-        # Hook tracking
+        # 钩子 tracking
         self._hook_handles: List[Any] = []
         self._user_hooks: Dict[str, List[Callable]] = {
             "code": [],
@@ -450,7 +450,7 @@ class HybridEmulationEngine:
 
     # ------------------------------------------------------------------
     def _init_disassembler(self):
-        """Lazy-init the Capstone disassembler for block translation."""
+        """Lazy-init Capstone 反汇编r for block translation"""
         if CAPSTONE_AVAILABLE:
             cs_arch = _CS_ARCH_MAP.get(self._arch_str, capstone.CS_ARCH_X86)
             cs_mode = _CS_MODE_MAP.get(self._arch_str, capstone.CS_MODE_64)
@@ -459,23 +459,23 @@ class HybridEmulationEngine:
 
     # ------------------------------------------------------------------
     def _init_unicorn(self):
-        """Create or recreate the Unicorn engine instance."""
+        """创建 or recreate Unicorn引擎 instance"""
         uc_arch = _UC_ARCH_MAP.get(self._arch_str, UC_ARCH_X86)
         uc_mode = _UC_MODE_MAP.get(self._arch_str, UC_MODE_64)
         self._uc = Uc(uc_arch, uc_mode)
 
-        # 默认的空页访问钩子：当模拟触碰未映射地址时记录错误并停止。
+        # 默认的空页访问钩子：当模拟触碰未映射地址时记录错误并停止
         self._uc.hook_add(UC_HOOK_MEM_UNMAPPED, self._hook_mem_unmapped_default)
 
     # ------------------------------------------------------------------
     def map_region(self, region: MemoryRegion) -> None:
-        """Map a memory region into the emulator's address space.
-
-        后续调用时若地址重叠会先取消映射再重新映射，避免 UcError.
+        """Map a memory region 仿真器's address space
+        
+        后续调用时若地址重叠会先取消映射再重新映射，避免 UcError
         """
         if self._uc is None:
             self._init_unicorn()
-        # Unmap if already present (partial overlap detection — conservative)
+        # Unmap present (partial overlap detection — conservative)
         for existing_name, existing in list(self._regions.items()):
             if not (existing.end <= region.base or region.end <= existing.base):
                 self._uc.mem_unmap(existing.base, existing.size)
@@ -489,7 +489,7 @@ class HybridEmulationEngine:
 
     # ------------------------------------------------------------------
     def unmap_region(self, name: str) -> bool:
-        """Remove a named region from the emulator's address space."""
+        """Remove a region 仿真器's address space"""
         region = self._regions.pop(name, None)
         if region is None:
             return False
@@ -497,7 +497,7 @@ class HybridEmulationEngine:
             self._uc.mem_unmap(region.base, region.size)
         except UcError:
             pass
-        # Remove from code_ranges
+        # Remove code_ranges
         key = (region.base, region.base + region.size)
         if key in self._code_ranges:
             self._code_ranges.remove(key)
@@ -505,9 +505,9 @@ class HybridEmulationEngine:
 
     # ------------------------------------------------------------------
     def write_registers(self, regs: Dict[str, int]) -> None:
-        """Write named register values into the current CPU context.
-
-        Uses architecture-appropriate register mapping.
+        """写入 寄存器 values current CPU context
+        
+        使用 architecture-appropriate 寄存器 mapping
         """
         for reg_name, value in regs.items():
             reg_id = self._reg_name_to_id(reg_name)
@@ -515,7 +515,7 @@ class HybridEmulationEngine:
 
     # ------------------------------------------------------------------
     def read_registers(self, reg_names: List[str]) -> Dict[str, int]:
-        """Read named register values from the current CPU context."""
+        """读取 寄存器 values current CPU context"""
         result = {}
         for reg_name in reg_names:
             reg_id = self._reg_name_to_id(reg_name)
@@ -524,21 +524,21 @@ class HybridEmulationEngine:
 
     # ------------------------------------------------------------------
     def write_memory(self, address: int, data: bytes) -> None:
-        """Write raw bytes to emulated memory at the given address."""
+        """写入 raw bytes emulated memory address"""
         self._uc.mem_write(address, data)
 
     # ------------------------------------------------------------------
     def read_memory(self, address: int, size: int) -> bytes:
-        """Read raw bytes from emulated memory."""
+        """读取 raw bytes emulated memory"""
         return self._uc.mem_read(address, size)
 
     # ------------------------------------------------------------------
     def add_hook(self, hook_type: str, callback: Callable,
                  begin: int = 1, end: int = 0) -> None:
-        """Register a user callback for a Unicorn hook event.
-
-        Supported hook_type values: "code", "mem_read", "mem_write",
-        "mem_unmapped", "intr".
+        """寄存器 a user 回调 for a Unicorn 钩子 event
+        
+        Supported 钩子_type values: "code", "mem_read", "mem_write"
+        "mem_unmapped", "intr"
         """
         uc_hook_map = {
             "code": UC_HOOK_CODE,
@@ -556,7 +556,7 @@ class HybridEmulationEngine:
 
     # ------------------------------------------------------------------
     def remove_all_hooks(self) -> None:
-        """Remove all user-registered hooks. System hooks (e.g., unmapped handler) remain."""
+        """Remove user-寄存器ed 钩子s. System 钩子s (e.g., unmapped 处理器) remain"""
         for handle in self._hook_handles:
             self._uc.hook_del(handle)
         self._hook_handles.clear()
@@ -565,23 +565,23 @@ class HybridEmulationEngine:
 
     # ------------------------------------------------------------------
     def snapshot(self) -> Dict[str, Any]:
-        """Create a serializable checkpoint of the current emulation state.
-
-        Returns a dict containing register state and memory region contents.
-        用于状态空间探索中的回溯——投机执行分叉前调用此方法。
+        """创建 a serializable 检查点 current 仿真 state
+        
+        返回 a dict containing 寄存器 state memory region contents
+        用于状态空间探索中的回溯——投机执行分叉前调用此方法
         """
         snap: Dict[str, Any] = {
             "architecture": self._arch_str,
             "regions": {},
         }
-        # Register snapshot
+        # 寄存器 快照
         reg_ids = self._default_reg_ids()
         for name, reg_id in reg_ids.items():
             try:
                 snap[name] = self._uc.reg_read(reg_id)
             except UcError:
                 snap[name] = 0
-        # Memory region snapshot
+        # Memory region 快照
         for name, region in self._regions.items():
             try:
                 contents = self._uc.mem_read(region.base, region.size)
@@ -597,7 +597,7 @@ class HybridEmulationEngine:
 
     # ------------------------------------------------------------------
     def restore(self, snapshot: Dict[str, Any]) -> None:
-        """Restore emulation state from a previously captured snapshot."""
+        """恢复 仿真 state a previously captured 快照"""
         # Re-init engine
         self._init_unicorn()
         self._regions.clear()
@@ -612,7 +612,7 @@ class HybridEmulationEngine:
                 data=region_info.get("data"),
             )
             self.map_region(region)
-        # Restore registers
+        # 恢复 寄存器s
         reg_ids = self._default_reg_ids()
         for name, reg_id in reg_ids.items():
             if name in snapshot:
@@ -624,13 +624,13 @@ class HybridEmulationEngine:
     # ------------------------------------------------------------------
     def run(self, start_address: int, max_instructions: int = 10000,
             timeout_ms: int = 5000) -> ExecutionResult:
-        """Run emulation from start_address, stopping after max_instructions or timeout.
-
-        Core entry point for single-path emulation. Block cache is consulted
-        to skip re-disassembly of previously visited addresses.
-
-        Returns:
-            ExecutionResult with exit reason, instruction count, register state.
+        """运行 仿真 start_address, stopping max_instructions or timeout
+        
+        Core 入口 for single-path 仿真. Block 缓存is consulted
+        skip re-反汇编 previously visited addresses
+        
+        返回:
+        ExecutionResult exit reason, instruction count, 寄存器 state
         """
         if self._uc is None:
             self._init_unicorn()
@@ -645,7 +645,7 @@ class HybridEmulationEngine:
         try:
             self._uc.emu_start(
                 start_address,
-                0,  # stop when hooks return False or timeout
+                0,  # 停止 钩子s 返回 False or timeout
                 timeout=timeout_ms * 1000,  # microseconds
                 count=max_instructions,
             )
@@ -667,20 +667,20 @@ class HybridEmulationEngine:
     def analyze(self, start_address: int, end_address: int,
                 max_instructions: int = 20000,
                 enable_speculative: bool = False) -> HybridAnalysisResult:
-        """Hybrid analysis combining static disassembly and dynamic emulation.
-
+        """Hybrid analysis combining static 反汇编 dynamic 仿真
+        
         对指定范围内的所有代码路径进行静态反汇编，然后用动态模拟补充
         路径覆盖率。若 enable_speculative=True，碰到间接跳转时启用
-        投机执行来探索更多路径。
-
+        投机执行来探索更多路径
+        
         Args:
-            start_address: 分析的起始地址。
-            end_address:   分析的结束地址（不含）。
-            max_instructions: 模拟的最大指令数。
-            enable_speculative: 是否启用投机间接跳转解析。
-
-        Returns:
-            HybridAnalysisResult 包含静态和动态分析的数据。
+        start_address: 分析的起始地址
+        end_address: 分析的结束地址（不含）
+        max_instructions: 模拟的最大指令数
+        enable_speculative: 是否启用投机间接跳转解析
+        
+        返回:
+        HybridAnalysisResult 包含静态和动态分析的数据
         """
         t_start = time.perf_counter()
         hr = HybridAnalysisResult(
@@ -697,7 +697,7 @@ class HybridEmulationEngine:
                     if insn.address >= end_address:
                         break
                     static_addrs.add(insn.address)
-                    # Populate block cache with disassembled instructions
+                    # Populate block 缓存with 反汇编d instructions
                     # 批量填充缓存以减少后续模拟时的反汇编开销
                     successor_addrs: List[int] = []
                     # 简单的后继推断：下一条指令地址
@@ -730,7 +730,7 @@ class HybridEmulationEngine:
         hr.total_instructions = len(static_addrs | {a for a in exec_result.trace})
 
         # Phase 3: 投机执行（若启用）
-        # 投机执行的入口点来自静态分析中标记的间接跳转。
+        # 投机执行的入口点来自静态分析中标记的间接跳转
         if enable_speculative:
             # 从指令跟踪中寻找间接跳转
             self._speculative_explore(hr, start_address, end_address, max_instructions)
@@ -747,16 +747,16 @@ class HybridEmulationEngine:
 
     # ------------------------------------------------------------------
     # 投机执行内部方法：检测间接跳转并尝试并行探索目标
-    # 每个候选目标在独立的执行上下文中运行，互不干扰。
-    # 当某个目标路径可达时，将其追踪纳入最终结果。
+    # 每个候选目标在独立的执行上下文中运行，互不干扰
+    # 当某个目标路径可达时，将其追踪纳入最终结果
     # ------------------------------------------------------------------
     def _speculative_explore(self, hr: HybridAnalysisResult,
                              start_addr: int, end_addr: int,
                              max_insns: int) -> None:
-        """Attempt speculative resolution for all indirect branches encountered.
-
-        不需要对每条指令重复调用——仅在分析阶段收集间接跳转地址，
-        然后并行尝试所有候选目标。
+        """Attempt speculative resolution for indirect branches encountered
+        
+        不需要对每条指令重复调用——仅在分析阶段收集间接跳转地址
+        然后并行尝试所有候选目标
         """
         snap = self.snapshot()
         indirect_targets: List[Tuple[int, List[int]]] = []
@@ -810,16 +810,16 @@ class HybridEmulationEngine:
     # ------------------------------------------------------------------
     def _speculative_worker(self, snap: Dict[str, Any], jump_addr: int,
                             target: int, max_steps: int) -> Optional[ExecutionResult]:
-        """Worker thread: restore snapshot, redirect PC to target, emulate.
-
-        从快照状态恢复 → 将 PC 设为候选目标 → 模拟至多 max_steps 条指令。
-        若目标地址不可达（未映射、非法代码），返回 None。
+        """Worker thread: 恢复 快照, redirect PC target, emulate
+        
+        从快照状态恢复 → 将 PC 设为候选目标 → 模拟至多 max_steps 条指令
+        若目标地址不可达（未映射、非法代码），返回 None
         """
         worker_engine = None
         try:
             worker_engine = HybridEmulationEngine(self._arch_str)
             worker_engine.restore(snap)
-            # Redirect program counter to speculative target
+            # Redirect program counter speculative target
             pc_name = self._get_pc_name()
             worker_engine.write_registers({pc_name: target})
             er = worker_engine.run(target, max_instructions=max_steps, timeout_ms=1000)
@@ -834,7 +834,7 @@ class HybridEmulationEngine:
 
     # ------------------------------------------------------------------
     def destroy(self) -> None:
-        """Release all Unicorn resources and internal state."""
+        """释放 Unicorn resources internal state"""
         if self._uc is not None:
             try:
                 self.remove_all_hooks()
@@ -850,25 +850,25 @@ class HybridEmulationEngine:
 
     # ------------------------------------------------------------------
     def set_callgraph(self, callgraph: Dict[int, List[int]]) -> None:
-        """Provide a precomputed call-graph for speculative execution hinting."""
+        """提供 a precomputed call-graph for speculative execution hinting"""
         self._callgraph = defaultdict(list, callgraph)
 
     # ------------------------------------------------------------------
     def get_block_cache_stats(self) -> Dict[str, Any]:
-        """Return block cache hit/miss statistics for performance monitoring."""
+        """返回 block 缓存hit/miss statistics for 性能 monitoring"""
         return self._block_cache.stats
 
     # ------------------------------------------------------------------
     def invalidate_code_cache(self, start: int, end: int) -> int:
-        """Invalidate all cached blocks in [start, end). Returns count removed."""
+        """In校验 all缓存d blocks [启动, end). 返回 count removed"""
         return self._block_cache.invalidate_range(start, end)
 
     # ------------------------------------------------------------------
-    # Internal helpers
+    # Internal 辅助函数
     # ------------------------------------------------------------------
     def _hook_mem_unmapped_default(self, uc: Uc, access: int, address: int,
                                    size: int, value: int, user_data: Any) -> bool:
-        """默认的未映射内存钩子：记录访问并停止模拟，防止无限故障循环。"""
+        """默认的未映射内存钩子：记录访问并停止模拟，防止无限故障循环"""
         access_names = {UC_MEM_READ: "read", UC_MEM_WRITE: "write", UC_MEM_FETCH: "fetch"}
         access_type = access_names.get(access, "unknown")
         logger.debug(
@@ -879,7 +879,7 @@ class HybridEmulationEngine:
 
     # ------------------------------------------------------------------
     def _get_pc_name(self) -> str:
-        """Return the program-counter register name for the current architecture."""
+        """返回 program-counter 寄存器 name for current architecture"""
         pc_map = {
             "x86": "eip", "x64": "rip",
             "arm": "pc", "arm64": "pc",
@@ -889,10 +889,10 @@ class HybridEmulationEngine:
 
     # ------------------------------------------------------------------
     def _reg_name_to_id(self, reg_name: str) -> int:
-        """Map a human-readable register name to its Unicorn register ID."""
+        """Map a human-readable 寄存器 name Unicorn 寄存器 ID"""
         reg_name_l = reg_name.lower()
 
-        # x86/x64 registers
+        # x86/x64 寄存器s
         x86_regs = {
             "eax": unicorn.x86_const.UC_X86_REG_EAX,
             "ebx": unicorn.x86_const.UC_X86_REG_EBX,
@@ -927,7 +927,7 @@ class HybridEmulationEngine:
         if reg_name_l in x86_regs:
             return x86_regs[reg_name_l]
 
-        # ARM registers
+        # ARM 寄存器s
         arm_map = {
             "r0": unicorn.arm_const.UC_ARM_REG_R0,
             "r1": unicorn.arm_const.UC_ARM_REG_R1,
@@ -973,7 +973,7 @@ class HybridEmulationEngine:
         if reg_name_l in arm_map:
             return arm_map[reg_name_l]
 
-        # MIPS registers
+        # MIPS 寄存器s
         mips_map = {
             "zero": unicorn.mips_const.UC_MIPS_REG_ZERO,
             "at": unicorn.mips_const.UC_MIPS_REG_AT,
@@ -997,7 +997,7 @@ class HybridEmulationEngine:
 
     # ------------------------------------------------------------------
     def _default_reg_ids(self) -> Dict[str, int]:
-        """Return the default set of general-purpose register IDs for snapshotting."""
+        """返回 default set general-purpose 寄存器 IDs for 快照ting"""
         if self._arch_str in ("x86", "x64"):
             return {
                 "rax": unicorn.x86_const.UC_X86_REG_RAX,
@@ -1040,20 +1040,20 @@ class HybridEmulationEngine:
 
 
 # ============================================================================
-# Convenience factory function
+# Convenience 工厂 function
 # ============================================================================
 
 
 def create_engine(architecture: str = "x64",
                   block_cache_capacity: int = 512) -> HybridEmulationEngine:
-    """Factory: construct and return a ready-to-use HybridEmulationEngine.
-
+    """工厂: construct 返回 a ready--使用 Hybrid仿真Engine
+    
     Args:
-        architecture: Target ISA string ("x86", "x64", "arm", "arm64", "mips").
-        block_cache_capacity: Maximum number of cached translated blocks.
-
-    Returns:
-        Configured HybridEmulationEngine instance.
+    architecture: Target ISA string ("x86", "x64", "arm", "arm64", "mips")
+    block_cache_capacity: Maximum number of缓存d translated blocks
+    
+    返回:
+    配置ured Hybrid仿真Engine instance
     """
     engine = HybridEmulationEngine(architecture)
     engine._block_cache = BlockCache(capacity=block_cache_capacity)

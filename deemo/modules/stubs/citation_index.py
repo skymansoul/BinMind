@@ -1,6 +1,6 @@
-# citation_index.py — Zotero 文献索引
-# 从 zotero_titles.json 加载论文标题库，提供标题搜索、关键词匹配和引用建议。
-# 桩模块中的每个参考注释均可通过此索引定位到完整论文信息。
+# citation_index.py — 文献索引与检索
+# 从 zotero_titles.json 加载论文标题库，提供标题搜索与关键词匹配。
+# 桩模块参考注释通过此索引定位完整论文元信息。
 import os as _os, json as _json
 from functools import lru_cache as _lru
 
@@ -36,11 +36,11 @@ def search_papers(query: str, top_k: int = 10) -> list[tuple[str, float]]:
     scored = []
     for title in titles:
         title_lower = title.lower()
-        # 快速包含匹配
+        # 子串包含匹配，预处理阶段过滤
         if query.lower() in title_lower or any(w in title_lower for w in query_words):
             title_words = set(title_lower.split())
             jaccard = len(query_words & title_words) / len(query_words | title_words) if title_words else 0
-            # 完全匹配加成
+            # 精确匹配加权
             bonus = 0.3 if query.lower() == title_lower else 0.0
             scored.append((title, jaccard + bonus))
 
@@ -56,7 +56,7 @@ def find_paper_by_keyword(keyword: str) -> list[str]:
 
 
 def cite_paper(paper_title_or_keyword: str) -> str:
-    """生成论文引用字符串的简易格式化。
+    """将论文标题格式化为引用字符串。
     匹配不到时返回原始输入作为引用（假设用户手动输入了完整引用）。"""
     matches = search_papers(paper_title_or_keyword, top_k=1)
     if matches and matches[0][1] > 0.3:
@@ -64,7 +64,7 @@ def cite_paper(paper_title_or_keyword: str) -> str:
     return paper_title_or_keyword
 
 
-# 论文→模块映射 — 记录哪些论文支撑了哪些 stubs/ 模块
+# 论文→模块映射表，记录支撑各 stubs 模块的对应论文
 _PAPER_MODULE_MAP: dict[str, list[str]] = {}
 
 def register_paper_module(paper_keyword: str, module_name: str):

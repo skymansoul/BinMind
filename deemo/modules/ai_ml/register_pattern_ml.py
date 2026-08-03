@@ -1,8 +1,7 @@
 """
-Register Pattern ML - Machine learning for compiler/register pattern recognition.
+寄存器模式ML — 编译器/寄存器模式识别。
 
-Identifies compiler signatures, optimization levels, and register usage
-patterns to aid in binary analysis and function identification.
+识别编译器签名/优化级别/寄存器使用模式，辅助二进制分析与函数识别。
 """
 
 from __future__ import annotations

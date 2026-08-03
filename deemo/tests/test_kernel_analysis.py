@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-#!/usr/bin/env python3
-=======
 
->>>>>>> d81973a (精简冗余模块)
 """
 内核模块分析单元测试
 
@@ -48,7 +44,7 @@ class TestKernelBinaryFormatDetection(unittest.TestCase):
         """
         测试通过扩展名检测Linux内核模块(.ko)
         """
-        from modules.info_collect import detect_binary_format
+        from modules.info.info_collect import detect_binary_format
 
         ko_path = os.path.join(self.temp_dir, 'test_module.ko')
         with open(ko_path, 'wb') as f:
@@ -61,7 +57,7 @@ class TestKernelBinaryFormatDetection(unittest.TestCase):
         """
         测试通过扩展名检测Windows驱动(.sys)
         """
-        from modules.info_collect import detect_binary_format
+        from modules.info.info_collect import detect_binary_format
 
         sys_path = os.path.join(self.temp_dir, 'test_driver.sys')
         with open(sys_path, 'wb') as f:
@@ -72,11 +68,7 @@ class TestKernelBinaryFormatDetection(unittest.TestCase):
 
 
 class TestKernelDangerousFunctions(unittest.TestCase):
-<<<<<<< HEAD
     """
-=======
-        """
->>>>>>> d81973a (精简冗余模块)
     测试内核危险函数识别功能
     """
 
@@ -84,20 +76,17 @@ class TestKernelDangerousFunctions(unittest.TestCase):
         """
         测试内核危险函数列表是否已定义
         """
-        from modules.info_collect import KERNEL_DANGEROUS_FUNCTIONS, KERNEL_DRIVER_DANGEROUS_FUNCTIONS
+        from modules.info.info_collect import KERNEL_DANGEROUS_FUNCTIONS, KERNEL_DRIVER_DANGEROUS_FUNCTIONS
 
         self.assertIsInstance(KERNEL_DANGEROUS_FUNCTIONS, list)
         self.assertIsInstance(KERNEL_DRIVER_DANGEROUS_FUNCTIONS, list)
 
     def test_kernel_dangerous_functions_contains_key_functions(self):
-<<<<<<< HEAD
-=======
 
->>>>>>> d81973a (精简冗余模块)
         """
         测试关键内核危险函数是否在列表中
         """
-        from modules.info_collect import KERNEL_DANGEROUS_FUNCTIONS, KERNEL_DRIVER_DANGEROUS_FUNCTIONS
+        from modules.info.info_collect import KERNEL_DANGEROUS_FUNCTIONS, KERNEL_DRIVER_DANGEROUS_FUNCTIONS
 
         key_linux_functions = [
             'copy_from_user',
@@ -131,11 +120,7 @@ class TestKernelPrompts(unittest.TestCase):
     """
 
     def test_kernel_vuln_analysis_template_exists(self):
-<<<<<<< HEAD
         """
-=======
-                """
->>>>>>> d81973a (精简冗余模块)
         测试内核漏洞分析模板是否存在
         """
         from prompts import KERNEL_VULN_ANALYSIS_TEMPLATE
@@ -144,12 +129,6 @@ class TestKernelPrompts(unittest.TestCase):
         self.assertGreater(len(KERNEL_VULN_ANALYSIS_TEMPLATE), 0)
 
     def test_kernel_vuln_analysis_template_contains_keywords(self):
-<<<<<<< HEAD
-        """
-        测试内核漏洞分析模板是否包含关键关键词
-        """
-=======
->>>>>>> d81973a (精简冗余模块)
         from prompts import KERNEL_VULN_ANALYSIS_TEMPLATE
 
         keywords = [
@@ -191,12 +170,6 @@ class TestKernelExploitGenerator(unittest.TestCase):
     """
 
     def setUp(self):
-<<<<<<< HEAD
-        """
-        测试前初始化
-        """
-=======
->>>>>>> d81973a (精简冗余模块)
         self.binary_info = {
             'binary_path': './test_module.ko',
             'format': 'KO',
@@ -209,13 +182,7 @@ class TestKernelExploitGenerator(unittest.TestCase):
         }
 
     def test_is_kernel_module_detection(self):
-<<<<<<< HEAD
-        """
-        测试内核模块检测功能
-        """
-=======
->>>>>>> d81973a (精简冗余模块)
-        from modules.exploit_gen import ExploitGenerator
+        from modules.exploit.exploit_gen import ExploitGenerator
 
         with patch('modules.exploit_gen.ROPChainBuilder') as mock_rop:
             mock_instance = MagicMock()
@@ -233,7 +200,7 @@ class TestKernelExploitGenerator(unittest.TestCase):
         """
         测试非内核模块检测
         """
-        from modules.exploit_gen import ExploitGenerator
+        from modules.exploit.exploit_gen import ExploitGenerator
 
         userland_info = {
             'binary_path': './test_binary',
@@ -259,7 +226,7 @@ class TestKernelExploitGenerator(unittest.TestCase):
         """
         测试获取Linux内核模块类型
         """
-        from modules.exploit_gen import ExploitGenerator
+        from modules.exploit.exploit_gen import ExploitGenerator
 
         with patch('modules.exploit_gen.ROPChainBuilder') as mock_rop:
             mock_instance = MagicMock()
@@ -278,7 +245,7 @@ class TestKernelExploitGenerator(unittest.TestCase):
         """
         测试获取Windows驱动类型
         """
-        from modules.exploit_gen import ExploitGenerator
+        from modules.exploit.exploit_gen import ExploitGenerator
 
         windows_info = {
             'binary_path': './test_driver.sys',
@@ -307,7 +274,7 @@ class TestKernelExploitGenerator(unittest.TestCase):
         """
         测试内核利用策略包含免责声明
         """
-        from modules.exploit_gen import ExploitGenerator
+        from modules.exploit.exploit_gen import ExploitGenerator
 
         with patch('modules.exploit_gen.ROPChainBuilder') as mock_rop:
             mock_instance = MagicMock()
@@ -342,30 +309,12 @@ class TestKernelCommandLineArgs(unittest.TestCase):
     测试内核模块分析命令行参数
     """
 
-<<<<<<< HEAD
-    def test_kernel_argument_help_in_parser(self):
-=======
     def test_kernel_argument_exists(self):
->>>>>>> d81973a (精简冗余模块)
         """
         测试--kernel参数是否已添加到解析器
         """
         import io
         import sys
-<<<<<<< HEAD
-        from contextlib import redirect_stdout
-
-        import main
-
-        parser = main.parse_arguments.__wrapped__ if hasattr(main.parse_arguments, '__wrapped__') else None
-        if parser is None:
-            parser = main.parse_arguments
-
-        with patch('sys.argv', ['test']):
-            parsed = parser()
-            self.assertTrue(hasattr(parsed, 'kernel'))
-
-=======
         import main
 
         original_argv = sys.argv.copy()
@@ -377,18 +326,12 @@ class TestKernelCommandLineArgs(unittest.TestCase):
         finally:
             sys.argv = original_argv
 
->>>>>>> d81973a (精简冗余模块)
     def test_kernel_argument_default_value(self):
         """
         测试--kernel参数默认值为False
         """
         import main
 
-<<<<<<< HEAD
-        with patch('sys.argv', ['test']):
-            parsed = main.parse_arguments()
-            self.assertFalse(parsed.kernel)
-=======
         original_argv = sys.argv.copy()
         sys.argv = ['main.py']
 
@@ -413,7 +356,6 @@ class TestKernelCommandLineArgs(unittest.TestCase):
             self.assertTrue(parsed.kernel)
         finally:
             sys.argv = original_argv
->>>>>>> d81973a (精简冗余模块)
 
 
 class TestForceKernelMode(unittest.TestCase):
@@ -436,13 +378,7 @@ class TestForceKernelMode(unittest.TestCase):
             shutil.rmtree(self.temp_dir)
 
     def test_get_binary_info_force_kernel_parameter(self):
-<<<<<<< HEAD
-        """
-        测试get_binary_info函数接受force_kernel参数
-        """
-=======
->>>>>>> d81973a (精简冗余模块)
-        from modules.info_collect import get_binary_info
+        from modules.info.info_collect import get_binary_info
 
         elf_path = os.path.join(self.temp_dir, 'test_elf.elf')
         with open(elf_path, 'wb') as f:
@@ -497,12 +433,5 @@ def run_tests():
     return 0 if result.wasSuccessful() else 1
 
 
-<<<<<<< HEAD
 if __name__ == '__main__':
     sys.exit(run_tests())
-=======
-
-if __name__ == '__main__':
-    sys.exit(run_tests())
-
->>>>>>> d81973a (精简冗余模块)

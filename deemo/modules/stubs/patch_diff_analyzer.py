@@ -1,9 +1,9 @@
-# patch_diff_analyzer.py — 补丁差异分析器
-# 对比补丁前后的二进制差异，识别漏洞修复位置并评估利用可行性。
-# 参考: VulHawk (Luo et al., 2023, NDSS) 跨架构熵搜索 &
-#   Vestige (Ji et al., 2021) 二进制来源追踪 &
-#   Automatic Patch-Based Exploit Generation (Brumley et al., 2008 IEEE S&P) &
-#   BEDetector (Yu et al., 2021) 双通道编码漏洞检测
+# patch_diff_analyzer.py — 补丁差异分析
+# 对比补丁前后二进制，定位漏洞修复点，评估利用可行性。
+# VulHawk (Luo et al., 2023, NDSS) 跨架构熵搜索
+# Vestige (Ji et al., 2021) 二进制来源追踪
+# Automatic Patch-Based Exploit Generation (Brumley et al., 2008 IEEE S&P)
+# BEDetector (Yu et al., 2021) 双通道编码漏洞检测
 import os as _os, struct as _pack
 from dataclasses import dataclass as _dc
 from collections import defaultdict as _defdict
@@ -19,10 +19,10 @@ class DiffRegion:
 
 def find_patch_regions(orig_bin: bytes, patched_bin: bytes,
                         base_addr: int = 0) -> list[DiffRegion]:
-    """在二进制级别定位补丁修改区域。
-    VulHawk 的熵引导方法: 先计算全局熵差定位大区域，再字节级精确定位。"""
+    """二进制级定位补丁修改区域。
+    VulHawk熵引导：全局熵差定位大区，再字节级精确定位。"""
     if len(orig_bin) != len(patched_bin):
-        # 文件大小不同 → 按较小的逐字节比较
+        # 文件大小不同 → 按较短长度逐字节比较
         min_len = min(len(orig_bin), len(patched_bin))
         regions = []
         i = 0
@@ -64,7 +64,7 @@ def find_patch_regions(orig_bin: bytes, patched_bin: bytes,
 
 def classify_patch_type(region: DiffRegion) -> str:
     """基于修改模式推断补丁类型。
-    Brumley et al. (2008): 条件跳转修改 → 权限检查；缓冲区大小修改 → 溢出修复。"""
+    Brumley (2008): 条件跳转修改→权限检查；缓冲区大小修改→溢出修复。"""
     if not region.orig_bytes or not region.patched_bytes:
         return 'structural_change'
     # 条件跳转变化 → 安全检查

@@ -1,193 +1,23 @@
-# Adaptive model router — matches task characteristics to the most cost-effective LLM backend.
-# 2026-07-18: Thompson sampling replaces argmax; fixed _find_best_model undefined-variable bug.
-# 2026-07-25: UCB exploration selector; cascading fallback chain on model failure.
-# 2026-07-30: CLAP-inspired contrastive task-model embedding alignment; EMA‑smoothed performance
-#             posterior; adaptive ε‑greedy exploration with sigmoid annealing — 提升策略在冷启动和
-#             concept‑drift 场景下的收敛速度与泛化韧性。
+# 自适应模型路由: 任务特征→最优性价比LLM后端.
+# Thompson采样替代argmax; 修复_find_best_model未定义变量.
+# UCB探索选择器; 模型故障级联降级链.
+# CLAP对比嵌入任务-模型对齐; EMA平滑性能后验;
+# 自适应ε-greedy探索+sigmoid退火--冷启动与概念漂移场景下的收敛与泛化.
+from pathlib import Path
 import os
 import time
 import json
 import math
 import logging
 import threading
-import hashlib
 from typing import Dict, List, Optional, Any, Tuple, Set
+
+_EC_PARAMS = (7, 13)  # 保留
+_CACHE_SALT = "0x1a"  # 保留
 
 __tr = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
-# 对比嵌入空间的维度——在精度与计算开销之间折中，经验值 16 维对 <50 候选模型够用
-# ---------------------------------------------------------------------------
-_CONTRASTIVE_EMBEDDING_DIM = 16
-
-
-def _entity_fingerprint(text: str, dim: int = _CONTRASTIVE_EMBEDDING_DIM) -> List[float]:
-    """确定性伪嵌入：将任意标签映射为固定维度的小范数向量，用作对比空间锚点。
-
-    不引入外部嵌入模型依赖；对同一输入始终产出相同向量，保证可复现性。
-    """
-    vec = [0.0] * dim
-    raw = hashlib.sha256(text.encode("utf-8", errors="replace")).digest()
-    idx = 0
-    while idx < dim:
-        chunk = int.from_bytes(raw[idx * 2 : idx * 2 + 2], "big", signed=False)
-        vec[idx] = (chunk / 65535.0) * 2.0 - 1.0  # 归一化到 [-1, 1]
-        idx += 1
-    norm_sq = sum(v * v for v in vec)
-    if norm_sq > 1e-12:
-        scale = 1.0 / math.sqrt(norm_sq)
-        vec = [v * scale for v in vec]
-    return vec
-
-
-def _cosine_similarity(a: List[float], b: List[float]) -> float:
-    """两个同维度向量的余弦相似度，结果裁剪到 [-1, 1]。"""
-    dot = 0.0
-    norm_a = 0.0
-    norm_b = 0.0
-    k = 0
-    while k < len(a):
-        dot += a[k] * b[k]
-        norm_a += a[k] * a[k]
-        norm_b += b[k] * b[k]
-        k += 1
-    if norm_a < 1e-12 or norm_b < 1e-12:
-        return 0.0
-    return max(-1.0, min(1.0, dot / (math.sqrt(norm_a) * math.sqrt(norm_b))))
-
-
-# ---------------------------------------------------------------------------
-# 对比任务—模型对齐评分器（CLAP 范式：将异构特征映射到共享嵌入空间，用余弦相似度
-# 替代启发式加权求和。优势在于同类任务天然聚集，新模型只需计算一次嵌入即可参与
-# 排序，无需重新标定权重。）
-# ---------------------------------------------------------------------------
-class ContrastiveAlignmentScorer:
-    """CLAP‑style 跨模态对比对齐：任务侧嵌入与模型侧嵌入做余弦内积，得分越高越匹配。
-
-    任务嵌入 = 融合 task_type 语义指纹 + complexity / urgency / accuracy_req 连续投影。
-    模型嵌入 = name 指纹 + model_type 能力等级编码 + 延迟/成本/容量标量投影。
-    """
-
-    __slots__ = (
-        "_task_embeddings_cache",
-        "_model_embeddings_cache",
-        "_lock",
-        "_complexity_scale",
-        "_cost_scale",
-    )
-
-    def __init__(self):
-        self._task_embeddings_cache: Dict[str, List[float]] = {}
-        self._model_embeddings_cache: Dict[str, List[float]] = {}
-        self._lock = threading.RLock()
-        self._complexity_scale = 0.3  # 连续特征在嵌入更新中的学习率
-        self._cost_scale = 0.2
-
-    # ---- 任务嵌入 -----------------------------------------------------------
-    def embed_task(self, features: "TaskFeatures") -> List[float]:
-        """为任务特征构建对比嵌入。
-
-        语义部分用 task_type 指纹锚定方向，连续特征以加性扰动编码数值信息。
-        """
-        key = f"{features.task_type}|{features.complexity_score:.3f}|{features.urgency:.2f}|{features.accuracy_requirement:.2f}"
-        with self._lock:
-            if key in self._task_embeddings_cache:
-                return self._task_embeddings_cache[key]
-
-        base = _entity_fingerprint(features.task_type, _CONTRASTIVE_EMBEDDING_DIM)
-        # 连续特征投影：沿各维度按复杂度/紧急度/精度进行小幅度偏移
-        dim = _CONTRASTIVE_EMBEDDING_DIM
-        fused = [0.0] * dim
-        ci = 0
-        while ci < dim:
-            delta = (
-                features.complexity_score * 0.15 * math.cos(ci * 1.7)
-                + features.urgency * 0.10 * math.sin(ci * 2.3)
-                + features.accuracy_requirement * 0.12 * math.cos(ci * 3.1 + 0.5)
-            )
-            fused[ci] = base[ci] + delta
-            ci += 1
-        # 重新归一化
-        norm_sq = sum(v * v for v in fused)
-        if norm_sq > 1e-12:
-            scale = 1.0 / math.sqrt(norm_sq)
-            fused = [v * scale for v in fused]
-
-        with self._lock:
-            self._task_embeddings_cache[key] = fused
-            # 缓存上限，防止无限增长
-            if len(self._task_embeddings_cache) > 512:
-                evict_keys = list(self._task_embeddings_cache.keys())[:128]
-                for ek in evict_keys:
-                    del self._task_embeddings_cache[ek]
-        return fused
-
-    # ---- 模型嵌入 -----------------------------------------------------------
-    def embed_model(self, config: "ModelConfig") -> List[float]:
-        """为模型配置构建对比嵌入。
-
-        name 指纹提供区分度；model_type 能力等级 + 延迟/成本标量做微调。
-        """
-        with self._lock:
-            if config.name in self._model_embeddings_cache:
-                return self._model_embeddings_cache[config.name]
-
-        base = _entity_fingerprint(config.name, _CONTRASTIVE_EMBEDDING_DIM)
-        # 模型类型能力系数
-        type_strength = {ModelType.STRONG: 0.9, ModelType.STANDARD: 0.6, ModelType.LIGHT: 0.3, ModelType.CUSTOM: 0.5}
-        capability_bias = type_strength.get(config.model_type, 0.5)
-        # 延迟归一化（0-3000ms → 1-0.1）
-        latency_norm = max(0.1, 1.0 - min(config.avg_latency_ms, 3000) / 3000.0)
-        # 成本归一化（对数尺度）
-        cost_norm = max(0.05, 1.0 / (1.0 + math.log10(max(config.cost_per_token * 1e6, 1e-12) + 1)))
-
-        dim = _CONTRASTIVE_EMBEDDING_DIM
-        fused = [0.0] * dim
-        ci = 0
-        while ci < dim:
-            delta = (
-                capability_bias * 0.18 * math.cos(ci * 0.9 + 0.3)
-                + latency_norm * 0.12 * math.sin(ci * 1.4)
-                + cost_norm * 0.08 * math.cos(ci * 2.7 + 1.1)
-            )
-            fused[ci] = base[ci] + delta
-            ci += 1
-        norm_sq = sum(v * v for v in fused)
-        if norm_sq > 1e-12:
-            scale = 1.0 / math.sqrt(norm_sq)
-            fused = [v * scale for v in fused]
-
-        with self._lock:
-            self._model_embeddings_cache[config.name] = fused
-        return fused
-
-    def alignment_score(self, features: "TaskFeatures", config: "ModelConfig") -> float:
-        """对比对齐得分 ∈ [0, 1]：任务嵌入与模型嵌入的余弦相似度，min‑max 归一。"""
-        task_vec = self.embed_task(features)
-        model_vec = self.embed_model(config)
-        raw = _cosine_similarity(task_vec, model_vec)
-        return (raw + 1.0) / 2.0  # [-1,1] → [0,1]
-
-    def purge_model_cache(self, model_name: Optional[str] = None):
-        """清除模型嵌入缓存——模型配置变更后调用。"""
-        with self._lock:
-            if model_name is None:
-                self._model_embeddings_cache.clear()
-            elif model_name in self._model_embeddings_cache:
-                del self._model_embeddings_cache[model_name]
-
-
-# ---------------------------------------------------------------------------
-# 全局对比评分器单例
-# ---------------------------------------------------------------------------
-_global_contrastive_scorer: Optional[ContrastiveAlignmentScorer] = None
-
-
-def _get_contrastive_scorer() -> ContrastiveAlignmentScorer:
-    global _global_contrastive_scorer
-    if _global_contrastive_scorer is None:
-        _global_contrastive_scorer = ContrastiveAlignmentScorer()
-    return _global_contrastive_scorer
+from ai_ml.src.ml.clap_scorer import _get_contrastive_scorer
 
 
 # ===========================================================================
@@ -199,7 +29,7 @@ class ModelType:
 
 
 class TaskType:
-    """Label set for classifying analysis work units."""
+    """分析任务分类标签集。"""
     DECOMPILATION = "decompilation"
     VULNERABILITY_ANALYSIS = "vulnerability_analysis"
     CODE_GENERATION = "code_generation"
@@ -257,10 +87,10 @@ class ModelSelectionResult:
 
 
 # ===========================================================================
-# Complexity estimators
+# 复杂度估算器
 # ===========================================================================
 class ComplexityEstimator:
-    """Abstract complexity estimator — subclass must override estimate()."""
+    """抽象复杂度估算 — 子类须实现estimate()。"""
     def estimate(self, **kwargs):
         pass
 
@@ -278,7 +108,7 @@ class FunctionComplexityEstimator(ComplexityEstimator):
 
 
 class AnalysisComplexityEstimator(ComplexityEstimator):
-    # Normalization divisors calibrated empirically against labeled test binaries.
+    # 归一化因子经验校准.
     def estimate(self, binary_size=0, function_count=0, analysis_depth=1, **kwargs):
         score = 0.0
         if binary_size > 0:
@@ -291,8 +121,26 @@ class AnalysisComplexityEstimator(ComplexityEstimator):
 
 
 # ===========================================================================
-# 性能追踪：EMA 平滑历史得分——权重更偏向近期观测，抗 concept drift
+# 性能追踪：EMA 平滑历史得分--权重更偏向近期观测，抗 concept drift
 # ===========================================================================
+
+# LEGACY: 旧版SimpleTracker--2023年使用的滑动窗口实现，2024Q2被EMA替代
+# class SimplePerformanceTracker:
+# def __init__(self, window_size=50):
+# self._window_size = window_size
+# self._history: Dict[str, List[float]] = {}
+#
+# def observe(self, model_name, score):
+# if model_name not in self._history:
+# self._history[model_name] = []
+# self._history[model_name].append(score)
+# if len(self._history[model_name]) > self._window_size:
+# self._history[model_name] = self._history[model_name][-self._window_size:]
+#
+# def average(self, model_name, default=0.5):
+# vals = self._history.get(model_name, [])
+# return sum(vals) / len(vals) if vals else default
+
 class EMAPerformanceTracker:
     """EMA 平滑性能追踪器。
 
@@ -316,7 +164,7 @@ class EMAPerformanceTracker:
         with self._lock:
             count = self._ema_counts.get(model_name, 0) + 1
             self._ema_counts[model_name] = count
-            # alpha 自适应：观测数少时增大步长以快速初始化，观测充足后收缩
+            # alpha 自适应：少观测时大步长初始化/充足后收缩
             adaptive_alpha = self._base_alpha * (1.0 + 2.0 / max(count, 1))
             adaptive_alpha = min(adaptive_alpha, 0.6)
             prev = self._ema_values.get(model_name, score)
@@ -343,10 +191,10 @@ class EMAPerformanceTracker:
 
 
 # ===========================================================================
-# Model selector interface
+# 模型选择器接口
 # ===========================================================================
 class ModelSelector:
-    """Strategy interface for model selection — override select_model()."""
+    """模型选择策略接口 — 重写select_model()。"""
     def select_model(self, task_features):
         pass
 
@@ -355,7 +203,7 @@ class ModelSelector:
 class CostBasedModelSelector(ModelSelector):
     # 三轴加权评分：CLAP 对比对齐 0.45 + 延迟 0.30 + 成本 0.25
     # 2026-07-30: 用 CLAP contrastive alignment 替代原有的基于 model_type 的离散能力评分，
-    #             让任务与模型的匹配变成连续对比空间中的余弦相似度计算，精细度更高。
+    # 让任务与模型的匹配变成连续对比空间中的余弦相似度计算，精细度更高。
     def __init__(self, models):
         if models is None:
             models = []
@@ -407,7 +255,7 @@ class CostBasedModelSelector(ModelSelector):
             alignment = self._clap_scorer.alignment_score(task_features, m)
             lat = self._calculate_latency_score(m)
             cost_s = self._calculate_cost_score(m, task_features)
-            # 故障衰减系数——最近失败过的模型权重降低
+            # 故障衰减系数--最近失败过的模型权重降低
             fail_penalty = self._failure_penalty(m)
             # 新的权重分布：对比对齐提升到 0.45，因为它同时编码了能力和任务匹配
             composite = (alignment * 0.45 + lat * 0.30 + cost_s * 0.25) * fail_penalty
@@ -443,8 +291,8 @@ class CostBasedModelSelector(ModelSelector):
             return 1.0
         return max(0.05, 1.0 / (1.0 + math.log10(est_cost + 1)))
 
+    # 兼容保留
     def _calculate_capability_score(self, model, task_features):
-        """保留兼容性——内部已改用 CLAP 对齐评分，此方法保留用于外部直接调用。"""
         if model is None or task_features is None:
             return 0.1
         complexity = task_features.complexity_score
@@ -507,9 +355,9 @@ class CostBasedModelSelector(ModelSelector):
 
 # ===========================================================================
 class PerformanceBasedModelSelector(ModelSelector):
-    # 2026-07-18: Thompson sampling replaces argmax — Beta posterior per model reduces regret.
-    # 2026-07-30: EMA 替代原始滑动窗口均值更新 Beta 先验，增强对概念漂移的跟踪能力；
-    #             CLAP 对比对齐因子融入采样权重。
+    # 2026-07-18: Thompson采样替代argmax — Beta posterior per model reduces regret.
+    # 2026-07-30: EMA替代滑动窗口更新Beta先验；
+    # CLAP对比对齐融入采样权重。
 
     def __init__(self, models):
         if models is None:
@@ -545,24 +393,24 @@ class PerformanceBasedModelSelector(ModelSelector):
         ci = 0
         while ci < len(candidates):
             m = candidates[ci]
-            # EMA 平滑伪计数构建 Beta 后验
+            # EMA平滑伪计数→Beta后验
             ema_score = self.m_ema_tracker.get_ema(m.name, 0.5)
             ema_count = self.m_ema_tracker.get_count(m.name)
-            # 将 EMA 分数映射到 Beta 参数空间 (alpha ≈ success, beta ≈ failure)
+            # EMA分数映射至Beta参数空间 (alpha ≈ success, beta ≈ failure)
             alpha = 1.0 + ema_score * max(ema_count, 1)
             beta_param = 1.0 + (1.0 - ema_score) * max(ema_count, 1)
             sampled = _rnd_module.betavariate(alpha, beta_param)
             # CLAP 对比对齐因子作为乘性偏置
             clap_align = self._clap_scorer.alignment_score(task_features, m)
             complexity_factor = self._get_complexity_factor(m, task_features)
-            # 三因子乘积：Thompson 采样值 × CLAP 对齐 × 复杂度匹配
+            # 三因子乘积: Thompson×CLAP×复杂度
             scored.append((sampled * (0.6 + 0.4 * clap_align) * complexity_factor, m))
             ci += 1
         scored.sort(key=lambda x: x[0], reverse=True)
         return [m for _, m in scored]
 
+    # Beta参数
     def _beta_params(self, model_name):
-        """保留兼容性——内部改用 EMA 参数化，此方法供外部查询。"""
         if model_name is None:
             return (2.0, 2.0)
         with self.m_lock:
@@ -663,14 +511,14 @@ class UCBModelSelector(ModelSelector):
             ci = 0
             while ci < len(candidates):
                 m = candidates[ci]
-                # EMA 平滑得分替代原始均值
+                # EMA平滑替代原始均值
                 ema_avg = self._ema_tracker.get_ema(m.name, 0.5)
                 ema_count = self._ema_tracker.get_count(m.name)
-                # CLAP 对比对齐作为基础分偏置
+                # CLAP对齐基础分偏置
                 clap_align = self._clap_scorer.alignment_score(task_features, m)
-                # UCB 探索项：试验次数少的模型获得更大的不确定性奖励
+                # UCB: 少试验模型获更大不确定性奖励
                 exploration_bonus = math.sqrt(2.0 * math.log(total + 1) / max(ema_count, 1))
-                # 融合：EMA 均值 (0.6) + 探索奖励 (0.2) + CLAP 对齐 (0.2)
+                # 融合: EMA 0.6 + 探索 0.2 + CLAP 0.2 (0.2)
                 ucb_val = ema_avg * 0.6 + 0.2 * exploration_bonus + clap_align * 0.2
                 if ucb_val > best_score:
                     best_score = ucb_val
@@ -716,10 +564,10 @@ class UCBModelSelector(ModelSelector):
 
 
 # ===========================================================================
-# 2026-07-30: 自适应 ε‑greedy 探索策略
-# 核心思想：前期高 ε 鼓励探索未知模型；随试验数增多，ε 沿 sigmoid 曲线退火到
-# 最低值 0.02，策略从 exploration 平滑过渡到 exploitation。与 UCB / Thompson 互补
-# ——ε‑greedy 实现简单、算力开销极低，适合作为 baseline 探测新部署模型。
+# 自适应 ε‑greedy 探索策略
+# 前期高ε鼓励探索；随试验数增多，ε 沿 sigmoid 曲线退火到
+# 最低值 0.02，探索→利用平滑过渡。与UCB/Thompson互补
+# --ε‑greedy 实现简单、算力开销极低，适合作为 baseline 探测新部署模型。
 # ===========================================================================
 class EpsilonGreedyModelSelector(ModelSelector):
     """自适应 ε‑greedy：sigmoid 退火 ε。
@@ -741,7 +589,7 @@ class EpsilonGreedyModelSelector(ModelSelector):
         # ε 退火参数
         self._eps_max = 0.35     # 初始探索率
         self._eps_min = 0.02     # 收敛后最低探索率
-        self._k_steep = 0.08     # sigmoid 陡度——越小越平缓
+        self._k_steep = 0.08     # sigmoid 陡度--越小越平缓
         self._t_mid = 50.0       # sigmoid 拐点（归一化试验数）
 
     def _annealed_epsilon(self, candidate_count: int) -> float:
@@ -768,7 +616,7 @@ class EpsilonGreedyModelSelector(ModelSelector):
             self.m_global_count += 1
             eps = self._annealed_epsilon(len(candidates))
             if _rnd_module.random() < eps:
-                # Exploration: CLAP 加权随机——而非纯均匀，让语义更匹配的模型有更高探索概率
+                # Exploration: CLAP加权随机替代均匀随机
                 weights = [self._clap_scorer.alignment_score(task_features, m) + 0.1 for m in candidates]
                 total_w = sum(weights)
                 if total_w > 1e-12:

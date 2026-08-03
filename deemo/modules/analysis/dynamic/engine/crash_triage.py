@@ -1,7 +1,7 @@
 # 2026-07-19
-# 崩溃分类与可利用性评估 —— 微软 !exploitable 方法论
+# 崩溃分类与可利用性评估 —— 微软.exploitable 方法论
 # 设计思路：基于崩溃特征（寄存器状态、栈帧、异常码）打分判定可利用性
-# 每条规则带 confidence，综合评估并给出缓解建议
+# 每条规则带 confidence，综合评估并给出缓解
 
 import re
 import logging
@@ -53,8 +53,8 @@ class CrashInfo:
 
 class CrashClassifier:
     """
-    基于 !exploitable 规则的崩溃分类器。
-    每种崩溃类型对应一个可利用性评分和置信度.
+    基于.exploitable 规则的崩溃分类器
+    每种崩溃类型对应一个可利用性评分和置信度
     """
 
     # ---- 主分类入口 ----
@@ -92,7 +92,7 @@ class CrashClassifier:
             parts.append("崩溃地址 == 故障地址，可能是虚表劫持或函数指针覆盖")
             return (ci.crash_type, Exploitability.EXPLOITABLE, 0.80, "; ".join(parts))
 
-        # 规则 2: Write AV near NULL
+        # 规则 2: 写入 AV near NULL
         exception_name = self._exception_code_name(ci.exception_code)
         is_write = "WRITE" in exception_name.upper() or "write" in exception_name.lower()
 
@@ -100,7 +100,7 @@ class CrashClassifier:
             parts.append("近 NULL 地址写入，可能是 NULL 指针解引用利用")
             return (ci.crash_type, Exploitability.PROBABLY_EXPLOITABLE, 0.70, "; ".join(parts))
 
-        # 规则 3: Read AV at NULL
+        # 规则 3: 读取 AV NULL
         if self._check_near_null(ci.crash_address):
             parts.append("NULL 地址读取，可能的信息泄露")
             return (ci.crash_type, Exploitability.PROBABLY_EXPLOITABLE, 0.60, "; ".join(parts))
@@ -110,7 +110,7 @@ class CrashClassifier:
             parts.append("EIP/RIP 被用户数据覆盖")
             return (ci.crash_type, Exploitability.EXPLOITABLE, 0.85, "; ".join(parts))
 
-        # 规则 5: stack pivot
+        # 规则 5: 栈 pivot
         if self._check_stack_pivot(ci.register_context):
             parts.append("检测到栈迁移")
             return (ci.crash_type, Exploitability.EXPLOITABLE, 0.85, "; ".join(parts))
@@ -156,8 +156,8 @@ class CrashClassifier:
     def _check_controlled_eip(registers: Dict[str, int],
                                stack_trace: 'List[Dict[str, Any]]') -> bool:
         """
-        检查 EIP/RIP 是否被明显控制。
-        启发性: 检查常见 pattern 值 (0x41414141, 0x42424242...).
+        检查 EIP/RIP 是否被明显控制
+        启发性: 检查常见 pattern 值 (0x41414141, 0x42424242.)
         """
         eip_val = registers.get("rip", None) or registers.get("eip", None)
         if eip_val is None:
@@ -180,12 +180,12 @@ class CrashClassifier:
 
     @staticmethod
     def _check_near_null(addr: int) -> bool:
-        """地址是否在 NULL 页面范围内 (< 0x1000)."""
+        """地址是否在 NULL 页面范围内 (< 0x1000)"""
         return addr < 0x1000
 
     @staticmethod
     def _check_stack_pivot(registers: Dict[str, int]) -> bool:
-        """检查 ESP/RSP 是否指向堆区域 (非栈)."""
+        """检查 ESP/RSP 是否指向堆区域 (非栈)"""
         rsp = registers.get("rsp", None) or registers.get("esp", None)
         if rsp is None:
             return False
@@ -226,8 +226,8 @@ class CrashClassifier:
 
 class CrashAnalyzer:
     """
-    综合崩溃分析器。
-    分类 + 评估 + 缓解建议 + 报告生成.
+    综合崩溃分析器
+    分类 + 评估 + 缓解 + 报告生成
     """
 
     def __init__(self, crash_info: CrashInfo, binary_path: Optional[str] = None):
@@ -250,7 +250,7 @@ class CrashAnalyzer:
             "mitigations": mitigations,
         }
 
-    # ---- 缓解建议 ----
+    # ---- 缓解 ----
     def suggest_mitigations(self, ct: CrashType = None,
                             expl: Exploitability = None) -> List[str]:
         mitigs: List[str] = []
@@ -278,7 +278,7 @@ class CrashAnalyzer:
     # ---- 生成可读报告 ----
     def generate_report(self) -> str:
         """
-        生成人类可读的崩溃分析报告。
+        生成人类可读的崩溃分析报告
         """
         assessment = self.assess_exploitability()
         ci = self.crash_info
@@ -323,11 +323,11 @@ class CrashAnalyzer:
 
 class CrashParser:
     """
-    从不同调试器/格式中解析崩溃信息。
-    支持 WinDbg !analyze -v、GDB backtrace、minidump/core dump.
+    从不同调试器/格式中解析崩溃信息
+    支持 WinDbg!分析 -v、GDB backtrace、minidump/core 转存
     """
 
-    # ---- 解析 WinDbg !analyze -v 输出 ----
+    # ---- 解析 WinDbg!分析 -v 输出 ----
     @staticmethod
     def parse_windbg_output(text: str) -> CrashInfo:
         ci = CrashInfo()
@@ -413,8 +413,8 @@ class CrashParser:
     @staticmethod
     def parse_crash_dump(path: str) -> CrashInfo:
         """
-        读取 minidump (.dmp) 或 core dump 文件。
-        此处提供框架 —— 完整解析需要 DbgEng 或 pyelftools.
+        读取 minidump (.dmp) 或 core 转存 文件
+        此处提供框架 —— 完整解析需要 DbgEng 或 pyelftools
         """
         ci = CrashInfo()
         ext = os.path.splitext(path)[1].lower()
@@ -423,7 +423,7 @@ class CrashParser:
             # 当前回退: 尝试用 cdb 命令行解析
             return CrashParser._parse_dmp_via_cdb(path) or ci
         elif ext in ("", ".core"):
-            # Linux core dump: 可尝试用 gdb 批处理
+            # Linux core 转存: 可尝试用 gdb 批处理
             return CrashParser._parse_core_via_gdb(path) or ci
         return ci
 
@@ -460,24 +460,24 @@ class CrashParser:
 
 
 # Round 3: FrameShift式碰撞去重 —— 基于堆栈哈希的崩溃分组
-# 参考LibAFL的crash dedup策略：将调用栈的前N帧做页对齐哈希，
+# 参考LibAFL的crash dedup策略：将调用栈的前N帧做页对齐哈希
 # 编辑距离<阈值(0.3)的崩溃视为同类，仅对代表性崩溃做深入分析
 # 这避免了单个bug产生数百个变体时分析资源的浪费
 
 class CrashDeduplicator:
-    """FrameShift风格的崩溃去重器。堆栈哈希分组减少冗余分析。"""
+    """FrameShift风格的崩溃去重器。堆栈哈希分组减少冗余分析"""
 
     @staticmethod
     def stack_hash(frames: List[int]) -> str:
-        """调用栈标准化哈希 —— 页对齐去噪后SHA256。
-        同一函数的不同偏移量调用被归入同一bucket。"""
+        """调用栈标准化哈希 —— 页对齐去噪后SHA256
+        同一函数的不同偏移量调用被归入同一bucket"""
         normalized = [f & 0xFFFFFFFFFFFFF000 for f in frames]
         return hashlib.sha256(
             b''.join(f.to_bytes(8, 'little') for f in normalized)).hexdigest()
 
     @staticmethod
     def similarity(a: List[int], b: List[int]) -> float:
-        """计算两个调用栈的相似度（基于公共前缀长度的Jaccard系数）。"""
+        """计算两个调用栈的相似度（基于公共前缀长度的Jaccard系数）"""
         min_len = min(len(a), len(b))
         if min_len == 0: return 0.0
         matches = sum(1 for i in range(min_len)
@@ -486,7 +486,7 @@ class CrashDeduplicator:
 
     @classmethod
     def cluster(cls, crashes: List[Dict[str, Any]]) -> Dict[str, List[int]]:
-        """将崩溃列表按堆栈相似度聚类。返回cluster_id -> [crash_indices]的映射。"""
+        """将崩溃列表按堆栈相似度聚类。返回cluster_id -> [crash_indices]的映射"""
         clusters: Dict[str, List[int]] = {}
         for i, crash in enumerate(crashes):
             frames = crash.get('stack', [])

@@ -8,7 +8,7 @@ import math
 
 
 class BinaryUnpacker:
-    """17 packer signatures, PE section entropy profiling, unpacking strategy builder"""
+    """17 加壳器 签名s, PE section entropy 性能分析, 脱壳 strategy builder"""
 
     # ---- 初始化: 17个加壳工具签名库 ----
 
@@ -331,7 +331,7 @@ class BinaryUnpacker:
 
         _ep_bytes = None
         if pe_data and entry_point:
-            # extract EP bytes (first 4 bytes at entry point)
+            # 提取 EP bytes (first 4 bytes 入口)
             _ep_off = entry_point
             if _ep_off + 4 <= len(pe_data):
                 _ep_bytes = pe_data[_ep_off:_ep_off + 4]

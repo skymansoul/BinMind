@@ -1,21 +1,15 @@
-# 2026-07-30
-# ==== 端到端加密协议检测: Signal / Double Ratchet / MLS / OTR ====
-# 检测加密消息应用中使用的端到端加密 (E2EE) 协议指纹。
-# 覆盖: Signal Protocol (X3DH + Double Ratchet), MLS (Messaging Layer Security, RFC 9420),
-# OTR (Off-the-Record v3), Matrix Olm/Megolm, Tox 协议, OMEMO (XMPP), Wickr, Threema.
-#
+# ==== E2EE协议检测: Signal / Double Ratchet / MLS / OTR ====
+# 覆盖: Signal Protocol (X3DH + Double Ratchet), MLS (RFC 9420),
+# OTR v3/v4, Matrix Olm/Megolm, Tox, OMEMO (XMPP), Wickr, Threema.
 # 检测维度:
-#   (1) 协议特定魔数/常量 (X3DH initial ciphertext, MLS GroupInfo/Welcome encoding)
-#   (2) ECDH 密钥交换指纹 (X25519/X448 在消息密钥上下文中的使用模式)
+#   (1) 协议特定魔数/常量 (X3DH初始密文, MLS GroupInfo/Welcome编码)
+#   (2) ECDH密钥交换指纹 (X25519/X448在消息密钥上下文中的模式)
 #   (3) 库字符串 (libsignal, matrix-olm, mls-rs, openmls)
-#   (4) Double Ratchet 特征: 交替的 DH 密钥对和对称棘轮, KDF chain key 派生
-#   (5) MLS TreeKEM tree hash 和 parent_hash 扩展
-#
-# 参考: Cohn-Gordon et al. (Signal Protocol, 2017), Barnes et al. (MLS RFC 9420, 2023),
-# Borisov-Goldberg-Brewer (OTR, WPES 2004), Alwen et al. (TreeKEM, 2019),
-# Robert et al. (MLS Security Analysis, CRYPTO 2021).
-# 2026-07-31: 新增 Matrix Megolm ratchet session 导出检测, OMEMO XML stanza 指纹,
-# Snikket SCE (Simple Cryptography Extension) 特征, Tox DHT + lossy crypto 复合检测.
+#   (4) Double Ratchet特征: 交替DH密钥对+对称棘轮, KDF链密钥派生
+#   (5) MLS TreeKEM树哈希与parent_hash扩展
+# 参考: Cohn-Gordon et al. (Signal, 2017), Barnes et al. (MLS RFC 9420, 2023),
+# Borisov-Goldberg-Brewer (OTR, WPES 2004), Alwen et al. (TreeKEM, 2019).
+# 扩展: Matrix Megolm ratchet会话导出, OMEMO XML stanza, Snikket SCE, Tox DHT+lossy复合检测.
 
 import struct
 import logging
@@ -23,6 +17,7 @@ import re
 from dataclasses import dataclass, field
 from typing import List, Optional
 from .utils import safeReadBytes
+import hashlib
 
 _log = logging.getLogger(__name__)
 
@@ -37,10 +32,9 @@ class E2EEProtocolResult:
 
 
 # ==== Signal Protocol 指纹 ====
-# libsignal (原 libsignal-protocol-c / libsignal-client / signal-ffi) Rust 重写版本。
-# X3DH: 初始密钥协商, DH1..DH4 四次 ECDH
-# Double Ratchet: DH ratchet (每轮) + symmetric ratchet (每条消息)
-# KDF: HKDF-SHA256, 链密钥 → 消息密钥 → 密文
+# X3DH 初始密钥协商, DH1..DH4 四次ECDH
+# Double Ratchet: DH棘轮 (每轮) + 对称棘轮 (每条消息)
+# KDF: HKDF-SHA256, 链密钥→消息密钥→密文
 
 _SIGNAL_STRINGS: List[tuple] = [
     (b'libsignal', 'Signal', 'libsignal (FFI)', 0.88),
@@ -54,16 +48,14 @@ _SIGNAL_STRINGS: List[tuple] = [
     (b'double_ratchet', 'Signal', 'Double Ratchet', 0.85),
     (b'chain_key', 'Signal', 'symmetric ratchet chain key', 0.60),
     (b'message_key', 'Signal', 'per-message symmetric key', 0.55),
-    # Signal TLS-ified variants (Signal TLS Proxy, Signal TLS Termination)
+    # Signal TLS化变体 (Signal TLS Proxy, Signal TLS Termination)
     (b'signal_tls', 'Signal', 'TLS proxy', 0.65),
 ]
 
 
 # ==== MLS 协议指纹 (RFC 9420) ====
-# MLS 使用 Protocol Buffer (protobuf) 编码 GroupInfo/Welcome/Commit 等消息。
-# TreeKEM 使用基于树的 continuous group key agreement。
-# 特征字段: mls_message, mls10 (MLS version 1.0), GroupInfo, Welcome,
-# Application, Proposal, Commit, tree_hash, parent_hash, leaf_node, key_package.
+# Protobuf编码 GroupInfo/Welcome/Commit 消息
+# TreeKEM based continuous group key agreement
 
 _MLS_STRINGS: List[tuple] = [
     (b'mls10', 'MLS', 'version 1.0 (RFC 9420)', 0.88),
@@ -78,21 +70,20 @@ _MLS_STRINGS: List[tuple] = [
     (b'leaf_node', 'MLS', 'LeafNode', 0.72),
     (b'Proposal', 'MLS', 'Proposal message', 0.65),
     (b'Commit', 'MLS', 'Commit message', 0.65),
-    # mls-rs (Rust MLS implementation)
+    # mls-rs (Rust实现)
     (b'mls-rs', 'MLS', 'mls-rs (Rust)', 0.88),
     (b'openmls', 'MLS', 'OpenMLS (Rust)', 0.88),
     (b'openmls_rust_crypto', 'MLS', 'OpenMLS crypto provider', 0.82),
-    # MLS++ / mlspp (C++ MLS)
+    # MLS++ / mlspp (C++实现)
     (b'mlspp', 'MLS', 'mlspp (C++)', 0.82),
     (b'mls_plus_plus', 'MLS', 'mlspp', 0.78),
 ]
 
 
-# ==== OTR v3 指纹 ====
-# OTR v3: 使用 AES-128-CTR + SHA-1 HMAC, 128-bit DH
-# OTR v4: 使用 X25519 + Ed25519 + ChaCha20 + SHA-512, DAKE (Deniable Auth Key Exchange)
-# 降级为可否认认证, v4 修复了 v3 的密钥大小不足问题。
-# OTR 查询消息: "?OTR?v3?" → 唯一魔数特征。
+# ==== OTR v3/v4 指纹 ====
+# OTR v3: AES-128-CTR + SHA-1 HMAC, 128-bit DH
+# OTR v4: X25519 + Ed25519 + ChaCha20 + SHA-512, DAKE
+# 查询消息 "?OTR?v3?" 为唯一魔数
 
 _OTR_STRINGS: List[tuple] = [
     (b'?OTR?v', 'OTR', 'OTR query message', 0.95),
@@ -107,9 +98,9 @@ _OTR_STRINGS: List[tuple] = [
 
 
 # ==== Matrix Olm / Megolm ====
-# Olm = 每会话 Double Ratchet (类似 Signal, 但使用 Olm-specific 格式)
-# Megolm = 每群组 ratchet (发送者密钥从 Megolm session 派生)
-# 特征 JSON/二进制: "ed25519" + "curve25519" 密钥格式 + "olm." 前缀
+# Olm = 每会话Double Ratchet (类似Signal)
+# Megolm = 每群组ratchet (发送者密钥从Megolm会话派生)
+# 特征: "ed25519" + "curve25519" 密钥格式 + "olm." 前缀
 
 _MATRIX_STRINGS: List[tuple] = [
     (b'olm.', 'Olm', 'Olm session', 0.82),
@@ -120,7 +111,7 @@ _MATRIX_STRINGS: List[tuple] = [
     (b'olm_account', 'Olm', 'account keys', 0.78),
     (b'vodozemac', 'Olm/Megolm', 'vodozemac (Rust Matrix crypto)', 0.85),
     (b'matrix_sdk_crypto', 'Matrix', 'Matrix Rust SDK crypto', 0.80),
-    # OMEMO (XMPP, 基于 Signal protocol)
+    # OMEMO (XMPP, 基于Signal)
     (b'omemo', 'OMEMO', 'XMPP E2EE', 0.82),
     (b'OMEMO', 'OMEMO', 'XMPP E2EE', 0.82),
     (b'omemo_encrypt', 'OMEMO', '', 0.78),
@@ -129,9 +120,9 @@ _MATRIX_STRINGS: List[tuple] = [
 
 
 # ==== Tox 协议指纹 ====
-# Tox: 基于 NaCl/libsodium, UDP-based DHT + lossy/lossless crypto layers
+# 基于 NaCl/libsodium, UDP DHT + lossy/lossless crypto layers
 # 密钥交换: Curve25519, 加密: xsalsa20 + poly1305
-# Tox ID = 公钥 (32B) + nospam (4B) + checksum (2B) = 38B hex = 76 chars
+# Tox ID = 公钥(32B) + nospam(4B) + checksum(2B) = 38B hex
 
 _TOX_STRINGS: List[tuple] = [
     (b'toxcore', 'Tox', 'Tox core library', 0.90),
@@ -145,7 +136,7 @@ _TOX_STRINGS: List[tuple] = [
 
 
 class E2EEProtocolDetector:
-    """端到端加密协议指纹检测器: Signal/MLS/OTR/Matrix/Tox/OMEMO."""
+    """E2EE协议指纹检测器: Signal/MLS/OTR/Matrix/Tox/OMEMO."""
 
     def __init__(self):
         pass
@@ -206,7 +197,7 @@ class E2EEProtocolDetector:
         return unique
 
 
-# ==== 便捷函数 ====
+# ==== 便捷入口 ====
 
 def detect_e2ee_protocols(path: str) -> List[E2EEProtocolResult]:
     return E2EEProtocolDetector().scan_file(path)
@@ -216,3 +207,6 @@ def detect_e2ee_bytes(data: bytes, source: str = "memory") -> List[E2EEProtocolR
 
 __all__ = ['E2EEProtocolDetector', 'E2EEProtocolResult',
            'detect_e2ee_protocols', 'detect_e2ee_bytes']
+
+def _debug_print(*a,**kw):
+    if __import__("os").environ.get("BINMIND_DEBUG"):print(*a,**kw)

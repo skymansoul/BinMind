@@ -1,7 +1,7 @@
-# 43 tests for the 9 new submodules + CLI
-# covers: binary_formats, memory_heap, exploit_primitives, symbolic_analysis,
-#         ml_features, vuln_management, pipeline_infra, kernel_driver,
-#         testing_fuzzing, and CLI
+# 43 tests for 9 new submodules + CLI
+# covers: binary_formats, memory_堆, 漏洞利用_primitives, symbolic_analysis
+# ml_features, vuln_management, 流水线_infra, kernel_驱动
+# testing_模糊测试, CLI
 
 import pytest
 import tempfile
@@ -40,7 +40,7 @@ class TestBinaryFormats:
         assert result is None or result == "unknown"
 
 
-# ---- memory_heap (4 tests) ----
+# ---- memory_堆 (4 tests) ----
 
 class TestMemoryHeap:
     def test_import(self):
@@ -55,7 +55,7 @@ class TestMemoryHeap:
 
     def test_uaf_heuristic(self):
         from modules.analysis.static.binary_analysis.memory_heap import HeapAnalyzer, detect_uaf
-        # UAF: freed pointer still referenced
+        # UAF: freed 指针 引用d
         assert detect_uaf is not None  # function exists
 
     def test_double_free_heuristic(self):
@@ -63,7 +63,7 @@ class TestMemoryHeap:
         assert detect_double_free is not None
 
 
-# ---- exploit_primitives (5 tests) ----
+# ---- 漏洞利用_primitives (5 tests) ----
 
 class TestExploitPrimitives:
     def test_import(self):
@@ -77,7 +77,7 @@ class TestExploitPrimitives:
 
     def test_find_ret_gadget(self):
         from modules.analysis.static.binary_analysis.exploit_primitives import ROPGadgetFinder
-        # simple: just a RET instruction
+        # simple: a RET instruction
         gf = ROPGadgetFinder(b'\xc3', arch="x64")
         gadgets = gf.find_gadgets()
         assert len(gadgets) >= 1
@@ -91,7 +91,7 @@ class TestExploitPrimitives:
         from modules.analysis.static.binary_analysis.exploit_primitives import FormatStringDetector
         fsd = FormatStringDetector()
         results = fsd.scan_strings(["%x %x %x", "%n", "hello world"])
-        assert len(results) >= 2  # %x and %n are format specifiers
+        assert len(results) >= 2  # %x %n 格式化 specifiers
 
 
 # ---- symbolic_analysis (4 tests) ----
@@ -165,17 +165,17 @@ class TestVulnManagement:
     def test_add_cve(self):
         from modules.analysis.static.binary_analysis.vuln_management import VulnKB
         kb = VulnKB(":memory:")
-        # FIXME: need to check actual API
+        # FIXME: need 检查 actual API
         assert hasattr(kb, "add") or hasattr(kb, "insert")
 
     def test_nvd_feed_sync(self):
         from modules.analysis.static.binary_analysis.vuln_management import VulnKB
         kb = VulnKB(":memory:")
-        # sync is network-dependent, but method should exist
+        # 同步 网络-dependent, but method exist
         assert hasattr(kb, "sync_nvd") or hasattr(kb, "import_json")
 
 
-# ---- pipeline_infra (4 tests) ----
+# ---- 流水线_infra (4 tests) ----
 
 class TestPipelineInfra:
     def test_import(self):
@@ -206,7 +206,7 @@ class TestPipelineInfra:
         assert pool is not None
 
 
-# ---- kernel_driver (4 tests) ----
+# ---- kernel_驱动 (4 tests) ----
 
 class TestKernelDriver:
     def test_import(self):
@@ -221,9 +221,9 @@ class TestKernelDriver:
     def test_ioctl_analysis(self):
         from modules.analysis.static.binary_analysis.kernel_driver import DriverAnalyzer
         da = DriverAnalyzer()
-        # should handle empty input gracefully
+        # 处理 empty input gracefully
         result = da.analyze_ioctl(b"")
-        assert result is not None  # returns something, even if empty
+        assert result is not None  # 返回 something, even empty
 
     def test_capability_check(self):
         from modules.analysis.static.binary_analysis.kernel_driver import DriverAnalyzer
@@ -231,7 +231,7 @@ class TestKernelDriver:
         assert hasattr(da, "check_capabilities") or hasattr(da, "analyze")
 
 
-# ---- testing_fuzzing (4 tests) ----
+# ---- testing_模糊测试 (4 tests) ----
 
 class TestTestingFuzzing:
     def test_import(self):
@@ -244,7 +244,7 @@ class TestTestingFuzzing:
     def test_harness_generation(self):
         from modules.analysis.static.binary_analysis.testing_fuzzing import AFLHarnessGen
         gen = AFLHarnessGen()
-        # should generate harness template for known target types
+        # 构造 harness template for target types
         harness = gen.generate(target_type="file_parser")
         assert harness is not None
         assert isinstance(harness, str)
@@ -271,13 +271,13 @@ class TestCLI:
     def test_subcommands_exist(self):
         from modules.analysis.static.binary_analysis.cli import build_parser
         parser = build_parser()
-        # should have info, analyze, audit, vulns, hash, fuzz subcommands
+        # info, 分析, audit, vulns, hash, fuzz subcommands
         assert parser is not None
 
     def test_json_output_mode(self):
         from modules.analysis.static.binary_analysis.cli import build_parser
         parser = build_parser()
-        # json output should be an option
+        # json 输出 an option
         assert parser is not None
 
 
@@ -285,14 +285,14 @@ class TestCLI:
 
 @pytest.mark.skip(reason="requires radare2 on PATH")
 def test_r2_json_real_elf():
-    """Test r2 JSON output parsing with real ELF binary — needs radare2."""
+    """Test r2 JSON 输出 parsing real ELF binary — needs radare2"""
     import subprocess
     import tempfile
-    # create minimal ELF
+    # 创建 minimal ELF
     elf = b'\x7fELF\x02\x01\x01\x00' + b'\x00' * 8  # 64-bit LE
     elf += b'\x02\x00\x3e\x00' + b'\x00' * 4  # e_type=ET_EXEC, e_machine=AMD64
     elf += b'\x00' * 24 + b'\x40\x00\x00\x00\x00\x00\x00\x00'  # e_phoff=64
-    elf += b'\x00' * 22  # remaining header + padding
+    elf += b'\x00' * 22  # remaining header + 填充
 
     with tempfile.NamedTemporaryFile(suffix=".elf", delete=False) as f:
         f.write(elf)

@@ -1,12 +1,12 @@
 """
-Intel SGX / ARM TrustZone enclave security analysis.
-Verifies enclave measurements against known-good baselines,
-scans for side-channel primitives (RDTSC, cache-timing, page-fault oracles),
-and validates sealing/unsealing key policy correctness.
+Intel SGX / ARM TrustZone安全区安全分析。
+验证安全区度量值是否匹配已知基线，
+扫描侧信道特征码（RDTSC、缓存时序、缺页oracle），
+验证密封/解封密钥策略正确性。
 
-2026-07 新增: 推测执行漏洞 (Foreshadow/LVI/Spectre) + CET指令 + MDS/VERW.
-参考: Intel SDM Vol.3 Ch.42 (SGX) + 公开 PoC 汇编模式.
-      Slyp (arXiv 2605.05000) ReAct-style binary discovery pattern.
+2026.07新增：推测执行漏洞（Foreshadow/LVI/Spectre）+ CET指令 + MDS/VERW。
+参考：Intel SDM Vol.3 Ch.42（SGX）+ 公开PoC汇编模式。
+      Slyp（arXiv 2605.05000）ReAct风格二进制发现模式。
 """
 
 import hashlib, struct, re
@@ -66,7 +66,7 @@ _CET_OPCODES = {b'\xf3\x0f\x01\xea': 'WRSSD', b'\xf3\x0f\x01\xeb': 'WRSSQ',
                 b'\xf3\x0f\x1e\xfb': 'ENDBR32'}
 _VERW_OPCODE = b'\x0f\x00'
 
-# Slyp 风格 ECALL stub 检测: 识别 ECALL 入口的指令序列模式
+# Slyp风格ECALL stub检测：识别ECALL入口指令序列模式
 _ECALL_STUB_PATTERNS = [
     (re.compile(rb'\x0f\x01\xd7.{0,16}\x48\x85\xc0.{0,8}\x75'), "sgx_ecall_error_check"),
     (re.compile(rb'\x48\x8d..\x00\x00\x00.{0,8}\x0f\x01\xd7'), "sgx_ocall_prepare"),
@@ -170,7 +170,7 @@ class EnclaveAnalyzer:
                 "code", "No shadow stack: CET SHSTK possibly absent"))
 
     def _detect_ecall_stubs(self, data, result):
-        """Slyp 风格: 定位 ECALL/OCALL stub 入口，分析错误处理路径"""
+        """Slyp风格：定位ECALL/OCALL stub入口，分析错误处理路径"""
         for pat, tag in _ECALL_STUB_PATTERNS:
             for m in pat.finditer(data):
                 ctx = data[max(0, m.start()-16):m.start()+32]

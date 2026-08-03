@@ -1,5 +1,5 @@
-# round 7 tests — ghsa pagination, epss bulk import, cwe enrichment
-# ~28 tests covering new features added late aug 2026
+# Round 7 测试——GHSA分页、EPSS批量导入、CWE富化
+# ~28项测试，覆盖2026年8月下旬新增特性
 
 import pytest
 import json
@@ -161,7 +161,7 @@ class TestCWEClient:
         client.close()
 
     def test_get_cwe_seeded(self):
-        """Get a seeded CWE — no network needed."""
+        """获取预置CWE——无需网络。"""
         from modules.cve.src.cve_cwe import CWEClient
         client = CWEClient(":memory:")
         data = client.get_cwe("CWE-79")

@@ -1,4 +1,3 @@
-# 2026-08-06
 # 严格状态机 — 为 Task 生命周期提供显式转移表
 # Resilient Microservices 综述 [arXiv:2512.16959]: 显式状态跟踪是恢复策略的前提
 # 参考 AWS Step Functions 的状态转移思想：每步转移前验证合法性
@@ -73,7 +72,7 @@ class TransitionGuard:
 
 
 class RetryLimitGuard(TransitionGuard):
-    """重试次数限制守卫 — retries >= max_retries 时禁止 RETRYING 转移"""
+    # 重试次数限制守卫 — retries >= max_retries 时禁止 RETRYING 转移
     def check(self, context: dict) -> bool:
         retries = context.get("retries", 0)
         max_retries = context.get("max_retries", 3)

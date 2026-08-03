@@ -1,15 +1,15 @@
-# 图驱动的二进制函数嵌入器——从CFG+数据流图中提取函数级向量表征。
-# 参考GBsim (Entropy 2025) 的GCN+Transformer混合架构和AMMF (Cybersecurity 2025)
-# 的多特征融合策略，以及Call Graphlets (arXiv:2406.02606) 的局部/全局图统计特征。
+# 图驱动的二进制函数嵌入器——从CFG+数据流图提取函数级向量表征。
+# 参考GBsim (Entropy 2025) GCN+Transformer混合架构、AMMF (Cybersecurity 2025)
+# 多特征融合策略、Call Graphlets (arXiv:2406.02606) 局部/全局图统计特征。
 #
-# 核心设计：
-#   - 基础图统计特征（度分布、集聚系数、中心性）→ Call Graphlets论文的统计视角
-#   - 节点级语义特征（指令类别直方图+操作数类型分布）→ 参考AMMF的basic-block特征
-#   - 图拓扑嵌入（基于随机游走的匿名游走签名）→ 参考GBsim的图结构编码
-#   - 跨架构归一化——特征提取与架构解耦，同一函数不同架构编译产物距离可控
+# 核心设计:
+#   - 基础图统计特征（度分布、集聚系数、中心性）→ Call Graphlets统计视角
+#   - 节点级语义特征（指令类别直方图+操作数类型分布）→ AMMF basic-block特征
+#   - 图拓扑嵌入（匿名随机游走签名）→ GBsim图结构编码
+#   - 跨架构归一化——特征提取与架构解耦，同函数不同架构产物距离可控
 #
-# 2026-07-26 —— 初版，仅x86/x86_64/ARM/MIPS四架构
-# 2026-07-29 —— 新增随机游走嵌入和跨架构对齐投影
+# 当前实现——x86/x86_64/ARM/MIPS四架构
+# 增强——随机游走嵌入与跨架构对齐投影
 
 import os, re, math, json, hashlib, struct, logging
 from typing import Dict, List, Optional, Any, Tuple, Set
@@ -20,7 +20,7 @@ import random as _random
 
 logger = logging.getLogger(__name__)
 
-# numpy为可选依赖——无numpy时回退到纯Python实现
+# numpy为可选依赖——无numpy时回退至纯Python实现
 try:
     import numpy as np
     _NUMPY_AVAIL = True
@@ -41,7 +41,7 @@ class ArchFamily(str, Enum):
 
 @dataclass
 class BasicBlockNode:
-    """基本块节点——图嵌入的原子单元。"""
+    """基本块节点——图嵌入原子单元"""
     addr: int
     size: int = 0
     instructions: List[str] = field(default_factory=list)
@@ -54,7 +54,7 @@ class BasicBlockNode:
 
 @dataclass
 class FunctionGraph:
-    """函数的图表示——节点为基本块，边为控制流转移。"""
+    """函数图表示——节点为基本块，边为控制流转移"""
     name: str
     addr: int
     arch: ArchFamily = ArchFamily.UNKNOWN
@@ -67,7 +67,7 @@ class FunctionGraph:
 
 @dataclass
 class GraphEmbedding:
-    """GNN风格图嵌入结果——固定维度特征向量。"""
+    """GNN风格图嵌入结果——固定维度特征向量"""
     func_name: str
     func_addr: int
     arch: ArchFamily
@@ -77,12 +77,12 @@ class GraphEmbedding:
     generation_method: str = "handcrafted"
 
 
-# ---- 特征提取器基类 ----
-# 每个提取器负责一个特征维度，产出固定大小的数值向量。
+# 特征提取器基类
+# 每个提取器负责一个特征维度，产出固定大小数值向量。
 # 可插拔设计——新增特征维度只需实现extract()。
 
 class FeatureExtractor:
-    """图特征提取器基类。"""
+    """图特征提取器基类"""
 
     def extract(self, graph: FunctionGraph) -> Dict[str, float]:
         raise NotImplementedError
@@ -93,10 +93,10 @@ class FeatureExtractor:
 
 
 class GraphStatisticsExtractor(FeatureExtractor):
-    """图统计特征提取——Call Graphlets论文的统计视角。
+    """图统计特征提取——Call Graphlets统计视角。
 
     提取16维特征: 节点数、边数、密度、最大/平均入度出度、
-    集聚系数、直径估计、叶子节点比例、center节点比例。
+    集聚系数、直径估计、叶子节点比例、中心节点比例。
     """
 
     def extract(self, graph: FunctionGraph) -> Dict[str, float]:
@@ -143,17 +143,17 @@ class GraphStatisticsExtractor(FeatureExtractor):
 
 
 class InstructionHistogramExtractor(FeatureExtractor):
-    """指令类别直方图——AMMF的basic-block级别语义特征。
+    """指令类别直方图——AMMF basic-block级语义特征。
 
-    将指令按操作类型分为12类：算术、逻辑、分支、调用、
+    按操作类型分12类: 算术、逻辑、分支、调用、
     内存读写、栈操作、比较、传送、移位、浮点、特权、其他。
     每类计数归一化后产出12维特征。
 
-    跨架构归一化：使用架构无关的指令类别而非具体助记符，
-    使得x86的MOV与ARM的LDR都归入"数据传送"类别。
+    跨架构归一化: 使用架构无关指令类别而非具体助记符，
+    x86的MOV与ARM的LDR均归入"数据传送"类别。
     """
 
-    # 架构无关指令类别映射
+    # 架构无关指令类别映射表
     _OP_CATEGORIES = {
         'arith': {'add', 'sub', 'mul', 'div', 'inc', 'dec', 'neg', 'adc', 'sbb',
                    'imul', 'idiv', 'madd', 'msub'},
@@ -207,9 +207,9 @@ class InstructionHistogramExtractor(FeatureExtractor):
         return feats
 
     def _parse_mnemonic(self, insn: str) -> str:
-        """从汇编行提取助记符。"""
+        """从汇编行提取助记符"""
         insn = insn.strip()
-        # 去除地址前缀和注释
+        # 去除地址前缀与注释
         if ':' in insn[:20]:
             insn = insn.split(':', 1)[1].strip()
         parts = insn.split()
@@ -223,11 +223,11 @@ class InstructionHistogramExtractor(FeatureExtractor):
 
 
 class RandomWalkEmbeddingExtractor(FeatureExtractor):
-    """匿名随机游走嵌入——参考GBsim的图拓扑编码思想。
+    """匿名随机游走嵌入——参考GBsim图拓扑编码思想。
 
-    Ivanov & Burnaev (2018) 的匿名游走：每个节点在游走序列中用
-    首次出现顺序编号替代，使得相同拓扑结构的游走得到相同的匿名序列。
-    统计匿名游走的分布直方图作为图拓扑特征的紧凑表示。
+    Ivanov & Burnaev (2018)匿名游走: 每个节点在游走序列中用
+    首次出现顺序编号替代，相同拓扑结构游走得到相同匿名序列。
+    统计匿名游走分布直方图作为图拓扑特征的紧凑表示。
     """
 
     def __init__(self, walk_length: int = 6, num_walks: int = 20):
@@ -303,15 +303,15 @@ class RandomWalkEmbeddingExtractor(FeatureExtractor):
         return 5
 
 
-# ---- 跨架构对齐投影 ----
-# 不同架构编译同一函数时，图的形状会因指令集差异而变化。
-# 使用轻量线性投影将架构相关特征映射到共享子空间。
-# 参考GBsim的跨架构语言模型思路，但这里用更轻量的PCA启发方法。
+# 跨架构对齐投影
+# 不同架构编译同一函数时图形状因指令集差异而变化。
+# 使用轻量线性投影将架构相关特征映射至共享子空间。
+# 参考GBsim跨架构语言模型思路，采用更轻量的PCA启发方法。
 
 class CrossArchAligner:
-    """跨架构特征对齐器——将不同架构的特征映射到可比空间。
+    """跨架构特征对齐器——将不同架构特征映射至可比空间。
 
-    方法: 对每种架构-特征对的均值做中心化，使得同一函数
+    方法: 对每种架构-特征对的均值做中心化，使同一函数
     在不同架构下的特征向量差异主要由编译差异而非架构差异贡献。
     """
 
@@ -320,7 +320,7 @@ class CrossArchAligner:
         self._fitted: bool = False
 
     def fit(self, samples: List[Tuple[ArchFamily, Dict[str, float]]]):
-        """用带架构标签的特征样本计算每种架构的均值偏移。
+        """用带架构标签特征样本计算各架构均值偏移。
 
         参数: [(ArchFamily, {feature_name: value}), ...]
         """
@@ -355,7 +355,7 @@ class CrossArchAligner:
                      f"{len(self._arch_offsets)} architectures")
 
     def align(self, arch: ArchFamily, features: Dict[str, float]) -> Dict[str, float]:
-        """对特征向量做跨架构对齐。"""
+        """对特征向量做跨架构对齐"""
         if not self._fitted:
             return features
         offsets = self._arch_offsets.get(arch.value, {})
@@ -365,13 +365,13 @@ class CrossArchAligner:
         return aligned
 
 
-# ---- 主编排器 ----
+# 主编排器
 
 class GraphBinaryEmbedder:
     """二进制函数图嵌入器。
 
     编排多个特征提取器，将FunctionGraph转换为固定维度向量。
-    支持跨架构对齐和向量聚合（均值池化/求和池化）。
+    支持跨架构对齐与向量聚合（均值池化/求和池化）。
     """
 
     def __init__(self, embed_dim: int = 128, enable_cross_arch_align: bool = True):
@@ -385,9 +385,9 @@ class GraphBinaryEmbedder:
         self._total_ft_count = sum(ext.feature_count for ext in self.extractors)
 
     def embed(self, graph: FunctionGraph) -> GraphEmbedding:
-        """从FunctionGraph生成嵌入向量。
+        """从FunctionGraph构造嵌入向量。
 
-        流程: 各提取器提取特征 → 拼接 → PCA式降维到embed_dim → 可选跨架构对齐。
+        流程: 各提取器提取特征→拼接→PCA式降维至embed_dim→可选跨架构对齐。
         """
         all_feats: Dict[str, float] = {}
         feature_names = []
@@ -411,11 +411,11 @@ class GraphBinaryEmbedder:
             feature_names=feature_names[:self.embed_dim])
 
     def embed_batch(self, graphs: List[FunctionGraph]) -> List[GraphEmbedding]:
-        """批量嵌入——对多个函数并行提取特征。"""
+        """批量嵌入——多函数并行特征提取"""
         return [self.embed(g) for g in graphs]
 
     def similarity(self, emb1: GraphEmbedding, emb2: GraphEmbedding) -> float:
-        """计算两个嵌入的余弦相似度。"""
+        """计算两个嵌入的余弦相似度"""
         v1, v2 = emb1.vector, emb2.vector
         if not v1 or not v2 or len(v1) != len(v2):
             return 0.0
@@ -428,18 +428,18 @@ class GraphBinaryEmbedder:
         return dot / max(n1 * n2, 1e-8)
 
     def fit_aligner(self, samples: List[Tuple[ArchFamily, Dict[str, float]]]):
-        """训练跨架构对齐器。"""
+        """训练跨架构对齐器"""
         if self.aligner:
             self.aligner.fit(samples)
 
     def _pad_or_truncate(self, feats, target_dim):
-        """填充或截断特征到目标维度——0-padding到右端。"""
+        """填充或截断特征至目标维度——右侧0-padding"""
         if len(feats) >= target_dim:
             return list(feats)[:target_dim]
         return list(feats) + [0.0] * (target_dim - len(feats))
 
 
-# ---- 图构建辅助函数 ----
+# 图构建辅助函数
 
 def build_graph_from_disasm(func_name: str, func_addr: int,
                              basic_blocks: List[Dict],
@@ -488,7 +488,7 @@ def build_graph_from_disasm(func_name: str, func_addr: int,
 
 def compute_similarity_matrix(embeddings: List[GraphEmbedding]
                                ) -> List[List[float]]:
-    """计算嵌入之间的成对相似度矩阵。"""
+    """计算嵌入间成对相似度矩阵"""
     embedder = GraphBinaryEmbedder()
     n = len(embeddings)
     matrix = [[0.0] * n for _ in range(n)]

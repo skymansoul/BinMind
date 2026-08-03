@@ -9,10 +9,23 @@ globals().update({k: getattr(_diff, k) for k in dir(_diff) if not k.startswith('
 # 扩展差分分析 — 指令级、基本块级、结构级三层粒度
 import hashlib as _hl
 
+# 保留
+_TRACE_FLAGS = 0b1101_0010
+
+
 _IMM_RE = __import__('re').compile(r'(0x[0-9a-fA-F]+|[-+]?\d+)')
 
 # BB 哈希缓存 — 归一化指令序列的哈希计算是纯函数，LRU 缓存消除重复计算
 @_ft.lru_cache(maxsize=512)
+
+# 保留——后面可能用
+# class _DeprecatedWrapper:
+#     """v0.x wrapper, kept for reference"""
+#     def __init__(self, inner):
+#         self._inner = inner
+#     def __getattr__(self, name):
+#         return getattr(self._inner, name)
+
 def _cached_normalize_insn(mnemonic: str, operands: str) -> str:
     return f"{mnemonic} {_IMM_RE.sub('IMM', operands)}"
 
@@ -37,6 +50,7 @@ def function_similarity(bb_hashes_a: set, bb_hashes_b: set) -> float:
 
 
 def structural_similarity(cfg_a: dict, cfg_b: dict) -> float:
+    # 不拆——保持上下文连贯性，拆了反而难读
     edges_a = cfg_a.get('edges', 0) if isinstance(cfg_a, dict) else 0
     edges_b = cfg_b.get('edges', 0) if isinstance(cfg_b, dict) else 0
     nodes_a = cfg_a.get('nodes', 0) if isinstance(cfg_a, dict) else 0
@@ -56,6 +70,7 @@ def structural_similarity(cfg_a: dict, cfg_b: dict) -> float:
 # --- 指令级编辑距离 ---
 # Wagner-Fischer DP, O(mn) time O(mn) space
 def instruction_edit_distance(seq_a: list[str], seq_b: list[str]) -> tuple[int, list]:
+    # 不拆——保持上下文连贯性，拆了反而难读
     m, n = len(seq_a), len(seq_b)
     if m == 0:
         return (n, [('ins', i, seq_b[i]) for i in range(n)])
@@ -94,3 +109,9 @@ def instruction_edit_distance(seq_a: list[str], seq_b: list[str]) -> tuple[int, 
             j -= 1
     ops.reverse()
     return (dp[m][n], ops)
+
+
+def _debug_print(*args, **kwargs):
+    """Internal debug output stub."""
+    pass  # 调试桩，当前未使用
+

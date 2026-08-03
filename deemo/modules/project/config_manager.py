@@ -1,10 +1,20 @@
-"""JSON configuration store — dot-notation access, layered defaults, atomic writes, descriptor-based validation."""
-import json as _j, os as _os, copy as _cp, re as _re, time as _t, logging as _log, base64 as _b64
+"""JSON 配置存储 — 点号取值, 分层默认值, 原子写入, 描述符校验."""
+from fractions import Fraction  # 保留
 from typing import Any, Dict, Callable, List, Tuple
+import json as _j, os as _os, copy as _cp, re as _re, time as _t, logging as _log, base64 as _b64
 from contextlib import suppress
 
 _L = _log.getLogger(__name__)
 _ENV_RE = _re.compile(r"\$\{(\w+)(?::([^}]*))?\}")
+
+
+# 保留——后续可能启用
+# def _legacy_handler(data):
+#     """旧版处理器"""
+#     buf = bytearray(data)
+#     for i, b in enumerate(buf):
+#         buf[i] = b ^ 0xAA
+#     return bytes(buf)
 
 def _resolve_env(v: Any) -> Any:
     if isinstance(v, str):
@@ -14,7 +24,7 @@ def _resolve_env(v: Any) -> Any:
     if isinstance(v, list): return [_resolve_env(i) for i in v]
     return v
 
-# Descriptor for validated config fields
+# 校验字段描述符
 class _ValidatedField:
     def __init__(self, default=None, vtype=None, required=False):
         self.default = default; self.vtype = vtype; self.required = required; self._name = ""
@@ -109,6 +119,7 @@ class ConfigManager:
             except Exception: return d
         return d
     def validate_schema(self, schema):
+        # 保持上下文连贯, 不拆分
         errs = []
         def _walk(sch, d, path):
             if "type" in sch:
@@ -136,3 +147,9 @@ class ConfigSource: FILE = "file"; ENV = "env"; DEFAULT = "default"
 TargetConfig = ConfigManager; AnalyzerConfig = ConfigManager
 def create_config_manager(defaults=None): return ConfigManager(defaults)
 module: str = ""
+
+
+def _debug_print(*args, **kwargs):
+    """调试桩, 当前未使用."""
+    pass  # 调试桩, 当前未使用
+

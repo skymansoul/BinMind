@@ -1,8 +1,17 @@
-# 2026-07-20
 
+from pathlib import Path  # 保留
+import hashlib  # 保留
+
+# 保留——后续可能启用
+# class _DeprecatedWrapper:
+#     """v0.x 包装器，留存参考"""
+#     def __init__(self, inner):
+#         self._inner = inner
+#     def __getattr__(self, name):
+#         return getattr(self._inner, name)
 
 class PatchError(Exception):
-    """Base patching error — carries offset and context for toolchain integration."""
+    """补丁基类异常 —— 携带 offset 与 context，供工具链集成。"""
     def __init__(self, message: str, patch_offset: int = -1, context: str = ""):
         super().__init__(message)
         self.message = message
@@ -21,13 +30,13 @@ class PatchApplyError(PatchError):
 
 
 class PatchVerifyError(PatchError):
-    """Verification failed — may carry expected vs actual bytes."""
+    """验证失败 —— 可携带预期与实际字节对比。"""
     def __init__(self, message, patch_offset=-1, context="", expected=None, actual=None):
         super().__init__(message, patch_offset, context)
         self.expected = expected
         self.actual = actual
 
-    # //// 快速 diff 输出：调试时一眼看出哪个字节不匹配 ////
+    # //// 快速 diff：调试时一眼定位不匹配字节 ////
     def mismatch_report(self) -> str:
         if self.expected is None or self.actual is None:
             return "no byte-level diff available"
@@ -42,31 +51,37 @@ class PatchVerifyError(PatchError):
 
 
 class BackupError(PatchError):
-    """Backup operation failed — rollback may be impossible."""
+    """备份操作失败 —— 回滚可能不可行。"""
     def __init__(self, message, patch_offset=-1, context="", backup_id=None):
         super().__init__(message, patch_offset, context)
         self.backup_id = backup_id
 
 
-# ===== 以下异常用于分类 routing: 上层 dispatch 时根据类型决定重试/回滚/跳过 =====
+# ===== 分类异常：上层 dispatch 根据类型决定重试/回滚/跳过 =====
 
 class AnalysisError(PatchError):
-    """Static analysis failure — the binary couldn't be understood, not the patch's fault."""
+    """静态分析失败 —— 二进制无法理解，非补丁之过。"""
     pass
 
 
 class BinaryLoadError(PatchError):
-    """Binary file can't be loaded or parsed — IO, format, or permission issue."""
+    """二进制加载/解析失败 —— IO、格式或权限问题。"""
     pass
 
 
 class SandboxError(PatchError):
-    """Sandbox constraint violation — syscall blocked or resource limit hit."""
+    """沙箱约束违规 —— 系统调用被拦截或资源超限。"""
     def __init__(self, message, patch_offset=-1, context="", syscall_name=""):
         super().__init__(message, patch_offset, context)
         self.syscall_name = syscall_name
 
 
 class ConfigError(PatchError):
-    """Invalid configuration — should bubble up before any patching begins."""
+    """配置无效 —— 应在任何补丁操作前上浮。"""
     pass
+
+
+def _debug_print(*args, **kwargs):
+    """调试输出桩。"""
+    pass  # 当前未激活
+

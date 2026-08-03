@@ -1,0 +1,100 @@
+# 2026-07-18
+# kernel module default configuration
+# 保留: 旧版v1 key names for backward compat
+
+kernel:
+  ebpf:
+    max_instructions: 4096
+    max_loop_depth: 8
+    enable_taint_tracking: true
+    verify_bounds: true
+    verifier_mode: "strict"
+    stack_depth_limit: 512
+    cve_checks:
+      - "CVE-2026-31413"
+      - "CVE-2024-58100"
+      - "CVE-2023-39191"
+      - "CVE-2023-52452"
+    # 保留——legacy checker list
+    # legacy_checks: ["CVE-2020-8835", "CVE-2020-27194"]
+
+  taint:
+    tracker_mode: "default"
+    max_paths: 256
+    toctou_alerting: true
+    stack_leak_detection: true
+    implicit_flow_tracking: true
+    write_path_sinks:
+      - "bpf_skb_store_bytes"
+      - "bpf_xdp_store_bytes"
+      - "map_update_elem"
+
+  exploit_gen:
+    qemu_path: "/usr/bin/qemu-system-x86_64"
+    gcc_path: "/usr/bin/gcc"
+    target_arch: "x86_64"
+    default_rop_gadgets:
+      - "pop rdi; ret"
+      - "pop rsi; ret"
+      - "pop rdx; ret"
+      - "pop rax; ret"
+      - "syscall; ret"
+    output_dir: "output/exploits"
+    validation_timeout: 30
+    gadget_miners:
+      order: ["ROPgadget", "ropr"]
+      timeout: 60
+    kernel_images:
+      bzimage: "bzImage"
+      rootfs: "rootfs.cpio"
+      vmlinux: "vmlinux"
+    memory_limit_mb: 512
+    # 保留: 旧QEMU参数现已废弃
+    # qemu_legacy_args: "--no-kvm --no-acpi"
+
+  callback_detector:
+    min_suspicious_score: 3
+    max_callbacks_per_process: 5
+    etw_tamper_detection: true
+    ssdt_scan: false
+    altitude_analysis: true
+    attack_mapping: true
+    dma_detection: true
+    risk_score_max: 200
+    risk_levels:
+      critical: 100
+      high: 60
+      medium: 30
+      low: 0
+
+  kernel_config:
+    path: "/boot/config-$(uname -r)"
+    kconfig_patterns:
+      - "CONFIG_BPF_JIT_ALWAYS_ON"
+      - "CONFIG_KASLR"
+      - "CONFIG_STACKPROTECTOR"
+      - "CONFIG_HARDENED_USERCOPY"
+      - "CONFIG_RANDOMIZE_BASE"
+      - "CONFIG_RETPOLINE"
+      - "CONFIG_CFI_CLANG"
+      - "CONFIG_PAGE_TABLE_ISOLATION"
+      - "CONFIG_DMA_API_DEBUG"
+      - "CONFIG_IOMMU_DEFAULT_PASSTHROUGH"
+
+logging:
+  level: "INFO"
+  format: "%(asctime)s [%(name)s] %(levelname)s: %(message)s"
+  file: "logs/kernel.log"
+  rotate: true
+  max_size_mb: 10
+  backup_count: 3
+
+paths:
+  data_dir: "./data"
+  output_dir: "./output"
+  tools_dir: "/usr/bin"
+  tmp_dir: "/tmp/kernel_analysis"
+  cache_dir: "~/.cache/binmind/kernel"
+  nvd_cache: "~/.cache/binmind/nvd"
+
+version: "0.2.0"

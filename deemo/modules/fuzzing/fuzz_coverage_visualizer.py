@@ -168,7 +168,7 @@ class FuzzCoverageVisualizer:
             if '@' in func_name:
                 func_name = func_name.split('@')[0]
             return hash(func_name) & 0xFFFFFFFFFFFFFFFF
-        except:
+        except Exception:  # 修复: bare except → Exception (hash fallback)
             return 0
 
     # ── 导出 ─────────────────────────────────────────────────────

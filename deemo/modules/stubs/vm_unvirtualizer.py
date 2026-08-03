@@ -1,6 +1,6 @@
-# re-export from compat/ — VM 去虚拟化桩
-# 使用 types.ModuleType 策略创建隔离模块命名空间，与 string_unobfuscator 相同
-# 参考: VulCatch (arXiv:2408.07181) 伪代码提升管线 & DeBinVul (arXiv:2411.04981) 反编译代码分析
+# compat/ 代理导出 — VM 去虚拟化桩
+# 使用 types.ModuleType 创建隔离命名空间，与 string_unobfuscator 策略统一
+# 参考: VulCatch (arXiv:2408.07181) 伪代码提升管线 & DeBinVul (arXiv:2411.04981) 反编译分析
 import os as _os
 import types as _types
 import importlib.util as _iu
@@ -12,27 +12,27 @@ _spec.loader.exec_module(_proxy_mod)
 
 globals().update({_k: _v for _k, _v in _proxy_mod.__dict__.items() if not _k.startswith('_')})
 
-# --- VM handler 模式扩展 ---
-# 基于 DeBinVul 的多架构反编译分析中所见的多样化 VM 保护策略，
-# 补充非标准 handler 模式（多见于 Themida/VMProtect 变体）
+# VM handler 模式扩展
+# 基于 DeBinVul 多架构反编译分析中的 VM 保护策略，
+# 补充非标准 handler 模式（Themida/VMProtect 变体）
 import struct as _binpack
 
-# Themida 风格的多字节 NOP 滑梯 → 实际 handler 入口的偏移
-_THEMIDA_SLED = b'\x0f\x1f\x00'  # 3-byte NOP (common in x64 Themida)
+# Themida 风格 NOP 滑梯 → handler 入口偏移识别
+_THEMIDA_SLED = b'\x0f\x1f\x00'  # x64 Themida 3字节 NOP
 
 def detect_vm_entry_patterns(segment: bytes) -> list[dict]:
-    """扫描代码段中疑似 VM entry 的模式。
-    返回 [{'offset': int, 'type': str, 'confidence': float}] 列表。"""
+    """扫描代码段中的 VM entry 模式。
+    返回 [{'offset': int, 'type': str, 'confidence': float}]。"""
     entries = []
     pos = 0
     seglen = len(segment)
 
     while pos < seglen - 2:
-        # VMP 风格: push reg + pushfq + ... → vm_dispatcher
+        # VMP 特征: pushfq → vm_dispatcher 入口点
         if segment[pos] == 0x9C:  # pushfq
             entries.append({'offset': pos, 'type': 'vmprotect_entry', 'confidence': 0.6})
             pos += 1; continue
-        # Themida 风格: NOP sled → indirect call/jmp
+        # Themida 特征: NOP sled → indirect call/jmp
         if segment[pos:pos + 3] == _THEMIDA_SLED:
             entries.append({'offset': pos, 'type': 'themida_nop_sled', 'confidence': 0.5})
             pos += 3; continue
@@ -40,7 +40,7 @@ def detect_vm_entry_patterns(segment: bytes) -> list[dict]:
 
     return entries
 
-# 字节码操作码分布熵 — 衡量 VM 字节码的随机性（高熵→更强的混淆）
+# 字节码操作码分布熵 — 评估 VM 字节码随机性（高熵→强混淆）
 import math as _math
 
 def bytecode_entropy(bytecode: bytes) -> float:

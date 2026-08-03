@@ -1,9 +1,8 @@
-# 2026-07-23
-# ==== NIST SP 800-22 随机数测试套件(子集) ====
-# 自包含实现 — 不依赖scipy/numpy。O(n)或O(n log n)内完成。
-# gamma函数: Lanczos逼近(log-gamma), erfc: Abramowitz 7.1.26。
-# DFT测试: numpy可选加速, 无numpy时对<8k bits用O(n²)降级。
-# α=0.01, 允许1项失败仍判定为cryptographically random。
+# ==== NIST SP 800-22 随机数测试套件 (子集) ====
+# 自包含实现 -- 不依赖 scipy/numpy。O(n) 或 O(n log n) 内完成。
+# gamma 函数: Lanczos 逼近 (log-gamma), erfc: Abramowitz 7.1.26。
+# DFT 测试: numpy 可选加速, 无 numpy 时对 <8k bits 用 O(n^2) 降级。
+# alpha=0.01, 允许1项失败仍判定为密码学随机。
 
 import math
 from typing import List, Dict, Tuple, Optional
@@ -17,7 +16,7 @@ except ImportError:
 
 # ---- 数学辅助: gamma(log) + erfc ----
 def _lgamma(x: float) -> float:
-    """Lanczos log-gamma, 精度~1e-15"""
+    """Lanczos log-gamma, 精度约1e-15."""
     _g = 7
     _c = [0.99999999999980993, 676.5203681218851, -1259.1392167224028,
           771.32342877765313, -176.61502916214059, 12.507343278686905,
@@ -37,7 +36,7 @@ def _gamma(x: float) -> float:
 
 
 def _igamc(a: float, x: float) -> float:
-    """不完全gamma正则化的补: 用于NIST p值计算"""
+    """不完全 gamma 正则化补: NIST p 值计算用."""
     # 级数展开 (x < a+1)
     if x < a + 1:
         _sum = 1.0 / a
@@ -72,7 +71,7 @@ def _igamc(a: float, x: float) -> float:
 
 
 def _erfc(x: float) -> float:
-    """互补误差函数 erfc(x) = 1 - erf(x)"""
+    """互补误差函数 erfc(x) = 1 - erf(x)."""
     if x < 0:
         return 2.0 - _erfc(-x)
     _t = 1.0 / (1.0 + 0.3275911 * x)
@@ -83,7 +82,7 @@ def _erfc(x: float) -> float:
 
 # ---- NIST SP 800-22 检验 ----
 def monobit_test(bits: List[int]) -> float:
-    """频率(单比特)检验: H0 → P(0)=P(1)=0.5. 返回p值"""
+    """频率 (单比特) 检验: H0 -> P(0)=P(1)=0.5。返回 p 值."""
     _n = len(bits)
     if _n < 100:
         return 0.0
@@ -93,7 +92,7 @@ def monobit_test(bits: List[int]) -> float:
 
 
 def block_frequency_test(bits: List[int], M: int = 128) -> float:
-    """块内频率检验: 每个长度为M的块内1的比例"""
+    """块内频率检验: 每 M 位块内 1 的比例."""
     _n = len(bits)
     _N = _n // M
     if _N < 1:
@@ -107,7 +106,7 @@ def block_frequency_test(bits: List[int], M: int = 128) -> float:
 
 
 def runs_test(bits: List[int]) -> float:
-    """游程检验: 游程数反映序列振荡频率"""
+    """游程检验: 游程数反映序列振荡频率."""
     _n = len(bits)
     if _n < 100:
         return 0.0
@@ -125,7 +124,7 @@ def runs_test(bits: List[int]) -> float:
 
 
 def longest_run_of_ones_test(bits: List[int]) -> float:
-    """块内最长1游程检验"""
+    """块内最长1游程检验."""
     _n = len(bits)
     if _n < 128:
         return 0.0
@@ -166,7 +165,7 @@ def longest_run_of_ones_test(bits: List[int]) -> float:
 
 
 def approximate_entropy_test(bits: List[int], m: int = 5) -> float:
-    """近似熵(ApEn)检验: 比较m和m+1位模式的频率"""
+    """近似熵 (ApEn) 检验: 比较 m 和 m+1 位模式频率."""
     _n = len(bits)
     if _n < m + 2:
         return 0.0
@@ -196,7 +195,7 @@ def approximate_entropy_test(bits: List[int], m: int = 5) -> float:
 
 
 def cusum_test(bits: List[int]) -> Tuple[float, float]:
-    """累积和检验: 前向和后向, 检测序列中部分和是否过大"""
+    """累积和检验: 前向和后向, 检测序列部分和是否过大."""
     _n = len(bits)
     if _n < 100:
         return 0.0, 0.0
@@ -232,7 +231,7 @@ def _normal_cdf(x: float) -> float:
 
 
 def dft_test(bits: List[int]) -> float:
-    """离散傅里叶变换检验: 检测序列中的周期性特征"""
+    """离散傅里叶变换检验: 检测序列周期性特征."""
     _n = len(bits)
     if _n < 100:
         return 0.0
@@ -242,7 +241,7 @@ def dft_test(bits: List[int]) -> float:
         _fft = _np.fft.fft(_x)
         _mag = _np.abs(_fft[:_n // 2]) / math.sqrt(_n)
     else:
-        # O(n²) fallback
+        # O(n^2) 降级
         _mag = []
         _half = _n // 2
         for _k in range(_half):
@@ -263,7 +262,7 @@ def dft_test(bits: List[int]) -> float:
 
 # ---- 综合检验 ----
 def test_randomness(data: bytes) -> Dict[str, float]:
-    """对字节数据执行NIST检验集, 返回 {test_name: p_value}"""
+    # 对字节数据执行 NIST 检验集, 返回 {test_name: p_value}
     _bits = [(b >> i) & 1 for b in data for i in range(8)]
     _res = {}
     _res['monobit'] = monobit_test(_bits)
@@ -279,13 +278,13 @@ def test_randomness(data: bytes) -> Dict[str, float]:
 
 
 def is_cryptographically_random(data: bytes) -> bool:
-    """α=0.01, 允许1项失败"""
+    """alpha=0.01, 允许1项失败."""
     _r = test_randomness(data)
     _fail = sum(1 for _v in _r.values() if _v < 0.01)
     return _fail <= 1
 
 
 def entropy_differential(a: bytes, b: bytes) -> float:
-    """两个字节序列之间的熵差异 (用于比较加密前后)"""
+    """两个字节序列间的熵差异 (比较加密前后)."""
     from .utils import shannon_entropy
     return abs(shannon_entropy(a) - shannon_entropy(b))

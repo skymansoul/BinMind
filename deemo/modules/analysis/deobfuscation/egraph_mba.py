@@ -2,10 +2,10 @@
 """
 E-graph MBA 表达式简化器
 
-基于 [Lee et al. 2024, arXiv:2404.05431] 的 e-graph 框架，
+基于 [Lee et al. 2024, arXiv:2404.05431] 的 e-graph 框架
 使用等价类（e-class）和 e-node 数据结构对 MBA 混淆表达式进行
-重写和简化。与传统规则匹配不同，e-graph 支持同时探索多条重写路径，
-通过提取最优重写结果。
+重写和简化。与传统规则匹配不同，e-graph 支持同时探索多条重写路径
+通过提取最优重写结果
 
 核心数据结构：
 - ENode: 操作符 + 子节点 e-class ID 列表
@@ -13,7 +13,7 @@ E-graph MBA 表达式简化器
 - EGraph: 全局等价关系图
 
 融合 [Skees 2024, arXiv:2406.10016] 的半线性 MBA 处理：
-对含常量的位运算操作数进行部分求值后再入图。
+对含常量的位运算操作数进行部分求值后再入图
 """
 
 import logging
@@ -71,7 +71,7 @@ class EClass:
 
 class EGraph:
     # 维护 e-class 集合 + e-node→e-class 映射
-    # 支持 add/find/merge/rebuild/extract
+    # 支持 add/查找/合并/rebuild/提取
 
     def __init__(self):
         self.classes: List[EClass] = []
@@ -150,9 +150,9 @@ class EGraph:
 
     def rebuild(self) -> int:
         """
-        执行 congruence closure + union-find 合并
-
-        返回本轮合并的 e-class 对数。
+        执行 congruence closure + union-查找 合并
+        
+        返回本轮合并的 e-class 对数
         """
         merged = 0
         while self.pending:
@@ -246,9 +246,9 @@ class EGraph:
 class MBARewriteRules:
     """
     MBA 重写规则集
-
+    
     融合 [Lee 2024, 2404.05431] 的 25 条恒等规则
-    与 [Skees 2024, 2406.10016] 的半线性扩展规则。
+    与 [Skees 2024, 2406.10016] 的半线性扩展规则
     """
 
     # 标准线性 MBA 规则（e-graph 格式）
@@ -286,13 +286,13 @@ class MBARewriteRules:
         # (x ^ y) ^ y = x
         ('xor', ('xor', 'x', 'y'), 'y',
          'var', 'x'),
-        # (x << 3) - x = x * 7  [TrickBot 模式]
+        # (x << 3) - x = x * 7 [TrickBot 模式]
         ('sub', ('shl', 'x', ('const', 3)), 'x',
          'mul', 'x', ('const', 7)),
-        # (x ^ y) + ((x & y) << 1) = x + y  [TrickBot carry-addition]
+        # (x ^ y) + ((x & y) << 1) = x + y [TrickBot carry-addition]
         ('add', ('xor', 'x', 'y'), ('shl', ('and', 'x', 'y'), ('const', 1)),
          'add', 'x', 'y'),
-        # (~x + y) + 1 = y - x  [2's complement variant]
+        # (~x + y) + 1 = y - x [2's complement variant]
         ('add', ('add', ('not', 'x'), 'y'), ('const', 1),
          'sub', 'y', 'x'),
     ]
@@ -301,8 +301,8 @@ class MBARewriteRules:
     def apply_rules(cls, egraph: EGraph, max_iterations: int = 5) -> int:
         """
         将规则集迭代应用于 e-graph
-
-        返回新创建的等价类数量（即发现的新等价关系数）。
+        
+        返回新创建的等价类数量（即发现的新等价关系数）
         """
         total_new = 0
 
@@ -335,8 +335,8 @@ class MBARewriteRules:
     def _try_match_node(cls, egraph: EGraph, node: ENode) -> Set[int]:
         """
         尝试对单个 e-node 匹配所有规则
-
-        返回匹配到的等价 e-class ID 集合。
+        
+        返回匹配到的等价 e-class ID 集合
         """
         results: Set[int] = set()
 
@@ -419,16 +419,16 @@ class MBASimplifier:
     def simplify(self, expr_str: str) -> Dict[str, Any]:
         """
         简化 MBA 表达式
-
+        
         Args:
-            expr_str: 待简化的表达式字符串
-
-        Returns:
-            dict with 'original', 'simplified', 'steps', 'verified'
+        expr_str: 待简化的表达式字符串
+        
+        返回:
+        dict 'original', 'simplified', 'steps', 'verified'
         """
         egraph = EGraph()
 
-        # Step 1: Parse → AST → EGraph
+        # Step 1: 解析 → AST → EGraph
         tokens = self._tokenize(expr_str)
         root_cid = self._build_egraph(egraph, tokens)
 
@@ -446,7 +446,7 @@ class MBASimplifier:
         # Step 2: Apply rewrite rules
         steps = MBARewriteRules.apply_rules(egraph, max_iterations=5)
 
-        # Step 3: Extract
+        # Step 3: 提取
         simplified = egraph.extract(root_cid)
 
         # Step 4: Verify
@@ -572,9 +572,9 @@ class MBASimplifier:
     def _z3_verify(self, expr_a: str, expr_b: str) -> bool:
         """
         使用 Z3 验证两个表达式等价
-
-        对 32-bit 位向量进行全量词验证。
-        参考 [Skees 2024] 的验证策略。
+        
+        对 32-bit 位向量进行全量词验证
+        参考 [Skees 2024] 的验证策略
         """
         if not _HAS_Z3:
             return False
@@ -622,8 +622,8 @@ class MBASimplifier:
 def simplify_mba_egraph(expr: str, bit_width: int = 32) -> Dict[str, Any]:
     """
     便捷函数：使用 e-graph 简化 MBA 表达式
-
-    终端用户接口，实现 [Lee 2024, 2404.05431] 的完整流程。
+    
+    终端用户接口，实现 [Lee 2024, 2404.05431] 的完整流程
     """
     simplifier = MBASimplifier(bit_width=bit_width, verify_z3=_HAS_Z3)
     return simplifier.simplify(expr)

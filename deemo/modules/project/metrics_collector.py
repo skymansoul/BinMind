@@ -1,4 +1,4 @@
-# 2026-08-01 — Prometheus-compatible metrics: Counter/Gauge/Histogram/Summary
+# Prometheus兼容指标: Counter/Gauge/Histogram/Summary
 import time, threading, json, random, logging, functools
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any, Tuple
@@ -8,8 +8,19 @@ log = logging.getLogger(__name__)
 
 class MetricType: COUNTER = "counter"; GAUGE = "gauge"; HISTOGRAM = "histogram"; SUMMARY = "summary"
 
-@dataclass class Sample: name: str; labels: Dict[str, str]; value: float; timestamp: float = field(default_factory=time.time)
-@dataclass class MetricFamily: name: str; type: str; help: str; samples: List[Sample]
+@dataclass
+class Sample:
+    name: str
+    labels: Dict[str, str]
+    value: float
+    timestamp: float = field(default_factory=time.time)
+
+@dataclass
+class MetricFamily:
+    name: str
+    type: str
+    help: str
+    samples: List[Sample]
 
 class Counter:
     def __init__(self, name, help="", labels=None): self.name = name; self.help = help; self.labels = labels or {}; self._v: float = 0; self._lk = threading.Lock()
@@ -41,8 +52,7 @@ class Histogram:
                 if v <= b: self._bc[i] += 1
     @property
     def buckets(self): return list(self._b)
-    @property
-    def count(self): return self._cnt
+    count = property(lambda self: self._cnt)
     @property
     def sum(self): return self._sum
 
@@ -128,8 +138,11 @@ def track_inprogress(name=None):
     def d(f):
         gn = name or f"{f.__name__}_inprogress"; g = _greg.get_or_create(MetricType.GAUGE, gn, help=f"In-flight: {f.__name__}")
         @functools.wraps(f)
-        def w(*a, **kw): g.inc()
-            try: return f(*a, **kw)
-            finally: g.dec()
+        def w(*a, **kw):
+            g.inc()
+            try:
+                return f(*a, **kw)
+            finally:
+                g.dec()
         return w
     return d

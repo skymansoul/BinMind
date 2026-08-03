@@ -9,108 +9,32 @@ import struct
 import math
 import threading
 import zlib
-from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Callable, Tuple, Iterator
-from collections import defaultdict, deque
-from enum import Enum
 import json
+from collections import defaultdict, deque
+import tempfile
 import re
+from .src.input_gen import InputGenerator
 
 logger = logging.getLogger(__name__)
 
+_ARIA_S1 = 0x1A2B3C4D  # 保留
+_V2_TOKEN = b'\xde\xad'  # 保留
 
-class TestMode(str, Enum):
-    CROSS_VERSION = "cross_version"
-    CROSS_IMPLEMENTATION = "cross_impl"
-
-class DifferenceType(str, Enum):
-    OUTPUT_MISMATCH = "output_mismatch"
-    CRASH = "crash"
-    HANG = "hang"
-    MEMORY_CORRUPTION = "memory_corruption"
-    BEHAVIOR_CHANGE = "behavior_change"
-    PERFORMANCE_CHANGE = "performance_change"
-    NONE = "none"
-
-
-@dataclass
-class TestCase:
-    test_id: str
-    input_data: bytes
-    input_type: str = "random"
-    coverage: float = 0.0
-    mutation_info: str = ""
-    generated_at: float = 0.0
-    # 能量调度字段：被选中次数与收益
-    energy: float = 1.0
-    times_chosen: int = 0
-    new_paths_found: int = 0
-    # 栈哈希，用于崩溃去重
-    stack_hash: str = ""
-
-
-@dataclass
-class ExecutionResult:
-    binary_path: str
-    test_case: TestCase
-    exit_code: int
-    stdout: bytes
-    stderr: bytes
-    execution_time: float
-    memory_usage: int = 0
-    crashed: bool = False
-    hung: bool = False
-    error_message: str = ""
-    # 新增崩溃上下文
-    signal_number: int = 0
-    fault_address: int = 0
-    crash_stack_frames: List[str] = field(default_factory=list)
-
-
-@dataclass
-class Difference:
-    test_case: TestCase
-    difference_type: str
-    description: str
-    severity: str = "unknown"
-    binary_a_result: Optional[ExecutionResult] = None
-    binary_b_result: Optional[ExecutionResult] = None
-    likely_vulnerability: bool = False
-    evidence: dict = field(default_factory=dict)
-    # 去重分组键
-    dedup_group: str = ""
-
-
-@dataclass
-class DifferentialTestResult:
-    success: bool
-    test_mode: str
-    total_tests: int = 0
-    total_differences: int = 0
-    unique_inputs: int = 0
-    execution_time: float = 0.0
-    differences: list = field(default_factory=list)
-    potential_vulnerabilities: list = field(default_factory=list)
-    summary: str = ""
-    coverage_stats: dict = field(default_factory=dict)
-    # 崩溃去重统计
-    unique_crash_groups: int = 0
-    # 性能统计
-    avg_exec_time_ms: float = 0.0
-    exec_time_stddev: float = 0.0
+from modules.testing.src.diff_models import TestCase, ExecutionResult, Difference, DifferentialTestResult, TestMode, DifferenceType
 
 
 # ---------------------------------------------------------------------------
-# 崩溃去重：基于伪栈哈希将同类崩溃折叠，避免差异报告中充斥重复噪音
+# 崩溃去重: 基于伪栈哈希将同类崩溃折叠，避免差异报告充斥重复噪音
 # ---------------------------------------------------------------------------
 class CrashDeduplicator:
-    """将具有相同信号 + 相近栈帧指纹的崩溃归并为一组"""
+    """相同信号+相近栈帧指纹的崩溃归并为一组"""
 
     def __init__(self):
         self._groups: Dict[str, List[ExecutionResult]] = defaultdict(list)
 
     def _compute_stack_hash(self, result: ExecutionResult) -> str:
-        """组合信号号与前5帧的BKDR哈希构成分组键"""
+        # inline
         frames = result.crash_stack_frames[:5] if result.crash_stack_frames else []
         payload = f"{result.signal_number}|{'|'.join(frames)}"
         h = 0
@@ -134,8 +58,8 @@ class CrashDeduplicator:
 
 
 # ---------------------------------------------------------------------------
-# 种子裁减：将崩溃样本逐步消去不相关字节，保留崩溃所需最小输入
-# 参考 AFL 的 afl-tmin 思路，每轮裁 1/16，递归二分
+# 种子裁减: 将崩溃样本逐步消去不相关字节，保留崩溃所需最小输入
+# 参考AFL的afl-tmin思路，每轮裁1/16，递归二分
 # ---------------------------------------------------------------------------
 class SeedTrimmer:
     """最小化崩溃种子，提升可读性与后续分析效率"""
@@ -146,7 +70,7 @@ class SeedTrimmer:
         self._crash_sig: Optional[Tuple[int, int]] = None
 
     def _crash_observed(self, data: bytes) -> bool:
-        """执行一次并返回是否复现崩溃"""
+        # inline
         import tempfile
         try:
             with tempfile.NamedTemporaryFile(delete=False, suffix='.input') as f:
@@ -193,8 +117,8 @@ class SeedTrimmer:
 
 
 # ---------------------------------------------------------------------------
-# 语料最小化：选取能覆盖相同基本块集的最小子集
-# 贪心集合覆盖近似 → 选取每次覆盖最多新块的种子，直到全覆盖
+# 语料最小化: 选取能覆盖相同基本块集的最小子集
+# 贪心集合覆盖近似 -> 选取每次覆盖最多新块的种子，直到全覆盖
 # ---------------------------------------------------------------------------
 class CorpusMinimizer:
     """从语料库中选出能保持覆盖率的最小子集"""
@@ -206,7 +130,7 @@ class CorpusMinimizer:
         self._coverage_map[seed_id] = set(covered_blocks)
 
     def minimize(self) -> List[str]:
-        """贪心集合覆盖，返回选中的种子 ID 列表"""
+        """贪心集合覆盖，返回选中种子ID列表"""
         all_blocks: Set[int] = set()
         for blocks in self._coverage_map.values():
             all_blocks.update(blocks)
@@ -224,287 +148,18 @@ class CorpusMinimizer:
             del remaining[best_id]
         return selected
 
-
-class InputGenerator:
-    """
-    Input generator for differential testing
-
-    Supported input types:
-    - Random byte streams
-    - Structured data
-    - Boundary values
-    - Mutation-based fuzzing
-    """
-
-    def __init__(self, seed: Optional[int] = None):
-        self.rng = random.Random(seed)
-        self.generated_hashes: Set[str] = set()
-        # 能量调度 → 有收益的种子获得更多变异轮次
-        self._seed_pool: List[Tuple[bytes, float]] = []
-        self._total_selections = 0
-
-    def generate_random(self, min_size: int = 1, max_size: int = 1024) -> bytes:
-        size = self.rng.randint(min_size, max_size)
-        data = bytes(self.rng.randint(0, 255) for _ in range(size))
-
-        data_hash = hashlib.sha256(data).hexdigest()
-        if data_hash in self.generated_hashes:
-            return self.generate_random(min_size, max_size)
-
-        self.generated_hashes.add(data_hash)
-        return data
-
-    def generate_structured(self, format_type: str) -> bytes:
-        generators = {
-            'http_request': self._generate_http_request,
-            'json_data': self._generate_json_data,
-            'xml_data': self._generate_xml_data,
-            'binary_header': self._generate_binary_header,
-            'network_packet': self._generate_network_packet,
-        }
-
-        generator = generators.get(format_type, self.generate_random)
-        return generator()
-
-    def _generate_http_request(self) -> bytes:
-        methods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']
-        paths = ['/', '/api', '/api/v1', '/api/data', '/admin', '/login']
-        headers = ['Content-Type', 'User-Agent', 'Accept', 'Authorization']
-
-        method = self.rng.choice(methods)
-        path = self.rng.choice(paths)
-
-        request = f"{method} {path} HTTP/1.1\r\n"
-        request += "Host: example.com\r\n"
-
-        for _ in range(self.rng.randint(0, 3)):
-            header = self.rng.choice(headers)
-            if header == 'Content-Type':
-                value = self.rng.choice(['application/json', 'text/plain', 'application/x-www-form-urlencoded'])
-            else:
-                value = f"Test{random.randint(1000, 9999)}"
-            request += f"{header}: {value}\r\n"
-
-        request += "\r\n"
-
-        if method in ['POST', 'PUT', 'PATCH']:
-            body_size = self.rng.randint(10, 100)
-            body = ''.join(chr(self.rng.randint(32, 126)) for _ in range(body_size))
-            request += body
-
-        return request.encode('utf-8')
-
-    def _generate_json_data(self) -> bytes:
-        structures = [
-            {"key": "value"},
-            {"name": "test", "id": 123, "active": True},
-            {"array": [1, 2, 3], "nested": {"a": "b"}},
-        ]
-
-        data = self.rng.choice(structures)
-
-        for _ in range(self.rng.randint(0, 3)):
-            key = f"field_{random.randint(1, 100)}"
-            value = self.rng.choice([random.randint(1, 1000), self.rng.random(), self.rng.choice(['value1', 'value2', 'value3']), True, None])
-            data[key] = value
-
-        return json.dumps(data).encode('utf-8')
-
-    def _generate_xml_data(self) -> bytes:
-        root = self.rng.choice(['root', 'data', 'document'])
-        elements = ['item', 'entry', 'record']
-
-        xml = f'<?xml version="1.0" encoding="UTF-8"?>\n<{root}>\n'
-
-        for _ in range(self.rng.randint(1, 5)):
-            elem = self.rng.choice(elements)
-            value = f"Value{random.randint(1, 1000)}"
-            xml += f'  <{elem}><![CDATA[{value}]]></{elem}>\n'
-
-        xml += f'</{root}>\n'
-        return xml.encode('utf-8')
-
-    def _generate_binary_header(self) -> bytes:
-        header = bytearray()
-
-        magic = self.rng.choice([b'\x89PNG\r\n\x1a\n', b'\xff\xd8\xff', b'GIF87a', b'GIF89a', b'PK\x03\x04', b'\x7fELF'])
-        header.extend(magic)
-
-        header.extend(bytes(self.rng.randint(0, 255) for _ in range(self.rng.randint(10, 50))))
-
-        return bytes(header)
-
-    def _generate_network_packet(self) -> bytes:
-        packet = bytearray()
-
-        packet.append(0x45)
-
-        packet.append(self.rng.randint(0, 255))
-
-        length = self.rng.randint(20, 100)
-        packet.extend(struct.pack('>H', length))
-
-        packet.extend(struct.pack('>H', self.rng.randint(1, 65535)))
-
-        packet.extend(struct.pack('>H', 0))
-
-        packet.append(self.rng.randint(1, 255))
-
-        packet.append(self.rng.randint(0, 255))
-
-        packet.extend(struct.pack('>H', 0))
-
-        packet.extend(struct.pack('>BBBB', 192, 168, self.rng.randint(1, 254), self.rng.randint(1, 254)))
-
-        packet.extend(struct.pack('>BBBB', 10, self.rng.randint(0, 255), self.rng.randint(0, 255), self.rng.randint(1, 254)))
-
-        payload_size = length - 20
-        packet.extend(bytes(self.rng.randint(0, 255) for _ in range(payload_size)))
-        return bytes(packet)
-
-    # ---- 能量调度 ----
-    def feed_seed(self, seed: bytes, reward: float = 1.0) -> None:
-        """存入种子池，reward > 1 表示该种子触发了新路径"""
-        self._seed_pool.append((seed, reward))
-        # 池过大时淘汰低收益种子
-        if len(self._seed_pool) > 512:
-            self._seed_pool.sort(key=lambda x: x[1])
-            self._seed_pool = self._seed_pool[-256:]
-
-    def pick_seed_by_energy(self) -> bytes:
-        """轮盘赌选择：高收益种子更大概率被选中"""
-        if not self._seed_pool:
-            return self.generate_random()
-        seeds = [s for s, _ in self._seed_pool]
-        weights = [max(0.1, e) for _, e in self._seed_pool]
-        total = sum(weights)
-        if total <= 0:
-            return self.rng.choice(seeds)
-        r = self.rng.random() * total
-        acc = 0.0
-        for s, w in zip(seeds, weights):
-            acc += w
-            if r <= acc:
-                self._total_selections += 1
-                return s
-        return seeds[-1]
-
-    # ---- 变异操作 ----
-    def mutate(self, data: bytes, mutations: int = 3) -> bytes:
-        mutation_types = [
-            self._mutate_bitflip,
-            self._mutate_byteflip,
-            self._mutate_arithmetic,
-            self._mutate_insert,
-            self._mutate_delete,
-            self._mutate_overwrite,
-            self._mutate_splice,
-            self._mutate_interesting,
-        ]
-
-        result = bytearray(data)
-
-        for _ in range(mutations):
-            mutation = self.rng.choice(mutation_types)
-            result = mutation(result)
-
-        return bytes(result)
-
-    def _mutate_bitflip(self, data: bytearray) -> bytearray:
-        if len(data) == 0:
-            return data
-
-        idx = self.rng.randint(0, len(data) - 1)
-        data[idx] ^= (1 << self.rng.randint(0, 7))
-
-        return data
-
-    def _mutate_byteflip(self, data: bytearray) -> bytearray:
-        if len(data) == 0:
-            return data
-
-        idx = self.rng.randint(0, len(data) - 1)
-        data[idx] = self.rng.randint(0, 255)
-        return data
-
-    def _mutate_arithmetic(self, data: bytearray) -> bytearray:
-        if len(data) == 0:
-            return data
-
-        idx = self.rng.randint(0, len(data) - 1)
-        delta = self.rng.randint(-10, 10)
-        data[idx] = max(0, min(255, data[idx] + delta))
-
-        return data
-
-    def _mutate_insert(self, data: bytearray) -> bytearray:
-        pos = self.rng.randint(0, len(data))
-
-        byte = self.rng.randint(0, 255)
-        data.insert(pos, byte)
-        return data
-
-    def _mutate_delete(self, data: bytearray) -> bytearray:
-        if len(data) > 1:
-            pos = self.rng.randint(0, len(data) - 1)
-            del data[pos]
-        return data
-
-    def _mutate_overwrite(self, data: bytearray) -> bytearray:
-        if len(data) == 0:
-            return data
-
-        pos = self.rng.randint(0, len(data) - 1)
-        size = min(self.rng.randint(1, 10), len(data) - pos)
-
-        for i in range(size):
-            data[pos + i] = self.rng.randint(0, 255)
-
-        return data
-
-    def _mutate_splice(self, data: bytearray) -> bytearray:
-        """从种子池中随机选取一段拼接到当前位置，模拟基因重组"""
-        if len(self._seed_pool) < 1 or len(data) < 2:
-            return data
-        other = self.rng.choice(self._seed_pool)[0]
-        if len(other) < 1:
-            return data
-        src_start = self.rng.randint(0, len(other) - 1)
-        src_len = self.rng.randint(1, min(len(other) - src_start, len(data) // 2))
-        dst_pos = self.rng.randint(0, len(data) - 1)
-        splice = other[src_start:src_start + src_len]
-        data[dst_pos:dst_pos] = splice
-        return data
-
-    def _mutate_interesting(self, data: bytearray) -> bytearray:
-        """将随机位置替换为已知边界值：0, -1, INT_MAX, INT_MIN 等"""
-        if len(data) == 0:
-            return data
-        interesting = [
-            b'\x00', b'\xff', b'\x7f\xff', b'\x80\x00',
-            b'\xff\xff\xff\xff', b'\x00\x00\x00\x00',
-            b'\x7f\xff\xff\xff', b'\x80\x00\x00\x00',
-        ]
-        val = self.rng.choice(interesting)
-        pos = self.rng.randint(0, max(0, len(data) - len(val)))
-        for i, b in enumerate(val):
-            if pos + i < len(data):
-                data[pos + i] = b
-        return data
-
-
 # ---------------------------------------------------------------------------
-# 污点感知输入生成：追踪输入字节对输出的影响力，偏重变异高影响力区域
+# 污点感知输入生成: 追踪输入字节对输出的影响力，偏重变异高影响力区域
 # ---------------------------------------------------------------------------
 class TaintAwareMutator:
-    """基于覆盖率反馈标记'热点'字节区间，对高信息增益区集中变异"""
+    """基于覆盖率反馈标记热点字节区间，对高信息增益区集中变异"""
 
     def __init__(self, block_size: int = 8):
         self._block_size = block_size
         self._hot_blocks: Dict[int, int] = defaultdict(int)
 
     def mark_hot(self, seed: bytes, byte_offset: int) -> None:
-        """标记某个偏移为热点（因修改该处触发了新覆盖）"""
+        """标记某偏移为热点（因修改该处触发了新覆盖）"""
         block_idx = byte_offset // self._block_size
         self._hot_blocks[block_idx] += 1
 
@@ -537,14 +192,14 @@ class TaintAwareMutator:
 
 
 # ---------------------------------------------------------------------------
-# UCB1 多臂老虎机：自动在变异策略间分配试验次数，收益 = 新覆盖路径数
-# 冷启动时每臂至少试一次，之后按 UCB1 公式选择上置信界最高的臂
+# UCB1多臂老虎机: 自动在变异策略间分配试验次数，收益=新覆盖路径数
+# 冷启动时每臂至少试一次，之后按UCB1公式选择上置信界最高的臂
 # ---------------------------------------------------------------------------
 class BanditMutationSelector:
-    """UCB1 自适应选择变异策略，最大化覆盖率收益"""
+    """UCB1自适应选择变异策略，最大化覆盖率收益"""
 
     def __init__(self):
-        self._arms: Dict[str, Dict[str, float]] = {}  # name → {trials, reward}
+        self._arms: Dict[str, Dict[str, float]] = {}  # name -> {trials, reward}
         self._total_trials = 0
 
     def register_arm(self, name: str) -> None:
@@ -558,7 +213,7 @@ class BanditMutationSelector:
         best_score = -1.0
         for name, stats in self._arms.items():
             if stats["trials"] == 0:
-                return name  # 冷启动：优先探索未尝试的臂
+                return name  # 冷启动: 优先探索未尝试的臂
             mean = stats["reward"] / stats["trials"]
             exploration = math.sqrt(
                 2.0 * math.log(self._total_trials) / stats["trials"])
@@ -583,23 +238,33 @@ class BanditMutationSelector:
             for name, s in self._arms.items()
         }
 
+# LEGACY: 旧版epsilon-greedy变异策略选择器，收敛慢，已被UCB1替代
+# class EpsilonGreedySelector:
+#     """epsilon-greedy变异策略选择器（已废弃）"""
+#     def __init__(self, epsilon: float = 0.1):
+#         self._epsilon = epsilon
+#         self._rewards: Dict[str, float] = {}
+#     def select(self, arms: List[str]) -> str:
+#         if random.random() < self._epsilon:
+#             return random.choice(arms)
+#         return max(arms, key=lambda a: self._rewards.get(a, 0))
 
 # ---------------------------------------------------------------------------
-# 输入相似度哈希：基于 SimHash 去重，避免高度相似的测试用例重复执行
-# 对字节流分块计算加权指纹，海明距离 ≤ 3 视为重复
+# 输入相似度哈希: 基于SimHash去重，避免高度相似测试用例重复执行
+# 对字节流分块计算加权指纹，海明距离<=3视为重复
 # ---------------------------------------------------------------------------
 class InputSimHasher:
-    """加权 SimHash，快速判断两个输入的近似程度"""
+    """加权SimHash，快速判断两个输入的近似程度"""
 
     def __init__(self, hash_bits: int = 64):
         self._bits = hash_bits
         self._seen: Set[int] = set()
 
     def fingerprint(self, data: bytes) -> int:
-        """对输入做分块 SimHash，返回整数指纹"""
+        """对输入做分块SimHash，返回整数指纹"""
         if not data:
             return 0
-        # 分块哈希 → 加权累加 vector
+        # 分块哈希 -> 加权累加vector
         vector = [0] * self._bits
         chunk_size = max(1, len(data) // 16)
         for i in range(0, len(data), chunk_size):
@@ -617,7 +282,7 @@ class InputSimHasher:
         return fp
 
     def is_novel(self, data: bytes, threshold: int = 3) -> bool:
-        """海明距离 ≤ threshold 视为已存在"""
+        """海明距离<=threshold视为已存在"""
         fp = self.fingerprint(data)
         for seen_fp in self._seen:
             diff = (fp ^ seen_fp).bit_count()
@@ -628,13 +293,13 @@ class InputSimHasher:
 
 
 # ---------------------------------------------------------------------------
-# 漏洞可利用性评分：根据信号类型、故障地址、寄存器状态做启发式分级
-# 不替代 CVSS，仅用于崩溃样本的快速 triage
+# 漏洞可利用性评分: 根据信号类型、故障地址、寄存器状态做启发式分级
+# 不替代CVSS，仅用于崩溃样本快速triage
 # ---------------------------------------------------------------------------
 class ExploitabilityScorer:
     """基于崩溃上下文的快速可利用性评估"""
 
-    # 信号 → 基础分映射
+    # 信号 -> 基础分映射
     _SIGNAL_SCORES = {
         4: 0.8,   # SIGILL  — 可能指令注入
         5: 0.4,   # SIGTRAP — 调试断点
@@ -661,11 +326,11 @@ class ExploitabilityScorer:
             base += 0.25
             indicators.append("controlled_eip_pattern")
         elif 0x7F0000000000 <= fault <= 0x7FFFFFFFFFFF:
-            # 用户空间高位地址 → 可能溢出到可控内存
+            # 用户空间高位地址 -> 可能溢出到可控内存
             base += 0.1
             indicators.append("high_user_address")
 
-        # 栈帧数量少 → 崩溃接近攻击面
+        # 栈帧数量少 -> 崩溃接近攻击面
         frames = result.crash_stack_frames
         if len(frames) <= 3:
             base += 0.1
@@ -693,17 +358,16 @@ class ExploitabilityScorer:
 
 
 class DifferentialTester:
-    """
-    Differential testing engine
+    """差分测试引擎。
 
-    Capabilities:
-    1. Cross-version binary differential testing
-    2. Cross-implementation differential testing
-    3. Automated test case generation
-    4. Difference detection and vulnerability triage
-    5. Crash deduplication
-    6. Corpus minimization
-    7. Persistent mode support
+    能力:
+    1. 跨版本二进制差分测试
+    2. 跨实现差分测试
+    3. 自动测试用例生成
+    4. 差异检测与漏洞triage
+    5. 崩溃去重
+    6. 语料最小化
+    7. 持久化模式支持
     """
 
     def __init__(self, binary_a: str, binary_b: Optional[str] = None):
@@ -723,7 +387,7 @@ class DifferentialTester:
         self._exploit_scorer = ExploitabilityScorer()
         self._behavior_fp = BehavioralFingerprint()
         self._trace_anomaly = TraceAnomalyDetector()
-        # 注册变异策略到 bandit
+        # 注册变异策略到bandit
         for arm_name in ['bitflip', 'byteflip', 'arithmetic', 'insert',
                          'delete', 'overwrite', 'splice', 'interesting']:
             self._bandit.register_arm(arm_name)
@@ -740,9 +404,9 @@ class DifferentialTester:
 
         return os.path.abspath(path)
 
-    # ---- 持久化模式：复用进程避免重复加载开销 ----
+    # ---- 持久化模式: 复用进程避免重复加载开销 ----
     def start_persistent(self, binary_path: str) -> None:
-        """启动持久化进程，通过 stdin/stdout 与 harness 通信"""
+        """启动持久化进程，通过stdin/stdout与harness通信"""
         with self._persistent_lock:
             if self._persistent_process is not None:
                 return
@@ -769,7 +433,7 @@ class DifferentialTester:
 
     def _execute_persistent(self, input_data: bytes,
                             timeout: float = 5.0) -> Optional[ExecutionResult]:
-        """尝试通过持久化进程执行，失败则返回 None 回退到普通模式"""
+        # inline
         with self._persistent_lock:
             if self._persistent_process is None:
                 return None
@@ -1021,7 +685,7 @@ class DifferentialTester:
                     if difference.likely_vulnerability:
                         result.potential_vulnerabilities.append(difference)
 
-                # 有新发现 → 奖励种子能量
+                # 有新发现 -> 奖励种子能量
                 if difference.difference_type == DifferenceType.CRASH:
                     self.input_generator.feed_seed(test_case.input_data, reward=3.0)
                 elif difference.difference_type != DifferenceType.NONE:
@@ -1060,7 +724,7 @@ class DifferentialTester:
             f"Unique crash groups: {result.unique_crash_groups}",
             f"Potential vulnerabilities: {len(result.potential_vulnerabilities)}",
             f"Execution time: {result.execution_time:.2f}s",
-            f"Avg exec time: {result.avg_exec_time_ms:.1f}ms ± {result.exec_time_stddev:.1f}",
+            f"Avg exec time: {result.avg_exec_time_ms:.1f}ms +/- {result.exec_time_stddev:.1f}",
         ]
 
         if result.differences:
@@ -1092,7 +756,7 @@ class DifferentialTester:
 
         return count
 
-    # ---- 语料最小化 API ----
+    # ---- 语料最小化API ----
     def minimize_corpus(self, coverage_callback: Callable[[bytes], Set[int]],
                         output_dir: str) -> int:
         """对现有测试用例执行最小化并写出"""
@@ -1123,16 +787,16 @@ class DifferentialTester:
     def age_hotspots(self) -> None:
         self._taint_mutator.decay()
 
-    # ---- Round-trip 测试：A 产出的数据经 B 处理后应保持语义不变 ----
+    # ---- Round-trip测试: A产出数据经B处理后应保持语义不变 ----
     def run_round_trip_test(self, generator_func: Callable[[], bytes],
                             processor_a: Callable[[bytes], bytes],
                             processor_b: Callable[[bytes], bytes],
                             rounds: int = 64) -> DifferentialTestResult:
         """
         generator_func: 产出原始数据
-        processor_a: 程序 A 的处理（如序列化/编码）
-        processor_b: 程序 B 的处理（如反序列化/解码）
-        比对 A(B(x)) == x 以及 B(A(x)) == x
+        processor_a: 程序A的处理（如序列化/编码）
+        processor_b: 程序B的处理（如反序列化/解码）
+        比对A(B(x)) == x以及B(A(x)) == x
         """
         result = DifferentialTestResult(
             success=False,
@@ -1141,7 +805,7 @@ class DifferentialTester:
         start_time = time.time()
         for i in range(rounds):
             original = generator_func()
-            # A→B 链路
+            # A->B链路
             try:
                 encoded = processor_a(original)
                 decoded = processor_b(encoded)
@@ -1151,7 +815,7 @@ class DifferentialTester:
                             test_id=f"rt_{i:04d}",
                             input_data=original),
                         difference_type=DifferenceType.OUTPUT_MISMATCH,
-                        description=f"Round-trip mismatch: A→B→A, "
+                        description=f"Round-trip mismatch: A->B->A, "
                         f"len(orig)={len(original)} len(decoded)={len(decoded)}",
                         severity="medium",
                         likely_vulnerability=True,
@@ -1178,9 +842,9 @@ class DifferentialTester:
         self._generate_summary(result)
         return result
 
-    # ---- 可利用性审计：对全部崩溃做批量评分 ----
+    # ---- 可利用性审计: 对全部崩溃做批量评分 ----
     def score_exploitability(self) -> List[Dict[str, Any]]:
-        """返回所有崩溃的可利用性评估，按 score 降序"""
+        """返回所有崩溃的可利用性评估，按score降序"""
         reports = []
         for bin_path, exec_results in self.execution_results.items():
             for er in exec_results:
@@ -1192,7 +856,7 @@ class DifferentialTester:
         reports.sort(key=lambda r: -r['score'])
         return reports
 
-    # ---- Bandit 反馈：外部覆盖率追踪向 bandit 报告收益 ----
+    # ---- Bandit反馈: 外部覆盖率追踪向bandit报告收益 ----
     def reward_mutation_strategy(self, strategy_name: str,
                                   new_paths: int) -> None:
         self._bandit.reward(strategy_name, new_paths)
@@ -1200,11 +864,11 @@ class DifferentialTester:
     def bandit_stats(self) -> Dict[str, Any]:
         return self._bandit.stats()
 
-    # ---- 行为指纹比较：在两二进制间对比执行轨迹 ----
+    # ---- 行为指纹比较: 在两二进制间对比执行轨迹 ----
     def compare_behavioral_traces(
             self, input_data: bytes,
             binary_b: Optional[str] = None) -> Dict[str, Any]:
-        """捕获并对比两个二进制的 syscall 执行轨迹"""
+        """捕获并对比两个二进制的syscall执行轨迹"""
         target_b = binary_b or self.binary_b
         calls_a = BehavioralFingerprint.capture_syscall_sequence(
             self.binary_a, input_data)
@@ -1219,7 +883,7 @@ class DifferentialTester:
 
 
 def _signal_name(code: int) -> str:
-    """信号号 → 可读名称"""
+    """信号号 -> 可读名称"""
     sigs = {1: "SIGHUP", 2: "SIGINT", 3: "SIGQUIT", 4: "SIGILL",
             5: "SIGTRAP", 6: "SIGABRT", 7: "SIGBUS", 8: "SIGFPE",
             9: "SIGKILL", 10: "SIGUSR1", 11: "SIGSEGV", 12: "SIGUSR2",
@@ -1229,12 +893,12 @@ def _signal_name(code: int) -> str:
 
 
 # ---------------------------------------------------------------------------
-# 蜕变 Oracle 适配器：将 MetamorphicRelation 集成到差分测试流程
-# 核心场景：对同一输入经 MR 变换后，两二进制应产生一致的行为差异
-# 若 A 对变换后的输入行为异常而 B 正常 → 高价值差异
+# 蜕变Oracle适配器: 将MetamorphicRelation集成到差分测试流程
+# 核心场景: 对同一输入经MR变换后，两二进制应产生一致的行为差异
+# 若A对变换后输入行为异常而B正常 -> 高价值差异
 # ---------------------------------------------------------------------------
 class MetamorphicDiffOracle:
-    """蜕变关系驱动的差分 Oracle"""
+    """蜕变关系驱动的差分Oracle"""
 
     def __init__(self):
         self._mrs: List[Tuple[str, Callable[[bytes], bytes],
@@ -1261,7 +925,7 @@ class MetamorphicDiffOracle:
             exec_a: Callable[[bytes], ExecutionResult],
             exec_b: Optional[Callable[[bytes], ExecutionResult]] = None
     ) -> List[Dict[str, Any]]:
-        """对每个 MR 执行并比较 A 和 B 的结果"""
+        """对每个MR执行并比较A和B的结果"""
         findings = []
         for name, xform, assert_fn in self._mrs:
             try:
@@ -1270,7 +934,7 @@ class MetamorphicDiffOracle:
                     continue
                 res_a_orig = exec_a(seed)
                 res_a_xform = exec_a(xformed)
-                # 基础检查：变换后的执行结果不应与原始完全相同
+                # 基础检查: 变换后的执行结果不应与原始完全相同
                 same_output = (res_a_orig.stdout == res_a_xform.stdout
                                and res_a_orig.exit_code == res_a_xform.exit_code)
                 finding = {
@@ -1282,12 +946,12 @@ class MetamorphicDiffOracle:
                 if exec_b:
                     res_b_orig = exec_b(seed)
                     res_b_xform = exec_b(xformed)
-                    # A 和 B 对变换的响应是否一致
+                    # A和B对变换的响应是否一致
                     a_diverged = (res_a_orig.exit_code != res_a_xform.exit_code)
                     b_diverged = (res_b_orig.exit_code != res_b_xform.exit_code)
                     finding["a_diverged"] = a_diverged
                     finding["b_diverged"] = b_diverged
-                    # 仅 A 发散 → 潜在漏洞
+                    # 仅A发散 -> 潜在漏洞
                     if a_diverged and not b_diverged:
                         finding["suspicious"] = True
                         finding["severity"] = "high"
@@ -1300,9 +964,9 @@ class MetamorphicDiffOracle:
 
 
 # ---------------------------------------------------------------------------
-# 后门触发器检测：基于 ROSA (arXiv:2505.08544) 的蜕变 Oracle 思想
-# 检测隐蔽的运行时后门：对输入中嵌入魔术字节/特殊命令序列，
-# 比较行为是否一致。若仅一个二进制对特殊输入产生异常反应 → 可疑
+# 后门触发器检测: 基于ROSA (arXiv:2505.08544)的蜕变Oracle思想
+# 检测隐蔽运行时后门: 对输入中嵌入魔术字节/特殊命令序列，
+# 比较行为是否一致。若仅一个二进制对特殊输入产生异常反应 -> 可疑
 # ---------------------------------------------------------------------------
 class BackdoorTriggerProber:
     """嵌入后门触发序列并观察行为偏差"""
@@ -1346,11 +1010,11 @@ class BackdoorTriggerProber:
 
 
 # ---------------------------------------------------------------------------
-# 自动崩溃分类流水线：minimize → symbolize → dedup → root cause
-# 参照 ClusterFuzz 的四阶段管道，将原始崩溃转化为可操作的安全报告
+# 自动崩溃分类流水线: minimize -> symbolize -> dedup -> root cause
+# 参照ClusterFuzz的四阶段管道，将原始崩溃转化为可操作安全报告
 # ---------------------------------------------------------------------------
 class CrashTriagePipeline:
-    """自动化崩溃 triage：裁减→符号化→去重→根因提取"""
+    """自动化崩溃triage: 裁减->符号化->去重->根因提取"""
 
     def __init__(self, binary_path: str, symbol_resolver=None):
         self._binary = binary_path
@@ -1367,7 +1031,7 @@ class CrashTriagePipeline:
             'phase4_root_cause_hint': '',
         }
 
-        # 阶段 1: 裁减
+        # 阶段1: 裁减
         if result.crashed and result.test_case.input_data:
             trimmer = SeedTrimmer(self._binary, timeout)
             minimized = trimmer.trim(result.test_case.input_data)
@@ -1376,7 +1040,7 @@ class CrashTriagePipeline:
                 1.0 - len(minimized) / max(1, len(
                     result.test_case.input_data)), 3)
 
-        # 阶段 2: 符号化
+        # 阶段2: 符号化
         if result.crash_stack_frames:
             symbolized = []
             for frame in result.crash_stack_frames:
@@ -1387,7 +1051,7 @@ class CrashTriagePipeline:
                     symbolized.append(frame)
             report['phase2_symbolized'] = symbolized[:8]
 
-        # 阶段 3: 去重
+        # 阶段3: 去重
         dedup_key = f"s{result.signal_number}|"
         dedup_key += '|'.join(
             (report['phase2_symbolized'] or result.crash_stack_frames)[:3])
@@ -1396,14 +1060,14 @@ class CrashTriagePipeline:
         self._dedup_groups[dedup_key].append(result)
         report['phase3_group_size'] = len(self._dedup_groups[dedup_key])
 
-        # 阶段 4: 根因提示
+        # 阶段4: 根因提示
         sig = result.signal_number
         if sig == 11:
             fault = result.fault_address
             if fault == 0:
-                report['phase4_root_cause_hint'] = 'NULL 指针解引用'
+                report['phase4_root_cause_hint'] = 'NULL指针解引用'
             elif fault == 0x41414141:
-                report['phase4_root_cause_hint'] = '栈缓冲区溢出（EIP 被覆盖为 0x41414141）'
+                report['phase4_root_cause_hint'] = '栈缓冲区溢出（EIP被覆盖为0x41414141）'
             elif fault > 0x7F0000000000:
                 report['phase4_root_cause_hint'] = '堆越界写（高位用户空间地址）'
             else:
@@ -1426,15 +1090,9 @@ class CrashTriagePipeline:
 
 
 # ---------------------------------------------------------------------------
-# 堆利用原语检测器：根据崩溃上下文判断是否存在可利用的堆操纵原语
-# ---------------------------------------------------------------------------
-# Def-Use 反馈集成器：将覆盖率反馈分解为 def-use 对粒度
-# ---------------------------------------------------------------------------
-# Syscall 可达性分析器：基于静态污点传播判定敏感系统调用是否可被攻击者控制
-# ---------------------------------------------------------------------------
-# 加壳二进制差分器：比较加壳前/后或不同解包层的执行行为
-# 检测项：解包后的入口 OEP 偏差 / IAT 解析差异 / 动态代码生成差异 /
-# 反分析触发点。思路来自 Gunpack 的 PTE 非同步与 GoaTracer 的 wave 追踪
+# 加壳二进制差分器: 比较加壳前/后或不同解包层的执行行为
+# 检测项: 解包后入口OEP偏差/IAT解析差异/动态代码生成差异/反分析触发点
+# 思路来自Gunpack的PTE非同步与GoaTracer的wave追踪
 # ---------------------------------------------------------------------------
 class PackedBinaryDiffer:
     """加壳/解包二进制行为差异比较"""
@@ -1475,7 +1133,7 @@ class PackedBinaryDiffer:
 
     def detect_layer_transition(self,
                                  wave_tracker) -> Dict[str, Any]:
-        """检测解包层转换：从 wave tracker 获取层信息"""
+        """检测解包层转换: 从wave tracker获取层信息"""
         return {
             'layer_count': wave_tracker.layer_count,
             'is_packed': wave_tracker.is_packed(),
@@ -1483,12 +1141,12 @@ class PackedBinaryDiffer:
         }
 
 
-# 思路：攻击面入口参数 → 污点传播 → 敏感 syscall 参数
-# 若存在从入口到 syscall 的可控路径 → 标记为 CFI 可绕过的高危路径
-# 参考 Syscall Reachability under CFI 分析框架
+# 思路: 攻击面入口参数 -> 污点传播 -> 敏感syscall参数
+# 若存在从入口到syscall的可控路径 -> 标记为CFI可绕过的高危路径
+# 参考Syscall Reachability under CFI分析框架
 # ---------------------------------------------------------------------------
 class SyscallReachabilityAnalyzer:
-    """静态污点可达性：攻击面→敏感 syscall"""
+    """静态污点可达性: 攻击面->敏感syscall"""
 
     SENSITIVE_SYSCALLS = {
         'execve': {'risk': 'code_execution', 'args': 3},
@@ -1511,7 +1169,7 @@ class SyscallReachabilityAnalyzer:
 
     def find_reachable_syscalls(self, entry_params: List[int]
                                  ) -> Dict[str, Any]:
-        """从入口参数出发做 BFS 污点传播，返回可达的敏感 syscall 列表"""
+        """从入口参数出发做BFS污点传播，返回可达的敏感syscall列表"""
         tainted: Set[int] = set(entry_params)
         queue = deque(entry_params)
         while queue:
@@ -1543,12 +1201,12 @@ class SyscallReachabilityAnalyzer:
         }
 
 
-# 对每个 (producer_block, consumer_block) 边对追踪覆盖状态，
-# 新 def-use 覆盖 → 种子能量 ×2，驱动 fuzzer 探索数据流多样性
-# 参考 FuzzRDUCC (arXiv 2509.04967) 的 def-use 链反馈机制
+# 对每个(producer_block, consumer_block)边对追踪覆盖状态，
+# 新def-use覆盖 -> 种子能量x2，驱动fuzzer探索数据流多样性
+# 参考FuzzRDUCC (arXiv 2509.04967)的def-use链反馈机制
 # ---------------------------------------------------------------------------
 class DefUseFeedbackIntegrator:
-    """def-use 对粒度的覆盖率反馈"""
+    """def-use对粒度的覆盖率反馈"""
 
     def __init__(self):
         self._du_pairs: Dict[Tuple[int, int], int] = defaultdict(int)
@@ -1557,7 +1215,7 @@ class DefUseFeedbackIntegrator:
 
     def record_def_use(self, producer_block: int,
                         consumer_block: int) -> bool:
-        """返回 True 表示首次发现此 def-use 对"""
+        """返回True表示首次发现此def-use对"""
         key = (producer_block, consumer_block)
         is_new = key not in self._du_pairs
         self._du_pairs[key] += 1
@@ -1567,13 +1225,13 @@ class DefUseFeedbackIntegrator:
         return is_new
 
     def seed_energy_boost(self, new_du_pairs: int) -> float:
-        """发现新 def-use 对 → 能量倍率 (1.0 ~ 3.0)"""
+        """发现新def-use对 -> 能量倍率 (1.0 ~ 3.0)"""
         if new_du_pairs <= 0:
             return 1.0
         return min(3.0, 1.0 + new_du_pairs * 0.5)
 
     def stagnation_score(self) -> float:
-        """自上次发现新 def-use 对以来的执行次数 / 总执行次数"""
+        """自上次发现新def-use对以来的执行次数 / 总执行次数"""
         if self._total_execs == 0:
             return 0.0
         since = self._total_execs - self._last_new_pair_at
@@ -1584,12 +1242,12 @@ class DefUseFeedbackIntegrator:
         return len(self._du_pairs)
 
 
-# 检测项：malloc/free 参数可控、fastbin 损坏、tcache poisoning 迹象、
-# unsorted bin 信息泄露、堆元数据覆写
-# 参考 BloodFang 和 PwnPasi 的自动化利用检测思路
+# 检测项: malloc/free参数可控、fastbin损坏、tcache poisoning迹象、
+# unsorted bin信息泄露、堆元数据覆写
+# 参考BloodFang和PwnPasi的自动化利用检测思路
 # ---------------------------------------------------------------------------
 class HeapExploitPrimitiveDetector:
-    """检测崩溃是否展示了可利用的堆操纵能力"""
+    """检测崩溃是否展示可利用的堆操纵能力"""
 
     def detect(self, result: ExecutionResult) -> Dict[str, Any]:
         primitives = []
@@ -1601,48 +1259,48 @@ class HeapExploitPrimitiveDetector:
         frames = result.crash_stack_frames
         fault = result.fault_address
 
-        # 原语 1: fastbin 损坏 → free 时 SIGABRT
+        # 原语1: fastbin损坏 -> free时SIGABRT
         if sig == 6 and ('free' in msg or any(
                 'free' in f.lower() for f in frames[:2])):
             if 'invalid' in msg or 'corrupted' in msg:
                 primitives.append({
                     'type': 'fastbin_corruption',
                     'confidence': 0.70,
-                    'detail': 'free 时 fastbin 链表损坏，可能存在堆溢出或 UAF',
+                    'detail': 'free时fastbin链表损坏，可能存在堆溢出或UAF',
                 })
 
-        # 原语 2: 可控 EIP (0x41414141 模式)
+        # 原语2: 可控EIP (0x41414141模式)
         if fault == 0x41414141:
             primitives.append({
                 'type': 'controlled_eip',
                 'confidence': 0.95,
-                'detail': '指令寄存器被覆盖为 0x41414141，代码执行控制',
+                'detail': '指令寄存器被覆盖为0x41414141，代码执行控制',
             })
 
-        # 原语 3: 空指针 + free 路径 → 可能 UAF
+        # 原语3: 空指针+free路径 -> 可能UAF
         if fault == 0 and sig == 11 and any(
                 'free' in f.lower() for f in frames[:3]):
             primitives.append({
                 'type': 'uaf_null_crash',
                 'confidence': 0.55,
-                'detail': 'free 路径上的空指针崩溃，可能 UAF 被触发',
+                'detail': 'free路径上的空指针崩溃，可能UAF被触发',
             })
 
-        # 原语 4: SIGSEGV + 写入模式 (fault addr 在堆区域)
+        # 原语4: SIGSEGV+写入模式 (fault addr在堆区域)
         if sig == 11 and 0x100000 <= fault <= 0x7F0000000000:
             primitives.append({
                 'type': 'heap_write_primitive',
                 'confidence': 0.45,
-                'detail': f'堆区域 ({hex(fault)}) 的 SIGSEGV，可能任意地址写入',
+                'detail': f'堆区域 ({hex(fault)}) 的SIGSEGV，可能任意地址写入',
             })
 
-        # 原语 5: tcache poisoning → malloc 返回任意地址
+        # 原语5: tcache poisoning -> malloc返回任意地址
         if sig == 11 and any(
                 'malloc' in f.lower() for f in frames[:3]):
             primitives.append({
                 'type': 'tcache_poisoning',
                 'confidence': 0.50,
-                'detail': 'malloc 路径上的 SIGSEGV，tcache 可能被污染',
+                'detail': 'malloc路径上的SIGSEGV，tcache可能被污染',
             })
 
         primitives.sort(key=lambda p: -p['confidence'])
@@ -1655,12 +1313,12 @@ class HeapExploitPrimitiveDetector:
 
 
 # ---------------------------------------------------------------------------
-# 行为指纹：基于 strace/ftrace 的轻量执行轮廓捕获
+# 行为指纹: 基于strace/ftrace的轻量执行轮廓捕获
 # 对同一输入在不同二进制上的行为做向量化比较，捕获输出之外的语义差异
-# 参考 Hybrid Fuzzing (arXiv 2511.03995) 的语义反馈思想
+# 参考Hybrid Fuzzing (arXiv 2511.03995)的语义反馈思想
 # ---------------------------------------------------------------------------
 class BehavioralFingerprint:
-    """捕获执行时的 syscall 序列作为行为指纹"""
+    """捕获执行时的syscall序列作为行为指纹"""
 
     def __init__(self):
         self._baselines: Dict[str, List[Tuple[int, int]]] = {}
@@ -1669,7 +1327,7 @@ class BehavioralFingerprint:
     def capture_syscall_sequence(binary: str, input_data: bytes,
                                  timeout: float = 5.0,
                                  max_syscalls: int = 256) -> List[str]:
-        """通过 strace 捕获系统调用序列，返回 syscall 名列表"""
+        """通过strace捕获系统调用序列，返回syscall名列表"""
         import tempfile
         with tempfile.NamedTemporaryFile(delete=False, suffix='.strace') as sf:
             strace_path = sf.name
@@ -1685,7 +1343,7 @@ class BehavioralFingerprint:
                 lines = fh.readlines()[:max_syscalls]
             calls: List[str] = []
             for line in lines:
-                # 提取 syscall 名（strace 输出的第一组括号前的内容）
+                # 提取syscall名（strace输出第一组括号前的内容）
                 match = re.match(r'\d+\s+(\w+)\(', line)
                 if match:
                     calls.append(match.group(1))
@@ -1700,13 +1358,13 @@ class BehavioralFingerprint:
                     pass
 
     def diff(self, calls_a: List[str], calls_b: List[str]) -> Dict[str, Any]:
-        """比较两个 syscall 序列的差异度"""
+        """比较两个syscall序列的差异度"""
         if not calls_a and not calls_b:
             return {'divergence': 0.0, 'reason': 'both_empty'}
         common = set(calls_a) & set(calls_b)
         all_calls = set(calls_a) | set(calls_b)
         jaccard = len(common) / len(all_calls) if all_calls else 1.0
-        # 序列编辑距离（简化 LCS 比率）
+        # 序列编辑距离（简化LCS比率）
         lcs_len = _lcs_length(calls_a, calls_b)
         seq_sim = (2 * lcs_len) / max(1, len(calls_a) + len(calls_b))
         return {
@@ -1719,7 +1377,7 @@ class BehavioralFingerprint:
 
 
 def _lcs_length(a: List[str], b: List[str]) -> int:
-    """LCS 长度，O(n*m) 空间优化到 O(min(n,m))"""
+    """LCS长度，O(n*m)空间优化到O(min(n,m))"""
     if len(a) < len(b):
         a, b = b, a
     prev = [0] * (len(b) + 1)
@@ -1735,8 +1393,8 @@ def _lcs_length(a: List[str], b: List[str]) -> int:
 
 
 # ---------------------------------------------------------------------------
-# 执行轨迹异常检测：对同一输入在 A 和 B 上的行为差异做分层分析
-# 第一层：syscall 集合差异；第二层：执行时间异常；第三层：输出差异
+# 执行轨迹异常检测: 对同一输入在A和B上的行为差异做分层分析
+# 第一层: syscall集合差异; 第二层: 执行时间异常; 第三层: 输出差异
 # 综合三层评分标记为行为异常
 # ---------------------------------------------------------------------------
 class TraceAnomalyDetector:
@@ -1765,7 +1423,7 @@ class TraceAnomalyDetector:
                 layers['timing_ratio'] = round(ratio, 1)
                 score += 0.25
 
-        # Layer 3: stdout/stderr 内容差异
+        # Layer 3: stdout/stderr内容差异
         if result_b and (result_a.stdout != result_b.stdout
                          or result_a.stderr != result_b.stderr):
             layers['layer3_output'] = True

@@ -1,45 +1,45 @@
-"""On-demand vulnerability triage pipeline.
+"""-demand 漏洞 triage 流水线
 
-Pattern-match for known-dangerous API call sites, rank by confidence,
-then symbolically execute the high-confidence candidates at a depth
-proportional to the confidence score.
+Pattern-match for -dangerous API调用 sites, rank confidence
+symbolically 执行 high-confidence candidates a depth
+proportional 置信度
 
 增强 — TF-IDF 加权模式匹配：
 将每个漏洞模式看作一个"词项"，函数代码看作"文档"，匹配次数由 IDF
 （逆向模式在所有函数中被触发的普遍性）加权。这降低了类似 `printf`
-这种几乎每个函数都包含的模式的重要性，提升了对 `gets` 等罕见模式的关注。
+这种几乎每个函数都包含的模式的重要性，提升了对 `` 等罕见模式的关注
 
 增强 — 置信度自动校准 (ConfidenceCalibrator)：
-追踪 precision_estimate —— 高置信度候选中有多少真正产出了漏洞。
-precision < 0.3 时上调阈值 0.05（当前阈值太宽松），
-precision > 0.7 时下调阈值 0.05（阈值偏保守，可解放更多候选）。
-每轮分析后自动执行校准。
+追踪 precision_estimate —— 高置信度候选中有多少真正产出了漏洞
+precision < 0.3 时上调阈值 0.05（当前阈值太宽松）
+precision > 0.7 时下调阈值 0.05（阈值偏保守，可解放更多候选）
+每轮分析后自动执行校准
 
-增强 — 分析缓存 (CachingAnalyzer)：
-对已分析函数计算 func_code_hash（源码/反汇编的 SHA256），
-存入 sqlite3 表。下次遇到相同 func_code_hash 时直接跳过重分析，
-复用 last_vuln_count。跨 binary 场景下通过 func_code_hash 匹配，
-避免对同一份代码在不同 binary 中重复符号执行。
+增强 — 分析缓存 (缓存Analyzer)：
+对已分析函数计算 func_code_hash（源码/反汇编的 SHA256）
+存入 sqlite3 表。下次遇到相同 func_code_hash 时直接跳过重分析
+复用 last_vuln_count。跨 binary 场景下通过 func_code_hash 匹配
+避免对同一份代码在不同 binary 中重复符号执行
 
 增强 — Top-K 候选排序：
-get_top_candidates(k) 返回 k 个最高分的未分析候选，
-按 confidence * novelty_bonus 排序。novelty_bonus 对首次见到的函数为 1.0，
-对"曾在其他 binary 中分析过但当前 binary 尚未分析"的函数为 0.5，
-平衡探索与利用。
+get_top_candidates(k) 返回 k 个最高分的未分析候选
+按 confidence * novelty_bonus 排序。novelty_bonus 对首次见到的函数为 1.0
+对"曾在其他 binary 中分析过但当前 binary 尚未分析"的函数为 0.5
+平衡探索与利用
 
-增强 — TriageQueue：
-基于 confidence * novelty_bonus 得分的优先级队列。
-新候选按分数插入，pop_next() 返回最高优先级未分析候选。
-内部使用 heapq 实现最大堆。
+增强 — Triage队列：
+基于 confidence * novelty_bonus 得分的优先级队列
+新候选按分数插入，pop_next() 返回最高优先级未分析候选
+内部使用 heapq 实现最大堆
 
 增强 — BatchAnalysis：
-将低置信度候选（0.3-0.5）按 5 个一批分组，
-对所有路径进行一次统一的符号执行，
-摊销 angr 项目设置的开销。
+将低置信度候选（0.3-0.5）按 5 个一批分组
+对所有路径进行一次统一的符号执行
+摊销 angr 项目设置的开销
 
 增强 — VulnReportFormatter：
-生成 JSON/Markdown/HTML 格式的漏洞报告，
-包含严重性着色、代码片段及按 CWE 映射的修复建议。
+生成 JSON/Markdown/HTML 格式的漏洞报告
+包含严重性着色、代码片段及按 CWE 映射的修复
 """
 
 import os
@@ -70,7 +70,7 @@ class VulnerabilityType(Enum):
 
 
 class AnalysisLevel:
-    """Depth tiers: more paths = higher cost, higher coverage."""
+    """Depth tiers: paths = higher cost, higher 覆盖率"""
     FAST = "fast"
     STANDARD = "standard"
     DEEP = "deep"
@@ -78,8 +78,8 @@ class AnalysisLevel:
 
 
 # ---------------------------------------------------------------------------
-# CWE → VulnerabilityType 映射 + 修复建议
-# 用于 VulnReportFormatter 生成带建议的报告
+# CWE → 漏洞Type 映射 + 修复
+# 用于 VulnReportFormatter 生成带的报告
 # ---------------------------------------------------------------------------
 _VULN_CWE_MAP: Dict[VulnerabilityType, Dict[str, Any]] = {
     VulnerabilityType.BUFFER_OVERFLOW: {
@@ -182,7 +182,7 @@ _SEVERITY_ORDER: Dict[str, int] = {
 
 @dataclass
 class VulnerabilityCandidate:
-    """A site flagged by pattern matching, scored for triage priority."""
+    """A site flagged pattern matching, scored for triage priority"""
     function_name: str
     function_address: int
     vuln_type: VulnerabilityType
@@ -196,7 +196,7 @@ class VulnerabilityCandidate:
 
 @dataclass
 class SymbolicResult:
-    """Output of a single symbolic execution run."""
+    """输出 a single 符号执行 运行"""
     function_name: str
     vulnerabilities_found: List
     paths_explored: int
@@ -206,17 +206,17 @@ class SymbolicResult:
 # ===========================================================================
 # TriageQueue — 基于分数的优先级队列
 #
-# 内部使用 heapq，存储 (negated_score, insert_counter, candidate)。
-# negated_score 使最大堆行为得以实现（heapq 默认最小堆）。
-# insert_counter 作为 tie-breaker，保证插入顺序确定。
+# 内部使用 堆q，存储 (negated_score, insert_counter, candidate)
+# negated_score 使最大堆行为得以实现（heapq 默认最小堆）
+# insert_counter 作为 tie-breaker，保证插入顺序确定
 # ===========================================================================
 class TriageQueue:
-    """Priority-ordered queue of VulnerabilityCandidates.
-
-    New candidates are inserted by confidence * novelty_bonus score.
-    pop_next() returns the highest-priority unanalyzed candidate.
-
-    使用 heapq 实现 O(log n) 插入和 O(log n) 弹出。
+    """Priority-ordered 队列 漏洞Candidates
+    
+    New candidates inserted confidence * novelty_bonus score
+    pop_next() 返回 highest-priority unanalyzed candidate
+    
+    使用 heapq 实现 O(log n) 插入和 O(log n) 弹出
     """
 
     def __init__(self):
@@ -225,18 +225,18 @@ class TriageQueue:
         self._candidate_ids: Set[str] = set()  # 去重：同一候选不重复入队
 
     def _score(self, candidate: VulnerabilityCandidate) -> float:
-        """Compute the priority score: confidence * novelty_bonus."""
+        """计算 priority score: confidence * novelty_bonus"""
         return candidate.confidence * candidate.novelty_bonus
 
     def _candidate_key(self, candidate: VulnerabilityCandidate) -> str:
-        """Unique key for deduplication: function_name + vuln_type."""
+        """Unique key for deduplication: function_name + vuln_type"""
         return f"{candidate.function_name}::{candidate.vuln_type.value}"
 
     def insert(self, candidate: VulnerabilityCandidate):
-        """Insert a candidate into the priority queue.
-
-        Uses negative score for max-heap behavior. Deduplicates by
-        function_name + vuln_type.
+        """插入 a candidate priority 队列
+        
+        使用 negative score for max-堆 behavior. 去重
+        function_name + vuln_type
         """
         key = self._candidate_key(candidate)
         if key in self._candidate_ids:
@@ -248,12 +248,12 @@ class TriageQueue:
         self._counter += 1
 
     def insert_batch(self, candidates: List[VulnerabilityCandidate]):
-        """Insert multiple candidates at once."""
+        """插入 multiple candidates once"""
         for c in candidates:
             self.insert(c)
 
     def pop_next(self) -> Optional[VulnerabilityCandidate]:
-        """Return the highest-priority unanalyzed candidate, or None if empty."""
+        """返回 highest-priority unanalyzed candidate, or None empty"""
         while self._heap:
             neg_score, _, candidate = heapq.heappop(self._heap)
             if not candidate.analyzed:
@@ -262,9 +262,9 @@ class TriageQueue:
         return None
 
     def peek_next(self) -> Optional[VulnerabilityCandidate]:
-        """Peek at the highest-priority unanalyzed candidate without removing it.
-
-        Returns None if the queue is empty or all remaining are analyzed.
+        """Peek highest-priority unanalyzed candidate removing
+        
+        返回 None 队列 empty or remaining analyzed
         """
         # 重建：heapq 没有 peek，我们需要弹出再塞回
         temp: List[Tuple[float, int, VulnerabilityCandidate]] = []
@@ -282,22 +282,22 @@ class TriageQueue:
         return result
 
     def mark_analyzed(self, candidate: VulnerabilityCandidate):
-        """Mark a candidate as analyzed (will be skipped on pop)."""
+        """Mark a candidate analyzed (skipped pop)"""
         candidate.analyzed = True
 
     def __len__(self) -> int:
-        """Return the number of items in the heap (including analyzed)."""
+        """返回 number items 堆 (including analyzed)"""
         return len(self._heap)
 
     @property
     def unanalyzed_count(self) -> int:
-        """Number of unanalyzed candidates still in the queue."""
+        """Number unanalyzed candidates 队列"""
         return sum(1 for _, _, c in self._heap if not c.analyzed)
 
     def rebuild_scores(self):
-        """Rebuild the heap after confidence or novelty_bonus values changed.
-
-        将所有条目重新计算分数并重建堆。O(n log n)。
+        """Rebuild 堆 confidence or novelty_bonus values changed
+        
+        将所有条目重新计算分数并重建堆。O(n log n)
         """
         items = [(c.confidence * c.novelty_bonus, c) for _, _, c in self._heap]
         self._heap.clear()
@@ -307,9 +307,9 @@ class TriageQueue:
             self._counter += 1
 
     def drain_unanalyzed(self) -> List[VulnerabilityCandidate]:
-        """Pop all remaining unanalyzed candidates in priority order.
-
-        Returns an empty list if the queue is exhausted.
+        """Pop remaining unanalyzed candidates priority order
+        
+        返回 an empty list 队列 exhausted
         """
         results: List[VulnerabilityCandidate] = []
         while True:
@@ -323,14 +323,14 @@ class TriageQueue:
 # ===========================================================================
 # BatchAnalysis — 低置信候选批量符号执行
 #
-# 将 confidence 在 [0.3, 0.5] 区间的候选以 5 个一批分组，
-# 所有路径汇总后进行单轮符号执行，摊销 angr 项目 setup 开销。
+# 将 confidence 在 [0.3, 0.5] 区间的候选以 5 个一批分组
+# 所有路径汇总后进行单轮符号执行，摊销 angr 项目 setup 开销
 # ===========================================================================
 class BatchAnalysis:
-    """Group low-confidence candidates (0.3-0.5) into batches of 5 and run
-    a single symbolic execution covering all their code paths collectively,
-    amortizing angr project setup cost.
-
+    """Group low-confidence candidates (0.3-0.5) batches 5 运行
+    a single 符号执行 covering code paths collectively
+    amortizing angr project setup cost
+    
     Batch size 的设定基于以下权衡：
     - 太小（< 3）不足以摊销 setup 开销
     - 太大（> 10）可能导致路径爆炸
@@ -363,10 +363,10 @@ class BatchAnalysis:
     def form_batches(
         self, candidates: List[VulnerabilityCandidate]
     ) -> List[List[VulnerabilityCandidate]]:
-        """Partition low-confidence candidates into fixed-size batches.
-
-        Only candidates with confidence in [low_min, low_max] and not yet
-        analyzed are eligible. Returns the list of batches.
+        """Partition low-confidence candidates fixed-size batches
+        
+        candidates confidence [low_min, low_max]
+        analyzed eligible. 返回 list batches
         """
         eligible = [
             c for c in candidates
@@ -398,21 +398,21 @@ class BatchAnalysis:
         executor,
         binary_context: str = "",
     ) -> List[SymbolicResult]:
-        """Run a single symbolic execution covering all code paths in a batch.
-
-        The executor callable receives (function_names: List[str],
-        aggregated_evidence: str, avg_confidence: float) and should
-        return a SymbolicResult or list thereof.
-
-        Amortized cost: one angr project setup for N functions instead of N setups.
-
+        """运行 a single 符号执行 covering code paths a batch
+        
+        executor callable 接收 (function_names: List[str]
+        aggregated_evidence: str, avg_confidence: float)
+        返回 a SymbolicResult or list thereof
+        
+        Amortized cost: one angr project setup for N functions instead N setups
+        
         Args:
-            batch: List of low-confidence candidates to execute together.
-            executor: Callable that performs the actual symbolic execution.
-            binary_context: Optional binary-wide context string.
-
-        Returns:
-            List of SymbolicResult, one per candidate in the batch.
+        batch: List low-confidence candidates 执行 together
+        executor: Callable performs actual 符号执行
+        binary_context: Optional binary-wide context string
+        
+        返回:
+        List SymbolicResult, one per candidate batch
         """
         if not batch:
             return []
@@ -474,10 +474,10 @@ class BatchAnalysis:
         executor,
         binary_context: str = "",
     ) -> Dict[str, SymbolicResult]:
-        """Execute all pre-formed batches and return results keyed by function name.
-
-        Returns:
-            Dict mapping function_name → SymbolicResult.
+        """执行 pre-formed batches 返回 results keyed function name
+        
+        返回:
+        Dict mapping function_name → SymbolicResult
         """
         all_results: Dict[str, SymbolicResult] = {}
 
@@ -492,18 +492,18 @@ class BatchAnalysis:
 # ===========================================================================
 # VulnReportFormatter — 多格式漏洞报告生成
 #
-# 支持 JSON / Markdown / HTML 三种格式。
-# 严重性着色和 CWE 映射来自 _VULN_CWE_MAP。
-# HTML 报告内含嵌入式 CSS 用于独立渲染。
+# 支持 JSON / Markdown / HTML 三种格式
+# 严重性着色和 CWE 映射来自 _VULN_CWE_MAP
+# HTML 报告内含嵌入式 CSS 用于独立渲染
 # ===========================================================================
 class VulnReportFormatter:
-    """Generate JSON/Markdown/HTML vulnerability reports with severity coloring,
-    code snippets, and remediation suggestions per CWE mapping.
-
+    """构造 JSON/Markdown/HTML 漏洞 报告 severity coloring
+    code snippets, remediation suggestions per CWE mapping
+    
     每种 VulnerabilityType 都映射到一个 CWE 条目，包含：
     - CWE ID + 名称
     - 严重性等级（CRITICAL / HIGH / MEDIUM / LOW）
-    - 修复建议
+    - 修复
     - 显示颜色
     """
 
@@ -520,15 +520,15 @@ class VulnReportFormatter:
         candidates: Optional[List[VulnerabilityCandidate]] = None,
         pretty: bool = True,
     ) -> str:
-        """Generate a JSON vulnerability report.
-
+        """构造 a JSON 漏洞 报告
+        
         Args:
-            results: Dict of function_name → SymbolicResult.
-            candidates: Optional list of all VulnerabilityCandidates for context.
-            pretty: Whether to pretty-print with indentation.
-
-        Returns:
-            JSON string.
+        results: Dict function_name → SymbolicResult
+        candidates: Optional list 漏洞Candidates for context
+        pretty: Whether pretty-print indentation
+        
+        返回:
+        JSON string
         """
         report = self._build_report_dict(results, candidates)
         indent = 2 if pretty else None
@@ -539,14 +539,14 @@ class VulnReportFormatter:
         results: Dict[str, SymbolicResult],
         candidates: Optional[List[VulnerabilityCandidate]] = None,
     ) -> str:
-        """Generate a Markdown vulnerability report.
-
+        """构造 a Markdown 漏洞 报告
+        
         Args:
-            results: Dict of function_name → SymbolicResult.
-            candidates: Optional list of all VulnerabilityCandidates for context.
-
-        Returns:
-            Markdown string.
+        results: Dict function_name → SymbolicResult
+        candidates: Optional list 漏洞Candidates for context
+        
+        返回:
+        Markdown string
         """
         report = self._build_report_dict(results, candidates)
         return self._render_markdown(report)
@@ -557,15 +557,15 @@ class VulnReportFormatter:
         candidates: Optional[List[VulnerabilityCandidate]] = None,
         title: str = "Vulnerability Analysis Report",
     ) -> str:
-        """Generate a self-contained HTML vulnerability report.
-
+        """构造 a self-contained HTML 漏洞 报告
+        
         Args:
-            results: Dict of function_name → SymbolicResult.
-            candidates: Optional list of all VulnerabilityCandidates for context.
-            title: HTML page title.
-
-        Returns:
-            Full HTML document string.
+        results: Dict function_name → SymbolicResult
+        candidates: Optional list 漏洞Candidates for context
+        title: HTML page title
+        
+        返回:
+        Full HTML document string
         """
         report = self._build_report_dict(results, candidates)
         return self._render_html(report, title)
@@ -577,16 +577,16 @@ class VulnReportFormatter:
         candidates: Optional[List[VulnerabilityCandidate]] = None,
         fmt: str = "markdown",
     ) -> str:
-        """Generate and write a report to disk.
-
+        """构造 写入 a 报告 disk
+        
         Args:
-            output_path: File path to write to.
-            results: Dict of function_name → SymbolicResult.
-            candidates: Optional candidate list.
-            fmt: One of "json", "markdown", "html".
-
-        Returns:
-            The file path written.
+        output_path: File path 写入
+        results: Dict function_name → SymbolicResult
+        candidates: Optional candidate list
+        fmt: One "json", "markdown", "html"
+        
+        返回:
+        file path written
         """
         fmt_lower = fmt.lower()
         if fmt_lower == "json":
@@ -611,7 +611,7 @@ class VulnReportFormatter:
         results: Dict[str, SymbolicResult],
         candidates: Optional[List[VulnerabilityCandidate]] = None,
     ) -> Dict[str, Any]:
-        """Construct the internal report data structure."""
+        """Construct internal 报告 data structure"""
         vulnerabilities: List[Dict[str, Any]] = []
         vuln_count_by_severity: Dict[str, int] = defaultdict(int)
         analyzed_count = 0
@@ -667,15 +667,15 @@ class VulnReportFormatter:
         }
 
     def _resolve_vuln_type(self, type_str: str) -> VulnerabilityType:
-        """Resolve a string to VulnerabilityType enum, with fuzzy matching."""
+        """解析 a string 漏洞Type enum, fuzzy matching"""
         type_lower = type_str.replace(" ", "_").replace("-", "_").lower()
         for vt in VulnerabilityType:
             if vt.value == type_lower or vt.value in type_lower or type_lower in vt.value:
                 return vt
-        return VulnerabilityType.BUFFER_OVERFLOW  # fallback
+        return VulnerabilityType.BUFFER_OVERFLOW  # 回退
 
     def _render_markdown(self, report: Dict[str, Any]) -> str:
-        """Render the report dict as Markdown."""
+        """渲染 报告 dict Markdown"""
         meta = report["report_metadata"]
         vulns = report["vulnerabilities"]
 
@@ -734,7 +734,7 @@ class VulnReportFormatter:
         return "\n".join(lines)
 
     def _render_html(self, report: Dict[str, Any], title: str) -> str:
-        """Render the report dict as a self-contained HTML page."""
+        """渲染 报告 dict a self-contained HTML page"""
         meta = report["report_metadata"]
         vulns = report["vulnerabilities"]
 
@@ -838,7 +838,7 @@ class VulnReportFormatter:
         return "\n".join(html_parts)
 
     def _css_styles(self) -> str:
-        """Return embedded CSS for HTML reports."""
+        """返回 embedded CSS for HTML 报告"""
         return """
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -855,8 +855,8 @@ body {
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
-h1 { border-bottom: 3px solid #007acc; padding-bottom: 10px; }
-.meta { color: #666; font-size: 0.9em; }
+h1 { border-bottom: 3px solid # 007acc; 填充-bottom: 10px;}
+.meta { color: # 666; font-size: 0.9em;}
 .summary-table {
     width: 40%;
     border-collapse: collapse;
@@ -867,7 +867,7 @@ h1 { border-bottom: 3px solid #007acc; padding-bottom: 10px; }
     border: 1px solid #ddd;
     text-align: left;
 }
-.summary-table th { background: #007acc; color: white; }
+.summary-table th { background: # 007acc; color: white;}
 .vuln-card {
     border-left: 5px solid #ccc;
     padding: 15px;
@@ -875,13 +875,13 @@ h1 { border-bottom: 3px solid #007acc; padding-bottom: 10px; }
     background: #fafafa;
     border-radius: 4px;
 }
-.vuln-card.severity-critical { border-left-color: #b52b27; }
-.vuln-card.severity-high { border-left-color: #d9534f; }
-.vuln-card.severity-medium { border-left-color: #f0ad4e; }
-.vuln-card.severity-low { border-left-color: #5cb85c; }
-.vuln-card.severity-info { border-left-color: #5bc0de; }
+.vuln-card.severity-critical { border-left-color: # b52b27;}
+.vuln-card.severity-high { border-left-color: # d9534f;}
+.vuln-card.severity-medium { border-left-color: # f0ad4e;}
+.vuln-card.severity-low { border-left-color: # 5cb85c;}
+.vuln-card.severity-info { border-left-color: # 5bc0de;}
 .vuln-details p { margin: 5px 0; line-height: 1.5; }
-.vuln-details code { background: #e8e8e8; padding: 2px 6px; border-radius: 3px; }
+.vuln-details code { background: # e8e8e8; 填充: 2px 6px; border-radius: 3px;}
 .badge {
     display: inline-block;
     padding: 2px 8px;
@@ -891,11 +891,11 @@ h1 { border-bottom: 3px solid #007acc; padding-bottom: 10px; }
     color: white;
     margin-left: 8px;
 }
-.badge.severity-critical { background: #b52b27; }
-.badge.severity-high { background: #d9534f; }
-.badge.severity-medium { background: #f0ad4e; color: #333; }
-.badge.severity-low { background: #5cb85c; }
-.badge.severity-info { background: #5bc0de; color: #333; }
+.badge.severity-critical { background: # b52b27;}
+.badge.severity-high { background: # d9534f;}
+.badge.severity-medium { background: # f0ad4e; color: #333;}
+.badge.severity-low { background: # 5cb85c;}
+.badge.severity-info { background: # 5bc0de; color: #333;}
 .remediation {
     background: #e8f5e9;
     border: 1px solid #a5d6a7;
@@ -904,19 +904,19 @@ h1 { border-bottom: 3px solid #007acc; padding-bottom: 10px; }
     border-radius: 4px;
     font-size: 0.95em;
 }
-td.severity-critical { color: #b52b27; font-weight: bold; }
-td.severity-high { color: #d9534f; font-weight: bold; }
-td.severity-medium { color: #f0ad4e; font-weight: bold; }
-td.severity-low { color: #5cb85c; }
-td.severity-info { color: #5bc0de; }
+td.severity-critical { color: # b52b27; font-weight: bold;}
+td.severity-high { color: # d9534f; font-weight: bold;}
+td.severity-medium { color: # f0ad4e; font-weight: bold;}
+td.severity-low { color: # 5cb85c;}
+td.severity-info { color: # 5bc0de;}
 """
 
 
 class ConfidenceCalibrator:
-    """Auto-tunes the confidence threshold based on empirical precision.
-
-    每次符号执行后将"高置信候选是否真正产出漏洞"记录为 binary 反馈，
-    然后动态调整 threshold。threshold 的变动日志输出到 logger.info。
+    """Auto-tunes confidence threshold 基于 empirical precision
+    
+    每次符号执行后将"高置信候选是否真正产出漏洞"记录为 binary 反馈
+    然后动态调整 threshold。threshold 的变动日志输出到 logger.info
     """
 
     def __init__(self, initial_threshold: float = 0.6):
@@ -934,10 +934,10 @@ class ConfidenceCalibrator:
         return self._precision_estimate
 
     def record_result(self, confidence: float, vulns_found: int):
-        """Feed one analysis outcome into the calibrator.
-
-        Only counts candidates whose confidence was above threshold at
-        the time of scheduling (i.e., the ones that were actually analyzed).
+        """Feed one analysis outcome calibrator
+        
+        counts candidates confidence above threshold
+        time scheduling (.e., ones actually analyzed)
         """
         if confidence >= self._threshold:
             self._total_analyzed += 1
@@ -945,10 +945,10 @@ class ConfidenceCalibrator:
                 self._true_positives += 1
 
     def calibrate(self):
-        """Recompute precision_estimate and adjust threshold if needed.
-
-        基于累积的 true_positives / total_analyzed 计算精度估计值。
-        无样本时保持不变。
+        """Recompute precision_estimate adjust threshold needed
+        
+        基于累积的 true_positives / total_analyzed 计算精度估计值
+        无样本时保持不变
         """
         if self._total_analyzed == 0:
             return
@@ -970,17 +970,17 @@ class ConfidenceCalibrator:
             )
 
     def reset(self):
-        """Clear all accumulated stats, keep current threshold."""
+        """清除 accumulated stats, keep current threshold"""
         self._true_positives = 0
         self._total_analyzed = 0
         self._precision_estimate = 0.0
 
 
 class CachingAnalyzer:
-    """sqlite3-backed analysis cache keyed by func_code_hash.
-
-    命中缓存时返回 (True, last_vuln_count)，未命中返回 (False, 0)。
-    调用方根据返回决定是否继续符号执行。
+    """sqlite3-backed analysis 缓存keyed func_code_hash
+    
+    命中缓存时返回 (True, last_vuln_count)，未命中返回 (False, 0)
+    调用方根据返回决定是否继续符号执行
     """
 
     def __init__(self, db_path: Optional[str] = None):
@@ -1008,11 +1008,11 @@ class CachingAnalyzer:
         self._conn.commit()
 
     def compute_func_code_hash(self, code: str) -> str:
-        """SHA-256 of the function's source/disassembly text."""
+        """SHA256 function's source/反汇编 text"""
         return hashlib.sha256(code.encode("utf-8")).hexdigest()
 
     def lookup(self, function_name: str, func_code_hash: str) -> Optional[int]:
-        """Return last_vuln_count if cached, else None."""
+        """返回 last_vuln_count if缓存d, else None"""
         row = self._conn.execute(
             "SELECT last_vuln_count FROM analysis_cache "
             "WHERE function_name = ? AND func_code_hash = ?",
@@ -1024,7 +1024,7 @@ class CachingAnalyzer:
 
     def store(self, function_name: str, func_code_hash: str,
               last_vuln_count: int, source_binary: str = ""):
-        """Insert or update a cache entry."""
+        """插入 or 更新 a 缓存entry"""
         self._conn.execute(
             "INSERT OR REPLACE INTO analysis_cache "
             "(function_name, func_code_hash, last_vuln_count, last_analyzed, source_binary) "
@@ -1034,9 +1034,9 @@ class CachingAnalyzer:
         self._conn.commit()
 
     def is_function_seen_in_other_binary(self, func_code_hash: str) -> bool:
-        """Check whether this func_code_hash exists in the cache at all.
-
-        用于计算 novelty_bonus：曾在其他 binary 中出现过 → novelty_bonus = 0.5。
+        """检查 whether func_code_hash exists 缓存at
+        
+        用于计算 novelty_bonus：曾在其他 binary 中出现过 → novelty_bonus = 0.5
         """
         row = self._conn.execute(
             "SELECT COUNT(*) FROM analysis_cache WHERE func_code_hash = ?",
@@ -1049,13 +1049,13 @@ class CachingAnalyzer:
 
 
 class VulnerabilityDetector:
-    """Regex-based pre-scanner. Flags functions that call unsafe C APIs
-    and assigns a confidence estimate using TF-IDF weighted pattern density.
-
+    """Regex-based pre-scanner. Flags functions call unsafe C APIs
+    assigns a confidence 估算 using TF-IDF weighted pattern density
+    
     TF-IDF 权重逻辑：
     - TF (Term Frequency)：模式在此函数中出现的次数
-    - IDF (Inverse Document Frequency)：log(总函数数 / 包含此模式的函数数)
-    - 罕见模式（如 gets）IDF 高 → 置信度加成大
+    - IDF (Inverse Document Frequency)：记录(总函数数 / 包含此模式的函数数)
+    - 罕见模式（如）IDF 高 → 置信度加成大
     - 常见模式（如 printf）IDF 低 → 置信度被抑制
     """
 
@@ -1087,7 +1087,7 @@ class VulnerabilityDetector:
 
     def scan_function(self, function_name: str, code: str,
                       total_funcs: int = 1) -> List[VulnerabilityCandidate]:
-        """Match patterns within a single function's decompiled text."""
+        """Match patterns a single function's decompiled text"""
         candidates = []
 
         for vuln_type, patterns in self._patterns.items():
@@ -1117,7 +1117,7 @@ class VulnerabilityDetector:
         return candidates
 
     def scan_binary(self, binary_data: bytes) -> List[VulnerabilityCandidate]:
-        """Coarse scan over raw binary bytes treated as a text blob."""
+        """Coarse scan over raw binary bytes treated a text blob"""
         candidates = []
         code_str = binary_data.decode('utf-8', errors='ignore')
         self._total_funcs_scanned = 1
@@ -1137,13 +1137,13 @@ class VulnerabilityDetector:
 
 
 class SymbolicExecutor:
-    """Depth-gated symbolic execution. Path budget scales with analysis level;
-    higher levels spend more CPU for deeper coverage.
-
+    """Depth-gated 符号执行. Path budget scales analysis level;
+    higher levels spend CPU for deeper 覆盖率
+    
     增强 — 对数级别深度分配：
     不再使用固定阶梯（20/100/500/1000），而是基于置信度的对数增长：
     paths = int(20 * (1 + log2(1 + confidence)))
-    这使得深度分配随置信度平滑增长，而非跳变。
+    这使得深度分配随置信度平滑增长，而非跳变
     """
 
     def __init__(self):
@@ -1152,7 +1152,7 @@ class SymbolicExecutor:
 
     def execute(self, function_name: str, code: str,
                 confidence: float = 0.5) -> SymbolicResult:
-        """Run with depth proportional to confidence (log scale)."""
+        """运行 depth proportional confidence (记录 scale)"""
         if confidence <= 0:
             paths_explored = 20
         else:
@@ -1183,21 +1183,21 @@ class SymbolicExecutor:
 
 
 class OnDemandAnalyzer:
-    """Two-phase pipeline: detect candidates with regex, then symbolically
-    execute only those above the confidence threshold. Allocates analysis
-    depth proportional to confidence.
-
+    """Two-phase 流水线: 检测 candidates regex, symbolically
+    执行 above confidence threshold. Allocates analysis
+    depth proportional confidence
+    
     增强 — 置信度校准：
-    内置 ConfidenceCalibrator，每轮分析后自动调整置信度阈值。
-    precision_estimate 过低 → 自动上调 threshold，过高 → 下调。
-
+    内置 ConfidenceCalibrator，每轮分析后自动调整置信度阈值
+    precision_estimate 过低 → 自动上调 threshold，过高 → 下调
+    
     增强 — 分析缓存：
-    内置 CachingAnalyzer，对 func_code_hash 相同的函数跳过重复分析，
-    直接复用 SQLite 缓存的 last_vuln_count。
-
+    内置 CachingAnalyzer，对 func_code_hash 相同的函数跳过重复分析
+    直接复用 SQLite 缓存的 last_vuln_count
+    
     增强 — Top-K 排序：
-    get_top_candidates(k) 返回最高的 k 个未分析候选，
-    按 confidence * novelty_bonus 排序。
+    get_top_candidates(k) 返回最高的 k 个未分析候选
+    按 confidence * novelty_bonus 排序
     """
 
     def __init__(self, cache_db_path: Optional[str] = None):
@@ -1214,30 +1214,30 @@ class OnDemandAnalyzer:
 
     @property
     def triage_queue(self) -> TriageQueue:
-        """Access the internal TriageQueue for manual queue management."""
+        """Access internal Triage队列 for manual 队列 management"""
         return self._triage_queue
 
     @property
     def batch_analyzer(self) -> BatchAnalysis:
-        """Access the internal BatchAnalysis for batch configuration."""
+        """Access internal BatchAnalysis for batch 配置"""
         return self._batch_analyzer
 
     @property
     def report_formatter(self) -> VulnReportFormatter:
-        """Access the internal VulnReportFormatter for custom reports."""
+        """Access internal VulnReportFormatter for custom 报告"""
         return self._report_formatter
 
     def _fingerprint_binary(self, data: bytes) -> str:
-        """Quick import-table hash for skip-if-unchanged logic."""
+        """Quick import-table hash for skip--unchanged logic"""
         return hashlib.sha256(data[:4096] + data[-4096:]).hexdigest()[:16]
 
     def get_top_candidates(self, k: int) -> List[VulnerabilityCandidate]:
-        """Return top k unanalyzed candidates sorted by confidence * novelty_bonus.
-
+        """返回 top k unanalyzed candidates sorted confidence * novelty_bonus
+        
         novelty_bonus:
-            1.0 → 从未在任何 binary 中出现过（全新函数）
-            0.5 → 曾在其他 binary 中分析过（func_code_hash 在 DB 中已存在）
-        排序为降序 → 最高置信且最"新颖"的候选优先。
+        1.0 → 从未在任何 binary 中出现过（全新函数）
+        0.5 → 曾在其他 binary 中分析过（func_code_hash 在 DB 中已存在）
+        排序为降序 → 最高置信且最"新颖"的候选优先
         """
         unanalyzed = [c for c in self._candidates if not c.analyzed]
         if not unanalyzed:
@@ -1258,12 +1258,12 @@ class OnDemandAnalyzer:
         return scored[:k]
 
     def analyze_binary(self, binary_data: bytes) -> Dict[str, Any]:
-        """Run the full detect→triage→execute pipeline.
-
+        """运行 full 检测→triage→执行 流水线
+        
         增强流程：
         1. 指纹不变 → 直接复用上一次结果
-        2. detect → 为每个候选计算 func_code_hash
-        3. 将候选插入 TriageQueue
+        2. 检测 → 为每个候选计算 func_code_hash
+        3. 将候选插入 Triage队列
         4. CachingAnalyzer 检查缓存 → 命中则跳过符号执行
         5. 未命中 → 符号执行 → 记录结果到缓存
         6. 低置信候选 → BatchAnalysis 批处理
@@ -1283,7 +1283,7 @@ class OnDemandAnalyzer:
                 str(c.evidence)
             )
 
-        # 插入 TriageQueue（按 confidence * novelty_bonus 排序）
+        # 插入 Triage队列（按 confidence * novelty_bonus 排序）
         self._triage_queue = TriageQueue()
         self._triage_queue.insert_batch(self._candidates)
 
@@ -1336,7 +1336,7 @@ class OnDemandAnalyzer:
         self._batch_analyzer.form_batches(self._candidates)
 
         def batch_executor(func_names, aggregated_evidence, avg_conf):
-            """Batch executor that runs a single simulated symbolic execution."""
+            """Batch executor 运行 a single simulated 符号执行"""
             vulns = []
             if "memcpy" in aggregated_evidence or "strcpy" in aggregated_evidence:
                 vulns.append({
@@ -1374,9 +1374,9 @@ class OnDemandAnalyzer:
 
     def analyze_function(self, function_name: str, code: str,
                          total_funcs: int = 1) -> Optional[SymbolicResult]:
-        """Scan one function; execute symbolically if confidence reaches threshold.
-
-        增强：通过 func_code_hash 检查缓存，命中则跳过执行。
+        """Scan one function; 执行 symbolically confidence reaches threshold
+        
+        增强：通过 func_code_hash 检查缓存，命中则跳过执行
         """
         candidates = self._detector.scan_function(
             function_name, code, total_funcs)
@@ -1417,7 +1417,7 @@ class OnDemandAnalyzer:
         return None
 
     def _generate_report(self) -> Dict[str, Any]:
-        """Aggregate pipeline statistics into a summary dict."""
+        """Aggregate 流水线 statistics a summary dict"""
         total_candidates = len(self._candidates)
         analyzed = len(self._results)
         vulns_found = sum(len(r.vulnerabilities_found) for r in self._results.values())
@@ -1440,24 +1440,24 @@ class OnDemandAnalyzer:
         }
 
     def get_candidates(self) -> List[VulnerabilityCandidate]:
-        """Return all detected candidates from the last scan."""
+        """返回 detected candidates last scan"""
         return self._candidates
 
     def get_results(self) -> Dict[str, SymbolicResult]:
-        """Return all execution results from the last run."""
+        """返回 execution results last 运行"""
         return self._results
 
     def generate_report(
         self, fmt: str = "markdown", output_path: Optional[str] = None
     ) -> str:
-        """Generate a formatted vulnerability report using VulnReportFormatter.
-
+        """构造 a formatted 漏洞 报告 using VulnReportFormatter
+        
         Args:
-            fmt: One of "json", "markdown", "html".
-            output_path: Optional path to write the report to disk.
-
-        Returns:
-            Report string (or file path if output_path is set).
+        fmt: One "json", "markdown", "html"
+        output_path: Optional path 写入 报告 disk
+        
+        返回:
+        报告 string (or file path output_path set)
         """
         if output_path:
             return self._report_formatter.write_report(
@@ -1471,7 +1471,7 @@ class OnDemandAnalyzer:
 
 
 def analyze_on_demand(binary_path: str) -> Dict[str, Any]:
-    """One-shot: read binary from disk, run the detect→triage→execute pipeline."""
+    """One-shot: 读取 binary disk, 运行 检测→triage→执行 流水线"""
     try:
         with open(binary_path, 'rb') as f:
             data = f.read()

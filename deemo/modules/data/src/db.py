@@ -1,14 +1,14 @@
-# DataDB — signature storage backed by SQLite
-# 设计原则：所有写操作走单线程锁，读操作利用 WAL 模式并发
-# 参考了 sqlite-utils 的 schema migration 思路，但去掉了 ORM 层
+# DataDB —— signature storage backed by SQLite
+# 设计原则: 所有写操作走单线程锁, 读操作利用 WAL 模式并发
+# 参考了 sqlite-utils 的 schema migration 思路, 但去掉了 ORM 层
 #
-# PRAGMA 优化：
-#   mmap_size: 将 DB 文件映射到进程地址空间，大 DB 下可将只读查询
-#     延迟降低 30-50%（SQLite 官方白皮书 §3.2）。默认映射 256MB，
+# PRAGMA 优化:
+#   mmap_size: 将 DB 文件映射到进程地址空间, 大 DB 下可将只读查询
+#     延迟降低 30-50% (SQLite 官方白皮书). 默认映射 256MB,
 #     超过 DB 实际大小时会静默钳制。
-#   wal_autocheckpoint: WAL 文件超过阈值（默认 1000 页 ≈ 4MB）时
-#     自动执行被动 checkpoint，防止 WAL 无限制增长拖慢恢复。
-#   optimize: 定期运行 PRAGMA optimize（每 N 次写入触发一次），
+#   wal_autocheckpoint: WAL 文件超过阈值 (默认 1000 页) 时
+#     自动执行被动 checkpoint, 防止 WAL 无限制增长拖慢恢复。
+#   optimize: 定期运行 PRAGMA optimize (每 N 次写入触发一次),
 #     让 SQLite 自动更新统计信息以优化查询计划。
 
 import json
@@ -28,11 +28,11 @@ def _connect_db(db_path: str, wal: bool = True, timeout_ms: int = 5000,
         conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA foreign_keys=ON")
     conn.execute("PRAGMA busy_timeout=5000")
-    # mmap_size: 默认 0（不映射），设为正数后 SQLite 将文件映射到内存
-    # 对只读查询有显著加速，对写入也有一定改善（减少 syscall）
+    # mmap_size: 默认 0 (不映射), 设为正数后 SQLite 将文件映射到内存
+    # 对只读查询有显著加速, 对写入也有一定改善 (减少 syscall)
     if mmap_mb > 0:
         conn.execute(f"PRAGMA mmap_size={mmap_mb * 1024 * 1024}")
-    # WAL 自动 checkpoint：超过 2000 页时触发，避免 WAL 无限增长
+    # WAL 自动 checkpoint: 超过 2000 页时触发, 避免 WAL 无限增长
     conn.execute("PRAGMA wal_autocheckpoint=2000")
     return conn
 
@@ -41,7 +41,7 @@ _SCHEMA_VERSION = 3
 
 
 class DataDB:
-    """核心签名数据库 — 管理 binary signature、chunk、analysis 结果、去重映射。"""
+    """核心签名数据库 —— 管理 binary signature、chunk、analysis 结果、去重映射。"""
 
     def __init__(self, config: DataConfig):
         self._cfg = config
@@ -110,7 +110,7 @@ class DataDB:
             return cur.lastrowid
 
     def add_signatures_batch(self, records: List[Dict[str, Any]]) -> int:
-        """批量插入，返回实际写入数量。每条 record 需含 file_path 和 sha256。"""
+        """批量插入, 返回实际写入数量。每条 record 需含 file_path 和 sha256。"""
         now = time.time()
         count = 0
         with self._lock:
@@ -287,7 +287,7 @@ class DataDB:
         return row["data"] if row else None
 
     def get_chunk_ids_by_hashes(self, hashes: List[str]) -> Dict[str, int]:
-        """批量查 chunk，返回 {chunk_hash: rowid}。用于快速判断哪些 chunk 已存在。"""
+        """批量查 chunk, 返回 {chunk_hash: rowid}。快速判断哪些 chunk 已存在。"""
         if not hashes:
             return {}
         placeholders = ",".join("?" * len(hashes))
@@ -355,7 +355,7 @@ class DataDB:
 
     def query_simhash_candidates(self, band_keys: List[int], limit: int = 50) -> List[Dict]:
         """用 LIKE 匹配任意 band key → 返回候选 sig_id。
-        这是离线 LSH 查询的简单实现：一个或多个 band 命中即候选。"""
+        离线 LSH 查询的简单实现: 一个或多个 band 命中即候选。"""
         if not band_keys:
             return []
         conditions = " OR ".join(["band_keys LIKE ?"] * len(band_keys))
@@ -422,7 +422,7 @@ class DataDB:
     def explain_query(self, sql: str, *params) -> List[Dict]:
         """返回 EXPLAIN QUERY PLAN 结果 —— 用于性能诊断。
 
-        每个结果行包含：selectid, order, from, detail。
+        每个结果行包含: selectid, order, from, detail。
         detail 列指示是否使用了索引、是否需要临时表等。
         """
         rows = self._conn.execute(
@@ -438,7 +438,7 @@ class DataDB:
     def table_sizes(self) -> Dict[str, Dict[str, int]]:
         """返回各表的行数和估计大小 —— 用于存储监控与容量规划。
 
-        每张表返回 {rows, pages}；pages * page_size ≈ 磁盘占用。
+        每张表返回 {rows, pages}; pages * page_size 约等于磁盘占用。
         """
         result = {}
         tables = ["signatures", "chunks", "analysis_results",
@@ -459,10 +459,10 @@ class DataDB:
         return result
 
     def export_schema(self) -> str:
-        """导出当前数据库的完整 DDL（CREATE TABLE + INDEX）。
+        """导出当前数据库的完整 DDL (CREATE TABLE + INDEX)。
 
         用于备份数据库结构、版本控制 schema、或创建空副本。
-        返回 SQL 字符串，可直接执行重建相同结构的数据库。
+        返回 SQL 字符串, 可直接执行重建相同结构的数据库。
         """
         rows = self._conn.execute(
             "SELECT sql FROM sqlite_master WHERE sql IS NOT NULL ORDER BY type, name"
@@ -470,14 +470,14 @@ class DataDB:
         return ";\n".join(r["sql"] + ";" for r in rows if r["sql"]) + ";\n"
 
     def integrity_check(self) -> List[str]:
-        """运行 PRAGMA integrity_check，返回错误行（空列表=正常）。"""
+        """运行 PRAGMA integrity_check, 返回错误行 (空列表=正常)。"""
         rows = self._conn.execute("PRAGMA integrity_check").fetchall()
         return [r[0] for r in rows if r[0] != "ok"]
 
     def backup(self, target_path: str) -> bool:
         """在线热备份 —— 使用 SQLite backup API 将当前 DB 复制到新文件。
 
-        备份过程中不阻塞读操作（利用 WAL），写入会短暂排队。
+        备份过程中不阻塞读操作 (利用 WAL), 写入会短暂排队。
         返回 True 表示备份成功。
         """
         try:

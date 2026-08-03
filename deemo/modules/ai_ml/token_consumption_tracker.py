@@ -1,8 +1,7 @@
 """
-Token Consumption Tracker - Tracks and budgets LLM token usage.
+令牌消耗追踪 — LLM令牌使用追踪与预算。
 
-Provides per-module and per-operation token consumption tracking with
-daily budgeting, cost estimation, and usage analytics.
+按模块/操作追踪令牌消耗 + 日预算 + 成本估算 + 用量分析。
 """
 
 from __future__ import annotations

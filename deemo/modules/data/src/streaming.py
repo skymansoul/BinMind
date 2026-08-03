@@ -1,14 +1,13 @@
-# Streaming processor for large-file import
 # 分块读取 + backpressure 控制，避免大文件撑爆内存
-# 新增环形缓冲区 chunk 池 —— 复用已处理的 chunk 内存，减少 GC 压力
-# 在大批量文件导入时，64KB chunk 的 malloc/free 会成为瓶颈：
+# 引入环形缓冲区 chunk 池 —— 复用已处理的 chunk 内存，减少 GC 压力
+# 在大批量文件导入时，64KB chunk 的 malloc/free 会成为瓶颈:
 # 预分配 32 个 chunk buffer 在池中循环使用，消除分配开销。
 #
-# FileBatchIngest: 高层批量导入协调器 —— 连接 StreamProcessor 与 DataDB，
-# 自动处理去重、哈希计算、批量写入、进度报告全链路。
+# FileBatchIngest: 高层批量导入协调器 —— 串联 StreamProcessor 与 DataDB，
+# 自主处理去重、哈希计算、批量写入、进度报告全链路。
 #
 # MmapReader: 零拷贝大文件读取 —— 用 mmap 将文件映射到虚拟地址空间，
-# 避免 read() 的系统调用和内核缓冲区拷贝。适合 >100MB 的文件扫描。
+# 避免 read() 系统调用和内核缓冲区拷贝。适合 >100MB 的文件扫描。
 
 import mmap
 import os
@@ -18,9 +17,9 @@ from .config import StreamingConfig
 
 
 class ChunkPool:
-    """环形缓冲区 chunk 池 —— 预分配固定数量的 bytearray 并循环复用。
+    """环形缓冲区 chunk 池 —— 预分配固定数量 bytearray 并循环复用。
 
-    默认 32 个 × 64KB = 2MB 固定开销，换来零分配的 chunk 读取。
+    默认 32 个 x 64KB = 2MB 固定开销，换取零分配的 chunk 读取。
     """
 
     def __init__(self, chunk_size: int = 65536, capacity: int = 32):
@@ -39,11 +38,11 @@ class MmapReader:
     """mmap 零拷贝文件读取器 —— 将文件直接映射到进程地址空间。
 
     操作系统按需将文件页加载到 page cache，无需 read() 系统调用
-    和用户态/内核态之间的缓冲区拷贝。对于顺序扫描大文件，吞吐量
+    和用户态/内核态缓冲区拷贝。顺序扫描大文件时吞吐量
     通常比普通 read 高 20-40%。
 
-    注意：mmap 占用虚拟地址空间但不占物理内存（OS 按需加载），
-    32 位 Python 进程有 2GB 地址空间限制，大文件需分片映射。
+    注意: mmap 占用虚拟地址空间但不占物理内存（OS 按需加载），
+    32 位进程有 2GB 地址空间上限，大文件需分片映射。
     """
 
     def __init__(self, path: str):
@@ -101,7 +100,7 @@ class StreamProcessor:
         self._pool = ChunkPool(chunk_size=self.cfg.chunk_size)
 
     def process_file(self, path: str) -> Iterator[Dict[str, Any]]:
-        """逐块 yield 文件 chunk，带内存检测。"""
+        """逐块 yield 文件 chunk，附带内存阈值检测。"""
         if not os.path.isfile(path):
             return
         fsize = os.path.getsize(path)
@@ -128,7 +127,7 @@ class StreamProcessor:
 
     def process_directory(self, root: str, recursive: bool = True,
                           ext_filter: Optional[List[str]] = None) -> Iterator[Dict[str, Any]]:
-        """扫描目录，逐个文件流式 yield。跳过压缩包。"""
+        """扫描目录，逐文件流式产出 chunk。跳过压缩包。"""
         skip_ext = {'.gz', '.zip', '.7z', '.xz', '.bz2', '.tar', '.rar'}
         if ext_filter:
             skip_ext.update(ext_filter)
@@ -157,8 +156,8 @@ class StreamProcessor:
 class FileBatchIngest:
     """高层批量导入协调器 —— 串联 StreamProcessor → hash → DataDB 全链路。
 
-    每个文件：读 chunk → 算 SHA256 → 累积到 batch → 触发写入。
-    文件去重在内层用 file_path set 实现（同一文件不会被重复处理）。
+    每个文件: 读 chunk → 算 SHA256 → 累积到 batch → 触发写入。
+    文件去重在内层用 file_path set 实现（同一文件不会重复处理）。
     """
 
     def __init__(self, db, stream_config: StreamingConfig = None,
@@ -221,7 +220,7 @@ class FileBatchIngest:
         }
 
     def ingest_file(self, path: str) -> Dict[str, Any]:
-        """导入单个文件。"""
+        """导入单文件。"""
         import hashlib
         self._t0 = time.time()
         sha = hashlib.sha256()

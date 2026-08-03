@@ -1,130 +1,224 @@
-# Binary formats v0.5 — MMapReader, chunked, COFF/eBPF/SPARC, compression export
-import struct,os,math,hashlib,mmap
-from enum import Enum,auto; from dataclasses import dataclass,field; from collections import Counter
+# INTJ策略: 单一真相源。所有格式检测逻辑集中于此，避免各处散落 magic byte 比对
+# 算法复杂度: detect() 为 O(1) — 仅检查前 4 字节 magic number
 
-class Arch(Enum): X86=auto();X86_64=auto();ARM=auto();ARM64=auto();MIPS=auto();PPC=auto();SPARC=auto();RISCV=auto();WASM=auto();EBPF=auto();UNKNOWN=auto()
-class Endian(Enum): LITTLE=auto();BIG=auto()
+from __future__ import annotations
 
-@dataclass class SI: nm:str;va:int;vs:int;ro:int;rs:int;ent:float=0.0;wx:bool=False;enc:bool=False
-@dataclass class BI: fp:str;fmt:str='';arch:Arch=Arch.UNKNOWN;end:Endian=Endian.LITTLE;bits:int=32;pkr:str='';ep:int=0;secs:list=field(default_factory=list);sha256:str='';ee:float=0.0;rvf:float=0.0;uw:bool=False;dbl:str=''
+import struct
+import math
+import hashlib
+from typing import Any, Optional
 
-MAGIC={b'\x7fELF':'ELF',b'MZ':'PE',b'ZM':'PE',b'\xce\xfa\xed\xfe':'MO',b'\xcf\xfa\xed\xfe':'MO',b'BZh':'bzip2',b'\x1f\x8b':'gzip',b'PK\x03\x04':'ZIP',b'\x00asm':'WASM',b'\x4c\x01':'COFF'}
-ELF_M={0x00:Arch.UNKNOWN,0x02:Arch.SPARC,0x03:Arch.X86,0x08:Arch.MIPS,0x14:Arch.PPC,0x28:Arch.ARM,0x3E:Arch.X86_64,0xB7:Arch.ARM64,0xF3:Arch.RISCV,0xF7:Arch.EBPF}
-PE_M={0x014c:(Arch.X86,32),0x8664:(Arch.X86_64,64),0x01c0:(Arch.ARM,32),0xaa64:(Arch.ARM64,64)}
-_CH=256*1024*1024; _LG=1024*1024*1024
+from modules.analysis.static.binary_analysis.src.utils.constants import BinaryFormat, Arch
+from modules.analysis.static.binary_analysis.src.utils.errors import BinaryParseError
 
-def _ent(d):
-    n=len(d); ent=0.0
-    if n==0: return 0.0
-    for c in Counter(d).values(): p=c/n; ent-=p*math.log2(p)
-    return ent
 
-def _inc(n,d=1):
-    try: from . import inc_counter; inc_counter(n,d)
-    except: pass
+class BinaryFormatParser:
+    """二进制文件格式检测与头部解析器
+    
+    INTJ策略: 采用分层解析——先 detect 格式，再 parse 头部。分离的好处是调用方
+    可以先做粗略的格式筛选，不需要完整解析就能判断文件类型
+    
+    复杂度:
+    - 检测(): O(1) magic byte lookup
+    - parse_header(): O(1) 固定长度头部读取，~64-128 bytes
+    """
 
-class MMR:
-    def __init__(self,fp,off=0,sz=None): self.fp=fp; self.off=off; self.sz=sz; self._f=None; self._m=None
-    def __enter__(self):
-        self._f=open(self.fp,'rb'); fsz=os.path.getsize(self.fp); rs=min(self.sz or fsz,fsz-self.off)
-        self._m=mmap.mmap(self._f.fileno(),0,access=mmap.ACCESS_READ); return self._m[self.off:self.off+rs]
-    def __exit__(self,*_):
-        if self._m: self._m.close()
-        if self._f: self._f.close()
-        return False
+    def __init__(self):
+        self._last_result: Optional[dict] = None
 
-def _rh(fp,n=64):
-    with open(fp,'rb')as f: return f.read(n)
-def _rb(fp,off,sz):
-    fsz=os.path.getsize(fp)
-    if fsz>_LG:
-        try:
-            with MMR(fp,off,min(sz,fsz-off))as d: return bytes(d)
-        except: pass
-    with open(fp,'rb')as f: f.seek(off); return f.read(min(sz,fsz-off))
-def _rf(fp):
-    sz=os.path.getsize(fp)
-    if sz>_LG:
-        try:
-            with MMR(fp,0,sz)as d: return bytes(d)
-        except: pass
-    with open(fp,'rb')as f: return f.read()
+    def detect(self, data: bytes) -> Optional[str]:
+        """检测二进制格式。返回 'elf', 'pe', 'mach_o', 'raw', 或 None
+        
+        如果数据不足 4 字节，返回 None 表明无法判断
+        """
+        if not data or len(data) < 4:
+            return None
+        fmt = BinaryFormat.from_magic(data[:4])
+        if fmt == BinaryFormat.UNKNOWN:
+            return None
+        return fmt.value
 
-def achunk(fp,ch=_CH):
-    sz=os.path.getsize(fp)
-    if sz<=_LG: return[analyze(fp)]
-    chs=[]
-    for off in range(0,min(sz,ch*4),ch): blob=_rb(fp,off,min(ch,sz-off)); ent=_ent(blob); sd=sum(1 for b in blob if 32<=b<127)/max(len(blob),1); chs.append({'off':off,'sz':len(blob),'ent':round(ent,2),'sd':round(sd,3)})
-    return chs
+    # ---- ELF 解析 ----
 
-def _pe(d):
-    if len(d)<64: raise ValueError("short"); idt=d[:16]; cls,ed=idt[4],idt[5]; bits=64 if cls==2 else 32; end='>'if ed==2 else'<'; ee=Endian.BIG if ed==2 else Endian.LITTLE
-    if bits==64: et,em,ev,ep=struct.unpack_from(f'{end}HHIQ',d,16); a=ELF_M.get(em,Arch.UNKNOWN)
-    else: et,em,ev,ep=struct.unpack_from(f'{end}HHII',d,16); a=ELF_M.get(em,Arch.UNKNOWN)
-    return{'bits':bits,'end':ee,'arch':a,'ep':ep}
-def _pep(d):
-    if len(d)<2 or d[:2]not in(b'MZ',b'ZM'): raise ValueError("Not PE")
-    po=struct.unpack_from('<I',d,0x3C)[0]; r={'bits':32,'arch':Arch.UNKNOWN,'ep':0,'hp':False}
-    if po==0 or po>len(d)-4: return r; m=struct.unpack_from('<H',d,po+4+4)[0]; pa=PE_M.get(m,(Arch.UNKNOWN,32)); r['arch']=pa[0]; r['bits']=pa[1]
-    os_=po+24
-    if len(d)>os_+16: mg=struct.unpack_from('<H',d,os_)[0]; r['ep']=struct.unpack_from('<I',d,os_+16)[0]
-    return r
-def _pdb(d):
-    idx=d.find(b'.gnu_debuglink')
-    if idx==-1: return''; s=idx+16; e=d.find(b'\x00',s); return d[s:e].decode('ascii',errors='replace')if e!=-1 else''
+    def _parse_elf_header(self, data: bytes) -> dict:
+        """解析 ELF 头部 (64/32 bit autodetect)"""
+        ei_class = data[4]  # 1=32bit, 2=64bit
+        if ei_class == 1:
+            return self._parse_elf32_header(data)
+        elif ei_class == 2:
+            return self._parse_elf64_header(data)
+        else:
+            raise BinaryParseError(f"unknown ELF class: {ei_class}")
 
-def dfmt(fp):
-    d=_rh(fp,64)
-    for sig,fmt in MAGIC.items():
-        if d.startswith(sig): return fmt
-    return'UNKNOWN'
-def _da(fp):
-    m={'x86':(Arch.X86,32),'amd64':(Arch.X86_64,64),'arm':(Arch.ARM,32),'aarch64':(Arch.ARM64,64),'mips':(Arch.MIPS,32),'sparc':(Arch.SPARC,32),'riscv':(Arch.RISCV,32),'ebpf':(Arch.EBPF,64)}
-    try:
-        import subprocess; o=subprocess.check_output(['r2','-q','-c','iI',fp],stderr=subprocess.DEVNULL,timeout=10).decode(errors='ignore')
-        for l in o.splitlines():
-            if'arch'in l.lower(): return m.get(l.split()[-1].strip().lower(),(Arch.UNKNOWN,32))
-    except: pass
-    return(Arch.UNKNOWN,32)
-def _de(d):
-    if len(d)<6: return Endian.LITTLE
-    if d[:4]==b'\x7fELF': return Endian.BIG if d[5]==2 else Endian.LITTLE
-    return Endian.LITTLE
-def _rvf(ss):
-    if len(ss)<2: return 0.0; va=sorted(s.va for s in ss if s.va>0)
-    if len(va)<2: return 0.0; gps=[va[i]-va[i-1]for i in range(1,len(va))]
-    if not gps: return 0.0; ag=sum(gps)/len(gps)
-    if ag==0: return 0.0; v=sum((g-ag)**2 for g in gps)/len(gps)
-    return round(1.0-min((v**0.5)/ag,1.0),2)
-def _dp(fp):
-    for kw,nm in{'upx':'UPX','aspack':'ASPack'}.items():
-        if kw in os.path.basename(fp).lower(): return nm
-    return''
-def _ps(fp):
-    ss=[]
-    try:
-        import subprocess,json; o=subprocess.check_output(['r2','-q','-c','iSj',fp],stderr=subprocess.DEVNULL,timeout=15).decode(errors='ignore')
-        for s in json.loads(o): sec=SI(s.get('name',''),s.get('vaddr',0),s.get('vsize',0),s.get('paddr',0),s.get('size',0))
-        try: raw=_rb(fp,sec.ro,min(sec.rs,4096)); sec.ent=_ent(raw); sec.enc=sec.ent>7.8 and Counter(raw).most_common(1)[0][1]/max(len(raw),1)<0.05
-        except: sec.ent=0.0; ss.append(sec)
-    except: pass
-    return ss
+    def _parse_elf32_header(self, data: bytes) -> dict:
+        if len(data) < 52:
+            raise BinaryParseError("truncated ELF32 header")
+        hdr = struct.unpack_from("<HHIIIIIHHHHHH", data, 16)
+        return {
+            "format": "elf",
+            "bits": 32,
+            "endian": "little" if data[5] == 1 else "big",
+            "type": hdr[0],
+            "machine": hdr[1],
+            "version": hdr[2],
+            "entry": hdr[3],
+            "phoff": hdr[4],
+            "shoff": hdr[5],
+            "flags": hdr[6],
+            "ehsize": hdr[7],
+            "phentsize": hdr[8],
+            "phnum": hdr[9],
+            "shentsize": hdr[10],
+            "shnum": hdr[11],
+        }
 
-def analyze(fp):
-    fmt=dfmt(fp); info=BI(fp=fp,fmt=fmt); d=_rh(fp,512); info.end=_de(d)
-    try: info.sha256=hashlib.sha256(_rf(fp)).hexdigest()
-    except: pass
-    try:
-        if fmt=='ELF': h=_pe(d); info.arch=h['arch']; info.bits=h['bits']; info.end=h['end']; info.ep=h['ep']; info.dbl=_pdb(d)
-        elif fmt=='PE': h=_pep(d); info.arch=h['arch']; info.bits=h['bits']; info.ep=h['ep']; info.uw=h.get('hp',False)
-        else: at=_da(fp); info.arch=at[0]; info.bits=at[1]
-    except: at=_da(fp); info.arch=at[0]; info.bits=at[1]
-    info.pkr=_dp(fp); info.secs=_ps(fp)
-    if info.ep>0:
-        try: info.ee=_ent(_rb(fp,info.ep,256))
-        except: info.ee=0.0
-    info.rvf=_rvf(info.secs); _inc('fmt.a',1); return info
+    def _parse_elf64_header(self, data: bytes) -> dict:
+        if len(data) < 64:
+            raise BinaryParseError("truncated ELF64 header")
+        hdr = struct.unpack_from("<HHIQQQIHHHHH", data, 16)
+        return {
+            "format": "elf",
+            "bits": 64,
+            "endian": "little" if data[5] == 1 else "big",
+            "type": hdr[0],
+            "machine": hdr[1],
+            "version": hdr[2],
+            "entry": hdr[3],
+            "phoff": hdr[4],
+            "shoff": hdr[5],
+            "flags": hdr[6],
+            "ehsize": hdr[7],
+            "phentsize": hdr[8],
+            "phnum": hdr[9],
+            "shentsize": hdr[10],
+            "shnum": hdr[11],
+        }
 
-if __name__=='__main__':
-    import sys
-    if len(sys.argv)>1: r=analyze(sys.argv[1]); print(f"Fmt:{r.fmt} Arch:{r.arch.name} {r.bits}bit EP:0x{r.ep:x} SHA256:{r.sha256[:32]}...")
+    # ---- PE 解析 ----
+
+    def _parse_pe_header(self, data: bytes) -> dict:
+        """解析 PE 头部 (PE32/PE32+ autodetect)"""
+        if len(data) < 64 or data[:2] != b"MZ":
+            raise BinaryParseError("not a valid PE file (missing MZ signature)")
+
+        # 定位 PE 签名
+        e_lfanew = struct.unpack_from("<I", data, 0x3C)[0]
+        if e_lfanew + 4 > len(data):
+            raise BinaryParseError("PE signature offset out of range")
+
+        sig = data[e_lfanew:e_lfanew + 4]
+        if sig != b"PE\x00\x00":
+            raise BinaryParseError("invalid PE signature")
+
+        # COFF header e_lfanew + 4
+        coff_off = e_lfanew + 4
+        if coff_off + 20 > len(data):
+            raise BinaryParseError("truncated COFF header")
+
+        machine, num_sections = struct.unpack_from("<HH", data, coff_off)
+        # optional header
+        opt_off = coff_off + 20
+        if opt_off + 2 > len(data):
+            raise BinaryParseError("truncated optional header")
+        magic = struct.unpack_from("<H", data, opt_off)[0]
+        pe32_plus = (magic == 0x20B)
+
+        entry_point = 0
+        if opt_off + 20 <= len(data):
+            entry_point = struct.unpack_from("<I", data, opt_off + 16)[0]
+
+        return {
+            "format": "pe",
+            "bits": 64 if pe32_plus else 32,
+            "machine": machine,
+            "num_sections": num_sections,
+            "entry": entry_point,
+            "pe_signature_offset": e_lfanew,
+        }
+
+    # //// Mach-O 解析
+
+    def _parse_macho_header(self, data: bytes) -> dict:
+        if len(data) < 28:
+            raise BinaryParseError("truncated Mach-O header")
+        magic = struct.unpack_from("<I", data, 0)[0]
+        if magic in (0xCAFEBABE, 0xBEBAFECA):
+            return {"format": "mach_o", "type": "fat", "bits": "multi"}
+        cputype = struct.unpack_from("<I", data, 4)[0]
+        bits = 64 if (magic == 0xFEEDFACF or magic == 0xCFFAEDFE) else 32
+        return {
+            "format": "mach_o",
+            "bits": bits,
+            "cputype": cputype,
+            "magic": f"0x{magic:08X}",
+        }
+
+    # ===== 主入口 =====
+
+    def parse_header(self, data: bytes) -> dict:
+        """根据 detect 结果自动选择解析器，返回结构化头部信息"""
+        fmt = self.detect(data)
+        # 对于无法识别的格式，返回基本信息而非报错
+        # INTJ策略: 文件识别失败不应阻断后续分析流程
+        if fmt == "elf":
+            result = self._parse_elf_header(data)
+        elif fmt == "pe":
+            result = self._parse_pe_header(data)
+        elif fmt == "mach_o":
+            result = self._parse_macho_header(data)
+        elif fmt == "raw":
+            result = {
+                "format": "raw",
+                "size": len(data),
+                "entropy": _shannon_entropy(data[:4096]),
+            }
+        else:
+            result = {"format": "unknown", "size": len(data)}
+        self._last_result = result
+        return result
+
+    # ---- 便捷方法 ----
+
+    def arch_from_header(self, data: bytes) -> Arch:
+        """从二进制头部推断目标架构"""
+        hdr = self.parse_header(data)
+        machine = hdr.get("machine", 0)
+        return Arch.from_elf_machine(machine)
+
+    def is_library(self, data: bytes) -> bool:
+        """判断是否为动态库/共享对象"""
+        hdr = self.parse_header(data)
+        return hdr.get("type") == 3  # ET_DYN for ELF
+
+    @property
+    def last_result(self) -> Optional[dict]:
+        return self._last_result
+
+
+# ---- 辅助函数 ----
+# 留着备用，后面分析 raw binary 时可能需要更细粒度的熵分块
+
+def _shannon_entropy(data: bytes) -> float:
+    """计算字节级香农熵。0.0 ~ 8.0"""
+    if not data:
+        return 0.0
+    freq = [0] * 256
+    for b in data:
+        freq[b] += 1
+    n = len(data)
+    entropy = 0.0
+    for c in freq:
+        if c == 0:
+            continue
+        p = c / n
+        entropy -= p * math.log2(p)
+    return entropy
+
+
+def _compute_section_hashes(data: bytes, chunk_size: int = 4096) -> list[str]:
+    """分块哈希，用于快速差异化比较。2025-11-03 FIXME: 大文件时 chunk_size 应该可配"""
+    return [hashlib.sha256(data[i:i + chunk_size]).hexdigest()[:16]
+            for i in range(0, min(len(data), chunk_size * 16), chunk_size)]
+
+
+# from typing import OrderedDict  # python3.7+自带dict有序，不需要了

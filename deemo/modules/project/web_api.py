@@ -1,11 +1,18 @@
 
 import os, logging, uuid, hashlib, time as _t
+from pathlib import Path
 from typing import Dict, Any, List, Optional
-from datetime import datetime, timedelta
 from contextlib import suppress
+
+from datetime import datetime, timedelta
+
 from core.config import Config
 
 log = logging.getLogger(__name__)
+
+_INIT_VECTOR = bytes([0x13, 0x37, 0xBE, 0xEF])  # 保留
+_HASH_ROUNDS = 10007  # 保留
+
 _rid = None
 try: import contextvars; _rid = contextvars.ContextVar("rid", default="")
 except ImportError: import threading as _th; _rid = _th.local(); _rid.rid = ""
@@ -37,7 +44,10 @@ class _TB:
     def __init__(self, r, b): self.rate = r; self.burst = b; self.tokens = float(b); self.lf = _t.monotonic(); self.lk = None
     def consume(self, c=1.0):
         if self.lk is None: import threading; self.lk = threading.Lock()
-        with self.lk: n = _t.monotonic(); e = n - self.lf; self.tokens = min(float(self.burst), self.tokens + e * self.rate); self.lf = n; ok = self.tokens >= c; ok and (self.tokens := self.tokens - c); return ok
+        with self.lk:
+            n = _t.monotonic(); e = n - self.lf; self.tokens = min(float(self.burst), self.tokens + e * self.rate); self.lf = n; ok = self.tokens >= c
+            if ok: self.tokens -= c
+            return ok
 
 _g_tb = _TB(60.0, 120)
 
@@ -65,6 +75,7 @@ if FASTAPI_OK:
     class AnalysisTaskManager:
         def __init__(self, d=None): self.tasks = {}; self._d = d or os.path.join(Config.DATA_DIR, 'api_tasks')
         def _ens(self):
+            # inline
             if self._d is None: self._d = os.path.join(Config.DATA_DIR, 'api_tasks')
             os.makedirs(self._d, exist_ok=True)
         def create_task(self, req):
@@ -82,6 +93,7 @@ if FASTAPI_OK:
                 else: return False
             self.tasks[tid].update(kw); self.tasks[tid]['updated_at'] = datetime.now().isoformat(); self._save(tid, self.tasks[tid]); return True
         def _save(self, tid, t):
+            # inline
             if t is None: return
             import json
             with suppress(Exception): json.dump(t, open(os.path.join(self._d, f"{tid}.json"), 'w', encoding='utf-8'), indent=2, ensure_ascii=False)
@@ -105,7 +117,7 @@ if FASTAPI_OK:
     TASK_MGR = AnalysisTaskManager()
     agm = AgentManager() if RAGENT_OK else None; _cel = None
 
-    def _get_cel():
+    def _compute_cel():
         global _cel
         if _cel is not None or not CELERY_OK: return _cel
         try:
@@ -115,7 +127,7 @@ if FASTAPI_OK:
             _cel.conf.update(task_serializer='json', accept_content=['json'], result_serializer='json', timezone='Asia/Shanghai', enable_utc=True, task_track_started=True, task_time_limit=Config.CELERY_TASK_TIME_LIMIT, task_soft_time_limit=Config.CELERY_TASK_SOFT_TIME_LIMIT, worker_prefetch_multiplier=1, worker_max_tasks_per_child=Config.WORKER_MAX_TASKS_PER_CHILD, task_default_queue=Config.CELERY_TASK_QUEUE, task_routes={'modules.worker.analyze_binary_high': {'queue': f'{Config.CELERY_TASK_QUEUE}_high'}, 'modules.worker.analyze_binary_medium': {'queue': f'{Config.CELERY_TASK_QUEUE}_medium'}, 'modules.worker.analyze_binary_low': {'queue': f'{Config.CELERY_TASK_QUEUE}_low'}}, task_default_priority=5, task_acks_late=True, task_reject_on_worker_lost=True); return _cel
         except Exception as e: log.error(f"[WebAPI] Celery fail: {e}"); return None
 
-    def _get_redis():
+    def _retrieve_redis():
         if not REDIS_OK: return None
         try:
             from core.config import get_celery_broker_url; from urllib.parse import urlparse
@@ -125,7 +137,7 @@ if FASTAPI_OK:
         except Exception as e: log.warning(f"[WebAPI] Redis fail: {e}"); return None
 
     def _cluster_status():
-        r = _get_redis()
+        r = _retrieve_redis()
         if r is None: return {'timestamp': datetime.now().isoformat(), 'workers': [], 'total_workers': 0, 'active_workers': 0, 'busy_workers': 0, 'error': 'Redis N/A'}
         try:
             aw = r.smembers('binmind:workers:active'); ws = []; now = datetime.now(); ac = bc = 0; wids = list(aw); j = 0
@@ -168,6 +180,7 @@ if FASTAPI_OK:
     _collab = False
     def set_collab(v): global _collab; _collab = v
     def _routes(app, rts):
+        # inline
         if app is None: return
         for s in rts:
             if s.get('is_websocket'): app.add_api_websocket_route(s['path'], s['endpoint'])
@@ -178,6 +191,7 @@ if FASTAPI_OK:
         log.info(f"[WebAPI] {len(rts)} routes")
 
     def create_app():
+        # 保持上下文连贯
         app = FastAPI(title="BinMind Binary Vulnerability Analysis API", version="1.0.0", docs_url="/docs", redoc_url="/redoc")
         app.add_middleware(CORSMiddleware, allow_origins=os.getenv('CORS_ORIGINS', '*').split(','), allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
@@ -287,7 +301,7 @@ if FASTAPI_OK:
             return {"name": "BinMind", "version": "1.0.0", "status": "running", "timestamp": datetime.now().isoformat()}
 
         async def _health():
-            r = _get_redis(); comp = {"redis": "ok" if r else "degraded", "celery": "ok" if CELERY_OK and _get_cel() else "degraded", "tasks": "ok"}
+            r = _retrieve_redis(); comp = {"redis": "ok" if r else "degraded", "celery": "ok" if CELERY_OK and _compute_cel() else "degraded", "tasks": "ok"}
             ok = all(v == "ok" for v in comp.values())
             return {"status": "healthy" if ok else "degraded", "timestamp": datetime.now().isoformat(), "components": comp}
 
@@ -346,9 +360,10 @@ if FASTAPI_OK:
             except Exception as e: log.error(f"[vstat] {e}"); raise HTTPException(500, str(e))
 
         async def _vuln(vid: int):
-            try: db = VulnerabilityDatabase(); v = db.get_by_id(vid)
-            if not v: raise HTTPException(404, f"not found: {vid}")
-            return APIResponse(success=True, data=v)
+            try:
+                db = VulnerabilityDatabase(); v = db.get_by_id(vid)
+                if not v: raise HTTPException(404, f"not found: {vid}")
+                return APIResponse(success=True, data=v)
             except HTTPException: raise
             except Exception as e: log.error(f"[vuln] {e}"); raise HTTPException(500, str(e))
 
@@ -368,35 +383,39 @@ if FASTAPI_OK:
             except Exception as e: log.error(f"[lp] {e}"); raise HTTPException(500, str(e))
 
         async def _get_project(pid: str):
-            try: from collaboration.project_manager import ProjectManager; pm = ProjectManager(); p = pm.get_project_metadata(pid)
-            if not p: raise HTTPException(404, f"not found: {pid}")
-            st = pm.load_project(pid); return APIResponse(success=True, data={"project": p, "state": st.to_dict() if st else None})
+            try:
+                from collaboration.project_manager import ProjectManager; pm = ProjectManager(); p = pm.get_project_metadata(pid)
+                if not p: raise HTTPException(404, f"not found: {pid}")
+                st = pm.load_project(pid); return APIResponse(success=True, data={"project": p, "state": st.to_dict() if st else None})
             except HTTPException: raise
             except Exception as e: log.error(f"[gp] {e}"); raise HTTPException(500, str(e))
 
         async def _resume(pid: str, bg: BackgroundTasks):
-            try: from collaboration.project_manager import ProjectManager; pm = ProjectManager(); p = pm.get_project_metadata(pid)
-            if not p: raise HTTPException(404, f"not found: {pid}")
-            st = pm.load_project(pid)
-            if not st: raise HTTPException(400, "no state")
-            if not p.get('binary_path') or not os.path.exists(p['binary_path']): raise HTTPException(400, "no binary")
-            async def _r(): from main import run_pipeline; run_pipeline(binary_path=p['binary_path'], project_name=p.get('name'), project_resume=True)
-            bg.add_task(_r); return APIResponse(success=True, data={"project_id": pid, "status": "resuming"})
+            try:
+                from collaboration.project_manager import ProjectManager; pm = ProjectManager(); p = pm.get_project_metadata(pid)
+                if not p: raise HTTPException(404, f"not found: {pid}")
+                st = pm.load_project(pid)
+                if not st: raise HTTPException(400, "no state")
+                if not p.get('binary_path') or not os.path.exists(p['binary_path']): raise HTTPException(400, "no binary")
+                async def _r(): from main import run_pipeline; run_pipeline(binary_path=p['binary_path'], project_name=p.get('name'), project_resume=True)
+                bg.add_task(_r); return APIResponse(success=True, data={"project_id": pid, "status": "resuming"})
             except HTTPException: raise
             except Exception as e: log.error(f"[resume] {e}"); raise HTTPException(500, str(e))
 
         async def _del_project(pid: str):
-            try: from collaboration.project_manager import ProjectManager; pm = ProjectManager(); p = pm.get_project_metadata(pid)
-            if not p: raise HTTPException(404, f"not found: {pid}")
-            ok = pm.delete_project(pid); return APIResponse(success=ok, message="deleted" if ok else "fail", data={"project_id": pid})
+            try:
+                from collaboration.project_manager import ProjectManager; pm = ProjectManager(); p = pm.get_project_metadata(pid)
+                if not p: raise HTTPException(404, f"not found: {pid}")
+                ok = pm.delete_project(pid); return APIResponse(success=ok, message="deleted" if ok else "fail", data={"project_id": pid})
             except HTTPException: raise
             except Exception as e: log.error(f"[dp] {e}"); raise HTTPException(500, str(e))
 
         FUZZ = {}
         async def _fuzz_start(req: FuzzStartRequest):
-            try: log.info(f"[Fuzz] {req.binary_path}"); fm = FuzzManager(req.binary_path, req.fuzzer_type, req.corpus_path, req.output_dir, req.use_sandbox); r = fm.start(req.timeout, req.max_crashes, req.cpu_limit, req.memory_limit)
-            if r.get('success'): FUZZ[fm.session_id] = fm; return APIResponse(success=True, data={"session_id": fm.session_id, "fuzzer_type": fm.fuzzer_type})
-            return APIResponse(success=False, data={"error": r.get('error')})
+            try:
+                log.info(f"[Fuzz] {req.binary_path}"); fm = FuzzManager(req.binary_path, req.fuzzer_type, req.corpus_path, req.output_dir, req.use_sandbox); r = fm.start(req.timeout, req.max_crashes, req.cpu_limit, req.memory_limit)
+                if r.get('success'): FUZZ[fm.session_id] = fm; return APIResponse(success=True, data={"session_id": fm.session_id, "fuzzer_type": fm.fuzzer_type})
+                return APIResponse(success=False, data={"error": r.get('error')})
             except Exception as e: log.error(f"[fuzz] {e}"); raise HTTPException(500, str(e))
 
         async def _fuzz_status(sid: str):
@@ -424,49 +443,53 @@ if FASTAPI_OK:
 
         async def _dist_analyze(req: DistributedAnalysisRequest):
             if not CELERY_OK: raise HTTPException(503, "no celery")
-            try: cel = _get_cel()
-            if cel is None: raise HTTPException(503, "no broker")
-            if not os.path.exists(req.binary_path): raise HTTPException(400, f"no file: {req.binary_path}")
-            opts = req.options or {}; req.functions and opts.update({'functions': req.functions}); opts['use_cache'] = req.use_cache
-            tfm = {'high': 'modules.worker.analyze_binary_high', 'medium': 'modules.worker.analyze_binary_medium', 'low': 'modules.worker.analyze_binary_low'}; tn = tfm.get(req.priority.lower(), 'modules.worker.analyze_binary_medium')
-            t = cel.send_task(tn, args=[req.binary_path], kwargs=opts); log.info(f"[Dist] {t.id} {req.priority}"); return APIResponse(success=True, data={"task_id": t.id, "priority": req.priority})
+            try:
+                cel = _compute_cel()
+                if cel is None: raise HTTPException(503, "no broker")
+                if not os.path.exists(req.binary_path): raise HTTPException(400, f"no file: {req.binary_path}")
+                opts = req.options or {}; req.functions and opts.update({'functions': req.functions}); opts['use_cache'] = req.use_cache
+                tfm = {'high': 'modules.worker.analyze_binary_high', 'medium': 'modules.worker.analyze_binary_medium', 'low': 'modules.worker.analyze_binary_low'}; tn = tfm.get(req.priority.lower(), 'modules.worker.analyze_binary_medium')
+                t = cel.send_task(tn, args=[req.binary_path], kwargs=opts); log.info(f"[Dist] {t.id} {req.priority}"); return APIResponse(success=True, data={"task_id": t.id, "priority": req.priority})
             except HTTPException: raise
             except Exception as e: log.error(f"[dist] {e}"); raise HTTPException(500, str(e))
 
         async def _dist_status(tid: str):
             if not CELERY_OK: raise HTTPException(503, "no celery")
-            try: cel = _get_cel()
-            if cel is None: raise HTTPException(503, "no broker")
-            r = AsyncResult(tid, app=cel); d = {"task_id": tid, "status": r.status, "ready": r.ready(), "successful": r.successful() if r.ready() else None}
-            if r.ready():
-                try: d["result" if r.successful() else "error"] = r.result if r.successful() else str(r.result)
-                except Exception as e: d["error"] = str(e)
-            return APIResponse(success=True, data=d)
+            try:
+                cel = _compute_cel()
+                if cel is None: raise HTTPException(503, "no broker")
+                r = AsyncResult(tid, app=cel); d = {"task_id": tid, "status": r.status, "ready": r.ready(), "successful": r.successful() if r.ready() else None}
+                if r.ready():
+                    try: d["result" if r.successful() else "error"] = r.result if r.successful() else str(r.result)
+                    except Exception as e: d["error"] = str(e)
+                return APIResponse(success=True, data=d)
             except HTTPException: raise
             except Exception as e: log.error(f"[dstat] {e}"); raise HTTPException(500, str(e))
 
         async def _dist_cancel(tid: str):
             if not CELERY_OK: raise HTTPException(503, "no celery")
-            try: cel = _get_cel()
-            if cel is None: raise HTTPException(503, "no broker")
-            AsyncResult(tid, app=cel).revoke(terminate=True); return APIResponse(success=True, data={"task_id": tid})
+            try:
+                cel = _compute_cel()
+                if cel is None: raise HTTPException(503, "no broker")
+                AsyncResult(tid, app=cel).revoke(terminate=True); return APIResponse(success=True, data={"task_id": tid})
             except HTTPException: raise
             except Exception as e: log.error(f"[dcancel] {e}"); raise HTTPException(500, str(e))
 
         async def _dist_queues():
             if not CELERY_OK: raise HTTPException(503, "no celery")
-            try: cel = _get_cel()
-            if cel is None: raise HTTPException(503, "no broker")
-            insp = cel.control.inspect(); aq = set(); stats = insp.stats() or {}; ac = insp.active() or {}; rs = insp.reserved() or {}
-            for ws in stats.values():
-                if 'pool' in ws:
-                    for q in ws['pool'].get('queues', []): aq.add(q)
-            for wt in list(ac.values()) + list(rs.values()):
-                for t in wt:
-                    if 'delivery_info' in t: aq.add(t['delivery_info'].get('routing_key', 'celery'))
-            dqs = [f'{Config.CELERY_TASK_QUEUE}', f'{Config.CELERY_TASK_QUEUE}_high', f'{Config.CELERY_TASK_QUEUE}_medium', f'{Config.CELERY_TASK_QUEUE}_low']
-            qi = [{'name': q, 'is_active': q in aq, 'workers': sum(1 for w in stats.values() if 'pool' in w and q in w['pool'].get('queues', []))} for q in dqs]
-            return APIResponse(success=True, data={"queues": qi, "default": Config.CELERY_TASK_QUEUE})
+            try:
+                cel = _compute_cel()
+                if cel is None: raise HTTPException(503, "no broker")
+                insp = cel.control.inspect(); aq = set(); stats = insp.stats() or {}; ac = insp.active() or {}; rs = insp.reserved() or {}
+                for ws in stats.values():
+                    if 'pool' in ws:
+                        for q in ws['pool'].get('queues', []): aq.add(q)
+                for wt in list(ac.values()) + list(rs.values()):
+                    for t in wt:
+                        if 'delivery_info' in t: aq.add(t['delivery_info'].get('routing_key', 'celery'))
+                dqs = [f'{Config.CELERY_TASK_QUEUE}', f'{Config.CELERY_TASK_QUEUE}_high', f'{Config.CELERY_TASK_QUEUE}_medium', f'{Config.CELERY_TASK_QUEUE}_low']
+                qi = [{'name': q, 'is_active': q in aq, 'workers': sum(1 for w in stats.values() if 'pool' in w and q in w['pool'].get('queues', []))} for q in dqs]
+                return APIResponse(success=True, data={"queues": qi, "default": Config.CELERY_TASK_QUEUE})
             except HTTPException: raise
             except Exception as e: log.error(f"[dq] {e}"); raise HTTPException(500, str(e))
 
@@ -476,10 +499,11 @@ if FASTAPI_OK:
             if t.get('status') != 'completed': raise HTTPException(400, "not done")
             er = t.get('result', {}).get('exploit_result')
             if not er or not er.get('success'): raise HTTPException(400, "no exploit")
-            try: from exploit.exploit_verifier import ExploitVerifier; ev = ExploitVerifier()
-            def _v(): r = ev.verify_exploit(er.get('script_content', ''), t.get('request', {}).get('binary_name', ''), vc); TASK_MGR.update_task(tid, verification_result=r)
-            if bg is None: raise HTTPException(500, "no bg")
-            bg.add_task(_v); return APIResponse(success=True, data={"task_id": tid, "verify_count": vc, "status": "running"})
+            try:
+                from exploit.exploit_verifier import ExploitVerifier; ev = ExploitVerifier()
+                def _v(): r = ev.verify_exploit(er.get('script_content', ''), t.get('request', {}).get('binary_name', ''), vc); TASK_MGR.update_task(tid, verification_result=r)
+                if bg is None: raise HTTPException(500, "no bg")
+                bg.add_task(_v); return APIResponse(success=True, data={"task_id": tid, "verify_count": vc, "status": "running"})
             except Exception as e: log.error(f"[exp] {e}"); raise HTTPException(500, str(e))
 
         async def _exp_status(tid: str):
@@ -490,10 +514,11 @@ if FASTAPI_OK:
             return APIResponse(success=True, data={"task_id": tid, "status": "completed", "verification_result": vr})
 
         async def _ti_query(req: ThreatIntelQuery, bg: BackgroundTasks = None):
-            try: tc = ThreatIntelClient(providers=[req.provider])
-            def _q(): rs = tc.query_by_hash(req.query_value, req.task_id or '', req.anonymize) if req.query_type == 'hash' else tc.query_by_cve(req.query_value, req.task_id or '') if req.query_type == 'cve' else tc.query_by_indicator(req.query_value, req.task_id or ''); db = VulnerabilityDatabase(); tc.save_results(rs, db, req.task_id or ''); return [r.to_dict() for r in rs]
-            if bg is None: raise HTTPException(500, "no bg")
-            bg.add_task(_q); return APIResponse(success=True, data={"query_id": f"ti_{uuid.uuid4().hex[:8]}", "status": "running"})
+            try:
+                tc = ThreatIntelClient(providers=[req.provider])
+                def _q(): rs = tc.query_by_hash(req.query_value, req.task_id or '', req.anonymize) if req.query_type == 'hash' else tc.query_by_cve(req.query_value, req.task_id or '') if req.query_type == 'cve' else tc.query_by_indicator(req.query_value, req.task_id or ''); db = VulnerabilityDatabase(); tc.save_results(rs, db, req.task_id or ''); return [r.to_dict() for r in rs]
+                if bg is None: raise HTTPException(500, "no bg")
+                bg.add_task(_q); return APIResponse(success=True, data={"query_id": f"ti_{uuid.uuid4().hex[:8]}", "status": "running"})
             except Exception as e: log.error(f"[ti] {e}"); raise HTTPException(500, str(e))
 
         async def _ti_results(tid: str):
@@ -533,26 +558,29 @@ if FASTAPI_OK:
 
         async def _ag_info(aid: str, au=Depends(_admin)):
             if not RAGENT_OK or not agm: raise HTTPException(status.HTTP_503, "agent N/A")
-            try: a = agm.get_agent_by_id(aid)
-            if not a: raise HTTPException(404, f"not found: {aid}")
-            return APIResponse(success=True, data=a)
+            try:
+                a = agm.get_agent_by_id(aid)
+                if not a: raise HTTPException(404, f"not found: {aid}")
+                return APIResponse(success=True, data=a)
             except HTTPException: raise
             except Exception as e: log.error(f"[agi] {e}"); raise HTTPException(500, str(e))
 
         async def _ag_revoke(aid: str, au=Depends(_admin)):
             if not RAGENT_OK or not agm: raise HTTPException(status.HTTP_503, "agent N/A")
-            try: ok = agm.revoke_agent(aid)
-            if ok: return APIResponse(success=True, message=f"revoked: {aid}")
-            raise HTTPException(404, f"not found: {aid}")
+            try:
+                ok = agm.revoke_agent(aid)
+                if ok: return APIResponse(success=True, message=f"revoked: {aid}")
+                raise HTTPException(404, f"not found: {aid}")
             except HTTPException: raise
             except Exception as e: log.error(f"[agrv] {e}"); raise HTTPException(500, str(e))
 
         async def _ag_cmd(aid: str, req: AgentCommandRequest, au=Depends(_admin)):
             if not RAGENT_OK or not agm: raise HTTPException(status.HTTP_503, "agent N/A")
-            try: a = agm.get_agent_by_id(aid)
-            if not a: raise HTTPException(404, f"not found: {aid}")
-            if a.get('status') != 'online': raise HTTPException(400, f"offline: {aid}")
-            log.info(f"[agcmd] {aid}: {req.command}"); return APIResponse(success=True, data={"agent_id": aid, "command": req.command})
+            try:
+                a = agm.get_agent_by_id(aid)
+                if not a: raise HTTPException(404, f"not found: {aid}")
+                if a.get('status') != 'online': raise HTTPException(400, f"offline: {aid}")
+                log.info(f"[agcmd] {aid}: {req.command}"); return APIResponse(success=True, data={"agent_id": aid, "command": req.command})
             except HTTPException: raise
             except Exception as e: log.error(f"[agc] {e}"); raise HTTPException(500, str(e))
 
@@ -563,9 +591,10 @@ if FASTAPI_OK:
 
         async def _ag_assign(tid: str, aid: str, au=Depends(_admin)):
             if not RAGENT_OK or not agm: raise HTTPException(status.HTTP_503, "agent N/A")
-            try: ok = agm.assign_task_to_agent(tid, aid)
-            if ok: return APIResponse(success=True, message=f"{tid} -> {aid}")
-            raise HTTPException(400, "assign fail")
+            try:
+                ok = agm.assign_task_to_agent(tid, aid)
+                if ok: return APIResponse(success=True, message=f"{tid} -> {aid}")
+                raise HTTPException(400, "assign fail")
             except HTTPException: raise
             except Exception as e: log.error(f"[aga] {e}"); raise HTTPException(500, str(e))
 

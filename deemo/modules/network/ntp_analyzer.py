@@ -1,12 +1,11 @@
-# 2026-07-19
 """NTP 协议安全分析 —— 放大攻击检测、Monlist扫描、时间源信任评估。
 
-NTP monlist (MODE_CONTROL+opcode=42) 是历史上放大系数最高的反射攻击向量之一
-（单请求可达556.9x放大率）。尽管ntp.conf 4.2.7p26+默认禁用monlist，
-全球仍有大量未升级的NTP服务器存在此漏洞。
+NTP monlist (MODE_CONTROL+opcode=42)是历史上放大系数最高的反射攻击向量之一
+（单请求可达556.9x放大率）。ntp.conf 4.2.7p26+默认禁用monlist，
+但全球仍有大量未升级的NTP服务器存在此漏洞。
 
 参考：
-- SoK arXiv:2502.09837 (Digital Clock Trustworthiness)
+- SoK Digital Clock Trustworthiness
 - CVE-2013-5211 — NTP monlist 反射DDoS
 - RFC 8915 (Network Time Security for NTP)
 """
@@ -228,7 +227,7 @@ class NtpAmplificationDetector:
             anomaly = NtpAnomaly(
                 anomaly_type="ntp_stratum_zero",
                 src_ip=src_ip,
-                description="NTP服务器Stratum=0 —— 可能为伪造/KoD包",
+                description="NTP服务器Stratum=0 —— 伪造/KoD包嫌疑",
                 severity="low",
             )
 

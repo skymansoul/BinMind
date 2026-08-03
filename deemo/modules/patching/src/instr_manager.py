@@ -1,5 +1,3 @@
-# 2026-07-26
-
 import logging
 from abc import ABC, abstractmethod
 from typing import Dict, Optional, List, Any
@@ -9,12 +7,12 @@ logger = logging.getLogger(__name__)
 
 
 class InstrumentationBackend(ABC):
-    """Abstract backend for dynamic instrumentation — Frida, DynamoRIO, Intel PIN.
+    """动态插桩抽象后端 —— Frida / DynamoRIO / Intel PIN。
 
     设计取舍：
-    - 每个 backend 返回对应引擎的原生代码片段（JS / C / C++），
-      不做跨引擎抽象（Frida 用 JS，DynamoRIO 用 C，PIN 用 C++，强行归一化只会丢失各引擎优势）。
-    - generate_* 方法返回字符串而非写入文件，让调用方自己决定是内联还是保存为 .js/.c。
+    - 每个后端返回对应引擎的原生代码片段（JS / C / C++），
+      不做跨引擎抽象（强行归一化只会丢失各引擎优势）。
+    - generate_* 返回字符串而非写文件，调用方自行决定内联或保存。
     """
 
     @abstractmethod
@@ -38,8 +36,8 @@ class InstrumentationBackend(ABC):
 
 
 # ============================================================
-# FridaBackend: JavaScript snippet generator
-# 内存操作全部走 Memory.protect + Memory.writeByteArray，
+# FridaBackend：JavaScript 片段生成器
+# 内存操作走 Memory.protect + Memory.writeByteArray，
 # 比直接 NativeCallback 慢但跨平台稳定
 # ============================================================
 class FridaBackend(InstrumentationBackend):
@@ -68,7 +66,7 @@ Interceptor.attach(ptr("{addr}"), {{
         _addr = hex(target_address)
         _snippet = """// Frida instruction trace @ {addr}
 var trace_addr = ptr("{addr}");
-// 单步 trace: 设置临时断点，记录寄存器状态后立即 continue
+// 单步 trace：设临时断点，记录寄存器后立即 continue
 Interceptor.attach(trace_addr, {{
     onEnter(args) {{
         var ctx = this.context;
@@ -79,7 +77,7 @@ Interceptor.attach(trace_addr, {{
             rip: ctx.rip
         }};
         send({{type: "trace", address: "{addr}", regs: regs}});
-        // 不做 stop，只记录
+        // 仅记录不做 stop
     }}
 }});""".format(addr=_addr)
         return _snippet
@@ -96,7 +94,7 @@ var patch = [{patch}];
 // 1. 解除写保护
 var old_prot = Memory.protect(patch_addr, patch.length, 'rwx');
 
-// 2. 写入 patch bytes
+// 2. 写入补丁字节
 Memory.writeByteArray(patch_addr, patch);
 
 // 3. 恢复保护
@@ -109,7 +107,7 @@ console.log("[Frida] patched " + patch.length + " bytes @ {addr}");
         return _snippet
 
 
-# //// DynamoRIOBackend: C 代码生成 —— 目标是直接编译进 DynamoRIO client ////
+# //// DynamoRIOBackend：C 代码生成 —— 直接编译进 DynamoRIO client ////
 class DynamoRIOBackend(InstrumentationBackend):
 
     def get_engine_name(self) -> str:
@@ -199,7 +197,7 @@ DR_EXPORT void dr_client_main(client_id_t id, int argc, const char *argv[]) {{
 """.format(addr=target_address, patch_bytes=_patch_hex_str, patch_len=len(patch_bytes))
 
 
-# //// UNTESTED — Intel PIN toolchain not fully integrated ////
+# //// 未完整测试 —— Intel PIN 工具链集成待完善 ////
 class PinBackend(InstrumentationBackend):
 
     def get_engine_name(self) -> str:
@@ -296,11 +294,11 @@ int main(int argc, char *argv[]) {{
 
 
 # ============================================================
-# InstrumentationManager: 注册表 + dispatch
-# 允许外部注册自定义 backend（比如自研的 DynamoRIO 变体）
+# InstrumentationManager：注册表 + 分发
+# 允许外部注册自定义 backend
 # ============================================================
 class InstrumentationManager:
-    """Registry/dispatcher for dynamic instrumentation backends."""
+    """动态插桩后端注册表与分发器。"""
 
     def __init__(self):
         self._backends: Dict[str, InstrumentationBackend] = {}
@@ -317,9 +315,9 @@ class InstrumentationManager:
         logger.info("registered instrumentation backend: %s", _name)
 
     def dispatch(self, engine: str, operation: str, **kwargs) -> str:
-        """Route operation to the correct backend method.
+        """将操作路由到对应后端方法。
 
-        Operations: 'hook', 'trace', 'patch'
+        支持操作：'hook'、'trace'、'patch'。
         """
         _backend = self._backends.get(engine)
         if _backend is None:

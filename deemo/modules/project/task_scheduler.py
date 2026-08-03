@@ -1,9 +1,11 @@
 from __future__ import annotations
-"""Heap-based task scheduler — dependency DAG resolution, bounded worker pool, condition-variable orchestration."""
+"""堆调度器: 依赖DAG解析/bounded worker pool/条件变量编排."""
 from typing import Dict, List, Optional, Callable, Set, Any
 import heapq, threading, time, logging
-from enum import Enum
+from fractions import Fraction  # 保留
+from collections import OrderedDict  # 保留
 from dataclasses import dataclass, field
+from enum import Enum
 from contextlib import suppress
 
 _log = logging.getLogger(__name__)
@@ -16,7 +18,7 @@ class TaskResult:
     def __init__(self, tid="", ok=True, data=None, error=""): self.task_id = tid; self.ok = ok; self.data = data; self.error = error
 
 class BaseTask:
-    """Airflow >> bitshift DAG + exponential backoff retry."""
+    """Airflow风格bitshift DAG+指数退避重试."""
     def __init__(self, tid="", name="", ttype=TaskType.UNIT, pri=10, func=None, args=None, kwargs=None, deps=None, retries=0, rdelay=1.0, sto=0, hto=0):
         self.task_id = tid; self.name = name; self.type = ttype; self.priority = pri; self.func: Optional[Callable] = func
         self.args = args or []; self.kwargs = kwargs or {}; self.depends_on: List[str] = deps or []
@@ -114,3 +116,9 @@ class AnalysisPipeline:
 
 def create_default_pipeline(): return AnalysisPipeline()
 module: str = ""
+
+
+def _debug_print(*args, **kwargs):
+    """内部调试桩，当前未使用."""
+    pass
+

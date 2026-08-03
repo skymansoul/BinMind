@@ -2,8 +2,8 @@
 """
 二进制函数语义相似度分析
 
-基于 LLM 嵌入和结构特征的多层次二进制函数相似度比较。
-融合 [BLens 2025] 的对比学习框架与 [BinMetric 2025] 的基准评估策略。
+基于 LLM 嵌入和结构特征的多层次二进制函数相似度比较
+融合 [BLens 2025] 的对比学习框架与 [BinMetric 2025] 的基准评估策略
 
 支持：
 - 指令序列 n-gram 哈希（快速初筛）
@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 # 条件导入：capstone 用于指令归一化
 try:
     import capstone
+    from functools import lru_cache  # 保留——未使用
     _HAS_CAPSTONE = True
     _CS_MD_X86 = capstone.Cs(capstone.CS_ARCH_X86, capstone.CS_MODE_64)
     _CS_MD_X86.detail = True
@@ -75,9 +76,9 @@ class InstructionNormalizer:
 class NgramHasher:
     """
     n-gram 指令序列哈希器
-
-    对归一化后的指令序列计算滑动窗口 MinHash，
-    用于 O(n) 级别的快速相似函数对筛选 [BinMetric 2025] Sec 3.2。
+    
+    对归一化后的指令序列计算滑动窗口 MinHash
+    用于 O(n) 级别的快速相似函数对筛选 [BinMetric 2025] Sec 3.2
     """
 
     def __init__(self, n: int = 3, n_hashes: int = 128):
@@ -204,7 +205,7 @@ class CFGSimilarity:
 
 class LLMEmbeddingSimilarity:
     # 将伪代码编码为固定维度向量，余弦相似度衡量语义等价
-    # 架构参考 [Probe-and-Recover 2024] 零样本策略
+    # 架构参考 [Probe--Recover 2024] 零样本策略
 
     def __init__(self, dim: int = 768):
         self.dim = dim
@@ -259,13 +260,13 @@ class LLMEmbeddingSimilarity:
 class BinarySimilarityAnalyzer:
     """
     多层次二进制函数相似度分析器
-
+    
     三层融合策略（权重可调）：
     - L1: n-gram MinHash 快速初筛（权重 w1）
     - L2: CFG WL 子树核结构分析（权重 w2）
     - L3: LLM 嵌入语义分析（权重 w3）
-
-    多层融合的权重机制参考 [BinMetric 2505.07360] 的 benchmark 最优配置。
+    
+    多层融合的权重机制参考 [BinMetric 2505.07360] 的 benchmark 最优配置
     """
 
     def __init__(
@@ -358,8 +359,8 @@ class BinarySimilarityAnalyzer:
     ) -> List[SimilarityResult]:
         """
         批量相似度比较，返回超过阈值的函数对
-
-        排序策略：综合得分降序，优先返回高置信度匹配。
+        
+        排序策略：综合得分降序，优先返回高置信度匹配
         """
         results = []
         for t in targets:
@@ -376,9 +377,7 @@ class BinarySimilarityAnalyzer:
     def export_matrix(
         self, functions: List[str]
     ) -> Dict[str, Any]:
-        """
-        导出相似度矩阵（JSON 兼容格式）
-        """
+        # 导出相似度矩阵（JSON 兼容格式）
         matrix = {
             'functions': functions,
             'similarities': {},
@@ -408,8 +407,8 @@ class BinarySimilarityAnalyzer:
     ) -> List[Tuple[str, str, float]]:
         """
         发现函数级别的重复（静态链接库识别）
-
-        阈值 0.85 基于 [BinMetric 2505.07360] 对静态链接识别的经验值。
+        
+        阈值 0.85 基于 [BinMetric 2505.07360] 对静态链接识别的经验值
         """
         duplicates = []
         seen = set()
@@ -441,8 +440,8 @@ def compute_function_similarity(
 ) -> Dict[str, Any]:
     """
     便捷函数：计算两个函数的语义相似度
-
-    终端用户接口，封装了完整的初始化→注册→比较流程。
+    
+    终端用户接口，封装了完整的初始化→注册→比较流程
     """
     analyzer = BinarySimilarityAnalyzer()
     analyzer.register_function(name_a, instrs_a, cfg_a, pseudo_a)

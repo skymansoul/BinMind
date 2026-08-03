@@ -1,6 +1,6 @@
 """协议状态机模型检测——死锁/活锁检测、不变式验证
 
-新增：有限深度 CTL 风格时态属性检测 —— 支持路径存在性 (EF/EG) 与
+CTL 风格时态属性检测 —— 支持路径存在性 (EF/EG) 与
 全称量化 (AG/AF) 的有限前缀近似，深度上界由状态数平方控制，防止
 无限展开。借鉴 SPIN 的 bitstate hashing 思路，对大规模状态图使用
 Bloom filter 压缩访问集，内存常数级。
@@ -60,12 +60,12 @@ class Invariant:
 
 @dataclass
 class TemporalProperty:
-    """CTL 风格的时态属性 —— 有限前缀近似
+    """CTL 风格时态属性 —— 有限前缀近似
 
     property_type:
-      - 'AG'  (∀□): 所有可达状态满足  → 验证：所有路径所有节点满足
-      - 'AF'  (∀◇): 所有路径最终满足  → 验证：所有路径有满足节点
-      - 'EF'  (∃◇): 存在可达状态满足  → 验证：搜索可达状态空间
+      - 'AG'  (所有可达状态满足)  → 所有路径所有节点满足
+      - 'AF'  (所有路径最终满足)  → 所有路径有满足节点
+      - 'EF'  (存在可达状态满足)  → 搜索可达状态空间
       - 'EG_ABSENT': 不存在无限循环不满足  → 近似为活锁检查
     """
     name: str
@@ -76,7 +76,7 @@ class TemporalProperty:
 
 @dataclass
 class CheckResult:
-    violation_type: str   # deadlock | livelock | invariant_broken | unreachable_state 四种违例类型
+    violation_type: str   # deadlock | livelock | invariant_broken | unreachable_state
     description: str
     states_involved: List[str] = field(default_factory=list)
     counterexample: List[str] = field(default_factory=list)
@@ -100,7 +100,7 @@ class ProtocolModelChecker:
         self._temporal_properties: List[TemporalProperty] = []
         self._outgoing: Dict[str, List[ProtocolTransition]] = defaultdict(list)
 
-    # -- 构建 -----------------------------------------------------------------
+    # -- 构建 --
 
     def add_state(self, state: ProtocolState) -> None:
         self._states[state.name] = state
@@ -116,10 +116,10 @@ class ProtocolModelChecker:
         """注册 CTL 时态属性 —— 在 check() 时一并验证"""
         self._temporal_properties.append(prop)
 
-    # -- 主检测 ------------------------------------------------------------
+    # -- 主检测 --
 
     def check(self, model=None) -> List[CheckResult]:
-        """执行全部检测。`model` 可为字典：{"states": [...], "transitions": [...]}。"""
+        """执行全部检测。model 可为字典：{"states": [...], "transitions": [...]}。"""
         if model is not None:
             self._load(model)
 
@@ -168,7 +168,7 @@ class ProtocolModelChecker:
         return unreachable
 
     def _check_livelocks(self, max_depth: int = 64) -> List[CheckResult]:
-        """DFS 环检测：若同一状态访问次数超过状态总数 2 倍，标记活锁。"""
+        """DFS 环检测：若同一状态访问次数超状态总数2倍，标记活锁。"""
         livelocks = []
         threshold = max(len(self._states) * 2, 8)
         for start_name in self._states:

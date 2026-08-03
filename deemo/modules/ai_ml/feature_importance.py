@@ -1,5 +1,3 @@
-# 2026-07-24 09:45
-# feature_importance.py
 # 特征重要性分析器 — 多种归因方法的统一接口
 # 方法: 置换重要性 / SHAP近似 (Kernel SHAP简化) / 消融分析 / Sobol指数采样
 # 设计: 独立于模型类型, 只需要 predict(X) 接口
@@ -170,7 +168,7 @@ class FeatureImportanceAnalyzer:
 
         return scores
 
-    # ---------- Shapley Sample ----------
+    # ---------- Shapley采样 ----------
     def _shapley_importance(self, X, predict_fn, baseline, n_samples):
         """简化Kernel SHAP: 随机采样特征子集计算边际贡献"""
         N = len(X)

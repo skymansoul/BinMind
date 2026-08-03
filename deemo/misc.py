@@ -1,13 +1,6 @@
-"""
-Miscellaneous helpers that don't fit cleanly into any subpackage.
-Miscellaneous utilities that span multiple subsystems without a clear single owner.
-"""
+"""Utilities that span multiple subsystems without a clear single owner."""
 
-import hashlib
-import os
-import random
-import re
-import string
+import hashlib, os, random, re, string
 from typing import Optional
 
 

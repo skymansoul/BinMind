@@ -1,0 +1,191 @@
+# BinMind Mobile Platform - Default Configuration
+# YAML config for mobile analyzers (Android/iOS/WASM)
+
+platform:
+  default: auto
+  choices:
+    - android
+    - ios
+    - auto
+
+android:
+  # OAT/DEX analysis
+  oat_analysis: true
+  dex_class_extraction: true
+  native_method_detection: true
+
+  # WOOTdroid/LEMON eBPF anti-tracing detection
+  anti_tracing:
+    enabled: true
+    patterns:
+      - debugfs_tracing
+      - bpffs_mount
+      - perf_event
+      - kprobe_uprobe
+      - bpf_syscall
+
+  # Binder IPC analysis
+  binder_analysis:
+    enabled: true
+    audit_syscalls: true
+    trace_transactions: true
+
+  # JNI analysis
+  jni_analysis:
+    enabled: true
+    detect_injection: true
+    detect_command_exec: true
+
+  # Compiler/OAT hardening
+  compiler_check:
+    enabled: true
+    warn_verify_at_runtime: true
+    check_image_base: true
+
+ios:
+  # Mach-O analysis
+  macho_analysis: true
+  objc_classlist: true
+  objc_selectors: true
+  swift_metadata: true
+
+  # Vulnerability scanning
+  vuln_detection:
+    enabled: true
+    check_keychain_access: true
+    check_dangerous_selectors: true
+    check_dynamic_library_injection: true
+    check_swift_symbol_exposure: true
+
+managed_code:
+  java:
+    enabled: true
+    dangerous_methods:
+      deserialization: critical
+      command_execution: critical
+      jndi_injection: critical
+      sql_injection: high
+      dynamic_loading: medium
+      reflection: medium
+      weak_crypto: low
+    max_jar_entries: 50
+    decompile: true
+
+  dotnet:
+    enabled: true
+    dangerous_methods:
+      deserialization: critical
+      command_execution: critical
+      dynamic_loading: medium
+      reflection: medium
+      weak_crypto: low
+    use_ilspy: auto
+
+  ml_model_detection:
+    enabled: true
+    frameworks:
+      - tflite
+      - onnx
+      - pytorch_mobile
+      - coreml
+      - ncnn
+      - paddle
+    scan_encrypted: true
+
+  sbom_fingerprinting:
+    enabled: true
+    detect_sdks: true
+    confidence_minimum: medium
+
+wasm:
+  parser:
+    validate_magic: true
+    parse_all_sections: true
+    max_function_count: 100000
+
+  wasi:
+    enabled: true
+    detect_capabilities: true
+    capability_categories:
+      - file_system
+      - network
+      - process
+      - memory
+      - time
+      - random
+    sandbox_fingerprints:
+      wasi_snapshot_preview1: wasmtime/wasmer/wasmedge
+      wasi_unstable: lucet/old_wasmtime
+      wasix: wasmer
+      env: node_wasi
+
+  vulnerability_detection:
+    enabled: true
+    check_unbounded_memory: true
+    check_dangerous_exports: true
+    check_mutable_globals: true
+    check_unbounded_table: true
+    check_file_operations: true
+
+  shadow_memory:
+    enabled: true
+    check_red_zone: true
+    check_uninitialized_growth: true
+    min_red_zone_pages: 2
+
+  abstract_interpretation:
+    enabled: true
+    detect_memcpy_patterns: true
+    detect_dual_unbounded: true
+
+arm64e_pac:
+  enabled: true
+  scan_opcodes:
+    signing: true
+    authentication: true
+    stripping: true
+    branch_auth: true
+  detect_signing_oracles: true
+  key_domain_analysis: true
+  large_file_threshold: 10485760
+  entropy_bit_width: 16
+
+sandbox:
+  wasi:
+    escape_chain_detection: true
+    resource_exhaustion_detection: true
+    runtime_fingerprinting: true
+    escape_chains:
+      - ["path_open", "fd_write"]
+      - ["path_open", "fd_read"]
+      - ["sock_open", "sock_connect"]
+      - ["fd_read", "sock_send"]
+      - ["proc_exec", "path_open"]
+
+output:
+  format: json
+  pretty_print: true
+  include_metadata: true
+  include_raw: false
+  reports_dir: reports
+
+logging:
+  level: INFO
+  format: "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+  file_output: false
+  max_file_size_mb: 10
+
+performance:
+  max_file_size: 524288000
+  subprocess_timeout: 300
+  max_retries: 3
+  retry_delay: 1.0
+  retry_backoff: 2.0
+  chunk_size: 65536
+
+ai:
+  enabled: true
+  model: claude-sonnet-4-20250514
+  temperature: 0.2
+  max_tokens: 4000
+  decompile_prompt: MANAGED_CODE_DECOMPILE_TEMPLATE

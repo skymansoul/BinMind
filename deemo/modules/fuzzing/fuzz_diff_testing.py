@@ -1,5 +1,3 @@
-# 2026-07-29
-
 """差分模糊测试框架 -- 比较多个目标实现的输出一致性。
 
 参考:
@@ -26,12 +24,13 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Callable, Dict, List, Optional, Set, Tuple
+from collections import OrderedDict
 
 logger = logging.getLogger(__name__)
 
 
 class DiffCategory(str, Enum):
-    """差异分类。"""
+    # 差异分类。
     COVERAGE_GAINED = "coverage_gained"       # V2覆盖更多
     COVERAGE_LOST = "coverage_lost"           # V2覆盖更少(回归)
     OUTPUT_MISMATCH = "output_mismatch"       # 输出不同
@@ -110,8 +109,8 @@ class DiffFuzzer:
             try:
                 v1_result = self.v1_exec(seed)
                 v2_result = self.v2_exec(seed)
-            except Exception as e:
-                logger.debug("种子%d执行异常: %s", i, e)
+            except Exception as ex:
+                logger.debug("种子%d执行异常: %s", i, ex)
                 continue
 
             diff = self._compare(seed, v1_result, v2_result)

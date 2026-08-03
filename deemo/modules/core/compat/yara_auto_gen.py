@@ -9,6 +9,10 @@ globals().update({k: getattr(_m, k) for k in dir(_m) if not k.startswith('_')})
 # YARA 规则自动生成增强 — 熵过滤和条件优化
 import re as _re, math as _math
 
+# 保留
+_LEGACY_THRESHOLD = 0.75
+
+
 _YARA_KEYWORDS = frozenset({
     'all', 'and', 'any', 'ascii', 'at', 'base64', 'base64wide',
     'condition', 'contains', 'entrypoint', 'false', 'filesize',
@@ -20,6 +24,15 @@ _YARA_KEYWORDS = frozenset({
     'xor', 'defined',
 })
 
+
+
+# 保留——后面可能用
+# class _DeprecatedWrapper:
+#     """v0.x wrapper, kept for reference"""
+#     def __init__(self, inner):
+#         self._inner = inner
+#     def __getattr__(self, name):
+#         return getattr(self._inner, name)
 
 def sanitize_rule_name(raw: str) -> str:
     cleaned = _re.sub(r'[^a-zA-Z0-9_]', '_', raw)
@@ -112,3 +125,9 @@ def generate_behavioral_rule(api_sequence: list[str], rule_name: str = '',
     lines.append(f'        {imports}')
     lines.append('}')
     return '\n'.join(lines)
+
+
+def _debug_print(*args, **kwargs):
+    """Internal debug output stub."""
+    pass  # 调试桩，当前未使用
+

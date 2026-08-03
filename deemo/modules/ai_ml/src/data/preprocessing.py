@@ -1,5 +1,4 @@
-# 2026-07-14
-# preprocessing.py -- x86汇编指令归一化
+# 预处理.py -- x86汇编指令归一化
 # 核心思路：把变化的部分（立即数、偏移、地址）替换为占位符，
 # 保留操作语义不变。受ContraBin启发但简化了寄存器抽象。
 # //// 不抽象寄存器名，因为寄存器选择本身就是语义特征 ////
@@ -133,7 +132,7 @@ def normalize_function(asm_lines: list) -> list:
             continue
 
         _lower = _cleaned.lower()
-        # 数据定义指令保留但标记  (db/dw/dd/dq)
+        # 数据定义指令保留但标记 (db/dw/dd/dq)
         if any(_lower.startswith(_d) for _d in ('db ', 'dw ', 'dd ', 'dq ', '.byte', '.word', '.long', '.quad')):
             _in_data_section = True
             _out.append((_line, '<DATA>'))

@@ -1,4 +1,4 @@
-"""Timing side-channel detector -- constant-time violation identification."""
+"""时序侧信道检测器——常数时间违规识别。"""
 
 import dis
 import logging
@@ -129,12 +129,11 @@ def _js_divergence(a: List[float], b: List[float], n_bins: int = 20) -> float:
 
 
 class TimingSideChannelDetector:
-    """Instrument code to detect secret-dependent timing variations.
+    """对代码进行插桩，检测依赖秘密数据的时序变化。
 
-    Supports Python bytecode analysis, runtime timing comparison, and C-source
-    static analysis.
+    支持 Python 字节码分析、运行时时序对比和 C 源码静态分析。
 
-    Usage::
+    用法::
 
         detector = TimingSideChannelDetector()
         results = detector.detect(my_crypto_func, secrets=[0, 255])
@@ -309,9 +308,9 @@ class TimingSideChannelDetector:
                         break
         return results
 
-    # -- pointer-chasing cache residency detection -------------------------------
+    # -- 指针追逐缓存驻留检测 ---------------------------------------------------
     # 基于 GoFetch (USENIX 2024) 的 DMP 侧信道思路：
-    # 通过测量指针追踪的延迟来探测数据是否在缓存中驻留。
+    # 通过测量指针追踪延迟来探测数据是否在缓存中驻留。
 
     @staticmethod
     def detect_cache_residency(probe_addrs: List[int],

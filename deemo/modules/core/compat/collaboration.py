@@ -77,7 +77,7 @@ class CollaborationManager:
                             password_hash=d.get('password_hash', ''),
                             salt=d.get('salt', ''))
                         self._users.append(u)
-            except: pass
+            except Exception: pass  # 修复: bare except → Exception
 
     # --- User management ---
     def register_user(self, username, password, role=None):

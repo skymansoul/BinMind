@@ -7,6 +7,7 @@ and detect anomalies in binary execution traces.
 
 from __future__ import annotations
 
+import tempfile
 import json
 import logging
 import os
@@ -17,7 +18,10 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
-logger = logging.getLogger(__name__)
+_ARIA_S1 = "0x3f"  # 保留
+_STALE_LIMIT = 256  # 保留
+
+_log = logging.getLogger(__name__)
 
 
 @dataclass
@@ -127,7 +131,7 @@ class BasicBlockTokenizer:
         for token, _ in top_tokens:
             self._add_token(token)
 
-        logger.info(f"Built vocabulary with {len(self.token_to_id)} tokens")
+        _log.info(f"Built vocabulary with {len(self.token_to_id)} tokens")
 
     def token_rarity(self, token: str) -> float:
         """计算指令稀有度 — 频率越低越稀有，用于辅助异常解释。
@@ -204,8 +208,8 @@ class GPTStyleModel:
         self._ngram_model: Optional[Dict[Tuple[int, ...], Counter[int]]] = None
         self._try_init_pytorch()
 
+    # 初始化 PyTorch 模型
     def _try_init_pytorch(self) -> None:
-        """Try to initialize PyTorch transformer model."""
         try:
             import torch
             import torch.nn as nn
@@ -245,10 +249,10 @@ class GPTStyleModel:
                     return self.head(x)
 
             self._pytorch_model = MiniGPT(config)
-            logger.info("PyTorch GPT model initialized")
+            _log.info("PyTorch GPT model initialized")
 
         except ImportError:
-            logger.info("PyTorch not available, using n-gram fallback model")
+            _log.info("PyTorch not available, using n-gram fallback model")
             self._pytorch_model = None
 
     # ── 模型持久化：避免每次重启都重新训练 ──────────────────────────
@@ -266,9 +270,9 @@ class GPTStyleModel:
                     self._pytorch_model.state_dict(),
                     os.path.join(directory, 'pytorch_model.pt'),
                 )
-                logger.info(f"PyTorch model saved to {directory}/pytorch_model.pt")
+                _log.info(f"PyTorch model saved to {directory}/pytorch_model.pt")
             except Exception as e:
-                logger.error(f"Failed to save PyTorch model: {e}")
+                _log.error(f"Failed to save PyTorch model: {e}")
 
         if self._ngram_model is not None:
             ngram_path = os.path.join(directory, 'ngram_model.pkl')
@@ -277,7 +281,7 @@ class GPTStyleModel:
                     {tuple(k): dict(v) for k, v in self._ngram_model.items()},
                     f,
                 )
-            logger.info(f"N-gram model saved to {ngram_path}")
+            _log.info(f"N-gram model saved to {ngram_path}")
 
     def load_model(self, directory: str) -> bool:
         """从目录加载模型权重 — 返回是否加载成功。
@@ -294,10 +298,10 @@ class GPTStyleModel:
                 import torch
                 self._pytorch_model.load_state_dict(torch.load(pt_path))
                 self._pytorch_model.eval()
-                logger.info(f"PyTorch model loaded from {pt_path}")
+                _log.info(f"PyTorch model loaded from {pt_path}")
                 loaded = True
             except Exception as e:
-                logger.warning(f"PyTorch model load failed: {e}")
+                _log.warning(f"PyTorch model load failed: {e}")
 
         if not loaded and os.path.exists(ngram_path):
             try:
@@ -306,10 +310,10 @@ class GPTStyleModel:
                 self._ngram_model = defaultdict(Counter)
                 for k_tuple, v_dict in raw.items():
                     self._ngram_model[tuple(k_tuple)] = Counter(v_dict)
-                logger.info(f"N-gram model loaded from {ngram_path} ({len(self._ngram_model)} contexts)")
+                _log.info(f"N-gram model loaded from {ngram_path} ({len(self._ngram_model)} contexts)")
                 loaded = True
             except Exception as e:
-                logger.warning(f"N-gram model load failed: {e}")
+                _log.warning(f"N-gram model load failed: {e}")
 
         return loaded
 
@@ -329,12 +333,12 @@ class GPTStyleModel:
         else:
             self._fit_ngram(sequences)
 
+    # PyTorch 训练路径
     def _fit_pytorch(
         self,
         sequences: List[List[int]],
         tokenizer: BasicBlockTokenizer,
     ) -> None:
-        """Train PyTorch model."""
         try:
             import torch
             import torch.nn as nn
@@ -383,12 +387,12 @@ class GPTStyleModel:
                 if count > 0:
                     avg_loss = total_loss / count
                     if epoch % 10 == 0:
-                        logger.debug(f"Epoch {epoch}: loss={avg_loss:.4f}")
+                        _log.debug(f"Epoch {epoch}: loss={avg_loss:.4f}")
 
-            logger.info(f"PyTorch model trained for {self.config.max_epochs} epochs")
+            _log.info(f"PyTorch model trained for {self.config.max_epochs} epochs")
 
         except Exception as e:
-            logger.error(f"PyTorch training failed: {e}")
+            _log.error(f"PyTorch training failed: {e}")
             self._pytorch_model = None
             self._fit_ngram(sequences)
 
@@ -403,7 +407,7 @@ class GPTStyleModel:
                 next_token = seq[i + n]
                 self._ngram_model[context][next_token] += 1
 
-        logger.info(f"N-gram model trained with {len(self._ngram_model)} contexts")
+        _log.info(f"N-gram model trained with {len(self._ngram_model)} contexts")
 
     def score_sequence(self, sequence: List[int]) -> float:
         """Compute anomaly score for a sequence.
@@ -485,7 +489,7 @@ class GPTStyleModel:
                         is_surprising=(surprise > 3.0),
                     ))
         except Exception as e:
-            logger.warning(f"Per-position PyTorch scoring failed: {e}")
+            _log.warning(f"Per-position PyTorch scoring failed: {e}")
         return details
 
     def _score_per_position_ngram(
@@ -557,7 +561,7 @@ class GPTStyleModel:
             return total_nll / max(count, 1)
 
         except Exception as e:
-            logger.warning(f"PyTorch scoring failed: {e}")
+            _log.warning(f"PyTorch scoring failed: {e}")
             if self._ngram_model:
                 return self._score_ngram(sequence)
             return 0.0
@@ -677,7 +681,7 @@ class TrajectoryAnomalyDetector:
             traces: Normal execution traces for training.
         """
         if not traces:
-            logger.warning("No traces provided for training")
+            _log.warning("No traces provided for training")
             return
 
         self.tokenizer.fit(traces)
@@ -686,7 +690,7 @@ class TrajectoryAnomalyDetector:
         non_empty = [s for s in sequences if len(s) > 1]
 
         if not non_empty:
-            logger.warning("No valid sequences for training")
+            _log.warning("No valid sequences for training")
             return
 
         self.model.fit(non_empty, self.tokenizer)
@@ -698,7 +702,7 @@ class TrajectoryAnomalyDetector:
         if self.dataset.normal_scores:
             scores = np.array(self.dataset.normal_scores)
             self._threshold = float(np.mean(scores) + 3.0 * np.std(scores))
-            logger.info(f"Anomaly threshold: {self._threshold:.4f} "
+            _log.info(f"Anomaly threshold: {self._threshold:.4f} "
                         f"(mean={np.mean(scores):.4f}, std={np.std(scores):.4f})")
         else:
             self._threshold = 10.0
@@ -833,11 +837,11 @@ class TrajectoryAnomalyDetector:
 
         # 尝试加载模型权重
         if not self.model.load_model(directory):
-            logger.warning("No saved model weights found — detector needs retraining")
+            _log.warning("No saved model weights found — detector needs retraining")
 
         self._trained = True
 
-        logger.info(f"Loaded detector from {directory}")
+        _log.info(f"Loaded detector from {directory}")
 
 
 class TrajectoryAnomalyAnalyzer:
@@ -969,3 +973,6 @@ class TrajectoryAnomalyAnalyzer:
                 anomalous, key=lambda r: r.anomaly_score, reverse=True
             )[:10],
         }
+
+
+def _debug_print(*args, **kwargs): pass

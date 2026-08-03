@@ -1,13 +1,13 @@
 # 持续数据集构建流水线 —— 面向二进制漏洞研究的增量数据管理
 # 参考 Zotero 文献:
 #   "CBTracer: Continuously Building Datasets for Binary Vulnerability and
-#     Exploit Research" [Kim et al., ASIA CCS 2018] — 通过持续抓取开源
+#     Exploit Research" [Kim et al., ASIA CCS 2018] —— 通过持续抓取开源
 #     repository + 编译 + 静态分析构建二进制漏洞数据集的核心思想。
 #   "Recent Advances in Large Language Model Benchmarks against Data
-#     Contamination: From Static to Dynamic Evaluation" — 数据污染检测
+#     Contamination: From Static to Dynamic Evaluation" —— 数据污染检测
 #     与本模块的 dataset 版本控制 (snapshot) 和去污 (decontaminate) 相关。
 #   "Large Language Models for Blockchain Security: A Systematic Literature
-#     Review" — LLM 辅助的漏洞标注与分类策略。
+#     Review" —— LLM 辅助的漏洞标注与分类策略。
 #
 # 核心功能:
 #   1. DatasetBuild: 定义数据集 schema → 增量导入签名 → 标注管理
@@ -25,14 +25,14 @@ from collections import defaultdict
 
 
 # ---------------------------------------------------------------------------
-# DatasetBuild — 数据集核心管理
+# DatasetBuild —— 数据集核心管理
 # ---------------------------------------------------------------------------
 
 class DatasetBuild:
     """二进制签名数据集 —— 增量构建 + schema 约束 + 标注追踪。
 
-    schema 定义数据集所需的最小字段集合，导入时自动校验。
-    参考 CBTracer 的 continuous build 模型: 不删除已有数据，
+    schema 定义数据集所需的最小字段集合, 导入时自动校验。
+    参考 CBTracer 的 continuous build 模型: 不删除已有数据,
     而是追加新数据并记录 snapshot。
     """
 
@@ -186,7 +186,7 @@ class DatasetBuild:
 
 
 # ---------------------------------------------------------------------------
-# DatasetSplit — 按策略切分 train/val/test
+# DatasetSplit —— 按策略切分 train/val/test
 # ---------------------------------------------------------------------------
 
 class DatasetSplit:
@@ -236,7 +236,7 @@ class DatasetSplit:
     def temporal_split(ds: DatasetBuild, db,
                         train_before: str = "",
                         test_after: str = "") -> Dict[str, List[int]]:
-        """时间顺序切分 —— train 用早期数据，test 用晚期数据。
+        """时间顺序切分 —— train 用早期数据, test 用晚期数据。
         避免时间泄漏 (future data in training)。
         """
         id_with_time = []
@@ -256,9 +256,9 @@ class DatasetSplit:
 
 
 # ---------------------------------------------------------------------------
-# ContaminationCheck — 数据集交叉污染检测
+# ContaminationCheck —— 数据集交叉污染检测
 # 参考 "Recent Advances in LLM Benchmarks against Data Contamination"
-# 的去污评估方法，适配到二进制签名领域。
+# 的去污评估方法, 适配到二进制签名领域。
 # ---------------------------------------------------------------------------
 
 class ContaminationCheck:
@@ -266,7 +266,7 @@ class ContaminationCheck:
 
     去污层级:
       L1: exact hash match (sha256) → 精确重复
-      L2: near-duplicate via SimHash Hamming distance ≤ 3 → 高度相似
+      L2: near-duplicate via SimHash Hamming distance <= 3 → 高度相似
       L3: chunk-level content overlap > threshold → 部分重叠
     """
 
@@ -333,7 +333,7 @@ class ContaminationCheck:
 
 
 # ---------------------------------------------------------------------------
-# LabelAnnotator — 半自动标注
+# LabelAnnotator —— 半自动标注
 # ---------------------------------------------------------------------------
 
 class LabelAnnotator:

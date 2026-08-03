@@ -7,7 +7,7 @@ import logging
 import re
 from typing import Any, Dict, List, Optional
 
-logger = logging.getLogger(__name__)
+_log = logging.getLogger(__name__)
 
 SEVERITY_MAP = {
     'SIGSEGV': 'Critical',
@@ -78,7 +78,7 @@ def load_crash_file(path: str) -> Optional[Dict]:
         with open(path, 'r', encoding='utf-8', errors='replace') as fh:
             content = fh.read(65536)  # max 64KB
     except (OSError, IOError) as e:
-        logger.error("Cannot read crash file %s: %s", path, e)
+        _log.error("Cannot read crash file %s: %s", path, e)
         return None
 
     result = parse_crash(content)
@@ -116,3 +116,35 @@ def analyze_crash_for_exploit(crash: Dict) -> Dict:
             'Double-free can lead to tcache/fastbin poisoning')
 
     return analysis
+
+
+# =============================================================================
+# 新增多维原语指纹识别
+# 提供比 analyze_crash_for_exploit() 更细粒度的可利用性评估，
+# 包含寄存器可控性分析、堆操作序列提取、多维评分和策略推荐。
+# 参考: Lancet (USENIX Security 2025), HEXP (IEEE 2025), AutoPwn (2024)
+# =============================================================================
+
+def fingerprint_crash_detailed(
+    crash_data: dict,
+    stack_bounds: tuple = None,
+    heap_bounds: list = None,
+) -> dict:
+    """多维崩溃原语指纹识别——可替代 analyze_crash_for_exploit 的更精细接口。
+
+    返回值包含:
+      - registers: 每个寄存器的可控性分析
+      - heap_ops: 提取的堆操作序列
+      - scores: rip_control / stack_control / heap_control / info_leak / overall
+      - recommended_primitives: 推荐的利用原语类型
+      - recommended_strategy: 推荐的利用策略文本
+
+    调用方无额外依赖——纯Python标准库实现。
+    """
+    try:
+        from core.crash_primitive_fingerprint import fingerprint_crash
+        return fingerprint_crash(crash_data, stack_bounds, heap_bounds)
+    except ImportError:
+        # 降级到旧接口
+        _log.warning("crash_primitive_fingerprint 不可用，降级到 analyze_crash_for_exploit")
+        return analyze_crash_for_exploit(crash_data)

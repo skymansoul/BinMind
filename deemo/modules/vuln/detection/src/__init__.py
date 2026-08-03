@@ -1,5 +1,5 @@
-# 2026-07-30 — vuln_detection/src package init
-# 子模块入口：logger, config, main, core/{confidence, taint_engine, plugin}
+# vuln_detection/src包入口
+# 子模块: logger, config, main, core/{confidence, taint_engine, plugin}
 
 from vuln_detection.src.logger import setup_logger, get_logger
 from vuln_detection.src.config import load_config, Config

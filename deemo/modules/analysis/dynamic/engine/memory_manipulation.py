@@ -1,4 +1,4 @@
-"""Memory manipulation and code injection detection in native binaries."""
+"""Memory manipulation code injection detection native binaries"""
 
 import logging
 import os
@@ -21,13 +21,13 @@ class InjectionIndicator:
 
 
 class MemoryManipulationDetector:
-    """Scan binaries for code injection, process hollowing, and memory manipulation
-    patterns common in malware and game hacking.
-
+    """Scan binaries for code injection, process hollowing, memory manipulation
+    patterns common malware game hacking
+    
     Usage::
-
-        detector = MemoryManipulationDetector()
-        indicators = detector.detect("./suspicious_binary.exe")
+    
+    detector = MemoryManipulationDetector()
+    indicators = detector.检测("./suspicious_binary.exe")
     """
 
     _INJECTION_IMPORTS = {
@@ -213,12 +213,12 @@ class MemoryManipulationDetector:
                     evidence=[desc],
                 ))
 
-    # --- 新增: Heap Spray检测 ---
+    # --- 新增: 堆 Spray检测 ---
     # 检测重复的VirtualAlloc模式 — 相同大小的RWX分配在短窗口内集中出现
-    # 是heap spray攻击的强烈信号。参考CVE-2017-11882等利用中观察到的模式。
+    # 是heap spray攻击的强烈信号。参考CVE-2017-11882等利用中观察到的模式
     def _scan_heap_spray(self, data: bytes) -> None:
-        """在二进制数据中扫描heap spray特征模式：连续的大块RWX内存分配。
-        匹配VirtualAlloc调用后的0x0C字节对齐和重复大小模式。"""
+        """在二进制数据中扫描heap spray特征模式：连续的大块RWX内存分配
+        匹配VirtualAlloc调用后的0x0C字节对齐和重复大小模式"""
         spray_sigs = [
             (rb'VirtualAlloc', 0x100000),   # 1MB spray block
             (rb'VirtualAlloc', 0x10000),    # 64KB spray block (常见于JS引擎利用)
@@ -242,9 +242,9 @@ class MemoryManipulationDetector:
 
     # --- 新增: AtomBombing检测 ---
     # AtomBombing利用全局原子表(Global Atom Table)传递shellcode数据到目标进程。
-    # 检测签名: GlobalGetAtomNameA/W + NtQueueApcThread + WriteProcessMemory 链
+    # 检测签名: GlobalGetAtomNameA/W + Nt队列ApcThread + WriteProcessMemory 链
     def _scan_atom_bombing(self, data: bytes) -> None:
-        """AtomBombing注入技术检测 — 基于ensilo在2016年披露的技术签名。"""
+        """AtomBombing注入技术检测 — 基于ensilo在2016年披露的技术签名"""
         has_atom = b'GlobalGetAtomName' in data or b'GlobalAddAtom' in data
         has_apc = b'NtQueueApcThread' in data or b'QueueUserAPC' in data
         has_wpm = b'WriteProcessMemory' in data or b'NtWriteVirtualMemory' in data
@@ -267,8 +267,8 @@ class MemoryManipulationDetector:
 
     # --- 新增: 注入技术到ATT&CK ID的映射 ---
     def classify_injection_technique(self) -> Dict[str, List[str]]:
-        """将检测到的注入指标映射到MITRE ATT&CK技术ID。
-        未识别的技术归入通用T1055（Process Injection）类别。"""
+        """将检测到的注入指标映射到MITRE ATT&CK技术ID
+        未识别的技术归入通用T1055（Process Injection）类别"""
         mapping: Dict[str, List[str]] = {}
         for ind in self._indicators:
             attack_id = self._ATTACK_MAP.get(ind.technique, "T1055")

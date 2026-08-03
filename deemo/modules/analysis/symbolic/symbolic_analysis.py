@@ -1,17 +1,17 @@
-"""Symbolic analysis toolkit: abstract interpretation, deobfuscation,
-coverage-guided scheduling, and Unicorn hybrid execution.
+"""Symbolic analysis toolkit: abstract interpretation, 去混淆
+覆盖率-guided scheduling, Unicorn hybrid execution
 
-Components work independently but compose into a pipeline:
-  1. SymbolicMergerWithWidening — loop-aware state merging
-  2. ShadowStackSimulator — ROP resistance evaluation
-  3. PathReachabilityQuery — call-graph reachability
-  4. DeobfuscationScriptLibrary — OLLVM/Tigress pattern detection and cleanup
-  5. CoverageGuidedSymbolicScheduler — coverage-prioritized path selection
-  6. UnicornHybridSymbolicExecutor — concrete execution feedback into angr
+Components work independently but compose a 流水线:
+1. SymbolicMergerWithWidening — loop-aware state merging
+2. Shadow栈Simulator — ROP resistance evaluation
+3. PathReachabilityQuery — call-graph reachability
+4. 去混淆ScriptLibrary — OLLVM/Tigress pattern detection cleanup
+5. 覆盖率GuidedSymbolicScheduler — 覆盖率-prioritized path selection
+6. UnicornHybridSymbolicExecutor — concrete execution feedback angr
 
-二轮增强 — Unicorn 真实执行：使用 unicorn 库进行基本块级具体执行，
+二轮增强 — Unicorn 真实执行：使用 unicorn 库进行基本块级具体执行
 提取寄存器值和内存写入后回注到 angr state 的约束集中。当 unicorn 不可用时
-回退到简单的 PC 推进模拟。
+回退到简单的 PC 推进模拟
 """
 
 from typing import Dict, Any, List, Optional, Set, Union, Tuple
@@ -46,7 +46,7 @@ except ImportError:
 
 
 class AbstractDomainLattice:
-    """Sign-analysis abstract domain.
+    r"""Sign-analysis abstract domain.
 
     Lattice elements for integer sign classification used in
     abstract interpretation of arithmetic expressions.  The
@@ -79,15 +79,15 @@ class AbstractDomainLattice:
 
     @staticmethod
     def name(val: int) -> str:
-        """Human-readable label for a lattice element."""
+        """Human-readable label for a lattice element"""
         names = {0: 'BOTTOM', 1: 'NEG', 2: 'ZERO', 3: 'POS', 4: 'TOP'}
         return names.get(val, '?')
 
     @staticmethod
     def join(a: int, b: int) -> int:
-        """Least upper bound.
-
-        join(BOTTOM, x) = x; join(x, x) = x; join(x, y) = TOP otherwise.
+        """Least upper bound
+        
+        join(BOTTOM, x) = x; join(x, x) = x; join(x, y) = TOP otherwise
         """
         if a == AbstractDomainLattice.BOTTOM:
             return b
@@ -99,9 +99,9 @@ class AbstractDomainLattice:
 
     @staticmethod
     def meet(a: int, b: int) -> int:
-        """Greatest lower bound.
-
-        meet(TOP, x) = x; meet(x, x) = x; meet(x, y) = BOTTOM otherwise.
+        """Greatest lower bound
+        
+        meet(TOP, x) = x; meet(x, x) = x; meet(x, y) = BOTTOM otherwise
         """
         if a == AbstractDomainLattice.TOP:
             return b
@@ -113,17 +113,17 @@ class AbstractDomainLattice:
 
     @staticmethod
     def widen(a: int, b: int) -> int:
-        """Extrapolation operator for loop convergence.
-
-        Widening ensures the abstract-interpretation fixpoint
-        terminates in finite steps.  In the sign domain the
-        strategy is aggressive: whenever two iterations disagree
-        on the sign of a variable, jump directly to TOP.  This
-        keeps the number of iterations bounded by 2 (BOTTOM ->
-        concrete sign -> TOP).
-
-        算法的正确性依赖于有限高度的格 — 符号格只有 5 个元素,
-        因此任意上升链长度不超过 2。
+        """Extrapolation operator for loop convergence
+        
+        Widening 确保 abstract-interpretation fixpoint
+        terminates finite steps. sign domain
+        strategy aggressive: whenever two iterations disagree
+        sign a variable, jump directly TOP
+        keeps number iterations bounded 2 (BOTTOM ->
+        concrete sign -> TOP)
+        
+        算法的正确性依赖于有限高度的格 — 符号格只有 5 个元素
+        因此任意上升链长度不超过 2
         """
         if a == AbstractDomainLattice.BOTTOM:
             return b
@@ -135,16 +135,16 @@ class AbstractDomainLattice:
 
     @staticmethod
     def narrow(a: int, b: int) -> int:
-        """Refinement operator applied after widening.
-
-        Once the widening fixpoint is reached, narrowing can
-        recover some precision from the TOP result.  The sign
-        domain narrows TOP down to the concrete sign if both
-        operands agree after the loop stabilises.
-
-        Narrowing is sound because we only descend the lattice
-        when the second operand (post-widening iteration result)
-        provides evidence of a tighter bound.
+        """Refinement operator applied widening
+        
+        Once widening fixpoint reached, narrowing
+        recover precision TOP result. sign
+        domain narrows TOP down concrete sign
+        operands agree loop stabilises
+        
+        Narrowing sound because descend lattice
+        second operand (post-widening iteration result)
+        提供 evidence a tighter bound
         """
         if a == AbstractDomainLattice.TOP:
             return b
@@ -154,7 +154,7 @@ class AbstractDomainLattice:
 
     @staticmethod
     def from_value(value: int) -> int:
-        """Classify a concrete integer into sign domain."""
+        """Classify a concrete integer sign domain"""
         if value < 0:
             return AbstractDomainLattice.NEG
         if value == 0:
@@ -163,12 +163,12 @@ class AbstractDomainLattice:
 
     @staticmethod
     def from_bitvector(width: int, signed: bool = True) -> int:
-        """A fresh bitvector of unknown sign — maps to TOP."""
+        """A fresh bitvector unknown sign — maps TOP"""
         return AbstractDomainLattice.TOP
 
 
 # ---------------------------------------------------------------------------
-# Symbolic state and merging
+# Symbolic state merging
 # ---------------------------------------------------------------------------
 
 
@@ -180,8 +180,8 @@ class SymbolicState:
 
 
 class SymbolicMergerWithWidening:
-    """Applies abstract-interpretation widening after N loop iterations to
-    collapse similar states and contain path explosion."""
+    """Applies abstract-interpretation widening N loop iterations
+    collapse similar states 包含 路径爆炸"""
 
     def __init__(self):
         self.widening_threshold: int = 3
@@ -189,18 +189,18 @@ class SymbolicMergerWithWidening:
         self._loop_iter_counts: Dict[int, int] = defaultdict(int)
 
     def apply_widening(self, state1: SymbolicState, state2: SymbolicState) -> SymbolicState:
-        """Merge two symbolic states with sign-lattice widening.
-
-        Instead of naive constraint intersection (which discards all
-        divergent information), we compute abstract sign values for
-        widened memory locations.  This preserves type-level knowledge
-        (e.g. "this variable is non-negative") even when the concrete
-        value is unknown due to loop-carried dependencies.
-
-        Algorithm: for each memory address present in both states,
-          - if values agree, keep the concrete value;
-          - if they disagree, widen via the sign lattice;
-        for addresses in exactly one state, set them to TOP.
+        """合并 two symbolic states sign-lattice widening
+        
+        Instead naive constraint intersection (discards
+        divergent information), 计算 abstract sign values for
+        widened memory locations. preserves type-level knowledge
+        (e.g. " variable non-negative") even concrete
+        value unknown due loop-carried dependencies
+        
+        Algorithm: 对每个 memory address present states
+        - values agree, keep concrete value;
+        - disagree, widen via sign lattice;
+        for addresses exactly one state, set TOP
         """
         sign_lattice = AbstractDomainLattice
         pc = state1.pc if state1.pc == state2.pc else state1.pc
@@ -234,7 +234,7 @@ class SymbolicMergerWithWidening:
         return SymbolicState(constraints=common_constraints, memory_model=narrowed, pc=pc)
 
     def merge_states(self, states: List[SymbolicState]) -> SymbolicState:
-        """Fold a list of states into one via pairwise widening."""
+        """Fold a list states one via pairwise widening"""
         if not states:
             return SymbolicState(constraints=[], memory_model={}, pc=0)
         merged = states[0]
@@ -246,17 +246,17 @@ class SymbolicMergerWithWidening:
         return iteration >= self.widening_threshold
 
     def abstract_interpret(self, function_addr: int) -> List[SymbolicState]:
-        """Run abstract interpretation over a function body.
-
-        Placeholder entry point — actual implementation depends on
-        a CFG provider (radare2/angr) and a transfer-function table.
+        """运行 abstract interpretation over a function body
+        
+        Placeholder 入口 — actual implementation 依赖
+        a CFG provider (radare2/angr) a transfer-function table
         """
         states: List[SymbolicState] = []
         return states
 
 
 # ---------------------------------------------------------------------------
-# Shadow stack simulation
+# Shadow 栈 simulation
 # ---------------------------------------------------------------------------
 
 
@@ -291,10 +291,10 @@ class ShadowStackSimulator:
             hardware_enforced=cet_detected, cet_enabled=cet_detected)
 
     def find_return_addr_writes(self, function_addr: int) -> List[int]:
-        """反汇编函数并识别修改 [rsp+offset] 的写指令地址。
-
-        通过 r2 的 `pdf` 输出扫描 `mov`/`push` 到栈的指令。
-        不区分合法栈帧写入和恶意覆盖 — 由调用者判断上下文。"""
+        """反汇编函数并识别修改 [rsp+offset] 的写指令地址
+        
+        通过 r2 的 `pdf` 输出扫描 `mov`/`push` 到栈的指令
+        不区分合法栈帧写入和恶意覆盖 — 由调用者判断上下文"""
         writes: List[int] = []
         return writes
 
@@ -371,7 +371,7 @@ class PathReachabilityQuery:
         return None
 
     def all_reachable_from(self, func: str) -> Set[str]:
-        """返回从 func 出发可达的所有函数集合。"""
+        """返回从 func 出发可达的所有函数集合"""
         reachable: Set[str] = set()
         queue = deque([func])
         while queue:
@@ -384,7 +384,7 @@ class PathReachabilityQuery:
 
 
 # ---------------------------------------------------------------------------
-# Deobfuscation pattern library
+# 去混淆 pattern library
 # ---------------------------------------------------------------------------
 
 
@@ -392,7 +392,7 @@ _Z3_IMPORT_CACHE = None
 
 
 def _lazy_import_z3():
-    """Lazy-import z3 so the class is usable even without it installed."""
+    """Lazy-import z3 class usable even installed"""
     global _Z3_IMPORT_CACHE
     if _Z3_IMPORT_CACHE is None:
         try:
@@ -456,37 +456,37 @@ class DeobfuscationScriptLibrary:
             'description': 'Junk code insertion', 'severity': 'low'}
 
     # ------------------------------------------------------------------
-    # Z3-based opaque predicate detection
+    # Z3-based 不透明谓词 detection
     # ------------------------------------------------------------------
 
     def detect_opaque_predicates_z3(self, code_snippet: str, z3_solver=None) -> List[Dict[str, Any]]:
-        """Detect opaque predicates using Z3 satisfiability checking.
-
-        Unlike the regex-based approach in the pattern library, this
-        method parses assembly branch instructions, extracts the
-        comparison semantics, constructs a Z3 formula, and determines
-        whether the branch condition is always-true or always-false.
-
-        An opaque predicate is "always-true" when its negation is UNSAT;
-        "always-false" when the condition itself is UNSAT.
-
+        """检测 不透明谓词s using Z3 satisfiability checking
+        
+        Unlike regex-based approach pattern library
+        method 解析 assembly branch instructions, 提取
+        comparison semantics, constructs a Z3 formula, determines
+        whether branch condition always-true or always-false
+        
+        An 不透明谓词 "always-true" negation UNSAT;
+        "always-false" condition itself UNSAT
+        
         Args:
-            code_snippet: x86/x86-64 assembly text containing branch
-                instructions.
-            z3_solver: optional preconfigured z3.Solver instance; a
-                fresh solver with 3-second timeout is created if None.
-
-        Returns:
-            List of dicts, each describing a detected opaque predicate
-            with keys target, jmp_type, always_true, always_false,
-            operands, confidence.
-
-        设计决策：不使用完整的数据流分析来跟踪寄存器定义，
+        code_snippet: x86/x86-64 assembly text containing branch
+        instructions
+        z3_solver: optional pre配置ured z3.Solver instance; a
+        fresh solver 3-second timeout created None
+        
+        返回:
+        List dicts, describing a detected 不透明谓词
+        keys target, jmp_type, always_true, always_false
+        operands, confidence
+        
+        设计决策：不使用完整的数据流分析来跟踪寄存器定义
         而是为操作数创建 fresh bitvector 变量并检查条件逻辑的
         内在可满足性。这可以捕获不依赖外部输入的代数恒等式
         （如 x == x, x & 0 == 0），覆盖了 OLLVM 和 Tigress 中
         最常见的不透明谓词模式。完整的 def-use 链追踪可以作为
-        后续增强。
+        后续增强
         """
         z3_mod = _lazy_import_z3()
         if not z3_mod:
@@ -497,13 +497,13 @@ class DeobfuscationScriptLibrary:
         solver.set('timeout', 3000)
 
         # 汇编级分支模式: cmp/test 后跟条件跳转
-        # cmp op1, op2 ; jcc target
+        # cmp op1, op2; jcc target
         branch_patterns = [
-            # cmp/test on one line, jcc on the next
+            # cmp/test one line, jcc next
             _re.compile(
                 r'(cmp|test)\s+(.+?)\s*[\n;]+\s*(j[a-z]+)\s+(0x[0-9a-fA-F]+|\w+)',
                 _re.IGNORECASE | _re.DOTALL),
-            # cmp; jcc on same logical line
+            # cmp; jcc same logical line
             _re.compile(
                 r'(cmp|test)\s+(.+?)\s*;\s*(j[a-z]+)\s+(0x[0-9a-fA-F]+|\w+)',
                 _re.IGNORECASE),
@@ -534,10 +534,10 @@ class DeobfuscationScriptLibrary:
 
     def _z3_check_branch_condition(self, instruction: str, operands_str: str,
                                     jmp_type: str, solver, z3_mod) -> Optional[Dict[str, Any]]:
-        """Construct Z3 formula for a cmp/test + jcc pair and check satisfiability.
-
-        Returns None if the operands cannot be parsed; otherwise returns a
-        dict with always_true, always_false, and confidence.
+        """Construct Z3 formula for a cmp/test + jcc pair 检查 satisfiability
+        
+        返回 None operands cannot parsed; otherwise 返回 a
+        dict always_true, always_false, confidence
         """
         parts = [p.strip() for p in operands_str.split(',')]
         if len(parts) < 2:
@@ -548,33 +548,33 @@ class DeobfuscationScriptLibrary:
         for i in range(min(len(parts), 3)):
             op_vars.append(z3_mod.BitVec(f'op_{i}', 64))
 
-        # Build the comparison expression based on instruction type
+        # 构建 comparison expression 基于 instruction type
         if instruction == 'cmp':
-            # cmp A, B  =>  compute A - B, set flags
-            # ZF set when A == B ; SF set when result < 0
+            # cmp A, B => 计算 A - B, set flags
+            # ZF set A == B; SF set result < 0
             diff = op_vars[0] - op_vars[1]
             zf = (diff == 0)
             sf = z3_mod.Extract(63, 63, diff) == 1
             of_expr = self._compute_overflow(op_vars[0], op_vars[1], diff, z3_mod)
         else:  # test
-            # test A, B  =>  compute A & B, set flags
+            # test A, B => 计算 A & B, set flags
             and_result = op_vars[0] & op_vars[1]
             zf = (and_result == 0)
             sf = z3_mod.Extract(63, 63, and_result) == 1
-            of_expr = z3_mod.BoolVal(False)  # test always clears OF
+            of_expr = z3_mod.BoolVal(False)  # test always 清除
             diff = and_result
 
         condition = self._jcc_to_z3(jmp_type, zf, sf, of_expr, diff, z3_mod)
         if condition is None:
             return None
 
-        # Check if condition is always false: cond is UNSAT
+        # 检查 condition always false: cond UNSAT
         solver.push()
         solver.add(condition)
         always_false = (solver.check() == z3_mod.unsat)
         solver.pop()
 
-        # Check if condition is always true: ¬cond is UNSAT
+        # 检查 condition always true: ¬cond UNSAT
         solver.push()
         solver.add(z3_mod.Not(condition))
         always_true = (solver.check() == z3_mod.unsat)
@@ -590,7 +590,7 @@ class DeobfuscationScriptLibrary:
 
     @staticmethod
     def _compute_overflow(a, b, result, z3_mod):
-        """Compute OF flag: overflow when sign(a) == sign(b) but sign(result) != sign(a)."""
+        """计算 flag: overflow sign(a) == sign(b) but sign(result)!= sign(a)"""
         sign_a = z3_mod.Extract(63, 63, a) == 1
         sign_b = z3_mod.Extract(63, 63, b) == 1
         sign_r = z3_mod.Extract(63, 63, result) == 1
@@ -598,9 +598,9 @@ class DeobfuscationScriptLibrary:
 
     @staticmethod
     def _jcc_to_z3(jmp_type: str, zf, sf, of_expr, diff, z3_mod):
-        """Map an x86 conditional-jump mnemonic to a Z3 formula over EFLAGS bits.
-
-        Returns None for unsupported mnemonics.
+        """Map an x86 conditional-jump mnemonic a Z3 formula over EFLAGS bits
+        
+        返回 None for unsupported mnemonics
         """
         jcc_map = {
             'je': zf, 'jz': zf,
@@ -620,12 +620,12 @@ class DeobfuscationScriptLibrary:
             'jno': z3_mod.Not(of_expr),
             'jp': None,  # PF requires computing parity bit
             'jnp': None,
-            'jcxz': None, 'jecxz': None, 'jrcxz': None,  # register-specific
+            'jcxz': None, 'jecxz': None, 'jrcxz': None,  # 寄存器-specific
         }
         return jcc_map.get(jmp_type)
 
     # ------------------------------------------------------------------
-    # Original detection + deobfuscation pipeline (preserved)
+    # Original detection + 去混淆 流水线 (preserved)
     # ------------------------------------------------------------------
 
     def detect_obfuscation(self, code: str) -> List[Dict[str, Any]]:
@@ -710,7 +710,7 @@ class DeobfuscationScriptLibrary:
 
 
 # ---------------------------------------------------------------------------
-# Coverage-guided scheduling
+# 覆盖率-guided scheduling
 # ---------------------------------------------------------------------------
 
 
@@ -755,10 +755,10 @@ class CoverageGuidedSymbolicScheduler:
         return [n for n in cfg.get(current_block, []) if n not in self.covered_blocks]
 
     def generate_guided_inputs(self, target_block: int, symbolic_state: Dict[str, Any]) -> List[bytes]:
-        """尝试用 Z3 求解约束以获得到达目标块的输入。
-
-        若 Z3 可用，将约束集中的每个约束解析为 Z3 表达式并求解。
-        不可用时返回零填充占位符。"""
+        """尝试用 Z3 求解约束以获得到达目标块的输入
+        
+        若 Z3 可用，将约束集中的每个约束解析为 Z3 表达式并求解
+        不可用时返回零填充占位符"""
         inputs: List[bytes] = []
         constraints = symbolic_state.get('constraints', [])
         try:
@@ -798,24 +798,24 @@ class CoverageGuidedSymbolicScheduler:
 
 
 # ---------------------------------------------------------------------------
-# Unicorn block cache
+# Unicorn block缓存
 # ---------------------------------------------------------------------------
 
 
 class UnicornBlockCache:
-    """LRU cache for Unicorn-executed basic blocks.
-
-    Caches frequently executed blocks keyed by (code_hash, entry_state_hash)
-    tuples.  Distinguishing by entry state avoids stale results when the
-    same code is reached through different register/memory contexts.
-
-    Values are (final_state, side_effects, hit_count) triples.
-    Eviction is least-recently-used at 1024 entries — sized to cover
-    typical analysis sessions where hot blocks are revisited across
-    paths but total distinct (code, state) pairs rarely exceed this.
-
+    """LRU 缓存for Unicorn-executed basic blocks
+    
+    Caches frequently executed blocks keyed (code_hash, entry_state_hash)
+    tuples. Distinguishing entry state avoids stale results
+    same code reached different 寄存器/memory contexts
+    
+    Values (final_state, side_effects, hit_count) triples
+    Eviction least-recently-used 1024 entries — sized cover
+    typical analysis sessions hot blocks revisited across
+    paths but total distinct (code, state) pairs rarely exceed
+    
     LRU 实现细节：使用双端队列维护访问顺序，每次 lookup 将命中的 key
-    移到队尾。淘汰时从队首弹出 — O(1) 均摊。
+    移到队尾。淘汰时从队首弹出 — O(1) 均摊
     """
 
     _MAX_ENTRIES = 1024
@@ -832,15 +832,15 @@ class UnicornBlockCache:
         return (code_hash, state_hash)
 
     def lookup(self, code_bytes: bytes, entry_state: Dict[str, int]) -> Optional[Dict[str, Any]]:
-        """Check cache for a prior execution result.
-
-        Returns None on miss; on hit returns final_state, side_effects,
-        and the incremented hit_count.  Updates LRU ordering.
+        """检查 缓存for a prior execution result
+        
+        返回 None miss; hit 返回 final_state, side_effects
+        incremented hit_count. 更新 LRU ordering
         """
         key = self._make_key(code_bytes, entry_state)
         if key not in self._cache:
             return None
-        # LRU refresh: move accessed key to the back
+        # LRU refresh: move accessed key back
         try:
             self._access_order.remove(key)
         except ValueError:
@@ -854,7 +854,7 @@ class UnicornBlockCache:
 
     def store(self, code_bytes: bytes, entry_state: Dict[str, int],
               final_state: Dict[str, int], side_effects: List) -> None:
-        """Insert or update a cache entry. Evicts LRU if at capacity."""
+        """插入 or 更新 a 缓存entry. Evicts LRU capacity"""
         key = self._make_key(code_bytes, entry_state)
         if key in self._cache:
             try:
@@ -868,7 +868,7 @@ class UnicornBlockCache:
         self._cache[key] = (final_state, side_effects, 1)
 
     def clear(self) -> None:
-        """Drop all cached entries."""
+        """Drop all缓存d entries"""
         self._cache.clear()
         self._access_order.clear()
 
@@ -883,14 +883,14 @@ class UnicornBlockCache:
 
 
 class UnicornHybridSymbolicExecutor:
-    """二轮增强 — 真实 Unicorn 执行引擎。
-
-    当 unicorn 库可用时，使用 unicorn.Uc 进行基本块级具体执行。
-    不可用时回退到基于 r2 的指令模拟。
-
+    """二轮增强 — 真实 Unicorn 执行引擎
+    
+    当 unicorn 库可用时，使用 unicorn.Uc 进行基本块级具体执行
+    不可用时回退到基于 r2 的指令模拟
+    
     架构选择：使用 unicorn 而非 qemu-user 的原因 —
-    unicorn 提供更细粒度的 hook 控制（指令级/基本块级/内存访问级），
-    且不需要完整的进程上下文，适合代码片段的隔离执行。
+    unicorn 提供更细粒度的 hook 控制（指令级/基本块级/内存访问级）
+    且不需要完整的进程上下文，适合代码片段的隔离执行
     """
 
     _X86_REGS = ['rax', 'rbx', 'rcx', 'rdx', 'rsi', 'rdi', 'rsp', 'rbp',
@@ -905,13 +905,13 @@ class UnicornHybridSymbolicExecutor:
     def execute_with_concrete(self, code_addr: int, code_data: bytes,
                                initial_state: Dict[str, int],
                                max_insns: int = 1000) -> Dict[str, Any]:
-        """使用 unicorn 具体执行代码片段。
-
+        """使用 unicorn 具体执行代码片段
+        
         若 unicorn 不可用，回退到简单的 PC 推进（模拟线性执行 max_insns 条指令
-        而不实际修改状态 — 这在真实集成中应替换为 r2 的 `aes` 模拟器）。
-
-        执行前先查询 UnicornBlockCache，命中则直接返回缓存结果，
-        避免重复执行相同的基本块。执行成功后更新缓存。
+        而不实际修改状态 — 这在真实集成中应替换为 r2 的 `aes` 模拟器）
+        
+        执行前先查询 UnicornBlockCache，命中则直接返回缓存结果
+        避免重复执行相同的基本块。执行成功后更新缓存
         """
         # 先查缓存
         bb_cache_hit = self._block_cache.lookup(code_data, initial_state)
@@ -987,9 +987,9 @@ class UnicornHybridSymbolicExecutor:
 
     def _fallback_execute(self, code_addr: int, code_data: bytes,
                            initial_state: Dict[str, int]) -> Dict[str, Any]:
-        """回退：返回初始状态，标记为未执行。
-
-        生产环境应替换为 r2 aes 或 qiling 框架的具体执行。"""
+        """回退：返回初始状态，标记为未执行
+        
+        生产环境应替换为 r2 aes 或 qiling 框架的具体执行"""
         return {'execution_successful': False,
                 'final_state': initial_state,
                 'memory_writes': [],
@@ -1000,10 +1000,10 @@ class UnicornHybridSymbolicExecutor:
         return self.concrete_values.get(memory_addr)
 
     def feed_to_angr(self, angr_project, concrete_values: Dict[int, int]) -> None:
-        """将具体执行的值注入 angr state。
-
+        """将具体执行的值注入 angr state
+        
         对于每个 (addr, value) 对，在 angr state 中添加
-        memory[addr] == value 的具体约束，从而约束符号状态。
+        memory[addr] == value 的具体约束，从而约束符号状态
         """
         if angr_project is None:
             return

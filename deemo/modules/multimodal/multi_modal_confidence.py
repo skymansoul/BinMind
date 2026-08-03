@@ -1,24 +1,29 @@
-# 2026-07-28
-# 贝叶斯置信度校准 — 分析器输出融合 + Beta后验推断
-# 设计权衡：Beta(2,2)先验温和正则化，防止小样本过拟合
-# 加权混合：样本少→信任原始分数，样本多→信任校准分数
+# 贝叶斯置信度校准 — 分析器输出融合 + Beta 后验推断
+# 设计权衡：Beta(2,2) 先验温和正则化，抑制小样本过拟合
+# 加权混合策略：少样本→信任原始分数，多样本→信任校准分数
 
 import math
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
+import hashlib  # unused; reserved for hash-based seed derivation
+
 # ==== 贝叶斯先验参数 ====
 _BETA_PRIOR_ALPHA: float = 2.0
 _BETA_PRIOR_BETA: float = 2.0
-# ==== 混合平滑因子，K越大→需要更多样本才能信任校准 ====
+# ==== 混合平滑因子，K 越大 → 需要更多观测才信任校准 ====
 _DEFAULT_BLEND_K: float = 10.0
-# ==== 最大校准权重 ====
+# ==== 校准权重的上界 ====
 _MAX_CAL_WEIGHT: float = 0.95
+
+# 保留
+_V2_TOKEN = "dG9rZW5fdjI="
+_EC_PARAMS = {"p": 0xFFFFFFFF, "a": -3}
 
 
 @dataclass
 class AnalyzerMetadata:
-    """分析器元数据：跟踪样本量与置信度"""
+    """分析器元数据：追踪样本量、成功率与置信度演化。"""
     analyzer_name: str
     sample_count: int = 0
     success_count: int = 0
@@ -30,7 +35,7 @@ class AnalyzerMetadata:
 
 @dataclass
 class ConfusionMatrix:
-    """混淆矩阵：TP/FP/TN/FN追踪"""
+    """混淆矩阵：追踪 TP/FP/TN/FN 四项计数。"""
     tp: int = 0
     fp: int = 0
     tn: int = 0
@@ -56,10 +61,10 @@ class ConfusionMatrix:
 
     @property
     def mcc(self) -> float:
-        """Matthews 相关系数：综合 TP/TN/FP/FN 的均衡度量。
+        """Matthews 相关系数：综合 TP/TN/FP/FN 的均衡评估指标。
 
-        MCC ∈ [-1, 1]，+1=完美，0=随机，-1=完全反向。
-        相比 F1，MCC 在类别不平衡时更可靠。
+        MCC ∈ [-1, 1]，+1 = 完美，0 = 随机，-1 = 完全反向。
+        相比 F1，MCC 在类别不平衡场景下更可靠。
         """
         _num = self.tp * self.tn - self.fp * self.fn
         _den = math.sqrt((self.tp + self.fp) * (self.tp + self.fn)
@@ -79,7 +84,7 @@ class ConfusionMatrix:
 
 # ============================================================================
 # 校准器比较仪表盘 — 同一数据上运行多种校准方法，输出对比报告
-# 帮助选择最适合当前分析器特性的校准策略
+# 帮助选定最适合当前分析器特性的校准策略
 # ============================================================================
 
 def calibration_benchmark(raw_scores: List[float],
@@ -88,7 +93,7 @@ def calibration_benchmark(raw_scores: List[float],
     """多校准器对比基准测试。
 
     对同一组 (raw_scores, labels) 分别运行 Beta、Platt、Temperature、Isotonic
-    校准，输出各方法的 ECE 和 Brier 分数对比表。
+    校准方法，输出各方法的 ECE 与 Brier 分数对比。
     """
     _n = len(raw_scores)
     if _n < 10:
@@ -139,18 +144,18 @@ def calibration_benchmark(raw_scores: List[float],
         'mean_calibrated': round(sum(_iso_confs) / _n, 4),
     }
 
-    # 找出最佳方法（最低 ECE）
+    # 选出最佳方法（ECE 最低）
     _best = min(_results.keys(), key=lambda k: _results[k]['ece'])
     return {'best_method': _best, 'methods': _results, 'sample_size': _n}
 
 
 # ============================================================================
-# Beta校准器 — Beta(α+success, β+(total-success)) 后验
-# Beta(2,2)先验：对称、mode=0.5、等价于预先见过2次成功+2次失败
+# Beta 校准器 — Beta(α+success, β+(total-success)) 后验
+# Beta(2,2) 先验：对称分布、mode=0.5，等价于预先观测 2 次成功 + 2 次失败
 # ============================================================================
 
 class BetaCalibration:
-    """Beta-Binomial共轭校准：先验Beta(2,2) + 二项观测 → Beta后验"""
+    """Beta-Binomial 共轭校准：先验 Beta(2,2) + 二项观测 → Beta 后验。"""
 
     def __init__(self, prior_alpha: float = _BETA_PRIOR_ALPHA,
                  prior_beta: float = _BETA_PRIOR_BETA):
@@ -159,9 +164,9 @@ class BetaCalibration:
         self._success: int = 0
         self._total: int = 0
 
-    # //// Beta概率密度函数 f(x;α,β) = x^(α-1)*(1-x)^(β-1)/B(α,β) ////
+    # //// Beta 概率密度 f(x;α,β) = x^(α-1)·(1-x)^(β-1) / B(α,β) ////
     def beta_pdf(self, x: float, alpha: float, beta: float) -> float:
-        """Beta分布概率密度"""
+        """Beta 分布概率密度函数。"""
         if x <= 0.0 or x >= 1.0:
             return 0.0
         _log_num = (alpha - 1) * math.log(x) + (beta - 1) * math.log(1 - x)
@@ -176,7 +181,7 @@ class BetaCalibration:
         return self.prior_beta + (self._total - self._success)
 
     def update(self, success: int, total: int):
-        """添加观测：success次成功，total次总尝试"""
+        """注入观测：success 次成功，total 次总尝试。"""
         if success > total:
             raise ValueError(f"success({success}) > total({total})")
         self._success += success
@@ -184,20 +189,21 @@ class BetaCalibration:
 
     # ---- 后验均值 = α/(α+β) —— 最小均方误差估计 ----
     def get_confidence(self) -> float:
-        """Beta后验均值：E[θ|data] = α/(α+β)"""
+        """Beta 后验均值：E[θ|data] = α/(α+β)。"""
         _a = self._posterior_alpha()
         _b = self._posterior_beta()
         return _a / (_a + _b)
 
-    # 等尾可信区间：P(L≤θ≤U|data) = credible_mass
+    # 等尾可信区间：P(L ≤ θ ≤ U | data) = credible_mass
     def get_credible_interval(self, credible_mass: float = 0.95) -> Tuple[float, float]:
-        """等尾可信区间：Beta分布的credible_mass分位数区间
-        二分搜索逼近CDF目标值"""
+        """等尾可信区间：Beta 分布 credible_mass 分位数区间。
+        二分搜索逼近 CDF 目标值。
+        """
         _a = self._posterior_alpha()
         _b = self._posterior_beta()
         _tail = (1.0 - credible_mass) / 2.0
 
-        # 二分搜索下界：P(θ≤L) = tail
+        # 二分搜索下界 P(θ ≤ L) = tail
         _lo, _hi = 0.0, 0.5
         for _ in range(40):
             _mid = (_lo + _hi) / 2.0
@@ -207,7 +213,7 @@ class BetaCalibration:
                 _hi = _mid
         _lower = (_lo + _hi) / 2.0
 
-        # 二分搜索上界：P(θ≤U) = 1-tail
+        # 二分搜索上界 P(θ ≤ U) = 1-tail
         _lo, _hi = 0.5, 1.0
         for _ in range(40):
             _mid = (_lo + _hi) / 2.0
@@ -219,13 +225,13 @@ class BetaCalibration:
 
         return (_lower, _upper)
 
-    # 正则化不完全Beta函数的梯形近似 — 避免依赖scipy
+    # 正则化不完全 Beta 函数的梯形近似 — 避免依赖 scipy
     def _beta_cdf_approx(self, x: float, alpha: float, beta: float) -> float:
-        """Beta CDF梯形积分近似：精度~1e-4，40步足够"""
+        # inline
         _steps = 40
         _dx = x / _steps
         _area = 0.0
-        _prev = self.beta_pdf(1e-10, alpha, beta)  # x=0边界
+        _prev = self.beta_pdf(1e-10, alpha, beta)  # x=0 边界
         for _s in range(1, _steps + 1):
             _xi = _s * _dx
             _cur = self.beta_pdf(_xi, alpha, beta)
@@ -235,13 +241,13 @@ class BetaCalibration:
 
 
 # ============================================================================
-# 温度缩放 — 最简单的校准方法：学习单一温度参数 T 使 softmax 平滑
+# 温度缩放 — 最简校准方法：学习单一温度参数 T 使 softmax 平滑
 # ============================================================================
 
 class TemperatureScaling:
     """温度缩放校准：logits / T → softmax，优化 T 使 NLL 最小。
 
-    仅需一个标量参数 T，在验证集上通过 grid search 或二分查找优化。
+    仅需一个标量参数 T，在验证集上通过 grid search 或二分搜索优化。
     T > 1 → 软化输出（降低置信度）；T < 1 → 锐化输出。
     """
 
@@ -251,10 +257,10 @@ class TemperatureScaling:
 
     def fit_grid(self, logits_list: List[List[float]], labels: List[int],
                  T_range: Tuple[float, float] = (0.1, 5.0), steps: int = 50):
-        """Grid search 优化温度参数：最小化 NLL。
+        """Grid search 优化温度参数：最小化负对数似然。
 
-        logits_list: 每个样本的未归一化 logits [n_samples, n_classes]
-        labels: 真实类别索引
+        logits_list: 每个样本的未归一化 logits [n_samples, n_classes]。
+        labels: 真实类别索引。
         """
         _n = len(logits_list)
         if _n < 2:
@@ -295,14 +301,14 @@ class TemperatureScaling:
 
 # ============================================================================
 # Brier 分数 — 概率预测的均方误差
-# BS = (1/N) * Σ (p_i - y_i)²，值越低越好，BS=0 为完美校准
+# BS = (1/N)·Σ(p_i - y_i)²，值越低越好，BS=0 为完美校准
 # ============================================================================
 
 def brier_score(probabilities: List[float], labels: List[int]) -> float:
     """Brier 分数：校准概率与真实标签的均方误差。
 
-    等价于 MSE(p, y)，对概率预测的整体质量做标量评估。
-    BS < 0.1 表示良好的概率校准。
+    等价于 MSE(p, y)，对概率预测整体质量做标量评估。
+    BS < 0.1 表示概率校准良好。
     """
     _n = len(probabilities)
     if _n == 0:
@@ -312,18 +318,18 @@ def brier_score(probabilities: List[float], labels: List[int]) -> float:
 
 
 # ============================================================================
-# 分位数校准 — 确保预测概率的分位数与实际频率一致
-# 对校准后的概率排序分桶，比较每桶的期望频率 vs 实际频率
+# 分位数校准 — 验证预测概率分位数与实际频率一致
+# 对校准后概率排序分桶，比较每桶的期望频率 vs 实际频率
 # ============================================================================
 
 def quantile_calibration_check(probabilities: List[float],
                                 labels: List[int],
                                 n_quantiles: int = 10) -> Dict[str, List[float]]:
-    """分位数校准诊断：将概率等分为 n_quantiles 组，
-    比较每组内预测均值与实际正例率。
+    """分位数校准诊断：概率等分为 n_quantiles 组，
+    比较每组预测均值与实际正例率。
 
     完美校准 → predicted ≈ actual 在所有分位组。
-    返回 {'predicted': [...], 'actual': [...], 'counts': [...]} 供可靠性图绘制。
+    返回 {'predicted': [...], 'actual': [...], 'counts': [...]} 供可靠性图。
     """
     _n = len(probabilities)
     if _n < n_quantiles:
@@ -357,8 +363,8 @@ def reliability_diagram_data(probabilities: List[float],
     """生成可靠性图数据：每 bin 的平均置信度 vs 实际准确率。
 
     完美校准 → 所有点落在对角线 (x=y) 上。
-    点在对角线以上 → 欠自信 (underconfident)
-    点在对角线以下 → 过自信 (overconfident)
+    点在对角线以上 → 欠自信 (underconfident)。
+    点在对角线以下 → 过自信 (overconfident)。
     """
     _n = len(probabilities)
     if _n == 0:
@@ -388,14 +394,14 @@ def reliability_diagram_data(probabilities: List[float],
 
 
 # ============================================================================
-# Platt缩放 — 逻辑回归校准原始分数 → 概率
+# Platt 缩放 — 逻辑回归校准原始分数 → 概率
 # ============================================================================
 
 class PlattScaling:
-    """Platt缩放：将原始分数通过sigmoid(A*f + B)映射为校准概率。
+    """Platt 缩放：将原始分数通过 sigmoid(A·f + B) 映射为校准概率。
 
-    相比Beta-Binomial：Platt适用于连续分数且无明确成功/失败计数的场景。
-    学习率固定为1e-3，迭代式更新A和B参数。
+    相比 Beta-Binomial：Platt 适用于连续分数且无明确成功/失败计数的场景。
+    学习率固定 1e-3，迭代更新 A 和 B 参数。
     """
 
     def __init__(self, max_iter: int = 100, lr: float = 0.001):
@@ -406,10 +412,11 @@ class PlattScaling:
         self._fitted: bool = False
 
     def fit(self, raw_scores: List[float], labels: List[float]):
+        # 不拆——保持上下文连贯性
         """在线逻辑回归拟合 Platt 参数。
 
-        raw_scores: 分析器原始输出分数（不限值域）
-        labels: 真实标签 {0, 1}
+        raw_scores: 分析器原始输出分数（不限值域）。
+        labels: 真实标签 {0, 1}。
         """
         _n = len(raw_scores)
         if _n < 4:
@@ -437,7 +444,7 @@ class PlattScaling:
 
 # ============================================================================
 # 期望校准误差 (ECE) — 衡量预测置信度与实际准确率的一致性
-# ECE = Σ (|B_b|/N) * |acc(B_b) - conf(B_b)|，值越低校准越好
+# ECE = Σ(|B_b|/N) * |acc(B_b) - conf(B_b)|，值越低校准越好
 # ============================================================================
 
 def expected_calibration_error(confidences: List[float],
@@ -446,8 +453,8 @@ def expected_calibration_error(confidences: List[float],
     """计算期望校准误差 (ECE)。
 
     将置信度 [0,1] 分为 n_bins 个等距区间，
-    每个区间计算 |平均准确率 - 平均置信度| 的加权和。
-    ECE < 0.05 认为校准良好，> 0.15 认为严重失校。
+    每区间计算 |平均准确率 - 平均置信度| 的加权和。
+    ECE < 0.05 视为校准良好，> 0.15 视为严重失校。
     """
     _n = len(confidences)
     if _n == 0:
@@ -472,14 +479,14 @@ def expected_calibration_error(confidences: List[float],
 
 # ============================================================================
 # 概念漂移检测 — 监控分析器性能的时序稳定性
-# 使用滑动窗口的CUSUM简化版：窗口均值偏离历史均值超过阈值→漂移
+# 使用滑动窗口 CUSUM 简化版：窗口均值偏离历史均值超过阈值 → 漂移告警
 # ============================================================================
 
 class DriftDetector:
-    """概念漂移检测器：监控分析器置信度的时间稳定性。
+    """概念漂移检测器：监控分析器置信度的时序稳定性。
 
-    滑动窗口追踪最近 N 次预测的准确率，
-    与历史基线（EWMA）比较，偏差超过阈值时触发告警。
+    滑动窗口追踪最近 N 次预测准确率，
+    与 EWMA 历史基线比较，偏差超过阈值触发告警。
     """
 
     def __init__(self, window_size: int = 50, drift_threshold: float = 0.15,
@@ -522,12 +529,12 @@ class DriftDetector:
 
 
 # ============================================================================
-# 加权混合器 — 样本量加权的原始/校准分数融合
+# 加权混合器 — 样本量加权融合原始分数与校准分数
 # ============================================================================
 
 class WeightedBlender:
-    """原始置信度与校准置信度的加权混合
-    K=10时：5个样本→权重0.33，20个→0.67，100个→0.91"""
+    """原始置信度与校准置信度的加权混合。
+    K=10 时：5 样本→权重 0.33，20→0.67，100→0.91。"""
 
     def __init__(self, K: float = _DEFAULT_BLEND_K, max_cal_weight: float = _MAX_CAL_WEIGHT):
         self.K = K
@@ -540,12 +547,12 @@ class WeightedBlender:
 
 
 # ============================================================================
-# isotonic回归简化 — 保序回归：将分数映射为单调递增的校准值
-# 使用PAV (Pool-Adjacent-Violators) 算法
+# Isotonic 回归简化 — 保序回归：将分数映射为单调递增的校准值
+# 使用 PAV (Pool-Adjacent-Violators) 算法
 # ============================================================================
 
 class IsotonicCalibration:
-    """保序回归校准：通过PAV算法强制单调性约束。"""
+    """保序回归校准：通过 PAV 算法强制执行单调性约束。"""
 
     def __init__(self, n_bins: int = 20):
         self.n_bins = n_bins
@@ -661,13 +668,13 @@ def ensemble_predict(calibrated_metadata: List[AnalyzerMetadata],
 # ============================================================================
 
 class SequentialBayesianUpdater:
-    """序贯贝叶斯更新器：每观测到一个 (success/fail) 立即更新后验。
+    """序贯贝叶斯更新器：每观测到一次 (success/fail) 立即更新后验。
 
-    与 BetaCalibration 的区别：BetaCalibration 做批量更新（一次性注入所有观测），
-    本类设计用于在线流式场景——每个观测到达时调用 .observe()，
-    后验参数和置信度实时更新。
+    与 BetaCalibration 区别：BetaCalibration 做批量更新（一次性注入观测），
+    本类用于在线流式场景——每个观测到达时调用 .observe()，
+    后验参数与置信度实时更新。
 
-    典例：分析器在 CI 流水线中逐 commit 输出预测，需要实时追踪其置信度变化。
+    典例：分析器在 CI 流水线中逐 commit 输出预测，需实时追踪置信度变化。
     """
 
     def __init__(self, prior_alpha: float = 2.0, prior_beta: float = 2.0,
@@ -716,9 +723,9 @@ class SequentialBayesianUpdater:
 
     @property
     def convergence_rate(self) -> float:
-        """后验方差的衰减速率——反映置信度的收敛速度。
+        """后验方差衰减速率——反映置信度的收敛速度。
 
-        方差下降越快，说明观测一致性越高，分析器的表现越稳定。
+        方差下降越快 → 观测一致性越高 → 分析器表现越稳定。
         """
         if len(self._history) < 2:
             return 0.0
@@ -727,7 +734,7 @@ class SequentialBayesianUpdater:
         _n_delta = _last[0] - _first[0]
         if _n_delta == 0:
             return 0.0
-        # 方差衰减率：log(variance_last) vs log(variance_first) 的斜率
+        # 方差衰减率：log(variance_last) / log(variance_first) 的斜率
         _current_var = self.posterior_variance
         # 用历史首记录的近似方差
         _first_alpha = self.prior_alpha + self._history[0][0] * self._history[0][1]
@@ -742,19 +749,18 @@ class SequentialBayesianUpdater:
 # ============================================================================
 # 贝叶斯模型平均 (BMA) — 对多个校准器做后验加权
 # 参考：Hoeting et al. Bayesian Model Averaging. Statistical Science 1999.
-# 每个校准方法视为一个"模型"，其后验概率由其历史 Brier 分数决定。
+# 每个校准方法视为一个"模型"，其后验概率由其历史 Brier 分数决定
 # ============================================================================
 
 def bayesian_model_average(calibrator_outputs: List[Dict[str, Any]],
                              brier_scores: Optional[List[float]] = None
                              ) -> Dict[str, float]:
-    """贝叶斯模型平均：用各校准器的 Brier 分数作为加权依据。
+    """贝叶斯模型平均：以各校准器的 Brier 分数作为加权依据。
 
-    calibrator_outputs: 每个校准器的输出 dict，至少含 'confidence' 键。
-    brier_scores: 各校准器的历史 Brier 分数（低 = 好）。
+    calibrator_outputs: 各校准器输出 dict，至少含 'confidence' 键。
+    brier_scores: 各校准器历史 Brier 分数（低 = 好）。
 
-    权重的后验正比于 exp(-brier * n_samples)，
-    然后用 softmax-like 归一化。
+    权重的后验正比于 exp(-brier * n_samples)，然后 softmax-like 归一化。
     若未提供 brier_scores，则等权平均。
     """
     _M = len(calibrator_outputs)
@@ -802,7 +808,7 @@ def cost_sensitive_threshold(calibrated_probs: List[float],
     cost_fp: 误报代价（不必要的人工审查时间）。
     cost_fn: 漏报代价（漏洞被忽略的潜在损失）。
     threshold = cost_fp / (cost_fp + cost_fn) — 当 FN 代价高时降低阈值。
-    这等价于在 ROC 曲线上沿切线 λ = C_FP/C_FN 选择操作点。
+    等效于在 ROC 曲线上沿切线 λ = C_FP/C_FN 选择操作点。
     """
     _opt_thresh = cost_fp / (cost_fp + cost_fn)
     # 可选：在经验分布上做平滑
@@ -818,7 +824,7 @@ def cost_sensitive_threshold(calibrated_probs: List[float],
 # ============================================================================
 # 校准变化追踪 — 随时间监控校准器的性能退化
 # 参考：Widmer & Kubat. Learning in the Presence of Concept Drift. 1996.
-# 当校准误差的趋势线斜率显著为正 → 需要重新校准
+# 当校准误差趋势线斜率显著为正 → 需要重新校准
 # ============================================================================
 
 class CalibrationDriftMonitor:
@@ -866,7 +872,7 @@ class CalibrationDriftMonitor:
 # ============================================================================
 # 鲁棒校准 — 使用 Huber 损失替代 MSE 的稳健保序回归
 # 参考：Huber. Robust Estimation of a Location Parameter. 1964.
-# 对离群值的敏感度由 δ 控制：|resid| ≤ δ → MSE, |resid| > δ → MAE
+# 对离群值敏感度由 δ 控制：|resid| ≤ δ → MSE, |resid| > δ → MAE
 # ============================================================================
 
 def huber_calibration_loss(prob: float, label: int, delta: float = 0.2) -> float:
@@ -875,7 +881,7 @@ def huber_calibration_loss(prob: float, label: int, delta: float = 0.2) -> float
     resid = prob - label
     |resid| ≤ δ → 0.5 * resid²（MSE，对小残差精确）
     |resid| > δ → δ * (|resid| - 0.5*δ)（MAE，对大残差不敏感）
-    这避免了少数离群样本过度影响整体校准结果。
+    少数离群样本不会过度影响整体校准结果。
     """
     _resid = prob - label
     _abs_r = abs(_resid)

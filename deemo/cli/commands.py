@@ -1,13 +1,7 @@
 #!/usr/bin/env python3
-"""
-Command-line interface. Kept simple — no fancy framework, just argparse
-and a handful of subcommands that delegate to the core pipeline.
-"""
+"""Command-line interface — argparse-based, delegates to core.pipeline."""
 
-import argparse
-import os
-import sys
-import time
+import argparse, os, sys, time
 
 from config import ensure_dirs
 from utils.logging_setup import init_logging

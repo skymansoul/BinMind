@@ -2,16 +2,16 @@
 """
 通用 Gadget 链合成器 v2
 
-基于 [ARCANIST 2025, USENIX Security] 的多原语 exploit 链合成框架，
-支持任意 exploit 原语（栈、堆、任意位置）的自动化 gadget 链构建。
+基于 [ARCANIST 2025, USENIX Security] 的多原语 漏洞利用 链合成框架
+支持任意 exploit 原语（栈、堆、任意位置）的自动化 gadget 链构建
 
 相比 v1 (rop_chain_synthesizer.py) 的改进：
 - 支持栈迁移（stack pivoting）的自动 gadget 选择
-- 条件执行 gadget 的利用（cmp/je/jne + ret）
+- 条件执行 构件 的利用（cmp/je/jne + ret）
 - 多原语组合（堆溢出 + 栈溢出 → 单条利用链）
 - 坏字节感知的 ROP 载荷编码
 
-参考 [PBAEG 2025] 的多漏洞组合利用策略。
+参考 [PBAEG 2025] 的多漏洞组合利用策略
 """
 
 import logging
@@ -45,7 +45,7 @@ class PrimitiveType(Enum):
 
 @dataclass
 class Gadget:
-    """ROP gadget 描述，兼容 v1 的 Gadget 结构"""
+    """ROP构件 描述，兼容 v1 的 构件 结构"""
     address: int
     instructions: List[str] = field(default_factory=list)
     category: str = ""
@@ -62,8 +62,8 @@ class PivotGadget(Gadget):
 
 @dataclass
 class ConditionalGadget(Gadget):
-    """条件执行 gadget (cmp/jmp/ret)"""
-    condition: str = ""  # 'je', 'jne', 'jg', 'jl', ...
+    """条件执行 构件 (cmp/jmp/ret)"""
+    condition: str = ""  # 'je', 'jne', 'jg', 'jl'
     then_gadget_addr: int = 0
     else_gadget_addr: int = 0
 
@@ -71,9 +71,9 @@ class ConditionalGadget(Gadget):
 @dataclass
 class ExploitChain:
     """
-    完整 exploit 链
-
-    由多个 stage 组成，最终实现任意代码执行。
+    完整 漏洞利用 链
+    
+    由多个 stage 组成，最终实现任意代码执行
     """
     name: str
     target_primitive: PrimitiveType
@@ -86,8 +86,8 @@ class ExploitChain:
 class GadgetFinder:
     """
     增强型 gadget 查找器
-
-    支持 [ARCANIST 2025] 的多原语 gadget 分类。
+    
+    支持 [ARCANIST 2025] 的多原语 构件 分类
     """
 
     # 用于 gadget 分类的操作码签名
@@ -105,7 +105,7 @@ class GadgetFinder:
             bytes([0x41, 0x59]),  # pop r9
         ],
         'syscall_ret': [
-            bytes([0x0f, 0x05]),  # syscall
+            bytes([0x0f, 0x05]),  # 系统调用
         ],
         'stack_pivot': [
             bytes([0x94]),        # xchg eax, esp
@@ -149,8 +149,8 @@ class GadgetFinder:
     ) -> List[Gadget]:
         """
         在二进制数据中查找 ROP gadgets
-
-        返回所有以 ret 结尾的有效指令序列。
+        
+        返回所有以 ret 结尾的有效指令序列
         """
         if self._capstone:
             return self._find_with_capstone(data, base_addr)
@@ -300,9 +300,9 @@ class GadgetFinder:
 class ChainSynthesizer:
     """
     Exploit 链合成器
-
-    基于 [ARCANIST 2025] 的组合方法，
-    自动将 gadget 组装为有效的 exploit 链。
+    
+    基于 [ARCANIST 2025] 的组合方法
+    自动将 gadget 组装为有效的 exploit 链
     """
 
     def __init__(self, arch: str = 'x64'):
@@ -315,10 +315,10 @@ class ChainSynthesizer:
     ) -> Optional[ExploitChain]:
         """
         合成 execve 链
-
-        需要: pop rdi; ret, pop rsi; ret, pop rdx; ret, pop rax; ret, syscall; ret
-
-        如果缺少某些 gadget，尝试替代路径 [ARCANIST 2025]。
+        
+        需要: pop rdi; ret, pop rsi; ret, pop rdx; ret, pop rax; ret, 系统调用; ret
+        
+        如果缺少某些 gadget，尝试替代路径 [ARCANIST 2025]
         """
         chain = ExploitChain(
             name='execve_chain',
@@ -368,7 +368,7 @@ class ChainSynthesizer:
         if pop_rax:
             stage1.append(pop_rax)
 
-        # Stage 2: syscall
+        # Stage 2: 系统调用
         stage2 = [syscall_g] if syscall_g else []
 
         chain.stages = [stage1, stage2] if stage2 else [stage1]
@@ -387,10 +387,10 @@ class ChainSynthesizer:
         shellcode_len: int
     ) -> Optional[ExploitChain]:
         """
-        合成 mprotect 链 → shellcode 执行
-
-        mprotect(shellcode_page, page_size, PROT_READ|PROT_WRITE|PROT_EXEC)
-        → jmp shellcode_addr
+        合成 mprotect 链 → 壳代码 执行
+        
+        mprotect(壳代码_page, page_size, PROT_READ|PROT_WRITE|PROT_EXEC)
+        → jmp 壳代码_addr
         """
         chain = ExploitChain(
             name='mprotect_chain',
@@ -408,9 +408,9 @@ class ChainSynthesizer:
         page_addr = shellcode_addr & ~(page_size - 1)
         prot_rwx = 7  # PROT_READ | PROT_WRITE | PROT_EXEC
 
-        # jmp gadget
+        # jmp 构件
         jmp_g = next((g for g in gadgets if g.category == 'jmp_reg'), None)
-        jmp_g = jmp_g or pop_rdi  # fallback
+        jmp_g = jmp_g or pop_rdi  # 回退
 
         stage = []
         if pop_rax:
@@ -449,8 +449,8 @@ class ChainSynthesizer:
     ) -> List[ExploitChain]:
         """
         多原语组合合成 [ARCANIST 2025]
-
-        将不同类型的 exploit 原语组合为单一利用链。
+        
+        将不同类型的 exploit 原语组合为单一利用链
         """
         chains = []
 
@@ -478,9 +478,9 @@ class ChainSynthesizer:
 class PayloadEncoder:
     """
     载荷编码器
-
-    将 exploit 链编码为可发送的字节载荷，
-    处理坏字节、对齐和端序 [ARCANIST 2025]。
+    
+    将 exploit 链编码为可发送的字节载荷
+    处理坏字节、对齐和端序 [ARCANIST 2025]
     """
 
     def __init__(self, arch: str = 'x64', bad_bytes: Optional[Set[int]] = None):
@@ -492,14 +492,14 @@ class PayloadEncoder:
         self, chain: ExploitChain, padding_before: int = 0
     ) -> bytes:
         """
-        将 exploit 链编码为 ROP payload
-
+        将 漏洞利用 链编码为 ROP payload
+        
         Args:
-            chain: exploit 链定义
-            padding_before: payload 之前的填充字节数
-
-        Returns:
-            编码后的 payload 字节
+        chain: 漏洞利用 链定义
+        填充_before: payload 之前的填充字节数
+        
+        返回:
+        编码后的 payload 字节
         """
         payload = bytearray()
 
@@ -538,8 +538,8 @@ def synthesize_chain_v2(
 ) -> Dict[str, Any]:
     """
     便捷函数：通用 exploit 链合成（v2）
-
-    基于 [ARCANIST 2025] 和 [PBAEG 2025] 的方法。
+    
+    基于 [ARCANIST 2025] 和 [PBAEG 2025] 的方法
     """
     g_list = [
         Gadget(

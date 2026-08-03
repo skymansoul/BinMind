@@ -1,5 +1,5 @@
-# Dynamic instrumentation profiler — Frida, PIN, perf, or simulated backends.
-# 2026-07-15: 对比嵌入风险评分（CLAP式跨模态投影）+ Welford在线统计算法 + 自适应时间衰减半衰期
+# 动态插桩剖析 — Frida/PIN/perf/模拟后端.
+# 对比嵌入风险评分（CLAP式跨模态投影）+ Welford在线统计算法 + 自适应时间衰减半衰期
 import logging, os, time, json, threading, statistics, math
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
@@ -43,8 +43,8 @@ class ProfileReport:
 DANGEROUS_FUNCS = {"strcpy","strcat","sprintf","gets","scanf","system","execve","popen","memcpy","memmove","free","malloc","realloc","strncpy"}
 
 # ===== 对比嵌入投影基础设施 — CLAP式跨模态语义对齐 =====
-# 8×8 投影矩阵：将函数统计特征映射到规范化语义空间
-# 对角线主导保留主特征，非对角线编码特征间交叉交互
+# 8×8投影矩阵: 函数统计→规范化语义空间
+# 对角保留主特征/非对角编码交叉交互
 _PROJECTION_MATRIX = [
     [ 1.2,  0.3, -0.1,  0.0,  0.5,  0.1, -0.2,  0.1],
     [-0.2,  1.1,  0.4, -0.1,  0.2,  0.0,  0.1, -0.3],
@@ -56,8 +56,8 @@ _PROJECTION_MATRIX = [
     [-0.3,  0.2, -0.1,  0.0,  0.1,  0.1, -0.3,  1.0],
 ]
 
-# 威胁原型嵌入 — 预定义的"危险方向"，基于已知漏洞模式的统计画像
-# 内存破坏：高频调用+低开销+高波动；命令注入：中频+高开销；格式化串：低频+高熵
+# 威胁原型嵌入: 预定义危险方向/已知漏洞模式统计画像
+# 内存破坏: 高频调用+低开销+高波动；命令注入: 中频+高开销；格式化串: 低频+高熵
 _THREAT_ARCHETYPES_RAW = {
     "memory_corruption":   [0.6, 0.2, 0.5, 0.3, 0.4, 0.1, 0.2, 0.3],
     "command_injection":   [0.3, 0.6, 0.2, 0.5, 0.3, 0.4, 0.1, 0.1],
@@ -122,7 +122,7 @@ class Profiler:
     def add_sample(self, sample: FuncSample):
         with self._lock:
             self._samples.append(sample)
-            # Welford (1962) 在线均值/方差更新 — 每样本 O(1)，数值稳定
+            # Welford在线均值/方差O(1)更新
             wf_key = (sample.func_name, sample.address)
             wf = self._welford.get(wf_key)
             dur_f = float(sample.duration_us)
@@ -135,7 +135,7 @@ class Profiler:
                 delta2 = dur_f - wf['mean']
                 wf['M2'] += delta * delta2
                 wf['count'] = cnt
-            # 到达间隔追踪 — 用于自适应衰减调节
+            # 到达间隔追踪用于自适应衰减
             now_ts = sample.timestamp
             last_ts = self._arrival_last.get(wf_key)
             if last_ts is not None:
@@ -279,7 +279,7 @@ class Profiler:
                 duration_entropy = -sum((c/total_bc) * math.log(c/total_bc) for c in bins if c > 0)
             else:
                 duration_entropy = 0.0
-            # === 对比嵌入 → 连续威胁相似度（替代二值 is_dangerous 判定）===
+            # 对比嵌入→连续威胁相似度
             features = _build_feature_vector(
                 call_count=n, avg_us=avg, stddev_us=stddev, p95_us=p95,
                 max_us=max(durs) if durs else 0, total_us=total,
@@ -287,10 +287,10 @@ class Profiler:
                 duration_entropy=duration_entropy,
             )
             embedding = _project_to_embedding(features)
-            # 与所有威胁原型的最大余弦相似度（向量已归一化，点积即余弦）
+            # 与威胁原型最大余弦相似度
             arch_sims = [sum(embedding[i] * arch[i] for i in range(8)) for arch in _THREAT_ARCHETYPES_NORM.values()]
             threat_sim = max(arch_sims) if arch_sims else 0.0
-            # === 自适应时间衰减 ===
+            # 自适应时间衰减
             hl, cv_inter = self._compute_adaptive_half_life((name, addr))
             decay_lambda = math.log(2) / hl
             decayed = 0.0
@@ -300,11 +300,11 @@ class Profiler:
                 decayed += ss[s_idx].duration_us * math.exp(-age * decay_lambda)
                 s_idx += 1
             hotness = (n * avg + decayed) / 2000.0
-            # === 风险融合：确定性匹配 + 对比相似度增强 ===
+            # 风险融合: 确定性+对比相似度
             is_dangerous = name in self.dangerous
             base_risk = 2.0 if is_dangerous else 1.0
-            # 已标记危险的函数：相似度有限放大（确定性证据优先）
-            # 未标记但语义相似的：相似度显著放大（发现未知威胁）
+            # 已标记危险: 有限放大
+            # 未标记相似: 显著放大/发现未知威胁
             if is_dangerous:
                 blended_risk = base_risk * (1.0 + 0.5 * threat_sim)
             else:

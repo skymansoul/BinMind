@@ -1,8 +1,8 @@
-# Multi-provider ensemble voting — aggregates verdicts from OpenAI, Ollama, and local heuristics.
-# 2026-07-20: fixed indentation bugs, added provider diversity scoring for uncertainty estimation.
-# 2026-07-23: 跨模态对比置信度校准（CLAP范式）— 将异源provider视为不同模态，利用 pairwise 一致性矩阵反推信息冗余度，惩罚高度相关provider间的一致性虚高。
-# 2026-07-23: EMA时间衰减精度追踪 — 替换简单滑动平均，增强对模型概念漂移的响应速度。
-# 2026-07-23: 熵基不确定性量化 — Shannon熵归一化替代CV变异系数，后验概率空间的置信度调节更符合贝叶斯纠偏。
+# 多提供商集成投票 — 汇总OpenAI/Ollama/本地启发式判定.
+# fixed indentation bugs, added provider diversity scoring for uncertainty estimation.
+# 跨模态对比置信度校准（CLAP范式）— 将异源provider视为不同模态，利用 pairwise 一致性矩阵反推信息冗余度，惩罚高度相关provider间的一致性虚高。
+# EMA时间衰减精度追踪 — 替换简单滑动平均，增强对模型概念漂移的响应速度。
+# 熵基不确定性量化 — Shannon熵归一化替代CV变异系数，后验概率空间的置信度调节更符合贝叶斯纠偏。
 import logging
 import os
 import time
@@ -322,8 +322,8 @@ class AIEnsembleVoter:
         contrastive_penalty = self._contrastive_recalibration_penalty()
 
         # 置信度综合调节:
-        #   基础调节：original CV diversity（保留向后兼容）
-        #   增强调节：(1 - entropy_uncertainty) * (1 - contrastive_penalty)
+        # 基础调节：original CV diversity（保留向后兼容）
+        # 增强调节：(1 - entropy_uncertainty) * (1 - contrastive_penalty)
         diversity = self._provider_diversity(verdicts)
         entropy_damp = max(0.25, 1.0 - entropy_uncertainty)       # 高熵 → damp < 1，压低置信度
         contrastive_damp = max(0.3, 1.0 - contrastive_penalty)    # 高冗余 → damp < 1，压低置信度

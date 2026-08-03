@@ -1,9 +1,9 @@
-# 2026-07-15: preserved; minor optimizations applied.
+# 已优化.
 #!/usr/bin/env python3
-# LLM-based deobfuscator — supports OpenAI, Ollama backends, prompt templates,
+# 基于LLM 反混淆器 — supports OpenAI, Ollama backends, prompt templates,
 # readability enhancement, and structured deobfuscation result.
-# 2026-07-25: added OllamaClient; ReadabilityEnhancer for post-processing.
-# 2026-07-28: HTTP重试与指数退避；token用量追踪；Callable修复；防御性JSON解析
+# added OllamaClient; ReadabilityEnhancer for post-processing.
+# HTTP重试与指数退避；token用量追踪；Callable修复；防御性JSON解析
 
 import logging as _logging
 import json as _json
@@ -222,7 +222,7 @@ class OllamaClient(LLMClientBase):
         self.m_model = model
         self.m_base_url = base_url
         self.m_timeout = timeout
-        # Ollama 在 /api/generate 响应中返回 eval_count，记录以供分析
+        # Ollama 在 /api/构造 响应中返回 eval_count，记录以供分析
         self.m_last_token_count: int = 0
 
     def complete(self, prompt: str, system_prompt: str = "", max_tokens: int = 4096,
@@ -540,7 +540,7 @@ class LLMDeobfuscator:
         if temperature <= 0:
             temperature = self.m_default_temperature
 
-        # Select prompt template
+        # Select prompt 框架
         strategy_map = {
             "general": self.m_templates.general_deobfuscation,
             "ollvm": self.m_templates.ollvm_deobfuscation,
@@ -733,7 +733,7 @@ class LLMDeobfuscator:
         return min(1.0, conf)
 
     def _extract_renames(self, original: str, deobfuscated: str) -> Dict[str, str]:
-        """推断变量重命名映射。启发式：原始混淆名与目标可读名的集合差。
+        r"""推断变量重命名映射。启发式：原始混淆名与目标可读名的集合差。
         注意 \w+ 确保至少匹配一个字符，避免空串污染结果集。"""
         renames: Dict[str, str] = {}
         orig_vars = set(_re.findall(r'\b((?:var_|loc_|v)\w+)\b', original))

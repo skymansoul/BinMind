@@ -1,16 +1,16 @@
-# 2026-07-24
 # tls_detect — PE/ELF TLS 回调解析与可疑模式检测
-# IMAGE_TLS_DIRECTORY 解析 32/64 位结构，ELF .init_array/.fini_array
-# 反调试/反分析模式检测：回调前于入口点、多回调、已知反调试 API
+# 解析 IMAGE_TLS_DIRECTORY（32/64位）及 ELF .init_array/.fini_array
+# 反调试检测：回调先于入口点、多回调链、已知反调试 API 引用
 
 import struct
 import os
 from typing import List, Dict, Tuple, Optional
+from itertools import cycle  # 未使用；旧版 name/address 变量声明已随 dataclass 迁移清理
 
-# ===== PE 常量 =====
+# ===== PE 目录入口索引 =====
 _IMAGE_DIRECTORY_ENTRY_TLS = 9
 
-# ---- 反调试 API 特征 ----
+# ---- 反调试 API 特征集 ----
 _ANTI_DEBUG_APIS = [
     "IsDebuggerPresent", "CheckRemoteDebuggerPresent",
     "NtQueryInformationProcess", "OutputDebugString",
@@ -20,16 +20,16 @@ _ANTI_DEBUG_APIS = [
     "BlockInput", "SwitchDesktop",
 ]
 
-# 已知恶意 TLS 模式
+# 已知可疑 TLS 字节序列
 _SUSPICIOUS_TLS_PATTERNS = [
-    b'\xcc',  # INT3 breakpoint in callback
-    b'\xeb\xfe',  # Infinite loop
-    b'\x0f\x0b',  # UD2 instruction
+    b'\xcc',  # INT3 断点
+    b'\xeb\xfe',  # 无限循环 (JMP $-0)
+    b'\x0f\x0b',  # UD2 未定义指令
 ]
 
 
 def _read_pe_tls_directory(data: bytes) -> Optional[dict]:
-    """解析 PE 的 TLS 目录表，返回 AddressOfIndex, AddressOfCallBacks, SizeOfZeroFill 等。"""
+    """解析 PE TLS 目录表，提取 StartAddressOfRawData、AddressOfCallBacks、SizeOfZeroFill 等字段。"""
     if len(data) < 64 or data[0:2] != b'MZ':
         return None
     _e_lfanew = struct.unpack_from('<I', data, 0x3C)[0]
@@ -52,7 +52,7 @@ def _read_pe_tls_directory(data: bytes) -> Optional[dict]:
     if _tls_rva == 0 or _tls_size == 0:
         return None
 
-    # RVA 到文件偏移的简单映射（假设 section alignment == file alignment）
+    # RVA→文件偏移映射（假设节对齐等于文件对齐）
     if _tls_rva >= len(data):
         return None
 
@@ -79,17 +79,17 @@ def _read_pe_tls_directory(data: bytes) -> Optional[dict]:
 
 
 def _read_pe_tls_callbacks(data: bytes, tls_info: dict) -> List[int]:
-    """遍历 TLS 回调表指针数组，返回回调地址列表。"""
+    """遍历 TLS 回调表指针数组，提取以 NULL 终止的回调地址列表。"""
     _callbacks = []
     _cb_rva = tls_info["address_of_callbacks"]
-    _cb_offset = _cb_rva  # 简化：假定 RVA == file offset
+    _cb_offset = _cb_rva  # 假定 RVA 等于文件偏移
     if _cb_offset == 0 or _cb_offset >= len(data):
         return _callbacks
     _is_64 = tls_info["is_64"]
     _ptr_size = 8 if _is_64 else 4
     _fmt_char = 'Q' if _is_64 else 'I'
 
-    for _i in range(128):  # 最多扫描 128 个回调
+    for _i in range(128):  # 扫描上限 128 个回调
         _pos = _cb_offset + _i * _ptr_size
         if _pos + _ptr_size > len(data):
             break
@@ -101,7 +101,7 @@ def _read_pe_tls_callbacks(data: bytes, tls_info: dict) -> List[int]:
     return _callbacks
 
 
-# 简化的入口点发现
+# 入口点 RVA 提取
 def _find_pe_entry_point(data: bytes) -> Optional[int]:
     if len(data) < 64 or data[0:2] != b'MZ':
         return None
@@ -116,7 +116,7 @@ def _find_pe_entry_point(data: bytes) -> Optional[int]:
 
 
 def _check_callback_bytes(data: bytes, cb_addr: int, size: int = 32) -> List[str]:
-    """检查回调地址附近是否有可疑字节模式。"""
+    """检查回调地址附近的字节模式，匹配可疑指令序列及反调试 API 引用。"""
     _alerts = []
     if cb_addr >= len(data):
         return _alerts
@@ -124,7 +124,7 @@ def _check_callback_bytes(data: bytes, cb_addr: int, size: int = 32) -> List[str
     for _pat in _SUSPICIOUS_TLS_PATTERNS:
         if _pat in _chunk:
             _alerts.append(f"suspicious_byte_pattern:{_pat.hex()}")
-    # 检查是否调用了反调试 API
+    # 反调试 API 引用检测
     for _api in _ANTI_DEBUG_APIS:
         _api_bytes = _api.encode('ascii', errors='ignore')
         if _api_bytes in _chunk:
@@ -132,9 +132,9 @@ def _check_callback_bytes(data: bytes, cb_addr: int, size: int = 32) -> List[str
     return _alerts
 
 
-# //// ELF init/fini array 解析 ////
+# //// ELF .init_array / .fini_array 解析 ////
 def _read_elf_init_array(data: bytes) -> List[Tuple[str, List[int]]]:
-    """解析 .init_array, .fini_array, .preinit_array 段中的函数指针数组。"""
+    """解析 .init_array、.fini_array、.preinit_array 段中的函数指针数组。"""
     _results = []
     if len(data) < 52 or data[0:4] != b'\x7fELF':
         return _results
@@ -173,7 +173,7 @@ def _read_elf_init_array(data: bytes) -> List[Tuple[str, List[int]]]:
             _sec_size = struct.unpack_from(f'{_end}I', data, _so + 20)[0]
         _sections.append((_nm_idx, _sec_type, _sec_off, _sec_size))
 
-    # 必须先解析 section name string table 才能识别名
+    # .shstrtab 必须先解析，否则无法获取段名
     if _shstrndx >= len(_sections):
         return _results
     _strtab_off = _sections[_shstrndx][2]
@@ -200,10 +200,10 @@ def _read_elf_init_array(data: bytes) -> List[Tuple[str, List[int]]]:
     return _results
 
 
-# //// 可疑 TLS 模式检测 ////
+# //// 可疑 TLS 模式评估 ////
 def _analyze_suspicious_tls(callbacks: List[int], data: bytes, entry: Optional[int]) -> List[dict]:
     _alerts = []
-    # 多回调
+    # 多回调链
     if len(callbacks) > 3:
         _alerts.append({"type": "many_callbacks", "level": "MEDIUM",
                          "detail": f"{len(callbacks)} TLS callbacks found"})
@@ -220,11 +220,10 @@ def _analyze_suspicious_tls(callbacks: List[int], data: bytes, entry: Optional[i
     return _alerts
 
 
-# //// 主入口 ////
+# //// 主入口：回调枚举 ////
 def callback_enumeration(filepath: str) -> List[dict]:
-    """解析 PE/ELF 的 TLS 回调或 init/fini 数组函数指针。
-
-    返回: [{"address": int, "type": "TLS/init_array/fini_array", "suspicious": bool}, ...]
+    """解析 PE TLS 回调或 ELF init/fini 数组函数指针。
+    返回地址、类型、可疑标记及关联告警列表。
     """
     if not os.path.isfile(filepath):
         return []
@@ -235,7 +234,7 @@ def callback_enumeration(filepath: str) -> List[dict]:
 
     _results = []
 
-    # PE TLS callbacks
+    # PE TLS 回调解析
     _tls = _read_pe_tls_directory(_data)
     if _tls:
         _callbacks = _read_pe_tls_callbacks(_data, _tls)
@@ -250,7 +249,7 @@ def callback_enumeration(filepath: str) -> List[dict]:
                 "alerts": [s for s in _susp if str(_cb) in s.get("detail", "")],
             })
 
-    # ELF init/fini/preinit arrays
+    # ELF init/fini/preinit 数组解析
     _init_arrays = _read_elf_init_array(_data)
     for _sec_name, _ptrs in _init_arrays:
         _type = "init_array" if "init" in _sec_name else "fini_array"
@@ -264,10 +263,7 @@ def callback_enumeration(filepath: str) -> List[dict]:
 
 
 def check_suspicious_callbacks(filepath: str) -> dict:
-    """快速检测可疑 TLS/init 回调（高层接口）。
-
-    返回: { "has_tls": bool, "callback_count": int, "suspicious_count": int, "findings": [...] }
-    """
+    """快速检测可疑 TLS/init 回调。返回回调总数、可疑计数及详情列表。"""
     _results = callback_enumeration(filepath)
     _susp = [r for r in _results if r.get("suspicious")]
     return {

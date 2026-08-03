@@ -1,10 +1,10 @@
 """
-Memory forensics engine for artifact extraction and incident response.
-Operates on live process memory and static disk images.
+Memory forensics engine for artifact extraction incident response
+Operates live process memory static disk images
 
-Round 5: Cryptographic weakness detection (RC4/DES/MD5/ECB signatures),
-binary exploit mitigation audit (ASLR/DEP/CFG/StackGuard/SafeSEH check),
-and CPython runtime object extraction from memory dumps.
+舍入 5: Cryptographic weakness detection (RC4/DES/MD5/ECB 签名s)
+binary 漏洞利用 mitigation audit (ASLR/DEP/CFG/栈Guard/SafeSEH 检查)
+CPython runtime object extraction memory 转存
 """
 import os, re, json, struct, logging, subprocess, platform, tempfile, hashlib, math
 from datetime import datetime
@@ -47,14 +47,14 @@ class SensitiveDataType(Enum):
     IP_ADDRESS = "ip_address"; URL_WITH_Creds = "url_with_creds"; EMAIL = "email"
     PHONE = "phone_number"; OTHER = "other"
 
-# ── Round 5: Cryptographic weakness signatures ──────────────────────────
-# 检测二进制中使用的弱密码学原语。参照NIST SP 800-131A和BSI TR-02102-1标准，
-# RC4/DES/MD5/SHA1/ECB模式的使用应标记为不符合当前安全基线。
+# ── 舍入 5: Cryptographic weakness 签名s ──────────────────────────
+# 检测二进制中使用的弱密码学原语。参照NIST SP 800-131A和BSI TR-02102-1标准
+# RC4/DES/MD5/SHA1/ECB模式的使用应标记为不符合当前安全基线
 
 @dataclass
 class CryptoWeakness:
     algorithm: str
-    weakness_type: str          # deprecated_key_size | broken_algorithm | weak_mode
+    weakness_type: str          # 已废弃_key_size | broken_algorithm | weak_mode
     evidence: str               # 触发检测的字节模式或导入符号
     severity: str               # critical | high | medium
     recommendation: str
@@ -99,18 +99,18 @@ CRYPTO_WEAK_SIGNATURES = {
     },
 }
 
-# ── Round 5: Binary exploit mitigation signatures ───────────────────────
-# 检测二进制启用的编译器和OS级安全缓解措施。参照微软/Google/Apple的安全要求。
+# ── 舍入 5: Binary 漏洞利用 mitigation 签名s ───────────────────────
+# 检测二进制启用的编译器和OS级安全缓解措施。参照微软/Google/Apple的安全要求
 
 HARDENING_SIGNATURES = {
     'ASLR': {
         'pe_flag': 0x0040,           # IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE
-        'elf_section': '.rela.dyn',  # Position-independent code requires relocations
+        'elf_section': '.rela.dyn',  # Position-independent code requires 重定位s
         'severity_if_missing': 'high',
     },
     'DEP_NX': {
         'pe_flag': 0x0100,           # IMAGE_DLLCHARACTERISTICS_NX_COMPAT
-        'elf_segment': 'GNU_STACK',   # PT_GNU_STACK with PF_X bit clear
+        'elf_segment': 'GNU_STACK',   # PT_GNU_栈 PF_X bit 清除
         'severity_if_missing': 'critical',
     },
     'StackGuard': {
@@ -322,11 +322,11 @@ class MemoryForensicsAnalyzer:
         result.total_sensitive_items = len(result.sensitive_data)
         return result
 
-    # ── Round 5: Cryptographic weakness scanner ────────────────────────
+    # ── 舍入 5: Cryptographic weakness scanner ────────────────────────
     def _scan_crypto_weaknesses(self, source: Union[str, int],
                                  result: ForensicsResult) -> None:
         """扫描二进制/内存中的弱密码学原语。基于导入符号、内联常量和
-        反汇编模式匹配。弱密码原语包括RC4/DES/MD5/SHA1/ECB/RSA-1024。"""
+        反汇编模式匹配。弱密码原语包括RC4/DES/MD5/SHA1/ECB/RSA-1024"""
         try:
             if isinstance(source, str) and os.path.isfile(source):
                 with open(source, 'rb') as fh:
@@ -348,11 +348,11 @@ class MemoryForensicsAnalyzer:
                     confidence=min(0.95, 0.5 + len(matches) * 0.1),
                 ))
 
-    # ── Round 5: Binary exploit mitigation auditor ──────────────────────
+    # ── 舍入 5: Binary 漏洞利用 mitigation auditor ──────────────────────
     def _audit_binary_hardening(self, source: Union[str, int],
                                   result: ForensicsResult) -> None:
         """审计二进制启用的安全缓解措施。检查ASLR/DEP/StackGuard/SafeSEH/
-        CFG/CET特性。缺失的缓解措施按严重程度排序在报告中列出。"""
+        CFG/CET特性。缺失的缓解措施按严重程度排序在报告中列出"""
         hardening = {}
         try:
             if isinstance(source, str) and os.path.isfile(source):

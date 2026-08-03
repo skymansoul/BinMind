@@ -6,9 +6,9 @@ WebAssembly 二进制分析器
 - 模块/函数/表/内存/全局变量解析
 - 导入/导出段分析
 - 控制流平坦化检测（WASM 特有模式）
-- 基于 [SoK: AI-Augmented Binary Reversing 2026, 2606.17398] 的跨领域分析框架
+- 基于 [SoK: -Augmented Binary Reversing 2026, 2606.17398] 的跨领域分析框架
 
-WASM 格式参考：https://webassembly.github.io/spec/core/binary/
+WASM 格式参考：https://WebAssembly.github.io/spec/core/binary/
 """
 
 import logging
@@ -125,17 +125,17 @@ class WASMAnalysisResult:
 class LEB128Decoder:
     """
     LEB128 变长整数解码器
-
-    WASM 二进制格式使用有符号和无符号 LEB128 编码。
+    
+    WASM 二进制格式使用有符号和无符号 LEB128 编码
     """
 
     @staticmethod
     def decode_unsigned(data: bytes, offset: int) -> Tuple[int, int]:
         """
         解码无符号 LEB128
-
-        Returns:
-            (value, new_offset)
+        
+        返回:
+        (value, new_offset)
         """
         result = 0
         shift = 0
@@ -152,9 +152,9 @@ class LEB128Decoder:
     def decode_signed(data: bytes, offset: int) -> Tuple[int, int]:
         """
         解码有符号 LEB128
-
-        Returns:
-            (value, new_offset)
+        
+        返回:
+        (value, new_offset)
         """
         result = 0
         shift = 0
@@ -181,10 +181,10 @@ class LEB128Decoder:
 class WASMAnalyzer:
     """
     WebAssembly 模块分析器
-
-    解析 WASM 二进制格式，提取结构化信息，
-    并进行安全性评估。
-    参考 [SoK: AI-Augmented Binary Reversing 2026, 2606.17398] 的跨领域框架。
+    
+    解析 WASM 二进制格式，提取结构化信息
+    并进行安全性评估
+    参考 [SoK: -Augmented Binary Reversing 2026, 2606.17398] 的跨领域框架
     """
 
     WASM_MAGIC = b'\x00asm'
@@ -562,13 +562,13 @@ def analyze_wasm(
 ) -> Dict[str, Any]:
     """
     便捷函数：分析 WASM 模块
-
+    
     Args:
-        wasm_path_or_data: WASM 文件路径或二进制数据（hex 字符串/bytes）
-        is_file: True 表示文件路径，False 表示数据
-
-    Returns:
-        分析结果字典
+    WASM_path_or_data: WASM 文件路径或二进制数据（hex 字符串/bytes）
+    is_file: True 表示文件路径，False 表示数据
+    
+    返回:
+    分析结果字典
     """
     analyzer = WASMAnalyzer()
 

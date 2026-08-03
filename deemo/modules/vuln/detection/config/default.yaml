@@ -1,0 +1,34 @@
+# Vuln Detection — 默认配置
+# 环境变量覆写前缀: VULN_
+
+database:
+  path: "data/vuln.db"
+  wal_mode: true
+
+nvd:
+  api_url: "https://services.nvd.nist.gov/rest/json/cves/2.0"
+  cache_ttl_hours: 24
+  rate_limit_rps: 5
+
+osv:
+  api_url: "https://api.osv.dev/v1"
+
+sbom:
+  default_format: "cyclonedx"
+  spdx_version: "2.3"
+
+dedup:
+  hash_threshold: 0.85
+  semantic_threshold: 0.70
+
+lifecycle:
+  sla_days:
+    triage: 7
+    fix: 30
+    verification: 14
+
+logging:
+  level: "INFO"
+  file: "logs/vuln_detection.log"
+  max_bytes: 10485760
+  backup_count: 5

@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-# Primary interface: ReportSection, ReportConfig, ReportData, ReverseReportGenerator (4 classes).
-# Dependencies: os, json.
-# Time O(n), space O(1).
+# Primary interface: ReportSection, Report配置, ReportData, ReverseReportGenerator (4 classes)
+# Dependencies: os, json
+# Time O(n), space O(1)
 #
-# 2025 增强: 集成 LLM4Decompile + ReF Decompile 的 Relabeling 策略。
+# 2025 增强: 集成 LLM4Decompile + ReF Decompile 的 Relabeling 策略
 # 参考: LLM4Decompile v2 (https://github.com/albertan017/LLM4Decompile)
 #       ReF Decompile (arXiv 2502.12221)
 # Relabeling 保留跳转目标语义——在反编译的伪代码中保留原始二进制中的跳转地址
 # 作为标签前缀，使 LLM 能区分"同签名不同行为"的函数。本模块在报告生成时
-# 对反编译结果应用此策略，提升后续 LLM 分析的准确度。
+# 对反编译结果应用此策略，提升后续 LLM 分析的准确度
 from enum import Enum
 from dataclasses import dataclass
 import logging
@@ -75,15 +75,15 @@ class ReportData:
         self.corruption_classification_results = corruption_classification_results or {}
 
 # ── Relabeling 策略 (LLM4Decompile / ReF Decompile) ────────────────────────
-# 核心方法: 保留二进制中的跳转目标地址作为反编译伪代码的标签前缀。
-# 例如 "j_0x401234_main_loop" 保留了原始跳转地址 0x401234，
-# 使 LLM 在分析时能利用此"锚点"区分多态函数，提升变量恢复和类型推断的准确度。
-# ReF Decompile 论文报告此策略将重编译通过率从 52% 提升至 61.43%。
+# 核心方法: 保留二进制中的跳转目标地址作为反编译伪代码的标签前缀
+# 例如 "j_0x401234_main_loop" 保留了原始跳转地址 0x401234
+# 使 LLM 在分析时能利用此"锚点"区分多态函数，提升变量恢复和类型推断的准确度
+# ReF Decompile 论文报告此策略将重编译通过率从 52% 提升至 61.43%
 
 
 class RelabelingStrategy:
-    """跳转目标保留标注器——LLM4Decompile v2 启发的 relabeling 实现。
-    对伪代码中的标签应用规范化命名，保留原始地址语义信息。
+    """跳转目标保留标注器——LLM4Decompile v2 启发的 relabeling 实现
+    对伪代码中的标签应用规范化命名，保留原始地址语义信息
     """
 
     _ADDR_LABEL_PAT = _re.compile(r'(?:loc|label)_?(0x[0-9a-fA-F]+)', _re.IGNORECASE)
@@ -91,8 +91,8 @@ class RelabelingStrategy:
 
     @classmethod
     def relabel(cls, pseudocode: str, func_addr: int = 0) -> str:
-        """对伪代码应用 relabeling——将匿名标签替换为地址保留的语义标签。
-        同时保留原始跳转目标地址作为前缀，以便 LLM 跨函数关联控制流。
+        """对伪代码应用 relabeling——将匿名标签替换为地址保留的语义标签
+        同时保留原始跳转目标地址作为前缀，以便 LLM 跨函数关联控制流
         """
         lines = pseudocode.split('\n')
         result: List[str] = []
@@ -118,7 +118,7 @@ class RelabelingStrategy:
 
     @classmethod
     def extract_call_targets(cls, pseudocode: str) -> List[int]:
-        """从反编译伪代码中提取所有 call 目标地址——用于 LLM 分析的上下文增强。"""
+        """从反编译伪代码中提取所有 call 目标地址——用于 LLM 分析的上下文增强"""
         targets: List[int] = []
         call_pat = _re.compile(r'(?:call|invoke)\s+(?:sub_)?(0x[0-9a-fA-F]+)', _re.IGNORECASE)
         for m in call_pat.finditer(pseudocode):
@@ -128,13 +128,13 @@ class RelabelingStrategy:
 
 class ReverseReportGenerator:
     """
-    LLM-based reverse engineering report generator.
-
+    LLM-based reverse engineering 报告 generator
+    
     Core functions:
-    1. Aggregates data from all analysis steps
-    2. Drives AI report generation via prompt templates with relabeling
-    3. Supports sectional generation for token budget control
-    4. Outputs Markdown-formatted reports
+    1. Aggregates data analysis steps
+    2. Drives 报告 generation via 提示词模板 relabeling
+    3. 支持 sectional generation for token budget control
+    4. 输出 Markdown-formatted 报告
     """
 
     def __init__(self, config: ReportConfig):

@@ -1,12 +1,11 @@
-# 2026-07-21
-# lateral — 10 种横向移动技术检测
-# 检测方法论：API 导入表模式匹配，辅以字符串特征验证
-# 跨平台支持 Windows + Linux/Mac SSH
+# lateral — 10 种横向移动技术 + 凭据转储检测
+# 基于 API 导入表 + 字符串特征双通道匹配，跨平台覆盖 Windows/Linux SSH
 
 import re
 from typing import List, Dict, Set, Tuple
+import hashlib
 
-# ---- 技术名称 -> MITRE TID ----
+# 技术名 → MITRE ATT&CK TID
 _LATERAL_TIDS = {
     "wmi": "T1047",
     "psexec": "T1021.002",
@@ -20,7 +19,7 @@ _LATERAL_TIDS = {
     "ssh": "T1021.004",
 }
 
-# ===== API/字符串模式定义 =====
+# ===== API 与字符串特征库 =====
 _WMI_APIS = [
     "IWbemServices", "IWbemLocator", "ConnectServer",
     "ExecMethod", "ExecQuery", "Win32_Process",
@@ -104,8 +103,6 @@ def _score(api_matches: int, api_total: int, str_matches: int, str_total: int,
     _s = (str_matches / max(str_total, 1)) * str_weight
     return min(_a + _s, 1.0)
 
-
-# ---- 各技术检测函数 ----
 
 def detect_wmi(imports: dict, strings: list) -> dict:
     _apis = _norm_apis(imports)
@@ -201,11 +198,9 @@ def detect_passthehash(imports: dict, strings: list) -> dict:
             "api_matches": _am, "str_matches": _sm, "mimikatz_strings": _mimikatz_str}
 
 
-# //// 凭据转储检测 (mimikatz, lsass, 注册表 hive, ntds) ////
 def credential_dumping_detect(imports: dict, strings: list, sections: list = None) -> dict:
-    """专用于检测凭据窃取行为的函数，比普通横向移动检测更敏感。
-
-    返回 dict 包含 detected, confidence, matched_patterns, lsass_access, sam_hive, ntds_hive 等。
+    """凭据转储专用检测：mimikatz/lsass/注册表HIVE/NTDS.dit 多重指标。
+    灵敏度高于普通横向移动检测器，对 mimikatz 关键词给予更高权重。
     """
     _apis = _norm_apis(imports)
     _strs = _norm_strs(strings)
@@ -242,7 +237,6 @@ def credential_dumping_detect(imports: dict, strings: list, sections: list = Non
     }
 
 
-# ---- 批量检测 ----
 _DETECTORS = {
     "wmi": detect_wmi, "psexec": detect_psexec,
     "schtasks": detect_schtasks, "winrm": detect_winrm,
@@ -253,10 +247,8 @@ _DETECTORS = {
 
 
 def detect_all(imports: dict, strings: list, sections: list = None) -> dict:
-    """运行全部横向移动检测器 + 凭据转储检测，返回综合报告。
-
-    返回:
-        { "findings": {...}, "credential_dumping": {...}, "overall_risk": float, "summary": str }
+    """全部横向移动检测器 + 凭据转储，汇总评分与风险等级。
+    凭据转储命中的风险权重为 1.5 倍。
     """
     _results = {}
     _risk = 0.0

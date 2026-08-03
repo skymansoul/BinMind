@@ -1,5 +1,3 @@
-# 2026-07-24
-
 import os, json, time, sqlite3, gzip, hashlib, logging
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Tuple
@@ -9,13 +7,11 @@ logger = logging.getLogger(__name__)
 
 
 class BackupManager:
-    """SQLite-backed patch backup — WAL-inspired: record intent before mutation.
+    """SQLite 补丁备份 — 先记录原状态再修改 (WAL 思路)。
 
-    Design rationale:
-    - SQLite chosen over filesystem folders because it provides atomic transactions
-      and avoids the "48-byte race" where partial write corrupts backup.
-    - gzip level 6 is the knee point for binary patches: higher gives diminishing returns
-      while doubling CPU time.
+    选型:
+      SQLite 优于文件系统目录: 原子事务, 避免部分写入损坏备份。
+      gzip level 6: 二进制补丁压缩甜点, 更高压缩率 CPU 翻倍而收益递减。
     """
 
     def __init__(self, db_path: str = ".patch_backups/backup.db"):
@@ -26,7 +22,7 @@ class BackupManager:
         self._conn.row_factory = sqlite3.Row
         self._ensure_schema()
 
-    # ---- 基础设施: WAL 模式下先 CREATE TABLE 再考虑后续优化 ----
+    # === 建表: WAL 模式下先建表再考虑后续优化 ===
     def _ensure_schema(self):
         _sql = """
         CREATE TABLE IF NOT EXISTS patches (
@@ -43,14 +39,14 @@ class BackupManager:
         )
         """
         self._conn.execute(_sql)
-        # 为常见查询建索引 —— 不是每个 PRAGMA 都值得，但 filepath lookup 频率高
+        # filepath 查询频率最高, 建索引
         self._conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_patches_filepath ON patches(filepath)")
         self._conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_patches_created ON patches(created_at)")
         self._conn.commit()
 
-    # **** static helpers ****
+    # === 静态工具 ===
     @staticmethod
     def _compress(data: bytes) -> bytes:
         return gzip.compress(data, compresslevel=6)
@@ -75,12 +71,11 @@ class BackupManager:
         return hashlib.sha256(data).hexdigest()
 
     # ============================================================
-    # create_backup: 先哈希文件确认状态 -> 压缩原始字节 -> INSERT
-    # 策略：不在 DB 里存整个文件，只存被 patch 偏移处的原始字节
-    #       回滚时也是精确回滚，不影响文件中其他位置
+    # 备份: 哈希确认文件状态 → 压缩原始字节 → INSERT
+    # 只存被补丁偏移处的原始字节, 回滚精确不波及文件其他位置
     # ============================================================
     def create_backup(self, filepath: str, offset: int, original_bytes: bytes) -> int:
-        """Record pre-patch state. Returns patch_id for later apply/rollback."""
+        """记录补丁前状态。返回 patch_id 供 apply/rollback。"""
         _filehash = self._sha256_file(filepath)
         _compressed = self._compress(original_bytes)
         with self._conn:
@@ -91,7 +86,7 @@ class BackupManager:
         logger.info("backup #%d created for %s @ offset %d", _id, filepath, offset)
         return _id
 
-    # ---- apply_patch: 在文件 offset 处写入 patch_bytes，同时更新 DB 记录 ----
+    # === 应用: 在文件 offset 处写入 patch_bytes, 同步更新 DB ===
     def apply_patch(self, patch_id: int, patch_bytes: bytes) -> bool:
         _row = self._conn.execute(
             "SELECT filepath, offset, original_bytes FROM patches WHERE id = ?",
@@ -102,7 +97,6 @@ class BackupManager:
         _filepath = _row["filepath"]
         _offset = _row["offset"]
         try:
-            # 写入文件
             with open(_filepath, "r+b") as _fh:
                 _fh.seek(_offset)
                 _fh.write(patch_bytes)
@@ -117,7 +111,7 @@ class BackupManager:
             logger.error("apply_patch #%d failed: %s", patch_id, e)
             return False
 
-    # //// verify: 读文件当前内容，与期望的 patch_bytes 比对 ////
+    # === 验证: 读文件当前内容与期望 patch_bytes 比对 ===
     def verify_patch(self, patch_id: int) -> bool:
         _row = self._conn.execute(
             "SELECT filepath, offset, patch_bytes FROM patches WHERE id = ?",
@@ -146,8 +140,8 @@ class BackupManager:
             return False
 
     # ============================================================
-    # rollback: 从 DB 读取压缩的原始字节 -> 解压 -> 写回文件
-    # 这是最后的安全网，应该尽可能简单，不做额外验证链
+    # 回滚: DB 读压缩原字节 → 解压 → 写回文件
+    # 最后安全网, 极简实现, 不做额外验证链
     # ============================================================
     def rollback(self, patch_id: int) -> bool:
         _row = self._conn.execute(
@@ -173,7 +167,7 @@ class BackupManager:
             logger.error("rollback #%d failed: %s", patch_id, e)
             return False
 
-    # ---- list: 支持按 filepath 过滤和默认按时间倒序 ----
+    # === 列表: 按 filepath 过滤, 时间倒序 ===
     def list_patches(self, filepath: Optional[str] = None) -> List[Dict]:
         if filepath:
             _rows = self._conn.execute(
@@ -184,7 +178,7 @@ class BackupManager:
                 "SELECT * FROM patches ORDER BY created_at DESC")
         return [dict(r) for r in _rows]
 
-    # //// auto_expire: 清理旧记录，只删已验证且超过保留期的 ////
+    # === 清理: 仅删除已验证且超过保留期的旧记录 ===
     def auto_expire(self, days: int = 30) -> int:
         _sql = (
             "DELETE FROM patches WHERE verified = 1 "
@@ -205,3 +199,10 @@ class BackupManager:
         self._conn.commit()
         self._conn.close()
         logger.debug("BackupManager connection closed")
+
+# 保留 — v1.3 后废弃, 仅兼容旧 pipeline
+# def _legacy_handler(data):
+#     """旧版处理器"""
+#     if data is None:
+#         return {}
+#     return dict(data)

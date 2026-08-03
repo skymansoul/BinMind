@@ -1,4 +1,4 @@
-"""Lattice-based crypto side-channel analysis -- polynomial multiplication timing leaks."""
+"""基于格的密码侧信道分析——多项式乘法时序泄漏。"""
 
 import logging
 import math
@@ -77,7 +77,7 @@ def _mutual_information_hist(samples_a: List[float], samples_b: List[float],
     mi = 0.0
     for i in range(n_bins):
         if pa[i] > 0 and pb[i] > 0:
-            # KL divergence of pa from pb
+            # pa 相对于 pb 的 KL 散度
             mi += pa[i] * math.log2(pa[i] / max(pb[i], 1e-10))
     return max(0.0, mi)
 
@@ -85,7 +85,7 @@ def _mutual_information_hist(samples_a: List[float], samples_b: List[float],
 def _cliff_delta(a: List[float], b: List[float]) -> float:
     """Cliff's delta: 非参数效应量 [-1, 1]。
 
-    |δ| > 0.474 → "large", |δ| > 0.33 → "medium", |δ| > 0.147 → "small"。
+    |δ| > 0.474 → "大", |δ| > 0.33 → "中", |δ| > 0.147 → "小"。
     对时序侧信道：正 δ 表示 a 组的时序显著高于 b 组。
     """
     n_a, n_b = len(a), len(b)
@@ -99,15 +99,15 @@ def _cliff_delta(a: List[float], b: List[float]) -> float:
     return 2 * delta - 1
 
 
-# Analyzer
+# 分析器
 
 class LatticeSideChannelAnalyzer:
-    """Detect timing leaks in lattice-based cryptographic operations.
+    """检测基于格的密码运算中的时序泄漏。
 
-    Focuses on polynomial multiplication, NTT/INTT transforms, and coefficient-
-    dependent branching commonly found in Kyber, Dilithium, and similar schemes.
+    聚焦于多项式乘法、NTT/INTT 变换以及系数相关的分支，
+    常见于 Kyber、Dilithium 等方案。
 
-    Usage::
+    用法::
 
         analyzer = LatticeSideChannelAnalyzer()
         result = analyzer.analyze(ntt_implementation, n=256, q=3329)
@@ -116,13 +116,13 @@ class LatticeSideChannelAnalyzer:
     def __init__(self):
         pass
 
-    # -- public API -----------------------------------------------------------
+    # -- 公开 API -----------------------------------------------------------
 
     def analyze(self, impl: Any, n: int = 256, q: int = 3329,
                 trials: int = 500, **kwargs) -> List[SideChannelVulnerability]:
-        """Analyze an implementation.
+        """分析一个实现。
 
-        `impl` can be a callable (coefficients) -> result, or a dict/path for static analysis.
+        `impl` 可以是可调用对象 (coefficients) -> result，或 dict/路径用于静态分析。
         """
         if callable(impl):
             return self._analyze_callable(impl, n, q, trials)
@@ -136,10 +136,10 @@ class LatticeSideChannelAnalyzer:
 
     def _analyze_callable(self, op: Callable, n: int, q: int,
                           trials: int) -> List[SideChannelVulnerability]:
-        """Instrument a callable for timing leakage across random coefficient sets."""
+        """对可调用对象进行插桩，跨随机系数集检测时序泄漏。"""
         vulns: List[SideChannelVulnerability] = []
 
-        # ---- Timing trace collection -------------------------------------------------
+        # ---- 时序追踪采集 ---------------------------------------------------------
         all_samples: List[float] = []
         coeff_timings: Dict[int, List[float]] = defaultdict(list)
 
@@ -150,7 +150,7 @@ class LatticeSideChannelAnalyzer:
             elapsed = time.perf_counter_ns() - t0
             all_samples.append(elapsed)
 
-            # Per-coefficient correlation: run with only one non-zero coefficient
+            # 逐系数相关性：仅使用一个非零系数运行
             for bit in range(min(8, n)):
                 single = [0] * n
                 idx = (bit * n // 8) % n
@@ -159,12 +159,12 @@ class LatticeSideChannelAnalyzer:
                 op(single)
                 coeff_timings[idx].append(time.perf_counter_ns() - t0)
 
-        # ---- Statistical analysis --------------------------------------------------
+        # ---- 统计分析 --------------------------------------------------
         mean_t = statistics.mean(all_samples)
         std_t = statistics.stdev(all_samples) if len(all_samples) > 1 else 0.0
 
-        # Coefficient correlation: if different coefficient indices produce different
-        # median timings, there is likely a data-dependent branch.
+        # 系数相关性：若不同系数索引产生不同的中位时序，
+        # 则大概率存在数据依赖分支。
         coeff_medians: Dict[int, float] = {}
         for idx, times in coeff_timings.items():
             coeff_medians[idx] = statistics.median(times)
@@ -179,8 +179,8 @@ class LatticeSideChannelAnalyzer:
             deviations = {}
             max_dev = 0.0
 
-        # Decision: constant-time or not?
-        # If coefficient choice changes timing by > 5%, flag it.
+        # 判定：是否常数时间？
+        # 若系数选择导致时序变化 > 5%，标记为非恒定时间。
         is_const = max_dev < 0.05 and std_t / max(mean_t, 1) < 0.1
 
         # -- 互信息与效应量 -----------------------------------------------------
@@ -216,7 +216,7 @@ class LatticeSideChannelAnalyzer:
                 evidence=[result],
             ))
 
-        # ---- NTT-specific checks ---------------------------------------------------
+        # ---- NTT 专项检测 ---------------------------------------------------
         ntt_result = self._check_ntt_timing(op, n, q, trials // 2)
         if ntt_result is not None and not ntt_result.is_constant_time:
             vulns.append(SideChannelVulnerability(
@@ -253,7 +253,7 @@ class LatticeSideChannelAnalyzer:
 
     def _check_ntt_timing(self, op: Callable, n: int, q: int,
                            trials: int) -> Optional[TimingAnalysisResult]:
-        """Specific NTT timing test: compare zero-coefficient vs. saturated."""
+        """NTT 时序专项检测：对比零系数与饱和系数。"""
         zero_times = []
         sat_times = []
         for _ in range(trials):
@@ -324,7 +324,7 @@ class LatticeSideChannelAnalyzer:
 
     @staticmethod
     def detect_conditional_branch_in_ntt(source_code: str) -> List[Tuple[int, str]]:
-        """Static analysis: find conditionals on modular reductions in NTT code."""
+        """静态分析：查找 NTT 代码中基于模约简的条件分支。"""
         import re
         issues = []
         patterns = [

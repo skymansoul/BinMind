@@ -1,14 +1,11 @@
-# 2026-08-02
-# 并发模糊测试引擎 — 针对多线程程序的竞态条件/死锁/原子性违反测试
-# 核心思路: 对每个 fuzz 输入生成 N 种线程调度变体，通过控制
-# 锁获取顺序、线程创建/销毁时序、共享变量访问交错来暴露并发漏洞。
-# 参考:
-#   DDRace (Yuan et al. USENIX 2024): Finding Concurrency UAF
-#     Vulnerabilities in Linux Drivers with Directed Fuzzing
+# 并发模糊测试引擎 — 多线程程序的竞态条件/死锁/原子性违反测试
+# 核心思路: 对每个fuzz输入生成N种线程调度变体，通过控制锁获取顺序、
+# 线程创建/销毁时序、共享变量访问交错来暴露并发漏洞。
+# 参考文献:
+#   DDRace (Yuan et al. USENIX 2024): Finding Concurrency UAF in Linux Drivers
 #   Razzer (Jeong et al. CCS 2019): Finding Kernel Race Bugs through Fuzzing
 #   ConcurrencyFuzzer (Jung et al. PLDI 2021)
-#   SKI (Fonseca et al. OSDI 2011): Testing Multi-threaded Programs
-#     with Systematic Interleaving Enumeration
+#   SKI (Fonseca et al. OSDI 2011): Systematic Interleaving Enumeration
 import random
 import time
 from typing import List, Dict, Set, Tuple, Optional, Any
@@ -18,17 +15,17 @@ from enum import Enum
 
 
 class ConcurrencyBugType(str, Enum):
-    DATA_RACE = "data_race"              # 对同一地址的非同步读-写或写-写
+    DATA_RACE = "data_race"              # 同地址非同步读-写或写-写
     DEADLOCK = "deadlock"                 # 环形锁依赖
-    ATOMICITY_VIOLATION = "atomicity"     # 本应原子的操作序列被另一个线程中断
-    ORDER_VIOLATION = "order_violation"   # 预期的 happens-before 关系未满足
+    ATOMICITY_VIOLATION = "atomicity"     # 原子操作序列被另一线程中断
+    ORDER_VIOLATION = "order_violation"   # 预期happens-before关系未满足
     THREAD_LEAK = "thread_leak"           # 线程未正确回收
-    LOCK_INVERSION = "lock_inversion"     # AB-BA 锁获取顺序
+    LOCK_INVERSION = "lock_inversion"     # AB-BA锁获取顺序
 
 
 @dataclass
 class ThreadSchedule:
-    """一次线程调度编排 — 定义 N 个线程的执行交叠序列。"""
+    """一次线程调度编排 — N个线程的执行交叠序列。"""
     thread_count: int
     operations: List[Tuple[int, str, Any]]  # (thread_id, op_type, detail)
     # op_type: 'acquire' | 'release' | 'read' | 'write' | 'create' | 'join'
@@ -51,20 +48,21 @@ class ConcurrencyFinding:
 class ConcurrencyFuzzer:
     """并发模糊测试主引擎。
 
-    设计: 不实际操控线程（那需要内核级支持），而是在测试用例
-    层面生成多种线程调度方案。每个方案定义:
-    - 线程数 (2–16)
+    设计: 不实际操控线程（需要内核级支持），而是在测试用例层面生成多种
+    线程调度方案。每个方案定义:
+    - 线程数 (2-16)
     - 锁获取顺序
     - 共享内存访问时间线
 
-    对每个调度方案生成一个"调度描述"→ 输入给被测程序的 scheduler harness
-    （harness 按描述创建线程、获取锁、访问共享变量），
-    在 harness 执行期间由 ASan/TSan 捕获实际的数据竞争。"""
+    每个调度方案编码为调度描述，输入给被测程序的scheduler harness
+    （harness按描述创建线程、获取锁、访问共享变量），
+    执行期间由ASan/TSan捕获实际数据竞争。
+    """
 
     def __init__(self, max_threads: int = 8):
         self._max_threads = max_threads
         self._lock_graph: Dict[int, Set[int]] = defaultdict(set)
-        self._shared_vars: Dict[int, int] = {}  # var_addr → size
+        self._shared_vars: Dict[int, int] = {}  # var_addr -> size
         self._schedules: List[ThreadSchedule] = []
         self._findings: List[ConcurrencyFinding] = []
         self._rng = random.Random()
@@ -74,8 +72,10 @@ class ConcurrencyFuzzer:
         self._lock_graph.setdefault(lock_id, set())
 
     def register_lock_order(self, lock_a: int, lock_b: int) -> None:
-        """记录在某个执行中 lock_a→lock_b 的获取顺序。
-        若某调度中存在 lock_b→lock_a，则为锁逆序 (lock inversion)。"""
+        """记录某次执行中lock_a->lock_b的获取顺序。
+
+        若某调度中存在lock_b->lock_a，则为锁逆序。
+        """
         self._lock_graph[lock_a].add(lock_b)
 
     def register_shared_var(self, var_addr: int, size: int = 4) -> None:
@@ -84,7 +84,7 @@ class ConcurrencyFuzzer:
     # ---- 调度生成 ----
     def generate_schedules(self, count: int = 32,
                            base_seed_id: str = "") -> List[ThreadSchedule]:
-        """生成 count 个随机线程调度方案。"""
+        """生成count个随机线程调度方案。"""
         self._schedules = []
         for i in range(count):
             n_threads = self._rng.randint(2, self._max_threads)
@@ -98,7 +98,7 @@ class ConcurrencyFuzzer:
 
             # 为每个线程生成操作序列
             for tid in range(n_threads):
-                # 每个线程: 获取 1-3 个锁 → 读写 0-2 个共享变量 → 释放
+                # 每个线程: 获取1-3个锁 -> 读写0-2个共享变量 -> 释放
                 thread_locks = self._rng.sample(
                     lock_ids, min(self._rng.randint(1, 3), len(lock_ids))
                 ) if lock_ids else []
@@ -118,7 +118,7 @@ class ConcurrencyFuzzer:
                 for lid in reversed(thread_locks):  # 先获取的后释放
                     ops.append((tid, 'release', lid))
 
-            # 随机打乱操作顺序（模拟不同线程交叠）
+            # 随机打乱操作顺序以模拟不同线程交叠
             self._rng.shuffle(ops)
 
             schedule = ThreadSchedule(
@@ -132,6 +132,7 @@ class ConcurrencyFuzzer:
 
     # ---- 静态检测（无需实际执行） ----
     def detect_deadlock_cycles(self) -> List[ConcurrencyFinding]:
+        """Floyd-Warshall传递闭包检测环形锁依赖。"""
         findings = []
         locks = list(self._lock_graph.keys())
         n = len(locks)
@@ -151,16 +152,18 @@ class ConcurrencyFuzzer:
                 if reachable[i][j] and reachable[j][i]:
                     findings.append(ConcurrencyFinding(
                         bug_type=ConcurrencyBugType.DEADLOCK,
-                        description=f'环形锁依赖: lock#{locks[i]} ↔ lock#{locks[j]}',
+                        description=f'环形锁依赖: lock#{locks[i]} <-> lock#{locks[j]}',
                         locks_involved=[locks[i], locks[j]],
                         confidence=0.85))
         return findings
 
     def detect_lock_inversion(self) -> List[ConcurrencyFinding]:
-        """检测已记录的执行顺序中的锁逆序模式。
-        若调度 A 中 lock_i→lock_j，调度 B 中 lock_j→lock_i → 锁逆序。"""
+        """检测已记录执行顺序中的锁逆序模式。
+
+        若调度A中lock_i->lock_j，调度B中lock_j->lock_i，则标记为锁逆序。
+        """
         findings = []
-        lock_pairs = defaultdict(list)  # (i,j) → [schedule_ids]
+        lock_pairs = defaultdict(list)  # (i,j) -> [schedule_ids]
         for sched in self._schedules:
             for i in range(len(sched.lock_order) - 1):
                 la = sched.lock_order[i][0]
@@ -173,7 +176,7 @@ class ConcurrencyFuzzer:
             if reverse_key in lock_pairs:
                 findings.append(ConcurrencyFinding(
                     bug_type=ConcurrencyBugType.LOCK_INVERSION,
-                    description=f'锁逆序: lock#{la}→lock#{lb} vs lock#{lb}→lock#{la}',
+                    description=f'锁逆序: lock#{la}->lock#{lb} vs lock#{lb}->lock#{la}',
                     locks_involved=[la, lb],
                     confidence=0.70,
                     evidence={
@@ -183,7 +186,7 @@ class ConcurrencyFuzzer:
         return findings
 
     def detect_potential_race(self) -> List[ConcurrencyFinding]:
-        """在同调度内检测对同一共享变量的无锁保护并发访问。"""
+        """同调度内检测对同一共享变量的无锁保护并发访问。"""
         findings = []
         for sched in self._schedules:
             # 按变量分组访问
@@ -214,9 +217,11 @@ class ConcurrencyFuzzer:
 
     # ---- 测试输入生成 ----
     def generate_harness_input(self, schedule: ThreadSchedule) -> bytes:
-        """将调度方案编码为二进制格式，供 harness 解析执行。
+        """将调度方案编码为二进制格式供harness解析。
+
         格式: [n_threads(1B)] [n_ops(2B)] [op_tuple...]
-        op_tuple: [thread_id(1B)] [op_type(1B)] [detail(4B LE)]"""
+        op_tuple: [thread_id(1B)] [op_type(1B)] [detail(4B LE)]
+        """
         buf = bytearray()
         buf.append(schedule.thread_count & 0xFF)
         n_ops = min(len(schedule.operations), 65535)

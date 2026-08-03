@@ -32,12 +32,12 @@ class HookEntry:
     hook_id: str = ""
 
 
-# ===== Hook 注册表 =====
+# ===== 钩子 注册表 =====
 
 class HookRegistry:
     """
-    管理所有 HookEntry 的注册/注销/查询.
-    使用缓存加速匹配 (api_name + module_name).
+    管理所有 HookEntry 的注册/注销/查询
+    使用缓存加速匹配 (api_name + module_name)
     """
 
     def __init__(self):
@@ -47,7 +47,7 @@ class HookRegistry:
 
     def register(self, pattern: str, handler: Callable,
                  priority: int = 100, module_filter: Optional[str] = None) -> str:
-        """注册 hook, 返回 hook_id."""
+        """注册 钩子, 返回 钩子_id"""
         self._hook_counter += 1
         hid = f"hook_{self._hook_counter}_{hashlib.md5(pattern.encode()).hexdigest()[:6]}"
         entry = HookEntry(
@@ -88,7 +88,7 @@ class HookRegistry:
                 if not re.search(entry.module_filter, module_name, re.IGNORECASE):
                     continue
             matched.append(entry)
-        # 已按 priority 排序（register 时排序）
+        # 已按 priority 排序（寄存器 时排序）
         self._match_cache[cache_key] = matched
         return matched
 
@@ -103,24 +103,24 @@ class HookRegistry:
         return self.count
 
 
-# ===== Hook 引擎 =====
+# ===== 钩子 引擎 =====
 
 class HookEngine:
     """
-    API 拦截分发器。
-    按优先级遍历匹配的 hook，按 action 决定后续行为。
+    API 拦截分发器
+    按优先级遍历匹配的 hook，按 action 决定后续行为
     """
 
     def __init__(self):
         self.registry = HookRegistry()
         self._install_builtins()
 
-    # ---- dispatcher: 核心分发逻辑 ----
+    # ---- 分发器: 核心分发逻辑 ----
     def dispatch(self, api_name: str, args: Any,
                  module_name: str = "") -> Tuple[bool, Any]:
         """
-        遍历匹配的 hooks, 返回 (handled, result).
-        handled=True 表示被某 hook 截获，不应再调用原始函数.
+        遍历匹配的 钩子s, 返回 (handled, result)
+        handled=True 表示被某 hook 截获，不应再调用原始函数
         """
         hooks = self.registry.get_matches(api_name, module_name)
         if not hooks:
@@ -139,7 +139,7 @@ class HookEngine:
             elif action == HookAction.SKIP_ORIGINAL:
                 return (True, result)
             elif action == HookAction.MODIFY_ARGS:
-                current_args = result  # handler 返回新的 args
+                current_args = result  # 处理器 返回新的 args
                 # 继续下一个 hook
             elif action == HookAction.CONTINUE:
                 continue
@@ -150,7 +150,7 @@ class HookEngine:
     # ---- decorator 风格注册 ----
     def hook(self, pattern: str, priority: int = 100,
              module_filter: Optional[str] = None):
-        """@engine.hook('IsDebuggerPresent') 装饰器"""
+        """@engine.钩子('IsDebuggerPresent') 装饰器"""
         def decorator(fn: Callable):
             self.registry.register(pattern, fn, priority, module_filter)
             return fn
@@ -173,13 +173,13 @@ class HookEngine:
                 return True
         return False
 
-    # ===== 内置反调试 hooks =====
+    # ===== 内置反调试 钩子s =====
     def _install_builtins(self):
         self._register_anti_debug()
         self._register_anti_vm()
         self._register_timing()
 
-    # ---- anti-debug ----
+    # ---- 反调试 ----
     def _register_anti_debug(self):
 
         def _block_is_debugger(api_name, args, module):
@@ -224,7 +224,7 @@ class HookEngine:
             else:
                 self.registry.register(spec[0], spec[1], spec[2], spec[3])
 
-    # ---- anti-VM ----
+    # ---- 反虚拟机 ----
     def _register_anti_vm(self):
 
         def _fake_registry_vm(api_name, args, module):
@@ -245,7 +245,7 @@ class HookEngine:
             return (HookAction.SKIP_ORIGINAL, "Dell Inc.")
 
         def _fake_mac_address(api_name, args, module):
-            """GetAdaptersInfo → 过滤 VM 特征 MAC (00:05:69, 00:0C:29, 00:50:56, 08:00:27)"""
+            """Get适配器sInfo → 过滤 VM 特征 MAC (00:05:69, 00:0C:29, 00:50:56, 08:00:27)"""
             return (HookAction.SKIP_ORIGINAL, "00:1A:2B:3C:4D:5E")
 
         anti_vm_specs = [
@@ -268,7 +268,7 @@ class HookEngine:
             return (HookAction.SKIP_ORIGINAL, _const_time)
 
         def _const_query_perf_counter(api_name, args, module):
-            """QueryPerformanceCounter → 返回固定的单调增长"""
+            """Query性能Counter → 返回固定的单调增长"""
             return (HookAction.SKIP_ORIGINAL, _const_time * 10000)
 
         def _const_rdtsc(api_name, args, module):

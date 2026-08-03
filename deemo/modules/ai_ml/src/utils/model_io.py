@@ -1,4 +1,3 @@
-# 2026-07-20
 # utils/model_io.py
 # 模型序列化：NPZ权重存储 + JSON头部描述
 # 设计权衡：不用pickle（安全性），不用ONNX（太重），

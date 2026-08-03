@@ -1,4 +1,3 @@
-# 2026-07-14
 """DNS流量分析——DGA检测、DNS隧道识别、快速通量检测。"""
 import math, re, logging, hashlib
 from collections import Counter, defaultdict
@@ -45,7 +44,7 @@ _BIGRAM_FREQ: Dict[str, float] = {
 }
 _BIGRAM_MAX = max(_BIGRAM_FREQ.values())
 
-# //// 熵值阈值 —— 参考CIC-Bell-DNS-EXF-2021数据集 ////
+# 熵值阈值 —— 参考CIC-Bell-DNS-EXF-2021数据集
 ENTROPY_THRESHOLD = 3.0
 # 快速通量检测阈值
 FAST_FLUX_IP_THRESHOLD = 5
@@ -59,9 +58,9 @@ DGA_LABEL_LEN_MAX = 12
 
 
 def shannon_entropy(s: str) -> float:
-    """计算字符串的香农熵，用于衡量字符分布随机性。
+    """计算字符串香农熵，衡量字符分布随机性。
 
-    DGA域名通常每个标签的熵较高（>3.0），而正常域名由于包含常见词根如
+    DGA域名通常每标签熵较高（>3.0），正常域名含常见词根如
     'google', 'yahoo'等，熵值较低。分标签计算而非整个域名。
     """
     if not s:
@@ -74,7 +73,7 @@ def shannon_entropy(s: str) -> float:
 def label_entropies(domain: str) -> List[float]:
     """计算域名每个标签（点分隔部分）的熵值"""
     labels = domain.lower().rstrip(".").split(".")
-    # 去除TLD，关注二级及更深层标签
+    # 去除TLD，关注二级及更深标签
     if len(labels) > 1:
         labels = labels[:-1]
     return [shannon_entropy(lb) for lb in labels if lb]
@@ -112,7 +111,7 @@ def length_penalty(label: str) -> float:
     """对极短或极长标签应用熵修正因子。
 
     短标签（<4字符）熵计算噪声大，上调0.1。长标签（>25字符）无论熵值
-    都高度可疑，直接标记。正常标签返回0不施加惩罚。
+    均为高度可疑。正常标签返回0。
     """
     _l = len(label)
     if _l < 4:
@@ -156,14 +155,14 @@ class DnsAnalysisReport:
     risk_score: float = 0.0
 
 
-# //// DGA域名综合评估 ////
+# DGA域名综合评估
 class DgaAssessor:
     @staticmethod
     def assess_domain(domain: str) -> Tuple[float, bool, List[DnsLabelAnalysis]]:
-        """综合评估域名是否为DGA生成。
+        """综合评估域名是否为DGA产品。
 
         评估策略：先分标签计算各项指标（熵、双字母频率、元辅音比），
-        再进行加权融合。单个高熵标签不足以判断DGA，需结合多特征。
+        再加权融合。单高熵标签不足以判断DGA，需结合多特征。
         """
         labels = domain.lower().rstrip(".").split(".")
         # 取去除TLD后的标签
@@ -207,7 +206,7 @@ class DgaAssessor:
                 dga_score=_dga, is_suspicious=_suspicious,
             ))
 
-        # 域名级别综合评分
+        # 域名级综合评分
         if analyses:
             _avg = sum(a.dga_score for a in analyses) / len(analyses)
         else:
@@ -229,12 +228,12 @@ def check_suspicious_tld(domain: str) -> bool:
     return False
 
 
-# //// 快速通量检测 ////
+# 快速通量检测
 class FastFluxDetector:
     """检测快速通量：同一域名在不同时间窗口解析到大量IP。
 
     快速通量僵尸网络通过频繁更换IP躲避封锁。检测方法：时间窗口内
-    同域名解析IP数超阈值（默认5），且IP跨ASN则置信度更高。
+    同域名解析IP数超阈值（默认5），跨ASN则置信度更高。
     """
 
     @staticmethod
@@ -260,7 +259,7 @@ class FastFluxDetector:
             _window_ips: Dict[float, Set[str]] = {}
             for ip, ts_list in ip_ts.items():
                 for ts in ts_list:
-                    # 找到该时间戳所属的窗口起始点
+                    # 找到该时间戳所属窗口起始点
                     _win_start = (ts // time_window) * time_window
                     if _win_start not in _window_ips:
                         _window_ips[_win_start] = set()
@@ -269,7 +268,7 @@ class FastFluxDetector:
             for _win, _ips in _window_ips.items():
                 _count = len(_ips)
                 if _count >= ip_threshold:
-                    # 检测是否跨ASN（基于IP前缀粗略判断）
+                    # 粗略跨ASN检测（基于IP前缀）
                     _subnets = set(ip.rsplit(".", 1)[0] for ip in _ips if ip.count(".") == 3)
                     _confidence = min(_count / ip_threshold, 2.0)
                     if len(_subnets) >= 2:
@@ -290,14 +289,14 @@ def analyze_txt_records(queries: List[DnsQuery]) -> List[Tuple[str, int]]:
     return alerts
 
 
-# //// 查询频率尖峰检测 ////
+# 查询频率尖峰检测
 class QuerySpikeDetector:
     @staticmethod
     def detect_spikes(queries: List[DnsQuery], window_sec: float = 60.0,
                       spike_factor: float = 3.0) -> List[str]:
         """基于滑动窗口QPS检测查询频率异常尖峰。
 
-        计算每个窗口的查询次数，与基线（移动平均）比较。尖峰因子默认3倍。
+        计算每窗口查询次数，与基线（移动平均）比较。尖峰因子默认3倍。
         """
         if len(queries) < 10:
             return []
@@ -336,7 +335,7 @@ class QuerySpikeDetector:
 
 # ===== 综合分析入口 =====
 def analyze(queries: List[DnsQuery]) -> DnsAnalysisReport:
-    """全面的DNS流量分析，整合DGA检测、外泄分析、通量检测等所有模块。
+    """DNS流量分析，整合DGA检测、外泄分析、通量检测等所有模块。
 
     处理流程：统计基本指标 → 逐域名DGA评估 → 快速通量检测 → TXT外泄 →
     频率尖峰 → 综合风险评分。TXT和DNS隧道是最高危信号，权重最高。

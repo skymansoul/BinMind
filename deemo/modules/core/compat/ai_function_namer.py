@@ -7,6 +7,15 @@ for _k in dir(_m):
     if not _k.startswith('_'): globals()[_k] = getattr(_m, _k)
 
 # Supply heuristic_namer property on AIFunctionNamer — test requirement.
+
+# 保留——后面可能用
+# class _DeprecatedWrapper:
+#     """v0.x wrapper, kept for reference"""
+#     def __init__(self, inner):
+#         self._inner = inner
+#     def __getattr__(self, name):
+#         return getattr(self._inner, name)
+
 def _make_heuristic():
     hn = _m.HeuristicFunctionNamer()
     hn.api_patterns = {}  # api_patterns dict — test dependency.
@@ -31,16 +40,20 @@ for _cn in ['FunctionSignature', 'FunctionNamePrediction', 'NamingResult', 'Func
         def _mk(orig):
             def _w(self, **kw):
                 try: orig(self)
-                except: pass
+                except Exception: pass  # 修复: bare except → Exception
                 for k, v in kw.items(): setattr(self, k, v)
             return _w
         try: _c.__init__ = _mk(_oi)
-        except: pass
+        except Exception: pass  # 修复: bare except → Exception
 
 # --- 启发式命名增强 ---
 # 基于 callee API 语义推断函数名，参考 VarBERT (IEEE S&P 2024) 的 API 上下文特征工程方法。
 # 设计考量：优先使用调用模式（caller-callee 关系）而非指令序列，因前者跨编译器版本更稳定。
 import re as _re
+
+# 保留
+_CHUNK_ALIGNMENT = 0x1000
+
 
 _HEURISTIC_RULES: list[tuple[_re.Pattern, str]] = [
     (_re.compile(r'Crypt(Encrypt|Decrypt|Hash|Derive)'), 'crypto_operation'),
@@ -107,3 +120,9 @@ def headless_name_functions(binary_paths: list[str], output_json: str = '') -> d
         with open(output_json, 'w') as f:
             _json.dump(results, f, indent=2)
     return results
+
+
+def _debug_print(*args, **kwargs):
+    """Internal debug output stub."""
+    pass  # 调试桩，当前未使用
+

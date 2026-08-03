@@ -24,7 +24,7 @@ class HookTemplate:
     name: str=""; template_type: Any=None; description: str=""; script_template: Any=None
 
 class InstrumentationManager:
-    """Frida instrumentation manager with Stalker fast-tracing and template-based hook injection."""
+    """Frida 插桩 manager Stalker fast-追踪 template-based 钩子 injection"""
 
     def __init__(self):
         self.frida_session=None; self.frida_script=None
@@ -40,11 +40,11 @@ class InstrumentationManager:
 
     def is_frida_available(self)->bool: return _FRIDA_AVAILABLE
 
-    # --- Round 2: 预编译Hook缓存 ---
-    # 将常用的Frida脚本模板预编译为JavaScript字符串并缓存，
-    # 避免重复的字符串拼接开销，尤其在高频hook场景下减少GC压力
+    # --- 舍入 2: 预编译钩子缓存 ---
+    # 将常用的Frida脚本模板预编译为JavaScript字符串并缓存
+    # 避免重复的字符串拼接开销，在高频hook场景下减少GC压力
     def preload_templates(self):
-        """预加载所有hook模板到内存缓存。首次调用后，后续inject_script直接从缓存读取。"""
+        """预加载所有hook模板到内存缓存。首次调用后，后续inject_script直接从缓存读取"""
         templates = {
             'anti_debug': self._generate_anti_debug_script(),
             'syscall_monitor': self._generate_syscall_monitor_script(),
@@ -57,9 +57,9 @@ class InstrumentationManager:
                 self._preloaded_hooks[name] = code
         logger.info(f"Preloaded {len(self._preloaded_hooks)} hook templates")
 
-    # --- Round 2: Stalker快速追踪集成 ---
-    # Frida Stalker是代码级追踪引擎，在每条指令执行时触发回调。
-    # 相比Interceptor（仅函数级），Stalker可捕获所有间接跳转和ROP gadget。
+    # --- 舍入 2: Stalker快速追踪集成 ---
+    # Frida Stalker是代码级追踪引擎，在每条指令执行时触发回调
+    # 相比Interceptor（仅函数级），Stalker可捕获所有间接跳转和ROP gadget
     def _generate_stalker_script(self) -> str:
         return """
         let traceBuffer = [];
@@ -108,7 +108,7 @@ try{Interceptor.attach(Module.findExportByName(null,'IsDebuggerPresent'),{onLeav
 
     # --- Round 2: 网络监控模板 ---
     def _generate_network_monitor_script(self)->str:
-        """跨平台网络socket API监控。Linux/macOS/Windows自动适配。"""
+        """跨平台网络套接字 API监控。Linux/macOS/Windows自动适配"""
         return """
         function hookNetFunc(mod, name) {
             const fp = Module.findExportByName(mod, name);
@@ -207,8 +207,8 @@ try{Interceptor.attach(Module.findExportByName(null,'IsDebuggerPresent'),{onLeav
     # --- Round 2: 超时自动分离 ---
     def run_with_timeout(self, target_path: str = None, pid: int = None,
                          timeout_sec: int = 30, **kwargs) -> Dict[str, Any]:
-        """在指定超时后自动detach，防止长时间挂起。
-        启动独立线程计时，到期后调用frida_session.detach()。"""
+        """在指定超时后自动detach，防止长时间挂起
+        启动独立线程计时，到期后调用frida_session.detach()"""
         import threading
         result = self.run_instrumentation(target_path=target_path, pid=pid, **kwargs)
         if not result['success']:

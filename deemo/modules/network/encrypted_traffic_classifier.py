@@ -1,11 +1,10 @@
-# 2026-07-24
-"""加密流量分类器 —— 基于首包熵值和流图特征的轻量级分类。
+"""加密流量分类器 —— 首包熵值+流图特征的轻量级分类。
 
 参考：
-- ECHO (2024): Non-uniformity is All You Need — 首N包非均匀分箱
-- FG-SAT (IEEE TIFS 2025): 流图结构特征 + JS散度特征选择
-- MH-Net (arXiv:2501.03279, AAAI 2025): 多视图异构图流量建模
-- arXiv:2407.19687: 两级明文/密文流量分类策略
+- ECHO (2024): 非均匀性即所需 —— 首N包非均匀分箱
+- FG-SAT (IEEE TIFS 2025): 流图结构特征+JS散度特征选择
+- MH-Net (AAAI 2025): 多视图异构图流量建模
+- 两级明文/密文流量分类策略
 
 设计目标：不依赖深度包检测，仅用包时序、长度序列、熵分布
 构建分类特征。适用于TLS1.3/QUIC等全加密场景。
@@ -18,19 +17,19 @@ from statistics import mean, stdev, median
 
 
 # 包长度熵分箱 —— ECHO论文中的非均匀分箱策略
-# 将包长度空间按常见MTU边界分为13个桶，减少稀疏性
+# 将包长空间按常见MTU边界分为13个桶，减少稀疏性
 _LEN_BINS = [
     (0, 63), (64, 127), (128, 255), (256, 511),
     (512, 767), (768, 1023), (1024, 1279), (1280, 1400),
     (1401, 1410), (1411, 1460), (1461, 1500), (1501, 9000),
 ]
 
-# 首包数量（ECHO的最优观测窗 — 20-40包在精度/延迟间取得平衡）
+# 首包数量（ECHO的最优观测窗——20-40包在精度/延迟间取得平衡）
 _FIRST_N_PACKETS = 30
 
 @dataclass
 class FlowFeatures:
-    """流的统计特征向量 —— 用于后续分类器输入"""
+    """流的统计特征向量 —— 分类器输入"""
     flow_key: str = ""
     pkt_count: int = 0
     byte_count: int = 0
@@ -40,13 +39,13 @@ class FlowFeatures:
     len_std: float = 0.0
     len_min: int = 0
     len_max: int = 0
-    len_entropy: float = 0.0        # 包长度分布的香农熵
-    # 包间到达时间(IAT)统计 —— 对交互式/流媒体/批量传输区分度高
+    len_entropy: float = 0.0        # 包长度分布香农熵
+    # IAT统计 —— 对交互式/流媒体/批量传输区分度高
     iat_mean: float = 0.0
     iat_std: float = 0.0
     iat_min: float = 0.0
     iat_max: float = 0.0
-    # 首N包特征 —— FG-SAT的核心观察：前30包已包含足够的流结构信息
+    # 首N包特征 —— FG-SAT核心观察：前30包已含足够流结构信息
     first_n_lens: List[int] = field(default_factory=list)
     first_n_iats: List[float] = field(default_factory=list)
     # 分箱特征
@@ -54,17 +53,17 @@ class FlowFeatures:
     # 方向特征
     out_pkt_ratio: float = 0.0       # 出方向包占比
     out_byte_ratio: float = 0.0      # 出方向字节占比
-    # 突发特征 —— QUIC/HTTP3的短突发是WF攻击的主要信号[arXiv:2401.06657]
+    # 突发特征 —— QUIC/HTTP3短突发是WF攻击主要信号
     burst_count: int = 0              # 突发块数量
     burst_len_max: int = 0           # 最大突发长度
 
 
 class EntropyBasedClassifier:
-    """基于信息熵的轻量级加密流量分类器。
+    """基于信息熵的轻量加密流量分类器。
 
     核心假设：不同应用类型在加密后仍保持显著不同的包长度和时序分布。
-    不使用任何ML框架依赖 —— 纯统计，资源受限可用。
-    [Korea Univ. 2025]：表格化流量数据上XGBoost与DL精度相当。"""
+    纯统计实现，零ML框架依赖，资源受限可用。
+    表格化流量数据上XGBoost与DL精度相当。[Korea Univ. 2025]"""
 
     # 类别原型 —— 基于公开数据集统计的先验分布
     _PROTOTYPES: Dict[str, Dict[str, Tuple[float, float]]] = {
@@ -95,10 +94,10 @@ class EntropyBasedClassifier:
     }
 
     def classify(self, features: FlowFeatures) -> Dict[str, Any]:
-        """基于特征向量匹配最接近的应用类别原型。
+        """基于特征向量匹配最近应用类别原型。
 
-        使用加权欧氏距离 —— 各维度的权重基于该维度在原型的区分度
-        （原型区间宽度越窄的维度，权重越高）。
+        加权欧氏距离 —— 各维度权重基于该维度在原型中的区分度
+        （原型区间越窄的维度，权重越高）。
         """
         raw_scores: Dict[str, float] = {}
         for cls_name, proto in self._PROTOTYPES.items():
@@ -112,7 +111,7 @@ class EntropyBasedClassifier:
                 center = (lo + hi) / 2.0
                 half_range = max((hi - lo) / 2.0, 0.001)
                 norm_dist = max(0.0, abs(fv - center) - half_range) / half_range
-                # 区间窄 → 权重高（该维度对类别区分力强）
+                # 区间窄 → 权重高（该维度区分力强）
                 weight = 1.0 / max((hi - lo), 1)
                 dist += norm_dist * weight
                 used_dims += 1
@@ -125,7 +124,7 @@ class EntropyBasedClassifier:
         best = max(raw_scores, key=raw_scores.get)
         best_score = raw_scores[best]
         runner_up = sorted(raw_scores.values(), reverse=True)[1] if len(raw_scores) > 1 else 0.0
-        # 置信度 = 最佳分与次佳分之差（差值大 → 确信；接近 → 不确定）
+        # 置信度 = 最佳分与次佳分之差（差值大→确信；接近→不确定）
         confidence = best_score - runner_up + 0.3
         return {
             "class": best if confidence > 0.3 else "unknown",
@@ -138,8 +137,8 @@ class FlowGraphBuilder:
     """从包序列构建流图特征 —— FG-SAT核心方法。
 
     将流表示为有向图：节点=包（按长度分箱），边=包间时序关系。
-    提取图的度分布、聚类系数、平均路径长度等结构特征。
-    引用：FG-SAT (IEEE TIFS 2025) 使用GraphSAGE+GAT处理此类图结构。
+    提取度分布、尺寸变化率等结构特征。
+    FG-SAT (IEEE TIFS 2025)使用GraphSAGE+GAT处理此类图结构。
     """
 
     @staticmethod
@@ -147,7 +146,7 @@ class FlowGraphBuilder:
                        packet_times: List[float]) -> Dict[str, float]:
         """从包长度和时间戳序列提取流图统计特征。
 
-        时间复杂度O(n²) —— 对首N包窗口可接受(n≤30)。
+        时间复杂度O(n) —— 对首N包窗口可接受(n≤30)。
         """
         n = min(len(packet_lens), _FIRST_N_PACKETS)
         if n < 3:
@@ -156,7 +155,7 @@ class FlowGraphBuilder:
         lens = packet_lens[:n]
         times = packet_times[:n] if len(packet_times) >= n else [float(i) for i in range(n)]
 
-        # 构建邻接关系：相邻包之间有向边（方向由尺寸变化决定）
+        # 构建邻接：相邻包间有向边（方向由尺寸变化决定）
         edges = 0
         for i in range(n - 1):
             if abs(lens[i] - lens[i + 1]) > 100:
@@ -168,14 +167,14 @@ class FlowGraphBuilder:
             out_deg[i] += 1
             in_deg[i + 1] += 1
 
-        avg_out = sum(out_deg) / len(out_deg) if out_deg else 0.0  # 直接除——避免statistics导入路径差异
+        avg_out = sum(out_deg) / len(out_deg) if out_deg else 0.0
 
         # 尺寸变化率 —— 流图边的权重代理
         size_deltas = [abs(lens[i+1] - lens[i]) for i in range(n - 1)]
         mean_delta = mean(size_deltas) if size_deltas else 0.0
         try:
             std_delta = stdev(size_deltas) if len(size_deltas) >= 2 else 0.0
-        except:    # 单元素序列方差未定义
+        except Exception:
             std_delta = 0.0
 
         # 包长度分布JS散度（前半vs后半） —— 检测流量模式变化
@@ -206,14 +205,14 @@ class FlowGraphBuilder:
 
 
 class EncryptedTrafficClassifier:
-    """加密流量分类流水线 —— 特征提取 + 流图构建 + 原型匹配。
+    """加密流量分类流水线 —— 特征提取+流图构建+原型匹配。
 
     架构：
     1. FlowFeatureExtractor: 从原始包列表提取统计特征
     2. FlowGraphBuilder: 构建流图结构特征
     3. EntropyBasedClassifier: 原型匹配分类
 
-    无外部ML依赖。可插拔替换第3步为任意sklearn/ONNX分类器。
+    零外部ML依赖。第三步可插拔替换为sklearn/ONNX分类器。
     """
 
     def __init__(self):
@@ -287,7 +286,7 @@ class EncryptedTrafficClassifier:
             out_bytes = sum(packet_lens[i] for i in range(n) if directions[i] == 0)
             feats.out_byte_ratio = out_bytes / max(feats.byte_count, 1)
 
-        # 突发检测 —— 连续的出方向包构成一个突发
+        # 突发检测 —— 连续出方向包构成突发
         if directions:
             in_burst = False
             burst_lens = []
@@ -318,7 +317,7 @@ class EncryptedTrafficClassifier:
         feats = self.extract_features(flow_key, packet_lens, packet_times, directions)
         graph_feats = self._graph_builder.build_features(packet_lens, packet_times)
 
-        # 将图形特征合并到FlowFeatures（动态属性注入）
+        # 图形特征合并到FlowFeatures（动态属性注入）
         for k, v in graph_feats.items():
             setattr(feats, k, v)
 

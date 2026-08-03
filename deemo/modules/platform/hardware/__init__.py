@@ -1,5 +1,3 @@
-# 2026-07-15
-
 _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
     "SpectreGadgetDetector": (".spectre_detector", "SpectreGadgetDetector"),
     "SpectreGadget": (".spectre_detector", "SpectreGadget"),

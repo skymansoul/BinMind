@@ -1,13 +1,11 @@
-# 2026-07-28
-"""Bounded model checking for patch correctness — ESBMC-AI [AST 2025] inspired.
+"""补丁正确性有界模型检查 — ESBMC-AI [AST 2025] 范式。
 
-ESBMC-AI 结合 LLM 和 bounded model checking (BMC) 进行自愈代码修复。
-本模块实现 ESBMC 风格的轻量 BMC 框架：为 patch 构造 assertion-based
-验证条件，通过符号枚举进行属性检查。
+ESBMC 风格轻量 BMC 框架：为 patch 构造 assertion-based
+验证条件，符号枚举执行属性检查。
 
-不绑定外部 SMT solver，自包含推理引擎。
-检查的属性:
-  1. 数组访问在界内 (bounds check)
+不绑定外部 SMT solver，自包含推理。
+检查四大属性:
+  1. 数组访问界内 (bounds check)
   2. 指针非 NULL 后解引用 (null check)
   3. 算术运算无溢出 (overflow check)
   4. 资源分配后无泄漏 (leak check)
@@ -29,18 +27,18 @@ class PropertyStatus(IntEnum):
 
 @dataclass
 class VerificationCondition:
-    """单个验证条件 — ESBMC 风格的 {property, bound, check} 三元组。"""
+    """单个验证条件 — {property, bound, check} 三元组。"""
     property_name: str
     description: str = ""
-    bound: int = 10  # loop/recursion unrolling bound
-    expected: bool = True  # expected check result
+    bound: int = 10  # 循环/递归展开上界
+    expected: bool = True  # 预期检查结果
     actual: PropertyStatus = PropertyStatus.UNKNOWN
     counterexample: str = ""
 
 
 @dataclass
 class ModelCheckingReport:
-    """BMC 验证报告 — ESBMC-AI 风格的 structured output。"""
+    """BMC 验证报告 — 结构化输出。"""
     patch_id: str = ""
     patch_code: str = ""
     conditions: List[VerificationCondition] = field(default_factory=list)
@@ -49,7 +47,7 @@ class ModelCheckingReport:
     failed: int = 0
     unknown: int = 0
     bound_exhausted: int = 0
-    overall_verdict: str = ""  # "verified", "falsified", "inconclusive"
+    overall_verdict: str = ""  # 三态裁定: verified / falsified / inconclusive
     counterexamples: List[str] = field(default_factory=list)
     verification_time_ms: float = 0.0
 
@@ -66,33 +64,33 @@ class ModelCheckingReport:
         }
 
 
-# ── 验证规则 ──────────────────────────────────────────────────────────
-# 每条规则: (property_name, 检测 regex, 约束条件描述, bound)
-# ESBMC-AI 对应的四大属性类
+# ── 验证规则集 ────────────────────────────────────────────────────────
+# 每条规则: (property_name, 检测 regex, 约束描述, bound)
+# 对应四大属性类
 
 _VERIFICATION_RULES = [
-    # Property 1: 数组边界检查
+    # 属性 1: 数组边界检查
     ('array_bounds', [
         (r'(\w+)\s*\[(\w+)\]\s*=', 'write to array index'),
         (r'(\w+)\s*\[(\d+)\]', 'literal index — always safe'),
         (r'(\w+)\s*\[(\w+)\s*[\+\-\*/]\s*(\w+)\]',
          'computed index — needs bounds check'),
     ]),
-    # Property 2: NULL 指针检查
+    # 属性 2: NULL 指针检查
     ('null_pointer', [
         (r'\*(\w+)\s*=', 'dereference before NULL check?'),
         (r'(\w+)\s*=\s*NULL', 'NULL assignment'),
         (r'if\s*\(\s*(\w+)\s*!=\s*NULL\s*\)', 'NULL guard present'),
         (r'if\s*\(\s*!\s*(\w+)\s*\)', 'implicit NULL guard'),
     ]),
-    # Property 3: 整数溢出检查
+    # 属性 3: 整数溢出检查
     ('integer_overflow', [
         (r'(\w+)\s*\+\s*(\w+)', 'addition — overflow possible'),
         (r'(\w+)\s*\*\s*(\w+)', 'multiplication — overflow possible'),
         (r'if\s*\(.*>\s*(?:INT_MAX|UINT_MAX|SIZE_MAX)', 'overflow guard'),
         (r'__builtin_(?:add|sub|mul)_overflow', 'builtin overflow check'),
     ]),
-    # Property 4: 内存泄漏检查
+    # 属性 4: 内存泄漏检查
     ('memory_leak', [
         (r'(?:malloc|calloc|realloc)\s*\(', 'allocation'),
         (r'free\s*\(', 'deallocation'),
@@ -100,7 +98,7 @@ _VERIFICATION_RULES = [
     ]),
 ]
 
-# 常见反例模式
+# 反例检测模式
 _COUNTEREXAMPLE_PATTERNS = [
     (r'(\w+)\s*\[(\d+)\]\s*=\s*\w+;\s*\n(?!.*\2\s*[<>=])',
      'array write without bounds check on line before'),
@@ -114,10 +112,10 @@ _COUNTEREXAMPLE_PATTERNS = [
 
 
 class BoundedModelChecker:
-    """ESBMC-AI 风格有界模型检查器。
+    """有界模型检查器 — ESBMC 范式。
 
-    对 C 伪代码进行静态分析，检查常见的补丁正确性属性。
-    bound 参数控制搜索深度（类比 ESBMC 的 loop unrolling bound）。
+    对 C 伪代码静态分析，检查补丁正确性属性。
+    bound 参数控制搜索深度（对应 loop unrolling bound）。
     """
 
     def __init__(self, bound: int = 10):
@@ -135,11 +133,11 @@ class BoundedModelChecker:
 
         _rpt = ModelCheckingReport(patch_id=patch_id, patch_code=patch_code)
 
-        # 规范化代码
+        # 代码规范化
         _norm_patch = self._normalize_code(patch_code)
         _norm_orig = self._normalize_code(original_code) if original_code else ""
 
-        # 逐属性检查
+        # 逐属性遍历
         for _prop, _patterns in self._rules:
             _vc = VerificationCondition(
                 property_name=_prop,
@@ -165,7 +163,7 @@ class BoundedModelChecker:
 
             _rpt.conditions.append(_vc)
 
-        # 判定结论
+        # 综合裁定
         if _rpt.failed == 0 and _rpt.unknown == 0:
             _rpt.overall_verdict = "verified"
         elif _rpt.failed > 0:
@@ -179,11 +177,11 @@ class BoundedModelChecker:
     # ── 规范化 ────────────────────────────────────────────────────────
 
     def _normalize_code(self, code: str) -> str:
-        """代码规范化 — 移除注释、统一空白。"""
-        # 移除 C 风格注释
+        """代码规范化 — 剥离注释，折叠空白。"""
+        # 剥离 C 风格注释
         _code = re.sub(r'//[^\n]*', '', code)
         _code = re.sub(r'/\*.*?\*/', '', _code, flags=re.DOTALL)
-        # 统一空白
+        # 折叠连续空白为单空格
         _code = re.sub(r'\s+', ' ', _code)
         return _code.strip()
 
@@ -209,8 +207,8 @@ class BoundedModelChecker:
 
     def _check_array_bounds(self, patch_code: str,
                            original_code: str) -> Tuple[PropertyStatus, str]:
-        """检查数组访问的边界安全性。"""
-        # 查找数组写入操作
+        """数组边界安全性检查。"""
+        # 提取数组写入操作
         _writes = re.findall(r'(\w+)\s*\[(\d+)\]\s*=', patch_code)
         if not _writes:
             return PropertyStatus.PASS, ""
@@ -219,7 +217,7 @@ class BoundedModelChecker:
         _details = []
         for _arr, _idx_str in _writes:
             _idx = int(_idx_str)
-            # 检查该数组是否有边界检查
+            # 验证该数组的边界守卫是否存在
             _guard = re.search(
                 r'if\s*\(.*' + re.escape(_arr) + r'.*[<>=].*\d+\)',
                 patch_code)
@@ -236,12 +234,12 @@ class BoundedModelChecker:
 
     def _check_null_pointer(self, patch_code: str,
                            original_code: str) -> Tuple[PropertyStatus, str]:
-        """检查指针解引用前是否有 NULL 检查。"""
-        # 查找所有 *ptr = value 写入
+        """NULL 检查 — 解引用前是否有空指针守卫。"""
+        # 提取所有 *ptr = value 写入
         _derefs = re.findall(r'\*(\w+)\s*=', patch_code)
 
         for _ptr in _derefs:
-            # 查找在该指针解引用之前的 NULL 检查
+            # 检索该指针的 NULL 守卫
             _guard = re.search(
                 r'if\s*\(.*' + re.escape(_ptr) + r'\s*!=\s*NULL\s*\)',
                 patch_code)
@@ -255,12 +253,12 @@ class BoundedModelChecker:
 
     def _check_integer_overflow(self, patch_code: str,
                                original_code: str) -> Tuple[PropertyStatus, str]:
-        """检查整数运算的溢出保护。"""
-        # 查找可能溢出的运算
+        """整数溢出保护检查。"""
+        # 提取可能溢出的加减乘运算
         _adds = re.findall(r'(\w+)\s*\+\s*(\w+)', patch_code)
         _muls = re.findall(r'(\w+)\s*\*\s*(\w+)', patch_code)
 
-        # 检查是否有溢出保护
+        # 验证溢出守卫或 builtin 是否存在
         _guard = re.search(
             r'if\s*\(.*>\s*(?:INT_MAX|UINT_MAX|SIZE_MAX|0x[7F]+)',
             patch_code)
@@ -274,7 +272,7 @@ class BoundedModelChecker:
 
     def _check_memory_leak(self, patch_code: str,
                           original_code: str) -> Tuple[PropertyStatus, str]:
-        """检查内存分配/释放配对。"""
+        """内存分配/释放配对验证。"""
         _allocs = len(re.findall(r'(?:malloc|calloc|realloc)\s*\(', patch_code))
         _frees = len(re.findall(r'free\s*\(', patch_code))
 
@@ -282,7 +280,7 @@ class BoundedModelChecker:
             _missing = _allocs - _frees
             return PropertyStatus.FAIL, "{} allocations without matching free".format(_missing)
         elif _allocs == 0:
-            return PropertyStatus.PASS, ""  # 没有分配操作
+            return PropertyStatus.PASS, ""  # 无分配操作，跳过检查
         return PropertyStatus.PASS, ""
 
 

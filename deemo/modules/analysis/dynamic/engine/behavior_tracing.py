@@ -1,4 +1,4 @@
-# Entry-point: BehaviorTracer with string-level pattern matching and typed report output.
+# Entry-point: BehaviorTracer string-level pattern matching typed 报告 输出
 
 import os
 import logging
@@ -7,10 +7,10 @@ __log = logging.getLogger(__name__)
 
 
 class BehaviorTracer:
-    """Binary feature scanner — matches API import strings against a behavior taxonomy."""
+    """Binary feature scanner — 匹配 API import strings against a behavior taxonomy"""
 
     def __init__(self):
-        """Seed the pattern library with categorized I/O, network, process, and registry signatures."""
+        """Seed pattern library categorized /O, 网络, process, registry 签名s"""
         self.patterns = [
             {'pattern': 'socket',       'type': 'Network',  'description': 'Network socket operation'},
             {'pattern': 'connect',      'type': 'Network',  'description': 'Network connection attempt'},
@@ -45,11 +45,11 @@ class BehaviorTracer:
         self.behaviors = []
 
     def trace(self, binary_path, output_dir=None):
-        """Scan binary for pattern matches; optionally emit a grouped report to disk."""
+        """Scan binary for pattern 匹配; optionally emit a grouped 报告 disk"""
         try:
             self.behaviors = []
 
-            # Latin-1: safe superset for arbitrary byte sequences in binaries.
+            # Latin-1: safe superset for arbitrary byte sequences binaries
             with open(binary_path, 'rb') as f:
                 content = f.read().decode('latin-1', errors='ignore')
 
@@ -70,7 +70,7 @@ class BehaviorTracer:
                     f.write(f"Binary: {binary_path}\n")
                     f.write(f"Behaviors Detected: {hit_count}\n\n")
 
-                    # Partition matched behaviors by category for structured output.
+                    # Partition matched behaviors category for structured 输出
                     by_type = {}
                     for behavior in self.behaviors:
                         behavior_type = behavior['type']
@@ -119,6 +119,6 @@ class BehaviorTracer:
 
 
 def trace_behavior(binary_path, output_dir=None):
-    """Backward-compatible entry: instantiate tracer and delegate."""
+    """Backward-compatible entry: instantiate tracer delegate"""
     tracer = BehaviorTracer()
     return tracer.trace(binary_path, output_dir)

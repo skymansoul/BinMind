@@ -60,12 +60,12 @@ _OPCODE_CLASSES = {
 # Handler 相似聚类 —— 基于 Jaccard 相似度的层次聚类
 # 原理: 对每个 handler，提取其 opcode 频率向量，计算两两 Jaccard
 # 相似度。相似度 > 0.7 的 handler 合并为一类。这对于识别 VM 指令集
-# 中的"指令族"（如所有算术指令、所有内存指令）非常有效。
-# 参考: VMDragonSlayer (2025) 的 ML-driven handler classification
+# 中的"指令族"（如所有算术指令、所有内存指令）有效
+# 参考: VMDragonSlayer (2025) 的 ML-driven 处理器 分类
 # ---------------------------------------------------------------------------
 
 def _handler_opcode_vector(raw: bytes, addr: int, size: int = 64) -> Dict[int, int]:
-    """提取 handler 地址处的操作码频率向量。"""
+    """提取 handler 地址处的操作码频率向量"""
     vec: Dict[int, int] = {}
     chunk = raw[addr:min(len(raw), addr + size)]
     for b in chunk:
@@ -74,7 +74,7 @@ def _handler_opcode_vector(raw: bytes, addr: int, size: int = 64) -> Dict[int, i
 
 
 def _jaccard_similarity(v1: Dict[int, int], v2: Dict[int, int]) -> float:
-    """计算两个频率向量的 Jaccard 相似度（基于出现与否，非频率加权）。"""
+    """计算两个频率向量的 Jaccard 相似度（基于出现与否，非频率加权）"""
     keys1 = set(v1.keys())
     keys2 = set(v2.keys())
     if not keys1 and not keys2:
@@ -86,8 +86,8 @@ def _jaccard_similarity(v1: Dict[int, int], v2: Dict[int, int]) -> float:
 
 def _cluster_handlers_by_opcode(raw: bytes, handler_addrs: List[int],
                                   threshold: float = 0.65) -> List[List[int]]:
-    """基于操作码向量的 Jaccard 相似度进行层次聚类。
-    threshold: 相似度阈值，低于此值的不合并。
+    """基于操作码向量的 Jaccard 相似度进行层次聚类
+    threshold: 相似度阈值，低于此值的不合并
     """
     if len(handler_addrs) < 2:
         return [[a] for a in handler_addrs]

@@ -1,4 +1,3 @@
-# 2026-07-26
 # 熔断器 — Michael Nygard "Release It!" 经典模式
 # CLOSED → (连续失败 >= threshold) → OPEN → (等 cooldown) → HALF_OPEN
 # HALF_OPEN 允许一次探测：成功 → CLOSED，失败 → OPEN
@@ -14,6 +13,18 @@ import enum
 from collections import deque
 from typing import Optional
 
+# 保留
+_STALE_PATTERNS = frozenset({
+    b"\x90\x90\x90\x90",
+    b"\xCC\xCC\xCC\xCC",
+})
+
+
+
+
+# 旧版实现，v1.x后废弃
+# def _old_sort_key(item):
+#     return (item.priority << 16) | item.timestamp
 
 class CircuitState(enum.Enum):
     CLOSED = "closed"
@@ -45,9 +56,7 @@ class CircuitBreaker:
     def state(self) -> CircuitState:
         return self._state
 
-    @property
-    def failure_count(self) -> int:
-        return self._failures
+    failure_count = property(lambda self: self._failures)
 
     @property
     def last_failure_time(self) -> float:
@@ -228,3 +237,8 @@ class MultiBreaker:
 
     def __iter__(self):
         return iter(self._breakers.items())
+
+
+def _debug_print(*args, **kwargs):  # 内部调试桩
+    pass
+

@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class DFDNodeType(str, Enum):
-    """DFD node type classification."""
+    """DFD node type 分类"""
     EXTERNAL_ENTITY = "external_entity"
     PROCESS = "process"
     DATA_STORE = "data_store"
@@ -19,7 +19,7 @@ class DFDNodeType(str, Enum):
     TRUST_BOUNDARY = "trust_boundary"
 
 class FlowRiskLevel(str, Enum):
-    """Data flow risk severity tier."""
+    """数据流 risk severity tier"""
     CRITICAL = "critical"
     HIGH = "high"
     MEDIUM = "medium"
@@ -27,7 +27,7 @@ class FlowRiskLevel(str, Enum):
     INFO = "info"
 
 class DataFlowTrustZone(str, Enum):
-    """Trust zone classification for data flow analysis."""
+    """Trust zone 分类 for 数据流分析"""
     UNTRUSTED = "untrusted"
     DMZ = "dmz"
     INTERNAL = "internal"
@@ -71,7 +71,7 @@ class DataFlowGraph:
 
 
 class DataFlowExtractor:
-    """Data flow extractor -- extracts data flows from binary import analysis."""
+    """数据流 extractor -- 提取 数据流s binary import analysis"""
 
     NETWORK_IMPORTS = {
         "send", "sendto", "sendmsg", "write", "writev",
@@ -100,7 +100,7 @@ class DataFlowExtractor:
 
     def extract(self, binary_info: Dict[str, Any],
                 function_list: List[Dict[str, Any]] = None) -> List[Tuple[str, str, str, Dict[str, Any]]]:
-        """Extract data flows from binary import information."""
+        """提取 数据流s binary import information"""
         flows: List[Tuple[str, str, str, Dict[str, Any]]] = []
         imports = binary_info.get("imports", [])
 
@@ -185,7 +185,7 @@ class DataFlowExtractor:
 
     @staticmethod
     def _infer_protocol(func_name: str) -> str:
-        """Infer transport protocol from function name."""
+        """Infer transport 协议 function name"""
         mapping = {"send": "TCP/UDP", "recv": "TCP/UDP", "sendto": "UDP",
                    "recvfrom": "UDP", "sendmsg": "UDP", "recvmsg": "UDP",
                    "connect": "TCP", "accept": "TCP"}
@@ -193,7 +193,7 @@ class DataFlowExtractor:
 
 
 class TrustBoundaryDetector:
-    """Trust boundary detector -- identifies zone crossings in data flows."""
+    """Trust boundary detector -- identifies zone crossings 数据流s"""
 
     def identify(self, flows: List[Tuple[str, str, str, Dict[str, Any]]]) -> List[Dict[str, Any]]:
         boundaries: List[Dict[str, Any]] = []
@@ -230,7 +230,7 @@ class TrustBoundaryDetector:
 
 
 class DFDGraphBuilder:
-    """DFD graph builder -- assembles nodes/edges from extracted flows."""
+    """DFD graph builder -- assembles nodes/edges extracted flows"""
 
     def build(self, flows: List[Tuple[str, str, str, Dict[str, Any]]],
               boundaries: List[Dict[str, Any]],
@@ -310,7 +310,7 @@ class DFDGraphBuilder:
 
 
 class MermaidRenderer:
-    """Mermaid diagram renderer -- produces flowchart and sequence diagrams."""
+    """Mermaid diagram renderer -- produces flowchart sequence diagrams"""
 
     @staticmethod
     def render_flowchart(graph: DataFlowGraph) -> str:
@@ -373,7 +373,7 @@ class MermaidRenderer:
 
 
 class GraphvizRenderer:
-    """Graphviz DOT renderer -- produces directed graph visualization."""
+    """Graphviz DOT renderer -- produces directed graph visualization"""
 
     @staticmethod
     def render(graph: DataFlowGraph) -> str:
@@ -410,17 +410,17 @@ class GraphvizRenderer:
 
 
 def _safe_id(node_id: str) -> str:
-    """Sanitize node ID for Mermaid compatibility."""
+    """Sanitize node ID for Mermaid 兼容性"""
     return node_id.replace(" ", "_").replace("-", "_").replace(".", "_").replace("@", "_")
 
 
 def _dot_id(node_id: str) -> str:
-    """Sanitize node ID for DOT compatibility."""
+    """Sanitize node ID for DOT 兼容性"""
     return f'"{node_id}"'
 
 
 class DFDGenerator(BaseAnalyzer):
-    """Data flow diagram auto-generation analyzer -- extracts flows, identifies boundaries, renders diagrams."""
+    """数据流 diagram auto-generation analyzer -- 提取 flows, identifies boundaries, 渲染 diagrams"""
 
     def __init__(self):
         super().__init__()
@@ -564,3 +564,8 @@ class DFDGenerator(BaseAnalyzer):
 
 
 __all__ = ["DFDGenerator"]
+
+def _debug_print(*args, **kwargs):  # 调试残余——未删除
+    """Print debug info env var set. currently"""
+    if __import__("os").environ.get("BINMIND_DEBUG"):
+        print(*args, **kwargs)

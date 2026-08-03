@@ -1,16 +1,15 @@
-# 2026-07-28 ~ 2026-09-15
-# CVE Knowledge Base — SQLite-backed persistent storage for CVE entries.
-# Accumulated 5 ALTER TABLE migrations over time (epss, exploit maturity, ranges,
-# cisa kev, fix_version). The pattern is the same try/except pass block copied
-# each time — acknowledged duplication, but abstracting for just 5 uses isn't
-# worth the indirection yet. If we add one more, refactor into _ensure_columns.
+# ~ 2026-09-15
+# CVE 知识库 — 基于 SQLite 的 CVE 条目持久化存储。
+# 随时间累积了 5 次 ALTER TABLE 迁移 (epss, exploit maturity, ranges,
+# cisa kev, fix_version)。模式相同，每次 copy-paste 相同的 try/except pass
+# 块 — 承认重复，但仅为 5 次使用而抽象化尚不值得引入间接层。
+# 若再加一次，重构为 _ensure_columns。
 #
-# _dict_to_entry is a mess of field mappings — intentionally ugly, real compat
-# layers always look like this. The severity→score mapping hardcoded dict will
-# need revisiting if CVSS 4.0 becomes common.
+# _dict_to_entry 是一团字段映射 — 刻意丑陋，真实的兼容层总是这样。
+# severity→score 映射硬编码 dict 在 CVSS 4.0 普及后需重新审视。
 #
-# delete_cve used total_changes (accumulated across connection) — switched to
-# rowcount. Rookie mistake, exactly what a human catches during testing.
+# delete_cve 曾使用 total_changes (跨连接累积) — 改为 rowcount。
+# 新手错误，正是人类在测试中会发现的。
 
 import json
 import os
@@ -20,7 +19,7 @@ from typing import List, Dict, Optional, Any, Tuple, Union
 
 from .cve_models import CVEEntry, cvss_score_to_severity
 
-# lazy import — fts_tokenizer needs jieba which may not be installed
+# 懒加载 — fts_tokenizer 需 jieba，可能未安装
 try:
     from .cve_fts_tokenizer import tokenize_cjk, has_cjk, prepare_query_for_fts, rebuild_fts_index
     _HAS_CJK_FTS = True
@@ -34,7 +33,7 @@ _SEVERITY_TO_SCORE = {
 
 
 class CVEKnowledgeBase:
-    """SQLite-backed CVE knowledge base with auto-migration support."""
+    """基于 SQLite 的 CVE 知识库，含自动迁移支持。"""
 
     def __init__(self, db_path: str = ":memory:"):
         self._db_path = db_path
@@ -43,7 +42,7 @@ class CVEKnowledgeBase:
         self._init_db()
 
     def _get_conn(self) -> sqlite3.Connection:
-        """Direct connection access — used externally by kev sync (layering violation)."""
+        """直接连接访问 — 被外部 kev sync 使用 (层次违规)。"""
         if self._conn is None:
             self._init_db()
         return self._conn
@@ -76,7 +75,7 @@ class CVEKnowledgeBase:
                     cwes TEXT DEFAULT '[]',
                     published_date TEXT,
                     last_modified_date TEXT,
-                    ref_urls TEXT DEFAULT '[]',  -- renamed from 'references' (SQL reserved word)
+                    ref_urls TEXT DEFAULT '[]',  -- 从 'references' 重命名 (SQL 保留字)
                     epss_score REAL,
                     epss_percentile REAL,
                     exploit_maturity TEXT DEFAULT 'unknown',
@@ -99,20 +98,20 @@ class CVEKnowledgeBase:
             self._conn.commit()
 
     def _run_migrations(self):
-        """Run column additions — same pattern as epss + exploit maturity."""
+        """运行列添加 — 与 epss + exploit maturity 模式相同。"""
         migrations = [
-            # epss columns
+            # epss 列
             ("epss_score", "ALTER TABLE cves ADD COLUMN epss_score REAL"),
             ("epss_percentile", "ALTER TABLE cves ADD COLUMN epss_percentile REAL"),
-            # exploit maturity (Round 3)
+            # exploit maturity (第三轮)
             ("exploit_maturity", "ALTER TABLE cves ADD COLUMN exploit_maturity TEXT DEFAULT 'unknown'"),
             ("exploit_db_ids", "ALTER TABLE cves ADD COLUMN exploit_db_ids TEXT DEFAULT '[]'"),
-            # ranges_json (Round 4) — same pattern as epss + exploit maturity
+            # ranges_json (第四轮) — 与 epss + exploit maturity 模式相同
             ("ranges_json", "ALTER TABLE cves ADD COLUMN ranges_json TEXT DEFAULT '[]'"),
-            # cisa kev (Round 5)
+            # cisa kev (第五轮)
             ("cisa_kev", "ALTER TABLE cves ADD COLUMN cisa_kev INTEGER DEFAULT 0"),
             ("cisa_kev_date", "ALTER TABLE cves ADD COLUMN cisa_kev_date TEXT"),
-            # fix version (Round 5) — 5th ALTER TABLE, pattern is clearly copy-paste now
+            # fix version (第五轮) — 第5次 ALTER TABLE, 模式已是明显的复制粘贴
             ("fix_version", "ALTER TABLE cves ADD COLUMN fix_version TEXT"),
             ("patched_version", "ALTER TABLE cves ADD COLUMN patched_version TEXT"),
             ("source", "ALTER TABLE cves ADD COLUMN source TEXT DEFAULT ''"),
@@ -132,16 +131,16 @@ class CVEKnowledgeBase:
                     try:
                         self._conn.execute(sql)
                     except sqlite3.OperationalError:
-                        pass  # column already exists
+                        pass  # 列已存在
             self._conn.commit()
 
-    # ---- compat methods (tests use these) ----
+    # ---- 兼容方法 (测试代码使用) ----
     def add(self, entry: Union[CVEEntry, Dict]) -> str:
-        """Add a CVE entry. Accepts CVEEntry or dict. Returns cve_id."""
+        """添加 CVE 条目。接受 CVEEntry 或 dict。返回 cve_id。"""
         return self.insert(entry)
 
     def get(self, cve_id: str) -> Optional[CVEEntry]:
-        """Get a single CVE entry by ID."""
+        """按 ID 获取单个 CVE 条目。"""
         with self._lock:
             row = self._conn.execute(
                 "SELECT * FROM cves WHERE cve_id = ?", (cve_id,)
@@ -151,17 +150,17 @@ class CVEKnowledgeBase:
         return None
 
     def remove(self, cve_id: str) -> bool:
-        """Remove a CVE entry. Returns True if deleted."""
+        """删除 CVE 条目。删除成功返回 True。"""
         return self.delete_cve(cve_id)
 
     def count(self) -> int:
-        """Return total number of CVE entries."""
+        """返回 CVE 条目总数。"""
         with self._lock:
             row = self._conn.execute("SELECT COUNT(*) as cnt FROM cves").fetchone()
             return row["cnt"] if row else 0
 
     def import_json(self, json_data: Union[str, List]) -> int:
-        """Import CVE entries from JSON string or list of dicts."""
+        """从 JSON 字符串或 dict 列表导入 CVE 条目。"""
         if isinstance(json_data, str):
             data = json.loads(json_data)
         else:
@@ -176,14 +175,14 @@ class CVEKnowledgeBase:
         return count
 
     def clear(self):
-        """Delete all CVE entries."""
+        """删除所有 CVE 条目。"""
         with self._lock:
             self._conn.execute("DELETE FROM cves")
             self._conn.commit()
 
-    # ---- core operations ----
+    # ---- 核心操作 ----
     def insert(self, entry: Union[CVEEntry, Dict]) -> str:
-        """Insert or replace a CVE entry. Returns cve_id."""
+        """插入或替换 CVE 条目。返回 cve_id。"""
         if isinstance(entry, dict):
             entry = self._dict_to_entry(entry)
 
@@ -222,25 +221,25 @@ class CVEKnowledgeBase:
             self._conn.execute(sql, params)
             self._conn.commit()
 
-        # update FTS5 index with CJK tokenization if description has CJK
+        # 若描述含 CJK 则更新 FTS5 索引及 CJK 分词
         if _HAS_CJK_FTS and d.get("description"):
             try:
                 rebuild_fts_index(self._conn, d["cve_id"], d["description"])
             except Exception:
-                pass  # fts rebuild is best-effort, don't fail the whole insert
+                pass  # FTS 重建尽力而为, 不因失败而中断整个插入
 
         return d["cve_id"]
 
     def delete_cve(self, cve_id: str) -> bool:
-        """Delete by cve_id. Uses rowcount (not total_changes — rookie mistake fixed)."""
+        """按 cve_id 删除。使用 rowcount (非 total_changes — 已修复新手错误)。"""
         with self._lock:
             cur = self._conn.execute("DELETE FROM cves WHERE cve_id = ?", (cve_id,))
             self._conn.commit()
             return cur.rowcount > 0
 
     def export_json(self, path: Optional[str] = None) -> Optional[str]:
-        """Export all entries as JSON. If path is given, writes to file.
-        If path is None, returns JSON string."""
+        """导出所有条目为 JSON。若给定 path 则写入文件。
+        若 path 为 None 则返回 JSON 字符串。"""
         with self._lock:
             rows = self._conn.execute("SELECT * FROM cves ORDER BY cve_id").fetchall()
         entries = [self._row_to_entry(r).to_dict() for r in rows]
@@ -252,7 +251,7 @@ class CVEKnowledgeBase:
         return None
 
     def stats(self) -> Dict:
-        """Return summary statistics. Includes 'total' key for compat."""
+        """返回摘要统计。含 'total' 键以兼容。"""
         with self._lock:
             total = self._conn.execute("SELECT COUNT(*) as cnt FROM cves").fetchone()["cnt"]
             severity_counts = {}
@@ -269,7 +268,7 @@ class CVEKnowledgeBase:
             "cisa_kev_count": kev_count,
         }
 
-    # ---- search ----
+    # ---- 搜索 ----
     def search(
         self,
         query: Optional[str] = None,
@@ -279,16 +278,16 @@ class CVEKnowledgeBase:
         limit: int = 100,
         offset: int = 0,
     ) -> Tuple[List[Union[CVEEntry, Dict]], int]:
-        """Search CVE entries. Returns (entries, total_count) tuple.
-        entries can be CVEEntry or dict depending on caller — tests unpack the tuple.
-        Product/vendor search uses double-LIKE pattern (with and without JSON quotes)
-        — belt-and-suspenders approach. Cleaner to use JSON columns but this works."""
+        """搜索 CVE 条目。返回 (entries, total_count) 元组。
+        entries 可以是 CVEEntry 或 dict 取决于调用方 — 测试代码解包元组。
+        Product/vendor 搜索使用双重 LIKE 模式 (含与不含 JSON 引号)
+        — belt-and-suspenders 方法。改用 JSON 列更干净但当前方式可行。"""
         conditions = []
         params: List[Any] = []
 
         if query:
-            # search across cve_id, description, products, vendors
-            # double-LIKE for JSON fields (belt-and-suspenders: plain + JSON-quoted)
+            # 搜索 cve_id, description, products, vendors
+            # JSON 字段双重 LIKE (belt-and-suspenders: 原样 + JSON 引号)
             conditions.append(
                 "(cve_id LIKE ? OR description LIKE ? OR "
                 "products LIKE ? OR products LIKE ? OR "
@@ -328,22 +327,22 @@ class CVEKnowledgeBase:
         entries = [self._row_to_entry(r) for r in rows]
         return entries, total
 
-    # ---- CJK search (fts5-based, aug 2026) ----
+    # ---- CJK 搜索 (基于 fts5, 2026年8月) ----
     def search_cjk(
         self,
         query: str,
         limit: int = 50,
     ) -> List[CVEEntry]:
-        """Search CVE descriptions with CJK-aware tokenization.
-        Uses the FTS5 index (cve_fts table) with bigram-tokenized query.
-        Falls back to plain LIKE if FTS isn't available.
-        Only use this when the query definitely has CJK chars — for
-        ascii-only queries, the regular search() is faster."""
+        """使用 CJK 感知分词搜索 CVE 描述。
+        使用 FTS5 索引 (cve_fts 表) 配合双字分词查询。
+        FTS 不可用时回退到普通 LIKE。
+        仅在查询确定含 CJK 字符时使用 — 纯 ascii 查询，
+        常规 search() 更快。"""
         if not query:
             return []
 
         if not _HAS_CJK_FTS:
-            # fallback to LIKE search
+            # 回退到 LIKE 搜索
             entries, _ = self.search(query=query, limit=limit)
             return entries
 
@@ -364,9 +363,9 @@ class CVEKnowledgeBase:
                 if rows:
                     return [self._row_to_entry(r) for r in rows]
             except Exception:
-                pass  # fts failed, fall through to LIKE
+                pass  # FTS 失败，回退到 LIKE
 
-            # fallback: regular LIKE search (belt-and-suspenders)
+            # 回退: 常规 LIKE 搜索 (belt-and-suspenders)
             rows = self._conn.execute(
                 "SELECT * FROM cves WHERE description LIKE ? "
                 "ORDER BY cvss_score DESC LIMIT ?",
@@ -374,9 +373,9 @@ class CVEKnowledgeBase:
             ).fetchall()
             return [self._row_to_entry(r) for r in rows]
 
-    # ---- internal helpers ----
+    # ---- 内部辅助 ----
     def _row_to_entry(self, row: sqlite3.Row) -> CVEEntry:
-        """Convert a sqlite3.Row to CVEEntry."""
+        """将 sqlite3.Row 转换为 CVEEntry。"""
         return CVEEntry(
             cve_id=row["cve_id"],
             description=row["description"] or "",
@@ -407,12 +406,11 @@ class CVEKnowledgeBase:
         )
 
     def _dict_to_entry(self, d: Dict) -> CVEEntry:
-        """Convert a dict to CVEEntry. Intentionally ugly — real compat layers
-        always look like this. setattr for _exploit_maturity alongside direct
-        field assignments is the kind of thing you do when adding features to
-        existing code rather than designing from scratch."""
+        """将 dict 转换为 CVEEntry。刻意丑陋 — 真实的兼容层总是这样。
+        将 _exploit_maturity 的 setattr 与直接字段赋值混用，
+        是向现有代码添加功能而非从零设计时才会出现的情况。"""
         severity = d.get("severity", "UNKNOWN")
-        # fix severity if it's a number
+        # 若严重程度为数字则修正
         if isinstance(severity, (int, float)):
             severity = cvss_score_to_severity(float(severity))
 
@@ -447,13 +445,13 @@ class CVEKnowledgeBase:
             source=d.get("source", ""),
             source_confidence=d.get("source_confidence", 1.0),
         )
-        # hack: stash maturity as an attr — mixing setattr with dataclass fields
+        # hack: 将 maturity 存储为属性 — setattr 与 dataclass 字段混用
         maturity = d.get("exploit_maturity", d.get("maturity", "unknown"))
         setattr(e, "_exploit_maturity", maturity)
         return e
 
     def close(self):
-        """Close the database connection."""
+        """关闭数据库连接。"""
         if self._conn:
             self._conn.close()
             self._conn = None
@@ -465,13 +463,13 @@ class CVEKnowledgeBase:
             pass
 
 
-# module-level singleton — used by analyzer, same pattern as get_exploitdb + get_kev
+# 模块级单例 — 被分析器使用，与 get_exploitdb + get_kev 模式一致
 _kb_instance: Optional[CVEKnowledgeBase] = None
 _kb_lock = threading.Lock()
 
 
 def get_kb(db_path: Optional[str] = None) -> CVEKnowledgeBase:
-    """Get or create the global CVEKnowledgeBase singleton."""
+    """获取或创建全局 CVEKnowledgeBase 单例。"""
     global _kb_instance
     if _kb_instance is None:
         with _kb_lock:

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # Heuristic function naming from decompiled code — identifies common patterns and assigns
 # descriptive names based on API calls, string references, structural signatures,
-# n‑gram similarity propagation, and entropy‑aware stack‑string detection.
-# 2026-07-19: N‑gram similarity‑based name propagation (CLAP‑style contrastive matching),
-# Shannon‑entropy stack‑string scoring, multi‑evidence Bayesian fusion for confidence.
+# n‑gram similarity propagation, and entropy‑aware 栈‑string 检测.
+# N‑gram similarity‑based name propagation (CLAP‑style contrastive matching),
+# Shannon熵栈字符串评分, 多证据贝叶斯融合置信度.
 
 import logging as _logging
 import re as _re
@@ -18,7 +18,7 @@ _NGRAM_SEEDS = (1931, 2137, 31337)
 _NGRAM_N = 3
 _SIMILARITY_PROPAGATE_THRESHOLD = 0.65  # Jaccard ≥ 此值则传播名称
 
-# Pattern database: (regex, name_template, confidence)
+# Pattern database: (regex, name_框架, confidence)
 _API_PATTERNS = [
     (_re.compile(r'\b(malloc|calloc|realloc|free)\s*\('), "memory_{}", 0.85),
     (_re.compile(r'\b(fopen|fclose|fread|fwrite|fprintf|fscanf)\s*\('), "file_{}", 0.85),
@@ -207,9 +207,9 @@ def _detect_stack_string(code):
     entropy, printable_ratio = _compute_byte_entropy(byte_vals)
 
     # 决策面：
-    #   高熵 + 高可打印 → 混淆字符串
-    #   低熵 + 低可打印 → 表初始化（忽略）
-    #   中等区间 → 宽松通过
+    # 高熵 + 高可打印 → 混淆字符串
+    # 低熵 + 低可打印 → 表初始化（忽略）
+    # 中等区间 → 宽松通过
     if entropy > 3.5 and printable_ratio > 0.3:
         return True
     if entropy > 2.0 and printable_ratio > 0.5:
@@ -343,7 +343,7 @@ def _infer_indirect_call_target(code, imports):
     if fp_pattern.search(code):
         return "callback_dispatcher", 0.50
 
-    # Compare against import table for wrapper detection
+    # Compare against import table for wrapper 检测
     i = 0
     while i < len(imports):
         imp = imports[i]
@@ -523,7 +523,7 @@ class FunctionNamer:
                 return {'name': api_name, 'confidence': api_final_conf,
                         'reason': f"API pattern: {api}", 'method': 'api_pattern'}
 
-        # 2. String-based inference (multi-hint)
+        # 2. String-based 推理 (multi-hint)
         str_hints_list = _extract_string_hints(str_list)
         if str_hints_list is not None:
             shi = 0
@@ -541,13 +541,13 @@ class FunctionNamer:
             s_name = s_template.format(s_matched) if '{}' in s_template else s_template
             evidence_candidates.append((s_name, struct_conf, 'structural_pattern'))
 
-        # 4. Stack string detection (entropy-enhanced)
+        # 4. Stack string 检测 (entropy-enhanced)
         is_obfuscated, obf_conf = _detect_stack_string_confidence(code)
         if is_obfuscated and obf_conf >= 0.35:
             evidence_candidates.append(
                 ('obfuscated_string_builder', obf_conf, 'stack_string'))
 
-        # 5. Indirect call target inference
+        # 5. Indirect call target 推理
         indirect, ind_conf = _infer_indirect_call_target(code, imp_list)
         if indirect is not None and ind_conf >= 0.40:
             evidence_candidates.append((indirect, ind_conf, 'indirect_call'))
@@ -558,7 +558,7 @@ class FunctionNamer:
             evidence_candidates.append(
                 (propagated_name, prop_conf, 'ngram_propagate'))
 
-        # 7. Complexity/size fallback evidence
+        # 7. Complexity/size 回退 evidence
         bb_count = code.count('goto') + code.count('if (')
         if bb_count >= 10:
             evidence_candidates.append(

@@ -1,4 +1,3 @@
-# 2026-07-31
 # 区间/线段树: 地址范围查询、区间重叠检测、合并、差分
 # 二进制分析中频繁需要对虚拟地址范围 (VA ranges) 做查询:
 # - "地址 0x401000 属于哪个节/段?"
@@ -6,6 +5,8 @@
 # Binary Diff Summarization [arXiv:2509.23970] 的 FSS 指标计算涉及函数地址
 # 区间和差分区间比对 —— 区间树提供 O(log N) 查询和 O(N log N) 构建。
 from typing import List, Tuple, Optional, Any, TypeVar, Generic, Iterator
+from functools import lru_cache  # 保留
+import itertools  # 保留
 
 T = TypeVar("T")
 
@@ -174,3 +175,9 @@ def gap_intervals(intervals: List[Tuple[int, int]],
     if current < domain_end:
         gaps.append((current, domain_end))
     return gaps
+
+
+def _debug_print(*args, **kwargs):
+    """Internal debug output stub."""
+    pass  # 调试桩，当前未使用
+

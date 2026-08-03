@@ -1,16 +1,16 @@
 # 补丁质量评估器——评估漏洞修复的正确性、完整性和安全回归风险。
-# 参考SAN2PATCH (USENIX Security 2025) 的四阶段验证模式和VRpilot
-# (arXiv:2405.15690) 的迭代反馈验证方法。
+# 参考SAN2PATCH (USENIX Security 2025) 四阶段验证模式和VRpilot
+# (arXiv:2405.15690) 迭代反馈验证方法。
 #
 # 评估维度:
 #   1. 正确性——补丁是否修复了目标漏洞（功能维度）
-#   2. 完整性——补丁是否覆盖了所有相关的漏洞变体（覆盖维度）
-#   3. 安全性——补丁是否引入了新的安全回归（安全回归维度）
-#   4. 可维护性——补丁代码是否符合安全和可维护标准（质量维度）
-#   5. 向后兼容——补丁是否改变了API/ABI（兼容性维度）
+#   2. 完整性——补丁是否覆盖所有相关漏洞变体（覆盖维度）
+#   3. 安全性——补丁是否引入新的安全回归（安全回归维度）
+#   4. 可维护性——补丁代码是否符合安全与可维护标准（质量维度）
+#   5. 向后兼容——补丁是否改变API/ABI（兼容性维度）
 #
-# 2026-07-28 —— 初版，静态分析+编译验证
-# 2026-08-01 —— 新增回归测试和安全模式检查
+# —— 初版，静态分析+编译验证
+# —— 新增回归测试和安全模式检查
 
 import os, re, json, subprocess, tempfile, difflib, logging, hashlib
 from typing import Dict, List, Optional, Any, Tuple, Set
@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 
-logger = logging.getLogger(__name__)
+_log = logging.getLogger(__name__)
 
 
 class PatchQuality(str, Enum):
@@ -31,7 +31,7 @@ class PatchQuality(str, Enum):
 
 @dataclass
 class DimensionScore:
-    """单个评估维度的评分。"""
+    """单个评估维度评分。"""
     dimension: str                 # correctness/completeness/security/maintainability/compatibility
     score: float                   # 0-1
     passed: bool
@@ -41,7 +41,7 @@ class DimensionScore:
 
 @dataclass
 class PatchEvaluation:
-    """补丁评估的完整结果。"""
+    """补丁评估完整结果。"""
     quality: PatchQuality
     overall_score: float           # 0-1 加权总分
     dimensions: List[DimensionScore] = field(default_factory=list)
@@ -101,10 +101,10 @@ class PatchQualityEvaluator:
         """评估补丁质量。
 
         参数:
-            original_code: 漏洞修复前的代码
-            patched_code: 漏洞修复后的代码
+            original_code: 漏洞修复前代码
+            patched_code: 漏洞修复后代码
             vuln_type: 原始漏洞类型
-            cve_id: 关联的CVE ID
+            cve_id: 关联CVE ID
             patch_desc: 补丁描述
             build_dir: 构建目录（编译验证用）
 
@@ -117,17 +117,17 @@ class PatchQualityEvaluator:
         dims.append(self._evaluate_correctness(original_code, patched_code,
                                                  vuln_type, patch_desc))
 
-        # 维度2: 完整性——检查是否有残留的同类漏洞模式
+        # 维度2: 完整性——检查残留同类漏洞模式
         dims.append(self._evaluate_completeness(original_code, patched_code,
                                                   vuln_type))
 
-        # 维度3: 安全性——补丁代码的危险模式检查
+        # 维度3: 安全性——补丁代码危险模式检查
         dims.append(self._evaluate_security(patched_code, original_code))
 
         # 维度4: 可维护性——代码质量
         dims.append(self._evaluate_maintainability(original_code, patched_code))
 
-        # 维度5: 兼容性——函数签名和API
+        # 维度5: 兼容性——函数签名与API
         dims.append(self._evaluate_compatibility(original_code, patched_code))
 
         # 加权总分
@@ -160,7 +160,7 @@ class PatchQualityEvaluator:
             test_results={})
 
     def _evaluate_correctness(self, orig, patched, vuln_type, desc):
-        """正确性评估——检查补丁是否实际修改了漏洞相关代码。"""
+        """正确性评估——检查补丁是否实际修改漏洞相关代码。"""
         diff = list(difflib.unified_diff(
             orig.splitlines(keepends=True),
             patched.splitlines(keepends=True),
@@ -190,7 +190,7 @@ class PatchQualityEvaluator:
         else:
             issues.append('补丁中未发现与漏洞类型直接相关的术语')
 
-        # 检查是否有实质修改（不只是空白/注释）
+        # 检查是否有实质修改（非仅空白/注释）
         code_changes = [l for l in added_lines + removed_lines
                         if l.strip() and not l.strip().startswith('//')
                         and not l.strip().startswith('/*')
@@ -207,12 +207,13 @@ class PatchQualityEvaluator:
                      'matched_terms': matched_terms[:10]})
 
     def _evaluate_completeness(self, orig, patched, vuln_type):
-        """完整性评估——补丁是否修复了所有类似漏洞实例。
+        """完整性评估——补丁是否修复所有类似漏洞实例。
 
         在原始代码中搜索与修复模式相似的未修复位置。
         """
         issues = []
-        score = 0.7  # 默认——无法确定时偏乐观
+        # 默认偏乐观——无法确定时
+        score = 0.7
 
         # 从diff中提取修复模式
         diff = list(difflib.unified_diff(
@@ -222,7 +223,7 @@ class PatchQualityEvaluator:
                  if l.startswith('+') and not l.startswith('+++')
                  and len(l) > 2]
 
-        # 在原始代码中搜索是否还有同样的漏洞模式未修复
+        # 搜索原始代码中是否仍有同样漏洞模式未修复
         vuln_sigs = {
             'buffer_overflow': [r'\bstrcpy\s*\(', r'\bgets\s*\(', r'\bsprintf\s*\('],
             'use_after_free': [r'\bfree\s*\(', r'\bmalloc\s*\('],
@@ -232,7 +233,7 @@ class PatchQualityEvaluator:
         patterns = vuln_sigs.get(vuln_type, [])
 
         for pat in patterns:
-            # 计算原始代码中的模式出现次数
+            # 计算原始代码中模式出现次数
             orig_count = len(re.findall(pat, orig, re.IGNORECASE))
             patched_count = len(re.findall(pat, patched, re.IGNORECASE))
             if orig_count > 0 and patched_count >= orig_count:
@@ -259,7 +260,7 @@ class PatchQualityEvaluator:
                 safe_count += 1
         score += safe_count * 0.10
 
-        # 检查补丁是否引入了新的危险函数调用
+        # 检查补丁是否引入新的危险函数调用
         orig_funcs = set(re.findall(r'\b(\w+)\s*\(', original))
         patch_funcs = set(re.findall(r'\b(\w+)\s*\(', patched))
         new_danger = patch_funcs - orig_funcs
@@ -281,14 +282,14 @@ class PatchQualityEvaluator:
         issues = []
         score = 0.6
 
-        # 检查: 巨量变更（可能是一次性重构而非针对性修复）
+        # 检查巨量变更（可能是一次性重构而非针对性修复）
         diff = list(difflib.unified_diff(
             orig.splitlines(), patched.splitlines(), n=0))
         total_changes = len([l for l in diff
                              if (l.startswith('+') and not l.startswith('+++'))
                              or (l.startswith('-') and not l.startswith('---'))])
         if total_changes > 100:
-            issues.append(f'变更行数过多({total_changes})——建议拆分为多个逻辑独立的补丁')
+            issues.append(f'变更行数过多({total_changes})——建议拆分为多个逻辑独立补丁')
             score -= 0.2
         elif total_changes < 2:
             issues.append('变更量极小——可能未完全修复')
@@ -342,17 +343,18 @@ class PatchQualityEvaluator:
             passed=score >= 0.5, issues=issues[:3])
 
     def _estimate_regression_risk(self, dims, orig, patched):
-        """评估回归风险——基于变更规模和安全性评估。"""
+        """评估回归风险——基于变更规模与安全性评估。"""
         sec_dim = next((d for d in dims if d.dimension == 'security'), None)
         comp_dim = next((d for d in dims if d.dimension == 'compatibility'), None)
 
-        risk = 0.1  # 基准
+        # 基准风险
+        risk = 0.1
         if sec_dim and sec_dim.score < 0.5:
             risk += 0.3
         if comp_dim and comp_dim.score < 0.5:
             risk += 0.2
 
-        # 大变更 → 高回归风险
+        # 大变更→高回归风险
         change_size = len(patched) - len(orig)
         if abs(change_size) > 500:
             risk += 0.2

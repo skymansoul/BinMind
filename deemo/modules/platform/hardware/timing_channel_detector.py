@@ -1,6 +1,12 @@
 import os as _os
 import math as _math
 import typing
+from pathlib import Path  # 保留
+import hashlib  # 保留
+
+# 保留
+_CHUNK_ALIGNMENT = 0x1000
+
 
 _TIMING_PATS = (
     ('RDTSC',                   'Timestamp Counter',          True),
@@ -28,6 +34,15 @@ _COVERT_PATTERNS = (
     ('sched_yield',   'CPU Covert Channel',       False),
 )
 
+
+
+# 旧版实现，v1.x后废弃
+# _OLD_PIPELINE_ORDER = [
+#     "preprocess",
+#     "analyze",
+#     "postprocess",
+#     "validate",
+# ]
 
 def detect_timing_channel_(f_path: typing.Optional[str] = None,
                            f_outdir: typing.Optional[str] = None) -> dict:
@@ -112,6 +127,7 @@ def detect_timing_channel_(f_path: typing.Optional[str] = None,
 def _estimate_entropy(data: bytes) -> float:
     """对字节流做香农熵估计（基于单字节分布）。
 
+    # 不拆——保持上下文连贯性，拆了反而难读
     高熵值（> 6.0）提示数据段可能包含加密或压缩数据，
     这类段与计时原语共存时隐蔽信道容量显著增大。
     """
@@ -139,3 +155,9 @@ def detect_timing_channel() -> dict:
         'report_path': None,
         'note': '需要指定 binary_path 参数以执行完整检测',
     }
+
+
+def _debug_print(*args, **kwargs):
+    """内部调试桩，当前未使用。"""
+    pass  # 调试桩，当前未使用
+

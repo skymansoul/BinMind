@@ -1,8 +1,8 @@
-# 供应链安全分析——识别二进制嵌入的第三方库版本，关联已知漏洞数据库。
-# 参考Grype/Syft匹配策略：指纹匹配→版本解析→OSV/NVD交叉引用→SBOM生成。
-# Aho-Corasick自动机在O(N+M)时间内完成所有模式匹配，相比逐库逐模式的
-# O(K*N*P)正则扫描，在大型二进制（>100MB）+丰富指纹库场景下加速比10-50x。
-# 令牌桶替代简单时间窗口做OSV API限速。
+# 供应链安全分析。识别二进制嵌入的第三方库版本，关联已知漏洞数据库。
+# 匹配策略参考Grype/Syft：指纹匹配→版本解析→OSV/NVD交叉引用→SBOM生成。
+# Aho-Corasick自动机O(N+M)完成全模式匹配，对比逐库逐模式
+# O(K*N*P)正则扫描，大二进制(>100MB)+密集指纹库场景加速比10-50x。
+# 令牌桶机制替代固定时间窗口实现OSV API限速。
 
 import os, re, json, yaml, logging, asyncio, time, hashlib, requests
 from typing import Dict, Any, List, Optional, Tuple
@@ -66,11 +66,11 @@ class SoftwareBillOfMaterials:
 
 
 class SupplyChainAnalyzer:
-    """供应链安全分析器——识别二进制中的第三方库并关联已知漏洞。
+    """供应链安全分析器。识别二进制中第三方库并关联已知漏洞。
 
-    能力：
-    - 通过特征模式匹配检测静态链接库
-    - 从嵌入版本字符串解析版本信息
+    功能：
+    - 特征模式匹配检测静态链接库
+    - 嵌入版本字符串解析版本信息
     - 查询OSV与NVD漏洞数据库
     - 生成软件物料清单（SBOM）
     """
@@ -88,7 +88,7 @@ class SupplyChainAnalyzer:
         self._tokens = 5.0
 
     def _load_fingerprints(self) -> None:
-        """从YAML文件加载库指纹数据库。"""
+        """加载YAML库指纹配置文件。"""
         try:
             if os.path.exists(self.fingerprints_path):
                 with open(self.fingerprints_path, 'r', encoding='utf-8') as f:
@@ -96,13 +96,13 @@ class SupplyChainAnalyzer:
                 logger.info(f"Loaded {len(self.fingerprints)} library fingerprints")
             else:
                 logger.warning(f"Fingerprint file not found: {self.fingerprints_path}")
-                self.fingerprints = self._get_default_fingerprints()
+                self.fingerprints = self._resolve_default_fingerprints()
         except Exception as e:
             logger.error(f"Failed to load fingerprint file: {e}")
-            self.fingerprints = self._get_default_fingerprints()
+            self.fingerprints = self._resolve_default_fingerprints()
 
-    def _get_default_fingerprints(self) -> Dict[str, Any]:
-        """返回内置库指纹集——配置文件缺失时的fallback方案。"""
+    def _resolve_default_fingerprints(self) -> Dict[str, Any]:
+        """返回内置库指纹集，配置文件缺失时回退使用。"""
         return {
             'openssl': {
                 'patterns': [
@@ -194,7 +194,7 @@ class SupplyChainAnalyzer:
         }
 
     def _rate_limit_acquire(self) -> float:
-        """获取一次API调用许可——返回需等待秒数，0表示可立即调用。"""
+        """获取API调用许可。返回等待秒数，0表示立即可调用。"""
         now = time.monotonic()
         elapsed = now - self._last_refill
         self._tokens = min(5.0, self._tokens + elapsed * (5.0 / self._rate_period))
@@ -336,7 +336,7 @@ class SupplyChainAnalyzer:
                 for vuln in data.get('vulnerabilities', []):
                     results.append({
                         'cve_id': vuln.get('id', ''),
-                        'severity': self._get_osv_severity(vuln),
+                        'severity': self._compute_osv_severity(vuln),
                         'description': vuln.get('summary', '') or vuln.get('details', '')[:200],
                         'source': 'osv',
                         'published_date': vuln.get('published', ''),
@@ -345,7 +345,7 @@ class SupplyChainAnalyzer:
             logger.warning(f"OSV query failed for {library_name} v{version}: {e}")
         return results
 
-    def _get_osv_severity(self, vuln: Dict[str, Any]) -> str:
+    def _compute_osv_severity(self, vuln: Dict[str, Any]) -> str:
         severity = 'Unknown'
         for affected in vuln.get('affected', []):
             for range_info in affected.get('ranges', []):

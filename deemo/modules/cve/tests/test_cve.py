@@ -1,5 +1,5 @@
-# core CVE tests — original suite (135 tests)
-# covers: models, KB CRUD, search, severity mapping, compat methods
+# CVE核心测试——原始套件（135项测试）
+# 覆盖: 模型、KB增删改查、搜索、严重度映射、兼容方法
 
 import json
 import os
@@ -12,11 +12,11 @@ from modules.cve.src.cve_models import (
 from modules.cve.src.cve_kb import CVEKnowledgeBase, get_kb
 
 
-# ---- fixture: temp DB isolation ----
+# ---- 夹具: 临时DB隔离 ----
 
 @pytest.fixture
 def kb():
-    """Create a temporary in-memory KB for isolated testing."""
+    """创建临时内存KB用于隔离测试。"""
     db = CVEKnowledgeBase(":memory:")
     yield db
     db.close()
@@ -28,7 +28,7 @@ def temp_dir():
         yield d
 
 
-# ---- Severity / CPE / Models (20 tests) ----
+# ---- Severity / CPE / 模型 (20项测试) ----
 
 class TestSeverity:
     def test_enum_values(self):
@@ -309,7 +309,7 @@ class TestKBCompat:
 
 class TestKBSchemaMigration:
     def test_epss_columns_exist(self, kb):
-        """Verify EPSS columns exist after auto-migration."""
+        """验证自动迁移后EPSS列存在。"""
         kb.insert(_make_test_entry("CVE-2024-0001"))
         e = kb.get("CVE-2024-0001")
         assert e.epss_score is None  # default

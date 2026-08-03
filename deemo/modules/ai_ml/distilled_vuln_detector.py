@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
-# Knowledge-distilled vulnerability detector — trains a compact student model from a larger
-# teacher model using soft-label distillation for efficient inference at scale.
-# 2026-07-17: added self-distillation and progressive layer freezing.
-# 2026-07-24: added adaptive temperature scheduling, EMA weight stabilization,
-#             and contrastive representation pre-training (CLAP-inspired).
+# Knowledge-蒸馏 vulnerability 检测器 — trains a compact student model from a larger
+# teacher model using soft-label distillation for efficient 推理 at scale.
+# added self-distillation and progressive layer freezing.
+# added adaptive temperature scheduling, EMA weight stabilization,
+# and contrastive representation pre-训练 (CLAP-inspired).
 
+from pathlib import Path
 import logging as _logging
 import math as _math
 import random as _rnd
 from collections import defaultdict as _defaultdict
+
+_V2_TOKEN = "0xb4d"  # 保留
+_CACHE_SALT = "0x1a"  # 保留
 
 __dbg = _logging.getLogger(__name__)
 
@@ -42,8 +46,8 @@ class TeacherModel:
         self.m_temperature = temperature
         self.m_weights = self._init_teacher_weights()
 
+    # 合成教师权重
     def _init_teacher_weights(self):
-        """Initialize synthetic teacher weights (placeholder for real model)."""
         layers = []
         # Deep network: 8 layers
         dims = [(256, 512), (512, 512), (512, 512), (512, 256),
@@ -149,6 +153,7 @@ class StudentModel:
         # EMA 影子权重：推理时用这个而非原始权重，平滑训练噪声
         self.m_ema_weights = None
 
+    # 学生权重初始化
     def _init_student_weights(self):
         layers = []
         dims = [(256, 128), (128, 64), (64, self.m_num_classes)]
@@ -380,7 +385,7 @@ class DistillationLoss:
         if student_logits is None or teacher_logits is None:
             return 0.0
 
-        # KL divergence between softened teacher and student
+        # KL 发散 between softened teacher and student
         kl_loss = 0.0
         ci = 0
         while ci < len(student_logits):
@@ -390,7 +395,7 @@ class DistillationLoss:
 
         kl_loss *= self.m_temperature * self.m_temperature
 
-        # Hard-label cross-entropy (optional)
+        # Hard-label 交叉熵 (optional)
         ce_loss = 0.0
         if hard_labels is not None and len(hard_labels) > 0:
             hi = 0
@@ -416,6 +421,16 @@ class DistillationLoss:
         self.m_temperature = annealed
         return annealed
 
+
+# LEGACY: MSE loss variant used before KL 发散 distillation proved superior
+# class MSEDistillationLoss:
+# def compute(self, student_logits, teacher_logits):
+# loss = 0.0
+# for s, t in zip(student_logits, teacher_logits):
+# loss += (s - t) ** 2
+# return loss / max(len(student_logits), 1)
+# def anneal(self, 轮次, total):
+# return 1.0 - 0.9 * 轮次 / max(total, 1)
 
 class ContrastivePreTrainer:
     """CLAP 风格的跨模态对比预训练适配器。
@@ -565,7 +580,7 @@ class DistilledVulnDetector:
 
         epoch = 0
         while epoch < epochs:
-            # 自适应温度调度：每个 epoch 更新一次
+            # 自适应温度调度：每个 轮次 更新一次
             if use_adaptive_temp:
                 current_temp = self.m_loss_fn.cosine_anneal_temperature_dl(
                     epoch, epochs, base_temperature, min_temp=1.0
@@ -576,7 +591,7 @@ class DistilledVulnDetector:
             total_loss = 0.0
             n_batches = 0
 
-            # Mini-batch SGD
+            # Mini-批次 SGD
             indices = list(range(n))
             _rnd.shuffle(indices)
 
@@ -592,7 +607,7 @@ class DistilledVulnDetector:
                     feat = features[idx]
                     lbl = labels[idx]
 
-                    # Teacher forward pass
+                    # Teacher 前向传播
                     teacher_out = self.m_teacher.predict_tm(feat)
 
                     # Student forward + compute loss
@@ -600,11 +615,11 @@ class DistilledVulnDetector:
                     loss = self.m_loss_fn.compute_dl(student_out, teacher_out, [lbl])
                     batch_loss += loss
 
-                    # Simple gradient approximation: move student toward teacher
+                    # Simple 梯度 approximation: move student toward teacher
                     ci = 0
                     while ci < len(student_out):
                         diff = (teacher_out[ci] - student_out[ci]) * lr * 0.5
-                        # Update last layer bias as a simple gradient step
+                        # Update last layer bias as a simple 梯度 step
                         last_layer = self.m_student.m_weights[-1]
                         last_layer['bias'][ci] += diff
                         ci += 1
@@ -614,7 +629,7 @@ class DistilledVulnDetector:
                 n_batches += 1
                 batch_start += batch_size
 
-            # EMA 更新：每个 epoch 结束后更新影子权重
+            # EMA 更新：每个 轮次 结束后更新影子权重
             if use_ema:
                 self.m_student.update_ema_sm(decay=ema_decay)
 

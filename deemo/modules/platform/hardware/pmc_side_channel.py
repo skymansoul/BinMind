@@ -1,4 +1,4 @@
-"""Performance Monitoring Counter (PMC) side-channel detection."""
+"""性能监控计数器（PMC）侧信道检测。"""
 
 import json
 import logging
@@ -47,10 +47,9 @@ class ExploitabilityScore:
     mann_whitney_p: float = 1.0
 
 class PMCSideChannelEvaluator:
-    """Collect hardware performance counters during cryptographic operations
-    and correlate them with secret data.
+    """在密码运算期间采集硬件性能计数器并与秘密数据做关联分析。
 
-    Usage::
+    用法::
 
         eval = PMCSideChannelEvaluator()
         score = eval.evaluate(crypto_op, secrets=[b"\\x00", b"\\xFF"])
@@ -73,11 +72,11 @@ class PMCSideChannelEvaluator:
         self._perf_available = False
         self._check_perf()
 
-    # -- main evaluate --------------------------------------------------------
+    # -- 主评估入口 --------------------------------------------------------
 
     def evaluate(self, impl: Any, secrets: Optional[List[bytes]] = None,
                  trials: int = 500) -> List[ExploitabilityScore]:
-        """Evaluate an implementation. `impl` is callable(secret) -> result."""
+        """评估实现。`impl` 为可调用对象(secret) -> result。"""
         if not callable(impl):
             scores: List[ExploitabilityScore] = []
             scores.append(ExploitabilityScore(
@@ -88,11 +87,11 @@ class PMCSideChannelEvaluator:
         secrets = secrets or [b"\x00", b"\xFF", b"\xAA", b"\x55"]
         return self._profile_callable(impl, secrets, trials)
 
-    # -- profiling ------------------------------------------------------------
+    # -- 性能剖析 ----------------------------------------------------------------
 
     def _profile_callable(self, op: Callable, secrets: List[bytes],
                           trials: int) -> List[ExploitabilityScore]:
-        """Collect PMC data per secret value and compute correlation."""
+        """采集每个秘密值的 PMC 数据并计算相关性。"""
 
         all_timings: Dict[bytes, List[float]] = defaultdict(list)
         all_icounts: Dict[bytes, List[int]] = defaultdict(list)
@@ -114,18 +113,18 @@ class PMCSideChannelEvaluator:
 
         scores: List[ExploitabilityScore] = []
 
-        # ---- Timing-based leakage ----------------------------------------------------
+        # ---- 基于时序的泄漏 ----------------------------------------------------
         timing_score = self._compute_leakage(all_timings, PMCCounterType.CYCLES)
         if timing_score.score > 0.1:
             scores.append(timing_score)
 
-        # ---- Instruction-count leakage ------------------------------------------------
+        # ---- 指令数泄漏 ----------------------------------------------------------------
         icount_score = self._compute_leakage(all_icounts, PMCCounterType.INSTRUCTIONS,
                                              is_int=True)
         if icount_score.score > 0.1 or timing_score.score <= 0.1:
             scores.append(icount_score)
 
-        # ---- Cache-related leakage --------------------------------------------------
+        # ---- 缓存相关泄漏 ----------------------------------------------------------
         if self._perf_available:
             cache_data = self._read_perf_cache()
             if cache_data:
@@ -134,7 +133,7 @@ class PMCSideChannelEvaluator:
                     if s.score > 0.05:
                         scores.append(s)
 
-        # ---- Branch prediction leakage ------------------------------------------------
+        # ---- 分支预测泄漏 ------------------------------------------------------------
         branch_variance = self._estimate_branch_misses(all_timings)
         if branch_variance > 0.15:
             scores.append(ExploitabilityScore(
@@ -156,7 +155,7 @@ class PMCSideChannelEvaluator:
     def _compute_leakage(self, data: Dict[bytes, List],
                           counter: PMCCounterType,
                           is_int: bool = False) -> ExploitabilityScore:
-        """Compute how much a counter leaks about the secret.
+        """计算计数器关于秘密值的泄漏量。
 
         增强：增加 Cohen's d、eta-squared 和 Mann-Whitney U 检验，
         作为 ANOVA F-ratio 的补充。参考 SLAD (2025) 的多维度信号评估思路。
@@ -174,10 +173,10 @@ class PMCSideChannelEvaluator:
         within_vars = [statistics.variance(v) if len(v) > 1 else 0 for v in values_list]
         within_var = statistics.mean(within_vars) if within_vars else 1e-10
 
-        # F-like ratio
+        # 类F比率
         f_ratio = between_var / max(within_var, 1e-10)
 
-        # Leaked bits: log2 of distinguishable groups
+        # 泄漏比特数：可区分组数的 log2
         distinct = sum(1 for i, a in enumerate(group_means)
                        for j, b in enumerate(group_means) if i < j and abs(a - b) > math.sqrt(max(within_var, 1)))
         leaked = math.log2(distinct + 1) if distinct > 1 else 0
@@ -214,7 +213,7 @@ class PMCSideChannelEvaluator:
         )
 
     def _estimate_branch_misses(self, timing_data: Dict[bytes, List[float]]) -> float:
-        """Estimate branch misprediction from timing variance skew."""
+        """根据时序方差偏度估算分支预测失败率。"""
         all_times = []
         for times in timing_data.values():
             all_times.extend(times)
@@ -224,7 +223,7 @@ class PMCSideChannelEvaluator:
         return min(1.0, max(0.0, abs(skewness) / 4.0))
 
     def _check_perf(self) -> None:
-        """Check if Linux perf subsystem is available."""
+        """检查 Linux perf 子系统是否可用。"""
         perf_path = "/sys/bus/event_source/devices"
         if os.path.exists(perf_path):
             self._perf_available = True
@@ -234,7 +233,7 @@ class PMCSideChannelEvaluator:
             _log.info("perf not available; using software-only metric estimation")
 
     def _read_perf_cache(self) -> Dict[PMCCounterType, Dict[bytes, List[int]]]:
-        """Stub: read real perf counters via perf_event_open."""
+        """桩：通过 perf_event_open 读取真实性能计数器。"""
         return {}
 
     @staticmethod
@@ -278,7 +277,7 @@ class PMCSideChannelEvaluator:
     @staticmethod
     def measure_cache_timing(probe_fn: Callable[[], None],
                               iterations: int = 1000) -> Dict[str, float]:
-        """Measure cache hit/miss timing for a probe function."""
+        """测量探针函数的缓存命中/缺失时序。"""
         hits = []
         for _ in range(iterations):
             probe_fn()

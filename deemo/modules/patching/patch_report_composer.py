@@ -1,20 +1,19 @@
-# 2026-08-02
-"""Patch report composer — cross-module aggregation and formatted report generation.
+"""补丁报告编排器 —— 跨模块聚合，输出格式化综合报告。
 
-将 patching 模块中所有分析的输出聚合为单一的结构化报告。
-参考 LLM-as-Judge [arXiv:2511.10865] 的评分标准思路和
+将 patching 各模块分析结果聚合为单一结构化报告。
+参考 rubric-guided 评估标准 [arXiv:2511.10865] 的思路和
 VeriBin [NDSS 2025] 的多层次报告格式。
 
-报告维度:
-  1. 补丁安全性评估 (PatchSafetyVerifier)
-  2. 栈完整性分析 (StackIntegrityChecker)
-  3. Gadget 风险评估 (GadgetChainAnalyzer)
-  4. 反编译质量评估 (DistortionDetector)
-  5. 模型检查结果 (BoundedModelChecker)
-  6. 补丁可靠性预测 (ReliabilityPredictor)
+报告维度：
+  1. 补丁安全性 (PatchSafetyVerifier)
+  2. 栈完整性 (StackIntegrityChecker)
+  3. Gadget 风险 (GadgetChainAnalyzer)
+  4. 反编译质量 (DistortionDetector)
+  5. bounded check 结果 (BoundedModelChecker)
+  6. 补丁可靠性 (ReliabilityPredictor)
   7. 综合评分与建议
 
-所有输入报告均为可选的 — 缺少某维度时标记为 "not evaluated"。
+所有输入报告均为可选 —— 缺失某维度时标记 "not evaluated"。
 """
 
 import os, json, logging, hashlib
@@ -28,9 +27,9 @@ _log_ = logging.getLogger(__name__)
 
 @dataclass
 class DimensionScore:
-    """单个评估维度的评分。"""
+    # 单个评估维度的评分
     name: str
-    score: float = 0.0          # 0..1 normalized
+    score: float = 0.0          # 0..1 归一化
     raw_score: Any = None       # 原始评分值
     status: str = "not_evaluated"  # pass, fail, warning, error, not_evaluated
     source_module: str = ""
@@ -40,7 +39,7 @@ class DimensionScore:
 
 @dataclass
 class CompositeReport:
-    """多维度的综合补丁报告。"""
+    """多维综合补丁报告。"""
     report_id: str = ""
     binary_path: str = ""
     patched_binary_path: str = ""
@@ -77,7 +76,7 @@ class CompositeReport:
         ])
 
     def to_markdown(self) -> str:
-        """Markdown 格式人类可读报告。"""
+        """Markdown 可读报告。"""
         _lines = [
             "# Binary Patch Composite Assessment Report",
             "",
@@ -123,13 +122,13 @@ class CompositeReport:
 
 
 class PatchReportComposer:
-    """综合报告编排器 — 聚合所有子模块的分析结果。
+    """综合报告编排器 —— 聚合所有子模块分析结果。
 
-    设计：与 LLM-as-Judge [arXiv:2511.10865] 类似的 rubric-guided 评估，
-    每个维度使用预设权重，生成结构化评分报告。
+    采用 rubric-guided 评估，每个维度预设权重，生成结构化评分报告。
+    参考评分标准 [arXiv:2511.10865]。
     """
 
-    # 维度权重 — 安全性占最高权重
+    # 维度权重 —— 安全性权重最高
     _DEFAULT_WEIGHTS = OrderedDict([
         ('safety',          0.25),
         ('stack_integrity', 0.15),
@@ -144,7 +143,7 @@ class PatchReportComposer:
         self._weights = weights or dict(self._DEFAULT_WEIGHTS)
 
     # ============================================================
-    # compose: 主编排 — 接受各模块的输出 raw result
+    # 主编排 —— 接受各模块输出 raw result
     # ============================================================
     def compose(self, binary_path: str = "",
                 patched_binary_path: str = "",
@@ -185,7 +184,7 @@ class PatchReportComposer:
         _d_decomp = self._eval_distortion(distortion_result)
         _dims.append(_d_decomp)
 
-        # Dimension 5: 模型检查
+        # Dimension 5: bounded check
         _d_model = self._eval_model_check(model_check_result)
         _dims.append(_d_model)
 
@@ -199,23 +198,23 @@ class PatchReportComposer:
 
         _rpt.dimensions = _dims
 
-        # 计算综合评分
+        # 综合评分
         _rpt.overall_score = self._compute_overall_score(_dims)
 
         # 评级
         _rpt.overall_grade = self._compute_grade(_rpt.overall_score)
 
-        # 收集 critical findings 和 warnings
+        # 收集 critical 与 warning
         _rpt.critical_findings = self._collect_critical(_dims)
         _rpt.warnings = self._collect_warnings(_dims)
         _rpt.recommendations = self._generate_recommendations(_dims, _rpt)
 
-        # 生成摘要
+        # 摘要
         _rpt.summary = self._generate_summary(_rpt)
 
         return _rpt
 
-    # ── 各维度评估 ────────────────────────────────────────────────────
+    # ── 各维度评估 ──────────────────────────────────────────────────
 
     def _eval_safety(self, result: Optional[Dict]) -> DimensionScore:
         _d = DimensionScore(name="Patch Safety", source_module="patch_safety_verifier",
@@ -356,7 +355,7 @@ class PatchReportComposer:
         if result is None:
             return _d
 
-        # reliability_predictor 返回的是 PredictionResult / ReliabilityReport
+        # reliability_predictor 返回 PredictionResult / ReliabilityReport
         _survival = 0.0
         if hasattr(result, 'success_rate'):
             _survival = getattr(result, 'success_rate', 0.0)
@@ -403,7 +402,7 @@ class PatchReportComposer:
 
         return _d
 
-    # ── 综合评分 ──────────────────────────────────────────────────────
+    # ── 综合评分 ────────────────────────────────────────────────────
 
     def _compute_overall_score(self, dimensions: List[DimensionScore]) -> float:
         _total_weight = 0.0
@@ -478,7 +477,7 @@ class PatchReportComposer:
                     report.overall_score, report.overall_grade))
 
 
-# ── 便捷函数 ──────────────────────────────────────────────────────────
+# ── 便捷入口 ──────────────────────────────────────────────────────
 
 def compose_patch_report(binary_path: str = "",
                          safety_result: Optional[Dict] = None,

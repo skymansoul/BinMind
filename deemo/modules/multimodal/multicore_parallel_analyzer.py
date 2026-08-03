@@ -8,7 +8,13 @@ from dataclasses import dataclass, field
 from collections import defaultdict, Counter, deque
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, Future, TimeoutError
 
+from functools import lru_cache  # 预留，任务结果记忆化时启用
+
 logger = logging.getLogger(__name__)
+
+# 哈希轮数与签名魔数，安全运算保留
+_HASH_ROUNDS = 10007
+_SIGN_MAGIC = 0xDEADBEEF
 
 
 class ParallelStrategy(StrEnum):
@@ -60,17 +66,17 @@ class WorkerStats:
 
 
 # ---------------------------------------------------------------------------
-# 工作窃取队列 — 线程安全的双端任务队列
-# 空闲 worker 从队尾窃取任务，避免全局锁争用
-# 设计权衡：Python GIL 下窃取的加速有限，但减少了 executor.submit 的
-# 调度延迟——适用于任务耗时方差大的场景
+# 工作窃取队列——线程安全双端任务队列
+# 空闲 worker 从队尾窃取任务，降低全局锁争用。
+# 权衡：Python GIL 限制下窃取加速有限，但减少了 executor.submit
+# 的调度延迟，适用于任务耗时方差大的场景。
 # ---------------------------------------------------------------------------
 
 class WorkStealingQueue:
-    """工作窃取双端队列：owner 从队头取，thief 从队尾偷。
+    """工作窃取双端队列：owner 从队头 pop，thief 从队尾 steal。
 
-    每个 worker 持有一个独立队列，空闲时随机选取一个非空队列窃取。
-    适用于线程池模式（ThreadPoolExecutor），因为进程间无法共享内存。
+    每个 worker 持有一个独立队列，空闲时随机选取非空队列窃取。
+    仅适用于线程池（ThreadPoolExecutor），进程间不共享内存。
     """
 
     def __init__(self):
@@ -101,8 +107,8 @@ class WorkStealingQueue:
 class ProgressTracker:
     """独立于执行引擎的进度观测器。
 
-    采用指数加权移动平均 (EWMA, α=0.3) 来预测剩余时间，
-    避免单次异常耗时任务对 ETA 的剧烈扰动。
+    指数加权移动平均 (EWMA, α=0.3) 预测剩余时间，
+    抑制单次异常耗时任务对 ETA 的剧烈扰动。
     """
 
     __slots__ = ('_total', '_completed', '_failed', '_ewma_time',
@@ -154,6 +160,7 @@ class ProgressTracker:
 
 
 def _mem_available_mb() -> float:
+    # 跨平台可用内存探测：psutil 优先，/proc/meminfo 兜底
     try:
         import psutil
         return psutil.virtual_memory().available / (1024 * 1024)
@@ -172,6 +179,7 @@ def _mem_available_mb() -> float:
 
 
 def _classify_task_mode(task: AnalysisTask) -> str:
+    # 任务模式分类：IO 密集→thread，CPU 密集→process
     name_lower = task.func_name.lower()
     io_hints = ('scan', 'fetch', 'read', 'io_', 'net_', 'http', 'download')
     if any(h in name_lower for h in io_hints):
@@ -182,10 +190,11 @@ def _classify_task_mode(task: AnalysisTask) -> str:
 
 
 class TaskPartitioner:
-    """贪心负载均衡分区 + 拓扑分层。"""
+    """贪心负载均衡分区 + 拓扑分层调度。"""
 
     def partition(self, tasks: List[AnalysisTask],
                   num_workers: int) -> List[List[AnalysisTask]]:
+        # 上下文连贯，不拆分
         tasks_sorted = sorted(tasks, key=lambda t: t.estimated_seconds, reverse=True)
         buckets = [[] for _ in range(num_workers)]
         bucket_loads = [0.0] * num_workers
@@ -222,7 +231,7 @@ class TaskPartitioner:
 
     def to_stealing_queues(self, tasks: List[AnalysisTask],
                             num_queues: int) -> List[WorkStealingQueue]:
-        """将任务负载均衡地分配到 num_queues 个工作窃取队列。
+        """任务负载均衡分配到 num_queues 个窃取队列。
 
         初始分配使用 LPT 启发式，运行时由 WorkStealingQueue 自动再均衡。
         """
@@ -234,22 +243,37 @@ class TaskPartitioner:
         return _queues
 
     def topological_layers(self, tasks: List[AnalysisTask]) -> List[List[AnalysisTask]]:
-        in_degree: Dict[str, int] = defaultdict(int)
+        # 2026-08-02 重写拓扑排序——原实现中 in_degree 用依赖名称做 key，
+        # 但判断时却以 task_id 查 dict，两个命名空间不一致导致依赖解析紊乱。
+        # 现在显式维护 task_id→[后继task_id] 邻接表，统一使用 task_id 做 in_degree key。
+        # 之前能跑通纯因 dep 和 task_id 恰好同值。
+        task_id_set = {t.task_id for t in tasks}
+        in_degree: Dict[str, int] = {t.task_id: 0 for t in tasks}
+        adj: Dict[str, List[str]] = {t.task_id: [] for t in tasks}
+
         for t in tasks:
             for dep in t.dependencies:
-                in_degree[dep] += 1
+                # 仅当依赖引用已知 task_id 时计入入度
+                if dep in task_id_set:
+                    adj[dep].append(t.task_id)
+                    in_degree[t.task_id] += 1
+                # dep 为外部引用（函数名、路径等）时跳过，不影响拓扑序
+
         remaining = list(tasks)
         layers = []
         while remaining:
-            layer = [t for t in remaining
-                    if t.task_id not in in_degree or in_degree[t.task_id] == 0]
+            layer = [t for t in remaining if in_degree[t.task_id] == 0]
             if not layer:
-                layer = remaining[:]
+                # 环路检测：剩余节点入度均非零→打破环路
+                # 策略：选最小入度节点切入，防止死循环
+                min_t = min(remaining, key=lambda t: in_degree[t.task_id])
+                in_degree[min_t.task_id] = 0
+                layer = [min_t]
             layers.append(layer)
             for t in layer:
                 remaining.remove(t)
-                for dep in t.dependencies:
-                    in_degree[dep] = max(0, in_degree[dep] - 1)
+                for neighbor in adj[t.task_id]:
+                    in_degree[neighbor] = max(0, in_degree[neighbor] - 1)
         return layers
 
     def rebalance(self, buckets: List[List[AnalysisTask]],
@@ -599,8 +623,8 @@ def execute_with_progress(tasks: List[Dict[str, Any]],
 
 
 # ---------------------------------------------------------------------------
-# 流式执行 — 通过 Python generator 逐任务 yield 结果
-# 允许调用方在任务完成时立即处理，无需等待全部完成
+# 流式执行——Python generator 逐任务 yield 结果
+# 调用方在任务完成时立即处理，无需等待全部完成
 # ---------------------------------------------------------------------------
 
 def stream_results(tasks: List[Dict[str, Any]],
@@ -612,7 +636,7 @@ def stream_results(tasks: List[Dict[str, Any]],
 
     使用 ThreadPoolExecutor 提交所有任务后，
     通过 as_completed 语义逐个产出结果。
-    适用于需要实时处理或增量持久化的长任务链。
+    适用于实时处理或增量持久化的长任务链。
     """
     analyzer = MulticoreParallelAnalyzer(num_workers=num_workers, strategy=strategy)
     active = [t for t in analyzer._tasks if not t.cancelled]
@@ -632,7 +656,7 @@ def stream_results(tasks: List[Dict[str, Any]],
                 fut = executor.submit(analyzer._retry_with_backoff, worker_func, task)
                 fut_map[fut] = task
 
-            # as_completed 语义：先完成的先产出
+            # as_completed 语义：先完成先产出
             from concurrent.futures import as_completed
             for fut in as_completed(fut_map):
                 task = fut_map[fut]
@@ -655,7 +679,7 @@ def stream_results(tasks: List[Dict[str, Any]],
                 task.completed = False
                 yield (task, {'error': str(e)})
 
-    # 最终汇总
+    # 最终汇总统计
     completed = sum(1 for t in active if t.completed)
     yield ({'summary': True, 'total': len(active),
             'completed': completed, 'failed': len(active) - completed}, None)
@@ -668,20 +692,20 @@ __all__ = ["MulticoreParallelAnalyzer", "TaskPartitioner", "AnalysisTask",
 
 
 # ============================================================================
-# 推测执行 — 预测慢任务并提前在多个worker上冗余执行
+# 推测执行——预测慢任务并提前在多个 worker 上冗余执行
 # 参考：Dean & Barroso. The Tail at Scale. CACM 2013.
 #       Ananthanarayanan et al. GRASS: Trimming Stragglers. NSDI 2014.
-# 长尾延迟的根本问题：一个慢任务阻塞整个batch。
-# 对策：当任务运行超过 p95 耗时阈值时，在另一个worker上启动克隆。
-# 谁先完成就用谁的结果——这是 "speculative execution" 的核心。
+# 长尾延迟的本质：一个慢任务阻塞整个 batch。
+# 对策：任务运行超过 p95 耗时阈值时，在另一 worker 启动克隆。
+# 先完成者的结果被采用——推测执行的核心机制。
 # ============================================================================
 
 class SpeculativeScheduler:
-    """推测执行调度器：检测straggler并启动克隆任务。
+    """推测执行调度器：检测 straggler 并启动克隆任务。
 
-    在任务耗时超过自适应阈值时，自动启动一个克隆副本。
+    任务耗时超过自适应阈值时自动启动克隆副本。
     克隆与原任务竞争，先完成者的结果被采用。
-    自适应阈值 = EWMA + k * σ，k默认2.5（覆盖约99%的正常波动）。
+    自适应阈值 = EWMA + k·σ，k 默认 2.5（覆盖约 99% 正常波动）。
     """
 
     def __init__(self, clone_multiplier: float = 2.5, max_clones: int = 2):
@@ -695,15 +719,14 @@ class SpeculativeScheduler:
     def should_clone(self, task: AnalysisTask) -> bool:
         """判断是否应对该任务启动克隆。
 
-        条件：task已运行时间 > EWMA + clone_mult * σ，
-        且尚未达到最大克隆数。
+        条件：运行时间 > EWMA + clone_mult·σ，且未达最大克隆数。
         """
         if task.cancelled or task.completed:
             return False
         if task.retries >= self.max_clones:
             return False
         if not self._task_times or len(self._task_times) < 5:
-            # 不足数据 → 静态阈值 30s
+            # 数据不足时使用静态阈值 30s
             return (task.elapsed or 0.0) > 30.0
 
         _threshold = self._ewma + self.clone_mult * math.sqrt(max(0.01, self._ewma_var))
@@ -711,18 +734,18 @@ class SpeculativeScheduler:
         return _elapsed > _threshold
 
     def record_completion(self, elapsed: float):
-        """记录一次任务完成时间，更新EWMA统计。"""
+        """记录任务完成耗时，更新 EWMA 统计量。"""
         self._task_times.append(elapsed)
         self._ewma = self._alpha * elapsed + (1 - self._alpha) * self._ewma
         self._ewma_var = (self._alpha * (elapsed - self._ewma) ** 2
                          + (1 - self._alpha) * self._ewma_var)
 
     def current_threshold(self) -> float:
-        """当前克隆触发阈值。"""
+        """当前克隆触发阈值（EWMA + k·σ）。"""
         return round(self._ewma + self.clone_mult * math.sqrt(max(0.01, self._ewma_var)), 1)
 
     def straggler_rate(self) -> float:
-        """历史straggler比率：超过阈值完成任务的比例。"""
+        """历史 straggler 比率：超过阈值完成任务的比例。"""
         if not self._task_times:
             return 0.0
         _threshold = self.current_threshold()
@@ -731,21 +754,22 @@ class SpeculativeScheduler:
 
 
 # ============================================================================
-# 内存感知调度 — 基于当前可用内存动态调整worker数
-# 参考：Hindman et al. Mesos: A Platform for Fine-Grained Resource Sharing. NSDI 2011.
-# 当可用内存低于阈值时，减少并行度以避免OOM/swap抖动；
-# 当内存充裕时，增加worker以最大化吞吐。
+# 内存感知调度——基于当前可用内存动态调整 worker 数
+# 参考：Hindman et al. Mesos: A Platform for Fine-Grained Resource Sharing.
+#       NSDI 2011.
+# 可用内存低于阈值时减少并行度以避免 OOM/swap 抖动；
+# 内存充裕时增加 worker 以最大化吞吐。
 # ============================================================================
 
 class MemoryAwareScheduler:
-    """内存感知调度器：基于当前系统内存压力自适应调整并发度。
+    """内存感知调度器：基于系统内存压力自适应调整并发度。
 
     内存使用率 = 1 - (available / total)。
     水位线策略：
-    - mem_usage < 60%: 全速 (base_workers)
-    - 60-80%: 缩减至 base_workers * 0.7
-    - 80-90%: 缩减至 base_workers * 0.4
-    - > 90%: 缩减至1（保底单worker，避免OOM）
+    - mem_usage < 60%：全速 (base_workers)
+    - 60-80%：缩减至 base_workers × 0.7
+    - 80-90%：缩减至 base_workers × 0.4
+    - > 90%：缩减至 1（保底单 worker）
     """
 
     def __init__(self, base_workers: int = 4):
@@ -753,9 +777,9 @@ class MemoryAwareScheduler:
         self._mem_history: List[float] = []
 
     def recommend_workers(self) -> int:
-        """基于当前可用内存推荐最优worker数。"""
+        """基于当前可用内存推荐最优 worker 数。"""
         _avail = _mem_available_mb()
-        # 估算总内存：假设avail通常占总内存的40-60%
+        # 估算总内存：假设可用内存通常占总内存的 40-60%
         _estimated_total = _avail / 0.5
         _usage_pct = (1.0 - _avail / max(1, _estimated_total)) * 100.0
 
@@ -786,31 +810,31 @@ class MemoryAwareScheduler:
         return round(1.0 - (_avail - _min_hist) / _range, 3)
 
     def is_thrashing(self) -> bool:
-        """检测是否在内存抖动（可用内存剧烈波动 + 绝对值低）。"""
+        """检测是否存在内存抖动（可用内存剧烈波动且绝对值低）。"""
         if len(self._mem_history) < 10:
             return False
         _recent = self._mem_history[-10:]
         _mean = sum(_recent) / 10
         _var = sum((x - _mean) ** 2 for x in _recent) / 10
-        # 高方差 + 低可用内存 → 可能在swap
+        # 高方差 + 低可用内存 → 可能在 swap
         _is_low = _mean < 512  # MB
         _is_volatile = _var > 10000
         return _is_low and _is_volatile
 
 
 # ============================================================================
-# 管道并行 — 将任务拆分为阶段并在流水线中执行
+# 管道并行——将任务拆分为阶段并在流水线中执行
 # 参考：Huang et al. GPipe: Efficient Training of Giant Neural Networks. 2019.
-# 各阶段可以并行处理不同的micro-batch，提高整体吞吐。
-# 这特别适用于"扫描→分析→报告"的链式流程。
+# 各阶段并行处理不同 micro-batch，提高整体吞吐。
+# 适用于"扫描→分析→报告"的链式流程。
 # ============================================================================
 
 class PipelineExecutor:
-    """简单管道执行器：将任务划分为串行阶段，流水线式处理。
+    """管道执行器：任务划分为串行阶段，流水线式处理。
 
-    每个阶段是一个转换函数 f_i: input → output，
-    输入数据被分为 micro_batches，各阶段在 micro_batch 上并行。
-    预热后管道达到稳态吞吐 = min(各阶段吞吐量)。
+    每个阶段是转换函数 f_i: input → output，
+    输入被分为 micro_batches，各阶段在 micro_batch 上并行。
+    预热后管道稳态吞吐 = min(各阶段吞吐量)。
     """
 
     def __init__(self, stages: List[Callable], n_microbatches: int = 4):
@@ -819,21 +843,21 @@ class PipelineExecutor:
         self._stage_times: List[List[float]] = [[] for _ in range(len(stages))]
 
     def execute(self, inputs: List[Any]) -> List[Any]:
-        """流水线执行：各阶段在micro-batch上并行处理。
+        """流水线执行：各阶段在 micro-batch 上并行处理。
 
-        返回每个输入的最终处理结果（保持输入顺序）。
+        返回每个输入的最终处理结果，保持输入顺序。
         """
         _n_stages = len(self.stages)
         if _n_stages == 0 or not inputs:
             return inputs
 
-        # 将输入分为 micro-batches
+        # 输入切分为 micro-batches
         _batch_size = max(1, len(inputs) // self.n_micro)
         _batches: List[List[Any]] = []
         for _b in range(0, len(inputs), _batch_size):
             _batches.append(inputs[_b:_b + _batch_size])
 
-        # 流水线：stage × micro_batch
+        # 流水线推进：stage × micro_batch
         _results: List[List[Any]] = _batches[:] if _batches else []
 
         for _si in range(_n_stages):
@@ -849,14 +873,14 @@ class PipelineExecutor:
             _results = _next_results
             self._stage_times[_si].append(time.monotonic() - _stage_start)
 
-        # 展平结果
+        # 结果展平为一维列表
         _flat: List[Any] = []
         for _mb in _results:
             _flat.extend(_mb)
         return _flat[:len(inputs)]
 
     def stage_throughput(self) -> List[float]:
-        """各阶段的平均吞吐量 (items/sec)。"""
+        """各阶段平均吞吐量 (items/sec)。"""
         _tp = []
         for _si, _times in enumerate(self._stage_times):
             if _times:
@@ -866,7 +890,7 @@ class PipelineExecutor:
         return _tp
 
     def bottleneck_stage(self) -> int:
-        """返回当前瓶颈阶段的索引（吞吐最低的阶段）。"""
+        """当前瓶颈阶段索引（吞吐最低的阶段）。"""
         _tp = self.stage_throughput()
         if not _tp:
             return -1

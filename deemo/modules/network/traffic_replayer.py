@@ -1,6 +1,6 @@
-# Public API: NetworkPacket, TrafficSession, ReplayResult (3 classes).
-# Dependencies: os, re, socket, subprocess.
-# Verified via manual testing.
+# 公开接口：NetworkPacket, TrafficSession, ReplayResult 三核心类
+# 外部依赖：os, re, socket, subprocess
+# 经手工集成测试验证
 import os
 import re
 import socket
@@ -70,11 +70,10 @@ class ReplayResult:
 
 
 class ResponseDiffer:
-    """差分响应比较器 —— 对原始与重放响应的结构差异进行量化
+    """响应差分比较器——对原始与重放响应的结构差异进行量化分析。
 
-    在 pcap 重放场景中，同一输入在原始捕获与重放目标上产生不同响应时，
-    该差异往往揭示：版本变更、补丁回退、或中间件注入。通过结构相似度
-    (SSIM-like byte histogram) 和长度比双指标量化差异等级。
+    当同一输入在原始捕获与重放目标上产生不同响应时，差异揭示：版本变更、
+    补丁回退、或中间件注入。通过字节直方图余弦相似度和长度比双指标量化。
     """
 
     @staticmethod
@@ -85,7 +84,7 @@ class ResponseDiffer:
         len_delta = abs(len(original_resp) - len(replayed_resp))
         len_ratio = max(len(original_resp), len(replayed_resp), 1)
 
-        # 字节直方图余弦相似度 —— 快速近似结构差异
+        # 字节直方图余弦相似度——快速近似结构差异
         if original_resp and replayed_resp:
             orig_hist = [original_resp.count(i) for i in range(256)]
             repl_hist = [replayed_resp.count(i) for i in range(256)]
@@ -216,11 +215,10 @@ class TrafficReplayer:
 
     def replay_session(self, session, target, target_port=None,
                        jitter_ms: float = 0.0):
-        """按原始时间戳间隔重放会话——可选时间抖动模拟真实网络条件
+        """按原始时间戳间隔重放会话包——支持时间抖动以模拟真实网络条件。
 
-        jitter_ms: 发包间隔随机化的最大幅度（毫秒）。
-        设为 0 时禁用抖动，按原始 pcap 时间戳间隔重放。
-        典型设值 5-50ms 用于抗时序指纹探测。
+        jitter_ms: 发包间隔随机化的最大幅度（毫秒）。设为0则按pcap原始间隔。
+        典型值 5-50ms 用于抗时序指纹探测。
         """
         if session is None or target is None:
             return 0, 0
@@ -230,14 +228,14 @@ class TrafficReplayer:
         for pkt in (session.packets or []):
             if pkt is None:
                 continue
-            # 包间延迟模拟 —— 保持原始流量节奏或注入抖动
+            # 包间延迟模拟——维持原始流量节奏或注入随机抖动
             if prev_ts is not None and jitter_ms >= 0:
                 gap = pkt.timestamp - prev_ts
                 if jitter_ms > 0:
                     import random as _rand
                     gap += _rand.uniform(-jitter_ms / 1000.0, jitter_ms / 1000.0)
                 if gap > 0:
-                    _time_module.sleep(min(gap, 2.0))  # 最长等待 2 秒防止挂起
+                    _time_module.sleep(min(gap, 2.0))  # 上限2秒防挂起
             prev_ts = pkt.timestamp
 
             if pkt.protocol == 'TCP':
@@ -253,7 +251,7 @@ class TrafficReplayer:
         return sent, rcvd
 
     def replay_with_diff(self, session, target, original_responses: List[bytes] = None):
-        """重放并执行差分响应分析 —— 检测目标与原始捕获的响应差异"""
+        """重放并执行差分响应分析——检测目标与原始捕获的响应差异"""
         if session is None or target is None:
             return []
         diffs = []

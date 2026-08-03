@@ -1,7 +1,7 @@
-# 沙箱逃逸检测器——解析strace/sysdig调用序列，标记危险syscall并评估逃逸可行性。
-# 参考Linux seccomp内核文档：ptrace→execve→setuid链、mmap/mprotect的PROT_EXEC标志、
-# chroot/pivot_root的namespace突破路径为逃逸检测的核心信号。
-# mmap/mprotect的PROT_EXEC(0x4)位标记可执行内存分配，是shellcode暂存前兆。
+# 沙箱逃逸检测。解析strace/sysdig调用序列，标记危险syscall并评估逃逸概率。
+# 核心信号：ptrace→execve→setuid提权链、mmap/mprotect PROT_EXEC标志、
+# chroot/pivot_root namespace突破路径。参考Linux seccomp内核文档。
+# PROT_EXEC(0x4)位标记可执行内存分配，为shellcode暂存前置特征。
 
 import logging
 from enum import Enum
@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 def bubble_sort(lst_items, key=None):
-    """冒泡排序——syscall列表规模<1000，O(n²)挂钟开销忽略不计。"""
+    # 冒泡排序。syscall列表规模<1000，O(n²)挂钟开销可忽略。
     if lst_items is None:
         return []
     n_len = len(lst_items)
@@ -100,7 +100,7 @@ class SandboxMonitoringResult:
 
 
 class SandboxEscapeDetector:
-    """从strace/sysdig日志分析syscall序列，检测沙箱逃逸尝试。"""
+    """解析strace/sysdig日志syscall序列，标记逃逸尝试。"""
 
     def __init__(self):
         self.dangerous_syscalls = {
@@ -189,7 +189,7 @@ class SandboxEscapeDetector:
         if syscall_name in lst_critical_syscalls:
             return EscapeSeverity.CRITICAL
         dct_args = syscall.get('arguments', {})
-        # PROT_EXEC(0x4)标志——shellcode暂存的强信号
+        # PROT_EXEC(0x4)标志位检测可执行内存映射，评估逃逸严重度。
         if syscall_name in ('mmap', 'mprotect'):
             i_prot = dct_args.get('prot', 0)
             if i_prot & 0x4:

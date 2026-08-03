@@ -1,5 +1,5 @@
-# 23 tests: normalization, token overlap, pipeline stages, version range checking,
-#           report structure, convenience function
+# 23项测试: 规范化、token重叠、管道阶段、版本区间检查、
+#           报告结构、便捷函数
 
 import pytest
 from modules.cve.src.cve_kb import CVEKnowledgeBase

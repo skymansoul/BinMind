@@ -1,19 +1,10 @@
-# 2026-07-30
+"""模糊测试与符号执行的约束求解桥接器。
 
-"""轻量级符号执行桥接 -- 在模糊测试回路中插入符号约束求解。
+当字节级变异无法突破分支时, 提取路径条件 → 约束求解 → 回注新输入到模糊测试队列。
+桥接层不实现符号引擎, 仅编排 Angr/启发式回退的求解流程。
 
-参考:
-  PathFuzzing (arXiv:2507.09892)  -- 进化Fuzzing+符号执行混合, 路径编码为比特串
-  FuzzBox  (arXiv:2509.05643)     -- QEMU仿真+符号覆盖分析
-  Examiner-Pro (IEEE TSE 2024)    -- Unicorn+Angr差分测试符号执行
-
-本模块的目标不是完整实现一个符号执行引擎, 而是提供一个轻量桥接层:
-  - 从 fuzzer 获取卡在特定分支的种子
-  - 提取路径条件 (通过 Angr 或 r2 反编译的伪代码模式)
-  - 生成满足翻转条件的新输入
-  - 将新输入反馈回模糊测试队列
-
-当代码覆盖率进入停滞期时, 调用此模块尝试突破复杂分支。
+参考: PathFuzzing 路径比特编码 (arXiv:2507.09892), FuzzBox QEMU 符号覆盖分析 (arXiv:2509.05643),
+Examiner-Pro Unicorn+Angr 差分测试 (IEEE TSE 2024)。
 """
 
 import hashlib
@@ -26,9 +17,9 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple
 
-logger = logging.getLogger(__name__)
+_log = logging.getLogger(__name__)
 
-# ---- Angr 可选依赖 ----
+# Angr 按需导入, 缺失时回退到启发式求解
 _ANGR_AVAILABLE = False
 try:
     import angr
@@ -40,29 +31,38 @@ except ImportError:
 
 @dataclass
 class BranchConstraint:
-    """单条分支约束。"""
-    address: int                  # 分支指令地址
-    taken: bool                   # 当前路径是否跳转
-    condition_expr: str = ""      # 可读的约束条件 (如 "rax == 0")
+    """一条分支指令的约束条件快照。
+
+    记录分支地址、当前跳转方向及对应的条件表达式。
+    """
+    address: int                  # 分支指令所在地址
+    taken: bool                   # 当前执行路径是否沿 take 方向
+    condition_expr: str = ""      # 约束文本, 如 "rax == 0"
     symbolic_vars: List[str] = field(default_factory=list)
 
 
 @dataclass
 class PathSolverResult:
-    """符号求解的结果。"""
+    """单次约束求解的产出记录。
+
+    包含翻转是否成功、目标地址、求解耗时及新输入字节序列。
+    """
     success: bool
-    target_address: int           # 目标分支地址
-    constraints_solved: int       # 解决的约束数
-    new_input: Optional[bytes]    # 满足翻转条件的新输入
+    target_address: int           # 待翻转的目标分支地址
+    constraints_solved: int       # 实际求解的约束条目数
+    new_input: Optional[bytes]    # 满足翻转条件的新输入, 失败时为 None
     solver_time_ms: float = 0.0
-    solver_name: str = ""         # angr / z3 / none
+    solver_name: str = ""         # 求解器标识: "angr" 或 "heuristic"
 
 
 class SymbolicBridge:
-    """模糊测试回路中的符号执行桥接。
+    """模糊测试循环中的符号求解编排器。
 
-    当 fuzzer 报告某条路径到达了分支但无法翻转时,
-    调用此桥接层尝试用符号执行生成能翻转分支的输入。
+    当覆盖卡死在某个分支无法翻转时介入:
+    Angr 可用 → 探索到达目标地址后翻转路径条件;
+    否则 → 启发式字节边界值注入。
+
+    max_solver_time_ms 控制单次求解超时, 超时计入 stats["timeouts"]。
     """
 
     def __init__(self, binary_path: str,
@@ -83,16 +83,20 @@ class SymbolicBridge:
                     self.binary_path, auto_load_libs=False
                 )
             except Exception as e:
-                logger.warning("Angr项目加载失败: %s, 回退到无符号模式", e)
+                _log.warning("Angr 项目加载失败: %s, 回退到无符号模式", e)
                 self._project = None
 
     def solve_branch_condition(self, seed: bytes,
                                branch_addr: int,
                                target_taken: bool = True) -> PathSolverResult:
+        """对单个分支条件求解, 尝试翻转当前方向。
+
+        入口分流: 有 Angr 项目则走符号执行, 否则走启发式字节变异。
+        """
         self._stats["queries"] += 1
         t0 = time.time()
 
-        # 优先使用 Angr
+        # 符号引擎可用时优先
         if self._project is not None:
             result = self._solve_with_angr(seed, branch_addr, target_taken)
             result.solver_name = "angr"
@@ -113,10 +117,11 @@ class SymbolicBridge:
 
     def _solve_with_angr(self, seed: bytes, branch_addr: int,
                          flip_to: bool) -> PathSolverResult:
-        """用 Angr 符号执行框架求解分支约束。
+        """Angr 符号执行: 沿当前路径推进至目标地址后翻转路径约束。
 
-        PathFuzzing 将执行路径编码为比特串 (bit=i表示第i个分支是否采取),
-        此处直接让 Angr 沿当前路径探索到目标分支, 然后翻转。
+        原理: 从 entry_state 启动, explore 至 branch_addr,
+        对到达状态的 solver.constraints 取反以生成新输入。
+        目标架构差异需在此处按需调整约束翻转策略。
         """
         if self._project is None:
             return PathSolverResult(
@@ -135,7 +140,7 @@ class SymbolicBridge:
 
             simgr = self._project.factory.simulation_manager(state)
 
-            # 在目标地址处探索
+            # 向目标分支地址推进
             simgr.explore(
                 find=branch_addr,
                 avoid=[],
@@ -150,11 +155,8 @@ class SymbolicBridge:
 
             found_state = simgr.found[0]
 
-            # 尝试翻转该分支条件
-            # 获取当前IP对应的基本块的后继约束
-            # 然后对约束取反
-            # Angr 的具体实现需根据目标架构调整
-            # 此处提供骨架
+            # 对当前基本块后继约束取反, 实现分支方向翻转
+            # 此处为骨架: 具体架构需适配条件跳转的约束改写方式
             new_input = self._concretize_stdin(found_state)
 
             return PathSolverResult(
@@ -166,7 +168,7 @@ class SymbolicBridge:
             )
 
         except Exception as e:
-            logger.debug("Angr求解异常 @ 0x%x: %s", branch_addr, e)
+            _log.debug("Angr 求解异常 @ 0x%x: %s", branch_addr, e)
             return PathSolverResult(
                 success=False, target_address=branch_addr,
                 constraints_solved=0, new_input=None,
@@ -174,13 +176,10 @@ class SymbolicBridge:
 
     def _solve_heuristic(self, seed: bytes,
                          branch_addr: int) -> PathSolverResult:
-        """无符号引擎时的回退: 基于启发式的输入变异。
+        """无符号引擎时的字节边界值试探回退。
 
-        在种子中与分支地址相关的字节位置进行变异,
-        类似于 AFL 的 effector map 但目标更精确。
-
-        复杂度: 远不如完整符号执行, 但对简单比较分支 (如 cmp eax, 0)
-        仍有效。
+        将分支地址映射到输入偏移, 在该位置注入 0x00/0xFF/0x01/0x7F,
+        旨在翻转简单的等值/边界比较。不处理多约束联立或间接寻址的情形。
         """
         if not seed:
             return PathSolverResult(
@@ -188,20 +187,20 @@ class SymbolicBridge:
                 constraints_solved=0, new_input=None,
             )
 
-        # 简单策略: 在分支地址相关偏移处逐字节翻转
+        # 分支地址低位衍生偏移, 逐字节轮试边界值
         offset_hint = branch_addr & 0xFF
         data = bytearray(seed)
 
         for attempt in range(min(10, len(data))):
             pos = (offset_hint + attempt * 17) % len(data)
             orig = data[pos]
-            # 尝试常见比较值: 0, -1, 1, 0x7f
+            # 以 17 为步长轮换位置, 试探常见比较边界值
             for candidate in (0x00, 0xFF, 0x01, 0x7F):
                 if candidate == orig:
                     continue
                 data[pos] = candidate
                 attempt_data = bytes(data)
-                data[pos] = orig  # 恢复
+                data[pos] = orig  # 写回前恢复原始字节
                 return PathSolverResult(
                     success=True,
                     target_address=branch_addr,
@@ -215,9 +214,12 @@ class SymbolicBridge:
         )
 
     def _concretize_stdin(self, state) -> Optional[bytes]:
-        """从符号状态中具体化 stdin 输入。"""
+        """从 Angr 状态中具象化 stdin 字节序列。
+
+        通过 posix 文件描述符 0 读取求解器求值后的具体内容。
+        """
         try:
-            # Angr 中 stdin 是文件描述符 0, 通过 posix 接口访问
+            # fd=0 经 posix 接口获取已求解的具体字节
             stdin_fd = state.posix.get_fd(0)
             if stdin_fd is None:
                 return None
@@ -229,7 +231,7 @@ class SymbolicBridge:
 
     def solve_multiple(self, seeds: List[Tuple[bytes, int, bool]],
                        ) -> List[PathSolverResult]:
-        """批量求解: 对多个 (seed, branch_addr, target_taken) 进行符号求解。"""
+        """对多个 (seed, addr, target_taken) 依次求解。"""
         results = []
         for seed, addr, target_taken in seeds:
             r = self.solve_branch_condition(seed, addr, target_taken)
@@ -244,21 +246,18 @@ class SymbolicBridge:
         }
 
 
-# ===== 从反编译伪代码提取分支条件(无符号引擎方案) =====
+# 从反编译伪代码中提取分支条件表达式
 
 def extract_branch_conditions_from_decomp(
     decomp_output: str
 ) -> List[Tuple[int, str]]:
-    """从 radare2/Ghidra 反编译输出中提取分支条件。
+    """解析 radare2/Ghidra 反编译输出, 提取 if 条件及其地址。
 
-    匹配模式:
-      if (var == const) { ... }
-      if (var != const) { ... }
-      if (var < const) { ... }
-    返回 [(address, condition_string), ...]。
+    匹配形式: if (var == const), if (var != const), if (var < const) 等。
+    返回值: [(addr, condition_str), ...], addr 为 int 型地址。
     """
     conditions = []
-    # radare2 风格: 0x00401234: if (eax == 0)
+    # radare2 伪代码格式: "0x00401234: if (eax == 0) {"
     r2_pattern = re.compile(
         r'(0x[0-9a-fA-F]+):\s*if\s*\((.+?)\)\s*\{'
     )
@@ -270,7 +269,7 @@ def extract_branch_conditions_from_decomp(
     return conditions
 
 
-# ===== 简单约束求解器 (不依赖外部库) =====
+# 单约束等值比较的直接字节替换求解
 
 def solve_simple_cmp(
     seed: bytes,
@@ -279,10 +278,10 @@ def solve_simple_cmp(
     target_value: int,
     operand_size: int = 4,
 ) -> Optional[bytes]:
-    """对简单等值比较 (cmp reg, imm) 的朴素求解。
+    """将 seed[offset:offset+operand_size] 替换为目标值, 求解 cmp reg, imm。
 
-    直接将 seed 中 offset 处的 operand_size 字节替换为 target_value。
-    这是符号执行能处理的最简单情况 --- 不涉及间接寻址或多约束联立。
+    边界: offset 越界时返回 None; 不支持间接寻址或复合约束。
+    operand_size 仅接受 1/2/4/8。
     """
     if offset < 0 or offset + operand_size > len(seed):
         return None

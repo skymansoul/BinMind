@@ -1,7 +1,7 @@
-# Crash-input minimizer: delta-debug the PoC down to a minimal triggering payload.
-# Round 3: FrameShift-style structure-preserving mutations — detects size/checksum
-# relation fields and preserves them during reduction to avoid generating
-# malformed inputs rejected before reaching the crash site.
+# Crash-input minimizer: delta-debug PoC down a minimal triggering payload
+# 舍入 3: FrameShift-style structure-preserving 变异s — 检测 size/校验和
+# relation fields preserves reduction avoid generating
+# malformed inputs rejected reaching crash site
 
 import logging
 import os
@@ -26,7 +26,7 @@ class MinimizationStrategy(StrEnum):
     HIERARCHY = "hierarchy"     # Hierarchical
     LEXICAL = "lexical"         # Lexical (token boundary based)
     BITS = "bits"               # Bit-level
-    FRAME_SHIFT = "frame_shift" # FrameShift: structure-preserving (Round 3)
+    FRAME_SHIFT = "frame_shift" # FrameShift: structure-preserving (舍入 3)
 
 
 @dataclass
@@ -44,21 +44,21 @@ class MinimizationResult:
 
 class DeltaDebugger:
     """
-    Delta Debugging minimizer.
-
-    Round 3: Added FrameShift strategy — detects relation fields
-    (size fields, checksums, length prefixes) and preserves their
-    integrity during reduction. FrameShift (arXiv 2507.05421) shows
-    this avoids generating malformed inputs that are rejected before
-    reaching the actual crash site, improving effective reduction
-    ratio by 20-50% on structured formats.
+    Delta Debugging minimizer
+    
+    舍入 3: Added FrameShift strategy — 检测 relation fields
+    (size fields, 校验和s, length prefixes) preserves
+    integrity reduction. FrameShift (arXiv 2507.05421) 显示
+    avoids generating malformed inputs rejected
+    reaching actual crash site, improving effective reduction
+    ratio 20-50% structured 格式化
     """
 
     # 关系字段模式: (识别正则, 修正函数)
-    # 格式: (pattern_bytes, 'size'|'checksum'|'count')
+    # 格式: (pattern_bytes, 'size'|'校验和'|'count')
     _RELATION_PATTERNS = [
-        (rb'(\x00\x00\x00\x00)', 'size_le32'),  # 4-byte little-endian size
-        (rb'(\x00\x00)', 'size_le16'),           # 2-byte little-endian size
+        (rb'(\x00\x00\x00\x00)', 'size_le32'),  # 4-byte 小端 size
+        (rb'(\x00\x00)', 'size_le16'),           # 2-byte 小端 size
     ]
 
     def __init__(self,
@@ -115,7 +115,7 @@ class DeltaDebugger:
 
     def _scan_relation_fields(self, data: bytes) -> List[Tuple[int, int, str]]:
         """FrameShift式关系字段扫描：检测输入中可能承载size/checksum/count
-        语义的字段位置。这些字段在缩减过程中需要同步更新以保持有效性。"""
+        语义的字段位置。这些字段在缩减过程中需要同步更新以保持有效性"""
         relations = []
         # 扫描常见的长度前缀模式: 4字节LE值 ≈ 当前位置之后的数据长度
         for offset in range(0, min(len(data) - 8, 512), 1):
@@ -131,8 +131,8 @@ class DeltaDebugger:
         return relations
 
     def _apply_relations(self, data: bytearray) -> bytearray:
-        """FrameShift修正：重新计算并写入关系字段。
-        每次缩减后调用，确保size/checksum字段与实际数据一致。"""
+        """FrameShift修正：重新计算并写入关系字段
+        每次缩减后调用，确保size/checksum字段与实际数据一致"""
         for offset, field_size, rel_type in self._relation_fields:
             if offset + field_size > len(data):
                 continue
@@ -145,9 +145,9 @@ class DeltaDebugger:
         return data
 
     def _frame_shift(self, data: bytes) -> bytes:
-        """FrameShift策略：在DDMIN的基础上，每次缩减后修正关系字段。
+        """FrameShift策略：在DDMIN的基础上，每次缩减后修正关系字段
         这模拟FrameShift论文的核心机制 — 在变异子(mutator)和规约子(minimizer)
-        之间插入关系字段检测层，确保生成的数据保持结构完整性。"""
+        之间插入关系字段检测层，确保生成的数据保持结构完整性"""
         cur = bytearray(data)
         n = 2
         start_ts = time.time()
@@ -186,7 +186,7 @@ class DeltaDebugger:
         return cur_bytes
 
     def _ddmin(self, data: bytes) -> bytes:
-        """Zeller Delta Debugging with tuned numeric parameters."""
+        """Zeller Delta Debugging tuned numeric parameters"""
         n = 2
         start_ts = time.time()
         while len(data) >= 2 and (time.time() - start_ts) < self.timeout_sec:
@@ -201,7 +201,7 @@ class DeltaDebugger:
                     self._record("reduce_chunk", len(data))
                     break
             else:
-                # Try complement.
+                # Try complement
                 if n < len(data):
                     n = min(n * 2, len(data))
                 else:
@@ -212,7 +212,7 @@ class DeltaDebugger:
         return data
 
     def _hierarchy(self, data: bytes) -> bytes:
-        # Hierarchical: 1/2, then 1/4, then 1/8 ...
+        # Hierarchical: 1/2, 1/4, 1/8
         cur = data
         for divisor in [2, 4, 8, 16, 32, 64, 128]:
             chunk_size = max(1, len(cur) // divisor)
@@ -227,13 +227,13 @@ class DeltaDebugger:
         return cur
 
     def _lexical(self, data: bytes) -> bytes:
-        # Delete by token boundaries.
+        # 删除 token boundaries
         tokens: List[bytes] = []
         for i in range(0, len(data), TOKEN_ALIGN):
             tokens.append(data[i:i + TOKEN_ALIGN])
         if not tokens:
             return data
-        # Greedy deletion.
+        # Greedy deletion
         cur_tokens = list(tokens)
         i = 0
         while i < len(cur_tokens):
@@ -247,9 +247,9 @@ class DeltaDebugger:
         return b"".join(cur_tokens)
 
     def _bits(self, data: bytes) -> bytes:
-        # Bit-level cleanup.
+        # Bit-level cleanup
         cur = data
-        # Clear each byte's high bits.
+        # 清除 byte's high bits
         for i in range(len(cur)):
             for bit in range(BIT_COUNT):
                 test = bytearray(cur)
@@ -265,7 +265,7 @@ class DeltaDebugger:
 
 
 class CrashInputMinimizer:
-    """Crash input minimizer."""
+    """Crash input minimizer"""
 
     def __init__(self, binary_path: str,
                  crash_runner: Optional[Callable[[str, bytes], bool]] = None,
@@ -275,7 +275,7 @@ class CrashInputMinimizer:
         self.timeout_sec = timeout_sec
 
     def _default_runner(self, input_data: bytes) -> bool:
-        # Default runner: execute binary via subprocess and detect crash.
+        # Default runner: 执行 binary via subprocess 检测 crash
         import subprocess
         import tempfile
         with tempfile.NamedTemporaryFile(delete=False, suffix=".bin") as f:
@@ -307,8 +307,8 @@ class CrashInputMinimizer:
 
     # Round 3: 级联最小化 — 组合多种策略以达到最优缩减
     def minimize_cascade(self, crash_input: bytes) -> MinimizationResult:
-        """级联最小化: DDMIN → FrameShift → Bits。
-        每阶段输出作为下一阶段输入，FrameShift在中间阶段确保结构化数据的完整性。"""
+        """级联最小化: DDMIN → FrameShift → Bits
+        每阶段输出作为下一阶段输入，FrameShift在中间阶段确保结构化数据的完整性"""
         start = time.time()
         cur = crash_input
         all_history = []
@@ -341,7 +341,7 @@ def minimize_crash_input(
     crash_input: bytes,
     strategy: str = "ddmin"
 ) -> Dict[str, Any]:
-    """Convenience entry point."""
+    """Convenience 入口"""
     try:
         strat = MinimizationStrategy(strategy)
     except ValueError:

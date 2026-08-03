@@ -1,6 +1,6 @@
-# Binary function embedding via triplet loss — joint CFG + opcode features.
-# 2026-07-16: semi-hard negative mining added for training stability.
-# 2026-07-23: CLAP‑style cross‑modal projection heads + momentum optimizer + early stopping.
+# Binary function 嵌入 via triplet loss : joint CFG + opcode features.
+# semi-hard negative mining added for 训练 stability.
+# CLAP‑style cross‑modal projection heads + momentum 优化器 + early stopping.
 import math as _math, json as _json, logging as _logging, hashlib as _hashlib
 from collections import Counter as _Counter, defaultdict as _defaultdict
 from dataclasses import dataclass, field
@@ -32,7 +32,7 @@ class EmbeddingResult:
 class BinaryEmbeddingTrainer(BaseAnalyzer):
     kDim = 128; kMargin = 0.5; kLR = 0.01
     # 跨模态融合 — 结构特征和操作码特征各自的投影权重
-    kFusionAlpha = 0.55  # struct projection weight;  >0.5 favours CFG topology
+    kFusionAlpha = 0.55  # struct projection weight; >0.5 favours CFG topology
 
     def __init__(self):
         super().__init__()
@@ -115,7 +115,7 @@ class BinaryEmbeddingTrainer(BaseAnalyzer):
         ngram_dict = feat.ngram
         if not ngram_dict:
             return [0.0] * self.__dim
-        # 用 ngram 的 hash 确定性地生成向量分量
+        # 用 ngram 的 哈希 确定性地生成向量分量
         projected = [0.0] * self.__dim
         ng_items = list(ngram_dict.items())
         ni = 0

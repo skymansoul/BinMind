@@ -1,4 +1,3 @@
-# 2026-07-16
 # smart_contract — EVM smart contract vulnerability analysis
 
 __version__ = "0.4.0"

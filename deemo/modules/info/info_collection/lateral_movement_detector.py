@@ -150,8 +150,7 @@ class LateralMovementDetector:
         """多信号 Bayesian 置信度融合。
 
         将每个独立信号的置信度视为概率 p，融合公式：
-        combined = 1 - Π(1 - p_i)
-        即假设信号独立，任一信号触发即可判定存在可疑行为。
+        combined = 1 - Π(1 - p_i)，即假设信号独立。
         """
         prod = 1.0
         for c in confidences:
@@ -239,7 +238,7 @@ class LateralMovementDetector:
 
     @classmethod
     def _map_to_mitre_tactic(cls, technique_id: str) -> tuple[str, str]:
-        """将技术 ID 映射到上层战术。"""
+        """技术 ID → 上层战术映射。"""
         return cls._TACTIC_MAP.get(technique_id, ('Unknown', 'TA0000'))
 
     def _group_by_tactic(self, findings: list[MovementIndicator]) -> dict[str, list[str]]:

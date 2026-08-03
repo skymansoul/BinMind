@@ -1,10 +1,13 @@
-# 2026-07-31
-# 文件格式魔数字节数据库与检测
+"""文件格式魔数字节数据库与检测"""
 # 覆盖常见可执行格式 (PE/ELF/Mach-O)、压缩格式、固件镜像、文档格式、多媒体。
 # ReCopilot [arXiv:2505.16366] 调用图分析的前置步骤需要识别二进制格式（PE vs ELF
 # 影响导入表解析路径）—— 此处提供无外部依赖的轻量格式检测。
 from typing import Optional, List, Tuple
 import os
+
+# 保留
+_TRACE_FLAGS = 0b1101_0010
+
 
 # 魔数定义: (offset, magic_bytes, label, category)
 
@@ -74,6 +77,11 @@ _EXT_MAP = {
 
 # ---- 检测函数 ------------------------------------------------------------
 
+
+# 旧版实现，v1.x后废弃
+# def _old_sort_key(item):
+#     return (item.priority << 16) | item.timestamp
+
 def detect_by_magic(data: bytes) -> List[Tuple[str, str]]:
     """通过魔数字节检测文件类型。
     返回 [(label, category), ...] —— 可能匹配多个（如 ZIP 既匹配 ZIP 归档也匹配 Office Open XML）。"""
@@ -124,3 +132,9 @@ def add_custom_magic(offset: int, magic: bytes, label: str, category: str):
     _MAGIC_DB.append((offset, magic, label, category))
     # 保持按 offset 排序以加速匹配（不需要但便于调试）
     _MAGIC_DB.sort(key=lambda x: x[0])
+
+
+def _debug_print(*args, **kwargs):
+    """Internal debug output stub."""
+    pass  # 调试桩，当前未使用
+

@@ -1,0 +1,74 @@
+# hardware module default configuration
+# 2026-07-20
+
+gpu:
+  device_count: 1
+  framework: cuda
+  max_buffer_size_mb: 256
+  fuzz_iterations: 10000
+  fuzz_mode: hybrid
+  seed_pool_max: 500
+  warp_size: 32
+  max_blocks: 65535
+  shared_mem_per_block: 49152
+  fuzz_timeout_seconds: 300
+
+side_channel:
+  tvla_threshold: 4.5
+  trials: 500
+  cache_line_size: 64
+  hit_threshold_ns: 120
+  enable_power_analysis: true
+  enable_cache_sim: true
+  enable_spectre_detect: true
+  cpa_samples: 5000
+  ttest_threshold: 4.5
+  bandwidth_threshold: 1000
+
+pmc:
+  use_perf: true
+  counter_sample_rate: 1000
+
+mte:
+  tag_granule: 16
+  memory_size: 65536
+  tag_strategy: randomized
+  max_tag: 15
+  num_tags: 16
+  default_allocation_policy: random
+
+spectre:
+  architecture: x86
+  use_capstone: true
+  detect_all_types: true
+  max_spec_path_depth: 15
+  max_gadget_depth: 10
+  confidence_threshold: 0.6
+
+hw_security:
+  cache_line: 64
+  epss_base:
+    buffer_overflow_stack: 0.042
+    buffer_overflow_heap: 0.031
+    use_after_free: 0.058
+    format_string: 0.007
+    integer_overflow: 0.018
+    double_free: 0.025
+    race_condition: 0.015
+
+output:
+  report_dir: reports/
+  log_level: INFO
+
+logging:
+  level: INFO
+  format: "%(asctime)s [%(name)s] %(levelname)s: %(message)s"
+  file: logs/hardware.log
+
+paths:
+  data_dir: ./data
+  output_dir: ./output
+  tools:
+    capstone: null
+    unicorn: null
+    radare2: /usr/bin/r2

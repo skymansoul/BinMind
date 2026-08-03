@@ -6,7 +6,7 @@ from typing import List, Dict, Tuple, Optional
 
 
 class YaraRuleGenerator:
-    """Auto-generate YARA 4.x rules from binary analysis results"""
+    """Auto-构造 YARA 4.x rules 二进制分析 results"""
 
     # ---- 初始化 ----
 
@@ -59,11 +59,11 @@ class YaraRuleGenerator:
             for _i, (_s, _w) in enumerate(_selected):
                 # Escape string for YARA
                 _escaped = self._escape_yara_string(_s)
-                # wide modifier for strings that look like UTF-16
+                # wide modifier for strings look like UTF-16
                 _modifier = ''
                 if any(ord(c) > 127 for c in _s):
                     _modifier = ' wide'
-                elif len(_s) >= 12:  # longer ASCII strings use ascii + wide
+                elif len(_s) >= 12:  # longer ASCII strings 使用 ascii + wide
                     _modifier = ' wide ascii'
 
                 # nocase for shorter strings
@@ -73,7 +73,7 @@ class YaraRuleGenerator:
 
         _parts.append('')
         _parts.append('    condition:')
-        # 条件逻辑: 短规则用all/any, 包含过于通用库函数时用更严格条件
+        # 条件逻辑: 短规则用all/, 包含过于通用库函数时用更严格条件
         if len(_selected) == 0:
             _parts.append('        false')
         elif len(_selected) <= 3:
@@ -133,7 +133,7 @@ class YaraRuleGenerator:
                 _parts.append(f'        /* At least 3 of the following import conditions */')
                 _parts.append(f'        3 of (')
                 for _c in _conditions:
-                    _parts.append(f'            {_c[8:]},')  # strip '        '
+                    _parts.append(f'            {_c[8:]},')  # strip ' '
                 _parts.append(f'        )')
             else:
                 _parts.append(f'        /* At least 5 of the following import conditions */')
@@ -174,7 +174,7 @@ class YaraRuleGenerator:
             if len(_data) < 16:
                 continue
             _sec_name = _name.replace('.', '_').strip('_') or 'noname'
-            # Use first 64 bytes hash as weak signature
+            # 使用 first 64 bytes hash weak 签名
             _h = hashlib.sha256(_data[:64]).hexdigest()
             _var = f'$hash_{_sec_name}'
             _parts.append(f'        /* Section .{_name} hash: {_h[:16]}... */')

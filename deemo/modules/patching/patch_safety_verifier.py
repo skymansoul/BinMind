@@ -1,9 +1,8 @@
-# 2026-08-01
-"""Patch safety verification — VeriBin (NDSS 2025) inspired symbolic checking.
+"""补丁安全性验证 —— 借鉴 VeriBin (NDSS 2025) 符号检测。
 
-VeriBin [Wu et al. 2025] 提出对二进制补丁做自适应验证，无需源码即可判定
-补丁是否 "Safe to Apply"。本模块将该思路工程化：比较原始 binary 和 patched
-binary 的字节级差异，通过启发式规则 + 轻量约束求解判定补丁安全性。
+VeriBin [Wu et al. 2025] 对二进制补丁自适应验证，无需源码判定
+补丁是否 "Safe to Apply"。本模块将思路工程化：比较原始与修补
+二进制的字节级差异，启发式规则 + 轻量约束求解判定安全性。
 
 核心策略：
 - Level A: 差异区域字节结构分析（指令边界、跳转目标合法性）
@@ -20,18 +19,20 @@ _log = logging.getLogger(__name__)
 
 
 class SafetyVerdict(IntEnum):
-    """VeriBin 风格的补丁安全性判定 — 四位而非简单的 pass/fail。
-    SAFE_STRONG 对应 VeriBin 的零误报标准。"""
+    """VeriBin 风格补丁安全性判定 —— 四位而非简单 pass/fail。
+
+    SAFE_STRONG 对应 VeriBin 的零误报标准。
+    """
     SAFE_STRONG = 0      # 高度确信：无副作用，语义不变
-    SAFE_LIKELY = 1      # 大概率安全：差异区域仅含预期的安全检查代码
+    SAFE_LIKELY = 1      # 大概率安全：差异区域仅含预期安全检查代码
     UNCERTAIN = 2        # 无法判定：差异区域含非标准指令序列
-    UNSAFE_LIKELY = 3    # 可疑：差异区域破坏了原有的数据流或控制流
-    UNSAFE_STRONG = 4    # 明确不安全：检测到已知的恶意模式或功能破坏
+    UNSAFE_LIKELY = 3    # 可疑：差异区域破坏原有数据流或控制流
+    UNSAFE_STRONG = 4    # 明确不安全：检测到已知恶意模式或功能破坏
 
 
 @dataclass
 class DiffRegion:
-    """二进制差异区域 — 对应 original 和 patched 中的一对字节区间。"""
+    """二进制差异区域 —— 对应 original/patched 中的一对字节区间。"""
     orig_offset: int
     patch_offset: int
     orig_bytes: bytes
@@ -74,10 +75,9 @@ class SafetyReport:
         }
 
 
-# ── 安全指令模式 ──────────────────────────────────────────────────────
-# 这些指令序列出现在补丁中通常表示安全检查，而非功能修改。
-# 参考 VeriBin 的 "safe patch pattern" 分类，增加了 inline 汇编和
-# ARM64 常见安全模式。
+# ── 安全指令模式表 ────────────────────────────────────────────────
+# 补丁中出现这些指令序列通常表示安全检查而非功能修改。
+# 参考 VeriBin "safe patch pattern" 分类，增加 inline 汇编和 ARM64 模式。
 
 _SAFE_PATTERNS_X86 = [
     # null check: test + jz/je + ret/call exit
@@ -89,17 +89,17 @@ _SAFE_PATTERNS_X86 = [
     # canary check: fs/gs segment read + xor + jne
     (rb'\x64\x48\x8b', 0.90, 'canary-read-x64'),
     (rb'\x65\x48\x8b', 0.90, 'canary-read-x64-alt'),
-    # xor eax, eax (return 0 / clear register — common in early-return patches)
+    # xor eax, eax (return 0 / 清寄存器 — early-return 补丁常见)
     (rb'\x31\xc0\xc3', 0.95, 'xor-eax-ret'),
     (rb'\x33\xc0\xc3', 0.95, 'xor-eax-ret-alt'),
-    # add esp/ rsp for stack cleanup
+    # add esp/rsp 栈清理
     (rb'\x48\x83\xc4', 0.70, 'stack-cleanup'),
 ]
 
 _SAFE_PATTERNS_ARM64 = [
-    # PAC instruction (Pointer Authentication — security feature)
+    # PAC 指令 (Pointer Authentication — 安全特性)
     (rb'\x1f\x23\x03\xd5', 0.95, 'pac-instruction'),
-    # BTI instruction (Branch Target Identification)
+    # BTI 指令 (Branch Target Identification)
     (rb'\x5f\x24\x03\xd5', 0.95, 'bti-instruction'),
     # CBZ (compare and branch on zero — null check)
     (rb'[\xb4\xb5][\x00\x20\x40\x60\x80\xa0\xc0\xe0]', 0.75, 'cbz-null-check'),
@@ -107,15 +107,15 @@ _SAFE_PATTERNS_ARM64 = [
     (rb'\xff\x23\x03\xd5', 0.90, 'pac-ret'),
 ]
 
-# ── 可疑指令模式 ───────────────────────────────────────────────────────
-# 若补丁中出现这些模式，大概率不是单纯的安全修复
+# ── 可疑指令模式 ───────────────────────────────────────────────────
+# 补丁中出现这些模式大概率不是单纯安全修复
 
 _SUSPICIOUS_PATTERNS = [
     # int 0x80 / syscall / sysenter — 补丁不应引入新系统调用
     (rb'\xcd\x80', 'int80-syscall'),
     (rb'\x0f\x05', 'syscall-x64'),
     (rb'\x0f\x34', 'sysenter'),
-    # 直接写入 GOT/PLT 区域 — 可能是劫持而非修复
+    # 直接写 GOT/PLT — 可能是劫持而非修复
     (rb'\x48\x8d.{0,8}\xff\xe0', 'indirect-jmp-got'),
     # 大段 NOP slide (>16 bytes) — 可能掩盖原有代码
     (rb'(\x90){17,}', 'nop-slide-suspicious'),
@@ -127,10 +127,10 @@ _SUSPICIOUS_PATTERNS = [
 
 
 class PatchSafetyVerifier:
-    """二进制补丁安全性校验器 — VeriBin 启发式实现。
+    """二进制补丁安全性校验器 —— VeriBin 启发式实现。
 
-    不依赖符号执行引擎，使用字节级模式匹配 + 指令边界分析替代。
-    当 Z3 可用时，增加约束求解路径（Level B）。
+    不依赖符号执行引擎，使用字节级模式匹配 + 指令边界分析。
+    Z3 可用时增加约束求解路径 (Level B)。
     ELF/PE 通用，不假设特定架构。
     """
 
@@ -139,7 +139,7 @@ class PatchSafetyVerifier:
         self._safe_patterns = _SAFE_PATTERNS_X86
         if 'arm' in self._arch or 'aarch' in self._arch:
             self._safe_patterns = _SAFE_PATTERNS_ARM64
-        # 检测 Z3 可用性
+        # Z3 可用性检测
         try:
             import z3
             self._has_z3 = True
@@ -147,11 +147,11 @@ class PatchSafetyVerifier:
             self._has_z3 = False
 
     # ============================================================
-    # verify: 主验证入口 — 返回 SafetyReport
+    # 主入口 —— 返回 SafetyReport
     # ============================================================
     def verify(self, original_path: str, patched_path: str,
                base_address: int = 0) -> SafetyReport:
-        """加载两个 binary，提取差异区域，逐区域评分。"""
+        """加载双 binary，提取差异区域，逐区域评分。"""
         rpt = SafetyReport()
 
         _orig = self._load_file(original_path)
@@ -230,7 +230,7 @@ class PatchSafetyVerifier:
         rpt.confidence = round(min(max(rpt.confidence, 0.0), 1.0), 4)
         return rpt
 
-    # ── 文件加载 ──────────────────────────────────────────────────────
+    # ── 文件加载 ────────────────────────────────────────────────────
 
     def _load_file(self, path: str) -> Optional[bytes]:
         try:
@@ -240,9 +240,9 @@ class PatchSafetyVerifier:
             _log.error("_load_file(%s): %s", path, e)
             return None
 
-    # ── 差异区域提取 ──────────────────────────────────────────────────
-    # 策略：遍历两个文件，找到所有不一致的连续字节区间。
-    # 对于长度不同的文件，超长部分视为差异。
+    # ── 差异区域提取 ────────────────────────────────────────────────
+    # 策略：遍历双文件，找到所有不一致的连续字节区间。
+    # 长度不同的文件，超长部分视为差异。
 
     def _extract_diff_regions(self, orig: bytes, patch: bytes) -> List[DiffRegion]:
         _regions = []
@@ -252,7 +252,7 @@ class PatchSafetyVerifier:
             _ob = orig[_i] if _i < len(orig) else None
             _pb = patch[_i] if _i < len(patch) else None
             if _ob != _pb:
-                # 发现差异 — 收集连续不一致的区间
+                # 发现差异 — 收集连续不一致区间
                 _start = _i
                 _obuf = bytearray()
                 _pbuf = bytearray()
@@ -299,7 +299,7 @@ class PatchSafetyVerifier:
         _out.append(_cur)
         return _out
 
-    # ── 安全模式匹配 ──────────────────────────────────────────────────
+    # ── 安全模式匹配 ────────────────────────────────────────────────
 
     def _count_safe_patterns(self, data: bytes) -> int:
         _cnt = 0
@@ -315,47 +315,47 @@ class PatchSafetyVerifier:
                 _found.append(_label)
         return _found
 
-    # ── 指令边界分析 ──────────────────────────────────────────────────
-    # 补丁不能跨指令边界：如果 original 侧以 0x90 (NOP) 结尾且 patch
-    # 侧在中间插入了不同长度的指令，可能破坏后续指令的对齐。
+    # ── 指令边界分析 ────────────────────────────────────────────────
+    # 补丁不得跨指令边界：若 original 侧以 0x90 (NOP) 结尾且
+    # patch 侧插入不同长度指令，可能破坏后续指令对齐。
 
     def _check_instruction_boundaries(self, orig: bytes, patch: bytes) -> bool:
         if len(orig) == len(patch):
-            return True  # 等长替换大概率指令边界对齐
-        # 不等长：检查 patch 的结尾是不是合法的指令边界
+            return True  # 等长替换大概率对齐
+        # 不等长：检查 patch 结尾是否为合法指令边界
         if not patch:
             return False
         _last = patch[-1]
-        # x86/x64: 合法指令结束符包括 ret(0xc3), nop(0x90), jmp(0xe9+4B, 0xeb+1B),
-        # int3(0xcc), hlt(0xf4), call(0xe8+4B) 等
+        # x86/x64 合法指令结束符：ret(0xc3), nop(0x90), jmp(0xe9+4B, 0xeb+1B),
+        # int3(0xcc), hlt(0xf4), call(0xe8+4B)
         _valid_enders = {0xc3, 0xcb, 0xca, 0xc2, 0x90, 0xcc, 0xf4}
         if _last in _valid_enders:
             return True
-        # 如果 patch 比 orig 短，其余帧填充 nop 即合法
+        # patch 比 orig 短且尾部有 NOP 填充 → 合法
         if len(patch) < len(orig) and patch.rstrip(b'\x90') != patch:
-            return True  # 尾部已有 NOP 填充
-        # 否则标记为可能越界 — 不做硬拒绝，让上层判定
+            return True
+        # 其余标记为可能越界 — 不做硬拒绝，上层判定
         return False
 
-    # ── Z3 约束验证 ──────────────────────────────────────────────────
-    # 将差异区域的每个字节建模为 BitVec(8)，检查是否存在输入使
-    # original[offset+i] != patch[offset+i] —— 若不存在≠的赋值，
-    # 则差异区域是 dead code（不可能被执行的路径），标记为低风险。
+    # ── Z3 约束验证 ────────────────────────────────────────────────
+    # 将差异区域每个字节映射为 BitVec(8)，检查是否存在输入令
+    # original[offset+i] != patch[offset+i] —— 若无≠赋值，
+    # 则差异区域为 dead code（不可执行路径），标记低风险。
 
     def _z3_verify_regions(self, orig: bytes, patch: bytes,
                            regions: List[DiffRegion]) -> bool:
-        """VeriBin Level B — 对所有差异区域构造 Z3 约束并检查可满足性。"""
+        """VeriBin Level B —— 对所有差异区域构造 Z3 约束并检查可满足性。"""
         try:
             import z3
         except ImportError:
             return True  # 不可用时不扣分
 
         _solver = z3.Solver()
-        _solver.set("timeout", 5000)  # 5s timeout per check
+        _solver.set("timeout", 5000)  # 每次检查 5s 超时
 
-        for _r in regions[:20]:  # 最多检查前20个区域
+        for _r in regions[:20]:  # 最多检查前 20 区域
             _solver.push()
-            # 对每个对应字节位置：original_byte != patch_byte 是否可能
+            # 检查每个对应字节位置 original_byte != patch_byte 是否可能
             _has_diff_constraint = False
             _min_len = min(len(_r.orig_bytes), len(_r.patch_bytes))
             for _b in range(_min_len):
@@ -367,16 +367,16 @@ class PatchSafetyVerifier:
 
             if _has_diff_constraint:
                 _res = _solver.check()
-                # 差异区域的约束是 UNSAT → 差异字节在所有路径上都相同
-                # → 差异区域是编译器 padding / alignment 的副作用
+                # 差异区域约束 UNSAT → 差异字节在所有路径上都相同
+                # → 差异区域是编译器 padding/对齐副作用
                 if _res == z3.unsat:
                     _log.debug("z3: region @ 0x%x is dead code", _r.patch_offset)
 
             _solver.pop()
 
-        return True  # Z3 路径不fail，仅提供额外信息
+        return True  # Z3 路径不 fail，仅提供额外信息
 
-    # ── 风险评分 ──────────────────────────────────────────────────────
+    # ── 风险评分 ────────────────────────────────────────────────────
 
     def _compute_risk_score(self, report: SafetyReport) -> int:
         _score = 0
@@ -392,7 +392,7 @@ class PatchSafetyVerifier:
         return min(max(_score, 0), 100)
 
 
-# ── 便捷函数 ──────────────────────────────────────────────────────────
+# ── 便捷入口 ──────────────────────────────────────────────────────
 
 def verify_patch_safety(original_path: str, patched_path: str,
                         arch: str = "x86_64") -> Dict:
@@ -403,8 +403,10 @@ def verify_patch_safety(original_path: str, patched_path: str,
 
 def batch_safety_check(patch_pairs: List[Tuple[str, str]],
                        arch: str = "x86_64") -> List[Dict]:
-    """对多个 (original, patched) 对做安全性检查。
-    参考 VeriBin 的 MicroPatch Bench 批量评估模式。"""
+    """对多个 (original, patched) 对做批量安全性检查。
+
+    参考 VeriBin MicroPatch Bench 批量评估模式。
+    """
     _verifier = PatchSafetyVerifier(arch=arch)
     _results = []
     for _orig, _patch in patch_pairs:
@@ -415,3 +417,118 @@ def batch_safety_check(patch_pairs: List[Tuple[str, str]],
             **_rpt.to_dict(),
         })
     return _results
+
+
+# ── 混合验证：静态 VeriBin + 动态差分执行 ─────────────────────────
+# 动静融合加权逻辑与动态验证超时降级策略
+
+def verify_hybrid(original_path: str, patched_path: str,
+                  arch: str = "x86_64",
+                  enable_dynamic: bool = True,
+                  dyn_seed_count: int = 20,
+                  dyn_timeout_ms: int = 5000) -> Dict:
+    """静态 (VeriBin) + 动态 (DifferentialExecutor) 混合验证。
+
+    动静融合策略：
+      静态分析先行：快速检出模式层面安全性（指令边界/已知安全模式）。
+      动态补充：仅在静态不能给出 SAFE_STRONG 时启用，
+      通过 concrete execution 捕获实际行为差异。
+      权衡精确度与开销：SAFE_STRONG 的 case 不需要动态。
+
+    参考 cozy [BAR 2025/arXiv:2504.00151] 符号执行验证补丁等价性。
+    本项目混合方案与 cozy 的核心差异：cozy 依赖 angr + SMT，
+    这里用 concrete execution + 模式匹配替代，降低依赖与计算成本。
+    当只有静态可做时（binary 不可执行/无运行时），退化为纯静态。
+
+    返回 dict 含 static_report、dynamic_report（若启用）和 fused_verdict。
+    """
+    # 阶段 1: 静态分析
+    _verifier = PatchSafetyVerifier(arch=arch)
+    _static = _verifier.verify(original_path, patched_path)
+
+    _result = {
+        'success': True,
+        'original': os.path.basename(original_path),
+        'patched': os.path.basename(patched_path),
+        'static_report': _static.to_dict(),
+        'dynamic_report': None,
+        'dynamic_enabled': enable_dynamic,
+        'fused_verdict': _static.verdict.name,
+        'fused_confidence': _static.confidence,
+    }
+
+    # 静态 SAFE_STRONG → 无需动态验证
+    if _static.verdict == SafetyVerdict.SAFE_STRONG:
+        return _result
+
+    # 阶段 2: 动态验证（若启用且 binary 可执行）
+    if not enable_dynamic:
+        return _result
+
+    try:
+        from .src.differential_executor import DifferentialExecutor, DiffVerdict
+        _dyn_exec = DifferentialExecutor(timeout_ms=dyn_timeout_ms)
+        _dyn_rpt = _dyn_exec.verify(
+            original_path, patched_path,
+            seed_count=dyn_seed_count, mutation_rounds=2)
+        _result['dynamic_report'] = _dyn_rpt.to_dict()
+
+        # 融合判定 — 动静加权
+        _fused = _fuse_verdicts(_static, _dyn_rpt)
+        _result['fused_verdict'] = _fused['verdict']
+        _result['fused_confidence'] = _fused['confidence']
+    except ImportError:
+        _log.warning("DiffExec not available — falling back to static-only verdict")
+        _result['dynamic_report'] = {'error': 'DifferentialExecutor module not importable'}
+    except Exception as e:
+        _log.warning("Dynamic verification failed: %s — using static verdict", e)
+        _result['dynamic_report'] = {'error': str(e)}
+
+    return _result
+
+
+def _fuse_verdicts(static_rpt: SafetyReport,
+                   dyn_rpt) -> Dict[str, any]:
+    """融合静态与动态判定 —— 简单加权规则。
+
+    权重：静态 0.6 / 动态 0.4。
+    动态有 concrete execution ground truth 优势，但覆盖率有限；
+    静态覆盖更全面但模式匹配有漏检风险。
+    """
+    # 静态分值
+    _s_map = {
+        SafetyVerdict.SAFE_STRONG: 1.0,
+        SafetyVerdict.SAFE_LIKELY: 0.8,
+        SafetyVerdict.UNCERTAIN: 0.5,
+        SafetyVerdict.UNSAFE_LIKELY: 0.2,
+        SafetyVerdict.UNSAFE_STRONG: 0.0,
+    }
+    _s_score = _s_map.get(static_rpt.verdict, 0.5)
+
+    # 动态分值
+    from .src.differential_executor import DiffVerdict
+    _d_map = {
+        DiffVerdict.EQUIVALENT: 1.0,
+        DiffVerdict.LIKELY_EQUIVALENT: 0.8,
+        DiffVerdict.CRASH_FIXED: 0.7,  # 补丁修复崩溃 → 正向信号
+        DiffVerdict.DIVERGENT: 0.2,
+        DiffVerdict.REGRESSION: 0.0,
+        DiffVerdict.TIMEOUT: 0.5,      # 无法判定 → 中性
+    }
+    _d_score = _d_map.get(dyn_rpt.overall_verdict, 0.5)
+
+    _fused = _s_score * 0.6 + _d_score * 0.4
+
+    # 映射回 SafetyVerdict
+    if _fused >= 0.9:
+        _verdict = SafetyVerdict.SAFE_STRONG.name
+    elif _fused >= 0.7:
+        _verdict = SafetyVerdict.SAFE_LIKELY.name
+    elif _fused >= 0.4:
+        _verdict = SafetyVerdict.UNCERTAIN.name
+    elif _fused >= 0.2:
+        _verdict = SafetyVerdict.UNSAFE_LIKELY.name
+    else:
+        _verdict = SafetyVerdict.UNSAFE_STRONG.name
+
+    return {'verdict': _verdict, 'confidence': round(_fused, 4)}

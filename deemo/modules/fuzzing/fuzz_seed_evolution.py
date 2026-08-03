@@ -1,3 +1,9 @@
+"""遗传算法种子进化引擎。
+
+字节级遗传变异 + 结构感知交叉 + 适应度共享 + 熵引导瞄准 + 模拟退火调度。
+核心循环以覆盖率增长驱动种子群体演化，维持探索阶段的种群多样性。
+"""
+
 import os
 import random
 import math
@@ -8,6 +14,7 @@ from enum import Enum
 import typing
 from typing import Dict, List, Optional, Set, Tuple
 from collections import Counter
+from functools import lru_cache  # 保留供后续进化结果缓存
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +31,8 @@ class MutationType(str, Enum):
     BLOCK_DUPLICATE = "block_duplicate"
     SPLICE = "splice"
 
-class SelectionStrategy:
+class SelectionStrategy(str, Enum):
+    """2026-08-02: 修正为str,Enum, 与MutationType风格统一。"""
     ROULETTE = "roulette"
     TOURNAMENT = "tournament"
     ELITISM = "elitism"
@@ -37,11 +45,11 @@ class Seed:
     fitness: float = 0.0
     age: int = 0
     mutations: int = 0
-    # 字节级重要性权重 (0.0‑1.0) — 高权重区域被变异概率更高
+    # 字节重要性权重 [0.0, 1.0], 高权重位置变异概率更高
     byte_weights: Optional[List[float]] = field(default=None, repr=False)
-    # 种子指纹 — SHA‑256 前 16 字符，用于去重
+    # SHA-256 前16字符指纹, 用于去重与多样性计算
     fingerprint: str = ""
-    # 成功触发新覆盖的次数 (用于 fitness sharing)
+    # 成功触发新覆盖的次数, fitness sharing 使用
     novelty_bonus: int = 0
 
 
@@ -55,7 +63,7 @@ class GenerationResult:
     diversity_index: float = 0.0
 
 
-# ── 变异操作 ────────────────────────────────────────────────────
+# -- 变异操作 --
 
 class GeneticMutator:
 
@@ -71,9 +79,10 @@ class GeneticMutator:
 
     def mutate(self, seed: bytes, mutation_rate: float = 0.01,
                byte_weights: Optional[List[float]] = None) -> bytes:
+        """对种子逐字节概率变异。有权重时变异位置按权重偏置采样。"""
         data = bytearray(seed)
         mutated = False
-        # 使用字节权重偏置变异位置: 高权重字节以更高概率中选
+        # 权重偏置: 高权重字节以更高有效概率被选中
         if byte_weights and len(byte_weights) == len(data):
             for i in range(len(data)):
                 bias = byte_weights[i] if i < len(byte_weights) else 0.5
@@ -91,6 +100,7 @@ class GeneticMutator:
         return bytes(data)
 
     def _select_mutation_type(self) -> MutationType:
+        """按预设概率分布轮盘赌选择变异算子类别。"""
         r = random.random()
         cumulative = 0.0
         for mutation_type, rate in self._mutation_rates.items():
@@ -137,6 +147,7 @@ class GeneticMutator:
         return data
 
     def crossover(self, parent1: bytes, parent2: bytes) -> bytes:
+        """单点交叉: 随机断点拼接两个父本。空输入直接返回非空一侧。"""
         if len(parent1) == 0 or len(parent2) == 0:
             return parent1 or parent2
 
@@ -146,16 +157,16 @@ class GeneticMutator:
         child = parent1[:crossover_point] + parent2[crossover_point:]
         return child
 
-    # ── 结构感知交叉 ─────────────────────────────────────────────
+    # -- 结构感知交叉 --
 
     def structure_aware_crossover(
         self, parent1: bytes, parent2: bytes,
         chunk_size: int = 8
     ) -> bytes:
-        """以 chunk 为单位交叉而非单个字节 — 适用于结构敏感的协议输入。
+        """以chunk_size对齐边界交替拼接两个父本片段。
 
-        随机采样两个父本在 chunk_size 对齐边界的片段交替拼接。
-        灵感来自 AFL++ splicing 阶段和 Grammar‑Mutator 的树重组。"""
+        适配结构敏感的协议输入。概念出自AFL++ splicing与语法引导变异器。
+        """
         if len(parent1) == 0 or len(parent2) == 0:
             return parent1 or parent2
         p1_chunks = [
@@ -176,7 +187,7 @@ class GeneticMutator:
         return bytes(result)
 
 
-# ── 覆盖评估 ────────────────────────────────────────────────────
+# -- 覆盖评估 --
 
 class CoverageEvaluator:
 
@@ -184,6 +195,7 @@ class CoverageEvaluator:
         self._coverage_map: Dict[int, int] = {}
 
     def evaluate(self, seed: bytes) -> int:
+        """对每个(位置,字节值)对哈希计数, 累加覆盖。"""
         coverage = 0
 
         for i in range(len(seed)):
@@ -199,16 +211,17 @@ class CoverageEvaluator:
     def reset(self):
         self._coverage_map.clear()
 
-    # ── 字节级覆盖贡献 ──────────────────────────────────────────
+    # -- 字节级覆盖贡献权重 --
 
     def byte_importance_weights(
         self, seed: bytes, prev_seeds: List[bytes]
     ) -> List[float]:
-        """基于覆盖贡献计算字节重要性权重。
+        """按字节稀有度计算重要性权重。
 
-        对 seed 中每个字节位置 i，计算该字节值在 prev_seeds 中出现的
-        稀有度: 稀有值权重高，因为变异稀有字节更可能触发新路径。
-        这是 AFL 的 effector map 思想的基因算法等价实现。"""
+        对每个字节位置i统计该值在历史种子中的出现频次,
+        稀有值权重高, 因变异稀有字节更可能触发新执行路径。
+        等价于AFL effector map的进化版本。
+        """
         if not prev_seeds or not seed:
             return [0.5] * len(seed)
         freq: List[Counter] = [Counter() for _ in seed]
@@ -220,20 +233,20 @@ class CoverageEvaluator:
         total_samples = max(1, len(prev_seeds))
         for idx, b in enumerate(seed):
             cnt = freq[idx].get(b, 0)
-            # 稀有度: 1 - (出现次数/总样本)
+            # 稀有度 = 1 - 出现频率
             rarity = 1.0 - (cnt / total_samples)
             weights.append(max(0.1, rarity))
         return weights
 
 
-# ── 熵引导的变异瞄准 ────────────────────────────────────────────
+# -- 熵引导变异瞄准 --
 
 class EntropyGuidedMutator:
-    """基于局部字节熵的瞄准器: 高熵区域更可能是数据字段 (而非控制字节)，
-    变异这些位置触发新路径的概率更高。"""
+    """基于局部字节熵的变异瞄准: 高熵区域倾向于数据字段, 命中新路径概率更高。"""
 
     @staticmethod
     def compute_entropy_profile(data: bytes, window: int = 8) -> List[float]:
+        """滑动窗口计算每个字节位置的归一化熵分布 [0, 1]。"""
         if len(data) < window:
             return [0.5] * len(data)
         profile = []
@@ -248,12 +261,12 @@ class EntropyGuidedMutator:
             for c in cnt.values():
                 p = c / total
                 ent -= p * log2(p)
-            # 归一化到 0..1 (max entropy = log2(256) = 8)
+            # 最大熵log2(256)=8, 以此为分母归一化
             profile.append(ent / 8.0)
         return profile
 
 
-# ── 种子群体 ────────────────────────────────────────────────────
+# -- 种子群体 --
 
 class SeedPopulation:
 
@@ -262,11 +275,17 @@ class SeedPopulation:
         self._size = size
         self._mutator = GeneticMutator()
         self._evaluator = CoverageEvaluator()
-        # 保留淘汰掉的优秀个体作为变异素材 (参考 elitism archive)
+        # 精英存档: 保存淘汰的高适应度个体供变异素材
         self._archive: List[Seed] = []
         self._entropy_mutator = EntropyGuidedMutator()
 
+    @property
+    def seeds(self) -> List[Seed]:
+        """当前种群列表只读副本, 兼容外部测试代码引用。"""
+        return list(self._population)
+
     def initialize(self, initial_seeds: Optional[List[bytes]] = None):
+        """初始化: 有外部种子直接填充, 否则随机生成至size上限。"""
         if initial_seeds:
             for data in initial_seeds:
                 if len(self._population) >= self._size:
@@ -288,31 +307,31 @@ class SeedPopulation:
         return bytes([random.randint(0, 255) for _ in range(length)])
 
     def evaluate_population(self):
+        """全体种子评估覆盖与适应度, 年龄递增。"""
         for seed in self._population:
             seed.coverage = self._evaluator.evaluate(seed.data)
             seed.fitness = self._calculate_fitness(seed)
             seed.age += 1
 
     def _calculate_fitness(self, seed: Seed) -> float:
+        """适应度 = 覆盖基础分 - 年龄衰减 + 变异经验加成。"""
         base_fitness = seed.coverage
         age_penalty = seed.age * 0.1
         mutation_bonus = seed.mutations * 0.05
         return base_fitness - age_penalty + mutation_bonus
 
-    # ── 适应度共享 — 保持种群多样性 ─────────────────────────────
+    # -- 适应度共享 --
 
     def apply_fitness_sharing(self, sigma_share: float = 5.0):
-        """适应度共享 (fitness sharing): 相似个体彼此惩罚。
+        """适应度共享: 用Jaccard不相似度度量个体间距离。
 
-        两个种子间的距离用各自覆盖哈希集合的 Jaccard 不相似度衡量。
-        原始适应度除以 niche_count（相似邻居数+1），降低同质个体的
-        选择概率，防止种群快速收敛到单一局部最优。
-
-        sigma_share: 共享阈值，距离小于此值的两个体视为同一生态位。"""
+        距离 < sigma_share 的两个体视为同生态位, 彼此惩罚。
+        niche_count越大原始适应度削弱越多, 抑制快速收敛至局部最优。
+        """
         n = len(self._population)
         if n < 2:
             return
-        # 提前计算每个个体的覆盖标识
+        # 每个个体的覆盖哈希集合
         coverage_sets: List[Set[int]] = []
         for seed in self._population:
             cov_set: Set[int] = set()
@@ -338,21 +357,17 @@ class SeedPopulation:
                     niche_count += max(0.0, 1.0 - distance / sigma_share)
             seed_i.fitness /= (1.0 + niche_count)
 
-    # ── 多样性指数 ──────────────────────────────────────────────
+    # -- 多样性指数 --
 
     def diversity_index(self) -> float:
-        """种群中唯㇐指纹的比例。1.0 = 完全多样，0.0 = 同构。
-        低于 0.3 时应触发更强的变异或种族刷新。"""
+        """唯一条指纹占群体比例。低于0.3触发精英回注。"""
         fps = {s.fingerprint for s in self._population}
         return len(fps) / max(1, len(self._population))
 
-    # ── 语料蒸馏 ────────────────────────────────────────────────
+    # -- 语料蒸馏 --
 
     def distill_corpus(self, target_size: int = 30) -> List[Seed]:
-        """覆盖贪心集合覆盖的语料蒸馏。
-
-        目标: 从当前群体中选择最小的子集仍保持完整覆盖。
-        返回蒸馏后的种子列表。"""
+        """覆盖贪心语料蒸馏: 选出保持完整覆盖的最小子集。"""
         sorted_pop = sorted(
             self._population, key=lambda s: s.fitness, reverse=True
         )
@@ -377,7 +392,7 @@ class SeedPopulation:
                 selected.append(sorted_pop[idx])
                 remaining -= cs
             idx += 1
-        # 若仍未满 target_size，按适应度补齐
+        # 未满额按适应度补齐
         for s in sorted_pop:
             if len(selected) >= target_size:
                 break
@@ -385,7 +400,7 @@ class SeedPopulation:
                 selected.append(s)
         return selected
 
-    # ── 选择 ─────────────────────────────────────────────────────
+    # -- 选择 --
 
     def select(self, strategy: SelectionStrategy = SelectionStrategy.TOURNAMENT) -> List[Seed]:
         if strategy == SelectionStrategy.TOURNAMENT:
@@ -396,6 +411,7 @@ class SeedPopulation:
             return self._elitism_selection()
 
     def _tournament_selection(self, tournament_size: int = 3) -> List[Seed]:
+        """锦标赛选择: 每组随机抽k个, 取适应度最高者, 重复至种群规模。"""
         selected = []
         for _ in range(self._size):
             tournament = random.sample(self._population, tournament_size)
@@ -404,6 +420,7 @@ class SeedPopulation:
         return selected
 
     def _roulette_selection(self) -> List[Seed]:
+        """轮盘赌选择: 适应度比例抽样, 总适应度为0时均匀随机。"""
         total_fitness = sum(seed.fitness for seed in self._population)
         if total_fitness == 0:
             return random.sample(self._population, self._size)
@@ -420,13 +437,25 @@ class SeedPopulation:
         return selected
 
     def _elitism_selection(self) -> List[Seed]:
+        """精英选择: 前20%直接保留, 其余均匀随机补齐。
+
+        2026-08-02 fix: 使用实际种群规模n而非self._size, 防k > n的ValueError。
+        """
+        n = len(self._population)
+        if n == 0:
+            return []
+        elite_count = max(1, n // 5)
         sorted_seeds = sorted(self._population, key=lambda s: s.fitness, reverse=True)
-        elites = sorted_seeds[:int(self._size * 0.2)]
-        remaining = random.sample(sorted_seeds[int(self._size * 0.2):],
-                                self._size - len(elites))
+        elites = sorted_seeds[:elite_count]
+        if elite_count >= n:
+            return elites
+        remaining = random.sample(
+            sorted_seeds[elite_count:],
+            min(n - elite_count, n - elite_count)
+        ) if n > elite_count else []
         return elites + remaining
 
-    # ── 演化主循环 ──────────────────────────────────────────────
+    # -- 演化主循环 --
 
     def evolve(self, generations: int = 10,
                selection: SelectionStrategy = SelectionStrategy.TOURNAMENT,
@@ -434,6 +463,11 @@ class SeedPopulation:
                use_entropy_guidance: bool = True,
                use_simulated_annealing: bool = True,
                ) -> List[GenerationResult]:
+        """多代演化主循环。
+
+        每代: 评估 -> 适应度共享 -> 选择 -> 交叉 -> 变异 -> 精英保留。
+        模拟退火渐变降低变异率以收敛, 熵引导偏置变异位置。
+        """
         results = []
         prev_seeds = [s.data for s in self._population]
 
@@ -461,7 +495,7 @@ class SeedPopulation:
                 diversity_index=div_idx
             ))
 
-            # 若多样性过低，从 archive 重新注入个体
+            # 多样性过低时从存档回注个体
             if div_idx < 0.3 and self._archive:
                 inject_count = min(5, len(self._archive))
                 for s in random.sample(self._archive, inject_count):
@@ -476,7 +510,7 @@ class SeedPopulation:
                 parent1 = selected[i]
                 parent2 = selected[i + 1] if i + 1 < len(selected) else selected[i]
 
-                # 以 50% 概率使用结构感知交叉
+                # 50%概率使用结构感知交叉
                 if random.random() < 0.5:
                     child1_data = self._mutator.structure_aware_crossover(
                         parent1.data, parent2.data
@@ -484,17 +518,17 @@ class SeedPopulation:
                 else:
                     child1_data = self._mutator.crossover(parent1.data, parent2.data)
 
-                # 计算字节重要性权重
+                # 字节重要性权重
                 w1 = self._evaluator.byte_importance_weights(child1_data, prev_seeds)
 
-                # 熵引导: 合并覆盖重要性和熵分布
+                # 熵引导: 融合覆盖重要性与熵分布
                 if use_entropy_guidance:
                     entropy_profile = self._entropy_mutator.compute_entropy_profile(
                         child1_data
                     )
                     w1 = [0.6 * w + 0.4 * e for w, e in zip(w1, entropy_profile)]
 
-                # 模拟退火: 温度高时接受更激进的变异参数
+                # 退火温度调节变异率: 高温阶段更激进
                 annealed_rate = min(0.1, max(0.005, 0.01 * temperature))
 
                 child1_data = self._mutator.mutate(child1_data, mutation_rate=annealed_rate,
@@ -519,14 +553,14 @@ class SeedPopulation:
                     byte_weights=w2,
                 ))
 
-            # 精英保留: 前 5% 直接进入下一代
+            # 精英保留: 前5%直接进入下一代
             elite_count = max(1, self._size // 20)
             sorted_old = sorted(self._population, key=lambda s: s.fitness, reverse=True)
             elites = sorted_old[:elite_count]
             for e in elites:
                 if e not in self._archive:
                     self._archive.append(e)
-            # archive 裁剪
+            # 存档裁剪至2倍种群容量
             if len(self._archive) > self._size * 3:
                 self._archive = sorted(
                     self._archive, key=lambda s: s.fitness, reverse=True
@@ -541,18 +575,21 @@ class SeedPopulation:
         return results
 
     def get_best_seeds(self, count: int = 10) -> List[Seed]:
+        """按适应度降序返回前count个种子。"""
         sorted_seeds = sorted(self._population, key=lambda s: s.fitness, reverse=True)
         return sorted_seeds[:count]
 
-    # ── 获取蒸馏后的最佳种子 ────────────────────────────────────
+    # -- 蒸馏后最优种子 --
 
     def get_distilled_best(self, count: int = 10) -> List[Seed]:
+        """先蒸馏再按适应度降序截取, 兼顾覆盖与种子质量。"""
         distilled = self.distill_corpus(target_size=max(count * 2, 20))
         return sorted(distilled, key=lambda s: s.fitness, reverse=True)[:count]
 
 
 def evolve_seeds(initial_seeds: List[bytes], generations: int = 10,
                  use_annealing: bool = True) -> List[bytes]:
+    """顶层便捷入口: 基于初始种子执行进化并返回最佳种子数据。"""
     population = SeedPopulation(size=100)
     population.initialize(initial_seeds)
     population.evolve(

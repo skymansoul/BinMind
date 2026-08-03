@@ -1,7 +1,7 @@
-# 2026-08-01 — 增量分析缓存: 基于代码相似度的分析结果重用 / 三级粒度(文件/函数/基本块)
+# 增量分析缓存: 代码相似度分析结果重用/三级粒度(文件/函数/基本块)
 # 参考: Meng & Liu "SimFuzz: Conflict-Aware Parallel Fuzzing via Incremental Path Similarity" (ISSRE 2025)
-#       Orion "Fuzzing Workflow Automation" (arXiv:2509.15195, 2025) — 反馈驱动的增量循环
-#       Khorrami et al. "Binary Diff Summarization using LLMs" (arXiv:2509.23970) — FSS 敏感度评分
+#       Orion "Fuzzing Workflow Automation" (arXiv:2509.15195, 2025)
+#       Khorrami et al. "Binary Diff Summarization using LLMs" (arXiv:2509.23970)
 import hashlib, json, logging, os, struct, time
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple, Any
@@ -11,29 +11,29 @@ from contextlib import suppress
 
 log = logging.getLogger(__name__)
 
-# 默认分块: 16字节 → 滑动token
+# 16字节滑动token
 _CHUNK = 16
-# LSH 桶数
+# LSH桶/行配置
 _LSH_BANDS = 8
 _LSH_ROWS  = 16
 
 
 @dataclass
 class AnalysisArtifact:
-    """分析产物: 对应一个分析目标(函数/文件)的结果快照."""
+    """分析产物: 对应一个分析目标的结果快照."""
     target_id: str
-    target_hash: str                 # SHA-256 of raw bytes
-    simhash: int = 0                 # SimHash 指纹 [Charikar 2002]
-    lsh_key: str = ""                # LSH 桶键
+    target_hash: str                 # 原始字节SHA-256
+    simhash: int = 0                 # SimHash指纹 [Charikar 2002]
+    lsh_key: str = ""                # LSH桶键
     findings: List[Dict] = field(default_factory=list)
     metrics: Dict[str, float] = field(default_factory=dict)
     timestamp: float = field(default_factory=time.time)
     analysis_duration_ms: float = 0.0
-    cached_from: Optional[str] = None  # 若从相似目标继承, 记录来源
+    cached_from: Optional[str] = None  # 相似继承来源
 
 
 def _compute_simhash(data: bytes) -> int:
-    """SimHash: 64位加权哈希 [Charikar 2002]. 用于快速相似度筛选."""
+    """SimHash: 64位加权哈希 [Charikar 2002]，快速相似度筛选."""
     v = [0] * 64
     for i in range(0, len(data) - _CHUNK, _CHUNK):
         chunk = data[i:i + _CHUNK]
@@ -58,7 +58,7 @@ def _hamming_distance(a: int, b: int) -> int:
 
 
 def _lsh_key_from_simhash(sh: int) -> str:
-    """将 64-bit SimHash 分为 BANDS 段, 每段作为 LSH 桶键的一部分 [Indyk & Motwani 1998]."""
+    """64-bit SimHash分BANDS段，每段作为LSH桶键 [Indyk & Motwani 1998]."""
     keys = []
     for band in range(_LSH_BANDS):
         mask = ((1 << _LSH_ROWS) - 1) << (band * _LSH_ROWS)
@@ -68,8 +68,8 @@ def _lsh_key_from_simhash(sh: int) -> str:
 
 
 class IncrementalAnalysisCache:
-    # 三级粒度复用: G1=SHA-256精确 | G2=SimHash邻域(Hamming<8) | G3=LSH桶碰撞
-    # 存储: SQLite+WAL + 内存LRU. 参考 SimFuzz (ISSRE 2025) 增量相似度思路
+    # 三级粒度: G1=SHA-256精确 | G2=SimHash邻域(Hamming<8) | G3=LSH桶碰撞
+    # 存储: SQLite+WAL+内存LRU. 参考SimFuzz (ISSRE 2025)增量相似度
     def __init__(self, db_path: str = ".binmind_cache/incremental.db",
                  hamming_threshold: int = 8, lru_cap: int = 512):
         import sqlite3
@@ -84,10 +84,9 @@ class IncrementalAnalysisCache:
         self._conn.execute("CREATE INDEX IF NOT EXISTS idx_simhash ON artifacts(simhash)")
         self._conn.commit()
 
-        # 内存 LRU
         self._lru: OrderedDict = OrderedDict()
         self._lru_cap = lru_cap
-        # SimHash 内存索引 → 快速邻居搜索
+        # SimHash内存索引→快速邻居搜索
         self._sh_index: Dict[int, List[str]] = {}
         self._build_simhash_index()
 
@@ -96,16 +95,13 @@ class IncrementalAnalysisCache:
         for sh, tid in rows:
             self._sh_index.setdefault(sh, []).append(tid)
 
-    # ——— G1: 精确匹配 ———
     # G1: 精确SHA-256匹配
     def lookup_exact(self, target_id: str, raw_bytes: bytes) -> Optional[AnalysisArtifact]:
         target_hash = hashlib.sha256(raw_bytes).hexdigest()
-        # 先查 LRU 再查 DB
         if target_id in self._lru:
             art = self._lru[target_id]
             if art.target_hash == target_hash:
                 self._lru.move_to_end(target_id); return art
-        # 检查 DB
         row = self._conn.execute(
             "SELECT * FROM artifacts WHERE target_id = ? AND target_hash = ?",
             (target_id, target_hash)).fetchone()
@@ -114,9 +110,9 @@ class IncrementalAnalysisCache:
             self._cache_lru(target_id, art); return art
         return None
 
-    # ——— G2: SimHash 邻域 ———
+    # G2: SimHash邻域
     def lookup_similar(self, raw_bytes: bytes) -> List[Tuple[AnalysisArtifact, int]]:
-        """返回 Hamming distance <= threshold 的候选, 按距离排序."""
+        """Hamming distance <= threshold候选，按距离排序."""
         sh = _compute_simhash(raw_bytes)
         candidates: List[Tuple[AnalysisArtifact, int]] = []
 
@@ -124,30 +120,30 @@ class IncrementalAnalysisCache:
             d = _hamming_distance(sh, index_sh)
             if d <= self._hamming_threshold:
                 for tid in tids:
-                    if (art := self._get_artifact(tid)):
+                    if (art := self._resolve_artifact(tid)):
                         candidates.append((art, d))
         candidates.sort(key=lambda x: x[1])
         return candidates[:20]
 
-    # ——— G3: LSH 桶碰撞 ———
+    # G3: LSH桶碰撞
     def lookup_lsh(self, raw_bytes: bytes) -> List[AnalysisArtifact]:
         sh = _compute_simhash(raw_bytes)
         keys = _lsh_key_from_simhash(sh).split("|")
-        matched: Dict[str, int] = {}  # target_id → collision_count
+        matched: Dict[str, int] = {}  # target_id→碰撞计数
         for k in keys:
             rows = self._conn.execute(
                 "SELECT target_id FROM artifacts WHERE lsh_key LIKE ?", (f"%{k}%",)).fetchall()
             for (tid,) in rows:
                 matched[tid] = matched.get(tid, 0) + 1
-        # 返回碰撞 ≥2 的候选 (降低误报)
+        # 碰撞≥2的候选 (降低误报)
         result = []
         for tid, cnt in sorted(matched.items(), key=lambda x: x[1], reverse=True):
-            if cnt >= 2 and (art := self._get_artifact(tid)):
+            if cnt >= 2 and (art := self._resolve_artifact(tid)):
                 result.append(art)
         return result[:20]
 
     def store(self, art: AnalysisArtifact):
-        art.simhash = art.simhash or _compute_simhash(b"")  # 若未计算则补
+        art.simhash = art.simhash or _compute_simhash(b"")  # 未计算则补齐
         art.lsh_key = art.lsh_key or _lsh_key_from_simhash(art.simhash)
         findings_json = json.dumps(art.findings, ensure_ascii=False)
         metrics_json = json.dumps(art.metrics)
@@ -179,7 +175,7 @@ class IncrementalAnalysisCache:
             self._lru.popitem(last=False)
         self._lru[tid] = art
 
-    def _get_artifact(self, tid: str) -> Optional[AnalysisArtifact]:
+    def _resolve_artifact(self, tid: str) -> Optional[AnalysisArtifact]:
         if tid in self._lru:
             return self._lru[tid]
         row = self._conn.execute("SELECT * FROM artifacts WHERE target_id = ?", (tid,)).fetchone()
@@ -202,29 +198,25 @@ class IncrementalAnalysisCache:
             self._conn.close()
 
 
-# ——————————————————————————————————————————————————————————
 # 增量分析调度器
-# ——————————————————————————————————————————————————————————
 
 class IncrementalAnalysisScheduler:
-    """管理增量分析流程: 检测变更 → 复用缓存 → 仅对变更目标重新分析.
-
-    与 ScanOrchestrator 集成: 在构建 DAG 之前, 先过滤出需要重新扫描的 targets.
-    参考 Orion (2025) 的反馈驱动增量循环.
+    """增量分析: 检测变更→复用缓存→仅重分析变更目标.
+    与ScanOrchestrator集成，参考Orion (2025)反馈驱动增量循环.
     """
 
     def __init__(self, cache: IncrementalAnalysisCache = None):
         self.cache = cache or IncrementalAnalysisCache()
-        self._change_log: List[Dict] = []  # 记录每次调度的变更
+        self._change_log: List[Dict] = []  # 每次调度变更记录
 
     def partition_targets(self, targets: Dict[str, bytes]) -> Tuple[
             List[str], List[str], Dict[str, AnalysisArtifact]]:
-        """将目标分为三类: 未变更(直接复用) / 相似(候选复用) / 新目标(需重新分析).
+        """目标分三类: 未变更(复用)/相似(候选复用)/新目标(重分析).
 
         Returns:
-            unchanged: 精确匹配, 可直接跳过
-            changed: 需重新分析
-            similar_matches: {target_id: best_candidate_artifact} 候选复用
+            unchanged: 精确匹配可跳过
+            changed: 需重分析
+            similar_matches: {target_id: best_candidate_artifact}
         """
         unchanged = []
         changed = []
@@ -235,13 +227,12 @@ class IncrementalAnalysisScheduler:
                 unchanged.append(tid)
                 continue
 
-            # 尝试 SimHash 邻域
             candidates = self.cache.lookup_similar(raw)
             if candidates:
                 best, distance = candidates[0]
                 similar_matches[tid] = best
                 changed.append(tid)
-                log.debug("近似匹配: %s → %s (Hamming=%d)", tid, best.target_id, distance)
+                log.debug("近似匹配: %s -> %s (Hamming=%d)", tid, best.target_id, distance)
             else:
                 changed.append(tid)
 
@@ -253,7 +244,7 @@ class IncrementalAnalysisScheduler:
         return unchanged, changed, similar_matches
 
     def get_change_stats(self) -> List[Dict]:
-        return self._change_log[-20:]  # 最近20次
+        return self._change_log[-20:]
 
 
 # 全局实例

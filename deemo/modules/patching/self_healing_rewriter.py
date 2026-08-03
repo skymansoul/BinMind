@@ -1,14 +1,15 @@
-# 2026-07-16
-
 import logging, os, time, re
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any, Tuple
 from pathlib import Path
 
-try:
-    from loguru import logger
-except ImportError:
-    logger = logging.getLogger(__name__)
+# 移除 loguru 依赖。try/except 是软回退，但大多数环境不装 loguru。
+# 标准 logging 始终可用。
+# try:
+#     from loguru import logger
+# except ImportError:
+#     logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 try:
     from core.plugin_manager import BaseAnalyzer, AnalyzerMetadata, AnalyzerType
@@ -85,8 +86,8 @@ class RewriteResult:
     log: List[str] = field(default_factory=list)
 
 
-# ===== Protection rule template library =====
-# 每个 protection type 对应一个 C 级别的检查代码模板
+# ===== 保护规则代码片段库 =====
+# 每种保护类型对应一段 C 级检查代码
 
 _PROTECTION_TEMPLATES: Dict[ProtectionType, str] = {
     ProtectionType.BOUND_CHECK: "if ({target}_len >= {target}_cap) {{ {target}_len = {target}_cap - 1; }}",
@@ -101,10 +102,10 @@ _PROTECTION_TEMPLATES: Dict[ProtectionType, str] = {
 
 
 class SelfHealingRewriter(BaseAnalyzer):
-    """自愈重写器：根据 ProtectionRule 生成 instrumentation 代码，模拟热补丁应用。
+    """自愈重写器：按 ProtectionRule 产出插桩代码，模拟热补丁。
 
-    实现策略：Python 无法直接修改运行中进程的内存，因此这里生成 instrumentation
-    脚本（Frida/ DynamoRIO / PIN），而非真实注入。真实注入由外部 C 工具链完成。
+    Python 无法直接修改运行中进程内存，因此生成插桩脚本
+    （Frida/DynamoRIO/PIN），真实注入由外部 C 工具链完成。
     """
 
     def __init__(self, binary_path: str = "", arch: str = "x86_64"):
@@ -114,10 +115,10 @@ class SelfHealingRewriter(BaseAnalyzer):
         self._framework = InstrumentationFramework.FRIDA
 
     # ============================================================
-    # rewrite: 主入口 — 遍历规则，生成+应用+验证，最多3次重试
+    # 主入口 —— 遍历规则，生成+应用+验证，最多 3 次重试
     # ============================================================
     def rewrite(self, rules: List[ProtectionRule]) -> RewriteResult:
-        """对每个 ProtectionRule 生成热补丁并验证，失败时重试最多 3 次。"""
+        """逐规则生成热补丁并验证，失败重试最多 3 次。"""
         _result = RewriteResult()
         _result.attempts = len(rules)
         for _rule in rules:
@@ -147,7 +148,7 @@ class SelfHealingRewriter(BaseAnalyzer):
         _result.log = list(self._results_log)
         return _result
 
-    # //// 生成热补丁代码：根据 framework 类型分发 ////
+    # //// 生成热补丁：按 framework 类型分发 ////
     def _generate_hot_patch(self, rule: ProtectionRule) -> str:
         if self._framework == InstrumentationFramework.FRIDA:
             return self._frida_hook_template(rule)
@@ -166,7 +167,7 @@ class SelfHealingRewriter(BaseAnalyzer):
         _code = rule.check_code
         if not _code or len(_code.strip()) == 0:
             return False
-        # 检查关键模式：应该是 if/return/memset 等安全检查代码
+        # 检查关键模式：应为 if/return/memset 等安全检查代码
         _patterns = [r'\bif\b', r'\breturn\b', r'\bmemset\b', r'\bnull\b', r'\bsizeof\b',
                      r'\bcheck\b', r'\bguard\b', r'\bvalidate\b', r'\{', r'\}']
         _hits = sum(1 for _p in _patterns if re.search(_p, _code, re.IGNORECASE))
@@ -184,7 +185,7 @@ class SelfHealingRewriter(BaseAnalyzer):
             time.sleep(0.5 * (2 ** (_retry - 1)))
         return False, _log
 
-    # **** FRIDA JavaScript 模板 ****
+    # **** FRIDA JavaScript hook ****
     def _frida_hook_template(self, rule: ProtectionRule) -> str:
         _mod = os.path.basename(self._binary_path) or "target"
         _lines = [
@@ -197,7 +198,7 @@ class SelfHealingRewriter(BaseAnalyzer):
             "      onEnter: function(args) {",
             "        // {}: {}".format(rule.protection_type.value, rule.description),
         ]
-        # 注入检查逻辑
+        # 嵌入检查逻辑
         _check = rule.check_code.strip().replace('\n', '\n        ')
         _lines.append("        // " + _check)
         _lines.append("      },")
@@ -205,14 +206,14 @@ class SelfHealingRewriter(BaseAnalyzer):
         _lines.append("  }")
         _lines.append("}")
 
-        # 内存保护：如果有 MEMORY_TRACKING 或 CANARY_INSERT
+        # 内存保护：MEMORY_TRACKING / CANARY_INSERT 时启用
         if rule.protection_type in (ProtectionType.MEMORY_TRACKING, ProtectionType.CANARY_INSERT):
             _lines.insert(len(_lines) - 4, "    Memory.protect(addr, 4096, 'rwx');")
             _lines.append("    Memory.writeByteArray(addr, [0x90, 0x90, 0x90, 0x90]);")
 
         return '\n'.join(_lines)
 
-    # //// DynamoRIO C 模板 ////
+    # //// DynamoRIO C hook ////
     def _dynamorio_hook_template(self, rule: ProtectionRule) -> str:
         _lines = [
             "// DynamoRIO auto-generated hook for {}".format(rule.rule_id),
@@ -226,7 +227,7 @@ class SelfHealingRewriter(BaseAnalyzer):
         ]
         return '\n'.join(_lines)
 
-    # //// Intel PIN C++ 模板 (UNTESTED) ////
+    # //// Intel PIN C++ hook (未测试) ////
     def _pin_hook_template(self, rule: ProtectionRule) -> str:
         _lines = [
             "// Intel PIN auto-generated hook for {} [UNTESTED]".format(rule.rule_id),
@@ -249,7 +250,7 @@ class SelfHealingRewriter(BaseAnalyzer):
         return '\n'.join(_lines)
 
 
-# **** 便捷函数：一步完成自愈保护 ****
+# **** 便捷入口：一步完成自愈保护 ****
 def apply_self_healing_protection(binary_path: str,
                                    cve_info: Optional[CVEInfo] = None,
                                    framework: InstrumentationFramework = InstrumentationFramework.FRIDA) -> InstrumentationResult:

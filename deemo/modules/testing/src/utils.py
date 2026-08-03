@@ -1,5 +1,4 @@
-# 2026-07-20
-# testing utilities — logging setup, retry, hashing, temp dirs
+"""测试工具集：日志初始化、重试、哈希、临时目录、文件比较、超时"""
 import logging
 import hashlib
 import time
@@ -9,16 +8,18 @@ import functools
 import signal
 from contextlib import contextmanager
 
+_CHUNK_ALIGNMENT = 0x1000
+
 
 def setup_logging(level: str = "INFO"):
-    """Configure root logger with timestamp + module name."""
+    """根日志器配置：时间戳 + 模块名"""
     _fmt = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
     logging.basicConfig(level=getattr(logging, level.upper(), logging.INFO),
                         format=_fmt, datefmt="%H:%M:%S")
 
-# ----
+
 def retry(max_attempts=3, delay=1.0, backoff=2.0):
-    """Decorator: retry function with exponential backoff on exception."""
+    """装饰器：异常时指数退避重试"""
     def _deco(func):
         @functools.wraps(func)
         def _wrap(*args, **kwargs):
@@ -37,8 +38,9 @@ def retry(max_attempts=3, delay=1.0, backoff=2.0):
         return _wrap
     return _deco
 
-# ----
+
 def hash_file(filepath: str, algorithm: str = "sha256") -> str:
+    """文件内容哈希"""
     _h = hashlib.new(algorithm)
     with open(filepath, "rb") as _f:
         while True:
@@ -48,9 +50,10 @@ def hash_file(filepath: str, algorithm: str = "sha256") -> str:
             _h.update(_chunk)
     return _h.hexdigest()
 
-# ----
+
 @contextmanager
 def temp_dir_context(suffix: str = ""):
+    """临时目录上下文管理器，退出时清理"""
     _path = tempfile.mkdtemp(suffix=suffix)
     try:
         yield _path
@@ -58,9 +61,9 @@ def temp_dir_context(suffix: str = ""):
         import shutil
         shutil.rmtree(_path, ignore_errors=True)
 
-# ----
+
 def compare_files(file_a: str, file_b: str) -> int:
-    """Byte-by-byte comparison. Returns first diff offset, or -1 if identical."""
+    """逐字节比较两文件，返回首个差异偏移；完全相同返回 -1"""
     with open(file_a, "rb") as _fa, open(file_b, "rb") as _fb:
         _offset = 0
         while True:
@@ -79,13 +82,13 @@ def compare_files(file_a: str, file_b: str) -> int:
                     return _offset + min(len(_ba), len(_bb))
     return -1
 
-# ----
+
 class TimeoutError(Exception):
     pass
 
 @contextmanager
 def timeout(seconds: float):
-    """Context manager: raises TimeoutError after `seconds`."""
+    """上下文管理器：超时抛 TimeoutError"""
     def _handler(signum, frame):
         raise TimeoutError(f"operation timed out after {seconds}s")
     _old = signal.signal(signal.SIGALRM, _handler)
@@ -95,3 +98,8 @@ def timeout(seconds: float):
     finally:
         signal.alarm(0)
         signal.signal(signal.SIGALRM, _old)
+
+
+def _debug_print(*args, **kwargs):
+    """调试输出桩，当前未启用"""
+    pass

@@ -1,32 +1,29 @@
-# Data provenance tracking — W3C PROV 模型 + lineage DAG
-# 审计二进制签名的完整溯源链: 谁、何时、通过什么工具处理了数据。
+# 数据溯源追踪 — W3C PROV 模型 + lineage DAG
+# 审计二进制签名完整溯源链: 谁、何时、通过何种工具处理数据。
 # W3C PROV-DM [Moreau et al. 2013] 核心三元组:
 #   Entity → Activity → Agent, 含 attribution/derivation/generation 关系。
-# Zotero 补充:
-#   "Vestige: Identifying Binary Code Provenance for Vulnerability Detection"
-#     — 二进制代码来源识别系统，与本模块的 provenance chain 对应:
-#     从编译工具链 / 源码库 / 第三方组件的 provenance 信息追溯到漏洞源头。
-#   "CBTracer: Continuously Building Datasets for Binary Vulnerability and
-#     Exploit Research" [Kim et al., ASIA CCS 2018] — 持续数据集构建
-#     中的 data lineage 追踪需求。
-#   "Arbiter: Bridging the Static and Dynamic Divide in Vulnerability
-#     Discovery on Binary Programs" — 静态/动态分析的混合 provenance。
+# 补充文献:
+#   Vestige — 二进制代码来源识别系统，与本模块 provenance chain 对应:
+#     从编译工具链/源码库/第三方组件的 provenance 追溯漏洞源头。
+#   CBTracer [Kim et al., ASIA CCS 2018] — 持续数据集构建
+#     中的 data lineage 追踪。
+#   Arbiter — 静态/动态分析的混合 provenance。
 #
-# 存储模型: 在 SQLite 中建 prov_nodes + prov_edges 两张表，
+# 存储模型: SQLite 中 prov_nodes + prov_edges 两张表，
 # 节点类型: entity | activity | agent，边类型: used | wasGeneratedBy |
 #   wasAttributedTo | wasDerivedFrom | wasInformedBy。
-# 查询接口支持 DAG 遍历: 上游溯源 (回溯到最早的输入) 和
-#   下游影响分析 (前向追踪某个 entity 影响了哪些后续产物)。
+# 查询接口支持 DAG 遍历: 上游溯源 (回溯至最早输入) 和
+#   下游影响分析 (前向追踪某 entity 影响到的后续产物)。
 #
-# 冷存储溯源视角 [AVS, arXiv:2511.19453]: 数据从热层迁移到冷层时，
-# provenance 记录迁移操作 + 压缩策略，使下游可以还原数据处理链。
+# 冷存储溯源视角 [AVS, arXiv:2511.19453]: 数据从热层迁至冷层时，
+# provenance 记录迁移操作 + 压缩策略，使下游可还原数据处理链。
 
 import time
 from typing import Dict, List, Optional, Any, Set
 
 
 class ProvNode:
-    """PROV 图中的节点 —— Entity / Activity / Agent 统一表示。"""
+    """PROV 图节点 —— Entity / Activity / Agent 统一表示。"""
     __slots__ = ("node_id", "node_type", "name", "attrs")
 
     def __init__(self, node_id: str, ntype: str, name: str = "",
@@ -42,7 +39,7 @@ class ProvNode:
 
 
 class ProvEdge:
-    """PROV 图中的有向边 —— 关系类型固定为 W3C PROV-DM 标准。"""
+    """PROV 图有向边 —— 关系类型固定为 W3C PROV-DM 标准。"""
     __slots__ = ("src", "tgt", "rel_type", "timestamp", "meta")
 
     def __init__(self, src: str, tgt: str, rel_type: str,
@@ -61,7 +58,7 @@ class ProvEdge:
 class ProvenanceGraph:
     """有向无环图 (DAG) 表达 provenance。
 
-    不去重地接受所有节点/边，遍历时基于邻接表做 BFS/DFS。
+    不去重接受所有节点/边，遍历基于邻接表 BFS/DFS。
     图本身不持久化 —— 由 ProvenanceTracker 负责 DB 存储。
     """
 
@@ -85,8 +82,8 @@ class ProvenanceGraph:
         return self._nodes.get(nid)
 
     def trace_upstream(self, start_id: str, max_depth: int = 20) -> List[ProvNode]:
-        """BFS 向上游溯源 —— 返回从 start_id 沿 used / wasDerivedFrom
-        回溯的所有 input entity 和 activity 节点 (逆拓扑顺序)。"""
+        """BFS 上游溯源 —— 从 start_id 沿 used / wasDerivedFrom
+        回溯所有 input entity 和 activity 节点 (逆拓扑序)。"""
         seen: Set[str] = set()
         result: List[ProvNode] = []
         queue = [(start_id, 0)]
@@ -104,8 +101,8 @@ class ProvenanceGraph:
         return result
 
     def trace_downstream(self, start_id: str, max_depth: int = 20) -> List[ProvNode]:
-        """BFS 向下游跟踪影响 —— 从 start_id 出发，沿 wasGeneratedBy /
-        wasDerivedFrom 找所有受影响的产物。"""
+        """BFS 下游影响追踪 —— 从 start_id 沿 wasGeneratedBy /
+        wasDerivedFrom 找所有受影响产物。"""
         seen: Set[str] = set()
         result: List[ProvNode] = []
         q = [(start_id, 0)]
@@ -165,7 +162,7 @@ def _prov_edges_to_json(edges: List[ProvEdge], rel: str) -> dict:
 # ---------------------------------------------------------------------------
 
 class ProvenanceTracker:
-    """DB-backed provenance 追踪器 —— 数据进出每个处理步骤时记录 provenance 关系。
+    """DB-backed provenance 追踪器 —— 数据进出各处理步骤时记录 provenance 关系。
 
     用法:
       tracker = ProvenanceTracker(db)
@@ -206,7 +203,7 @@ class ProvenanceTracker:
                       agent: str = "cli_import", metadata: dict = None) -> str:
         """导入文件时的 provenance 记录。
 
-        创建: Entity(sig) ← wasGeneratedBy ← Activity(import_file) ← used ← Entity(file)
+        构建路径: Entity(sig) ← wasGeneratedBy ← Activity(import_file) ← used ← Entity(file)
         """
         import json
         now = time.time()
@@ -247,7 +244,7 @@ class ProvenanceTracker:
     def record_analysis(self, sig_id: int, tool_name: str,
                         findings_count: int = 0,
                         agent: str = "binmind_scanner") -> str:
-        """记录分析结果 —— analysis activity 生成 findings entity。"""
+        """记录分析结果 —— analysis activity 产出 findings entity。"""
         import json
         now = time.time()
         conn = self._db.get_connection()
@@ -326,7 +323,7 @@ class ProvenanceTracker:
         return graph
 
     def search_by_agent(self, agent: str, limit: int = 100) -> List[dict]:
-        """按 agent 反查该操作者处理过的所有产物。"""
+        """按 agent 反查该操作者处理过的全部产物。"""
         conn = self._db.get_connection()
         rows = conn.execute("""
             SELECT pn.node_id, pn.name, pe.timestamp FROM prov_nodes pn
@@ -341,7 +338,7 @@ class ProvenanceTracker:
         return [dict(r) for r in rows]
 
     def recent_activities(self, limit: int = 50) -> List[dict]:
-        """最近 N 条 activity —— 用于 dashboard 和审计。"""
+        """最近 N 条 activity —— 供 dashboard 和审计使用。"""
         conn = self._db.get_connection()
         rows = conn.execute(
             "SELECT * FROM prov_nodes WHERE node_type='activity' "
@@ -352,7 +349,7 @@ class ProvenanceTracker:
     def export_graph(self, sig_ids: List[int] = None) -> ProvenanceGraph:
         """导出指定签名 ID 列表的完整 provenance 子图。"""
         if sig_ids is None:
-            # 默认导出所有
+            # 默认导出全部
             return self._full_graph()
         graph = ProvenanceGraph()
         for sid in sig_ids:

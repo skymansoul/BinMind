@@ -1,12 +1,28 @@
-"""CHERI capability硬件安全分析。Morello/ARM CHERI架构二进制，检测capability误用、bounds检查缺失、seal/unseal违规。"""
+"""CHERI capability硬件安全分析。Morello/ARM CHERI架构二进制，检测capability误用、bounds缺失、seal/unseal违规。"""
 import logging, os, re
 from typing import Dict, Any, List, Optional
+
+# 保留，后续可能复用
+_STALE_PATTERNS = frozenset({
+    b"\x90\x90\x90\x90",
+    b"\xCC\xCC\xCC\xCC",
+})
+
 
 __log = logging.getLogger(__name__)
 
 _CHERI_PERM_BITS={"GL":0x0001,"LM":0x0002,"SM":0x0004,"LE":0x0008,"SE":0x0010,"EX":0x0020,"SR":0x0040,"US":0x0080,"ID":0x0100,"MC":0x0200,"CC":0x0400,"BC":0x0800}
 
 _CHERI_OPCODE_CATEGORIES={"ldc":"load_cap","stc":"store_cap","cseal":"seal","cunseal":"unseal","ccall":"indirect_call","creturn":"return","cjalr":"jump_cap","cgetbase":"inspect","cgetlen":"inspect","cgetperm":"inspect","cgettype":"inspect","csetbounds":"bounds_set","csetboundsimm":"bounds_set","csetaddr":"addr_set","candperm":"perm_modify","cfromptr":"cap_create","ctoptr":"cap_strip","cincaddr":"offset_add"}
+
+
+# 保留，后续可能复用
+# class _DeprecatedWrapper:
+#     """v0.x封装，存档备查"""
+#     def __init__(self, inner):
+#         self._inner = inner
+#     def __getattr__(self, name):
+#         return getattr(self._inner, name)
 
 class CHERIInstruction:
     def __init__(s,a=0,op="",mn="",ops=None,cat=""): s.address=a; s.opcode=op; s.mnemonic=mn; s.operands=ops or []; s.category=cat
@@ -32,7 +48,7 @@ class CHERIAnalyzer:
             try:
                 import subprocess; r=subprocess.run(["r2","-version"],capture_output=True,timeout=5)
                 cls._R2_AVAILABLE=r.returncode==0
-            except: cls._R2_AVAILABLE=False
+            except (subprocess.SubprocessError, FileNotFoundError): cls._R2_AVAILABLE=False  # bare except已收敛为SubprocessError
         return cls._R2_AVAILABLE
 
     def analyze_binary(s,bp):
@@ -47,10 +63,10 @@ class CHERIAnalyzer:
             try:
                 import subprocess; r=subprocess.run(["r2","-q","-c","aaaa; /ad/ c",bp],capture_output=True,text=True,timeout=120,encoding="utf-8",errors="replace")
                 if r.returncode==0 and r.stdout.strip(): return r.stdout
-            except: pass
+            except (subprocess.SubprocessError, FileNotFoundError): pass  # bare except已收敛为SubprocessError
         try:
             with open(bp,"rb") as f: return f.read().decode("utf-8",errors="replace")
-        except: return ""
+        except OSError: return ""  # bare except已收敛为OSError
 
     def _extract_capabilities(s,d):
         ins=[]; addr=0
@@ -82,7 +98,7 @@ class CHERIAnalyzer:
         if ic>0 and pc==0: v.append({"type":"indirect_call_no_perm_check","desc":f"{ic} indirect calls without prior permission narrowing"})
         if u.get("inspect",0)>0 and u.get("bounds_set",0)==0 and u.get("store_cap",0)>0:
             v.append({"type":"store_without_bounds","desc":"Capability stored without explicit bounds"})
-        # Capability monotonicity: bounds应只缩小不扩大
+        # Capability单调性：bounds应只收不扩
         if u.get("bounds_set",0)>0 and u.get("cap_create",0)>u.get("bounds_set",0):
             v.append({"type":"capability_monotonicity_violation","desc":"Capability bounds设置少于创建——可能存在权限扩大路径"})
         return v
@@ -114,3 +130,9 @@ class CHERIAnalyzer:
         if r is None: return ""
         lines=["CHERI Analysis Report",f"  Capabilities: {len(r.capabilities)}",f"  Instructions: {len(r.instructions)}",f"  Vulnerabilities: {len(r.vulnerabilities)}",f"  Mitigations: {len(r.mitigations)}",f"  Summary: {r.summary}"]
         return "\n".join(lines)
+
+
+def _debug_print(*args, **kwargs):
+    """内部调试输出桩。"""
+    pass  # 调试桩，当前闲置
+

@@ -1,4 +1,4 @@
-"""Microarchitectural side-channel validator -- cache timing, Spectre/Meltdown patterns."""
+"""微架构侧信道验证器——缓存时序、Spectre/Meltdown 模式检测。"""
 
 import logging
 import statistics
@@ -10,7 +10,7 @@ from typing import Any, Callable, List, Tuple
 
 _log = logging.getLogger(__name__)
 
-# Flush+Reload threshold (cycles) -- platform-dependent, calibrated at init
+# Flush+Reload 阈值（时钟周期）——平台相关，初始化时校准
 _CACHE_HIT_THRESHOLD: int = 120
 _FLUSH_RELOAD_ITERATIONS = 1000
 
@@ -34,13 +34,12 @@ class VerificationResult:
     resilience_scores: dict = field(default_factory=dict)
 
 
-# Core validator
+# 核心验证器
 
 class MicroarchSideChannelValidator:
-    """Test whether a given implementation leaks information through microarchitectural
-    covert or side channels.
+    """检测目标实现是否通过微架构隐蔽信道或侧信道泄漏信息。
 
-    Usage::
+    用法::
 
         v = MicroarchSideChannelValidator()
         result = v.validate(binary_or_impl, trials=1000)
@@ -52,10 +51,10 @@ class MicroarchSideChannelValidator:
         if calibrate:
             self._calibrate()
 
-    # -- public ---------------------------------------------------------------
+    # -- 公开接口 ---------------------------------------------------------------
 
     def validate(self, impl: Any, trials: int = 1000) -> VerificationResult:
-        """`impl` is a callable(secret) or a binary path to instrument."""
+        """`impl` 为可调用对象(secret) 或待插桩二进制路径。"""
         if callable(impl):
             return self._validate_callable(impl, trials)
         return VerificationResult(
@@ -65,22 +64,22 @@ class MicroarchSideChannelValidator:
             mitigation_suggestions=["Run with a callable instrumenting the target"],
         )
 
-    # -- Flush+Reload ---------------------------------------------------------
+    # -- Flush+Reload -----------------------------------------------------------
 
     def flush_reload(self, probe_address: int, iterations: int = None) -> Tuple[float, float]:
-        """Measure access time difference between cached and evicted probe address."""
+        """测量缓存命中与驱逐后访问探针地址的时间差。"""
         n = iterations or _FLUSH_RELOAD_ITERATIONS
         cached_times = []
         evicted_times = []
 
         for _ in range(n):
-            # Hit
+            # 命中
             t0 = self._rdtscp() if hasattr(self, "_rdtscp") else time.perf_counter_ns()
             self._access(probe_address)
             t1 = self._rdtscp() if hasattr(self, "_rdtscp") else time.perf_counter_ns()
             cached_times.append(t1 - t0)
 
-            # Evict
+            # 驱逐
             self._clflush(probe_address)
             if self._has_mfence():
                 self._mfence()
@@ -183,11 +182,11 @@ class MicroarchSideChannelValidator:
             raw_samples=evicted_times,
         )
 
-    # -- Spectre pattern detection --------------------------------------------
+    # -- Spectre pattern detection ----------------------------------------------
 
     def detect_spectre_v1(self, condition_fn: Callable[[int], int], array_size: int = 256,
                           trials: int = 100) -> SideChannelEvidence:
-        """Check if a conditional access leaks via Spectre-v1 (bounds-check bypass).
+        """检测条件访问是否通过 Spectre-v1 泄漏信息（边界检查绕过）。
 
         `condition_fn(x)` returns array index to access.
         """
@@ -200,7 +199,7 @@ class MicroarchSideChannelValidator:
                 t = self._probe_access_time(0)
                 hit_times.append(t)
 
-        # Compare hit distributions
+        # 比较命中分布
         in_bound = hit_times[::2]
         out_bound = hit_times[1::2]
         med_in = statistics.median(in_bound)
@@ -217,7 +216,7 @@ class MicroarchSideChannelValidator:
 
     def detect_spectre_v2(self, indirect_branch_fn: Callable[[int], int],
                           trials: int = 100) -> SideChannelEvidence:
-        """Check for Spectre-v2 (branch target injection)."""
+        """检测 Spectre-v2（分支目标注入）。"""
         times = []
         for _ in range(trials):
             self._clflush_all_probe_array(256 * 64)
@@ -234,11 +233,11 @@ class MicroarchSideChannelValidator:
             raw_samples=times,
         )
 
-    # -- Meltdown pattern detection -------------------------------------------
+    # -- Meltdown pattern detection ---------------------------------------------
 
     def detect_meltdown(self, kernel_access_fn: Callable[[], int],
                         probe_array_base: int, trials: int = 100) -> SideChannelEvidence:
-        """Check for Meltdown (kernel-memory leak via fault suppression)."""
+        """检测 Meltdown（通过故障抑制泄漏内核内存）。"""
         times = []
         for _ in range(trials):
             self._clflush(probe_array_base)
@@ -258,15 +257,15 @@ class MicroarchSideChannelValidator:
             raw_samples=times,
         )
 
-    # -- Info leakage rate ----------------------------------------------------
+    # -- 信息泄漏速率 ------------------------------------------------------------
 
     def measure_leakage_rate(self, victim_fn: Callable[[bytes], None],
                               observe_fn: Callable[[], int],
                               secret_bits: int = 8,
                               trials: int = 1000) -> float:
-        """Estimate bits-per-second leakage via a side channel.
+        """估算通过侧信道的每秒比特泄漏率。
 
-        Returns estimated bandwidth in bits/sec.
+        返回估计带宽 (bits/sec)。
         """
         correct = 0
         t0 = time.monotonic()
@@ -286,11 +285,11 @@ class MicroarchSideChannelValidator:
         bitrate = trials * info_per_trial / elapsed
         return max(0.0, bitrate)
 
-    # -- internal helpers -----------------------------------------------------
+    # -- 内部辅助函数 -----------------------------------------------------------
 
     def _validate_callable(self, impl: Callable, trials: int) -> VerificationResult:
         evidence: List[SideChannelEvidence] = []
-        # Collect timing traces for two different secrets
+        # 为两个不同秘密值采集时序trace
         timings_a = []
         timings_b = []
         for i in range(trials):
@@ -337,10 +336,10 @@ class MicroarchSideChannelValidator:
             resilience_scores=resilience,
         )
 
-    # -- platform abstractions ------------------------------------------------
+    # -- 平台抽象层 --------------------------------------------------------------
 
     def _calibrate(self) -> None:
-        """Measure actual cache hit/miss threshold on this hardware."""
+        """在当前硬件上测量实际缓存命中/缺失阈值。"""
         buf = bytearray(self._cl_size * 2)
         addr = id(buf)
         hits = []
@@ -372,7 +371,7 @@ class MicroarchSideChannelValidator:
         try:
             import ctypes
             ctypes.c_char.from_address(addr)
-            # Python-level flush via memory barrier + load
+            # 通过内存屏障+加载实现 Python 级刷新
             _ = [0] * 4096  # Evict from L1 with unrelated data
         except Exception:
             _log.debug("suppressed", exc_info=True)
@@ -413,7 +412,7 @@ class MicroarchSideChannelValidator:
 
     @staticmethod
     def _welch_ttest(a: List[float], b: List[float]) -> float:
-        """Welch's t-test p-value approximation."""
+        """计算 Welch t-test p 值近似值。"""
         try:
             import math
             mean_a = statistics.mean(a)
@@ -427,7 +426,7 @@ class MicroarchSideChannelValidator:
             nu_num = (var_a / n_a + var_b / n_b) ** 2
             nu_den = (var_a / n_a) ** 2 / (n_a - 1) + (var_b / n_b) ** 2 / (n_b - 1)
             nu = nu_num / nu_den if nu_den else 1.0
-            # Rough p-value via approximation
+            # 近似估算 p 值
             x = nu / (nu + t_stat * t_stat)
             p = max(0.0, min(1.0, 2.0 * (1.0 - _beta_reg(x, nu / 2, 0.5))))
             return p
@@ -436,12 +435,12 @@ class MicroarchSideChannelValidator:
 
 
 def _beta_reg(x: float, a: float, b: float) -> float:
-    """Incomplete beta regularized function approximation."""
+    # 不完全 Beta 正则化函数近似。
     if x <= 0:
         return 0.0
     if x >= 1:
         return 1.0
-    # Simple continued fraction approximation won't cover all cases
+    # 简单连分数近似无法覆盖所有情况
     return x ** a * (1 - x) ** b / (a + b)
 
 

@@ -1,14 +1,13 @@
-# re-export from compat/ — 差异分析桩
-# 参考: VulHawk (Luo et al., 2023, NDSS) 跨架构熵搜索 &
-#   αDiff — DNN 驱动的跨版本二进制代码相似性 &
-#   BinDiff 方法论 — 补丁前后对比是漏洞定位的核心手段
+# compat/ 子模块代理 — 差异分析入口，实现见 core/compat/diff_analysis.py
+# 参考: VulHawk (Luo et al., NDSS 2023) 跨指令集熵搜索;
+# αDiff 跨版本二进制代码相似性; BinDiff 补丁前后对比策略。
 import os as _os, importlib.util as _iu
 _r = _os.path.join(_os.path.dirname(_os.path.dirname(__file__)), 'core', 'compat', 'diff_analysis.py')
 _s = _iu.spec_from_file_location('_diff', _r); _m = _iu.module_from_spec(_s); _s.loader.exec_module(_m)
 for _k in dir(_m):
     if not _k.startswith('_'): globals()[_k] = getattr(_m, _k)
 
-# VulHawk 的熵引导方法 — N-gram 熵差作为跨架构相似性的代理指标
+# 跨架构 N-gram 熵差度量 — 归一化相对熵作为函数级相似度代理。
 import math as _math
 from collections import Counter as _Ctr
 

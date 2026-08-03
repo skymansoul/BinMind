@@ -1,4 +1,3 @@
-# 2026-07-19
 # ==== 异常检测引擎：VAE重构 + 孤立森林 + OC-SVM（纯numpy，零依赖sklearn） ====
 
 import numpy as np
@@ -44,7 +43,7 @@ class BinaryFuncVAE:
         self._enc_w_lv = _last_w_lv
         self._enc_b_lv = _last_b_lv
 
-        # decoder
+        # 解码器
         for _j in range(len(_dec_dims) - 1):
             _w, _bias = self._init_weights([_dec_dims[_j], _dec_dims[_j + 1]])
             self._dec_w[_j] = _w
@@ -158,7 +157,7 @@ class BinaryFuncVAE:
         # logvar分支
         _w_lv_orig = self._enc_w_lv.copy()
         _b_lv_orig = self._enc_b_lv.copy()
-        # gradient for _enc_w_lv
+        # 梯度 for _enc_w_lv
         _flat_w = _w_lv_orig.ravel()
         _g_wlv = np.zeros_like(_flat_w)
         for _t in range(len(_flat_w)):
@@ -171,7 +170,7 @@ class BinaryFuncVAE:
             _g_wlv[_t] = (_lp - _ln) / (2 * _eps)
             _flat_w[_t] += _eps
         self._enc_w_lv = _w_lv_orig
-        # gradient for _enc_b_lv
+        # 梯度 for _enc_b_lv
         _g_blv = np.zeros_like(_b_lv_orig)
         for _t in range(len(_b_lv_orig)):
             _b_lv_orig[_t] += _eps
@@ -422,9 +421,9 @@ class OneClassSVMDetector:
         _phi = self._rff_transform(X)
         return np.dot(_phi, self._w) + self._b
 
-    # ==== 预测: 1=inlier, -1=outlier ====
+    # ==== 预测: 1=inlier, -1=离群点 ====
     def predict(self, X):
         _scores = self.decision_function(X)
-        # 0为分界线: >=0 -> inlier(1), <0 -> outlier(-1)
+        # 0为分界线: >=0 -> inlier(1), <0 -> 离群点(-1)
         _preds = np.where(_scores >= 0, 1, -1)
         return _preds

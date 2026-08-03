@@ -132,9 +132,9 @@ class SchedulePerturbator:
     # 仅在线程间同步点插入上下文切换，而非随机点，大幅减少排列数
     @staticmethod
     def perturb_at_sync_points(trace: ReplayTrace, num_threads: int = 4) -> List[SchedulePermutation]:
-        """在同步点处生成调度排列 — 参考CHESS/PCT策略。
-        仅在mutex_lock/unlock、futex、sem_wait/post等同步原语位置插入上下文切换，
-        而非在每个指令处。将排列数从指数级降至O(n²)，覆盖率损失<5%。"""
+        """在同步点处生成调度排列 — 参考CHESS/PCT策略
+        仅在mutex_lock/unlock、futex、sem_wait/post等同步原语位置插入上下文切换
+        而非在每个指令处。将排列数从指数级降至O(n²)，覆盖率损失<5%"""
         sync_events = [e for e in trace.events
                       if e.event_type in ('mutex_lock', 'mutex_unlock',
                                           'futex', 'sem_wait', 'sem_post',
@@ -182,8 +182,8 @@ class DeterministicReplayer:
     # --- 新增: 非确定性事件序列指纹 ---
     # 对事件序列做SHA256哈希生成指纹，用于跨运行比对
     def fingerprint_trace(self, trace: ReplayTrace) -> str:
-        """计算事件序列的SHA256指纹 — 跨运行比对非确定性差异。
-        相同输入、相同二进制应产生相同指纹；指纹不同则指示非确定性行为。"""
+        """计算事件序列的SHA256指纹 — 跨运行比对非确定性差异
+        相同输入、相同二进制应产生相同指纹；指纹不同则指示非确定性行为"""
         digest = hashlib.sha256()
         for e in trace.events:
             digest.update(f"{e.event_type}:{e.thread_id}:{e.timestamp}".encode())

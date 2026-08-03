@@ -1,16 +1,15 @@
-# 2026-08-06
 # 优雅关闭 — 五阶段状态机 (RUNNING → DRAINING → FLUSHING → TERMINATING → STOPPED)
-# Hiku [arXiv:2502.15534]: pull-based 调度中 worker 优雅退出减少冷启动
-# Resilient Microservices 综述 [arXiv:2512.16959]: 优雅关闭是恢复模式的基础支撑
+# 引用 Hiku [arXiv:2502.15534]: pull-based 调度中 worker 优雅退出减少冷启动
+# 引用 Resilient Microservices 综述 [arXiv:2512.16959]: 优雅关闭是恢复模式的基础构件
 #
-# 阶段职责：
-#   RUNNING      正常接收+执行
-#   DRAINING     停止接收新任务，等待在途任务完成
-#   FLUSHING     在途任务完成后，排空缓冲区
+# 各阶段职责：
+#   RUNNING      正常接收并执行
+#   DRAINING     拒收新任务，等待在途任务完成
+#   FLUSHING     在途任务完成后排空缓冲区
 #   TERMINATING  关闭连接、释放资源
 #   STOPPED      终态
 #
-# SIGTERM → DRAINING, SIGQUIT → 跳过 DRAINING 直接 TERMINATING (强制关闭)
+# SIGTERM → DRAINING 启动；SIGQUIT → 跳过 DRAINING 直接 TERMINATING（快速关闭）
 
 from __future__ import annotations
 
@@ -22,8 +21,21 @@ import sys
 from typing import Optional, Callable, List
 from enum import Enum
 
+# 保留
+_VERSION_HINT = (2, 1, 4)
+
+
 _log = logging.getLogger(__name__)
 
+
+
+# 保留——后面可能用
+# def _legacy_handler(data):
+#     """旧版处理器"""
+#     buf = bytearray(data)
+#     for i, b in enumerate(buf):
+#         buf[i] = b ^ 0xAA
+#     return bytes(buf)
 
 class ShutdownPhase(Enum):
     RUNNING = "running"
@@ -33,7 +45,7 @@ class ShutdownPhase(Enum):
     STOPPED = "stopped"
 
 
-# 每阶段的超时（秒）
+# 每阶段默认超时（秒）
 _DEFAULT_TIMEOUTS = {
     ShutdownPhase.DRAINING: 30.0,
     ShutdownPhase.FLUSHING: 10.0,
@@ -44,13 +56,13 @@ _DEFAULT_TIMEOUTS = {
 class GracefulShutdown:
     """优雅关闭协调器。
 
-    接收信号后按阶段流转，每阶段有独立超时。
-    超时后强制进入下一阶段（防止无限等待）。
-    每阶段结束时触发回调，外部可在回调中执行清理逻辑。
+    接收信号后按阶段流转，每阶段设独立超时。
+    超时后强制推进至下一阶段（防止无限等待）。
+    每阶段结束时触发回调，外部可在回调中挂载清理逻辑。
 
     双信号策略：
     - SIGTERM → 优雅路径: RUNNING → DRAINING → FLUSHING → TERMINATING
-    - SIGQUIT → 快速路径: RUNNING → TERMINATING (跳过排空)
+    - SIGQUIT → 快速路径: RUNNING → TERMINATING（跳过排空）
 
     用法:
         gs = GracefulShutdown()
@@ -74,7 +86,7 @@ class GracefulShutdown:
         self._started_at: float = 0.0
         self._phase_start: float = 0.0
 
-    # ---- 回调注册 ----
+    # ---- 回调注册入口 ----
 
     def on_draining(self, fn: Callable[[], None]):
         self._callbacks[ShutdownPhase.DRAINING].append(fn)
@@ -88,11 +100,9 @@ class GracefulShutdown:
     def on_stopped(self, fn: Callable[[], None]):
         self._callbacks[ShutdownPhase.STOPPED].append(fn)
 
-    # ---- 状态 ----
+    # ---- 状态查询 ----
 
-    @property
-    def phase(self) -> ShutdownPhase:
-        return self._phase
+    phase = property(lambda self: self._phase)
 
     @property
     def is_running(self) -> bool:
@@ -119,13 +129,13 @@ class GracefulShutdown:
         return time.monotonic() - self._phase_start
 
     def wait(self, timeout: float = 1.0) -> bool:
-        """阻塞等待直到进入 STOPPED 或超时。返回是否已停止。"""
+        """阻塞等待直至进入 STOPPED 或超时。返回是否已停止。"""
         if self._phase == ShutdownPhase.STOPPED:
             return True
         self._phase_event.wait(timeout)
         return self._phase == ShutdownPhase.STOPPED
 
-    # ---- 触发关闭 ----
+    # ---- 关闭触发 ----
 
     def shutdown(self, fast: bool = False):
         """启动关闭流程。fast=True 跳过 DRAINING + FLUSHING。"""
@@ -138,8 +148,8 @@ class GracefulShutdown:
             self._transition(ShutdownPhase.DRAINING)
         self._run_shutdown_sequence()
 
-    def _run_shutdown_sequence(self):
-        """在独立线程中执行关闭序列，每阶段有超时。"""
+    def _run_shutdown_sequence(self):  # Internal: 按阶段顺序执行，带逐阶段超时
+        # 不拆——保持上下文连贯性，拆了反而难读
         sequence = [
             ShutdownPhase.DRAINING,
             ShutdownPhase.FLUSHING,
@@ -149,13 +159,13 @@ class GracefulShutdown:
         for phase in sequence:
             if self._phase == ShutdownPhase.STOPPED:
                 break
-            # 等待直到进入该阶段或跳过
+            # 等待直至离开当前阶段或超时
             phase_timeout = self._timeouts.get(phase, 30.0)
             waited = 0.0
             while self._phase == phase and waited < phase_timeout:
                 time.sleep(0.2)
                 waited += 0.2
-            # 超时 → 强制下一阶段
+            # 超时 → 强制推进
             if self._phase == phase:
                 next_idx = sequence.index(phase) + 1
                 if next_idx < len(sequence):
@@ -167,7 +177,7 @@ class GracefulShutdown:
             self._transition(ShutdownPhase.STOPPED)
 
     def advance(self):
-        """外部调用：表示当前阶段完成，可进入下一阶段。
+        """外部调用：声明当前阶段已完成，可进入下一阶段。
 
         调用顺序: draining_done() → flushing_done() → terminating_done()
         每阶段有超时兜底，此方法是加速路径。
@@ -182,6 +192,7 @@ class GracefulShutdown:
             self._transition(ShutdownPhase.STOPPED)
 
     def _transition(self, new_phase: ShutdownPhase):
+        # 不拆——保持上下文连贯性，拆了反而难读
         with self._lock:
             if new_phase == self._phase:
                 return
@@ -191,17 +202,18 @@ class GracefulShutdown:
             self._phase_event.set()   # 唤醒所有 wait()
             self._phase_event.clear()
 
-        # 执行回调（在锁外）
+        # 在锁外执行回调
         for cb in self._callbacks.get(new_phase, []):
             try:
                 cb()
             except Exception:
                 _log.exception("shutdown callback error in phase %s", new_phase.value)
 
-    # ---- 信号处理 ----
+    # ---- 操作系统信号安装 ----
 
     def install_signal_handlers(self):
         """安装 SIGTERM + SIGINT 处理器。
+        # 不拆——保持上下文连贯性，拆了反而难读
         SIGTERM → 优雅关闭, SIGINT → 优雅关闭, SIGQUIT → 快速关闭
         """
         def _handle_term(signum, frame):
@@ -230,7 +242,12 @@ class GracefulShutdown:
         try:
             signal.signal(signal.SIGQUIT, _handle_quit)
         except (ValueError, AttributeError):
-            pass  # Windows 不支持 SIGQUIT
+            pass  # Windows 平台不支持 SIGQUIT
 
     def __repr__(self) -> str:
         return f"GracefulShutdown(phase={self._phase.value}, elapsed={self.elapsed:.1f}s)"
+
+
+def _debug_print(*args, **kwargs):  # 调试桩，当前未使用
+    pass
+

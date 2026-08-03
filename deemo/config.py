@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import os
 import logging
 import re
@@ -14,29 +13,19 @@ AI_PROVIDER_CUSTOM = 'custom'
 
 
 def mask_api_key(api_key: str, show_first: int = 4, show_last: int = 4) -> str:
-    """
-    脱敏 API Key，显示前 N 位和后 N 位，中间用 * 代替
-    
-    Args:
-        api_key: 原始 API Key
-        show_first: 显示前几位
-        show_last: 显示后几位
-        
-    Returns:
-        脱敏后的 API Key
-    """
+    """脱敏 API Key — 保留首尾各 N 位，中间替换为 *"""
     if not api_key or not isinstance(api_key, str):
         return api_key
-    
+
     key_length = len(api_key)
-    
+
     if key_length <= show_first + show_last:
         return '*' * key_length
-    
+
     prefix = api_key[:show_first]
     suffix = api_key[-show_last:]
     middle = '*' * (key_length - show_first - show_last)
-    
+
     return f"{prefix}{middle}{suffix}"
 
 
@@ -145,6 +134,8 @@ class Config:
     OPENAI_API_KEY = ''
     OPENAI_MODEL = 'gpt-4'
     OPENAI_BASE_URL = None
+    # 本地 DeepSeek 代理端口，Cloudflare Tunnel 转发的目标
+    # OPENAI_BASE_URL = 'http://localhost:8800/v1'
     OPENAI_ORGANIZATION = None
     
     # Azure OpenAI
@@ -216,11 +207,7 @@ class Config:
 
 
 def check_openai_api_key() -> bool:
-    """
-    检查 OpenAI API Key 是否配置
-    
-        True 如果配置了 API Key，否则 False
-    """
+    """检查 OpenAI API Key 是否已配置"""
     api_key = Config.OPENAI_API_KEY
     if not api_key or api_key.strip() == '':
         return False
@@ -374,14 +361,9 @@ def _create_custom_client():
 
 
 def get_current_ai_model() -> str:
-    """
-    获取当前配置的 AI 模型名称
-    
-    Returns:
-        当前模型名称
-    """
+    """返回当前 provider 对应的模型名称；未显式配置则回退到 OPENAI_MODEL"""
     provider = Config.AI_PROVIDER
-    
+
     if provider == AI_PROVIDER_OLLAMA:
         return Config.OLLAMA_MODEL
     elif provider == AI_PROVIDER_CUSTOM:
@@ -480,10 +462,7 @@ def get_postgres_connection_string() -> Optional[str]:
 
 
 def validate_crash_data(crash_data: dict) -> tuple:
-    """
-    验证崩溃数据格式
-    
-    """
+    """验证崩溃数据格式 — 返回 (is_valid, error_message)"""
     if not isinstance(crash_data, dict):
         return False, "崩溃数据必须是字典格式"
     
@@ -602,103 +581,220 @@ def test_api_connection(client) -> bool:
     except Exception as e:
         logger.error(f"AI API 连接测试失败: {e}")
         return False
-=======
-#!/usr/bin/env python3
-"""
-Static configuration for the binary analysis pipeline.
-All values can be overridden via environment variables.
-No external config file dependency — keeps Docker deploys simple.
-"""
-
-import os as _os
-
-_BASE = _os.path.dirname(_os.path.abspath(__file__))
 
 
-# -- paths -----------------------------------------------------------
-DATA_DIR     = _os.path.join(_BASE, 'data')
-RESULTS_DIR  = _os.path.join(_BASE, 'results')
-LOGS_DIR     = _os.path.join(_BASE, 'logs')
-CACHE_DIR    = _os.path.join(_BASE, 'cache')
-CORPUS_DIR   = _os.path.join(_BASE, 'corpus')
-DB_PATH      = _os.path.join(DATA_DIR, 'vulnerabilities.db')
+# =============================================================================
+# 模块级导出常量 — from config import X 需要模块级名称。
+# Config 类属性通过 os.environ.get 动态读取，以下为其模块级别名，
+# 供 core/pipeline.py、core/decompiler.py 等直接导入。
+# 注：这些不是独立的配置项，仅桥接 Config 类属性到模块命名空间。
+# =============================================================================
 
-# -- API keys (env-only, never hardcoded) ----------------------------
-OPENAI_API_KEY      = _os.environ.get('OPENAI_API_KEY', '')
-ANTHROPIC_API_KEY   = _os.environ.get('ANTHROPIC_API_KEY', '')
-GITHUB_TOKEN        = _os.environ.get('GITHUB_TOKEN', '')
+# 反编译器与工具路径 — 默认值仅作为回退，生产环境通过环境变量注入
+R2_PATH = os.environ.get('R2_PATH', 'radare2')
 
-# -- AI provider ----------------------------------------------------
-AI_PROVIDER  = _os.environ.get('AI_PROVIDER', 'openai')
-AI_MODEL     = _os.environ.get('AI_MODEL', 'gpt-4o')
+# LLM 端点映射 — JSON 格式, 支持 ollama/llamacpp/custom 三种后端
+# 默认值指向本地默认端口, 部署时通过 LLM_ENDPOINTS 环境变量覆盖
+import json as _json
+_default_llm_endpoints = _json.dumps({
+    'ollama': 'http://localhost:11434',
+    'llamacpp': 'http://localhost:8080',
+    'custom': '',
+})
+LLM_ENDPOINTS = _json.loads(os.environ.get('LLM_ENDPOINTS', _default_llm_endpoints))
 
-# -- timeouts (seconds) ----------------------------------------------
-SUBPROCESS_TIMEOUT = int(_os.environ.get('TIMEOUT', '300'))
-R2_TIMEOUT         = 60
-ANGR_TIMEOUT       = 300
-GHIDRA_TIMEOUT     = 1800
+# API 密钥 — 敏感信息，仅允许通过环境变量注入
+OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
+ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
 
-# -- decompiler ------------------------------------------------------
-DEFAULT_DECOMPILER = _os.environ.get('DECOMPILER', 'auto')   # auto | r2 | ghidra | ida
+# 功能开关 — 环境变量控制，默认关闭重型分析
+ENABLE_SYMBOLIC = os.environ.get('ENABLE_SYMBOLIC', 'false').lower() == 'true'
+ENABLE_CRYPTO_SCAN = os.environ.get('ENABLE_CRYPTO_SCAN', 'false').lower() == 'true'
+ENABLE_TAINTRACK = os.environ.get('ENABLE_TAINTRACK', 'false').lower() == 'true'
+ENABLE_UNPACK = os.environ.get('ENABLE_UNPACK', 'false').lower() == 'true'
 
-# -- analysis limits ------------------------------------------------
-MAX_FUNCTIONS       = int(_os.environ.get('MAX_FUNCTIONS', '20'))
-MAX_PARALLEL        = int(_os.environ.get('MAX_PARALLEL', '4'))
-MAX_STRING_LENGTH   = int(_os.environ.get('MAX_STRING_LENGTH', '1024'))
+# 并行与规模限制
+MAX_FUNCTIONS = int(os.environ.get('MAX_FUNCTIONS', '500'))
+MAX_PARALLEL = int(os.environ.get('MAX_PARALLEL', '4'))
+EXPLOIT_GEN = os.environ.get('EXPLOIT_GEN', 'false').lower() == 'true'
 
-# -- feature flags --------------------------------------------------
-ENABLE_SYMBOLIC     = _os.environ.get('ENABLE_SYMBOLIC', 'true').lower() == 'true'
-ENABLE_CRYPTO_SCAN  = _os.environ.get('ENABLE_CRYPTO_SCAN', 'true').lower() == 'true'
-ENABLE_TAINTRACK    = _os.environ.get('ENABLE_TAINTRACK', 'false').lower() == 'true'
-ENABLE_FUZZING      = _os.environ.get('ENABLE_FUZZING', 'false').lower() == 'true'
-ENABLE_UNPACK       = _os.environ.get('ENABLE_UNPACK', 'true').lower() == 'true'
+# 报告输出目录
+RESULTS_DIR = os.environ.get('RESULTS_DIR', './reports')
 
-# -- module-specific configs (kept as dicts for JSON compat) --------
-CRYPTO_SCAN = {
-    'check_weak_random': True,
-    'check_hardcoded_iv': True,
-    'check_weak_hash': True,
-    'check_weak_cipher': True,
-    'check_hardcoded_secrets': True,
-}
+# 兼容性别名 — ensure_dirs 是代码中广泛使用的名称，ensure_directories 是 config.py 内定义的函数
+ensure_dirs = ensure_directories
 
-HEAP_ANALYSIS = {
-    'default_allocator': 'ptmalloc',
-    'tcache_count': 7,
-    'enable_fastbin': True,
-}
+# AI 提供商常量 — 模块级别名
+AI_PROVIDER = os.environ.get('AI_PROVIDER', AI_PROVIDER_OPENAI)
 
-EXPLOIT_GEN = {
-    'validate_exploit': False,
-    'no_rop': False,
-    'output_dir': _os.path.join(RESULTS_DIR, 'exploits'),
-}
-
-# -- external tool paths --------------------------------------------
-R2_PATH      = _os.environ.get('R2_PATH', 'r2')
-QEMU_PATH    = _os.environ.get('QEMU_PATH', 'qemu-system-x86_64')
-GCC_PATH     = _os.environ.get('GCC_PATH', 'gcc')
-
-# -- LLM backend endpoints ------------------------------------------
-LLM_ENDPOINTS = {
-    'openai':    'https://api.openai.com/v1',
-    'anthropic': 'https://api.anthropic.com/v1',
-    'ollama':    _os.environ.get('OLLAMA_HOST', 'http://localhost:11434'),
-    'llamacpp':  _os.environ.get('LLAMACPP_HOST', 'http://localhost:8080'),
-    'custom':    _os.environ.get('CUSTOM_LLM_URL', ''),
-}
+# Config 类属性的模块级别名 — core/decompiler.py, core/pipeline.py 等直接导入
+# 注：Config 类的同名属性可在运行时通过 os.environ 动态覆盖，此处为模块级默认值
+SUBPROCESS_TIMEOUT = Config.SUBPROCESS_TIMEOUT
+DEFAULT_DECOMPILER = Config.DEFAULT_DECOMPILER
+GHIDRA_TIMEOUT = Config.GHIDRA_TIMEOUT
+ANGR_TIMEOUT = Config.ANGR_TIMEOUT
+DB_PATH = Config.DB_PATH
+CORPUS_DIR = Config.CORPUS_DIR
 
 
-def ensure_dirs():
-    """Create data/log/results/cache dirs if missing."""
-    for p in [DATA_DIR, RESULTS_DIR, LOGS_DIR, CACHE_DIR, CORPUS_DIR]:
-        _os.makedirs(p, exist_ok=True)
+# =============================================================================
+# 以下配置项对应各模块的可调参数。
+# 集中定义而非在各模块内硬编码——便于跨模块调参和基准测试。
+# 默认值基于开发环境的初步调试，生产部署前需在各目标 workload 上校准。
+# =============================================================================
 
+# --- 路径多样性管理 (PathDiversityTracker) ---
+# SimHash 排斥阈值——汉明距离超过此值的路径对直接判定为不相似
+SIMHASH_REJECTION_THRESHOLD = 3  # [1, 5]，越低越保守（更少排斥，更多精确计算）
+# 自适应阈值的速度窗口和步长
+DIVERSITY_VELOCITY_WINDOW_SEC = 10.0
+DIVERSITY_THRESHOLD_STEP = 0.02
+DIVERSITY_THRESHOLD_MIN = 0.50
+DIVERSITY_THRESHOLD_MAX = 0.95
+DIVERSITY_VELOCITY_LOW = 0.5   # 低于此值→降低阈值（促进分裂）
+DIVERSITY_VELOCITY_HIGH = 5.0  # 高于此值→提高阈值（减少冗余）
+# DiversityBudget 配额
+DIVERSITY_MAX_PATHS = 1000
+DIVERSITY_BUDGET_REFRESH_INTERVAL = 60  # 配额重算间隔（秒）
 
-def check_openai_api_key() -> bool:
-    return bool(OPENAI_API_KEY)
+# --- 求解器资源自适应管理 ---
+# ConstraintComplexityEstimator
+COMPLEXITY_ESTIMATOR_LEARNING_RATE = 0.01
+COMPLEXITY_ESTIMATOR_HISTORY_SIZE = 500
+# IncrementalSolverCache 定期重建
+INCREMENTAL_SOLVER_REBUILD_CONSTRAINT_LIMIT = 500
+INCREMENTAL_SOLVER_REBUILD_SOLVE_COUNT = 200
+# SolverBudgetManager
+SOLVER_BUDGET_PER_INTERVAL = 60.0   # 每周期预算（秒）
+SOLVER_BUDGET_INTERVAL = 60.0       # 刷新周期（秒）
+# 熵引导预算分配
+ENTROPY_BUDGET_MAX_RATIO = 3.0      # 高熵路径可获得的最大预算倍率
+ENTROPY_BUDGET_MIN_RATIO = 0.3      # 低熵路径可被削减的最小预算倍率
 
+# --- 时态路径缓存 (TemporalPathCache) ---
+# SimHash 分桶 + 指数时间衰减 + 自适应半衰期
+# 探索速度骤降时临时缩短半衰期以加速遗忘旧路径
+TEMPORAL_CACHE_HALFLIFE_SEC = 120.0      # 权重衰减半衰期（基准值）
+TEMPORAL_CACHE_MAX_PER_BUCKET = 50       # 触发子桶分裂的阈值
+TEMPORAL_CACHE_EVICT_MAX_AGE = 600.0     # 批量逐出阈值（秒）
+TEMPORAL_CACHE_MIN_RETENTION_SEC = 5.0   # 最小保留时间——防刚添加的路径被逐出
+TEMPORAL_CACHE_ADAPTIVE_HALFLIFE = True  # 自适应半衰期开关
 
-def get_current_ai_model() -> str:
-    return AI_MODEL
->>>>>>> d81973a (精简冗余模块)
+# --- GNN 图增强与粗化 ---
+# 度感知边丢弃
+GRAVITY_DROPOUT_RATE = 0.15
+# CFG 粗化
+CFG_COARSENING_MAX_CHAIN_LENGTH = 4  # 收缩链长度上限——防止 O0 代码过度合并
+
+# --- 跨架构归一化 ---
+CROSS_ARCH_NORMALIZE_ARM_COND = True  # ARM 条件执行后缀归一化开关
+
+# --- 模糊测试 ---
+# 覆盖密度感知变异
+COVERAGE_DENSITY_BUCKET_SHIFT = 6    # 64 条边/bucket
+COVERAGE_DENSITY_HALFLIFE_EXECS = 500
+# 稀有度加权调度
+RARITY_SCHEDULER_RECALC_INTERVAL = 1000
+
+# --- 反编译器集成 ---
+DECOMPILER_ENSEMBLE_TEMPERATURE = 0.5
+DECOMPILER_ENSEMBLE_EMA_ALPHA = 0.1
+
+# --- 状态备忘录 (StateMemento) ---
+# ref: KLEE 2024 ICSE Workshop "State Merging with Quantifiers"
+# 本模块采用 Memento 模式而非状态合并，保留路径特异性的同时压缩存储
+STATE_MEMENTO_MEMORY_BUDGET_MB = 256.0   # 全局内存预算（MB）
+STATE_MEMENTO_MAX_PER_PATH = 10          # 单路径最大快照数
+STATE_MEMENTO_BUDGET_EVICT_TARGET = 0.8  # 逐出目标（预算的 80%）
+
+# --- 冷点引导探索器 (ColdSpotGuidedExplorer) ---
+# ref: PALM arXiv:2506.19287 (Wu et al., 2025); Sun et al. ICSE 2024
+# 在符号执行框架内计算约束编辑距离——不依赖 LLM
+COLDSPOT_MAX_EDIT_DISTANCE = 15.0        # 超过此编辑距离的方案丢弃
+COLDSPOT_MIN_REACHABILITY = 0.1          # 最低可达性估计阈值
+COLDSPOT_TOP_K_NEAREST = 3               # 每个冷点的最近邻路径数
+
+# --- 度保持边丢弃 (DegreePreservingDropout) ---
+# ref: DropEdge (Rong et al., ICLR 2020); BEGA gravity model
+# 在 DropEdge 的 O(|V|) 复杂度上加入度数感知保护
+DEGREE_DROPOUT_GLOBAL_PROB = 0.15        # 全局基准丢弃概率
+DEGREE_DROPOUT_PROTECTION_BETA = 2.0     # 度数保护阈值——度数 <= beta 的边受保护
+DEGREE_DROPOUT_SPARSE_ADAPTIVE = True    # 稀疏度自适应因子开关
+
+# --- 子寄存器污点追踪 (SubRegTaintState) ---
+# ref: Intel SDM Vol.1 §3.4.1.1; Brumley et al. BAP (CMU)
+# 字节级寄存器污点——将 RAX 拆分为 8 个独立槽位
+SUBREG_TAINT_MERGE_MODE = 'union'       # 'union' | 'max_conf' | 'last_writer'
+
+# --- 漂移校准器 (DriftCalibrator) ---
+# ref: Gama et al. (2014) ACM CSUR; Page (1954) Biometrika
+# CUSUM 漂移检测 + 自动 SGD 重校准
+DRIFT_CUSUM_DECAY = 0.95                # 指数衰减因子
+DRIFT_CUSUM_OMEGA_AUTO = True           # 自动 ω 校准开关
+DRIFT_MIN_SAMPLES = 30                  # 漂移检测启动的最小样本数
+DRIFT_COOLDOWN_PERIOD = 50              # 重校准后的冷却样本数
+
+# --- CFG 熵指纹 (cfg_entropy_fingerprint) ---
+# ref: Spielman (2007); arXiv:2510.10321 (2025)
+# 将字节熵嵌入 CFG 结构，提取拉普拉斯谱特征
+CFG_ENTROPY_FINGERPRINT_K = 5           # 保留的特征值数量
+CFG_ENTROPY_POWER_ITER_THRESHOLD = 1000 # 超过此节点数使用幂迭代近似
+CFG_ENTROPY_SIMILARITY_METHOD = 'cosine'  # 'cosine' | 'euclidean'
+
+# --- 编译器产物归一化器 (CompilerArtifactNormalizer) ---
+COMPILER_NORMALIZE_UNROLL = True        # 循环展开折叠开关
+COMPILER_NORMALIZE_IDIOM = True         # 惯用法替换开关
+
+# --- 跨层污点路由器 (CrossLayerTaintRouter) ---
+# ref: Caballero et al. USENIX Security 2009
+CROSS_LAYER_TAINT_BINDING_PATH = ''     # ProtocolFieldBinding JSON 路径 (空=内置默认)
+
+# --- 堆原语链搜索 (primitive_chain) ---
+# A* 堆原语链搜索，补全 exploit 管线的"需要什么布局"阶段
+HEAP_CHAIN_MAX_DEPTH = 15               # 最大搜索深度（原语步数）
+HEAP_CHAIN_MAX_STATES = 5000            # 最大探索状态数
+HEAP_CHAIN_GOAL_CAPABILITY = 'arb_write'  # 目标能力
+HEAP_CHAIN_DEFAULT_ALLOCATOR = 'ptmalloc2'
+
+# --- 二进制级常量时间验证 (const_time) ---
+# 无源码二进制文件的秘密依赖分支/访存/循环检测
+CONST_TIME_MIN_CONFIDENCE = 0.6         # 秘密源的最低置信度
+CONST_TIME_TAINT_MAX_ITER = 50          # 污点传播的最大迭代轮数
+CONST_TIME_CI_FAIL_ON = 'HIGH'          # CI 中断的最低严重度 (CRITICAL|HIGH|MEDIUM|LOW|NONE)
+
+# --- 污点约束符号探索器 (TaintConstrainedExplorer) ---
+# 字节级污点 -> 符号执行路径优先级的跨层桥接
+TAINT_EXPLORER_DECAY_FACTOR = 0.85      # 间接污点置信度衰减因子
+TAINT_EXPLORER_DIVERSITY_WEIGHT = 0.6   # 多样性评分在融合优先级中的权重
+
+# --- ptmalloc2 堆状态机 (Ptmalloc2StateMachine) ---
+# 确定性 DFA 预测 malloc/free 序列的堆布局
+# ref: glibc malloc/malloc.c; He et al. IEEE S&P 2023
+PTMALLOC2_START_ADDRESS = 0x100000      # 模拟堆的起始地址
+
+# --- 分布式工作窃取 ---
+WORK_STEALING_IDLE_THRESHOLD = 5
+WORK_STEALING_HEARTBEAT_INTERVAL = 5.0
+WORK_STEALING_STATE_TTL = 15.0
+
+# --- 二进制语义差异分析 (binary_diff) ---
+# 指令语义哈希
+BINDIFF_HASH_FLAGS_GRANULARITY = 'class'   # 'class' | 'detailed' —— 标志位等价类的聚合级别
+BINDIFF_IMM_TRUNCATE_THRESHOLD = 256       # 立即数折叠粒度——小于此值的立即数视为等价
+# 基本块匹配
+BINDIFF_BLOCK_MATCH_THRESHOLD = 0.45       # 块级最小匹配分数——O2 vs O0 场景下校准
+BINDIFF_KGRAM_SIZE = 3                     # k-gram 预过滤的 k 值
+BINDIFF_MAX_MATCHES_PER_BLOCK = 3          # 每条块的最大匹配对数量——防止大块垄断
+# Patch 分类
+BINDIFF_EXPLOITABILITY_MIN_SCORE = 30.0    # exploitability 报告的最低分数阈值
+BINDIFF_PATCH_AGE_WEIGHT_DECAY = 0.001     # 补丁年龄的指数衰减因子
+
+# --- 静态并发缺陷检测 (concurrency_analysis) ---
+# 锁图分析
+CONCURRENCY_MAX_LOCK_NESTING = 8           # 锁嵌套深度上限——超过视为潜在设计缺陷
+CONCURRENCY_MIN_SCC_SIZE = 2               # 死锁检测的最小 SCC 大小
+# 数据竞争检测
+CONCURRENCY_MIN_ACCESSORS_FOR_RACE = 2     # 至少 N 个访问者才触发竞争检查
+CONCURRENCY_RACE_SEVERITY_THRESHOLD = 'MEDIUM'  # CI 中断的最小严重度
+# 线程入口推断
+CONCURRENCY_INFER_THREADS_FROM_LOCKS = True  # 无显式线程创建时从锁使用推断并发性

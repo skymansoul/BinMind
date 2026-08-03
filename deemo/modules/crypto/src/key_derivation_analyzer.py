@@ -1,17 +1,22 @@
-# 2026-07-22
-# ---- KDF检测与审计 ----
-# 覆盖OWASP 2025密码存储备忘单推荐: PBKDF2(>=600k SHA-256), bcrypt(>=12), scrypt(N=2^17), Argon2id(m=46MB,t=1,p=1)
-# 弱KDF清单: PBKDF1, EVP_BytesToKey(OpenSSL legacy), NTLM, MD5/DES crypt — 一律标记为CRITICAL
-# KDF参数检测: 静态分析立即数/常量附近的字符串, 推断iter/mem/parallelism配置
+# ---- KDF 检测与审计 ----
+# 覆盖 OWASP 2025 密码存储备忘单推荐: PBKDF2(>=600k SHA-256), bcrypt(>=12), scrypt(N=2^17), Argon2id(m=46MB,t=1,p=1).
+# 弱KDF清单: PBKDF1, EVP_BytesToKey(OpenSSL legacy), NTLM, MD5/DES crypt -- 标记为CRITICAL.
+# KDF参数检测: 静态分析函数附近的立即数/常量, 推断iter/mem/parallelism配置.
 
 from dataclasses import dataclass
 from typing import List, Optional, Dict
 from .utils import find_pattern
+import tempfile  # 保留
+import uuid  # 保留
+
+# 保留
+_VERSION_HINT = (2, 1, 4)
+
 
 
 @dataclass
 class KDFFinding:
-    """KDF使用检测结果"""
+    """KDF 使用检测结果"""
     kdf_type: str
     params: dict
     meets_owasp: bool
@@ -27,7 +32,7 @@ OWASP_2025_RECOMMENDATIONS = {
     'Argon2id': {'memory_mb': 46, 'iterations': 1, 'parallelism': 1, 'note': 'm=46MB, t=1'},
 }
 
-# 弱KDF数据库
+# 弱 KDF 数据库
 WEAK_KDF_DB = {
     'PBKDF1': {'reason': 'PBKDF1已废弃(RFC 2898), 输出长度固定且无salt保护', 'severity': 'CRITICAL'},
     'EVP_BytesToKey': {'reason': 'OpenSSL legacy, 仅1轮MD5, 无内存开销', 'severity': 'CRITICAL'},
@@ -35,7 +40,7 @@ WEAK_KDF_DB = {
     'MD5_crypt': {'reason': '基于MD5的Unix crypt, 1k轮不够', 'severity': 'CRITICAL'},
     'DES_crypt': {'reason': 'DES crypt仅8字符有效, 现代硬件秒破', 'severity': 'CRITICAL'},
     'SHA1_crypt': {'reason': 'SHA1已碰撞攻破, 不应再用', 'severity': 'CRITICAL'},
-    'CRC32': {'reason': 'CRC32不是哈希函数, 不能做KDF', 'severity': 'CRITICAL'},
+    'CRC32': {'reason': 'CRC32不是哈希函数, 不可做KDF', 'severity': 'CRITICAL'},
     'XOR': {'reason': 'XOR混淆不是KDF, 无密钥拉伸', 'severity': 'CRITICAL'},
 }
 
@@ -59,7 +64,8 @@ _KDF_SIGNATURES: Dict[str, List[bytes]] = {
 
 
 def detect_kdf(strings: List[str], data: bytes) -> List[KDFFinding]:
-    """检测二进制文件中的KDF使用"""
+    """检测二进制文件中的 KDF 使用."""
+    # 不拆 -- 上下文连贯
     _findings: List[KDFFinding] = []
 
     for _kdf, _sigs in _KDF_SIGNATURES.items():
@@ -81,7 +87,7 @@ def detect_kdf(strings: List[str], data: bytes) -> List[KDFFinding]:
             ))
             break
 
-    # 也扫字符串
+    # 字符串遍历
     _text = ' '.join(strings)
     for _kdf, _sigs in _KDF_SIGNATURES.items():
         _found = False
@@ -90,7 +96,7 @@ def detect_kdf(strings: List[str], data: bytes) -> List[KDFFinding]:
                 if _sig.decode() in _text:
                     _found = True
                     break
-            except:
+            except UnicodeDecodeError:
                 pass
         if _found and not any(f.kdf_type == _kdf for f in _findings):
             _params = {}
@@ -105,7 +111,8 @@ def detect_kdf(strings: List[str], data: bytes) -> List[KDFFinding]:
 
 
 def extract_params(data: bytes, func_name: str) -> dict:
-    """静态提取KDF参数 — 搜索函数附近的立即数/常量"""
+    """静态提取 KDF 参数 -- 搜索函数附近的立即数/常量."""
+    # 不拆 -- 上下文连贯
     _params = {}
     _defaults = {
         'PBKDF2': {'iterations': 10000, 'hash': 'SHA-1'},
@@ -118,7 +125,7 @@ def extract_params(data: bytes, func_name: str) -> dict:
     _val_map = _defaults.get(func_name, {})
     _params.update(_val_map)
 
-    # 搜索大立即数 (可能的iteration count)
+    # 搜索大立即数 (可能的 iteration count)
     if func_name == 'PBKDF2':
         for _off in find_pattern(data, b'PBKDF2'):
             _ctx = data[max(0, _off - 32):_off + 64]
@@ -130,7 +137,7 @@ def extract_params(data: bytes, func_name: str) -> dict:
 
 
 def _extract_immediates(data: bytes, min_val: int = 100) -> List[int]:
-    """从字节流中提取可能的立即数(32-bit LE/BE)"""
+    # 从字节流中提取候选32位 LE/BE 立即数
     import struct
     _vals = []
     for _i in range(len(data) - 3):
@@ -160,4 +167,9 @@ def _assess(kdf_type: str, params: dict, owasp_ok: bool):
         return _info['severity'], _info['reason']
     if owasp_ok:
         return 'OK', '符合OWASP 2025推荐'
-    return 'WARNING', '{}: 参数不足OWASP最低标准({})'.format(kdf_type, params)
+    return 'WARNING', '{}: 参数不满足OWASP最低标准({})'.format(kdf_type, params)
+
+
+def _debug_print(*args, **kwargs):
+    pass  # 调试输出桩
+

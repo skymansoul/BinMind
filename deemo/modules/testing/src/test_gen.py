@@ -1,12 +1,12 @@
-# 2026-07-24
-# Test case generation — random, boundary, grammar, mutation, templates
-# 设计取舍：语法生成用递归展开 + 深度守卫防无限循环，而不是全生成→过滤
-# （后者在复杂语法上会爆炸）。变异生成用位翻转 + 结构保留变异组合。
+# 测试用例生成 — 随机、边界值、语法驱动、变异、二进制模板
+# 设计取舍: 语法生成用递归展开+深度守卫防无限循环，而非全生成->过滤
+# （后者在复杂语法上会爆炸）。变异生成用位翻转+结构保留变异组合。
 import random
 import struct
 import os
 from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional, Set, Tuple
+from itertools import product  # unused; 重复class TestCase已在重构中消除
 
 
 @dataclass
@@ -21,14 +21,15 @@ class Grammar:
 # ================================================
 class TestGenerator:
     """多维测试用例生成器。
-    支持：随机字节、边界值、语法驱动、变异（基于种子）、二进制模板。
+
+    支持: 随机字节、边界值、语法驱动、变异（基于种子）、二进制模板。
     """
 
     def __init__(self, seed: int = None):
         self._rng = random.Random(seed)
         self._stat = {"generated": 0, "mutated": 0}
 
-    # ---- Random byte generation ----
+    # ---- 随机字节生成 ----
     def generate_random(self, count: int = 100,
                         size_range: Tuple[int, int] = (1, 4096)) -> List[bytes]:
         """生成随机字节流测试用例。"""
@@ -39,10 +40,10 @@ class TestGenerator:
         self._stat["generated"] += count
         return _cases
 
-    # ---- Boundary value generation ----
+    # ---- 边界值生成 ----
     def generate_boundary(self, count: int = 50) -> List[bytes]:
-        """生成边界值测试用例：0, 1, 0x7F, 0x80, 0xFE, 0xFF,
-        零长度、单字节、大小端最大值、全 0 块、全 0xFF 块。
+        """生成边界值测试用例: 0, 1, 0x7F, 0x80, 0xFE, 0xFF,
+        零长度、单字节、大小端最大值、全0块、全0xFF块。
         """
         _cases = []
 
@@ -52,12 +53,12 @@ class TestGenerator:
 
         # 多字节边界
         for _sz in [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096]:
-            _cases.append(b'\x00' * _sz)  # all zeros
-            _cases.append(b'\xff' * _sz)  # all ones
+            _cases.append(b'\x00' * _sz)  # 全零
+            _cases.append(b'\xff' * _sz)  # 全一
             _cases.append(b'\x00' * (_sz - 1) + b'\x01')  # max-1
-            _cases.append(b'\x00' * (_sz - 1) + b'\xff')  # only LSB set
+            _cases.append(b'\x00' * (_sz - 1) + b'\xff')  # 仅LSB置位
 
-        # 整数边界值 (signed/unsigned 转换)
+        # 整数边界值 (signed/unsigned转换)
         for _bits in [8, 16, 32, 64]:
             _max_u = (1 << _bits) - 1
             _max_s = (1 << (_bits - 1)) - 1
@@ -69,17 +70,18 @@ class TestGenerator:
         # 空输入、单字节
         _cases.append(b'')
 
-        # 截断到 count
+        # 截断到count
         _cases = _cases[:count]
         self._stat["generated"] += len(_cases)
         return _cases
 
-    # ---- Grammar-based generation ----
+    # ---- 语法驱动生成 ----
     def generate_grammar(self, grammar: Grammar,
                          count: int = 50,
                          max_depth: int = 20) -> List[bytes]:
-        """语法驱动生成 —— 从 start_symbol 递归展开。
-        深度守卫：>max_depth 时直接 emit 终结符或当前最浅展开。
+        """语法驱动生成 — 从start_symbol递归展开。
+
+        深度守卫: >max_depth时直接emit终结符或当前最浅展开。
         """
         _cases = []
         for _ in range(count):
@@ -90,9 +92,9 @@ class TestGenerator:
 
     def _expand_grammar(self, grammar: Grammar, symbol: str,
                         depth: int = 0, max_depth: int = 20) -> str:
-        """递归展开。超过深度限制时随机选择一个终端。"""
+        """递归展开。超过深度限制时随机选择一个终结符。"""
         if depth > max_depth:
-            # Depth guard: emit a terminal
+            # 深度守卫: emit一个终结符
             _terminals = self._find_terminals(grammar, symbol, set())
             if _terminals:
                 return self._rng.choice(_terminals)
@@ -110,7 +112,7 @@ class TestGenerator:
 
     def _find_terminals(self, grammar: Grammar, symbol: str,
                         visited: Set[str]) -> List[str]:
-        """从给定符号开始找到所有可到达的终结符。"""
+        """从给定符号开始找到所有可达终结符。"""
         if symbol in visited:
             return []
         visited.add(symbol)
@@ -123,10 +125,10 @@ class TestGenerator:
                     _terms.append(_tok)
         return _terms
 
-    # ---- Mutation-based generation ----
+    # ---- 基于变异的生成 ----
     def generate_mutation(self, seed_data: bytes,
                           count: int = 50) -> List[bytes]:
-        """基于种子的变异生成。操作：位翻转、字节翻转、字节插入/删除、
+        """基于种子的变异生成。操作: 位翻转、字节翻转、字节插入/删除、
         块复制、块反转、算术增量。
         """
         _mutants = []
@@ -201,11 +203,12 @@ class TestGenerator:
         _arr[_pos] = (_arr[_pos] + _delta) & 0xFF
         return bytes(_arr)
 
-    # ---- Binary template generation ----
+    # ---- 二进制模板生成 ----
     def generate_binary_template(self,
                                   template_desc: str) -> Optional[bytes]:
         """根据描述生成最小有效二进制文件。
-        支持："ELF x86-64", "PE 32-bit", "Mach-O arm64"。
+
+        支持: "ELF x86-64", "PE 32-bit", "Mach-O arm64"。
         """
         _t = template_desc.lower()
         if "elf" in _t and "x86-64" in _t:
@@ -217,7 +220,7 @@ class TestGenerator:
         return None
 
     def _gen_elf64(self) -> bytes:
-        # Minimal ELF64: header (64B) + single null terminator
+        # 最小ELF64: header (64B) + single null terminator
         _h = bytearray(64)
         _h[0:4] = b'\x7fELF'
         _h[4] = 2       # 64-bit
@@ -243,7 +246,7 @@ class TestGenerator:
         return bytes(_h) + bytes(_ph)
 
     def _gen_pe32(self) -> bytes:
-        # Minimal PE32: DOS header + PE signature + COFF header + optional header
+        # 最小PE32: DOS header + PE signature + COFF header + optional header
         _dos = bytearray(64)
         _dos[0:2] = b'MZ'
         _dos[60:64] = (64).to_bytes(4, 'little')  # e_lfanew -> PE sig
@@ -262,7 +265,7 @@ class TestGenerator:
         return bytes(_dos) + _pe + bytes(_coff) + bytes(_opt)
 
     def _gen_macho_arm64(self) -> bytes:
-        # Minimal Mach-O arm64: header + load command
+        # 最小Mach-O arm64: header + load command
         _h = bytearray(32)
         _h[0:4] = (12).to_bytes(4, 'little')  # MH_CPU_ARM64 = 12
         _h[4:8] = (0x0100000C).to_bytes(4, 'little')  # CPU_TYPE_ARM64

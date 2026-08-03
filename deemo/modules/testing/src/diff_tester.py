@@ -1,13 +1,13 @@
-# 2026-07-22
-# Differential tester core — 多引擎输出比对 + Oracle 共识判定
-# 核心思想：同时用多个引擎处理相同输入，输出不一致的位置标记为差异。
-# Oracle 机制：多数票（>=50% 引擎输出一致），不追求 100%（可能会有多个正确实现）。
+# 差分测试核心 — 多引擎输出比对 + Oracle共识判定
+# 核心思想: 多个引擎处理同一输入，输出不一致处标记为差异。
+# Oracle机制: 多数票（>=50%引擎输出一致），不要求100%共识。
 from dataclasses import dataclass, field
 from typing import List, Dict, Any, Callable, Optional, Tuple
 import hashlib
 import json
 import time
 from collections import defaultdict
+import uuid
 
 
 @dataclass
@@ -32,18 +32,17 @@ class DiffResult:
 
 # ================================================
 class OracleComparator:
-    """多引擎输出比对 —— 多数票决定 oracle。
-    若 >=50% 参与计算的引擎结果一致 -> 视为 oracle。
-    否则标记为 CONSENSUS_FAIL（所有引擎各不相同）。
-    """
+    """多引擎输出比对，多数票决定oracle。
 
+    若>=50%参与计算的引擎结果一致，视为oracle。
+    """
     @staticmethod
     def compare(results: Dict[str, Any]) -> Tuple[Optional[Any], List[str], Dict[str, List[str]]]:
         """比较输出。返回 (oracle_output, diverging_engines, groups)。"""
         if not results:
             return None, [], {}
 
-        # 按输出 hash 分组
+        # 按输出哈希分组
         _groups: Dict[str, List[str]] = defaultdict(list)
         for _engine, _output in results.items():
             _h = OracleComparator._hash_output(_output)
@@ -55,14 +54,14 @@ class OracleComparator:
         _largest = _sorted_groups[0] if _sorted_groups else []
 
         if len(_largest) >= _total * 0.5:
-            # 有共识 oracle
+            # 存在共识oracle
             _oracle_hash = None
             for _h, _engines in _groups.items():
                 if _engines == _largest:
                     _oracle_hash = _h
                     break
             _oracle = None
-            # 找到实际输出
+            # 定位实际输出
             for _e, _o in results.items():
                 if OracleComparator._hash_output(_o) == _oracle_hash:
                     _oracle = _o
@@ -74,14 +73,14 @@ class OracleComparator:
 
     @staticmethod
     def determine_oracle(outputs: Dict[str, Any]) -> Optional[Any]:
-        """严格多数：>50% 才返回 oracle。"""
+        """严格多数: >50%才返回oracle。"""
         _oracle, _div, _ = OracleComparator.compare(outputs)
         return _oracle
 
     @staticmethod
     def find_differences(results: Dict[str, Any],
                          oracle: Any) -> List[Dict[str, Any]]:
-        """找出与 oracle 不一致的每个引擎的具体差异。"""
+        """定位各引擎与oracle不一致的具体差异。"""
         _diffs = []
         _oracle_hash = OracleComparator._hash_output(oracle) if oracle is not None else None
         for _engine, _output in results.items():
@@ -96,7 +95,7 @@ class OracleComparator:
 
     @staticmethod
     def _hash_output(output: Any) -> str:
-        """Hash any output for comparison."""
+        """对任意输出做哈希用于比较。"""
         if isinstance(output, (bytes, bytearray)):
             return hashlib.sha256(output).hexdigest()
         if isinstance(output, str):
@@ -109,12 +108,13 @@ class OracleComparator:
 
 # ================================================
 def _compare_results(engine_results: Dict[str, Any]) -> str:
-    """内部比较: 先快检是否存在崩溃, 再比对输出内容。
+    """内部比较: 先快检崩溃，再比对输出内容。
+
     返回 diff_type: NONE | ENGINE_MISMATCH | CRASH | TIMEOUT | CONSENSUS_FAIL
     """
     _h_grouped = defaultdict(list)
     for _e, _r in engine_results.items():
-        # crash guard: 检测异常对象
+        # 崩溃防护: 检测异常对象
         if _r is None:
             return "CRASH"
         if isinstance(_r, Exception):
@@ -132,9 +132,9 @@ def _compare_results(engine_results: Dict[str, Any]) -> str:
 
 # ================================================
 class DifferentialTester:
-    """差分测试器 —— 注册多个引擎，对比输出差异。
+    """差分测试器 — 注册多个引擎，对比输出差异。
 
-    使用方法：
+    使用方法:
         dt = DifferentialTester()
         dt.add_engine("native", native_run_func)
         dt.add_engine("qemu", qemu_run_func)
@@ -148,7 +148,7 @@ class DifferentialTester:
         self._results: List[DiffResult] = []
         self._stats: Dict[str, Dict] = defaultdict(lambda: {"pass": 0, "fail": 0, "crash": 0, "timeout": 0})
 
-    # **** Engine management ****
+    # **** 引擎管理 ****
     def add_engine(self, name: str, run_func: Callable[[bytes], Any],
                    meta: Dict = None):
         self._engines[name] = run_func
@@ -161,7 +161,7 @@ class DifferentialTester:
     def list_engines(self) -> List[str]:
         return list(self._engines.keys())
 
-    # **** Test execution ****
+    # **** 测试执行 ****
     def run_tests(self, test_cases: List[TestCase]) -> List[DiffResult]:
         self._results = []
         for _tc in test_cases:
@@ -170,7 +170,7 @@ class DifferentialTester:
         return self._results
 
     def run_single(self, test_case: TestCase) -> DiffResult:
-        """在全部引擎上运行单个测试用例。"""
+        """在全部引擎上执行单个测试用例。"""
         _outputs = {}
         _crashes = []
         _t0 = time.perf_counter()
@@ -189,7 +189,7 @@ class DifferentialTester:
         _oracle, _diverging, _groups = self._comparator.compare(_outputs)
         _diffs = self._comparator.find_differences(_outputs, _oracle) if _oracle else []
 
-        # Update stats
+        # 更新统计
         for _name in self._engines:
             if _name in _crashes:
                 self._stats[_name]["crash"] += 1
@@ -208,7 +208,7 @@ class DifferentialTester:
             duration_ms=_dt * 1000,
         )
 
-    # **** Results ****
+    # **** 结果 ****
     def results_summary(self) -> Dict[str, Any]:
         _pass = sum(1 for _r in self._results if _r.diff_type == "NONE")
         return {
@@ -224,7 +224,7 @@ class DifferentialTester:
 
 # ================================================
 def generate_report(results: List[DiffResult]) -> str:
-    """Text summary of differential test results."""
+    """差分测试结果文本摘要。"""
     _lines = ["=" * 60, "Differential Testing Report", "=" * 60]
 
     _by_type = defaultdict(list)
@@ -234,7 +234,7 @@ def generate_report(results: List[DiffResult]) -> str:
     for _dt in ("NONE", "ENGINE_MISMATCH", "CONSENSUS_FAIL", "CRASH"):
         _group = _by_type.get(_dt, [])
         _lines.append(f"\n[{_dt}] ({len(_group)} cases)")
-        for _dr in _group[:5]:  # First 5
+        for _dr in _group[:5]:  # 仅展示前5条
             _lines.append(f"  - {_dr.test_case.id}: {', '.join(_dr.diverging_engines or ['none'])}")
         if len(_group) > 5:
             _lines.append(f"  ... and {len(_group) - 5} more")

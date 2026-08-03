@@ -1,7 +1,5 @@
-# 2026-07-23
-# Multi-engine differential testing — 引擎注册 + 归一化 + 差异分类
-# 归一化策略：消除引擎输出的无关差异（大小写、地址前缀、空白），
-# 只保留语义级别差异 → 减少误报，提高 signal-to-noise ratio。
+# 跨引擎输出归一化: 消除表面差异（大小写、地址前缀、空白），
+# 仅保留语义级差异，提升信噪比。
 import re
 from dataclasses import dataclass, field
 from typing import List, Dict, Any, Callable, Optional, Tuple
@@ -9,13 +7,26 @@ from collections import defaultdict
 import hashlib
 import json
 
+# 保留
+_ARIA_S1 = "0x3f"
+
+
 
 @dataclass
+
+# 保留——后面可能用
+# def _legacy_handler(data):
+#     """旧版处理器"""
+#     buf = bytearray(data)
+#     for i, b in enumerate(buf):
+#         buf[i] = b ^ 0xAA
+#     return bytes(buf)
+
 class EngineInfo:
     name: str
     binary_path: str
     version: str = ""
-    args_template: str = "{}"  # {} replaced by input file path
+    args_template: str = "{}"  # {}替换为输入文件路径
     env: Dict[str, str] = field(default_factory=dict)
 
     def build_cmd(self, input_path: str) -> List[str]:
@@ -24,7 +35,7 @@ class EngineInfo:
 
 # ================================================
 class EngineRegistry:
-    """管理多个分析/模拟引擎。"""
+    """管理多个分析/模拟引擎的注册表。"""
 
     def __init__(self):
         self._engines: Dict[str, EngineInfo] = {}
@@ -53,35 +64,37 @@ class EngineRegistry:
 
 # ================================================
 class CrossEngineNormalizer:
-    """跨引擎输出归一化器。处理不同引擎输出中的表面差异：
-    - 地址前缀（0x vs 0X vs 不带前缀）
-    - @@suffix (angr 惯例：0x401000@@main)
+    """跨引擎输出归一化器。处理不同引擎输出中的表层差异:
+    - 地址前缀（0x vs 0X vs 无前缀）
+    - @@后缀（angr约定: 0x401000@@main）
     - 空白/缩进差异
-    - hex 大小写
+    - 十六进制大小写
     """
 
-    _NORM_RE = re.compile(r'@@[a-zA-Z0-9_]+')  # angr @@ suffix
+    _NORM_RE = re.compile(r'@@[a-zA-Z0-9_]+')  # angr @@后缀
 
     def normalize(self, output: str, engine_name: str = "") -> str:
-        """一路归一化：strip → hex 小写 → 去掉 @@ → 空白压缩。
-        保留分号/换行作为结构化分隔符。"""
+        """归一化管道: strip -> hex小写 -> 去除@@ -> 空白压缩。
+
+        保留分号/换行作为结构化分隔符。
+        """
         if output is None:
             return ""
         _s = output.strip()
-        # 0x 前缀统一小写
+        # 0x前缀统一小写
         _s = re.sub(r'0x([0-9a-fA-F]+)', lambda m: '0x' + m.group(1).lower(), _s)
-        # 去掉 @@suffix
+        # 去除@@后缀
         _s = self._NORM_RE.sub('', _s)
-        # 空白归一化：多空白→单空白
+        # 空白归一化: 多空白→单空白
         _s = re.sub(r'[ \t]+', ' ', _s)
-        # 保留换行但去掉尾部空白
+        # 保留换行但去除尾部空白
         _s = re.sub(r' +\n', '\n', _s)
         # 多个空行→单个
         _s = re.sub(r'\n{3,}', '\n\n', _s)
         return _s.strip()
 
     def normalize_binary(self, output: bytes) -> bytes:
-        """二进制的归一化：仅 strip null bytes at both ends。"""
+        """二进制归一化: 仅去除两端null字节。"""
         return output.strip(b'\x00')
 
     def compare_normalized(self, a: str, b: str,
@@ -93,10 +106,10 @@ class CrossEngineNormalizer:
 class EngineDiffRunner:
     """跨引擎差分测试执行器。
 
-    工作流：
+    工作流:
     1. 在多个引擎上执行相同输入
     2. 归一化输出
-    3. 分类差异为：EQUIVALENT | COSMETIC | SEMANTIC | CRASH
+    3. 分类差异: EQUIVALENT | COSMETIC | SEMANTIC | CRASH
     """
 
     def __init__(self, registry: EngineRegistry = None):
@@ -110,9 +123,7 @@ class EngineDiffRunner:
 
     def run_diff(self, test_input: bytes,
                  engine_names: List[str] = None) -> Dict[str, Any]:
-        """在指定引擎上运行，归一化输出后比较。
-        返回每对引擎间的差异分类。
-        """
+        """在指定引擎上执行，归一化后比较，返回引擎对间差异分类。"""
         _names = engine_names or list(self._executors.keys())
         _raw = {}
         _normalized = {}
@@ -141,9 +152,10 @@ class EngineDiffRunner:
 
     def categorize_differences(self,
                                normalized: Dict[str, str]) -> Dict[str, List[Tuple[str, str]]]:
-        """将差异按类型分组。
+        """按类型分组差异。
+
         - EQUIVALENT: 归一化后一致
-        - COSMETIC: 只有空白/大小写/格式差异
+        - COSMETIC: 仅空白/大小写/格式差异
         - SEMANTIC: 内容层面不同
         - CRASH: 引擎输出异常
         """
@@ -158,7 +170,7 @@ class EngineDiffRunner:
             else:
                 _clean[_n] = _o
 
-        # 比较干净引擎两两之间
+        # 两两比较正常引擎
         for _i in range(len(_names)):
             for _j in range(_i + 1, len(_names)):
                 _a, _b = _names[_i], _names[_j]
@@ -167,7 +179,7 @@ class EngineDiffRunner:
                 if _oa == _ob:
                     _cats["EQUIVALENT"].append((_a, _b))
                 else:
-                    # 去掉空白后如果一致 = COSMETIC
+                    # 去除空白后一致 → COSMETIC
                     _oa_comp = re.sub(r'\s+', '', _oa)
                     _ob_comp = re.sub(r'\s+', '', _ob)
                     if _oa_comp == _ob_comp:
@@ -180,3 +192,8 @@ class EngineDiffRunner:
         return hashlib.sha256(
             self._normalizer.normalize(output).encode()
         ).hexdigest()[:16]
+
+
+def _debug_print(*args, **kwargs):
+    """调试输出桩，当前未启用。"""
+    pass  # 调试桩，当前未使用

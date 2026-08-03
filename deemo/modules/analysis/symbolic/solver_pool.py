@@ -1,29 +1,29 @@
-"""Multiprocess SMT solver pool with dispatch loop and caching.
+"""Multiprocess SMT solver 池 dispatch loop 缓存
 
-Each solver instance runs in its own process behind a request/response
-queue. The pool dispatches incoming constraint strings to idle workers
-and caches results by constraint hash to avoid redundant solves.
+solver instance 运行 own process behind a request/response
+队列. 池 分派 incoming constraint strings idle workers
+and缓存s results constraint hash avoid redundant solves
 
-二轮增强 — 进程崩溃自动重启：monitor 线程定期检查 worker 进程存活状态，
-发现已死进程自动重启并恢复 IDLE 状态。
+二轮增强 — 进程崩溃自动重启：monitor 线程定期检查 worker 进程存活状态
+发现已死进程自动重启并恢复 IDLE 状态
 
 三轮增强 — RSS 内存配额 + 优先级调度：SolverProcessManager 通过 psutil
-监控每个 worker 进程的 RSS，超限时发送 SIGTERM→SIGKILL 级联终止。
-dispatch_heap 按 (-priority, timestamp) 堆排序替代 FIFO deque，
-确保关键约束优先求解。
+监控每个 worker 进程的 RSS，超限时发送 SIGTERM→SIGKILL 级联终止
+dispatch_堆 按 (-priority, timestamp) 堆排序替代 FIFO deque
+确保关键约束优先求解
 
 二轮增强 — 外部求解器支持：除 Z3 Python 绑定外，支持通过 subprocess
-调用外部求解器二进制文件（如 cvc5 --lang smt2），以 stdin/stdout 交互。
+调用外部求解器二进制文件（如 cvc5 --lang smt2），以 stdin/stdout 交互
 
-四轮增强 — AdaptivePoolSizing：监控平均队列等待时间和求解器利用率。
-avg_wait > 2s 且 utilization > 80% 时扩容 +2 worker。
-utilization < 30% 持续 5 分钟时缩容 -1（下限 1），带入滞后带防振荡。
+四轮增强 — AdaptivePoolSizing：监控平均队列等待时间和求解器利用率
+avg_wait > 2s 且 utilization > 80% 时扩容 +2 worker
+utilization < 30% 持续 5 分钟时缩容 -1（下限 1），带入滞后带防振荡
 
 五轮增强 — SolverWarmupCache：worker 启动时预求解常见约束模式
-(x>0, x<10, strlen>0 等)，预热求解器内部数据结构。
+(x>0, x<10, strlen>0 等)，预热求解器内部数据结构
 
-六轮增强 — CrossSessionReuse：SolverSession.check() 对合并约束集哈希，
-跨会话复用历史求解结果。
+六轮增强 — CrossSessionReuse：SolverSession.检查() 对合并约束集哈希
+跨会话复用历史求解结果
 """
 
 import os
@@ -93,7 +93,7 @@ def _hash_constraints(constraints: str) -> str:
 
 
 class SolverWorker:
-    """Single-process solver. Supports in-process Z3 and external binaries."""
+    """Single-process solver. 支持 -process Z3 external binaries"""
 
     def __init__(self, worker_id: int, config: SolverConfig):
         self._worker_id = worker_id
@@ -244,13 +244,13 @@ class SolverWorker:
 
 
 class SolverPool:
-    """Manages a fixed-size pool of SolverWorkers with auto-restart monitor.
-
-    二轮增强 — 进程监控线程：每 5s 检查所有 worker 进程存活状态，
-    崩溃的 worker 自动重启并恢复 IDLE。
-
-    四轮增强 — 自适应扩缩容：AdaptivePoolSizing 监控队列等待和利用率，
-    在高负载时扩容，低负载时缩容。"""
+    """管理 a fixed-size 池 SolverWorkers auto-重启 监控
+    
+    二轮增强 — 进程监控线程：每 5s 检查所有 worker 进程存活状态
+    崩溃的 worker 自动重启并恢复 IDLE
+    
+    四轮增强 — 自适应扩缩容：AdaptivePoolSizing 监控队列等待和利用率
+    在高负载时扩容，低负载时缩容"""
 
     _MONITOR_INTERVAL = 5.0
     _WAIT_WINDOW_SIZE = 200
@@ -335,7 +335,7 @@ class SolverPool:
                 logger.error(f"Dispatch loop error: {e}")
 
     def _monitor_loop(self) -> None:
-        """检查 worker 存活，自动重启崩溃进程。"""
+        """检查 worker 存活，自动重启崩溃进程"""
         while self._running:
             time.sleep(self._MONITOR_INTERVAL)
             for i, worker in enumerate(self._workers):
@@ -357,13 +357,13 @@ class SolverPool:
         return None
 
     def get_avg_wait_time(self) -> float:
-        """返回最近 N 个请求的平均队列等待时间（秒）。"""
+        """返回最近 N 个请求的平均队列等待时间（秒）"""
         if not self._wait_times:
             return 0.0
         return sum(self._wait_times) / len(self._wait_times)
 
     def get_utilization(self) -> float:
-        """返回当前 solver 利用率 (0.0 ~ 1.0)。"""
+        """返回当前 solver 利用率 (0.0 ~ 1.0)"""
         total = len(self._workers)
         if total == 0:
             return 0.0
@@ -408,11 +408,11 @@ class SolverPool:
 
 
 class AdaptivePoolSizing:
-    """动态调整求解器池大小，基于队列等待时间和利用率。
-
+    """动态调整求解器池大小，基于队列等待时间和利用率
+    
     扩容条件：avg_wait > 2s 且 utilization > 80% → +2 worker
     缩容条件：utilization < 30% 持续 5 分钟 → -1 worker（下限 1）
-    滞后带：每次调整后冷却 120s，防止振荡。"""
+    滞后带：每次调整后冷却 120s，防止振荡"""
 
     _CHECK_INTERVAL = 30.0          # 每 30s 检查一次
     _COOLDOWN_SECONDS = 120.0       # 调整后冷却时间
@@ -445,7 +445,7 @@ class AdaptivePoolSizing:
         logger.info("AdaptivePoolSizing monitor stopped")
 
     def notify_resize(self) -> None:
-        """池大小被外部修改时调用，重置冷却计时器。"""
+        """池大小被外部修改时调用，重置冷却计时器"""
         with self._lock:
             self._last_resize_time = time.time()
 
@@ -500,10 +500,10 @@ class AdaptivePoolSizing:
 
 
 class SolverWarmupCache:
-    """Worker 启动时预求解常见约束模式，预热求解器内部数据结构。
-
-    常见模式涵盖整数比较、字符串长度、逻辑组合等，
-    提前填充求解器的增量缓存。"""
+    """Worker 启动时预求解常见约束模式，预热求解器内部数据结构
+    
+    常见模式涵盖整数比较、字符串长度、逻辑组合等
+    提前填充求解器的增量缓存"""
 
     WARMUP_PATTERNS: List[str] = [
         "(declare-const x Int) (assert (> x 0))",
@@ -526,10 +526,10 @@ class SolverWarmupCache:
         self._warmed = False
 
     def warmup(self, config: SolverConfig) -> int:
-        """执行预热：对每个模式创建临时求解器并求解，缓存结果。
-
-        Returns:
-            成功预热求解的模式数量。
+        """执行预热：对每个模式创建临时求解器并求解，缓存结果
+        
+        返回:
+        成功预热求解的模式数量
         """
         if self._warmed:
             return len(self._cache)
@@ -555,7 +555,7 @@ class SolverWarmupCache:
         return solved_count
 
     def _solve_pattern(self, config: SolverConfig, pattern: str) -> Optional[SolverResponse]:
-        """用独立求解器实例求解单个预热模式。"""
+        """用独立求解器实例求解单个预热模式"""
         try:
             solver = None
             if config.solver_type == SolverType.Z3:
@@ -616,10 +616,10 @@ _CROSS_SESSION_LOCK = threading.RLock()
 
 
 class SolverSession:
-    """单个求解会话，管理约束集合并和求解。
-
-    六轮增强 — CrossSessionReuse：check() 对合并约束集哈希，
-    跨会话复用历史求解结果。"""
+    """单个求解会话，管理约束集合并和求解
+    
+    六轮增强 — CrossSessionReuse：check() 对合并约束集哈希
+    跨会话复用历史求解结果"""
 
     def __init__(self, pool: SolverPool):
         self._pool = pool
@@ -633,10 +633,10 @@ class SolverSession:
         self._constraints.extend(constraints)
 
     def check(self) -> Optional[SolverResponse]:
-        """求解合并约束集。优先查跨会话缓存，命中则直接返回。
-
-        CrossSessionReuse：对 combined constraints 取 SHA-256，
-        若之前任一 SolverSession 求解过相同约束集，直接复用结果。"""
+        """求解合并约束集。优先查跨会话缓存，命中则直接返回
+        
+        CrossSessionReuse：对 combined constraints 取 SHA256
+        若之前任一 SolverSession 求解过相同约束集，直接复用结果"""
         combined = "\n".join(self._constraints)
         combined_hash = _hash_constraints(combined)
 
@@ -671,7 +671,7 @@ class SolverSession:
 
 
 class SolverCache:
-    """Solver response cache keyed by constraint hash."""
+    """Solver response 缓存keyed constraint hash"""
 
     def __init__(self, max_entries: int = 1000):
         self._cache: Dict[str, SolverResponse] = {}
@@ -732,6 +732,6 @@ def solve_constraints(constraints: str, timeout: Optional[int] = None) -> Option
 
 
 def clear_cross_session_cache() -> None:
-    """清空跨会话结果缓存。"""
+    """清空跨会话结果缓存"""
     with _CROSS_SESSION_LOCK:
         _CROSS_SESSION_CACHE.clear()

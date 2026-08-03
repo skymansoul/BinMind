@@ -1,5 +1,4 @@
-# 2026-07-18
-"""TLS指纹识别与密码套件安全分析——JA3/JA4指纹、证书解析、协议版本探测。"""
+"""TLS指纹识别与密码套件安全分析——JA3/JA4指纹生成、证书解析、协议版本探测。"""
 import hashlib, logging, socket, ssl, struct
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -8,7 +7,7 @@ from datetime import datetime
 
 _log = logging.getLogger(__name__)
 
-# ---- 密码套件评分 —— 参考Mozilla SSL Configuration Generator ----
+# 密码套件评分映射——参照 Mozilla SSL Configuration Generator 分级标准
 CIPHER_SUITE_SCORES: Dict[str, int] = {}
 
 _MODERN = {
@@ -72,14 +71,14 @@ _INSECURE = {
 for _d in [_MODERN, _INTERMEDIATE, _OLD, _INSECURE]:
     CIPHER_SUITE_SCORES.update(_d)
 
-# //// TLS版本映射 ////
+# TLS/SSL 协议版本号映射表
 _TLS_VERSIONS = {
     0x0301: "TLSv1.0", 0x0302: "TLSv1.1",
     0x0303: "TLSv1.2", 0x0304: "TLSv1.3",
 }
 _SSL_VERSIONS = {0x300: "SSLv3", 0x301: "TLSv1.0", 0x302: "TLSv1.1", 0x303: "TLSv1.2"}
 
-# ===== 数据结构 =====
+# 数据结构定义
 @dataclass
 class CertInfo:
     subject: str = ""
@@ -101,11 +100,11 @@ class TlsFingerprint:
     cert_info: Optional[CertInfo] = None
 
 
-# //// 密码套件评分 ////
+# 密码套件评分函数
 def score_cipher_suites(ciphers: List[str]) -> Dict[str, Any]:
-    """对密码套件列表评分，返回各等级数量和平均分。
+    """密码套件列表评分——返回各等级数量和平均分。
 
-    按Mozilla四等级分类：modern(100), intermediate(70-90), old(40-60), insecure(0-30)。
+    按Mozilla四等级分类：modern(>=90)、intermediate(70-89)、old(40-69)、insecure(<40)。
     不支持PFS的RSA密钥交换即使用AES-GCM也归入insecure。
     """
     if not ciphers:
@@ -116,9 +115,7 @@ def score_cipher_suites(ciphers: List[str]) -> Dict[str, Any]:
 
     for c in ciphers:
         _name = c.replace("-", "-").replace("_", "-")
-        # 标准化名称
         _name = _name.upper().replace("TLS-", "TLS_").replace("TLS_", "").strip()
-        # 尝试匹配已知套件
         _s = CIPHER_SUITE_SCORES.get(c, None)
         if _s is None:
             _s = _match_cipher_score(c)
@@ -140,44 +137,44 @@ def score_cipher_suites(ciphers: List[str]) -> Dict[str, Any]:
 
 def _match_cipher_score(cipher_name: str) -> int:
     _n = cipher_name.upper()
-    # EXPORT / NULL → 0
+    # EXPORT / NULL 密码套件 → 0分
     if "EXP" in _n or "NULL" in _n:
         return 0
-    # RC4 → 5
+    # RC4 流密码 → 5分
     if "RC4" in _n:
         return 5
-    # DES(3DES) → 15
+    # 3DES 块密码 → 15分
     if "DES" in _n and "AES" not in _n:
         return 15
-    # 无ECDHE/DHE → 无PFS，不高于30
+    # 无ECDHE/DHE → 无PFS，上限30分
     if "ECDHE" not in _n and "DHE" not in _n:
         if "AES" in _n and "GCM" in _n:
             return 30
         if "AES" in _n:
             return 20
         return 10
-    # DHE → 中等
+    # DHE 密钥交换 → 中等级
     if "DHE" in _n and "ECDHE" not in _n:
         if "GCM" in _n:
             return 80
         return 55
-    # ECDHE → 高
+    # ECDHE 密钥交换 → 高等级
     if "ECDHE" in _n:
         if "GCM" in _n or "CHACHA20" in _n:
             return 90
         if "SHA384" in _n or "SHA256" in _n:
             return 70
         return 60
-    return 40  # 未知套件保守评分
+    return 40  # 未识别套件保守评分
 
 
-# ===== JA3指纹生成 =====
+# JA3指纹生成
 def compute_ja3(ciphers: List[str], extensions: List[int],
                 curves: List[int], ec_formats: List[int],
                 tls_version: int = 0x0303) -> Tuple[str, str]:
-    """计算JA3指纹：MD5(TLS_VERSION,CIPHERS,EXTENSIONS,CURVES,EC_FORMATS)。
+    """计算 JA3 指纹：MD5(TLS_VERSION,CIPHERS,EXTENSIONS,CURVES,EC_FORMATS)。
 
-    ClientHello中各字段的十进制值以'-'分隔，以','连接各组。密码套件按出现顺序排列。
+    ClientHello 各字段的十进制值以'-'分隔，以','连接各组。密码套件按出现顺序排列。
     """
     _ciphers_str = "-".join(str(_cipher_to_decimal(c)) for c in ciphers) if ciphers else ""
     _ext_str = "-".join(str(e) for e in extensions) if extensions else ""
@@ -189,7 +186,7 @@ def compute_ja3(ciphers: List[str], extensions: List[int],
     return _ja3_raw, _ja3_hash
 
 
-# TLS密码套件数值映射（常见套件）
+# TLS密码套件数值映射（IANA注册值）
 _CIPHER_DECIMAL_MAP: Dict[str, int] = {
     "TLS_AES_128_GCM_SHA256": 0x1301,
     "TLS_AES_256_GCM_SHA384": 0x1302,
@@ -240,7 +237,6 @@ def _cipher_to_decimal(cipher: str) -> int:
     _c = _CIPHER_DECIMAL_MAP.get(cipher)
     if _c is not None:
         return _c
-    # 尝试小写匹配
     _c = _CIPHER_DECIMAL_MAP.get(cipher.upper().replace("-", "_"))
     if _c is not None:
         return _c
@@ -251,33 +247,33 @@ def _decimal_to_cipher(val: int) -> str:
     return _CIPHER_DECIMAL_REVERSE.get(val, f"UNKNOWN_{val:04X}")
 
 
-# ===== JA4简化指纹 =====
+# JA4简化指纹生成
 def compute_ja4(proto: str, ciphers: List[str], extensions: List[int]) -> str:
-    """JA4简化指纹：proto_ver + ciphers_hash(truncated 12char SHA256) + extensions_hash。
+    """JA4简化指纹：proto_ver + ciphers_hash(SHA256截断12字符) + extensions_hash。
 
-    取前30个密码套件排序后做SHA256截断12字符。比JA3更紧凑且支持TLS1.3。
+    取前30个密码套件排序后SHA256截断12字符。比JA3更紧凑，原生支持TLS 1.3。
     """
-    _proto_code = "t"  # TCP默认
+    _proto_code = "t"  # TCP默认标识
     if proto.lower() == "quic":
         _proto_code = "q"
 
-    # 密码套件哈希
+    # 密码套件排序后哈希
     _sorted_ciphers = sorted(ciphers[:30])
     _ciphers_str = ",".join(_sorted_ciphers)
     _ciphers_hash = hashlib.sha256(_ciphers_str.encode()).hexdigest()[:12]
 
-    # 扩展哈希
+    # 扩展字段排序后哈希
     _ext_str = ",".join(str(e) for e in sorted(extensions[:30]))
     _ext_hash = hashlib.sha256(_ext_str.encode()).hexdigest()[:12]
 
     return f"{_proto_code}13{_ciphers_hash}_{_ext_hash}"
 
 
-# ===== 证书解析 =====
+# X.509证书解析
 def parse_cert(cert_der: bytes) -> Optional[CertInfo]:
-    """解析DER编码的X.509证书，提取主体CN、颁发者、SAN、有效期和链深度。
+    """解析DER编码X.509证书——提取主体、颁发者、SAN、有效期及指纹。
 
-    尝试用ssl标准库解析，失败后回退到ASN.1手动解析（提取结构化字段）。
+    优先用ssl标准库解析，失败后回退至ASN.1手动解析获取结构化字段。
     """
     if not cert_der:
         return None
@@ -285,8 +281,8 @@ def parse_cert(cert_der: bytes) -> Optional[CertInfo]:
 
     try:
         _cert = ssl.DER_cert_to_PEM_cert(cert_der)
-        # 使用ssl标准库
         import tempfile, os as _os
+        import pathlib
         _tmp = None
         try:
             _tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".pem")
@@ -310,7 +306,7 @@ def parse_cert(cert_der: bytes) -> Optional[CertInfo]:
                 except Exception:
                     pass
     except Exception:
-        # 回退：简单ASN.1解析
+        # SSL库解析失败 → 回退至简化ASN.1解析
         _info = _asn1_fallback_parse(cert_der)
         _info.fingerprint_sha256 = hashlib.sha256(cert_der).hexdigest()
 
@@ -318,39 +314,38 @@ def parse_cert(cert_der: bytes) -> Optional[CertInfo]:
 
 
 def _asn1_fallback_parse(der: bytes) -> CertInfo:
-    """手动解析DER编码最低限度提取证书字段"""
+    """DER最低限度解析——手动提取X.509证书核心字段"""
     _info = CertInfo()
     _pos = 0
     try:
-        # 跳转到序列内部
         if len(der) < 4:
             return _info
         _pos = _skip_tag_len(der, 0)  # Certificate SEQUENCE
         _pos = _skip_tag_len(der, _pos)  # TBSCertificate SEQUENCE
-        # 跳版本
+        # 跳过版本号 [0] EXPLICIT
         if der[_pos] == 0xA0:
             _pos = _skip_tag_len(der, _pos)
-        # 序列号
+        # 序列号 INTEGER
         if der[_pos] == 0x02:
             _pos = _skip_tag_len(der, _pos)
-        # 签名算法
+        # 签名算法 SEQUENCE
         _pos = _skip_tag_len(der, _pos)
         # 颁发者
         if der[_pos] in (0x30, 0x31):
             _end = _pos + _get_len(der, _pos)
             _info.issuer = _parse_x500_name(der, _pos)
             _pos = _end
-        # 有效期
+        # 有效期 SEQUENCE
         if der[_pos] == 0x30:
             _pos = _skip_tag_len(der, _pos)
         # 主体
         if der[_pos] in (0x30, 0x31):
             _info.subject = _parse_x500_name(der, _pos)
             _pos = _skip_tag_len(der, _pos)
-        # 遍历扩展找SAN
+        # 遍历扩展域查找SAN (OID 2.5.29.17)
         while _pos < len(der) - 4:
             _tag = der[_pos]
-            if _tag == 0xA3:  # extensions
+            if _tag == 0xA3:  # extensions [3] EXPLICIT
                 _ext_pos = _pos + _get_len_bytes(der, _pos)
                 _ext_data = der[_ext_pos:_ext_pos + _get_len(der, _pos)]
                 _ext_pos = 0
@@ -358,7 +353,6 @@ def _asn1_fallback_parse(der: bytes) -> CertInfo:
                     _ext_tag = _ext_data[_ext_pos]
                     _ext_len = _get_len(_ext_data, _ext_pos)
                     _ext_end = _ext_pos + _get_len_bytes(_ext_data, _ext_pos) + _ext_len
-                    # 寻找 SAN OID 2.5.29.17
                     if b'\x55\x1d\x11' in _ext_data[_ext_pos:_ext_end]:
                         _san_data = _ext_data[_ext_pos + 2 + _get_len_bytes(_ext_data, _ext_pos):_ext_end]
                         _san_inner = _san_data
@@ -405,7 +399,7 @@ def _skip_tag_len(data: bytes, pos: int) -> int:
 
 
 def _parse_x500_name(data: bytes, pos: int) -> str:
-    """从ASN.1 DER中提取X.500名称"""
+    """从ASN.1 DER编码提取X.500可分辨名称"""
     parts: List[str] = []
     length = _get_len(data, pos)
     offset = pos + _get_len_bytes(data, pos)
@@ -426,14 +420,13 @@ def _parse_x500_name(data: bytes, pos: int) -> str:
                 inner_end = inner + _get_len_bytes(data, seq_start) + _get_len(data, inner)
                 inner = inner_end
                 continue
-            # OID
+            # OID 字段
             if data[inner] == 0x06:
                 oid_start = inner + _get_len_bytes(data, inner)
                 oid_len = _get_len(data, inner)
                 oid_end = oid_start + oid_len
             else:
                 oid_start, oid_end = inner, inner
-            # 值
             inner = oid_end
             if inner < len(data) and data[inner] in (0x0C, 0x13, 0x16):
                 val_start = inner + _get_len_bytes(data, inner)
@@ -451,11 +444,11 @@ def _parse_x500_name(data: bytes, pos: int) -> str:
     return "/".join(parts)
 
 
-# //// TLS版本探测 ////
+# TLS协议版本探测
 def _probe_versions(host: str, port: int, timeout: float = 5.0) -> List[str]:
-    """探测服务器支持的TLS协议版本。
+    """探测目标服务器支持的TLS协议版本列表。
 
-    分别尝试TLS1.0/1.1/1.2/1.3连接，记录成功版本。TLS1.3使用不同上下文。
+    分别尝试TLS 1.0/1.1/1.2连接，再独立测试TLS 1.3（不同SSLContext）。
     """
     _supported = []
     _test_versions = [
@@ -477,7 +470,7 @@ def _probe_versions(host: str, port: int, timeout: float = 5.0) -> List[str]:
         except Exception:
             pass
 
-    # TLS 1.3
+    # TLS 1.3 独立探测
     try:
         _ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         _ctx.check_hostname = False
@@ -496,12 +489,12 @@ def _probe_versions(host: str, port: int, timeout: float = 5.0) -> List[str]:
     return _supported
 
 
-# ===== 完整TLS分析 =====
+# 完整TLS分析入口
 def analyze(host: str, port: int = 443, timeout: float = 5.0) -> TlsFingerprint:
-    """对目标主机端口执行完整TLS分析。
+    """对目标主机端口执行完整TLS安全分析。
 
-    连接流程：建立TLS连接 → 获取密码套件和证书 → 解析JA3/JA4指纹 →
-    探测版本支持 → 评分密码套件。默认5秒超时，超时返回空fingerprint。
+    流程：建立TLS连接 → 获取密码套件和证书 → 生成JA3/JA4指纹 → 探测版本 → 评分。
+    默认5秒超时，超时返回空fingerprint结构。
     """
     _fp = TlsFingerprint()
     _cert_der = None
@@ -520,18 +513,18 @@ def analyze(host: str, port: int = 443, timeout: float = 5.0) -> TlsFingerprint:
         _sock = socket.create_connection((host, port), timeout=timeout)
         _ssock = _ctx.wrap_socket(_sock, server_hostname=host)
 
-        # 获取对端证书
+        # 提取对端证书 DER 编码
         _cert_der = _ssock.getpeercert(binary_form=True)
         _cert_dict = _ssock.getpeercert()
         if _cert_der:
             _fp.cert_info = parse_cert(_cert_der)
 
-        # 密码套件
+        # 提取协商密码套件
         _cipher_info = _ssock.cipher()
         if _cipher_info:
             _ciphers_raw = list(_cipher_info)
 
-        # 获取shared ciphers（无法直接从Python ssl获取完整ClientHello列表）
+        # 获取shared ciphers列表
         try:
             _shared = _ssock.shared_ciphers()
             _ciphers_names = [c[0] for c in _shared]
@@ -539,7 +532,7 @@ def analyze(host: str, port: int = 443, timeout: float = 5.0) -> TlsFingerprint:
         except Exception:
             pass
 
-        # 获取协议版本
+        # 提取协商协议版本
         try:
             _ver = _ssock.version()
             if _ver:
@@ -551,17 +544,16 @@ def analyze(host: str, port: int = 443, timeout: float = 5.0) -> TlsFingerprint:
         _ssock.close()
     except Exception as e:
         _log.debug("TLS连接失败 %s:%s: %s", host, port, e)
-        # 即使连接失败也尝试版本探测
         try:
             _fp.tls_versions_supported = _probe_versions(host, port, timeout)
         except Exception:
             pass
         return _fp
 
-    # 探测版本支持
+    # 版本探测
     _fp.tls_versions_supported = _probe_versions(host, port, timeout)
 
-    # 生成JA3指纹
+    # 生成 JA3/JA4 指纹
     if _fp.ciphers:
         _ja3, _ja3_hash = compute_ja3(_fp.ciphers, _fp.extensions, _curves_raw, _ec_formats_raw, _tls_ver)
         _fp.ja3 = _ja3
@@ -569,3 +561,6 @@ def analyze(host: str, port: int = 443, timeout: float = 5.0) -> TlsFingerprint:
         _fp.ja4 = compute_ja4("tcp", _fp.ciphers, _fp.extensions)
 
     return _fp
+
+def _debug_print(*a,**kw):
+    if __import__("os").environ.get("BINMIND_DEBUG"):print(*a,**kw)

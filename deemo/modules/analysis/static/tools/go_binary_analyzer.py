@@ -5,7 +5,7 @@ from typing import List, Dict, Optional, Tuple
 
 
 class GoBinaryAnalyzer:
-    """Go binary detection, version extraction, pclntab recovery, Go-specific vuln patterns"""
+    """binary detection, version extraction, pclntab recovery, -specific vuln patterns"""
 
     # ---- 初始化: Go特征签名 ----
 
@@ -16,7 +16,7 @@ class GoBinaryAnalyzer:
             re.compile(rb'go1\.(\d+)\.(\d+)(?:\.(\d+))?'),
         ]
 
-        # Go build信息pattern
+        # build信息pattern
         self._build_info_patterns = [
             rb'Go build ID:',
             rb'build\tvcs\.time=',
@@ -28,13 +28,13 @@ class GoBinaryAnalyzer:
 
         # pclntab magic
         self._pclntab_magics = [
-            b'\xFB\xFF\xFF\xFF\x00\x00',  # Go 1.2-1.15
-            b'\xFA\xFF\xFF\xFF\x00\x00',  # Go 1.16
-            b'\xF0\xFF\xFF\xFF\x00\x00',  # Go 1.18+
-            b'\xF1\xFF\xFF\xFF\x00\x00',  # Go 1.18+ variant
+            b'\xFB\xFF\xFF\xFF\x00\x00',  # 1.2-1.15
+            b'\xFA\xFF\xFF\xFF\x00\x00',  # 1.16
+            b'\xF0\xFF\xFF\xFF\x00\x00',  # 1.18+
+            b'\xF1\xFF\xFF\xFF\x00\x00',  # 1.18+ variant
         ]
 
-        # Go runtime函数特征
+        # runtime函数特征
         self._go_runtime_funcs = [
             'runtime.mallocgc', 'runtime.newobject', 'runtime.growslice',
             'runtime.panic', 'runtime.deferproc', 'runtime.deferreturn',
@@ -124,14 +124,14 @@ class GoBinaryAnalyzer:
         _indicators = []
         _score = 0.0
 
-        # Indicator 1: Go build ID
+        # Indicator 1: 构建 ID
         for _pat in self._build_info_patterns:
             if isinstance(_pat, bytes) and _pat in data:
                 _indicators.append(('build_info', _pat.decode('ascii', errors='replace')))
                 _score += 0.25
                 break
 
-        # Indicator 2: Go version string
+        # Indicator 2: version string
         for _pat in self._go_version_patterns:
             _m = _pat.search(data)
             if _m:
@@ -148,7 +148,7 @@ class GoBinaryAnalyzer:
                 _score += 0.25
                 break
 
-        # Indicator 4: Go runtime strings
+        # Indicator 4: runtime strings
         _strs_text = ' '.join(strings)
         _func_matches = 0
         for _func in self._go_runtime_funcs:
@@ -159,12 +159,12 @@ class GoBinaryAnalyzer:
             _indicators.append(('runtime_funcs', f"{_func_matches} matches"))
             _score += 0.25
 
-        # Indicator 5: ELF with .gopclntab section
+        # Indicator 5: ELF.gopclntab section
         if b'.gopclntab' in data or b'gopclntab' in data:
             _indicators.append(('gopclntab_section', True))
             _score += 0.2
 
-        # Indicator 6: Go-specific ELF note section
+        # Indicator 6: -specific ELF note section
         if b'Go\x00\x00' in data:
             _indicators.append(('go_note_section', True))
             _score += 0.15
@@ -191,7 +191,7 @@ class GoBinaryAnalyzer:
                     return f"go1.{_major}.{_minor}.{_patch}"
                 return f"go1.{_major}.{_minor}"
 
-        # fallback: find "go1." literal
+        # 回退: 查找 "go1." literal
         _m = re.search(rb'go1\.(\d+)(?:\.(\d+))?', data)
         if _m:
             return _m.group(0).decode('ascii', errors='replace')
@@ -203,7 +203,7 @@ class GoBinaryAnalyzer:
     def recover_functions_from_pclntab(self, data: bytes) -> List[Dict]:
         _funcs = []
 
-        # Find pclntab magic
+        # 查找 pclntab magic
         _pcln_off = -1
         _quantum = 1
         _pointer_size = 8
@@ -211,7 +211,7 @@ class GoBinaryAnalyzer:
             _pos = data.find(_magic)
             if _pos != -1:
                 _pcln_off = _pos
-                # Determine Go version from magic
+                # Determine version magic
                 if _magic == b'\xFB\xFF\xFF\xFF\x00\x00':
                     _quantum = 1
                     _pointer_size = 4 if len(data) < 0x100000000 else 8
@@ -224,24 +224,24 @@ class GoBinaryAnalyzer:
         if _pcln_off == -1:
             return _funcs
 
-        # Parse pclntab header (simplified)
+        # 解析 pclntab header (simplified)
         try:
-            # header: magic(6) + padding(2) + quantum(1) + pointer_size(1) + num_funcs(4/8)
+            # header: magic(6) + 填充(2) + quantum(1) + 指针_size(1) + num_funcs(4/8)
             _hdr = data[_pcln_off:_pcln_off + 8]
             _num_funcs = struct.unpack('<I', data[_pcln_off + 8:_pcln_off + 12])[0]
 
-            # Function entries start after header
+            # Function entries 启动 header
             _func_off = _pcln_off + 16  # approximate
 
             for _i in range(min(_num_funcs, 50000)):
-                _entry_off = _func_off + _i * 16  # each entry: entry_pc(8) + func_offset(8)
+                _entry_off = _func_off + _i * 16  # entry: entry_pc(8) + func_offset(8)
                 if _entry_off + 16 > len(data):
                     break
 
                 _pc = struct.unpack('<Q', data[_entry_off:_entry_off + 8])[0]
                 _off = struct.unpack('<Q', data[_entry_off + 8:_entry_off + 16])[0]
 
-                # Read function name from func_offset location
+                # 读取 function name func_offset location
                 _name_off = _pcln_off + _off
                 if _name_off < len(data):
                     _name = self._read_cstr(data, _name_off, 128)
@@ -285,7 +285,7 @@ class GoBinaryAnalyzer:
 
     def extract_dependencies(self, data: bytes, strings: List[str]) -> List[Dict]:
         _deps = []
-        # Go module paths pattern: github.com/org/repo, golang.org/x/, etc.
+        # module paths pattern: github.com/org/repo, golang.org/x/, etc
         _dep_re = re.compile(
             r'(?:github\.com|gitlab\.com|bitbucket\.org|golang\.org|'
             r'go\.googlesource\.com|gopkg\.in|k8s\.io|cloud\.google\.com)/'
@@ -298,7 +298,7 @@ class GoBinaryAnalyzer:
                 _found.add(_dep)
                 _deps.append({'package': _dep, 'type': 'import'})
 
-        # Additional from binary
+        # Additional binary
         _dep_re_b = re.compile(rb'path\t(github\.com/[\w\-./]+)')
         for _m in _dep_re_b.finditer(data):
             _dep = _m.group(1).decode('ascii', errors='replace')

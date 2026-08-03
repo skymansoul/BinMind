@@ -1,13 +1,12 @@
-# 2026-07-18
-# anonymizer — 代码匿名化：标识符、字符串、数值统一替换为确定性安全别名
-# 设计考量：用有序字典保证同一标识符在所有出现位置得到相同替换名
-# 不做 AST 解析（语言无关性优先），regex + keyword filter 实现 95% 准确率
+# anonymizer — 标识符/字符串/数值匿名化，确定性替换
+# 用 OrderedDict 维持同位替换一致性，同一标识符全局映射到同一别名
+# 语言无关：regex + 关键词黑名单，不做 AST 解析
 
 import re
 import hashlib
 from collections import OrderedDict
 
-# ---- 关键词黑名单 ----
+# C/C++ 保留字与标准库类型
 _C_KEYWORDS = {
     'auto', 'break', 'case', 'char', 'const', 'continue', 'default', 'do',
     'double', 'else', 'enum', 'extern', 'float', 'for', 'goto', 'if',
@@ -49,7 +48,8 @@ _KEYWORD_MAP = {
     'javascript': _JS_KEYWORDS, 'js': _JS_KEYWORDS,
 }
 
-# ---- 敏感内容检测模式 ----
+# 敏感内容正则库，每项 (pattern, weight)
+# 权重按泄露严重性分级：私钥最高 0.95，密码赋值最低 0.5
 _SECRET_PATTERNS = [
     (re.compile(r'(?i)(api[_-]?key|apikey|secret[_-]?key|private[_-]?key)\s*[:=]\s*[\'"]?\w{16,}[\'"]?'), 0.8),
     (re.compile(r'(?i)(password|passwd|pwd)\s*[:=]\s*[\'"][^\'"]{3,}[\'"]'), 0.5),
@@ -63,9 +63,8 @@ _SECRET_PATTERNS = [
 
 
 class Anonymizer:
-    """代码匿名化器。配置项: threshold 控制敏感内容检测灵敏度。
-
-    替换映射用 OrderedDict 保证确定性 —— 同一输入总产出同一匿名化结果。
+    """匿名化处理，threshold 控制敏感内容判定门槛。
+    内部映射表为 OrderedDict，确保同一输入永远产出同一替换序列。
     """
 
     def __init__(self, threshold: float = 0.6):
@@ -94,31 +93,26 @@ class Anonymizer:
 
     @staticmethod
     def _auto_detect_language(code: str) -> str:
-        """启发式语言检测：扫描前 2000 字符中的特征模式。"""
+        """扫描首 2000 字符中的语法特征词，投票判定语言。"""
         _head = code[:2000]
         _scores = {'c': 0, 'python': 0, 'js': 0}
-        # Python 特征
         for _p in [r'\bdef\b', r'\bimport\b', r'\bclass\s+\w+:', r':\s*$', r'#.*$']:
             if re.search(_p, _head, re.MULTILINE):
                 _scores['python'] += 1
-        # C/C++ 特征
         for _p in [r'#include\s*[<"]', r'\bint\s+main\b', r'\bNULL\b', r'\*.*;', r'//.*$']:
             if re.search(_p, _head, re.MULTILINE):
                 _scores['c'] += 1
-        # JS 特征
         for _p in [r'\bfunction\b', r'\bconst\b', r'\blet\b', r'\bvar\b', r'=>' ]:
             if re.search(_p, _head, re.MULTILINE):
                 _scores['js'] += 1
         return max(_scores, key=_scores.get)
 
-    # ===== 标识符匿名化 =====
     def anonymize_identifiers(self, code: str, language: str = "auto") -> str:
-        """替换变量名和函数名为 v_N 模式，跳过语言关键词。"""
+        """匹配 C 风格标识符，跳过语言保留字，其余映射为 v_N。"""
         if language == "auto":
             language = self._auto_detect_language(code)
         _keywords = _KEYWORD_MAP.get(language.lower(), set())
 
-        # 匹配 C 风格标识符
         _id_pat = re.compile(r'\b([a-zA-Z_][a-zA-Z0-9_]*)\b')
 
         def _replacer(m):
@@ -130,7 +124,7 @@ class Anonymizer:
         return _id_pat.sub(_replacer, code)
 
     def anonymize_strings(self, code: str) -> str:
-        """替换双引号/单引号字符串为 str_N 占位符。"""
+        """双引号/单引号字面量替换为 str_N，保留转义处理。"""
         _pat = re.compile(r'"(?:[^"\\]|\\.)*"|\'(?:[^\'\\]|\\.)*\'')
 
         def _replacer(m):
@@ -139,8 +133,7 @@ class Anonymizer:
         return _pat.sub(_replacer, code)
 
     def anonymize_numbers(self, code: str) -> str:
-        """替换数值字面量为 num_N，保留负号。"""
-        # 匹配整数和浮点数，不替换十六进制前缀
+        """整数与浮点数字面量映射为 num_N，负号保留在替换结果外。"""
         _pat = re.compile(r'\b(\d+\.?\d*(?:[eE][+-]?\d+)?)\b')
 
         def _replacer(m):
@@ -148,10 +141,8 @@ class Anonymizer:
 
         return _pat.sub(_replacer, code)
 
-    # //// 敏感内容检测 ////
-    # 设计考量：并非每个匹配项都等权重 —— 私钥标记权重最高，
-    # API key 次之，password 赋值较低。加权和超过阈值时标记为敏感。
     def is_sensitive_content(self, code: str, threshold: float = None) -> bool:
+        """加权求和检测敏感硬编码凭据。阈值跨过 + 匹配字符占比 > 0.001 即为敏感。"""
         _t = threshold if threshold is not None else self._threshold
         if not code:
             return False
@@ -163,16 +154,13 @@ class Anonymizer:
                 _hit_chars += len(_m.group(0))
                 _total += _weight
         _ratio = _hit_chars / _total_len
-        # 加权分超过阈值 且 命中比例不为零
         return _total > _t and _ratio > 0.001
 
     def full_anonymize(self, code: str, language: str = "auto") -> tuple:
-        """完整匿名化流程，返回 (匿名化后代码, 映射表)。
-
-        执行顺序：标识符 -> 字符串 -> 数值，保证字符串内的内容不被标识符规则误改。
-        映射表可用于后续还原。
+        """执行完整匿名化管线：标识符→字符串→数值，返回 (代码, 映射表)。
+        顺序保证字符串内文本不被标识符正则误匹配。
         """
-        self._counters_frozen = 0  # not actually frozen, just reset for fresh mapping
+        self._counters_frozen = 0
         _result = self.anonymize_identifiers(code, language)
         _result = self.anonymize_strings(_result)
         _result = self.anonymize_numbers(_result)

@@ -1,8 +1,6 @@
-# 2026-07-28 16:05
-# llm_agent_binary.py
 # 基于LLM智能体的二进制分析框架 — 多Agent协作完成端到端分析任务
 # 依据: ClearAgent [Zotero: "Agentic Binary Analysis for Effective Vulnerability Detection"]
-#       Getting pwn'd by AI [Zotero: "Penetration Testing with Large Language Models"]
+# Getting pwn'd by 智能 [Zotero: "Penetration Testing with Large Language Models"]
 # 核心: 定义Agent角色(反汇编/漏洞发现/利用生成/报告) → 共享状态 → 迭代推理
 
 from __future__ import annotations

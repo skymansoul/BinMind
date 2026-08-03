@@ -1,11 +1,10 @@
-# 2026-07-30
-"""Stack memory integrity checker — BASICS [Fang et al. 2025, arXiv:2511.19670] inspired.
+"""栈内存完整性检查 —— 借鉴 BASICS [Fang+, arXiv:2511.19670]。
 
-BASICS 使用 model checking + concolic execution 验证二进制中栈内存的安全属性。
-本模块实现其思想的可工程化子集：通过字节码模式分析检测栈帧中的缓冲区溢出、
+BASICS 用 model checking + concolic execution 验证栈安全属性。
+本模块实现其可工程化子集：字节码模式分析检测栈帧中的溢出、
 返回地址覆写和 canary 破坏风险，不依赖动态执行。
 
-输出 : StackIntegrityReport 包含逐函数的风险矩阵。
+输出：StackIntegrityReport，含逐函数风险矩阵。
 """
 
 import re, struct, logging, os
@@ -17,17 +16,17 @@ _logger = logging.getLogger(__name__)
 
 
 class StackRisk(IntEnum):
-    """栈安全风险等级 — 对应 BASICS 的属性检查结果。"""
+    """栈安全风险等级 —— 对应 BASICS 属性检查结果。"""
     CLEAN = 0           # 无风险
-    LOW_RISK = 1        # 存在潜在不安全函数但无明确溢出证据
+    LOW_RISK = 1        # 潜在不安全函数但无明确溢出证据
     MEDIUM_RISK = 2     # 固定大小缓冲区 + 不安全拷贝
     HIGH_RISK = 3       # 可变大小缓冲区 + 不安全拷贝 + 无边界检查
-    CRITICAL = 4        # 检测到明确的返回地址覆写模式
+    CRITICAL = 4        # 明确的返回地址覆写模式
 
 
 @dataclass
 class StackFrameInfo:
-    """单函数栈帧的结构化信息。"""
+    """单函数栈帧结构化信息。"""
     func_name: str
     func_offset: int = 0
     func_size: int = 0
@@ -49,7 +48,7 @@ class StackIntegrityReport:
     overall_risk: StackRisk = StackRisk.CLEAN
     mitigation_suggestions: List[str] = field(default_factory=list)
     canary_coverage: float = 0.0
-    # 对应 BASICS paper 的 "stack safety score"
+    # 对应 BASICS 论文的 stack safety score
     safety_score: float = 0.0
 
     def to_dict(self) -> Dict:
@@ -70,17 +69,17 @@ class StackIntegrityReport:
                     'dangerous_calls': _f.dangerous_calls,
                     'local_buffer_sizes': _f.local_buffer_sizes,
                 }
-                for _f in self.frames[:50]  # top 50 only
+                for _f in self.frames[:50]  # 仅 top 50
             ],
         }
 
 
-# ── 危险函数签名 ───────────────────────────────────────────────────────
-# 每项: (pattern, 默认缓冲区大小（bytes）, 风险权重)
-# 参考 BASICS paper Table 1 的危险函数分类
+# ── 危险函数签名表 ────────────────────────────────────────────────
+# 每项: (pattern, 默认缓冲区大小(bytes), 风险权重)
+# 参考 BASICS Table 1 的危险函数分类
 
 _DANGEROUS_FUNC_SIGS = [
-    # (regex for call instruction, estimated buffer size, risk weight 0..10)
+    # (regex, estimated buffer size, risk weight 0..10)
     (r'call.*<strcpy>', 256, 9),
     (r'call.*<strcat>', 256, 9),
     (r'call.*<sprintf>', 512, 8),
@@ -99,7 +98,7 @@ _DANGEROUS_FUNC_SIGS = [
     (r'call.*<g_utf8_strlcpy>', 256, 5),
 ]
 
-# ── 栈帧操作模式 ───────────────────────────────────────────────────────
+# ── 栈帧操作模式 ──────────────────────────────────────────────────
 # 检测函数序言中的栈帧大小和 canary 存在性
 
 _STACK_PROLOGUE_X86 = re.compile(
@@ -109,7 +108,7 @@ _STACK_PROLOGUE_X86 = re.compile(
 )
 
 _STACK_PROLOGUE_X64 = re.compile(
-    rb'[\x40-\x4f]?\x55'         # push rbp (optional REX prefix)
+    rb'[\x40-\x4f]?\x55'         # push rbp (可选 REX prefix)
     rb'[\x40-\x4f]?\x48\x89\xe5' # mov rbp, rsp
 )
 
@@ -127,11 +126,10 @@ _CANARY_CHECK = re.compile(
 
 
 class StackIntegrityChecker:
-    """栈完整性检查器 — 分析二进制中的栈安全属性。
+    """栈完整性检查器 —— 分析二进制栈安全属性。
 
-    基于 BASICS [Fang+, arXiv:2511.19670] 的栈内存安全验证思路，
-    实现字节码级别的栈帧分析和风险评分。
-    不执行符号执行，仅做静态字节码分析。
+    基于 BASICS 栈内存安全验证思路，实现字节码级栈帧分析和风险评分。
+    不执行符号执行，仅静态字节码分析。
     """
 
     def __init__(self, arch: str = "x86_64"):
@@ -144,11 +142,11 @@ class StackIntegrityChecker:
             self._canary_read = _CANARY_READ_X86
 
     # ============================================================
-    # analyze: 主编排 — 加载二进制 → 解析函数 → 逐函数分析栈帧
+    # 主编排 —— 加载二进制 → 解析函数 → 逐函数栈帧分析
     # ============================================================
     def analyze(self, binary_path: str,
                 function_list: Optional[List[Dict]] = None) -> StackIntegrityReport:
-        """分析二进制的栈完整性，返回结构化报告。"""
+        """分析二进制栈完整性，返回结构化报告。"""
         _rpt = StackIntegrityReport(binary_path=binary_path)
 
         _data = self._load_binary(binary_path)
@@ -157,7 +155,7 @@ class StackIntegrityChecker:
             _rpt.mitigation_suggestions.append("binary could not be loaded")
             return _rpt
 
-        # 解析或使用给定的函数列表
+        # 解析或用给定函数列表
         if function_list is None:
             function_list = self._discover_functions(_data)
 
@@ -182,7 +180,7 @@ class StackIntegrityChecker:
         _rpt.safety_score = self._compute_safety_score(_rpt)
         _rpt.overall_risk = self._determine_overall_risk(_rpt)
 
-        # 生成缓解建议 — 参考 BASICS paper §4.3
+        # 缓解建议 —— 参考 BASICS 第 4.3 节
         if _rpt.canary_coverage < 0.80:
             _rpt.mitigation_suggestions.append(
                 "canary coverage {:.0%} < 80%: enable -fstack-protector-strong".format(
@@ -198,7 +196,7 @@ class StackIntegrityChecker:
 
         return _rpt
 
-    # ── 二进制加载 ────────────────────────────────────────────────────
+    # ── 二进制加载 ──────────────────────────────────────────────────
 
     def _load_binary(self, path: str) -> Optional[bytes]:
         try:
@@ -208,15 +206,15 @@ class StackIntegrityChecker:
             _logger.warning("cannot load %s", path)
             return None
 
-    # ── 函数发现 ──────────────────────────────────────────────────────
-    # 通过函数序言模式扫描（不依赖符号表，因为 stripped binary 没有）
+    # ── 函数发现 ────────────────────────────────────────────────────
+    # 序言模式扫描，不依赖符号表（stripped binary 无符号）
 
     def _discover_functions(self, data: bytes) -> List[Dict]:
-        """扫描二进制字节码，通过序言模式检测函数入口。"""
+        """扫描字节码，通过序言模式检测函数入口。"""
         _funcs = []
         _i = 0
         _n = len(data)
-        # 通用序言模式 (放宽: 允许 push rbp 可选)
+        # 通用序言模式（放宽：push rbp 可选）
         while _i < _n - 4:
             # x86: push ebp (0x55) + mov ebp, esp (0x89 0xe5)
             if _i + 3 <= _n and data[_i] == 0x55 and data[_i+1] == 0x89 and data[_i+2] == 0xe5:
@@ -233,7 +231,7 @@ class StackIntegrityChecker:
         for _j, _fn in enumerate(_funcs):
             _fn['name'] = "func_{:04x}".format(_fn['offset'])
 
-        # 估算函数大小 (下一个函数的 offset 减当前 offset)
+        # 估算函数大小（下个函数 offset 减当前 offset）
         for _j in range(len(_funcs) - 1):
             _funcs[_j]['size'] = _funcs[_j + 1]['offset'] - _funcs[_j]['offset']
         if _funcs:
@@ -241,7 +239,7 @@ class StackIntegrityChecker:
 
         return _funcs
 
-    # ── 单函数栈帧分析 ────────────────────────────────────────────────
+    # ── 单函数栈帧分析 ──────────────────────────────────────────────
 
     def _analyze_frame(self, data: bytes, fn_info: Dict) -> StackFrameInfo:
         _off = fn_info.get('offset', 0)
@@ -259,7 +257,7 @@ class StackIntegrityChecker:
         if self._canary_read.search(_body) or _CANARY_CHECK.search(_body):
             _frame.has_canary = True
 
-        # 栈大小估算: 找 sub rsp, imm32 指令
+        # 栈大小估算：找 sub rsp, imm32
         _frame.stack_size = self._estimate_stack_size(_body)
 
         # 检测危险函数调用
@@ -281,7 +279,7 @@ class StackIntegrityChecker:
         return _frame
 
     def _estimate_stack_size(self, body: bytes) -> int:
-        """从 sub rsp/esp 指令中估算栈帧大小。"""
+        """从 sub rsp/esp 指令估算栈帧大小。"""
         _max_sub = 0
         _i = 0
         while _i < len(body) - 7:
@@ -299,7 +297,7 @@ class StackIntegrityChecker:
         return _max_sub
 
     def _detect_bounds_check(self, body: bytes) -> bool:
-        """检测函数体中是否存在边界检查指令序列。"""
+        """检测函数体中有无边界检查指令序列。"""
         # cmp + jbe/jae (unsigned bound check)
         _pattern = re.compile(
             rb'[\x81\x83\x3b\x39\x48\x83].{0,4}'
@@ -308,24 +306,26 @@ class StackIntegrityChecker:
         return bool(_pattern.search(body))
 
     def _score_frame_layout(self, frame: StackFrameInfo) -> float:
-        """栈帧布局安全评分 — 综合 canary/边界检查/缓冲区大小/危险调用。"""
+        """栈帧布局安全评分 —— 综合 canary/边界检查/缓冲区/危险调用。"""
         _sc = 1.0
         if not frame.has_canary:
             _sc -= 0.25
         if not frame.has_bounds_check:
             _sc -= 0.25
-        # 大型缓冲区 (>256 bytes) → 攻击面更大
+        # 大缓冲区 (>256 bytes) → 攻击面更大
         _large_bufs = sum(1 for _b in frame.local_buffer_sizes if _b > 256)
         _sc -= _large_bufs * 0.10
-        # 危险调用数量
+        # 危险调用计数
         _sc -= len(frame.dangerous_calls) * 0.05
         return max(_sc, 0.05)
 
-    # ── 综合评分 ──────────────────────────────────────────────────────
+    # ── 综合评分 ────────────────────────────────────────────────────
 
     def _compute_safety_score(self, report: StackIntegrityReport) -> float:
-        """BASICS paper 风格的 stack safety score。
-        综合 canary 覆盖率、风险函数比例和帧布局评分。"""
+        """BASICS 风格 stack safety score。
+
+        综合 canary 覆盖率、风险函数比例、帧布局评分。
+        """
         if report.total_functions == 0:
             return 0.0
         _canary_w = report.canary_coverage * 0.30
@@ -351,7 +351,7 @@ class StackIntegrityChecker:
         return StackRisk.CRITICAL
 
 
-# ── 便捷函数 ──────────────────────────────────────────────────────────
+# ── 便捷入口 ──────────────────────────────────────────────────────
 
 def check_stack_integrity(binary_path: str,
                           function_list: Optional[List[Dict]] = None) -> Dict:

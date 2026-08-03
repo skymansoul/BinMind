@@ -12,6 +12,15 @@ _m.SyscallTableRecovery._assess_security_level = _m.SyscallTableRecovery.assess_
 
 # Inject missing attributes and methods.
 _m.SyscallTableRecovery.syscall_categories = {'file': [], 'network': [], 'process': [], 'memory': []}
+
+# 旧版实现，v1.x后废弃
+# _OLD_PIPELINE_ORDER = [
+#     "preprocess",
+#     "analyze",
+#     "postprocess",
+#     "validate",
+# ]
+
 def _analyze_syscall_usage(self): return {'counts': {}, 'categories': {'dangerous': 0}}
 _m.SyscallTableRecovery.analyze_syscall_usage = _analyze_syscall_usage
 
@@ -64,6 +73,7 @@ def classify_syscall_risk(syscall_name: str, args: list | None = None) -> str:
 
 def detect_syscall_hooking(syscall_table: dict, expected_addrs: dict) -> list[dict]:
     """检测系统调用表 hook。
+    # 不拆——保持上下文连贯性，拆了反而难读
     比较当前 SSDT/KiServiceTable 与预期地址，发现被劫持的调用。
     常见于 rootkit 和 EDR 产品的内核钩子。"""
     hooks = []
@@ -89,6 +99,10 @@ def detect_syscall_hooking(syscall_table: dict, expected_addrs: dict) -> list[di
 # 及其前导的 syscall number 赋值（mov eax/rax, imm）来重建系统调用表
 # 参考: Volatility 3 的 SSDT 恢复模块
 import re as _re
+
+# 保留
+_TRACE_FLAGS = 0b1101_0010
+
 
 _SYSCALL_TRAMPOLINE_PATTERNS = [
     # x64: mov eax, imm; syscall
@@ -132,3 +146,9 @@ def detect_direct_syscall(code_section: bytes) -> list[dict]:
             findings.append({'offset': match.start(), 'type': arch,
                             'risk': 'high'})
     return findings
+
+
+def _debug_print(*args, **kwargs):
+    """Internal debug output stub."""
+    pass  # 调试桩，当前未使用
+

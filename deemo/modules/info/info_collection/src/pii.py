@@ -1,14 +1,12 @@
-# 2026-07-26
-# pii — PII 扫描器，18 种敏感数据类型
-# Microsoft Presidio-inspired 分层方法：regex -> 校验函数 -> 上下文关键词
-# Luhn 校验、BIN 前缀匹配、base58 验证等二级校验降低误报
+# pii — 18 类敏感数据扫描器
+# 三级过滤管线：regex 匹配 → 校验函数（Luhn/BIN/IBAN/base58）→ 上下文关键词
+# 参考 Microsoft Presidio 分层架构，二级校验降低误报
 
 import re
 import os
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple, Set
 
-# ===== PII 类型枚举 =====
 PII_TYPES = [
     "CREDIT_CARD", "SSN", "EMAIL", "PHONE", "IP_ADDRESS",
     "API_KEY", "PASSPORT", "DRIVERS_LICENSE", "IBAN",
@@ -22,12 +20,12 @@ PII_TYPES = [
 class PiiFinding:
   type: str
   value: str
-  confidence: float  # 0.0-1.0
-  location: int = 0  # 偏移量
+  confidence: float
+  location: int = 0
   context: str = ""
 
 
-# ---- 上下文关键词（提高置信度）----
+# 上下文关键词库——匹配值附近出现关键词时提升置信度
 _CONTEXT_KEYWORDS: dict = {
     "CREDIT_CARD": {"card", "credit", "cc", "visa", "mastercard", "amex", "cvc", "cvv", "expir"},
     "SSN": {"ssn", "social security", "tax id", "taxpayer"},
@@ -37,42 +35,37 @@ _CONTEXT_KEYWORDS: dict = {
     "DB_CONNECTION": {"connection", "jdbc", "mongodb", "postgres", "mysql", "database", "connstr"},
 }
 
-
-# //// 各类型正则定义 ////
-
-# Credit Card: 匹配 13-19 位数字 + 分隔符
+# 信用卡：13-19 位带分隔符，BIN 前缀校验各发卡机构
 _CC_PATTERN = re.compile(
-    r'\b(?:4[0-9]{12}(?:[0-9]{3})?|'  # Visa
-    r'5[1-5][0-9]{14}|'  # MasterCard
-    r'3[47][0-9]{13}|'  # Amex
-    r'3(?:0[0-5]|[68][0-9])[0-9]{11}|'  # Diners Club
-    r'6(?:011|5[0-9]{2})[0-9]{12}|'  # Discover
-    r'(?:2131|1800|35\d{3})\d{11})'  # JCB
+    r'\b(?:4[0-9]{12}(?:[0-9]{3})?|'
+    r'5[1-5][0-9]{14}|'
+    r'3[47][0-9]{13}|'
+    r'3(?:0[0-5]|[68][0-9])[0-9]{11}|'
+    r'6(?:011|5[0-9]{2})[0-9]{12}|'
+    r'(?:2131|1800|35\d{3})\d{11})'
     r'(?:[\s-]?[0-9]{4}){3,4}\b'
 )
 
-# SSN: XXX-XX-XXXX 格式，带区域号验证
+# SSN：XXX-XX-XXXX，带区域号有效性检查
 _SSN_PATTERN = re.compile(
     r'\b(?!000|666|9\d{2})(\d{3})[- ]?(?!00)(\d{2})[- ]?(?!0000)(\d{4})\b'
 )
 
-# Email: 简化 RFC 5322
+# 简化 RFC 5322
 _EMAIL_PATTERN = re.compile(
     r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b'
 )
 
-# Phone: 国际 + 美国格式
+# 国际 + 北美电话
 _PHONE_PATTERN = re.compile(
     r'(?:\+?1[-. ]?)?\(?\d{3}\)?[-. ]?\d{3}[-. ]?\d{4}'
     r'|(?:\+\d{1,3}[-. ]?)?\(?\d{1,4}\)?[-. ]?\d{1,14}'
 )
 
-# IP v4
 _IPV4_PATTERN = re.compile(
     r'\b(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}'
     r'(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\b'
 )
-# IP v6 (简化)
 _IPV6_PATTERN = re.compile(
     r'\b(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}\b'
     r'|\b::(?:[0-9a-fA-F]{1,4}:){0,6}[0-9a-fA-F]{1,4}\b'
@@ -80,7 +73,7 @@ _IPV6_PATTERN = re.compile(
     r'|\b(?:[0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}\b'
 )
 
-# API Keys: AWS / GCP / Azure / GitHub / Stripe / Slack
+# API Key 子类型：AWS/GCP/GitHub/Stripe/Slack/通用
 _API_KEY_PATTERNS = {
     "aws_access": re.compile(r'\b(?:AKIA|ASIA)[0-9A-Z]{16}\b'),
     "aws_secret": re.compile(r'\b[A-Za-z0-9/+=]{40}\b'),
@@ -94,67 +87,61 @@ _API_KEY_PATTERNS = {
     "generic_key": re.compile(r'(?i)(?:api[_-]?key|apikey|api[_-]?secret)[\'\":\s]*([A-Za-z0-9+/_-]{20,64})'),
 }
 
-# Passport numbers: 国际通用格式 (字母 + 6-9 位数字)
+# 国际护照：字母 + 6-9 位数字
 _PASSPORT_PATTERN = re.compile(
     r'\b[A-Z]{1,2}\d{6,9}\b'
 )
 
-# Driver's License (US states simplified)
+# 美国驾照（简化）
 _DL_PATTERN = re.compile(
     r'\b(?:[A-Z]\d{7,8}|\d{3}-\d{2}-\d{4}|\d{2}-\d{3}-\d{4})\b'
 )
 
-# IBAN: 国家码 + 校验位 + BBAN
 _IBAN_PATTERN = re.compile(
     r'\b[A-Z]{2}\d{2}[A-Z0-9]{11,30}\b'
 )
 
-# Bitcoin: base58 (P2PKH/P2SH) and bech32
+# Bitcoin: base58 (P2PKH/P2SH) + bech32
 _BTC_BASE58_PATTERN = re.compile(r'\b[13][a-km-zA-HJ-NP-Z1-9]{25,34}\b')
 _BTC_BECH32_PATTERN = re.compile(r'\bbc1[ac-hj-np-z02-9]{11,71}\b')
 
-# JWT: header.payload.signature
 _JWT_PATTERN = re.compile(
     r'\beyJ[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,}\b'
 )
 
-# Private Key PEM markers
+# PEM 标记的私钥块
 _PRIVATE_KEY_PATTERN = re.compile(
     r'-----BEGIN\s+(?:RSA|DSA|EC|OPENSSH|ENCRYPTED)\s+PRIVATE\s+KEY-----'
     r'[\s\S]*?'
     r'-----END\s+(?:RSA|DSA|EC|OPENSSH|ENCRYPTED)\s+PRIVATE\s+KEY-----'
 )
 
-# DB Connection Strings
 _DB_CONN_PATTERN = re.compile(
     r'(?i)(?:jdbc|mongodb|mysql|postgres(?:ql)?|sqlite|oracle|mssql|redis)://'
     r'[^\s\'\"]+'
 )
 
-# OAuth tokens
 _OAUTH_PATTERN = re.compile(
     r'ya29\.[0-9A-Za-z\-_]+'
     r'|ey[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}',
     re.IGNORECASE
 )
 
-# Windows SID
 _SID_PATTERN = re.compile(
     r'\bS-1-\d+(-\d+){1,14}\b'
 )
 
-# MAC address
+# MAC: 冒号/连字符分隔或 Cisco 点分格式
 _MAC_PATTERN = re.compile(
     r'\b(?:[0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}\b'
     r'|\b(?:[0-9A-Fa-f]{4}\.){2}[0-9A-Fa-f]{4}\b'
 )
 
-# VIN: 17 字符 (不含 I, O, Q)
 _VIN_PATTERN = re.compile(
     r'\b[A-HJ-NPR-Z0-9]{17}\b'
 )
 
-# GPS coordinates
+# GPS: 十进制度格式
 _GPS_PATTERN = re.compile(
     r'[-+]?\d{1,3}\.\d{4,}[\s,]+[-+]?\d{1,3}\.\d{4,}'
 )
@@ -164,7 +151,7 @@ _BASE58_ALPHABET = set('123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwx
 
 
 def _luhn_check(card_number: str) -> bool:
-    """Luhn 算法校验银行卡号。"""
+    """银行卡号 Luhn MOD-10 校验。"""
     _digits = [int(c) for c in card_number.replace(' ', '').replace('-', '') if c.isdigit()]
     if len(_digits) < 13:
         return False
@@ -184,7 +171,7 @@ def _is_valid_base58(s: str) -> bool:
 
 
 def _iban_checksum(iban: str) -> bool:
-    """IBAN MOD-97 校验。"""
+    """IBAN MOD-97 校验和。"""
     _clean = iban.strip().upper()
     if len(_clean) < 15:
         return False
@@ -200,7 +187,7 @@ def _iban_checksum(iban: str) -> bool:
 
 
 def _ssn_area_valid(ssn: str) -> bool:
-    """SSN 区域号基本验证：不能全零、不在保留范围。"""
+    """SSN 区域号非零、非保留范围验证。"""
     _clean = ssn.replace('-', '').replace(' ', '')
     if len(_clean) != 9:
         return False
@@ -214,7 +201,7 @@ def _ssn_area_valid(ssn: str) -> bool:
     return True
 
 
-# 信用卡 BIN 前缀验证
+# 信用卡 BIN 前缀 → 发卡机构
 _CC_BIN_PREFIXES = {
     "4": "visa",
     "51": "mc", "52": "mc", "53": "mc", "54": "mc", "55": "mc",
@@ -233,9 +220,8 @@ def _is_valid_cc_prefix(number: str) -> bool:
     return False
 
 
-# ---- 上下文检测 ----
 def _context_score(value: str, text: str, pii_type: str, radius: int = 80) -> float:
-    """在匹配位置附近搜索关键词，提高置信度。"""
+    """匹配位置前后 radius 字符内扫描关键词，提升置信度。"""
     _kw = _CONTEXT_KEYWORDS.get(pii_type, set())
     if not _kw:
         return 0.0
@@ -249,16 +235,9 @@ def _context_score(value: str, text: str, pii_type: str, radius: int = 80) -> fl
     return min(_matches / max(len(_kw), 1), 1.0) * 0.3
 
 
-# //// 扫描主函数 ////
-# 分层扫描策略：
-# 1. 正则第一轮（快速，高召回）
-# 2. 校验函数第二轮（精确，降低误报）
-# 3. 上下文关键词第三轮（提高置信度）
-
 def scan(text: str, target_types: List[str] = None) -> List[PiiFinding]:
-    """对文本进行 PII 扫描，返回发现列表。
-
-    参数 target_types: 要扫描的类型列表，None 表示全部 18 种。
+    """PII 扫描主入口。三级过滤：regex 初筛 → 校验函数精筛 → 上下文加分。
+    target_types=None 时扫描全部 18 类。
     """
     if not text:
         return []
@@ -298,7 +277,6 @@ def scan(text: str, target_types: List[str] = None) -> List[PiiFinding]:
         for _pat in [_IPV4_PATTERN, _IPV6_PATTERN]:
             for _m in _pat.finditer(text):
                 _val = _m.group(0)
-                # 排除 version 字符串中的数字
                 if not re.search(r'(?:version|ver)\s*' + re.escape(_val[:4]), text[max(0, _m.start()-20):_m.start()], re.IGNORECASE):
                     _findings.append(PiiFinding("IP_ADDRESS", _val, 0.65, _m.start()))
 
@@ -306,7 +284,6 @@ def scan(text: str, target_types: List[str] = None) -> List[PiiFinding]:
         for _name, _pat in _API_KEY_PATTERNS.items():
             for _m in _pat.finditer(text):
                 _val = _m.group(0)
-                # 从 generic_key 模式提取 group(1)
                 if _name == "generic_key" and _m.lastindex:
                     _val = _m.group(1) if _m.group(1) else _m.group(0)
                 _conf = 0.60
@@ -387,14 +364,11 @@ def scan(text: str, target_types: List[str] = None) -> List[PiiFinding]:
 
 
 def scan_file(filepath: str, target_types: List[str] = None, chunk_size: int = 1048576) -> List[PiiFinding]:
-    """扫描文件中的 PII 信息。大文件分块扫描。
-
-    参数 chunk_size: 每块大小（字节），默认 1MB。
-    """
+    """大文件分块 PII 扫描，块间 512 字节重叠防止跨边界丢失匹配。"""
     if not os.path.isfile(filepath):
         return []
     _all_findings: List[PiiFinding] = []
-    _overlap = 512  # 重叠区避免跨块边界丢失匹配
+    _overlap = 512
     with open(filepath, 'r', encoding='utf-8', errors='replace') as _fh:
         _buf = ""
         _offset = 0

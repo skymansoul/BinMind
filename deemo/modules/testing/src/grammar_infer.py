@@ -1,23 +1,16 @@
-# 2026-08-02
-# 语法推断引擎 — 从样本集自动推断 BNF 风格的产生式语法
+# 语法推断引擎 — 从样本集自动推断BNF风格产生式语法
 # 核心思想: 对多份协议/格式样本做递归结构检测，提取重复模式、
-# 序列模式、可选字段和递归嵌套，构建 BNF 语法规则集。
+# 序列模式、可选字段和递归嵌套，构建BNF语法规则集。
 #
-# 方法: Sequitur 风格的层次结构归纳 + entropy 辅助的字段边界识别。
-# Sequitur 在线性时间内从序列中提取层次产生式，天然适合协议
-# 格式的自动逆向。
+# 方法: Sequitur风格层次结构归纳 + entropy辅助字段边界识别。
+# Sequitur在线性时间内从序列中提取层次产生式，天然适合协议格式自动逆向。
 #
 # 参考:
-#   Grammar-based whitebox fuzzing (Godefroid et al. PLDI 2008)
-#     — 从参考实现自动构建语法
-#   Parser-directed fuzzing (Mathis et al. PLDI 2019)
-#     — 解析器导向的模糊测试
-#   ChatAFL (NDSS 2024) — LLM 引导的协议 Fuzzing,
-#     其中"机器可读语法提取"模块的思路
-#   Sequitur (Nevill-Manning & Witten 1997): identifying
-#     hierarchical structure in sequences
-#   Pulsar (Gascon et al. USENIX 2015): protocol reverse
-#     engineering via statistical analysis
+#   Grammar-based whitebox fuzzing (Godefroid et al. PLDI 2008) — 从参考实现自动构建语法
+#   Parser-directed fuzzing (Mathis et al. PLDI 2019) — 解析器导向模糊测试
+#   ChatAFL (NDSS 2024) — "机器可读语法提取"模块思路
+#   Sequitur (Nevill-Manning & Witten 1997): identifying hierarchical structure in sequences
+#   Pulsar (Gascon et al. USENIX 2015): protocol reverse engineering via statistical analysis
 import re
 import math
 import struct
@@ -28,9 +21,9 @@ from dataclasses import dataclass, field
 
 @dataclass
 class GrammarRule:
-    """单条 BNF 产生式: <nonterminal> ::= alternative_1 | ... | alternative_k"""
+    """单条BNF产生式: <nonterminal> ::= alternative_1 | ... | alternative_k"""
     nonterminal: str
-    alternatives: List[List[str]] = field(default_factory=list)  # 每项是符号列表
+    alternatives: List[List[str]] = field(default_factory=list)  # 每项为符号列表
     weight: float = 1.0  # 在语料中的出现频率权重
     recursive: bool = False
 
@@ -40,13 +33,13 @@ class GrammarRule:
 
 
 class GrammarInferrer:
-    """基于 Sequitur 风格层次归纳的语法推断器。
+    """基于Sequitur风格层次归纳的语法推断器。
 
     工作流:
     1. tokenize(samples) — 将字节样本分词
-    2. infer(samples) — Sequitur 主循环, 递归提取产生式
-    3. to_bnf() — 导出 BNF 语法
-    4. 语法可用于 TestGenerator 做基于语法的 fuzz 生成
+    2. infer(samples) — Sequitur主循环，递归提取产生式
+    3. to_bnf() — 导出BNF语法
+    4. 语法可用于TestGenerator做基于语法的fuzz生成
     """
 
     def __init__(self, max_rules: int = 256):
@@ -56,11 +49,13 @@ class GrammarInferrer:
         self._digram_index: Dict[Tuple[str, str], List[int]] = defaultdict(list)
         self._token_freq: Counter = Counter()
 
-    # ---- token 化 ----
+    # ---- token化 ----
     @staticmethod
     def tokenize_bytes(data: bytes) -> List[str]:
-        """将字节序列转换为 token 列表。
-        混合策略: 可打印 ASCII 序列→字符串 token; 不可打印→hex token。"""
+        """将字节序列转换为token列表。
+
+        混合策略: 可打印ASCII序列->字符串token; 不可打印->hex token。
+        """
         tokens = []
         i = 0
         while i < len(data):
@@ -81,35 +76,35 @@ class GrammarInferrer:
 
     @staticmethod
     def tokenize_hex(data: bytes) -> List[str]:
-        """全部字节转换为 "0xNN" hex token，适合严格二进制协议。"""
+        """全部字节转换为"0xNN" hex token，适合严格二进制协议。"""
         return [f'0x{b:02X}' for b in data]
 
-    # ---- Sequitur 核心 ----
+    # ---- Sequitur核心 ----
     def infer(self, samples: List[bytes]) -> Dict[str, GrammarRule]:
         """从样本集推断语法。返回规则字典。"""
         self._rules.clear()
         self._rule_counter = 0
 
-        # 对每个样本做 Sequitur
+        # 对每个样本做Sequitur
         for sample in samples:
             tokens = self.tokenize_bytes(sample)
             if not tokens:
                 continue
             self._process_sequence(tokens)
 
-        # 后处理: 为可选字段标记 '?' 权重
+        # 后处理: 为可选字段标记'?'权重
         self._postprocess_optional_fields()
         return dict(self._rules)
 
     def _process_sequence(self, tokens: List[str]) -> None:
-        """Sequitur 主循环: 扫描 token 序列，发现重复 digram 时创建新规则。"""
+        """Sequitur主循环: 扫描token序列，发现重复digram时创建新规则。"""
         seq = list(tokens)
         i = 0
         while i < len(seq) - 1 and len(self._rules) < self._max_rules:
             digram = (seq[i], seq[i + 1])
             self._digram_index[digram].append(i)
 
-            # 若 digram 已出现 ≥2 次 → 创建产生式
+            # 若digram已出现>=2次 -> 创建产生式
             occurrences = self._digram_index[digram]
             if any(j < i for j in occurrences):
                 new_nt = self._new_nonterminal()
@@ -123,7 +118,7 @@ class GrammarInferrer:
                     if occ_pos < len(seq) - 1:
                         del seq[occ_pos:occ_pos + 2]
                         seq.insert(occ_pos, new_nt)
-                i = 0  # 从头重新扫描（简化版 Sequitur）
+                i = 0  # 从头重新扫描（简化版Sequitur）
             else:
                 i += 1
 
@@ -140,13 +135,15 @@ class GrammarInferrer:
 
     # ---- 后处理 ----
     def _postprocess_optional_fields(self) -> None:
-        """对出现频率 < 50% 的 alternative 标记为可选 (BNF '?')。
-        不修改规则结构，仅调整 weight。"""
+        """对出现频率<50%的alternative标记为可选 (BNF '?')。
+
+        不修改规则结构，仅调整weight。
+        """
         for rule in self._rules.values():
             total_alts = len(rule.alternatives)
             if total_alts <= 1:
                 continue
-            # 按出现次数统计各 alternative
+            # 按出现次数统计各alternative
             alt_counts = Counter(
                 tuple(alt) for alt in rule.alternatives)
             max_count = max(alt_counts.values())
@@ -154,14 +151,16 @@ class GrammarInferrer:
                 key = tuple(alt)
                 freq = alt_counts.get(key, 1)
                 if freq < max_count * 0.3:
-                    # 低频 → 标记为可选
+                    # 低频 -> 标记为可选
                     alt.insert(0, '?')
 
     # ---- 语法启发式 ----
     def detect_repeating_fields(self, samples: List[bytes]
                                 ) -> List[Tuple[int, int]]:
         """检测重复字段块 (如数组元素)。
-        返回 [(start_offset, block_size), ...]"""
+
+        返回 [(start_offset, block_size), ...]
+        """
         if not samples:
             return []
 
@@ -186,8 +185,10 @@ class GrammarInferrer:
 
     def detect_length_field(self, samples: List[bytes]
                             ) -> List[Tuple[int, str]]:
-        """尝试检测长度字段: 寻找值为后续数据长度的字节位置。
-        返回 [(offset, endianness), ...]"""
+        """检测长度字段: 寻找值为后续数据长度的字节位置。
+
+        返回 [(offset, endianness), ...]
+        """
         if len(samples) < 2:
             return []
 
@@ -217,7 +218,7 @@ class GrammarInferrer:
         return '\n'.join(lines)
 
     def to_grammar(self) -> 'Grammar':
-        """将推断结果转换为 TestGenerator 兼容的 Grammar 对象。"""
+        """将推断结果转换为TestGenerator兼容的Grammar对象。"""
         from .test_gen import Grammar
         grammar = Grammar(start_symbol='<start>')
         for rule in self._rules.values():
@@ -251,10 +252,12 @@ def infer_from_messages(messages: List[bytes]) -> GrammarInferrer:
 
 
 def infer_from_pcap(pcap_bytes: bytes, port: int = 0) -> GrammarInferrer:
-    """从 PCAP 数据中提取 payload 并推断语法。
-    简化实现: 仅提取 TCP payload 部分（非完整 pcap 解析）。"""
+    """从PCAP数据中提取payload并推断语法。
+
+    简化实现: 仅提取TCP payload部分（非完整pcap解析）。
+    """
     messages = []
-    # 简化: 假设 payload 在 0x36 偏移开始 (Ethernet+IP+TCP header)
+    # 简化: 假设payload在0x36偏移开始 (Ethernet+IP+TCP header)
     if len(pcap_bytes) > 0x36:
         payload = pcap_bytes[0x36:]
         messages.append(payload)

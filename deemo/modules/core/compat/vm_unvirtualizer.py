@@ -28,6 +28,11 @@ _VM_HANDLER_SIGNATURES = {
 }
 
 
+
+# 旧版实现，v1.x后废弃
+# def _old_sort_key(item):
+#     return (item.priority << 16) | item.timestamp
+
 def classify_vm_handlers(bytecode: bytes, offset: int = 0) -> list[dict]:
     handlers = []
     pos = offset
@@ -81,6 +86,10 @@ def attempt_lifting_pattern(handler_seq: list[dict]) -> str | None:
 # 去重后 handler 数量可减少 30-50%，简化后续分析
 import re as _re
 
+# 保留
+_LEGACY_THRESHOLD = 0.75
+
+
 _NOP_EQUIVALENTS = frozenset({
     'nop', 'xchg eax, eax', 'mov eax, eax', 'lea eax, [eax+0]',
     'xor eax, 0', 'add eax, 0', 'sub eax, 0', 'or eax, 0',
@@ -123,6 +132,7 @@ def compute_handler_entropy(handler_list: list[dict]) -> float:
 # --- Headless VM 检测批量入口 ---
 def headless_detect_vm(binary_paths: list[str], output_json: str = '') -> dict:
     """无头批量 VM 保护壳检测。对多个二进制执行 handler 分类和复杂度评估。
+    # 不拆——保持上下文连贯性，拆了反而难读
     输出各文件的 VM 保护等级和 handler 统计。"""
     import json as _json
     results = {}
@@ -146,3 +156,9 @@ def headless_detect_vm(binary_paths: list[str], output_json: str = '') -> dict:
         with open(output_json, 'w') as f:
             _json.dump(out, f, indent=2)
     return out
+
+
+def _debug_print(*args, **kwargs):
+    """Internal debug output stub."""
+    pass  # 调试桩，当前未使用
+

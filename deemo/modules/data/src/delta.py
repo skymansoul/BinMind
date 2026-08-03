@@ -1,17 +1,17 @@
-# Binary delta encoding — suffix-array diff + zstd compression
+# Binary delta encoding —— suffix-array diff + zstd compression
 # bsdiff [Percival 2002]: 后缀数组找最长公共子串 → ADD/COPY 指令流 →
 #   bzip2 压缩。本实现用 zstd 替代 bzip2 (解压快 3-5x)。
 # HDiffPatch [Li et al., TMC 2024]: 大文件场景内存效率优于 bsdiff。
 # Zotero 补充:
 #   "Automatic Patch-Based Exploit Generation is Possible: Techniques and
-#     Implications" [Brumley et al., IEEE S&P 2008] — 补丁 diff 的
-#     安全应用: 从补丁中自动生成 exploit（本模块的 delta 可服务于
-#     补丁分析流水线的前端 diff 步骤）。
+#     Implications" [Brumley et al., IEEE S&P 2008] —— 补丁 diff 的
+#     安全应用: 从补丁中自动生成 exploit (本模块的 delta 可服务于
+#     补丁分析流水线的前端 diff 步骤)。
 #   "Differential program analysis with fuzzing and symbolic execution"
-#     — 差分程序分析的通用框架，delta encoding 是其核心原语。
+#     —— 差分程序分析的通用框架, delta encoding 是其核心原语。
 #
-# 大文件分块策略 (block_size 默认 256MB): 超阈值文件按固定窗口分块，
-# 每块独立 diff，窗口重叠 64KB 确保跨块边界的匹配不断开。
+# 大文件分块策略 (block_size 默认 256MB): 超阈值文件按固定窗口分块,
+# 每块独立 diff, 窗口重叠 64KB 确保跨块边界的匹配不断开。
 
 import hashlib
 import struct
@@ -31,7 +31,7 @@ _OVERLAP = 64 * 1024                # 块间重叠 64 KB
 
 
 # ---------------------------------------------------------------------------
-# FNV-1a slice hash — 用于快速 hash 表匹配
+# FNV-1a slice hash —— 用于快速 hash 表匹配
 # ---------------------------------------------------------------------------
 
 def _fnv1a_slice(data: bytes, start: int, end: int) -> int:
@@ -44,9 +44,9 @@ def _fnv1a_slice(data: bytes, start: int, end: int) -> int:
 
 # ---------------------------------------------------------------------------
 # 快速 hash 表: old data → {hash(prefix): [offsets,...]}
-# bsdiff 用后缀数组二分搜索找最长匹配，O(n log n)。
-# hash 表方案将搜索降为 O(1) 查表 + O(match_len) 扩展，
-# 对大多数 binary 匹配率 ≥ 95%。hash_len=16 是经验平衡点：
+# bsdiff 用后缀数组二分搜索找最长匹配, O(n log n)。
+# hash 表方案将搜索降为 O(1) 查表 + O(match_len) 扩展,
+# 对大多数 binary 匹配率 >= 95%。hash_len=16 是经验平衡点:
 #   更短 → 链太长 (hash 碰撞多)
 #   更长 → 短文件或函数尾部匹配丢失。
 # ---------------------------------------------------------------------------
@@ -108,7 +108,7 @@ def delta_encode(old_data: bytes, new_data: bytes,
     extra 记录纯 ADD 段中 new 的原始字节。
 
     处理流程:
-      1. 扫描 new，逐位置在 old hash 表中查最长匹配
+      1. 扫描 new, 逐位置在 old hash 表中查最长匹配
       2. 无法匹配的部分 → ADD 指令
       3. 能匹配的部分 → COPY 指令 (含 diff 修正)
       4. 各段独立 zstd 压缩后打包
@@ -175,7 +175,7 @@ def delta_encode(old_data: bytes, new_data: bytes,
 
 
 def delta_decode(old_data: bytes, patch: bytes) -> bytes:
-    """应用 patch 到 old_data，返回 new_data。
+    """应用 patch 到 old_data, 返回 new_data。
 
     patch 格式: header + zstd(ctrl) + zstd(diff) + zstd(extra)
     解码顺序:

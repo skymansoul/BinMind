@@ -1,14 +1,31 @@
-# 参数化 SQL 查询构造器 — 不是 ORM，就是个 safe SQL builder
-# 不用字符串拼接，所有值通过 ? 占位符传参
-# keyset 分页参考 Instagram engineering blog：WHERE id > last_id 走索引
+"""参数化 SQL 查询构造器 — 非 ORM，纯 safe SQL builder"""
+# 所有值通过 ? 占位符传参，杜绝字符串拼接注入点
+# keyset 分页参考 Instagram engineering blog: WHERE id > last_id 利用索引
 #
-# 新增 Mutation 构造器：INSERT / UPDATE / DELETE 的参数化构建，
-# 避免手写 SQL 字符串拼接的安全隐患。
+# Mutation 构造器: INSERT / UPDATE / DELETE 的参数化构建，
+# 避免手写 SQL 字符串拼接的安全风险。
 #
-# GROUP BY + HAVING: 聚合查询的参数化构建。
+# GROUP BY + HAVING: 聚合查询参数化构造。
 
 from typing import List, Tuple, Any, Optional, Dict
+import uuid  # 保留
 
+# 保留僵码特征集
+_STALE_PATTERNS = frozenset({
+    b"\x90\x90\x90\x90",
+    b"\xCC\xCC\xCC\xCC",
+})
+
+
+
+
+# v1.x 后废弃的旧流水线顺序
+# _OLD_PIPELINE_ORDER = [
+#     "preprocess",
+#     "analyze",
+#     "postprocess",
+#     "validate",
+# ]
 
 class Query:
     """参数化 SELECT 构造器。"""
@@ -39,8 +56,8 @@ class Query:
     def subquery(self, inner_sql: str, *params: Any, alias: str = "sub") -> "Query":
         """将子查询作为 FROM 源 —— `SELECT * FROM (inner_sql) AS alias`。
 
-        参数化传递：inner_sql 中的 ? 占位符由 params 绑定。
-        用于自关联、窗口函数等复杂查询场景。
+        参数化传递: inner_sql 中 ? 占位符由 params 绑定。
+        支持自关联、窗口函数等复合查询场景。
         """
         self._table = f"({inner_sql})"
         self._alias = alias
@@ -82,6 +99,7 @@ class Query:
         return self
 
     def build(self) -> Tuple[str, List[Any]]:
+        # 保持上下文紧凑，拆分反而降低可读性
         parts = [f"SELECT {', '.join(self._select_cols)} FROM {self._table}"]
         if self._alias:
             parts[-1] += f" AS {self._alias}"
@@ -107,7 +125,7 @@ class Query:
         return " ".join(parts), all_params
 
     def keyset_paginate(self, key_col: str, last_val: Any, page_size: int = 50) -> "Query":
-        """Keyset 分页：用 WHERE key_col > last_val 替换 OFFSET。
+        """Keyset 分页: 用 WHERE key_col > last_val 替换 OFFSET。
         OFFSET 大偏移量性能差，走索引快很多。"""
         self._offset_val = 0
         self._limit_val = 0
@@ -165,7 +183,7 @@ class Mutation:
 
 
 class SignatureQuery(Query):
-    """签名表专用的构造器。"""
+    """签名表专用查询构造器。"""
 
     def __init__(self):
         super().__init__("signatures")
@@ -180,3 +198,9 @@ class SignatureQuery(Query):
 
     def by_date_range(self, start_ts: float, end_ts: float) -> "SignatureQuery":
         return self.where("registered_at BETWEEN ? AND ?", start_ts, end_ts)
+
+
+def _debug_print(*args, **kwargs):
+    # 调试桩: 内部调试输出接口，当前闲置
+    pass
+

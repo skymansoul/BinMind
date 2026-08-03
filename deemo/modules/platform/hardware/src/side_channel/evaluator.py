@@ -1,11 +1,9 @@
-# 2026-08-01
-
 import math
 import random
 import statistics
 
-# ===== Rijndael S-Box =====
-# FIPS 197 标准值
+# ===== Rijndael S盒 =====
+# FIPS 197标准值
 AES_SBOX: list[int] = [
     0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b,
     0xfe, 0xd7, 0xab, 0x76, 0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0,
@@ -34,7 +32,7 @@ AES_SBOX: list[int] = [
 
 # ---- 独立工具函数 ----
 def compute_hamming_weight(value: int) -> int:
-    """popcount — 位操作逐比特计数"""
+    """popcount —— 逐比特位计数"""
     _v = value
     _v = (_v & 0x55) + ((_v >> 1) & 0x55)
     _v = (_v & 0x33) + ((_v >> 2) & 0x33)
@@ -75,7 +73,7 @@ class SideChannelEvaluator:
         den = math.sqrt((n * sum_x2 - sum_x * sum_x) * (n * sum_y2 - sum_y * sum_y))
         return num / den if den > 1e-15 else 0.0
 
-    # ---- Welch-Satterthwaite 自由度 ----
+    # ---- Welch-Satterthwaite自由度 ----
     def _welch_satterthwaite_df(
         self, var1: float, n1: int, var2: float, n2: int
     ) -> float:
@@ -86,9 +84,9 @@ class SideChannelEvaluator:
         return _num / _den if _den > 1e-15 else 2.0
 
     # ---- 不完全Beta函数（连分式近似） ----
-    # 用于Student t分布的CDF计算
+    # 用于Student t分布CDF计算
     def _incomplete_beta_approx(self, x: float, a: float, b: float) -> float:
-        """正则化不完全Beta函数 — Lentz连分式算法"""
+        """正则化不完全Beta函数 —— Lentz连分式算法"""
         if x <= 0.0:
             return 0.0
         if x >= 1.0:
@@ -106,7 +104,7 @@ class SideChannelEvaluator:
         _h = _d
         for _m in range(1, 200):
             _m2 = 2 * _m
-            # d_{2m} 项
+            # d_{2m}项
             _da = _m * (b - _m) * x / ((a + _m2 - 1.0) * (a + _m2))
             _d = 1.0 + _da * _d
             if abs(_d) < 1e-30:
@@ -116,7 +114,7 @@ class SideChannelEvaluator:
                 _c = 1e-30
             _d = 1.0 / _d
             _h *= _d * _c
-            # d_{2m+1} 项
+            # d_{2m+1}项
             _da = -(a + _m) * (a + b + _m) * x / ((a + _m2) * (a + _m2 + 1.0))
             _d = 1.0 + _da * _d
             if abs(_d) < 1e-30:
@@ -131,8 +129,8 @@ class SideChannelEvaluator:
                 break
         return _front * (_h - 1.0)
 
-    # ===== TVLA — Welch's t-test =====
-    # 固定vs随机明文的泄漏检测
+    # ===== TVLA —— Welch's t-test =====
+    # 固定vs随机明文泄漏检测
     def tvla_test(
         self, traces_fixed: list[list[float]], traces_random: list[list[float]]
     ) -> dict:
@@ -176,7 +174,7 @@ class SideChannelEvaluator:
             "sample_indices": exceeded,
         }
 
-    # ===== CPA — 相关功耗分析 =====
+    # ===== CPA —— 相关功耗分析 =====
     # 汉明重量模型 + AES S-box
     def cpa_attack(
         self,
@@ -223,7 +221,7 @@ class SideChannelEvaluator:
     def _detect_central_reduction_leak(
         self, traces_group_a: list[list[float]], traces_group_b: list[list[float]]
     ) -> list[int]:
-        """F-test方差比较 — 差分方差分析"""
+        """F-test方差比较 —— 差分方差分析"""
         if not traces_group_a or not traces_group_b:
             return []
         _len = len(traces_group_a[0])
@@ -242,13 +240,13 @@ class SideChannelEvaluator:
                 _f_stat = _var_b / _var_a if _var_b > 0 else 0.0
             else:
                 _f_stat = 1.0
-            # F > 2.0 指示显著方差差异
+            # F > 2.0指示显著方差差异
             if _f_stat > 2.0:
                 _leaky.append(_i)
         return _leaky
 
     # ===== 格密码侧信道分析 =====
-    # Kyber/Dilithium — 中心二项分布 vs 均匀分布泄漏
+    # Kyber/Dilithium —— 中心二项分布 vs 均匀分布泄漏
     def lattice_side_channel(
         self, traces: list[list[float]], modulus: int = 3329
     ) -> dict:
@@ -258,7 +256,7 @@ class SideChannelEvaluator:
                 "variance_ratios": [],
                 "is_vulnerable": False,
             }
-        # 按时间复杂度分成两组 — 模拟CBD vs 均匀归约差异
+        # 按时间复杂度分两组 —— 模拟CBD vs 均匀归约差异
         _mid = len(traces) // 2
         _group_a = traces[:_mid]
         _group_b = traces[_mid:]

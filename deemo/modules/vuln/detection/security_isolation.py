@@ -1,6 +1,6 @@
-# 多级安全隔离执行框架——代码脱敏→沙箱选择→安全执行→结果净化。
-# gVisor/Docker/Firecracker/Subprocess四级fallback链，优先使用最强隔离。
-# 参考Google gVisor论文(SOSP'17)的哨兵架构与Kata Containers的VM级隔离策略。
+# 多级安全隔离执行框架。代码脱敏→沙箱选择→安全执行→结果净化流水线。
+# gVisor/Docker/Firecracker/Subprocess四级回退链，优先最强隔离等级。
+# 参考gVisor论文(SOSP'17)哨兵架构及Kata Containers VM级隔离策略。
 
 import os, subprocess, tempfile, json, re
 from typing import Optional, Dict, Any, List, Tuple

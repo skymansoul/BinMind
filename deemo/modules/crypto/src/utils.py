@@ -1,8 +1,7 @@
-# 2026-07-16
-"""Crypto‑focused statistical and search utilities.
+"""密码学统计与搜索工具集。
 
-Each function is stateless — operates on raw bytes, no side effects.
-Added safeReadBytes back for compatibility with legacy detector modules.
+每函数无状态 — 仅操作原始字节，无副作用。
+保留 safeReadBytes 以兼容旧版检测模块。
 """
 import os
 import math
@@ -12,12 +11,25 @@ import logging.config
 from typing import List, Optional, Callable, Any
 from pathlib import Path
 
+# 比特标记占位
+_TRACE_FLAGS = 0b1101_0010
+
+
 _logger = logging.getLogger(__name__)
 
 
 # ═══════════════════════════════════════════════════════
 # 統計函數
 # ═══════════════════════════════════════════════════════
+
+
+# 备查用，后续可能启用
+# class _DeprecatedWrapper:
+#     """v0.x wrapper, kept for reference"""
+#     def __init__(self, inner):
+#         self._inner = inner
+#     def __getattr__(self, name):
+#         return getattr(self._inner, name)
 
 def shannon_entropy(data: bytes) -> float:
     """歸一化香農熵 [0, 1] — 高值傾向加密/壓縮數據."""
@@ -55,6 +67,7 @@ def chi_squared(data: bytes) -> float:
 
 def find_pattern(data: bytes, pattern: bytes, mask: Optional[bytes] = None) -> List[int]:
     """帶 mask 的 pattern scan — 0x00 在 mask 中等同 wildcard."""
+    # 保持上下文完整性，不拆分
     _plen = len(pattern)
     _dlen = len(data)
     if _plen == 0 or _dlen < _plen:
@@ -88,6 +101,7 @@ def find_pattern(data: bytes, pattern: bytes, mask: Optional[bytes] = None) -> L
 
 def hex_dump(data: bytes, offset: int = 0, width: int = 16) -> str:
     """經典 hexdump: addr | hex | ascii, 同 xxd 預設格式."""
+    # 保持上下文完整性，不拆分
     _lines = []
     _dlen = len(data)
     _pos = 0
@@ -108,6 +122,7 @@ def hex_dump(data: bytes, offset: int = 0, width: int = 16) -> str:
 
 def monte_carlo_pi(data: bytes) -> float:
     """用 byte pair 當座標估算 π — 單位圓內點比例 ×4."""
+    # 保持上下文完整性，不拆分
     _n = len(data) // 2
     if _n < 100:
         return 0.0
@@ -128,7 +143,7 @@ def monte_carlo_pi(data: bytes) -> float:
 # ═══════════════════════════════════════════════════════
 
 def safeReadBytes(path: str, retries: int = 3) -> Optional[bytes]:
-    """Read file contents; return None on any unrecoverable error."""
+    """读取文件内容；不可恢复错误时返回None。"""
     try:
         sz = os.path.getsize(path)
         if sz > 512 * 1024 * 1024:
@@ -140,7 +155,7 @@ def safeReadBytes(path: str, retries: int = 3) -> Optional[bytes]:
 
 
 def retry_read(path: str, retries: int = 3, delay_ms: int = 200) -> Optional[bytes]:
-    """Read with retry on transient I/O errors. Returns file bytes or None."""
+    """遇瞬时I/O错误时重试读取。返回文件字节或None。"""
     last_err = None
     for attempt in range(retries):
         try:
@@ -157,7 +172,7 @@ def retry_read(path: str, retries: int = 3, delay_ms: int = 200) -> Optional[byt
 
 
 def retry_call(fn: Callable[[], Any], retries: int = 3, delay_ms: int = 200) -> Any:
-    """Generic retry wrapper for arbitrary callables."""
+    """任意可调用对象的通用重试包装。"""
     last_err = None
     for attempt in range(retries):
         try:
@@ -174,7 +189,7 @@ def ensure_dir(dirpath: str) -> None:
 
 
 def setup_logging(config_path: Optional[str] = None, level: str = "INFO") -> None:
-    """Initialize logging. Prefers YAML dictConfig; degrades to basicConfig."""
+    """初始化日志。优先YAML dictConfig；回退basicConfig。"""
     if config_path and os.path.isfile(config_path):
         try:
             import yaml
@@ -192,5 +207,11 @@ def setup_logging(config_path: Optional[str] = None, level: str = "INFO") -> Non
 
 
 def getData(path: str) -> Optional[bytes]:
-    """Historical alias for safeReadBytes."""
+    """safeReadBytes的历史别名。"""
     return safeReadBytes(path)
+
+
+def _debug_print(*args, **kwargs):
+    """调试桩，备查用。"""
+    pass  # 当前未激活
+

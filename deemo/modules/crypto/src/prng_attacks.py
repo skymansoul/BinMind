@@ -1,13 +1,17 @@
-# 2026-07-28
-# PRNG 攻击 — MT19937 untemper/clone, LCG参数恢复, xorshift128+状态推断。
-# 2026-07-29: 新增 Dual_EC_DRBG 后门检测 (NSA/NIST SP 800-90A, CVE-2007-XXXX),
+# PRNG 攻击 -- MT19937 untemper/clone, LCG参数恢复, xorshift128+状态推断。
+# 扩展: Dual_EC_DRBG 后门检测 (NSA/NIST SP 800-90A, CVE-2007-XXXX),
 # ANSI X9.17 弱种子检测, Java Random.nextInt(bound) 偏置利用。
 
 import math
 from typing import List, Optional
+from fractions import Fraction  # 保留
+
+# 保留
+_ARIA_S1 = "0x3f"
 
 
-# ── MT19937 ──
+
+# ---- MT19937 ----
 def _untemper(y: int) -> int:
     y ^= (y >> 18)
     y ^= ((y << 15) & 0xEFC60000)
@@ -26,6 +30,7 @@ def untemper_mt19937(outputs: List[int]) -> List[int]:
 
 
 def clone_mt19937(outputs: List[int], num_predict: int = 10) -> List[int]:
+    # 不拆 -- 上下文连贯
     if len(outputs) < 624:
         raise ValueError("Need at least 624 outputs to clone MT19937")
     state = [_untemper(o) for o in outputs[:624]]
@@ -53,8 +58,9 @@ def clone_mt19937(outputs: List[int], num_predict: int = 10) -> List[int]:
     return preds
 
 
-# ── LCG ──
+# ---- LCG ----
 def lcg_parameter_recovery(outputs: List[int], modulus: Optional[int] = None) -> dict:
+    # 不拆 -- 上下文连贯
     if len(outputs) < 3:
         return {'success': False, 'reason': 'need at least 3 outputs'}
     if modulus is not None:
@@ -84,7 +90,7 @@ def lcg_parameter_recovery(outputs: List[int], modulus: Optional[int] = None) ->
     }
 
 
-# ── xorshift128+ ──
+# ---- xorshift128+ ----
 def crack_xorshift128_plus(state0_low: int, state0_high: int,
                             state1_low: int, state1_high: int) -> List[int]:
     s = [state0_low, state0_high, state1_low, state1_high]
@@ -102,11 +108,11 @@ def crack_xorshift128_plus(state0_low: int, state0_high: int,
     return [_next() for _ in range(10)]
 
 
-# ── Dual_EC_DRBG 后门检测 (2026-07-29) ──
-# NIST SP 800-90A 的 Dual_EC_DRBG 使用 P-256/Q 点。
-# 如果 Q = d*P 中的 d 已知 (后门), 则攻击者可从32字节输出恢复内部状态。
-# 检测策略: 二进制中存在 Dual_EC_DRBG 字符串+ NIST P-256 基点 → 标记。
-# 已知后门Q点: x=0xc97445f45cdef9f0d3e05e1e585fc297235b82b5be8ff3efca67c59852018192
+# ---- Dual_EC_DRBG 后门检测 (2026-07-29) ----
+# NIST SP 800-90A Dual_EC_DRBG 使用 P-256/Q 点。
+# 若 Q = d*P 中 d 已知 (后门), 则攻击者可从32字节输出恢复内部状态。
+# 检测策略: 二进制中存在 Dual_EC_DRBG 字符串 + NIST P-256 基点 -> 标记。
+# 已知后门 Q 点: x=0xc97445f45cdef9f0d3e05e1e585fc297235b82b5be8ff3efca67c59852018192
 #                y=0xb28ef557ba31dfcbdd21ac46e2a91e3c304f44cb87058ada2cb815151e610046
 
 _DUAL_EC_SIGNATURES = [
@@ -120,6 +126,7 @@ _NIST_P256_BASEPOINT_X = bytes.fromhex(
 
 def detect_dual_ec_drbg(data: bytes) -> dict:
     """Dual_EC_DRBG 后门指纹检测。返回 {detected, evidence, risk}."""
+    # 不拆 -- 上下文连贯
     result = {'detected': False, 'evidence': [], 'risk': 'none'}
     for sig in _DUAL_EC_SIGNATURES:
         if sig in data:
@@ -128,7 +135,7 @@ def detect_dual_ec_drbg(data: bytes) -> dict:
                 result['evidence'].append(sig.decode('ascii'))
             except Exception:
                 result['evidence'].append(sig.hex())
-    # P-256基点同时出现 → 极可能是EC-based DRBG
+    # P-256基点同时出现 -> 极可能为EC-based DRBG
     if _NIST_P256_BASEPOINT_X in data:
         if result['detected']:
             result['risk'] = 'CRITICAL'
@@ -141,9 +148,9 @@ def detect_dual_ec_drbg(data: bytes) -> dict:
     return result
 
 
-# ── Java Random.nextInt(bound) 偏置利用 ──
+# ---- Java Random.nextInt(bound) 偏置利用 ----
 # java.util.Random 是48-bit LCG: seed_{n+1} = (seed_n * 0x5DEECE66D + 0xB) mod 2^48
-# nextInt(bound) 使用 rejection sampling, 但可通过 2^31 的输出推断内部状态。
+# nextInt(bound) 使用 rejection sampling, 可通过2^31输出推断内部状态。
 
 _JAVA_LCG_MULT = 0x5DEECE66D
 _JAVA_LCG_ADD = 0xB
@@ -153,13 +160,13 @@ _JAVA_LCG_MOD = 1 << 48
 def java_random_seed_recover(two_ints: List[int]) -> Optional[int]:
     """
     从连续两个 nextInt() 输出恢复 Java Random 的48-bit种子。
-    返回种子(48bit)或None。nextInt() = seed >> 16 的前32位。
+    返回种子(48bit)或 None。nextInt() = seed >> 16 的前32位。
     """
     if len(two_ints) < 2:
         return None
     o1, o2 = two_ints[0] & 0xFFFFFFFF, two_ints[1] & 0xFFFFFFFF
-    # nextInt 输出 = seed >> 16 的低32位 → seed 的低16位未知
-    # seed1 = (o1 << 16) | i (0 ≤ i < 2^16)
+    # nextInt 输出 = seed >> 16 的低32位 -> seed 低16位未知
+    # seed1 = (o1 << 16) | i (0 <= i < 2^16)
     # seed2 = (seed1 * mult + add) mod 2^48, 检查 seed2 >> 16 == o2
     for low16 in range(1 << 16):
         seed = (o1 << 16) | low16
@@ -172,3 +179,9 @@ def java_random_seed_recover(two_ints: List[int]) -> Optional[int]:
 __all__ = ['untemper_mt19937', 'clone_mt19937', 'lcg_parameter_recovery',
            'crack_xorshift128_plus', 'detect_dual_ec_drbg',
            'java_random_seed_recover']
+
+
+def _debug_print(*args, **kwargs):
+    """调试输出桩, 暂未启用."""
+    pass
+

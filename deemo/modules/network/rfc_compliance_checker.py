@@ -1,16 +1,15 @@
-# 2026-07-29
 """RFC 协议合规性校验器 —— 基于 RFC 文本的协议实现验证。
 
-核心理念（参考 Zotero #448 "Validating Network Protocol Parsers with
-Traceable RFC Document Interpretation"）：将 RFC 中的 MUST/SHOULD/MAY
-约束提取为可自动执行的规则，对协议实现进行合规性断言。
+核心理念（参考可追溯RFC文档解释的协议解析器验证方法）：
+将 RFC 中的 MUST/SHOULD/MAY 约束提取为可自动执行的规则，
+对协议实现进行合规性断言。
 
 RFC 2119 关键词分级：
 - MUST / REQUIRED / SHALL → CRITICAL 违规（协议破坏性缺陷）
 - SHOULD / RECOMMENDED → HIGH 违规（非最佳实践，存在安全风险）
 - MAY / OPTIONAL → INFO（信息性，非强制）
 
-本模块不解析完整的 RFC 文本 —— 而是内置常见协议的关键规则模板，
+本模块不解析完整 RFC 文本 —— 而是内置常见协议的关键规则模板，
 可扩展为从 RFC XML 自动提取。
 """
 import re, logging, struct
@@ -148,7 +147,7 @@ class RfcRuleLibrary:
 
 
 class RfcComplianceChecker:
-    """RFC 合规性校验器 —— 对协议包执行规则库中的所有适用规则。
+    """RFC 合规性校验器 —— 对协议包执行规则库中所有适用规则。
 
     使用方式：对每个捕获的协议包调用 check()，累积违规列表。
     支持自定义规则扩展 —— 通过 add_rule() 注入领域特定规则。
@@ -190,7 +189,7 @@ class RfcComplianceChecker:
                     passed = True  # 跳过非数值的元组检查
             elif callable(rule.expected):
                 try:    passed = rule.expected(observed)
-                except: passed = False
+                except Exception: passed = False
             else:
                 passed = observed == rule.expected
 

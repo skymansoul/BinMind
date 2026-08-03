@@ -1,4 +1,3 @@
-# 2026-07-14
 # ai_ml/src/__init__.py
 # 懒加载入口 -- 每个子包按需导入，避免冷启动加载所有ML依赖
 # 设计权衡：用__getattr__而非显式import，启动快但首次访问有延迟
@@ -7,6 +6,7 @@ __all__ = [
     "data", "gnn", "llm", "ml", "mutation",
     "training", "evaluation", "inference",
     "anomaly", "explain", "active", "augment", "utils",
+    "search", "threat",
 ]
 
 _SUBPACKAGE_MAP = {
@@ -23,6 +23,8 @@ _SUBPACKAGE_MAP = {
     "active": ".active",
     "augment": ".augment",
     "utils": ".utils",
+    "search": ".search",
+    "threat": ".threat",
 }
 
 _loaded = {}

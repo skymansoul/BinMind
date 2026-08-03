@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Multimodal vulnerability analyzer — weighted evidence fusion across analysis modalities.
-# 2026-07-01: evidence fusion with modality weights; consensus detection; contradiction resolution.
+# evidence fusion with modality weights; consensus 检测; contradiction resolution.
 
 import logging as _logging
 from collections import defaultdict as _defaultdict

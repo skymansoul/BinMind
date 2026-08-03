@@ -1,5 +1,4 @@
-# 2026-07-16
-# eBPF instruction set analysis & CVE pattern matching engine
+# eBPF 指令集分析及 CVE 模式匹配引擎
 # 基于原始字节流解析BPF指令，检测已知CVE利用模式
 
 import struct
@@ -8,24 +7,24 @@ from dataclasses import dataclass, field
 from typing import List, Optional, Tuple, Dict
 from enum import IntEnum
 
-# ---- BPF opcode constants (class + operation encoding) ----
+# ---- BPF 操作码常量（class + operation 编码） ----
 class BpfClass(IntEnum):
-    LD    = 0x00  # 非standard load
-    LDX   = 0x01  # load into register
-    ST    = 0x02  # store from immediate
-    STX   = 0x03  # store from register
-    ALU   = 0x04  # 32-bit arithmetic
-    JMP   = 0x05  # 64-bit jump
-    JMP32 = 0x06  # 32-bit jump
-    ALU64 = 0x07  # 64-bit arithmetic
+    LD    = 0x00  # 非标准 load
+    LDX   = 0x01  # 加载至寄存器
+    ST    = 0x02  # 从立即数存储
+    STX   = 0x03  # 从寄存器存储
+    ALU   = 0x04  # 32位算术
+    JMP   = 0x05  # 64位跳转
+    JMP32 = 0x06  # 32位跳转
+    ALU64 = 0x07  # 64位算术
 
 BPF_CLASS_MASK = 0x07
 
-# ---- source operand modifiers ----
-BPF_K = 0x00  # immediate value
-BPF_X = 0x08  # register value
+# ---- 源操作数修饰符 ----
+BPF_K = 0x00  # 立即数
+BPF_X = 0x08  # 寄存器值
 
-# ---- ALU / ALU64 operation codes (4-bit field at bits 4-7) ----
+# ---- ALU / ALU64 操作码（4位字段，位4-7） ----
 _ALU_OPS: Dict[int, str] = {
     0x00: "ADD", 0x10: "SUB", 0x20: "MUL", 0x30: "DIV",
     0x40: "OR",  0x50: "AND", 0x60: "LSH", 0x70: "RSH",
@@ -33,7 +32,7 @@ _ALU_OPS: Dict[int, str] = {
     0xc0: "ARSH", 0xd0: "END",
 }
 
-# ---- JMP / JMP32 operation codes ----
+# ---- JMP / JMP32 操作码 ----
 _JMP_OPS: Dict[int, str] = {
     0x00: "JA",   0x10: "JEQ",  0x20: "JGT",  0x30: "JGE",
     0x40: "JSET", 0x50: "JNE",  0x60: "JSGT", 0x70: "JSGE",
@@ -41,25 +40,25 @@ _JMP_OPS: Dict[int, str] = {
     0xc0: "JSLT", 0xd0: "JSLE",
 }
 
-# ---- special opcodes ----
-BPF_DW = 0x18    # double-word (64-bit) load immediate
+# ---- 特殊操作码 ----
+BPF_DW = 0x18    # 双字（64位）加载立即数
 
-# ---- helper function IDs relevant to CVEs ----
-# BPF_FUNC_dynptr_data = 188 (varies by kernel version)
+# ---- 与 CVE 相关的 helper 函数 ID ----
+# BPF_FUNC_dynptr_data = 188（依内核版本变化）
 DYNPTR_DATA_FUNC_IDS = frozenset({188, 190, 192})
 
-# ---- register names for diagnostics ----
+# ---- 诊断用寄存器名 ----
 _R_NAMES = ["r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"]
 
 
 @dataclass
 class BpfInstruction:
-    """单个eBPF指令的解析结果。8字节=> opcode/dst/src/offset/imm。"""
+    # 单个eBPF指令的解析结果。8字节=> opcode/dst/src/offset/imm。
     opcode: int
     dst_reg: int
     src_reg: int
-    offset: int      # 16-bit signed
-    imm: int         # 32-bit signed
+    offset: int      # 16位有符号
+    imm: int         # 32位有符号
     class_: BpfClass
     op_name: str = ""
     is_ld_dw: bool = False  # 双字加载标记
@@ -86,7 +85,7 @@ class EbpfProgram:
     def __init__(self):
         self._instructions: List[BpfInstruction] = []
         self._raw: bytes = b""
-        _v = None  # placeholder for lazy init state
+        _v = None  # 惰性初始化状态占位
 
     # ===== 指令解析 =====
     def load(self, raw_bytes: bytes) -> 'EbpfProgram':
@@ -166,10 +165,11 @@ class EbpfProgram:
 
         return _findings
 
-    # //// CVE-2026-31413: BPF_OR after ARSH on same dst register ////
+    # //// CVE-2026-31413: 同目标寄存器上 ARSH 后置 BPF_OR ////
     # 攻击原理: ARSH右移后低位不确定，OR操作可泄漏栈上残留数据
     @staticmethod
     def check_cve_2026_31413(instructions: List[BpfInstruction]) -> List[Dict]:
+    # 不拆——保持上下文连贯性
         _findings: List[Dict] = []
         _n = len(instructions)
 
@@ -193,8 +193,8 @@ class EbpfProgram:
                 })
         return _findings
 
-    # //// CVE-2024-58100: stale PTR_TO_PACKET after range check bypass ////
-    # 模式: packet data load -> bounds check -> 无refresh的后续访问
+    # //// CVE-2024-58100: 边界检查绕过后的过期 PTR_TO_PACKET ////
+    # 模式: packet data load -> bounds check -> 无刷新的后续访问
     @staticmethod
     def check_cve_2024_58100(instructions: List[BpfInstruction]) -> List[Dict]:
         _findings: List[Dict] = []
@@ -229,7 +229,7 @@ class EbpfProgram:
                         })
         return _findings
 
-    # //// CVE-2023-39191: BPF_FUNC_dynptr_data type confusion ////
+    # //// CVE-2023-39191: BPF_FUNC_dynptr_data 类型混淆 ////
     # dynptr类型在使用前未经is_dynptr_valid检查
     @staticmethod
     def check_cve_2023_39191(instructions: List[BpfInstruction]) -> List[Dict]:
@@ -268,7 +268,7 @@ class EbpfProgram:
                 })
         return _findings
 
-    # //// CVE-2023-52452: stack access near BPF_MAX_STACK boundary ////
+    # //// CVE-2023-52452: 栈访问接近 BPF_MAX_STACK 边界 ////
     @staticmethod
     def check_cve_2023_52452(instructions: List[BpfInstruction]) -> List[Dict]:
         _findings: List[Dict] = []
@@ -305,3 +305,51 @@ class EbpfProgram:
         _m["total"] = len(self._instructions)
         _m["ld_dw_count"] = sum(1 for i in self._instructions if i.is_ld_dw)
         return _m
+
+
+# ---- 共享 struct 格式辅助（struct.calcsize 跨平台对齐） ----
+# FIXME: ARM 与 x86_64 对齐不同 — 使用 calcsize，不硬编码大小
+
+# 通用 eBPF 指令解包格式
+EBNPF_INSN_FMT = "<BBhi"
+EBNPF_INSN_SIZE = struct.calcsize(EBNPF_INSN_FMT)  # 动态获取，不硬编码8
+
+def insn_unpack(raw_bytes: bytes, offset: int = 0) -> tuple:
+    """使用 struct.calcsize 动态确定格式大小解包一条 eBPF 指令。"""
+    if offset + EBNPF_INSN_SIZE > len(raw_bytes):
+        raise ValueError(f"insn_unpack: 需要 {EBNPF_INSN_SIZE} bytes, offset={offset}")
+    return struct.unpack_from(EBNPF_INSN_FMT, raw_bytes, offset)
+
+
+# ---- 寄存器集工具 ----
+BPF_REG_NAMES = ["r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"]
+BPF_CALLER_SAVED = frozenset({0, 1, 2, 3, 4, 5})
+BPF_CALLEE_SAVED = frozenset({6, 7, 8, 9})
+BPF_FP = 10
+
+
+# ---- helper 函数注册表（扩展版） ----
+HELPER_ID_TO_NAME = {
+    1: "map_lookup_elem", 2: "map_update_elem", 3: "map_delete_elem",
+    4: "probe_read", 5: "ktime_get_ns", 6: "trace_printk",
+    7: "get_prandom_u32", 8: "get_smp_processor_id",
+    12: "bpf_tail_call", 13: "bpf_clone_redirect",
+    25: "skb_load_bytes", 29: "xdp_adjust_head",
+    36: "perf_event_output", 51: "bpf_spin_lock",
+    52: "bpf_spin_unlock", 54: "bpf_skb_store_bytes",
+    55: "bpf_xdp_store_bytes", 56: "bpf_ringbuf_reserve",
+    57: "bpf_ringbuf_submit", 58: "bpf_ringbuf_discard",
+    59: "bpf_ringbuf_output",
+}
+
+# ---- 通用操作码分类 ----
+# 边界条件: BPF_CLASS_MASK 对所有内核版本必须保持 0x07
+CLS_NAMES = {0: "LD", 1: "LDX", 2: "ST", 3: "STX", 4: "ALU", 5: "JMP", 6: "JMP32", 7: "ALU64"}
+
+def classify_insn(opcode: int) -> str:
+    return CLS_NAMES.get(opcode & 0x07, "???")
+
+# 保留——后面可能用
+# def _legacy_insn_verify(raw: bytes) -> bool:
+#     """旧版指令验证器 — 保留以备兼容性回退。"""
+#     return len(raw) % 8 == 0 and raw[0] & 0x07 < 8

@@ -1,0 +1,10 @@
+# multimodal — 2026-08-02
+# 核心依赖（必需）
+pyyaml>=6.0
+
+# 可选依赖
+# numpy>=1.26        # BEGA 重力对齐 (multi_modal_gravity_align)
+# psutil>=5.9        # 内存感知调度 (multicore_parallel_analyzer)
+
+# 测试依赖
+pytest>=8.0

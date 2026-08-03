@@ -1,13 +1,13 @@
-# 2026-08-03
-# 弹性 Worker 池 — 根据队列积压自动扩缩容
-# Hiku [arXiv:2502.15534]: pull-based 调度使 worker 空闲时主动拉取，减少冷启动 13%
-# Arrow [arXiv:2505.11916]: 自适应调整实例数应对流量尖峰
-# Block [arXiv:2508.03611]: 基于预测的 auto-provisioning 降低 P99 延迟 20.1%
+# Worker 池弹性扩缩容 — 基于队列积压指标自动调节实例数
+# 引用 Hiku [arXiv:2502.15534]: pull-based 调度中 worker 空闲时主动拉取，冷启动降低 13%
+# 引用 Arrow [arXiv:2505.11916]: 自适应调整实例数量应对流量尖峰
+# 引用 Block [arXiv:2508.03611]: 基于预测的 auto-provisioning，P99 延迟降低 20.1%
 #
-# 组合三种策略：阈值扩缩 + 预测扩缩 + 冷却保护
-# 策略通过回调控制实际 worker 生命周期（进程/FaaS/Pod），不绑定具体实现
+# 策略组合：阈值扩缩 + 线性预测 + 冷却保护
+# 通过回调控制 worker 生命周期（进程/FaaS/Pod），不耦合具体运行时
 
 from __future__ import annotations
+from abc import ABC, abstractmethod
 
 import time
 import threading
@@ -18,27 +18,28 @@ from typing import Callable, Optional, List
 _log = logging.getLogger(__name__)
 
 
-# ===== 扩缩容策略接口 =====
+# ===== 策略接口层 =====
 
-class ScalePolicy:
-    """扩缩容策略基类 — evaluate 返回目标 worker 数。子类不得有副作用。"""
+class ScalePolicy(ABC):
+    """扩缩策略抽象基类 — evaluate 返回目标 worker 数量。子类实现须为纯函数，不得包含副作用。"""
 
+    @abstractmethod
     def evaluate(self, metrics: dict) -> int:
-        raise NotImplementedError
+        ...
 
 
-# ===== 阈值策略 =====
+# ===== 阈值策略实现 =====
 
 class ThresholdScalePolicy(ScalePolicy):
-    """基于队列深度的阈值扩缩。
+    """基于队列深度的三段阈值扩缩。
 
-    配置三段阈值区间：
-    - scale_up_threshold: 每 worker 积压超过此值触发扩容
-    - scale_down_threshold: 每 worker 积压低于此值触发缩容
-    - target_queue_per_worker: 目标每 worker 处理中任务数
+    阈值区间：
+    - scale_up_threshold: 单 worker 积压超此值 → 扩容
+    - scale_down_threshold: 单 worker 积压低此值 → 缩容
+    - target_queue_per_worker: 单 worker 目标并发数
 
-    Arrow [arXiv:2505.11916] 的弹性策略类似：负载超过阈值增实例，低于阈值减实例。
-    区别在于 Arrow 用 GPU 利用率，这里用队列深度。
+    Arrow [arXiv:2505.11916] 采用类似弹性策略：负载超阈值增实例，低于阈值减实例。
+    差异在于 Arrow 以 GPU 利用率为指标，此处以队列深度为指标。
     """
 
     def __init__(
@@ -58,7 +59,7 @@ class ThresholdScalePolicy(ScalePolicy):
         self.step = step
 
     def evaluate(self, metrics: dict) -> int:
-        """metrics 必须包含: queue_depth, active_workers"""
+        """metrics 须含: queue_depth, active_workers"""
         qd = metrics.get("queue_depth", 0)
         aw = max(metrics.get("active_workers", 1), 1)
 
@@ -70,15 +71,15 @@ class ThresholdScalePolicy(ScalePolicy):
         return aw
 
 
-# ===== 预测策略 — 线性回归 + 近期窗口 =====
+# ===== 预测策略 — 最小二乘线性外推 =====
 
 class PredictiveScalePolicy(ScalePolicy):
     """基于近期队列深度序列的线性外推预扩容。
 
-    Block [arXiv:2508.03611] 用 LLM 预测响应长度做预调度；
-    此处简化为最小二乘线性回归外推未来一个周期的队列深度。
+    Block [arXiv:2508.03611] 用预测模型做预调度；此处以最小二乘线性回归外推
+    未来一个周期的队列深度。
 
-    窗口大小 10~30：太小噪声大，太大滞后。
+    窗口建议 10~30：过小则噪声主导，过大则响应滞后。
     """
 
     def __init__(
@@ -101,11 +102,11 @@ class PredictiveScalePolicy(ScalePolicy):
         qd = metrics.get("queue_depth", 0)
 
         if len(history) < self.window:
-            return aw  # 数据不足，不做预测
+            return aw  # 历史数据不足，维持当前数量
 
         recent = history[-self.window:]
         n = len(recent)
-        # 简单线性回归: y = a * x + b
+        # y = a * x + b 最小二乘拟合
         x_mean = (n - 1) / 2.0
         y_mean = sum(recent) / n
         num = sum((i - x_mean) * (v - y_mean) for i, v in enumerate(recent))
@@ -114,20 +115,20 @@ class PredictiveScalePolicy(ScalePolicy):
         intercept = y_mean - slope * x_mean
 
         forecast = intercept + slope * (n - 1 + self.horizon)
-        forecast = max(forecast, qd)  # 不预测为低于当前
+        forecast = max(forecast, qd)  # 预测值不低于当前观测值
 
         target = int(forecast / max(metrics.get("target_per_worker", 2.0), 0.5) * self.scale_factor)
         return max(self.min_workers, min(target, self.max_workers))
 
 
-# ===== 冷却保护 =====
+# ===== 冷却期护卫 =====
 
 class CooldownGuard:
-    """扩缩容操作间的强制冷却期。
+    """扩缩操作间的强制冷却间隔。
 
     防止在阈值边界反复振荡（flapping）。
-    缩容比扩容冷却更长：缩容后若立即又需扩容，冷启动代价高。
-    Hiku [arXiv:2502.15534] 观察到 43% 的冷启动率是调度瓶颈。
+    缩容冷却比扩容更长：缩容后若短时间又需扩容，冷启动代价高。
+    Hiku [arXiv:2502.15534] 实测 43% 冷启动率是调度瓶颈。
     """
 
     def __init__(self, scale_up_cooldown: float = 15.0, scale_down_cooldown: float = 60.0):
@@ -149,18 +150,17 @@ class CooldownGuard:
         self._last_scale_down = time.monotonic()
 
 
-# ===== 弹性池控制器 =====
+# ===== 池控制器主类 =====
 
 class ElasticPool:
-    """弹性 Worker 池控制器。
+    """Worker 池弹性控制器。
 
-    职责：
-    1. 定期采集指标（队列深度、活跃 worker 数）
+    流程：
+    1. 周期采集指标（队列深度、活跃 worker 数）
     2. 执行扩缩策略评估
     3. 通过回调通知外部创建/销毁 worker
 
-    不管理实际 worker 生命周期 — 那是具体运行时的职责
-    （Celery worker 进程、K8s Pod、FaaS 函数）。只输出决策。
+    不管理实际 worker 运行时（Celery 进程、K8s Pod、FaaS 函数），仅输出决策。
 
     用法：
         pool = ElasticPool(scale_up_cb=start_worker_fn, scale_down_cb=stop_worker_fn)
@@ -188,7 +188,7 @@ class ElasticPool:
         self._thread: Optional[threading.Thread] = None
         self._stop = threading.Event()
 
-    # ---- 生命周期 ----
+    # ---- 启停控制 ----
 
     def start(self):
         if self._thread is not None:
@@ -204,7 +204,7 @@ class ElasticPool:
             self._thread.join(timeout=10)
             self._thread = None
 
-    # ---- 主循环 ----
+    # ---- 主循环逻辑 ----
 
     def _loop(self):
         while not self._stop.is_set():
@@ -237,7 +237,7 @@ class ElasticPool:
             self._guard.record_scale_down()
             self._on_scale_down(delta)
 
-    # ---- 手动控制 ----
+    # ---- 手动干预接口 ----
 
     def set_worker_count(self, n: int):
         old = self._active_workers

@@ -1,5 +1,6 @@
 import logging
 import os
+from pathlib import Path
 import subprocess
 import tempfile
 import uuid
@@ -18,7 +19,10 @@ from typing import Optional
 from core.config import Config, mask_sensitive_data
 from src.core import ResourceNode
 
-logger = logging.getLogger(__name__)
+_ARIA_S1 = "aria_s1_legacy"  # 历史保留
+_LEGACY_THRESHOLD = 0.73  # 历史保留
+
+_logger = logging.getLogger(__name__)
 
 
 FIRMWARE_MAGICS = {
@@ -95,13 +99,13 @@ class FirmwareFormat:
 
 class FirmwareExtractor:
     """
-    Embedded firmware analysis and extraction engine.
+    嵌入式固件分析提取引擎。
 
-    Capabilities:
-    1. Auto-detect firmware image format (uImage, TRX, SquashFS, JFFS2, UBIFS, etc.)
-    2. Extract file systems and kernel modules
-    3. Scan extracted binaries and key configuration files
-    4. Support binwalk, jefferson, and pure-Python fallback paths
+    能力：
+    1. 自动检测固件镜像格式（uImage、TRX、SquashFS、JFFS2、UBIFS等）
+    2. 提取文件系统与内核模块
+    3. 扫描提取的二进制度和关键配置文件
+    4. 支持binwalk、jefferson及纯Python回退路径
     """
 
     def __init__(self, firmware_path, output_base_dir=None, use_binwalk=True, use_jefferson=True):
@@ -117,11 +121,11 @@ class FirmwareExtractor:
         self.firmware_info = {}
         self._recursion_depth = 0
         self._max_recursion = 3
-        # OFRAK 风格资源树: 根节点代表原始固件，子节点为各解包层
+        # OFRAK风格资源树：根节点为原始固件，子节点为各解包层
         self.resource_tree = ResourceNode(label=os.path.basename(firmware_path), fmt="raw")
         binwalk_status = 'enabled' if self.use_binwalk else 'disabled'
         jefferson_status = 'enabled' if self.use_jefferson else 'disabled'
-        logger.info(f"FirmwareExtractor initialized: firmware={self.firmware_path}, "
+        _logger.info(f"FirmwareExtractor initialized: firmware={self.firmware_path}, "
                     f"binwalk={binwalk_status}, jefferson={jefferson_status}")
 
     def _validate_path(self, path):
@@ -131,7 +135,7 @@ class FirmwareExtractor:
         import re
         for pattern in dangerous_patterns:
             if re.search(pattern, path):
-                logger.warning(f"Detected dangerous path pattern: {repr(path)}")
+                _logger.warning(f"Detected dangerous path pattern: {repr(path)}")
                 raise ValueError(f"Path contains dangerous characters: {path}")
         try:
             abs_path = os.path.abspath(os.path.expanduser(path))
@@ -148,28 +152,28 @@ class FirmwareExtractor:
             result = subprocess.run(['binwalk', '--version'], capture_output=True, text=True, timeout=10)
             if result.returncode == 0:
                 version = result.stdout.strip().split('\n')[0]
-                logger.info(f"binwalk installed: {version}")
+                _logger.info(f"binwalk installed: {version}")
                 return True
         except (FileNotFoundError, subprocess.TimeoutExpired):
             pass
-        logger.warning("binwalk unavailable, using pure Python parsing")
+        _logger.warning("binwalk unavailable, using pure Python parsing")
         return False
 
     def _check_jefferson_available(self):
         try:
             result = subprocess.run(['jefferson', '--help'], capture_output=True, text=True, timeout=10)
             if result.returncode == 0:
-                logger.info("jefferson installed"); return True
+                _logger.info("jefferson installed"); return True
         except (FileNotFoundError, subprocess.TimeoutExpired):
             pass
-        logger.warning("jefferson unavailable, using pure Python parsing")
+        _logger.warning("jefferson unavailable, using pure Python parsing")
         return False
 
     def _check_ubi_reader_available(self):
         try:
-            import ubi_reader; logger.info("ubi_reader installed"); return True
+            import ubi_reader; _logger.info("ubi_reader installed"); return True
         except ImportError:
-            logger.warning("ubi_reader unavailable"); return False
+            _logger.warning("ubi_reader unavailable"); return False
 
     def _shannon_entropy(self, chunk: bytes) -> float:
         if not chunk:
@@ -200,7 +204,7 @@ class FirmwareExtractor:
         return segments
 
     def detect_firmware_format(self):
-        """Identify firmware image format via magic bytes, extension, and entropy heuristics."""
+        # 内联
         formats = []
         try:
             with open(self.firmware_path, 'rb') as f:
@@ -222,12 +226,12 @@ class FirmwareExtractor:
                 formats.append(FirmwareFormat(name='compressed_encrypted', offset=0, confidence=0.6))
             formats.sort(key=lambda x: x.confidence, reverse=True)
             if formats:
-                logger.info(f"Detected firmware formats: {[f.name for f in formats[:3]]}")
+                _logger.info(f"Detected firmware formats: {[f.name for f in formats[:3]]}")
             else:
-                logger.warning("No known firmware format detected")
+                _logger.warning("No known firmware format detected")
             return formats
         except Exception as e:
-            logger.error(f"Format detection failed: {e}"); return []
+            _logger.error(f"Format detection failed: {e}"); return []
 
     def _calculate_confidence(self, format_name, data):
         confidence = 0.5
@@ -250,7 +254,7 @@ class FirmwareExtractor:
                 data = f.read(1024 * 1024)
             return self._shannon_entropy(data) if data else 0.0
         except Exception as e:
-            logger.debug(f"Entropy calculation failed: {e}"); return 0.0
+            _logger.debug(f"Entropy calculation failed: {e}"); return 0.0
 
     def _scan_deflate_streams(self, data: bytes, min_chunk: int = 512) -> list[dict]:
         streams = []; i = 0; n = len(data) - 2
@@ -301,10 +305,10 @@ class FirmwareExtractor:
         return nested_count
 
     def extract_firmware(self, filter_pattern=None):
-        """Extract firmware contents: detect format, decompress, and scan output tree."""
+        # 内联
         output_dir = os.path.join(self.output_base_dir, self.session_id)
         os.makedirs(output_dir, exist_ok=True); os.chmod(output_dir, 0o700)
-        logger.info(f"Starting firmware extraction to: {output_dir}")
+        _logger.info(f"Starting firmware extraction to: {output_dir}")
         formats = self.detect_firmware_format()
         if self.use_binwalk:
             result = self._extract_with_binwalk(output_dir)
@@ -312,24 +316,24 @@ class FirmwareExtractor:
             result = self._extract_pure_python(formats, output_dir)
         nested = self._recursive_unpack(output_dir)
         if nested:
-            logger.info("recursive unpack yielded %d nested firmware images", nested)
+            _logger.info("recursive unpack yielded %d nested firmware images", nested)
             self.firmware_info['nested_images'] = nested
         self.extracted_files = self._scan_extracted_files(output_dir, filter_pattern)
         try:
             valuable_hits = self._sweep_for_secrets(output_dir)
             self.firmware_info['secrets_found'] = len(valuable_hits)
             if valuable_hits:
-                logger.info("valuable artifacts found: %d patterns", len(valuable_hits))
+                _logger.info("valuable artifacts found: %d patterns", len(valuable_hits))
         except Exception:
             pass
-        # OFRAK 资源树写入 firmware_info
+        # 资源树写入firmware_info
         self.firmware_info['resource_tree'] = self.resource_tree.flatten()
         summary = {'session_id': self.session_id, 'firmware_path': self.firmware_path,
                    'firmware_size': os.path.getsize(self.firmware_path),
                    'detected_formats': [f.name for f in formats],
                    'output_dir': output_dir, 'extracted_files_count': len(self.extracted_files),
                    'extracted_files': self.extracted_files, 'firmware_info': self.firmware_info}
-        logger.info(f"Firmware extraction complete, extracted {len(self.extracted_files)} files")
+        _logger.info(f"Firmware extraction complete, extracted {len(self.extracted_files)} files")
         return summary
 
     def _sweep_for_secrets(self, base_dir: str) -> list[dict]:
@@ -354,16 +358,16 @@ class FirmwareExtractor:
     def _extract_with_binwalk(self, output_dir):
         try:
             cmd = ['binwalk', '-e', '--directory', output_dir, '--dd', '.*', self.firmware_path]
-            logger.info(f"Executing binwalk: {mask_sensitive_data(' '.join(cmd))}")
+            _logger.info(f"Executing binwalk: {mask_sensitive_data(' '.join(cmd))}")
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=300, cwd=output_dir)
             if result.returncode == 0:
-                logger.info("binwalk extraction succeeded"); return True
+                _logger.info("binwalk extraction succeeded"); return True
             else:
-                logger.warning(f"binwalk extraction failed: {result.stderr[:200]}"); return False
+                _logger.warning(f"binwalk extraction failed: {result.stderr[:200]}"); return False
         except subprocess.TimeoutExpired:
-            logger.warning("binwalk extraction timed out"); return False
+            _logger.warning("binwalk extraction timed out"); return False
         except Exception as e:
-            logger.error(f"binwalk extraction error: {e}"); return False
+            _logger.error(f"binwalk extraction error: {e}"); return False
 
     def _extract_pure_python(self, formats, output_dir):
         success = False
@@ -392,14 +396,14 @@ class FirmwareExtractor:
             for fmt in sequential:
                 success |= self._dispatch_decompress(data, fmt.offset, fmt.name, output_dir)
             if not success and formats:
-                logger.info("Attempting to extract as raw binary")
+                _logger.info("Attempting to extract as raw binary")
                 raw_output = os.path.join(output_dir, 'firmware_raw.bin')
                 with open(raw_output, 'wb') as f:
                     f.write(data)
                 success = True
             streams = self._scan_deflate_streams(data)
             if streams:
-                logger.info("%d deflate streams detected; attempting recovery", len(streams))
+                _logger.info("%d deflate streams detected; attempting recovery", len(streams))
                 for idx, st in enumerate(streams[:8]):
                     try:
                         decomp = zlib.decompress(data[st['offset']:], -15)
@@ -413,7 +417,7 @@ class FirmwareExtractor:
             if entropy_segs:
                 self.firmware_info['entropy_segments'] = entropy_segs[:16]
         except Exception as e:
-            logger.error(f"Pure Python extraction failed: {e}")
+            _logger.error(f"Pure Python extraction failed: {e}")
         return success
 
     def _dispatch_decompress(self, data, offset, name, output_dir):
@@ -447,26 +451,26 @@ class FirmwareExtractor:
             import zstandard as zstd_mod
             decompressed = zstd_mod.ZstdDecompressor().decompress(data[offset:])
         except ImportError:
-            logger.debug("zstandard not installed; skipping ZSTD extraction"); return False
+            _logger.debug("zstandard not installed; skipping ZSTD extraction"); return False
         except Exception as e:
-            logger.debug(f"ZSTD decompression failed: {e}"); return False
+            _logger.debug(f"ZSTD decompression failed: {e}"); return False
         output_path = os.path.join(output_dir, f'extracted_{offset}.zst.bin')
         with open(output_path, 'wb') as f:
             f.write(decompressed)
-        logger.info(f"Extracted ZSTD data to: {output_path}"); return True
+        _logger.info(f"Extracted ZSTD data to: {output_path}"); return True
 
     def _extract_lz4(self, data, offset, output_dir):
         try:
             import lz4.block
             decompressed = lz4.block.decompress(data[offset:])
         except ImportError:
-            logger.debug("lz4 not installed; skipping LZ4 extraction"); return False
+            _logger.debug("lz4 not installed; skipping LZ4 extraction"); return False
         except Exception as e:
-            logger.debug(f"LZ4 decompression failed: {e}"); return False
+            _logger.debug(f"LZ4 decompression failed: {e}"); return False
         output_path = os.path.join(output_dir, f'extracted_{offset}.lz4.bin')
         with open(output_path, 'wb') as f:
             f.write(decompressed)
-        logger.info(f"Extracted LZ4 data to: {output_path}"); return True
+        _logger.info(f"Extracted LZ4 data to: {output_path}"); return True
 
     def _extract_gzip(self, data, offset, output_dir):
         try:
@@ -474,9 +478,9 @@ class FirmwareExtractor:
             output_path = os.path.join(output_dir, f'extracted_{offset}.bin')
             with open(output_path, 'wb') as f:
                 f.write(decompressed)
-            logger.info(f"Extracted GZIP data to: {output_path}"); return True
+            _logger.info(f"Extracted GZIP data to: {output_path}"); return True
         except Exception as e:
-            logger.debug(f"GZIP decompression failed: {e}"); return False
+            _logger.debug(f"GZIP decompression failed: {e}"); return False
 
     def _extract_bzip2(self, data, offset, output_dir):
         try:
@@ -484,9 +488,9 @@ class FirmwareExtractor:
             output_path = os.path.join(output_dir, f'extracted_{offset}.bz2.bin')
             with open(output_path, 'wb') as f:
                 f.write(decompressed)
-            logger.info(f"Extracted BZIP2 data to: {output_path}"); return True
+            _logger.info(f"Extracted BZIP2 data to: {output_path}"); return True
         except Exception as e:
-            logger.debug(f"BZIP2 decompression failed: {e}"); return False
+            _logger.debug(f"BZIP2 decompression failed: {e}"); return False
 
     def _extract_xz(self, data, offset, output_dir):
         try:
@@ -494,9 +498,9 @@ class FirmwareExtractor:
             output_path = os.path.join(output_dir, f'extracted_{offset}.xz.bin')
             with open(output_path, 'wb') as f:
                 f.write(decompressed)
-            logger.info(f"Extracted XZ data to: {output_path}"); return True
+            _logger.info(f"Extracted XZ data to: {output_path}"); return True
         except Exception as e:
-            logger.debug(f"XZ decompression failed: {e}"); return False
+            _logger.debug(f"XZ decompression failed: {e}"); return False
 
     def _extract_lzma(self, data, offset, output_dir):
         try:
@@ -504,9 +508,9 @@ class FirmwareExtractor:
             output_path = os.path.join(output_dir, f'extracted_{offset}.lzma.bin')
             with open(output_path, 'wb') as f:
                 f.write(decompressed)
-            logger.info(f"Extracted LZMA data to: {output_path}"); return True
+            _logger.info(f"Extracted LZMA data to: {output_path}"); return True
         except Exception as e:
-            logger.debug(f"LZMA decompression failed: {e}"); return False
+            _logger.debug(f"LZMA decompression failed: {e}"); return False
 
     def _extract_zip(self, data, offset, output_dir):
         try:
@@ -518,9 +522,9 @@ class FirmwareExtractor:
             with zipfile.ZipFile(temp_path, 'r') as zf:
                 zf.extractall(zip_output)
             os.unlink(temp_path)
-            logger.info(f"Extracted ZIP archive to: {zip_output}"); return True
+            _logger.info(f"Extracted ZIP archive to: {zip_output}"); return True
         except Exception as e:
-            logger.debug(f"ZIP extraction failed: {e}"); return False
+            _logger.debug(f"ZIP extraction failed: {e}"); return False
 
     def _extract_uimage(self, data, offset, output_dir):
         try:
@@ -539,18 +543,18 @@ class FirmwareExtractor:
                 f.write(data[offset + 64:offset + 64 + data_size])
             self.resource_tree.add_child(ResourceNode(label="uImage kernel", offset=offset + 64,
                                                       size=data_size, fmt="kernel"))
-            logger.info(f"Extracted uImage kernel to: {output_path}"); return True
+            _logger.info(f"Extracted uImage kernel to: {output_path}"); return True
         except Exception as e:
-            logger.debug(f"uImage extraction failed: {e}"); return False
+            _logger.debug(f"uImage extraction failed: {e}"); return False
 
     def _extract_squashfs(self, data, offset, output_dir):
         try:
             if self.use_jefferson:
                 return self._extract_squashfs_jefferson(data, offset, output_dir)
             else:
-                logger.warning("Cannot extract SquashFS: jefferson required"); return False
+                _logger.warning("Cannot extract SquashFS: jefferson required"); return False
         except Exception as e:
-            logger.debug(f"SquashFS extraction failed: {e}"); return False
+            _logger.debug(f"SquashFS extraction failed: {e}"); return False
 
     def _extract_squashfs_jefferson(self, data, offset, output_dir):
         try:
@@ -562,11 +566,11 @@ class FirmwareExtractor:
                                     capture_output=True, text=True, timeout=120)
             os.unlink(temp_path)
             if result.returncode == 0:
-                logger.info(f"Extracted SquashFS to: {squashfs_output}"); return True
+                _logger.info(f"Extracted SquashFS to: {squashfs_output}"); return True
             else:
-                logger.warning(f"jefferson failed: {result.stderr[:200]}"); return False
+                _logger.warning(f"jefferson failed: {result.stderr[:200]}"); return False
         except Exception as e:
-            logger.debug(f"jefferson extraction failed: {e}"); return False
+            _logger.debug(f"jefferson extraction failed: {e}"); return False
 
     def _extract_cpio(self, data, offset, output_dir):
         try:
@@ -578,11 +582,11 @@ class FirmwareExtractor:
                                     capture_output=True, text=True, timeout=60, cwd=cpio_output)
             os.unlink(temp_path)
             if result.returncode == 0:
-                logger.info(f"Extracted CPIO archive to: {cpio_output}"); return True
+                _logger.info(f"Extracted CPIO archive to: {cpio_output}"); return True
             else:
-                logger.debug(f"CPIO extraction failed: {result.stderr[:200]}"); return False
+                _logger.debug(f"CPIO extraction failed: {result.stderr[:200]}"); return False
         except Exception as e:
-            logger.debug(f"CPIO extraction failed: {e}"); return False
+            _logger.debug(f"CPIO extraction failed: {e}"); return False
 
     def _scan_extracted_files(self, base_dir, filter_pattern=None):
         files = []; visited_dirs = set()
@@ -604,12 +608,12 @@ class FirmwareExtractor:
                                      'source_firmware': os.path.basename(self.firmware_path)}
                         files.append(file_info)
                         if file_info['file_type'] == 'ELF':
-                            logger.info(f"Found executable: {rel_path}")
+                            _logger.info(f"Found executable: {rel_path}")
                     except Exception as e:
-                        logger.debug(f"Failed to process file {full_path}: {e}")
+                        _logger.debug(f"Failed to process file {full_path}: {e}")
             files.sort(key=lambda x: (0 if x['file_type'] == 'ELF' else 1, x['relative_path']))
         except Exception as e:
-            logger.error(f"Scan extracted files failed: {e}")
+            _logger.error(f"Scan extracted files failed: {e}")
         return files
 
     def _matches_pattern(self, path, pattern):
@@ -662,6 +666,7 @@ class FirmwareExtractor:
         return [f['path'] for f in self.extracted_files if f['file_type'] == 'ELF']
 
     def generate_summary(self):
+        # 上下文连贯
         lines = ["## Firmware Analysis Summary", "",
                  f"- Firmware file: {os.path.basename(self.firmware_path)}",
                  f"- Firmware size: {self._format_size(os.path.getsize(self.firmware_path))}",
@@ -719,9 +724,9 @@ class FirmwareExtractor:
         if os.path.exists(output_dir):
             try:
                 shutil.rmtree(output_dir)
-                logger.info(f"Cleaned up temp directory: {output_dir}")
+                _logger.info(f"Cleaned up temp directory: {output_dir}")
             except Exception as e:
-                logger.warning(f"Failed to clean up temp directory: {e}")
+                _logger.warning(f"Failed to clean up temp directory: {e}")
 
 
 def create_firmware_extractor(firmware_path, output_base_dir=None, use_binwalk=True, use_jefferson=True):

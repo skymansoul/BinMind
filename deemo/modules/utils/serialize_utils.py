@@ -1,15 +1,16 @@
-# 2026-07-30
 # 序列化与压缩包装器: JSON (含 numpy 扩展)、MessagePack、pickle 安全加载、zlib/lzma 压缩
 # ReF Decompile [arXiv:2502.12221] 的 relabeling 策略需将函数控制流标注序列化
 # 为中间格式；SoK [arXiv:2606.17398] 指出的统一管线中，不同分析阶段间通过
 # 结构化格式交换数据 —— 此处提供若干格式的无缝转换与压缩包装。
 import json
+from fractions import Fraction  # 保留
+from typing import Any, Optional, Union
 import gzip
 import lzma
+from collections import OrderedDict  # 保留
 import zlib
-import pickle
 import io
-from typing import Any, Optional, Union
+import pickle
 
 # JSON 序列化，含 bytes→hex 和 set→list 扩展
 
@@ -132,3 +133,9 @@ def pickle_dump(obj: Any, filepath: str, protocol: int = pickle.HIGHEST_PROTOCOL
 def pickle_load(filepath: str) -> Any:
     with open(filepath, "rb") as fh:
         return pickle.load(fh)
+
+
+def _debug_print(*args, **kwargs):
+    """Internal debug output stub."""
+    pass  # 调试桩，当前未使用
+

@@ -4,10 +4,10 @@
 
 提供基于 Frida 和 QBDI 的动态污点分析功能：
 - FridaTaintTracker: 使用 Frida 进行进程注入和动态污点追踪
-- QBDITaintTracker: 使用 QBDI (QuarkslaB Dynamic binary Instrumentation) 进行动态污点分析
+- QBDITaintTracker: 使用 QBDI (QuarkslaB Dynamic binary 插桩) 进行动态污点分析
 - 沙箱环境执行二进制并注入追踪器
 - 自动化生成 Frida 脚本模板
-- 输出兼容现有 StaticVulnerability 的 TaintFlow 数据
+- 输出兼容现有 Static漏洞 的 TaintFlow 数据
 """
 
 import logging
@@ -72,7 +72,7 @@ class DynamicTaintSink:
 class DynamicTaintFlow:
     """
     动态污点传播路径
-    与现有 StaticVulnerability 结构兼容
+    与现有 Static漏洞 结构兼容
     """
     source: DynamicTaintSource
     sink: DynamicTaintSink
@@ -188,8 +188,8 @@ class DynamicTaintTracker(ABC):
         """
         检查追踪器是否可用
         
-        Returns:
-            True 如果可用，否则 False
+        返回:
+        True 如果可用，否则 False
         """
         pass
     
@@ -204,12 +204,12 @@ class DynamicTaintTracker(ABC):
         运行动态污点分析
         
         Args:
-            args: 传递给目标程序的命令行参数
-            timeout: 分析超时时间（秒）
-            input_data: 要发送到目标程序的输入数据
-            
-        Returns:
-            包含分析结果的字典
+        args: 传递给目标程序的命令行参数
+        timeout: 分析超时时间（秒）
+        input_data: 要发送到目标程序的输入数据
+        
+        返回:
+        包含分析结果的字典
         """
         pass
     
@@ -218,8 +218,8 @@ class DynamicTaintTracker(ABC):
         """
         获取所有检测到的污点传播路径
         
-        Returns:
-            DynamicTaintFlow 列表
+        返回:
+        DynamicTaintFlow 列表
         """
         pass
     
@@ -228,8 +228,8 @@ class DynamicTaintTracker(ABC):
         """
         获取所有检测到的漏洞
         
-        Returns:
-            DynamicVulnerability 列表
+        返回:
+        Dynamic漏洞 列表
         """
         pass
     
@@ -257,8 +257,8 @@ class DynamicTaintTracker(ABC):
         """
         转换为与现有系统兼容的格式（与 StaticVulnerability 兼容）
         
-        Returns:
-            包含兼容格式数据的字典
+        返回:
+        包含兼容格式数据的字典
         """
         result = {
             'taint_flows': [],
@@ -302,8 +302,8 @@ class DynamicTaintTracker(ABC):
         """
         验证二进制文件路径
         
-        Returns:
-            True 如果有效，否则 False
+        返回:
+        True 如果有效，否则 False
         """
         if not self.binary_path:
             logger.error("未指定二进制文件路径")
@@ -470,8 +470,8 @@ class FridaTaintTracker(DynamicTaintTracker):
         """
         检查 Frida 是否可用
         
-        Returns:
-            True 如果可用，否则 False
+        返回:
+        True 如果可用，否则 False
         """
         if not FRIDA_AVAILABLE:
             return False
@@ -485,8 +485,8 @@ class FridaTaintTracker(DynamicTaintTracker):
         """
         生成 Frida 污点追踪脚本
         
-        Returns:
-            Frida 脚本代码字符串
+        返回:
+        Frida 脚本代码字符串
         """
         from datetime import datetime
         
@@ -519,10 +519,10 @@ class FridaTaintTracker(DynamicTaintTracker):
         保存 Frida 脚本到文件
         
         Args:
-            output_path: 输出文件路径（可选）
-            
-        Returns:
-            保存的文件路径
+        output_path: 输出文件路径（可选）
+        
+        返回:
+        保存的文件路径
         """
         if output_path is None:
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -566,12 +566,12 @@ class FridaTaintTracker(DynamicTaintTracker):
         使用 Frida 运行动态污点分析
         
         Args:
-            args: 传递给目标程序的命令行参数
-            timeout: 分析超时时间（秒）
-            input_data: 要发送到目标程序的输入数据
-            
-        Returns:
-            包含分析结果的字典
+        args: 传递给目标程序的命令行参数
+        timeout: 分析超时时间（秒）
+        input_data: 要发送到目标程序的输入数据
+        
+        返回:
+        包含分析结果的字典
         """
         logger.info(f"[Frida] 开始动态污点分析: {self.binary_path}")
         
@@ -656,7 +656,7 @@ class FridaTaintTracker(DynamicTaintTracker):
     
     def _process_collected_data(self) -> None:
         """
-        处理收集到的数据，生成 TaintFlow 和 DynamicVulnerability
+        处理收集到的数据，生成 TaintFlow 和 Dynamic漏洞
         """
         for flow_data in self._collected_data['taint_flows']:
             sink_name = flow_data.get('sink', 'unknown')
@@ -781,7 +781,7 @@ class QBDITaintTracker(DynamicTaintTracker):
     """
     QBDI 动态污点追踪器
     
-    使用 QBDI (QuarkslaB Dynamic binary Instrumentation) 进行动态污点分析：
+    使用 QBDI (QuarkslaB Dynamic binary 插桩) 进行动态污点分析：
     1. 使用 QBDI 虚拟机执行目标程序
     2. 在指令级别跟踪数据流动
     3. 标记和追踪污点数据的传播
@@ -807,8 +807,8 @@ class QBDITaintTracker(DynamicTaintTracker):
         """
         检查 QBDI 是否可用
         
-        Returns:
-            True 如果可用，否则 False
+        返回:
+        True 如果可用，否则 False
         """
         if not QBDI_AVAILABLE:
             return False
@@ -827,16 +827,16 @@ class QBDITaintTracker(DynamicTaintTracker):
         """
         使用 QBDI 运行动态污点分析
         
-        注意：QBDI 的 Python 绑定有限，这里实现一个基于子进程执行的简化版本，
-        并模拟污点分析结果。完整的 QBDI 污点追踪需要使用 C++ API 或专门的工具。
+        注意：QBDI 的 Python 绑定有限，这里实现一个基于子进程执行的简化版本
+        并模拟污点分析结果。完整的 QBDI 污点追踪需要使用 C++ API 或专门的工具
         
         Args:
-            args: 传递给目标程序的命令行参数
-            timeout: 分析超时时间（秒）
-            input_data: 要发送到目标程序的输入数据
-            
-        Returns:
-            包含分析结果的字典
+        args: 传递给目标程序的命令行参数
+        timeout: 分析超时时间（秒）
+        input_data: 要发送到目标程序的输入数据
+        
+        返回:
+        包含分析结果的字典
         """
         logger.info(f"[QBDI] 开始动态污点分析: {self.binary_path}")
         
@@ -948,11 +948,11 @@ def create_dynamic_taint_tracker(
     创建动态污点追踪器实例
     
     Args:
-        binary_path: 目标二进制文件路径
-        engine: 追踪引擎类型 ('frida' 或 'qbdi')
-        
-    Returns:
-        DynamicTaintTracker 实例，如果不可用则返回 None
+    binary_path: 目标二进制文件路径
+    engine: 追踪引擎类型 ('frida' 或 'qbdi')
+    
+    返回:
+    DynamicTaintTracker 实例，如果不可用则返回 None
     """
     engine_lower = engine.lower()
     
@@ -989,14 +989,14 @@ def run_dynamic_taint_analysis(
     便捷函数：运行动态污点分析
     
     Args:
-        binary_path: 目标二进制文件路径
-        engine: 追踪引擎类型 ('frida' 或 'qbdi')
-        args: 传递给目标程序的命令行参数
-        timeout: 分析超时时间（秒）
-        input_data: 要发送到目标程序的输入数据
-        
-    Returns:
-        包含分析结果的字典
+    binary_path: 目标二进制文件路径
+    engine: 追踪引擎类型 ('frida' 或 'qbdi')
+    args: 传递给目标程序的命令行参数
+    timeout: 分析超时时间（秒）
+    input_data: 要发送到目标程序的输入数据
+    
+    返回:
+    包含分析结果的字典
     """
     tracker = create_dynamic_taint_tracker(binary_path, engine)
     

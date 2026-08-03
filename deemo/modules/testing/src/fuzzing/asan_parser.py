@@ -1,8 +1,4 @@
-# 2026-08-01
-# Sanitizer output parser — ASan / UBSan / MSan / TSan
-# 解析 sanitizer 输出到结构化格式 → 分类 → 去重
-# 兼容 clang/gcc sanitizers (AddressSanitizer, UndefinedBehaviorSanitizer,
-# MemorySanitizer, ThreadSanitizer)
+"""Sanitizer 输出解析器——ASan/UBSan/MSan/TSan 到结构化格式"""
 import re
 import os
 import subprocess
@@ -13,9 +9,9 @@ from typing import List, Dict, Any, Optional, Tuple
 @dataclass
 class SanitizerFinding:
     sanitizer_type: str  # ASAN | UBSAN | MSAN | TSAN
-    error_type: str      # e.g. heap-buffer-overflow, signed-integer-overflow
-    location: str = ""   # source file/line or module+offset
-    address: str = ""    # hex address of error
+    error_type: str      # 例: heap-buffer-overflow, signed-integer-overflow
+    location: str = ""   # 源文件行号或模块+偏移
+    address: str = ""    # 错误地址 (hex)
     access_type: str = ""  # READ | WRITE
     stack_trace: List[str] = field(default_factory=list)
     allocation_trace: List[str] = field(default_factory=list)
@@ -24,15 +20,12 @@ class SanitizerFinding:
     reproducible: bool = False
 
 
-# ================================================
-# ASan parser
-# ================================================
+# ==================== ASan 解析 ====================
 
 def parse_asan_output(output: str) -> Optional[SanitizerFinding]:
-    """解析 AddressSanitizer 输出。"""
+    """AddressSanitizer 输出解析"""
     _finding = SanitizerFinding(sanitizer_type="ASAN", raw_output=output)
 
-    # 错误类型
     _type_map = {
         "heap-buffer-overflow": "HEAP_BUFFER_OVERFLOW",
         "stack-buffer-overflow": "STACK_BUFFER_OVERFLOW",
@@ -55,37 +48,29 @@ def parse_asan_output(output: str) -> Optional[SanitizerFinding]:
     else:
         _finding.error_type = "UNKNOWN"
 
-    # 提取地址
     _addr_m = re.search(r'(0x[0-9a-fA-F]+)', output)
     if _addr_m:
         _finding.address = _addr_m.group(1)
 
-    # 提取访问类型
     if "WRITE of size" in output or "WRITE of" in output:
         _finding.access_type = "WRITE"
     elif "READ of size" in output or "READ of" in output:
         _finding.access_type = "READ"
 
-    # 提取 stack trace (#0, #1, ... 行)
     _finding.stack_trace = _extract_stack_trace(output)
-
-    # 提取 allocation/deallocation traces
     _finding.allocation_trace = _extract_trace_section(output, "allocated by thread")
     _finding.deallocation_trace = _extract_trace_section(output, "freed by thread")
 
-    # 提取 location
     if _finding.stack_trace:
         _finding.location = _finding.stack_trace[0]
 
     return _finding
 
 
-# ================================================
-# UBSan parser
-# ================================================
+# ==================== UBSan 解析 ====================
 
 def parse_ubsan_output(output: str) -> Optional[SanitizerFinding]:
-    """解析 UndefinedBehaviorSanitizer 输出。"""
+    """UndefinedBehaviorSanitizer 输出解析"""
     _finding = SanitizerFinding(sanitizer_type="UBSAN", raw_output=output)
 
     _type_map = {
@@ -118,12 +103,10 @@ def parse_ubsan_output(output: str) -> Optional[SanitizerFinding]:
     return _finding
 
 
-# ================================================
-# MSan parser
-# ================================================
+# ==================== MSan 解析 ====================
 
 def parse_msan_output(output: str) -> Optional[SanitizerFinding]:
-    """解析 MemorySanitizer 输出（未初始化内存读取）。"""
+    """MemorySanitizer 输出解析——未初始化内存读取"""
     _finding = SanitizerFinding(sanitizer_type="MSAN", raw_output=output)
 
     if "use-of-uninitialized-value" in output or "Uninitialized" in output:
@@ -138,12 +121,10 @@ def parse_msan_output(output: str) -> Optional[SanitizerFinding]:
     return _finding
 
 
-# ================================================
-# TSan parser
-# ================================================
+# ==================== TSan 解析 ====================
 
 def parse_tsan_output(output: str) -> Optional[SanitizerFinding]:
-    """解析 ThreadSanitizer 输出（数据竞争）。"""
+    """ThreadSanitizer 输出解析——数据竞争"""
     _finding = SanitizerFinding(sanitizer_type="TSAN", raw_output=output)
 
     if "data race" in output.lower():
@@ -162,12 +143,10 @@ def parse_tsan_output(output: str) -> Optional[SanitizerFinding]:
     return _finding
 
 
-# ================================================
-# Helpers
-# ================================================
+# ==================== 辅助函数 ====================
 
 def _extract_stack_trace(output: str) -> List[str]:
-    """从 sanitizer 输出中提取 #0, #1, ... 帧。"""
+    """提取 #0, #1, ... 栈帧行"""
     _frames = []
     for _line in output.split("\n"):
         _line_s = _line.strip()
@@ -180,7 +159,7 @@ def _extract_stack_trace(output: str) -> List[str]:
 
 
 def _extract_trace_section(output: str, marker: str) -> List[str]:
-    """提取特定 section 的 stack trace（如 'allocated by'）。"""
+    """提取标记段落的栈帧（如 'allocated by'）"""
     _lines = output.split("\n")
     _capture = False
     _frames = []
@@ -197,13 +176,11 @@ def _extract_trace_section(output: str, marker: str) -> List[str]:
     return _frames
 
 
-# ================================================
-# Reproducibility & categorization
-# ================================================
+# ==================== 可复现性与分类 ====================
 
 def is_reproducible(crash_output: str, target_binary: str,
                     test_input: bytes, timeout: float = 5.0) -> bool:
-    """重新运行目标验证 crash 可复现性。"""
+    """重跑目标验证崩溃可复现"""
     import tempfile
     try:
         with tempfile.NamedTemporaryFile(delete=False, suffix=".input") as _tf:
@@ -222,7 +199,7 @@ def is_reproducible(crash_output: str, target_binary: str,
 
 
 def categorize_sanitizer_finding(finding: SanitizerFinding) -> str:
-    """将 sanitizer finding 映射到漏洞类别。"""
+    """Sanitizer finding 映射到漏洞类别"""
     _map = {
         "HEAP_BUFFER_OVERFLOW": "buffer_overflow",
         "STACK_BUFFER_OVERFLOW": "buffer_overflow",
@@ -242,7 +219,7 @@ def categorize_sanitizer_finding(finding: SanitizerFinding) -> str:
 
 
 def parse_any_sanitizer(output: str) -> Optional[SanitizerFinding]:
-    """自动检测 sanitizer 类型并解析。"""
+    """自动检测 sanitizer 类型并解析"""
     _ol = output.lower()
     if "addresssanitizer" in _ol or "heap-buffer-overflow" in _ol or "stack-buffer-overflow" in _ol:
         return parse_asan_output(output)

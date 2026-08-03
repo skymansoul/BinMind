@@ -1,8 +1,8 @@
-# 2026-07-22
 """IDS规则引擎——Suricata风格规则解析与匹配。"""
 import logging, re
 from dataclasses import dataclass, field
 from typing import List, Dict, Optional, Tuple, Any, Set
+import uuid
 
 _log = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ class SuricataRule:
     raw: str = ""
 
 
-# //// Suricata规则解析 ////
+# Suricata规则解析
 def parse_suricata_rule(line: str) -> Optional[SuricataRule]:
     """分析Suricata规则语法行到结构化对象。
 
@@ -183,7 +183,7 @@ BUILT_IN_RULES: List[SuricataRule] = []
 def _build_builtin_rules() -> List[SuricataRule]:
     """构建7条内置检测规则，SID范围9000001-9000007。
 
-    规则设计覆盖ICMP隧道、DNS隧道、非标SSH、C2端口、PE下载、
+    规则覆盖ICMP隧道、DNS隧道、非标SSH、C2端口、PE下载、
     DNS外泄、Heartbleed攻击等典型威胁场景。
     """
     _rules_raw = [
@@ -241,12 +241,12 @@ def _build_builtin_rules() -> List[SuricataRule]:
 BUILT_IN_RULES = _build_builtin_rules()
 
 
-# //// 规则引擎 ////
+# 规则引擎
 class RuleEngine:
     """Suricata风格规则引擎：加载规则、匹配包和流。
 
     匹配策略：先检查协议和端口（快速过滤），再逐条匹配content和pcre模式。
-    流级别规则需要在match_flow中基于FlowRecord统计特征匹配。
+    流级别规则需在match_flow中基于FlowRecord统计特征匹配。
     """
 
     def __init__(self):

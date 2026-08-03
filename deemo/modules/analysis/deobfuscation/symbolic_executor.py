@@ -242,7 +242,7 @@ def _find_nested_predicates(predicates: List[OpaquePredicate], gap_threshold: in
 
 # ---------------------------------------------------------------------------
 # Z3 表达式提取 —— 从 Capstone 反汇编指令序列中提取符号表达式
-# 用于直接验证两条指令序列的等价性。支持常见的 x86 算术/逻辑操作。
+# 用于直接验证两条指令序列的等价性。支持常见的 x86 算术/逻辑操作
 # ---------------------------------------------------------------------------
 
 def _try_import_z3():
@@ -255,8 +255,8 @@ def _try_import_z3():
 
 def lift_instructions_to_z3(instructions: List[str],
                              bit_width: int = 32) -> Optional[Dict[str, any]]:
-    """将指令序列提升为 Z3 表达式和符号变量映射。
-    返回 {'exprs': {dest_reg: z3_expr, ...}, 'symbols': {reg: BitVec, ...}}
+    """将指令序列提升为 Z3 表达式和符号变量映射
+    返回 {'exprs': {dest_reg: z3_expr,.}, 'symbols': {reg: BitVec,.}}
     """
     z3 = _try_import_z3()
     if z3 is None:
@@ -312,7 +312,7 @@ def lift_instructions_to_z3(instructions: List[str],
 def verify_instruction_equivalence(seq_a: List[str], seq_b: List[str],
                                     target_reg: str,
                                     bit_width: int = 32) -> Optional[bool]:
-    """验证两条指令序列在目标寄存器上的等价性。"""
+    """验证两条指令序列在目标寄存器上的等价性"""
     lifted_a = lift_instructions_to_z3(seq_a, bit_width)
     lifted_b = lift_instructions_to_z3(seq_b, bit_width)
     if lifted_a is None or lifted_b is None:
@@ -346,7 +346,7 @@ def verify_instruction_equivalence(seq_a: List[str], seq_b: List[str],
 
 
 class SymbolicExecutor:
-    """Opaque predicate detection via capstone + angr + Z3."""
+    """不透明谓词 detection via capstone + angr + Z3"""
 
     def __init__(self, binary_path: str, angr_enabled: bool = True):
         self.binary_path = binary_path

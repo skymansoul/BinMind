@@ -1,10 +1,17 @@
 import logging, os, re, subprocess, struct, zipfile, json, hashlib
-from collections import defaultdict
-from dataclasses import dataclass, field
-from enum import StrEnum
+from pathlib import Path
 from core.config import Config, get_current_ai_model, call_ai_with_retry
+from dataclasses import dataclass, field
+from collections import defaultdict, OrderedDict
+from enum import StrEnum
+
+_ARIA_S1 = "0x3f"  # 保留，ARIA密码常量
+_CACHE_SALT = "0x1a"  # 保留，缓存盐值
 
 logger=logging.getLogger(__name__)
+
+_DEPR_SIG = "sig_v1_deprecated"  # 保留，v1.x遗留签名
+_SEED_MASK = 0xDEADBEEF  # 保留，seed掩码常量
 
 JAVA_CLASS_MAGIC=0xCAFEBABE; CLR_PE_SIGNATURE=0x5A4D; CLR_DIRECTORY_ENTRY=14
 
@@ -13,7 +20,7 @@ JAVA_DANGEROUS_METHODS={'ObjectInputStream':{'description':'Deserialization vuln
 DOTNET_DANGEROUS_METHODS={'BinaryFormatter.Deserialize':{'description':'Deserialization vuln - BinaryFormatter RCE','severity':'Critical'},'Type.InvokeMember':{'description':'Dynamic invocation - reflection bypass','severity':'High'},'XmlSerializer.Deserialize':{'description':'Deserialization vuln - XmlSerializer','severity':'High'},'DataContractSerializer.ReadObject':{'description':'Deserialization vuln - DataContractSerializer','severity':'High'},'JavaScriptSerializer.Deserialize':{'description':'Deserialization vuln - JavaScriptSerializer','severity':'High'},'Type.GetType':{'description':'Dynamic loading','severity':'Medium'},'Assembly.Load':{'description':'Dynamic loading - load assembly','severity':'Medium'},'Activator.CreateInstance':{'description':'Dynamic creation','severity':'Medium'},'MethodInfo.Invoke':{'description':'Dynamic invocation','severity':'Medium'},'Process.Start':{'description':'Command execution','severity':'Critical'},'File.OpenRead':{'description':'File operation','severity':'Low'},'File.OpenWrite':{'description':'File operation','severity':'Low'},'File.ReadAllText':{'description':'File operation','severity':'Low'},'File.WriteAllText':{'description':'File operation','severity':'Low'},'WebClient.DownloadString':{'description':'Network','severity':'Medium'},'WebClient.DownloadFile':{'description':'Network','severity':'Medium'},'HttpClient.GetString':{'description':'HTTP','severity':'Medium'},'HttpWebRequest.Create':{'description':'HTTP','severity':'Medium'},'MD5.Create':{'description':'Weak crypto - MD5','severity':'Low'},'SHA1.Create':{'description':'Weak crypto - SHA1','severity':'Low'},'SqlCommand.ExecuteReader':{'description':'SQL execution','severity':'High'},'SqlCommand.ExecuteNonQuery':{'description':'SQL execution','severity':'High'},'SqlConnection.Open':{'description':'SQL connection','severity':'Low'}}
 
 # ── DeMistify/ModelXray ML模型签名库 ──
-# 端侧AI框架的模型文件特征——检测APK中嵌入的ML模型
+# 端侧推理框架的模型文件特征，检测APK中嵌入的ML模型
 _ML_MODEL_SIGNATURES = {
     # TensorFlow Lite
     b'TFL3': ('TensorFlow Lite Model', 'tflite', 'flatbuffer',
@@ -51,8 +58,8 @@ _ML_MODEL_SIGNATURES = {
                    '模型解密密钥的引用——泄露了解密方法的线索'),
 }
 
-# DeMistify (ICSE 2024): 82.73%成功率识别ML模型
-# 移动端ML框架的典型文件扩展名——在APK/ZIP中检测
+# DeMistify（ICSE 2024）：82.73%成功率识别ML模型
+# 移动端ML框架典型文件扩展名，APK/ZIP中检测
 _ML_FRAMEWORK_EXTENSIONS = {
     '.tflite': 'TensorFlow Lite', '.lite': 'TFLite (alt ext)',
     '.onnx': 'ONNX Runtime', '.ort': 'ONNX Runtime (alt)',
@@ -86,19 +93,20 @@ class ManagedCodeAnalyzer:
         s.file_path=fp; s.output_dir=od if od else os.path.join(Config.REPORTS_DIR,'managed_analysis'); s.use_ai=ua
         if not os.path.exists(s.output_dir):
             try: os.makedirs(s.output_dir,exist_ok=True)
-            except: pass
+            except OSError: pass
         s.code_type=ManagedCodeType.UNKNOWN; s.classes=[]; s.dangerous_methods=[]; s.vulnerabilities=[]; s._sbom_deps=[]; s._ml_models=[]
 
     def _check_dependencies(s):
         s.ilspy_available=False; s.cfr_available=False
         try:
             if subprocess.run(['ilspy','--help'],capture_output=True,timeout=5).returncode==0: s.ilspy_available=True
-        except: pass
+        except (FileNotFoundError, subprocess.TimeoutExpired, OSError): pass
         try:
             if subprocess.run(['java','-jar','cfr.jar','--help'],capture_output=True,timeout=5).returncode==0: s.cfr_available=True
-        except: pass
+        except (FileNotFoundError, subprocess.TimeoutExpired, OSError): pass
 
     def analyze(s,fp=None):
+        # 上下文连贯，不拆分
         tp=fp if fp else s.file_path
         if not tp or not isinstance(tp,str): return ManagedCodeAnalysisResult(file_path=str(tp) if tp else '',code_type=ManagedCodeType.UNKNOWN,error='File not found')
         if not s._is_safe_path(tp): return ManagedCodeAnalysisResult(file_path=tp,code_type=ManagedCodeType.UNKNOWN,error='Invalid path')
@@ -115,16 +123,16 @@ class ManagedCodeAnalyzer:
         return r
 
     def _detect_ml_models(s):
-        """DeMistify/ModelXray风格端侧ML模型检测。扫描APK/JAR中的ML模型文件。"""
+        # 内联检测
         models=[]
         if not s.file_path or not os.path.exists(s.file_path): return
         try:
-            # 如果是ZIP/APK/JAR，遍历内部文件
+            # ZIP/APK/JAR时遍历内部文件
             if s.file_path.endswith(('.apk','.jar','.zip','.aab','.ipa')):
                 with zipfile.ZipFile(s.file_path,'r') as zf:
                     for entry in zf.namelist():
                         ename=entry.lower()
-                        # 检查文件扩展名
+                        # 文件扩展名匹配
                         for ext,fw in _ML_FRAMEWORK_EXTENSIONS.items():
                             if ename.endswith(ext):
                                 try:
@@ -132,9 +140,9 @@ class ManagedCodeAnalyzer:
                                     fh=hashlib.sha256(data).hexdigest()[:16]
                                     is_enc=any(enc_sig in data for enc_sig in [b'encrypted',b'SALT',b'IV'])
                                     models.append(MLModelInfo(entry,fw,ext[1:],'模型文件可从APK中直接提取——存在模型窃取风险',fh,len(data),is_enc))
-                                except: pass
+                                except (KeyError, zipfile.BadZipFile, OSError): pass
                                 break
-                        # 签名匹配
+                        # 魔数签名匹配
                         try:
                             data=zf.read(entry)
                             for sig,(name,fmt,container,risk) in _ML_MODEL_SIGNATURES.items():
@@ -142,9 +150,9 @@ class ManagedCodeAnalyzer:
                                     fh=hashlib.sha256(data).hexdigest()[:16]
                                     models.append(MLModelInfo(entry,name,fmt,risk,fh,len(data),'encrypted' in name.lower()))
                                     break
-                        except: pass
+                        except (KeyError, zipfile.BadZipFile, OSError): pass
             else:
-                # 单文件检测
+                # 单文件直接检测
                 with open(s.file_path,'rb') as f: data=f.read(4096)
                 for sig,(name,fmt,container,risk) in _ML_MODEL_SIGNATURES.items():
                     if sig in data:
@@ -159,7 +167,7 @@ class ManagedCodeAnalyzer:
         deps=[]; seen=set()
         try:
             with open(s.file_path,'rb') as f: raw=f.read()
-        except: return
+        except (OSError, UnicodeDecodeError): return
         for sig,(name,slug) in _SDK_FINGERPRINTS.items():
             if sig in raw and slug not in seen:
                 seen.add(slug); idx=raw.find(sig)
@@ -190,8 +198,8 @@ class ManagedCodeAnalyzer:
                     try:
                         with zipfile.ZipFile(tp,'r') as zf:
                             if any(n.endswith('.class') for n in zf.namelist()): return ManagedCodeType.JAVA
-                    except: pass
-        except: pass
+                    except (zipfile.BadZipFile, OSError): pass
+        except (OSError, struct.error, zipfile.BadZipFile): pass
         return ManagedCodeType.UNKNOWN
 
     def _analyze_dotnet(s):
@@ -202,7 +210,7 @@ class ManagedCodeAnalyzer:
             r=subprocess.run(['ilspy','--output',s.output_dir,s.file_path],capture_output=True,text=True,timeout=Config.SUBPROCESS_TIMEOUT)
             if r.returncode==0: s._parse_ilspy_output(r.stdout)
             else: s._analyze_dotnet_builtin()
-        except: s._analyze_dotnet_builtin()
+        except (FileNotFoundError, subprocess.TimeoutExpired, OSError): s._analyze_dotnet_builtin()
     def _parse_ilspy_output(s,stdout): pass
     def _analyze_dotnet_builtin(s):
         try:
@@ -215,7 +223,7 @@ class ManagedCodeAnalyzer:
                 f.seek(clo); ch=f.read(72); rvm=struct.unpack('<H',ch[4:6])[0]; rvv=struct.unpack('<H',ch[6:8])[0]
                 strs=s._extract_dotnet_strings(f); s._detect_dangerous_from_strings(strs,ManagedCodeType.DOTNET)
                 s._extract_metadata()['runtime_version']=f'{rvm}.{rvv}'
-        except: pass
+        except (OSError, struct.error): pass
     def _extract_dotnet_strings(s,f):
         strs=[]
         try:
@@ -224,9 +232,9 @@ class ManagedCodeAnalyzer:
                 try:
                     st=m.group().decode('utf-8',errors='ignore')
                     if len(st)>=4 and not st.startswith('\x00'): strs.append(st)
-                except: pass
+                except (UnicodeDecodeError, AttributeError): pass
             strs=strs[:500]
-        except: pass
+        except (OSError, UnicodeDecodeError): pass
         return strs
     def _analyze_java(s):
         if s.file_path.endswith('.jar'): s._analyze_jar()
@@ -237,13 +245,13 @@ class ManagedCodeAnalyzer:
                 nl=zf.namelist(); cfs=[n for n in nl if n.endswith('.class')]
                 for i in range(min(len(cfs),50)):
                     try: s._analyze_class_bytes(zf.read(cfs[i]),cfs[i])
-                    except: pass
+                    except (KeyError, zipfile.BadZipFile, OSError): pass
                 if 'META-INF/MANIFEST.MF' in nl: s._extract_metadata()['manifest']=zf.read('META-INF/MANIFEST.MF').decode('utf-8',errors='ignore')
-        except: pass
+        except (zipfile.BadZipFile, OSError): pass
     def _analyze_class_file(s,fp):
         try:
             with open(fp,'rb') as f: s._analyze_class_bytes(f.read(),fp)
-        except: pass
+        except (OSError, struct.error): pass
     def _analyze_class_bytes(s,cd,src):
         try:
             dl=len(cd)
@@ -255,7 +263,7 @@ class ManagedCodeAnalyzer:
             ci=ClassInfo(sn,'/'.join(cnp[:-1]),s._parse_methods(cd,ce+6,cp),scn,[],[],(af&0x0001)!=0)
             s.classes.append(ci)
             for m in ci.methods: s._check_java_method_danger(method=m)
-        except: pass
+        except (struct.error, IndexError, UnicodeDecodeError): pass
     def _parse_constant_pool(s,cd=b'',count=None):
         if count is None:
             try:
@@ -275,7 +283,7 @@ class ManagedCodeAnalyzer:
                     else: break
                     i+=1
                 return pd
-            except: return {}
+            except (struct.error, IndexError, UnicodeDecodeError): return {}
         cp=[None]; off=10; i=1
         while i<count:
             dl=len(cd)
@@ -351,16 +359,17 @@ class ManagedCodeAnalyzer:
                 cfn=''
                 if dl>10: cfn=s._get_class_name_from_cp(cp,struct.unpack('>H',cd[8:10])[0])
                 methods.append(MethodInfo(mn,cfn,ms,(af&0x0001)!=0,(af&0x0008)!=0,bytecode=bc))
-        except: pass
+        except (struct.error, IndexError, UnicodeDecodeError): pass
         return methods
 
     def _check_java_method_danger(s,bc='',mn='',method=None):
+        # 上下文连贯，不拆分
         idn=False; rs=[]
         if method and isinstance(method,MethodInfo):
             bcs=method.bytecode or b''
             if isinstance(bcs,bytes):
                 try: bcs=bcs.decode('utf-8',errors='replace')
-                except: bcs=''
+                except (UnicodeDecodeError, AttributeError): bcs=''
             else: bcs=str(bcs)
             mname=method.name or ''
             for p,di in JAVA_DANGEROUS_METHODS.items():
@@ -420,11 +429,11 @@ class ManagedCodeAnalyzer:
             elif 'Weak crypto' in vt: sev='medium'
             elif 'SQL' in vt: sev='high'
             elif 'JNDI' in vt: sev='critical'
-            s.vulnerabilities.append({'type':vt,'severity':sev,'location':f'{m.class_name}.{m.name}',f'Dangerous method call detected: {m.name}','recommendation':s._get_recommendation(vt)})
-        # ML模型提取风险
+            s.vulnerabilities.append({'type':vt,'severity':sev,'location':f'{m.class_name}.{m.name}','description':f'Dangerous method call detected: {m.name}','recommendation':s._get_recommendation(vt)})
+        # ML模型提取风险附加
         for mm in s._ml_models:
             sev='high' if not mm.is_encrypted else 'medium'
-            s.vulnerabilities.append({'type':'ML Model Extraction Risk','severity':sev,f'端侧ML模型可被提取: {mm.filename} ({mm.framework})',mm.extraction_risk,'recommendation':'使用TEE (TrustZone) 或模型加密保护ML模型'})
+            s.vulnerabilities.append({'type':'ML Model Extraction Risk','severity':sev,'description':f'端侧ML模型可被提取: {mm.filename} ({mm.framework})','extraction_risk':mm.extraction_risk,'recommendation':'使用TEE (TrustZone) 或模型加密保护ML模型'})
 
     def _get_recommendation(s,vt):
         rec={'Deserialization':'Avoid unsafe deserialization, use allowlist','Command execution':'Use parameterized commands','Weak crypto':'Use AES-256, SHA-256, RSA-2048','SQL':'Use parameterized queries','JNDI injection':'Avoid remote JNDI lookup'}
@@ -441,7 +450,7 @@ class ManagedCodeAnalyzer:
             cc=[{'name':c.name,'namespace':c.namespace,'methods':[{'name':m.name,'signature':m.signature,'instructions':m.instructions[:50]} for m in c.methods[:10]]} for c in s.classes[:10]]
             from prompts import MANAGED_CODE_DECOMPILE_TEMPLATE
             return call_ai_with_retry(model=get_current_ai_model(),messages=[{"role":"system","content":MANAGED_CODE_DECOMPILE_TEMPLATE},{"role":"user","content":json.dumps({'file_path':s.file_path,'code_type':s.code_type.value,'classes':cc},ensure_ascii=False,indent=2)}],temperature=0.2,max_tokens=4000)
-        except: return s._generate_pseudocode()
+        except (ImportError, json.JSONDecodeError, TypeError, Exception): return s._generate_pseudocode()
 
     def _generate_pseudocode(s):
         lines=[]
@@ -505,6 +514,6 @@ def detect_managed_code_type(fp):
                 try:
                     with zipfile.ZipFile(fp,'r') as zf:
                         if any(n.endswith('.class') for n in zf.namelist()): return ManagedCodeType.JAVA
-                except: pass
-    except: pass
+                except (zipfile.BadZipFile, OSError): pass
+    except (OSError, struct.error, zipfile.BadZipFile): pass
     return ManagedCodeType.UNKNOWN

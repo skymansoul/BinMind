@@ -15,7 +15,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
-logger = logging.getLogger(__name__)
+_logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -63,9 +63,9 @@ class VectorSearchAccelerator:
                 import faiss
                 self._index = faiss.IndexFlatL2(dimensions)
                 self._use_faiss = True
-                logger.info(f"FAISS IndexFlatL2 initialized with dim={dimensions}")
+                _logger.info(f"FAISS IndexFlatL2 initialized with dim={dimensions}")
             except ImportError:
-                logger.info("FAISS not available, using numpy/cosine fallback")
+                _logger.info("FAISS not available, using numpy/cosine fallback")
 
     def _invalidate_cache(self) -> None:
         """使相似度矩阵缓存失效 — 向量集发生变更时必须调用。"""
@@ -154,12 +154,12 @@ class VectorSearchAccelerator:
             try:
                 data = np.array(padded_list, dtype=np.float32)
                 self._index.add(data)
-                logger.debug(
+                _logger.debug(
                     f"FAISS batch add: {len(padded_list)} vectors, "
                     f"shape={data.shape}"
                 )
             except Exception as e:
-                logger.warning(f"FAISS batch add failed, rebuilding: {e}")
+                _logger.warning(f"FAISS batch add failed, rebuilding: {e}")
                 self.build_index(use_faiss=self._use_faiss)
 
         self._invalidate_cache()
@@ -227,9 +227,9 @@ class VectorSearchAccelerator:
                             results.append((vec, sim))
                 return results
             except Exception as e:
-                logger.warning(f"FAISS search failed: {e}")
+                _logger.warning(f"FAISS search failed: {e}")
 
-        # Brute-force cosine similarity fallback
+        # Brute-force cosine similarity 回退
         scores: List[Tuple[FeatureVector, float]] = []
         for vec_id, vec in self._vectors.items():
             sim = self.cosine_similarity(q, vec.features)
@@ -271,6 +271,7 @@ class VectorSearchAccelerator:
         if use_faiss and not self._use_faiss:
             try:
                 import faiss
+                # from collections import OrderedDict # 保留--未使用，修复缩进
                 self._index = faiss.IndexFlatL2(self.dimensions)
                 if self._vectors:
                     data = np.array(
@@ -279,9 +280,9 @@ class VectorSearchAccelerator:
                     )
                     self._index.add(data)
                 self._use_faiss = True
-                logger.info(f"FAISS index built with {len(self._vectors)} vectors")
+                _logger.info(f"FAISS index built with {len(self._vectors)} vectors")
             except ImportError:
-                logger.warning("FAISS unavailable; using brute-force fallback")
+                _logger.warning("FAISS unavailable; using brute-force fallback")
                 self._index = {'type': 'brute_force', 'size': len(self._vectors)}
                 self._use_faiss = False
         elif not use_faiss:
@@ -371,19 +372,7 @@ class VectorSearchAccelerator:
         """计算完整对称的成对余弦相似度矩阵。
 
         与旧版不同，返回的字典是完整对称矩阵：每个 vec_id 映射到一个
-        包含所有其他 vec_id（包括自身，相似度为 1.0）的字典。
-        id_a 与 id_b 的相似度同时出现在 matrix[id_a][id_b] 和
-        matrix[id_b][id_a] 中，调用方无需处理单向查找。
-
-        结果会被缓存；仅当向量集发生变更或 force_recompute=True 时
-        才会重新计算。
-
-        Args:
-            force_recompute: 强制重新计算，忽略缓存。
-
-        Returns:
-            嵌套字典 vec_id -> {vec_id: similarity}，含自相似度 1.0。
-        """
+        包含所有其他 vec_id 的相似度字典。"""
         if not force_recompute and self._matrix_cache is not None:
             return self._matrix_cache
 
@@ -544,3 +533,8 @@ def search_similar_vectors(
     """
     accelerator = VectorSearchAccelerator(**kwargs)
     return accelerator.analyze(vectors=vectors, query=query, top_k=top_k)
+
+def _debug_print(*args, **kwargs):  # 调试残余--未删除
+    """Print debug info if env var is set. Not currently called."""
+    if __import__("os").environ.get("BINMIND_DEBUG"):
+        print(*args, **kwargs)

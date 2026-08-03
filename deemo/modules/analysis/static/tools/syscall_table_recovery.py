@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Syscall table recovery and security analysis."""
+"""系统调用 table recovery security analysis"""
 from enum import Enum
 from typing import Dict, Any, List, Optional
 
@@ -39,7 +39,7 @@ class SyscallTableRecovery:
         self._kernel_type = KernelType.LINUX
 
     def detect_kernel(self) -> KernelType:
-        """通过二进制中嵌入的字符串检测目标内核类型。"""
+        """通过二进制中嵌入的字符串检测目标内核类型"""
         try:
             with open(self.binary_path, 'rb') as fh:
                 data = fh.read(4096)
@@ -60,7 +60,7 @@ class SyscallTableRecovery:
         return "medium"
 
     def recover_table(self, arch: ArchType = ArchType.X64) -> List[SyscallEntry]:
-        """根据架构恢复系统调用表条目——从静态表中按 syscall 号匹配名称。"""
+        """根据架构恢复系统调用表条目——从静态表中按 syscall 号匹配名称"""
         kernel = self.detect_kernel()
         entries: List[SyscallEntry] = []
         if kernel == KernelType.LINUX:
@@ -79,7 +79,7 @@ def recover_syscall_table(binary):
 def analyze_syscall_sequence(seq):
     return SyscallAnalysisResult()
 
-# Production syscall tables — 300+ entries per table.
+# Production 系统调用 tables — 300+ entries per table
 LINUX_X64_SYSCALLS = {
     0: 'read', 1: 'write', 2: 'open', 3: 'close', 4: 'stat',
     5: 'fstat', 6: 'lstat', 7: 'poll', 8: 'lseek', 9: 'mmap',

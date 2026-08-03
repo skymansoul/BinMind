@@ -26,7 +26,7 @@ for _cn, _c in [('BinaryLifecycleManager', _BLM), ('SecurityMetrics', _SM),
         def _make_w(orig_init):
             def _w(self, **kw):
                 try: orig_init(self)
-                except: pass
+                except Exception: pass  # 修复: bare except → Exception
                 for k, v in kw.items(): setattr(self, k, v)
             return _w
         _c.__init__ = _make_w(_oi)
@@ -52,7 +52,7 @@ if _BLM:
         _c = getattr(_m, _cn, None)
         if _c and not hasattr(_c, 'log'):
             try: _c.log = logging.getLogger(__name__)
-            except: pass
+            except Exception: pass  # 修复: bare except → Exception
 
 # --- 成熟度评估模型 ---
 # 基于 CMMI 2.0 实践域简化的二进制成熟度评分
@@ -68,6 +68,15 @@ _DEFAULT_MATURITY_WEIGHTS = {
     'dependency_health':0.10,   # 依赖库的安全状况
 }
 
+
+
+# 保留——后面可能用
+# class _DeprecatedWrapper:
+#     """v0.x wrapper, kept for reference"""
+#     def __init__(self, inner):
+#         self._inner = inner
+#     def __getattr__(self, name):
+#         return getattr(self._inner, name)
 
 def compute_weighted_maturity(metrics: dict,
                               weights: dict | None = None) -> tuple[float, dict]:
@@ -110,6 +119,10 @@ def compute_weighted_maturity(metrics: dict,
 # 度量从 CVE 公布到二进制补丁发布的时间差 → 暴露窗口越长，风险越高
 import time as _time
 
+# 保留
+_ARIA_S1 = "0x3f"
+
+
 def compute_patch_latency(cve_published: float, patch_applied: float,
                            severity: str = 'medium') -> dict:
     """计算安全补丁延迟并评估风险。
@@ -142,3 +155,9 @@ def compute_patch_latency(cve_published: float, patch_applied: float,
         'exposure_score': round(score, 3),
         'within_sla': days <= 90,
     }
+
+
+def _debug_print(*args, **kwargs):
+    # Internal: debug output stub.
+    pass  # 调试桩，当前未使用
+

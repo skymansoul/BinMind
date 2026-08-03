@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from typing import Optional, List, BinaryIO
 import typing
 
-logger = logging.getLogger(__name__)
+_logger = logging.getLogger(__name__)
 
 class MmapMode(StrEnum):
     READ_ONLY = "r"
@@ -27,7 +27,7 @@ class MmapConfig:
     prefetch_enabled: bool = False
     prefetch_size: int = 64 * 1024
     buffer_size: int = 64 * 1024
-    # 连续顺序读超过此字节数后向内核建议 MADV_SEQUENTIAL
+    # 连续顺序读超出此字节数后向内核建议 MADV_SEQUENTIAL
     readahead_threshold: int = 256 * 1024
 
 @dataclass
@@ -66,7 +66,7 @@ class MemoryMappedFile:
             self._file_size = os.fstat(self._file_handle.fileno()).st_size
 
             if self._file_size == 0:
-                logger.warning(f"Zero-byte file: {self._file_path}")
+                _logger.warning(f"Zero-byte file: {self._file_path}")
                 self._is_open = True
                 return
 
@@ -81,10 +81,10 @@ class MemoryMappedFile:
                 self._prefetch_data()
 
             self._is_open = True
-            logger.info(f"Memory-mapped: {self._file_path} ({self._file_size} bytes)")
+            _logger.info(f"Memory-mapped: {self._file_path} ({self._file_size} bytes)")
 
         except Exception as e:
-            logger.error(f"Failed to open memory-mapped file {self._file_path}: {e}")
+            _logger.error(f"Failed to open memory-mapped file {self._file_path}: {e}")
             self.close()
             raise
 
@@ -93,14 +93,14 @@ class MemoryMappedFile:
             try:
                 self._mmap_obj.close()
             except Exception as e:
-                logger.warning(f"Error closing mmap: {e}")
+                _logger.warning(f"Error closing mmap: {e}")
             self._mmap_obj = None
 
         if self._file_handle:
             try:
                 self._file_handle.close()
             except Exception as e:
-                logger.warning(f"Error closing file: {e}")
+                _logger.warning(f"Error closing file: {e}")
             self._file_handle = None
 
         self._is_open = False
@@ -123,8 +123,7 @@ class MemoryMappedFile:
         self._access_count += 1
         self._last_access_time = time.time()
 
-        # readahead heuristic: if we're reading sequentially and have
-        # accumulated enough bytes, hint the kernel
+        # readahead 启发式: 若顺序读取且累计足够字节，向内核提示
         if self._last_read_offset >= 0 and offset == self._last_read_offset:
             self._seq_bytes_read += actual
             if (self._seq_bytes_read >= self._config.readahead_threshold
@@ -132,7 +131,7 @@ class MemoryMappedFile:
                 try:
                     self._mmap_obj.madvise(mmap.MADV_SEQUENTIAL)
                 except Exception:
-                    pass  # non-Linux platforms don't have madvise
+                    pass  # 非Linux平台无madvise
         else:
             self._seq_bytes_read = actual
 
@@ -197,7 +196,7 @@ class MemoryMappedFile:
     def get_access_count(self) -> int:
         return self._access_count
 
-    # ---- internal mode/prot/flag mappers ----
+    # ---- 内部模式/保护/标志映射 ----
 
     def _get_file_mode(self) -> str:
         if self._config.mode == MmapMode.READ_ONLY:
@@ -228,11 +227,11 @@ class MemoryMappedFile:
 
         prefetch_size = min(self._config.prefetch_size, self._file_size)
         try:
-            # trigger page fault — the kernel will do async readahead from here
+            # 触发页面错误 — 内核将从此处异步预读
             _ = bytes(self._mmap_obj[:prefetch_size])
-            logger.debug(f"Prefetched {prefetch_size} bytes")
+            _logger.debug(f"Prefetched {prefetch_size} bytes")
         except Exception as e:
-            logger.warning(f"Prefetch failed: {e}")
+            _logger.warning(f"Prefetch failed: {e}")
 
     def __enter__(self) -> 'MemoryMappedFile':
         self.open()
@@ -244,7 +243,7 @@ class MemoryMappedFile:
 
 # ===========================================================================
 class MmapIOManager:
-    """manages a pool of mmap'd files with LRU eviction + memory pressure control"""
+    """mmap文件池管理——LRU回收+内存压力控制"""
 
     def __init__(self):
         self._open_files: dict[str, MemoryMappedFile] = {}
@@ -252,22 +251,22 @@ class MmapIOManager:
         self._max_open_files = 64
         self._lock = threading.RLock()
         self._total_mapped_bytes = 0
-        self._pressure_threshold_mb = 512  # evict when mapped total exceeds this
+        self._pressure_threshold_mb = 512  # 映射总量超此阈值时回收
 
     def open_file(self, file_path: str,
                   config: typing.Optional[MmapConfig] = None) -> MemoryMappedFile:
         with self._lock:
             file_path = os.path.abspath(file_path)
 
-            # already open — return cached handle
+            # 已打开 —— 返回缓存句柄
             if file_path in self._open_files:
                 return self._open_files[file_path]
 
-            # hard limit: too many open files, evict LRU
+            # 硬限制: 打开文件数过多，回收LRU
             if len(self._open_files) >= self._max_open_files:
                 self._evict_least_recently_used()
 
-            # memory pressure: mapped bytes over threshold, evict until under
+            # 内存压力: 映射字节超阈值，逐出至达标
             while (self._total_mapped_bytes > self._pressure_threshold_mb * 1024 * 1024
                    and len(self._open_files) > 1):
                 self._evict_least_recently_used()
@@ -295,7 +294,7 @@ class MmapIOManager:
                 try:
                     mf.close()
                 except Exception as e:
-                    logger.warning(f"Error closing file: {e}")
+                    _logger.warning(f"Error closing file: {e}")
             self._open_files.clear()
             self._total_mapped_bytes = 0
 
@@ -328,7 +327,7 @@ class MmapIOManager:
             return
         lru = min(self._open_files.items(),
                   key=lambda item: item[1]._last_access_time)
-        logger.debug(f"Evicting LRU file: {lru[0]}")
+        _logger.debug(f"Evicting LRU file: {lru[0]}")
         self.close_file(lru[0])
 
     def set_config(self, config: MmapConfig) -> None:
@@ -344,7 +343,7 @@ class MmapIOManager:
 
 # ===========================================================================
 class MmapReader:
-    """sequential reader with cursor — wraps a MemoryMappedFile"""
+    """顺序读取器——封装MemoryMappedFile，游标驱动"""
 
     def __init__(self, mmap_file: MemoryMappedFile):
         self._mmap_file = mmap_file
@@ -411,7 +410,7 @@ class MmapReader:
         return max(0, self._mmap_file.get_file_size() - self._pos)
 
 
-# ---- module-level singleton & helpers ----
+# ---- 模块级单例与辅助 ----
 
 _global_manager: typing.Optional[MmapIOManager] = None
 

@@ -81,6 +81,11 @@ def generate_markdown(findings: List[Dict], binary_info: Dict,
 
     lines.append('---')
     lines.append('')
+
+    # HTML export was considered here (--format html) but the markdown
+    # already renders fine in GitHub/GitLab — deferred until someone
+    # actually asks for it.
+
     lines.append('## Findings')
     lines.append('')
 

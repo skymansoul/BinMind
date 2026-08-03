@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Primary interface: DeobfuscationLevel and associated pipeline classes.
+# Primary interface: 去混淆Level associated 流水线 classes
 import json
 import logging
 import os
@@ -125,8 +125,8 @@ _CMP_GUARD_RX = re.compile(
 
 
 def _recover_jump_tables(cfg: ControlFlowGraph, raw_bytes: bytes) -> int:
-    """扫描 CFG 中的所有基本块，识别 switch-case 跳转表模式。
-    返回恢复的跳转表数量。
+    """扫描 CFG 中的所有基本块，识别 switch-case 跳转表模式
+    返回恢复的跳转表数量
     """
     recovered = 0
     if not cfg or len(cfg.blocks) < 3:
@@ -226,14 +226,14 @@ def _compute_dominators_raw(cfg):
 
 class FunctionDeobfuscator:
     """
-    Function-level deobfuscator.
-
+    Function-level deobfuscator
+    
     Capabilities:
     1. Dead code elimination
-    2. Control flow flattening recovery
-    3. Constant propagation and folding
-    4. Opaque predicate elimination
-    5. Deobfuscation effectiveness evaluation
+    2. 控制流平坦化 recovery
+    3. Constant propagation folding
+    4. 不透明谓词 elimination
+    5. 去混淆 effectiveness evaluation
     """
 
     def __init__(self, binary_path=None, deobfuscation_level=DeobfuscationLevel.MEDIUM):
@@ -273,9 +273,9 @@ class FunctionDeobfuscator:
         return edges - len(cfg.blocks) + 2 if len(cfg.blocks) > 1 else 1
 
     def recover_jump_tables(self) -> int:
-        """Switch-case 跳转表恢复 —— 在 deobfuscate() 中 dead code elimination 之前调用。
+        """Switch-case 跳转表恢复 —— 在 去混淆() 中 dead code elimination 之前调用
         成功恢复后，CFG 中会新增 case 目标块，后续的死代码消除和
-        常量传播可以处理这些新块。
+        常量传播可以处理这些新块
         """
         if not self.cfg or not self.raw_bytes: return 0
         return _recover_jump_tables(self.cfg, self.raw_bytes)

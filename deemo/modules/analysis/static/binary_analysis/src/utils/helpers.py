@@ -1,4 +1,3 @@
-# 2026-07-15 -- 通用辅助工具集
 # 从 radare2 封装到原子写入，一把梭
 
 import json
@@ -18,7 +17,7 @@ _R2_BIN = os.environ.get("R2_PATH", "r2")
 
 
 def r2_json(path: str, cmd: str) -> dict:
-    """执行 radare2 JSON 查询，返回解析后的字典。"""
+    """执行 radare2 JSON 查询，返回解析后的字典"""
     # //// 静默模式 + JSON输出
     full_cmd = [_R2_BIN, "-q", "-j", cmd, path]
     proc = subprocess.run(full_cmd, capture_output=True, text=True, timeout=120)
@@ -28,7 +27,7 @@ def r2_json(path: str, cmd: str) -> dict:
 
 
 def r2_cmd(path: str, cmd: str) -> str:
-    """执行 radare2 文本命令，返回原始字符串输出。"""
+    """执行 radare2 文本命令，返回原始字符串输出"""
     full_cmd = [_R2_BIN, "-q", cmd, path]
     proc = subprocess.run(full_cmd, capture_output=True, text=True, timeout=120)
     return proc.stdout
@@ -37,7 +36,7 @@ def r2_cmd(path: str, cmd: str) -> str:
 # ===== TTLCache -- 带过期时间的简单缓存 =====
 
 class TTLCache:
-    """基于 time.time() 的轻量 TTL 缓存，不引入第三方依赖。"""
+    """基于 time.time() 的轻量 TTL 缓存，不引入第三方依赖"""
 
     def __init__(self, default_ttl: float = 60.0):
         self._store: dict[str, tuple[Any, float]] = {}
@@ -77,7 +76,7 @@ class TTLCache:
 
 @contextmanager
 def atomic_write(path: str, mode: str = "w", encoding: str = "utf-8"):
-    """上下文管理器：写入临时文件后 os.rename，保证原子性。"""
+    """上下文管理器：写入临时文件后 os.rename，保证原子性"""
     dirname = os.path.dirname(path) or "."
     fd, tmp_path = tempfile.mkstemp(dir=dirname, suffix=".tmp")
     try:
@@ -91,7 +90,7 @@ def atomic_write(path: str, mode: str = "w", encoding: str = "utf-8"):
 
 
 def atomic_write_sync(path: str, content: str, mode: str = "w") -> None:
-    """同步原子写入字符串。"""
+    """同步原子写入字符串"""
     with atomic_write(path, mode) as fh:
         fh.write(content)
 
@@ -99,7 +98,7 @@ def atomic_write_sync(path: str, content: str, mode: str = "w") -> None:
 # //// dig -- 点号分隔的深层字典访问
 
 def dig(d: dict, keypath: str, default: Any = None) -> Any:
-    """dig(d, 'a.b.c') -> d['a']['b']['c']，安全地逐层下探。"""
+    """dig(d, 'a.b.c') -> d['a']['b']['c']，安全地逐层下探"""
     node = d
     for part in keypath.split("."):
         if isinstance(node, dict) and part in node:
@@ -118,7 +117,7 @@ def retry(
     catch: tuple[type[BaseException], ...] = (Exception,),
 ):
     """
-    指数退避 + jitter，INTJ策略：不浪费调用方时间。
+    指数退避 + jitter，INTJ策略：不浪费调用方时间
     delay = min(base * 2^attempt, max_delay) * (0.75 + random*0.5)
     """
     import random
@@ -147,14 +146,14 @@ def retry(
 _HEX_RE = re.compile(r"^[0-9A-Fa-f]+$")
 
 def is_valid_hex_str(s: str) -> bool:
-    """校验纯十六进制字符串（不含 0x 前缀）。"""
+    """校验纯十六进制字符串（不含 0x 前缀）"""
     return bool(s) and bool(_HEX_RE.match(s))
 
 
 # //// 列表分块
 
 def chunk_list(lst: list, n: int):
-    """yield 连续的 n 长度切片。"""
+    """yield 连续的 n 长度切片"""
     i = 0
     L = len(lst)
     while i < L:
@@ -167,7 +166,7 @@ def chunk_list(lst: list, n: int):
 _UNSAFE_CHARS = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
 
 def sanitize_filename(s: str, placeholder: str = "_") -> str:
-    """替换文件名中不允许的字符。"""
+    """替换文件名中不允许的字符"""
     return _UNSAFE_CHARS.sub(placeholder, s).strip()[:255]
 
 

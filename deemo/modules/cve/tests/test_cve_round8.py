@@ -1,5 +1,5 @@
-# round 8 tests — embeddings, vex, changelog
-# ~25 tests covering new features added early sep 2026
+# Round 8 测试——嵌入、VEX、变更日志
+# ~25项测试，覆盖2026年9月上旬新增特性
 
 import json
 import pytest

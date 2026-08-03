@@ -1,10 +1,10 @@
 """
-OTA firmware diff analysis. Binary-diff two firmware revisions:
-detect added/modified/deleted code blocks and classify each change by security relevance.
+OTA固件差分分析。对两个固件版本进行二进制差分：
+检测新增/修改/删除的代码块，按安全相关性分类。
 
-2026-07 新增: sdhash 模糊哈希同源检测 + FSS 功能敏感度评分 + Beyond Embeddings 可解释 diff 特征。
-参考: Khorrami et al. "Binary Diff Summarization Using LLMs", arXiv 2509.23970.
-      "Beyond Embeddings: Interpretable Feature Extraction for Binary Code Similarity", arXiv 2509.23449.
+2026.07新增：sdhash模糊哈希同源检测 + FSS功能敏感度评分 + Beyond Embeddings可解释差分特征。
+参考：Khorrami et al. "Binary Diff Summarization Using LLMs", arXiv 2509.23970。
+      "Beyond Embeddings: Interpretable Feature Extraction for Binary Code Similarity", arXiv 2509.23449。
 """
 
 import hashlib, re, struct
@@ -23,7 +23,7 @@ class ChangeType(str, Enum):
 @dataclass
 class CodeBlock:
     name: str; offset: int; size: int; hash: str = ""; fss: float = 0.0
-    # Beyond Embeddings 可解释特征: input/output types, side effects, notable constants
+    # Beyond Embeddings可解释特征：I/O类型、副作用、显著常量
     interpretable_features: dict = None
     def __hash__(self):
         return hash((self.name, self.offset, self.size))
@@ -89,11 +89,11 @@ def _sdhash_similarity(feats_a, feats_b) -> float:
     return inter / len(feats_a | feats_b)
 
 
-# Beyond Embeddings 可解释特征提取: 从函数原始字节中提取人类可读的属性。
-# 不需要训练，直接从二进制中提取: I/O 类型、副作用、显著常量、算法意图。
+# Beyond Embeddings可解释特征提取：从函数原始字节中提取人类可读属性。
+# 无需训练，直接从二进制提取：I/O类型、副作用、显著常量、算法意图。
 def _extract_interpretable_features(raw: bytes, name: str) -> dict:
     feats = {}
-    # 常量提取: 32-bit immediate values that look like magic numbers or sizes
+    # 常量提取：32-bit立即数（魔数或尺寸常量）
     if len(raw) >= 4:
         consts = set()
         for i in range(0, min(len(raw) - 4, 128), 2):
@@ -102,7 +102,7 @@ def _extract_interpretable_features(raw: bytes, name: str) -> dict:
                 consts.add(hex(val))
         if consts:
             feats["notable_constants"] = sorted(consts)[:4]
-    # 副作用检测: 字符串中是否有 "memcpy"/"memset"/branch 指令
+    # 副作用检测：字符串中是否含memcpy/memset/branch指令
     feats["has_memcpy"] = b"memcpy" in raw[:256]
     feats["has_branch"] = any(raw[i:i+2] in (b'\x00\xd0', b'\xff\xe7') for i in range(min(len(raw)-1, 128)))
     feats["size_category"] = "large" if len(raw) > 16384 else ("medium" if len(raw) > 4096 else "small")

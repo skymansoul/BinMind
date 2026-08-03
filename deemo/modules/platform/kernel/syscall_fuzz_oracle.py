@@ -1,11 +1,10 @@
-# 2026-08-01
-# Syscall Fuzzing Oracle: 基于差分测试的系统调用行为预言机
+# 系统调用Fuzz预言机：基于差分测试的syscall行为判定
 # 参考:
 #   "Heimdall: Formally Verified Automated Migration of Legacy eBPF Programs to Rust"
 #    (arXiv 2605.25411, May 2026) — 形式化方法验证迁移等价性
 #   "Characterizing and Bridging the Diagnostic Gap in eBPF Verifier Rejections"
-#    (arXiv 2607.02748) — Syscall 参数约束建模
-#   SyzGen (USENIX Security 2024) — 自动化 syscall 依赖推理
+#    (arXiv 2607.02748) — Syscall参数约束建模
+#   SyzGen (USENIX Security 2024) — 自动化syscall依赖推理
 
 import os
 import struct
@@ -17,10 +16,10 @@ from collections import defaultdict
 logger = logging.getLogger(__name__)
 
 # ── 系统调用参数类型建模 ──
-# 每个 syscall 的参数有类型约束; 有效的 fuzz 输入需满足这些约束
-# 类型: fd(file descriptor), ptr(user-space pointer), buf(buffer+length),
-#       flags(bitwise flags), path(filesystem path), signal(signal number),
-#       pid(process id), mode(file mode)
+# 每个syscall的参数携带类型约束；有效fuzz输入须满足这些约束
+# 类型: fd(文件描述符), ptr(用户空间指针), buf(缓冲区+长度),
+#       flags(位标志), path(文件系统路径), signal(信号编号),
+#       pid(进程ID), mode(文件模式)
 
 _PARAM_TYPE_GRAMMAR: dict[str, list] = {
     "fd":     [-1, 0, 1, 2, 3, 100, 0x7FFFFFFF],
@@ -36,7 +35,7 @@ _PARAM_TYPE_GRAMMAR: dict[str, list] = {
     "size":   [0, 1, 4096, 65536, 0x7FFFFFFF],
 }
 
-# 部分 Linux syscall 的定义 (nr, name, arg_types)
+# 部分Linux syscall定义 (nr, name, arg_types)
 _SYSCALL_TABLE: list[dict] = [
     {"nr": 0,   "name": "read",    "args": ["fd", "ptr", "size"]},
     {"nr": 1,   "name": "write",   "args": ["fd", "ptr", "size"]},
@@ -49,7 +48,7 @@ _SYSCALL_TABLE: list[dict] = [
     {"nr": 257, "name": "openat",  "args": ["fd", "path", "flags", "mode"]},
 ]
 
-# 敏感 syscall — fuzz 到此需特别注意, 可能造成系统不稳定
+# 敏感syscall — fuzz至此需特别谨慎，可能引发系统不稳定
 _SENSITIVE_SYSCALLS: set[str] = {
     "execve", "kill", "reboot", "shutdown", "exit", "exit_group",
     "mount", "umount2", "setuid", "setgid", "init_module", "delete_module",
@@ -58,7 +57,7 @@ _SENSITIVE_SYSCALLS: set[str] = {
 
 @dataclass
 class SyscallInput:
-    """单次 syscall fuzz 输入 — 包含参数具体值。"""
+    """单次syscall fuzz输入 — 含各参数具体值。"""
     syscall_nr: int
     syscall_name: str = ""
     args: list = field(default_factory=list)  # 具体参数值列表
@@ -78,16 +77,16 @@ class DiffOracleResult:
 
 
 class SyscallFuzzOracle:
-    """基于差分测试的系统调用 fuzz 预言机。
+    """基于差分测试的系统调用fuzz预言机。
 
-    设计理念 (参考 Heimdall 的形式化等价性):
-    同一 syscall 输入在两个内核版本/配置下应产生一致的行为。
-    若行为不一致 (返回值、errno、寄存器状态不同) → 潜在 bug 或回归。
+    设计理念 (参考Heimdall的形式化等价性):
+    同一syscall输入在两个内核版本/配置下应产生一致的行为。
+    若行为不一致 (返回值、errno、寄存器状态不同) → 潜在缺陷或回归。
 
     操作:
-    1. Grammar-based generation: 从参数类型语法生成合法输入
-    2. Edge-case mutation: 注入边界值和非法组合
-    3. Oracle comparison: 比对两个内核的输出 → 发现分歧
+    1. 语法导向构造: 从参数类型语法派生合法输入
+    2. 边界值变异: 注入极值和非法组合
+    3. Oracle比对: 比较两个内核的输出 → 发现分歧
     """
 
     def __init__(self, syscall_whitelist: list[str] | None = None,
@@ -100,12 +99,12 @@ class SyscallFuzzOracle:
 
     def generate_inputs(self, syscall_name: str,
                         n_variants: int = 16) -> list[SyscallInput]:
-        """为指定 syscall 生成 fuzz 输入组合。
+        """为指定syscall构造fuzz输入组合。
 
-        生成策略:
-        - 合法输入: 每个参数从其类型允许值集中选取
+        构造策略:
+        - 合法输入: 各参数从其类型允许值集合中选取
         - 边界值: 最小值、最大值、0、-1
-        - 非法组合: fd=-1 对大多数 syscall 是 EBADF
+        - 非法组合: fd=-1对多数syscall触发EBADF
         """
         sc = next((s for s in self._syscalls if s["name"] == syscall_name), None)
         if sc is None:
@@ -116,7 +115,7 @@ class SyscallFuzzOracle:
             args = []
             for at in arg_types:
                 pool = self._grammar.get(at, [0])
-                idx = (v * 7 + 3) % len(pool)  # 使用质数步长避免周期性
+                idx = (v * 7 + 3) % len(pool)  # 质数步长消除周期性重复
                 args.append(pool[idx])
             expected = self._predict_behavior(syscall_name, args)
             inputs.append(SyscallInput(
@@ -126,12 +125,12 @@ class SyscallFuzzOracle:
         return inputs
 
     def _predict_behavior(self, name: str, args: list) -> str:
-        """根据参数值预测预期 errno — 用于 oracle 比对。
+        """根据参数值预测预期errno — 用于oracle比对。
 
-        简单的规则驱动预测 (完整实现需符号执行引擎):
+        规则驱动预测 (完整实现需符号执行引擎):
         - fd=-1 → EBADF
-        - ptr=0 且需要有效指针 → EFAULT
-        - flags 无效组合 → EINVAL
+        - ptr=0且需要有效指针 → EFAULT
+        - flags无效组合 → EINVAL
         """
         for i, (arg, at) in enumerate(zip(args,
             next((s["args"] for s in self._syscalls if s["name"] == name), []))):
@@ -143,7 +142,7 @@ class SyscallFuzzOracle:
 
     def compare_behaviors(self, syscall_name: str,
                           results_a: dict, results_b: dict) -> DiffOracleResult:
-        """比对两个内核版本的 syscall 行为 — 发现分歧。"""
+        """比对两个内核版本的syscall行为 — 发现分歧。"""
         oracle = DiffOracleResult(syscall_name=syscall_name)
         for input_key, a_result in results_a.items():
             b_result = results_b.get(input_key)
@@ -189,7 +188,7 @@ class SyscallFuzzOracle:
         return results
 
     def coverage_report(self) -> dict:
-        """报告参数类型覆盖率 — 哪些类型组合已被测试。"""
+        """报告参数类型覆盖率 — 哪些类型组合已通过测试。"""
         covered = defaultdict(set)
         for sc in self._syscalls:
             for at in sc["args"]:

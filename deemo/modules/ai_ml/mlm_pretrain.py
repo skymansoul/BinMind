@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # MLM (Masked Language Model) pretraining module for binary/code token sequences.
-# Supports variable masking strategies, vocabulary building, dataset management,
-# training loops, and an analyzer integration point.
-# 2026-07-28: added SimpleMLMTrainer as a self-contained training harness.
+# Supports variable masking strategies, 词汇表 building, dataset management,
+# 训练 loops, and an analyzer integration point.
+# added SimpleMLMTrainer as a self-contained 训练 harness.
 
 import logging as _logging
 import json as _json

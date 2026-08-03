@@ -1,5 +1,3 @@
-# 2026-07-24
-
 """多臂老虎机(MAB)种子调度器 --- LinUCB / UCB / Exp3 / Thompson Sampling 四种策略。
 
 参考:

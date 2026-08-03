@@ -55,10 +55,10 @@ class SpoofingFinding:
 
 
 class ProcessSpoofingDetector:
-    """基于 API 调用模式匹配检测进程伪装技术。
+    """进程伪装技术检测器。
 
-    增强：引入多信号置信度融合 — 对每个检测维度独立计算置信度后
-    取加权几何平均，避免单一 API 偶然命中导致的误报。
+    多信号置信度融合: 每检测维度独立计算置信度后加权几何平均,
+    消除单一 API 偶然命中导致的误报。
     """
 
     HOLLOWING_PATTERN = [
@@ -78,8 +78,7 @@ class ProcessSpoofingDetector:
         'InitializeProcThreadAttributeList', 'UpdateProcThreadAttribute',
         'PROC_THREAD_ATTRIBUTE_PARENT_PROCESS', 'CreateProcess']
 
-    # 新增：Herpaderping 模式 — 与 Hollowing 高度相似但在 NtCreateProcessEx
-    # 之后立即替换文件映射
+    # Herpaderping 模式: NtCreateProcessEx 后替换文件映射, 与 Hollowing 相似但时机不同
     HERPADERPING_PATTERN = [
         'NtCreateProcessEx', 'NtCreateThreadEx', 'NtQueryInformationProcess',
         'NtWriteVirtualMemory', 'NtResumeThread']
@@ -88,10 +87,9 @@ class ProcessSpoofingDetector:
         'LoadLibrary', 'GetProcAddress', 'CreateRemoteThread',
         'WriteProcessMemory', 'SetWindowsHookEx']
 
-    # ── 反分析检测：参照 @wshobson/anti-reversing-techniques (35K★) ──
-    # 按检测类别分三组：反调试、反虚拟机、反沙箱。
+    # 反分析检测 (反调试/反虚拟机/反沙箱 三组)
 
-    # 反调试 API / 技术指标
+    # 反调试 API 集
     ANTI_DEBUG_APIS = [
         'IsDebuggerPresent', 'CheckRemoteDebuggerPresent',
         'NtQueryInformationProcess', 'NtSetInformationThread',
@@ -99,13 +97,13 @@ class ProcessSpoofingDetector:
         'NtGlobalFlag', 'CloseHandle', 'OpenProcess',
         'DebugActiveProcess', 'ContinueDebugEvent',
     ]
-    # 反调试字符串特征（PEB/标志位）
+    # 反调试 PEB/标志位字符串特征
     ANTI_DEBUG_STRINGS = [
         'BeingDebugged', 'NtGlobalFlag', 'HeapFlags',
         'ForceFlags', 'Debugger', 'ProcessHeap',
     ]
 
-    # 反虚拟机检测 — CPUID/Red Pill/bios/dmi 指纹
+    # 反虚拟机: CPUID/Red Pill/bios/dmi 指纹
     ANTI_VM_APIS = [
         'CreateFile', 'DeviceIoControl', 'GetSystemFirmwareTable',
         'EnumServicesStatus', 'SetupDiGetDeviceRegistryProperty',
@@ -120,7 +118,7 @@ class ProcessSpoofingDetector:
         'vmsrvc', 'vmacthlp', 'VMTools',
     ]
 
-    # 反沙箱 — 检测沙箱环境的典型指标
+    # 反沙箱: 延时检测与环境指纹
     ANTI_SANDBOX_APIS = [
         'GetTickCount', 'QueryPerformanceCounter', 'NtQueryPerformanceCounter',
         'Sleep', 'NtDelayExecution', 'WaitForSingleObject',
@@ -141,7 +139,7 @@ class ProcessSpoofingDetector:
 
     @staticmethod
     def _fuse_confidence(signal_confidences: List[float]) -> float:
-        """多信号 Bayesian 融合，与 LateralMovementDetector 方法一致。"""
+        """多信号置信度 Bayesian 融合。"""
         prod = 1.0
         for c in signal_confidences:
             if c > 0:
@@ -152,7 +150,7 @@ class ProcessSpoofingDetector:
         api_lower = {c.lower() for c in api_calls}
         matches = [a for a in self.HOLLOWING_PATTERN if a.lower() in api_lower]
         if len(matches) >= 3:
-            # 阶段置信度：前缀阶段（CreateProcess + SUSPENDED）权重更高
+            # 前缀阶段 (CreateProcess + SUSPENDED) 权重高于后续阶段
             early = sum(1 for m in matches if m.lower() in
                        {'createprocess', 'create_suspended', 'ntunmapviewofsection'})
             late = len(matches) - early
@@ -264,7 +262,7 @@ class ProcessSpoofingDetector:
         str_lower = {s.lower() for s in strings_data}
         api_hits = [a for a in self.ANTI_VM_APIS if a.lower() in api_lower]
         str_hits = [s for s in self.ANTI_VM_STRINGS if s.lower() in str_lower]
-        # 虚拟机字符串命中权重远高于 API 命中 — 前者几乎确定 VM 检测意图
+        # 虚拟机字符串命中权重远高于 API 命中
         score = len(str_hits) * 0.3 + len(api_hits) * 0.1
         if str_hits:
             return SpoofingFinding(
@@ -277,8 +275,8 @@ class ProcessSpoofingDetector:
                 evidence_chain=[f'VM指纹: {", ".join(str_hits[:5])}'])
         return None
 
-    # 线程劫持：SuspendThread + SetThreadContext + ResumeThread 模式
-    # 区别于 CreateRemoteThread — 劫持已有线程而非创建新线程
+    # 线程劫持: SuspendThread + SetThreadContext + ResumeThread 模式
+    # 劫持已有线程, 区别于 CreateRemoteThread 创建新线程
     THREAD_HIJACK_APIS = [
         'SuspendThread', 'SetThreadContext', 'ResumeThread',
         'OpenThread', 'GetThreadContext', 'NtSuspendThread',
@@ -287,7 +285,7 @@ class ProcessSpoofingDetector:
     def detect_thread_hijack(self, api_calls: List[str]) -> Optional[SpoofingFinding]:
         api_lower = {c.lower() for c in api_calls}
         matches = [a for a in self.THREAD_HIJACK_APIS if a.lower() in api_lower]
-        # 需要 Suspend + SetContext + Resume 三阶段至少 2 项 +
+        # 需要 Suspend + SetContext + Resume 三阶段至少 2 项
         if len(matches) >= 2:
             has_set_context = 'setthreadcontext' in api_lower
             has_suspend = 'suspendthread' in api_lower or 'ntsuspendthread' in api_lower
@@ -303,7 +301,7 @@ class ProcessSpoofingDetector:
                     evidence_chain=[f'线程劫持链: {"→".join(matches[:4])}'])
         return None
 
-    # APC 注入：QueueUserAPC / NtQueueApcThread + alertable 状态线程
+    # APC 注入: QueueUserAPC / NtQueueApcThread 配合 alertable 状态线程
     APC_INJECTION_APIS = [
         'QueueUserAPC', 'NtQueueApcThread', 'NtQueueApcThreadEx',
         'SleepEx', 'WaitForSingleObjectEx', 'WaitForMultipleObjectsEx',
@@ -337,7 +335,7 @@ class ProcessSpoofingDetector:
         str_lower = {s.lower() for s in strings_data}
         api_hits = [a for a in self.ANTI_SANDBOX_APIS if a.lower() in api_lower]
         str_hits = [s for s in self.ANTI_SANDBOX_STRINGS if s.lower() in str_lower]
-        # 需要 API (延时/查询) + 字符串 (沙箱名) 双重命中才算
+        # API (延时/查询) + 字符串 (沙箱名) 双重命中
         if api_hits and str_hits:
             return SpoofingFinding(
                 finding_id=self._next_id(),
@@ -374,7 +372,7 @@ class ProcessSpoofingDetector:
             if result:
                 findings.append(result)
 
-        # Doppelganging — 需要事务 API + 字符串上下文双重确认
+        # Doppelganging: 事务 API + 字符串上下文双重确认
         if any('doppelgang' in s.lower() or 'transacted' in s.lower()
                for s in strings_data):
             api_lower = {c.lower() for c in api_calls}
@@ -398,7 +396,7 @@ class ProcessSpoofingDetector:
             'risk_level': 'critical' if any(f.severity == 'critical' for f in findings)
                          else 'high' if findings else 'low'
         }
-        # 防御规避战术映射 — 所有进程伪装均归类于 TA0005
+        # 防御规避战术映射, 所有进程伪装归类 TA0005
         defense_evasion_techniques = [
             {'technique': f.technique.value,
              'mitre': f.mitre_technique,
@@ -419,7 +417,7 @@ class ProcessSpoofingDetector:
 def detect_process_spoofing(api_calls: List[str],
                             strings_data: Optional[List[str]] = None,
                             **kwargs) -> Dict[str, Any]:
-    """便捷入口：实例化检测器并执行全量分析。"""
+    """便捷入口, 实例化检测器执行全量分析。"""
     detector = ProcessSpoofingDetector()
     return detector.analyze(api_calls=api_calls, strings_data=strings_data)
 

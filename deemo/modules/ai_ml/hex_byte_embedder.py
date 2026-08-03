@@ -1,8 +1,6 @@
-# 2026-07-25 11:30
-# hex_byte_embedder.py
-# 原始字节级嵌入 — 从二进制文件的十六进制表示学习函数表示
+"""原始字节级嵌入 — 从二进制文件的十六进制表示学习函数表示"""
 # 依据: ContraBin [Zhang et al. TMLR 2025] 的三模态对比学习 (源代码+二进制+注释)
-#       DiffBCE [Zhang & Cheng, IST 2025] 的差分对比学习
+# DiffBCE [Zhang & Cheng, IST 2025] 的差分对比学习
 # 核心: 绕过反汇编需求, 直接从raw bytes提取语义信息
 # 用途: 处理无法反汇编的混淆/加壳代码; 作为CFG/GNN嵌入的多模态补充
 
@@ -128,7 +126,7 @@ class HexDumpEmbedder:
 
     def embed_hexdump(self, hexdump_text: str) -> List[float]:
         """从hex dump文本生成嵌入"""
-        # 解析hex dump行: "00401000: 55 48 89 E5 48 83 EC 20  ..."
+        # 解析hex dump行: "00401000: 55 48 89 E5 48 83 EC 20 ..."
         import re
         byte_values = []
         ascii_text = []

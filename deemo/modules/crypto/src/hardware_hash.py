@@ -1,11 +1,11 @@
-"""Hardware-accelerated hashing: xxHash / BLAKE3 with transparent hashlib fallback.
+"""硬件加速哈希：xxHash / BLAKE3，透明回退至 hashlib。
 
-2026-07 additions:
-  - Merkle tree hash construction for integrity proofs over large file sets
-  - mmap-based parallel chunk hashing via ProcessPoolExecutor
-  - Content-defined chunking (CDC) via GEAR hash for delta-aware dedup
-  - Incremental hash state serialization (hash_state / resume)
-  - Chained hash verification for audit trail integrity
+2026-07 新增：
+  - Merkle 树哈希构造，支持大型文件集完整性证明
+  - 基于 mmap 的并行分块哈希（ProcessPoolExecutor）
+  - 内容定义分块（CDC）通过 GEAR 哈希实现差量去重
+  - 增量哈希状态序列化（hash_state / resume）
+  - 链式哈希验证，保障审计轨迹完整性
 """
 
 import os
@@ -21,7 +21,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 
 logger = logging.getLogger(__name__)
 
-# Optional native dependencies — degrade gracefully when absent
+# 可选原生依赖 — 缺失时优雅降级
 try:
     import xxhash
     XXHASH_AVAILABLE = True
@@ -68,12 +68,12 @@ class HashConfig:
 
 @dataclass
 class MerkleNode:
-    """Single node in a Merkle tree. Leaf nodes reference file content; interior nodes combine children."""
+    """Merkle 树节点。叶节点引用文件内容；内部节点合并子节点哈希。"""
     digest: bytes
     algorithm: HashAlgorithm
     left: Optional['MerkleNode'] = None
     right: Optional['MerkleNode'] = None
-    file_path: Optional[str] = None     # non-None only for leaf nodes
+    file_path: Optional[str] = None     # 仅叶节点非空
     chunk_offset: int = 0
     chunk_size: int = 0
 
@@ -83,7 +83,7 @@ class MerkleNode:
 
 @dataclass
 class MerkleTree:
-    """Complete Merkle tree over a list of data chunks or files."""
+    """数据块或文件列表的完整 Merkle 树。"""
     root: Optional[MerkleNode] = None
     nodes: List[MerkleNode] = field(default_factory=list)
     leaf_count: int = 0
@@ -92,7 +92,7 @@ class MerkleTree:
 
 
 class FastHasher:
-    """Single-instance hasher supporting the standard update/digest/reset lifecycle."""
+    """单实例哈希器，支持标准 update/digest/reset 生命周期。"""
 
     def __init__(self, algorithm: HashAlgorithm = HashAlgorithm.XXHASH64):
         self._algorithm = algorithm
@@ -115,7 +115,7 @@ class FastHasher:
             return xxhash.xxh3_128() if XXHASH_AVAILABLE else hashlib.sha512()
         elif algo == HashAlgorithm.BLAKE3:
             return blake3.blake3() if BLAKE3_AVAILABLE else hashlib.sha256()
-        return hashlib.sha256()  # ultimate fallback for unrecognized algorithms
+        return hashlib.sha256()  # 未识别算法的最终回退
 
     def update(self, data: bytes) -> None:
         if not self._initialized:
@@ -142,7 +142,7 @@ class FastHasher:
         return 64
 
     def get_digest_size(self) -> int:
-        return {  # Dict dispatch for Python < 3.10 compatibility (avoids match-case)
+        return {  # 字典分发以兼容 Python < 3.10（避免 match-case）
             HashAlgorithm.MD5: 16, HashAlgorithm.SHA1: 20,
             HashAlgorithm.SHA256: 32, HashAlgorithm.SHA512: 64,
             HashAlgorithm.XXHASH32: 4, HashAlgorithm.XXHASH64: 8,
@@ -150,38 +150,38 @@ class FastHasher:
             HashAlgorithm.BLAKE3: 32,
         }.get(self._algorithm, 32)
 
-    # ── Incremental state serialization (2026-07) ──
+    # ── 增量状态序列化 (2026-07) ──
 
     def serialize_state(self) -> Optional[bytes]:
         """
-        Capture current hash state for later resumption.
-        For hashlib-based algorithms: returns a copy of the internal state.
-        For xxhash/blake3: returns the serialized native state.
-        Returns None if state serialization is unsupported for this algorithm.
+        捕获当前哈希状态供后续恢复.
+        hashlib 算法: 返回内部状态副本.
+        xxhash/blake3: 返回序列化的原生状态.
+        若该算法不支持状态序列化则返回 None.
         """
         if not self._initialized:
             return None
         try:
-            # hashlib supports .copy() since Python 3.x
+            # hashlib 自 Python 3.x 起支持 .copy()
             if hasattr(self._hash_obj, 'copy'):
                 return self._hash_obj.copy().digest()
-            # xxhash supports pickle
+            # xxhash 支持 pickle 序列化
             import pickle
             return pickle.dumps(self._hash_obj)
         except Exception:
             return None
 
     def resume_state(self, state: bytes) -> bool:
-        """Resume hashing from a previously serialized state. Best-effort."""
+        """从之前序列化的状态恢复哈希计算。尽力而为。"""
         self._hash_obj = self._create_hash_object()
         self._initialized = True
-        # Fallback: treat serialized state as pre-hashed data and hash it in
+        # 回退策略：将序列化状态作为预哈希数据并入
         self._hash_obj.update(state)
         return True
 
 
 class HashManager:
-    """Global hash manager with optional result caching."""
+    """全局哈希管理器，附带可选结果缓存。"""
 
     def __init__(self):
         self._default_algorithm = HashAlgorithm.XXHASH64
@@ -193,7 +193,7 @@ class HashManager:
                           chunk_size: int = 64 * 1024) -> HashResult:
         algo = algorithm or self._default_algorithm
 
-        # Return cached result when available and caching is active
+        # 缓存活跃时返回已缓存结果
         if self._cache_enabled:
             cache_key = f"{file_path}:{algo.value}"
             cached = self._hash_cache.get(cache_key)
@@ -315,24 +315,23 @@ class HashManager:
             available.append(HashAlgorithm.BLAKE3)
         return available
 
-    # ── Parallel mmap-based file hashing (2026-07) ──
-    # Uses mmap to avoid GIL contention on read and ProcessPoolExecutor for
-    # compute parallelism. Each worker maps a non-overlapping segment of the
-    # file and returns (offset, digest). Digests are then concatenated and
-    # re-hashed to produce the final result — equivalent to a Merkle tree
-    # of depth 1, giving deterministic output independent of worker count.
+    # ── 并行mmap文件哈希 (2026-07) ──
+    # 使用mmap避免GIL争用读取, ProcessPoolExecutor用于计算并行。
+    # 每个worker映射文件的一个非重叠段, 返回(offset, digest)。
+    # 摘要串联后重新哈希产生最终结果 — 等价于深度为1的Merkle树,
+    # 给出与worker数量无关的确定性输出。
 
     def compute_parallel_hash(self, file_path: str, num_workers: int = 4,
                               algorithm: Optional[HashAlgorithm] = None) -> HashResult:
         algo = algorithm or self._default_algorithm
         file_size = os.path.getsize(file_path)
         if file_size < num_workers * 1024 * 1024:
-            # File too small for parallel overhead — use sequential
+            # 文件太小, 并行开销不划算 — 使用顺序方式
             return self.compute_file_hash(file_path, algo)
 
         chunk_sz = file_size // num_workers
         segments = [(i * chunk_sz, chunk_sz) for i in range(num_workers)]
-        # Last segment absorbs remainder
+        # 最后段吸收余数
         segments[-1] = (segments[-1][0], file_size - segments[-1][0])
 
         start_time = time.time()
@@ -347,7 +346,7 @@ class HashManager:
                 if res:
                     segment_digests.append(res)
 
-        # Sort by offset, then concatenate and hash for deterministic output
+        # 按偏移排序, 串联后哈希, 保证确定性输出
         segment_digests.sort(key=lambda x: x[0])
         combined = b"".join(d for _, d in segment_digests)
 
@@ -361,10 +360,9 @@ class HashManager:
             digest_bytes=digest, hex_digest=digest.hex(),
             file_size=file_size, elapsed_ms=elapsed_ms)
 
-    # ── Merkle tree construction (2026-07) ──
-    # Builds a binary Merkle tree over file chunks, producing a root hash
-    # and an inclusion proof for any leaf. Used for file-integrity attestations
-    # where individual chunks must be verifiable without rehashing the whole file.
+    # ── Merkle树构造 (2026-07) ──
+    # 在文件块上构建二叉树, 产生根哈希和任意叶子的包含证明。
+    # 文件完整性证明中, 单个块需可验证而不重新哈希整个文件。
 
     def build_merkle_tree(self, file_path: str, chunk_size: int = 256 * 1024,
                           algorithm: Optional[HashAlgorithm] = None) -> MerkleTree:
@@ -392,7 +390,7 @@ class HashManager:
         tree.nodes = list(leaves)
         tree.leaf_count = len(leaves)
 
-        # Build tree bottom-up: pair consecutive nodes until only root remains
+        # 自底向上构建: 逐对组合连续节点, 直至仅剩根
         current_level = list(leaves)
         while len(current_level) > 1:
             next_level: List[MerkleNode] = []
@@ -418,9 +416,9 @@ class HashManager:
                             expected_root: bytes,
                             algorithm: Optional[HashAlgorithm] = None) -> bool:
         """
-        Verify a Merkle inclusion proof.
-        `proof` is a list of (sibling_digest, is_right) pairs from leaf to root.
-        `is_right` = True means the sibling is on the right.
+        验证Merkle包含证明。
+        proof是从叶子到根的(sibling_digest, is_right)对列表。
+        is_right=True表示兄弟节点在右边。
         """
         algo = algorithm or HashAlgorithm.SHA256
         current = leaf.digest
@@ -435,37 +433,36 @@ class HashManager:
             current = h.digest()
         return current == expected_root
 
-    # ── Content-defined chunking (CDC) via GEAR hash (2026-07) ──
-    # Splits data at boundaries determined by content hash, not fixed offsets.
-    # The same content produces the same chunk boundaries regardless of where
-    # it appears — enabling delta-aware dedup. GEAR hash with 48-bit mask at
-    # average chunk size ≈ 8KB.
+    # ── GEAR哈希内容定义分块(CDC) (2026-07) ──
+    # 按内容哈希确定的边界而非固定偏移分割数据。
+    # 相同内容产生相同块边界, 无论出现位置 — 支持增量感知去重。
+    # 48-bit掩码GEAR哈希, 平均块大小≈8KB。
 
     def cdc_split(self, data: bytes, min_chunk: int = 2048,
                   avg_chunk: int = 8192, max_chunk: int = 65536) -> List[Tuple[int, int]]:
         """
-        Return a list of (offset, size) tuples representing CDC boundaries.
-        Uses a 48-bit GEAR rolling hash with a target mask for boundary detection.
+        返回表示CDC边界的(offset, size)元组列表。
+        使用48-bit GEAR滚动哈希, 目标掩码用于边界检测。
         """
         chunks: List[Tuple[int, int]] = []
         if not data:
             return chunks
 
-        # Mask: ~1 boundary per avg_chunk bytes (48-bit hash space)
+        # 掩码: 每avg_chunk字节约1个边界(48-bit哈希空间)
         mask = (1 << 48) - 1
         threshold = (1 << 48) // avg_chunk
 
         gear_table = [(i * 0x9E3779B9) & mask for i in range(256)]
         chunk_start = 0
         h = 0
-        window = 8  # rolling window for GEAR
+        window = 8  # GEAR滚动窗口
 
         for i, b in enumerate(data):
             if i < window:
                 h = (h << 1) + gear_table[b]
                 h &= mask
             else:
-                # Slide window: subtract oldest, add newest
+                # 滑动窗口: 减去最旧, 加上最新
                 oldest = data[i - window]
                 h = (h << 1) + gear_table[b] - (gear_table[oldest] << window)
                 h &= mask
@@ -481,7 +478,7 @@ class HashManager:
                     chunk_start += max_chunk
                     h = 0
 
-        # Remaining tail
+        # 剩余尾部
         if chunk_start < len(data):
             chunks.append((chunk_start, len(data) - chunk_start))
 
@@ -489,7 +486,7 @@ class HashManager:
 
     def compute_cdc_hashes(self, data: bytes,
                            algorithm: Optional[HashAlgorithm] = None) -> List[str]:
-        """Split data via CDC and return hex digests of each chunk."""
+        """CDC 拆分数据，返回各块的十六进制摘要。"""
         algo = algorithm or self._default_algorithm
         chunks = self.cdc_split(data)
         return [_hash_chunk(data, off, sz, algo) for off, sz in chunks]
@@ -497,9 +494,8 @@ class HashManager:
     def compute_chain_hash(self, file_paths: List[str],
                            algorithm: Optional[HashAlgorithm] = None) -> str:
         """
-        Build a hash chain over a sequence of files, where each link
-        incorporates the previous link's digest. Used for audit trail integrity:
-        inserting/removing/reordering any file breaks the chain.
+        构建文件序列的哈希链，每个链接含上一链接摘要。
+        用于审计轨迹完整性：插入/删除/重排任意文件将破坏链条。
         """
         algo = algorithm or HashAlgorithm.SHA256
         prev = b""
@@ -516,7 +512,7 @@ class HashManager:
         return prev.hex()
 
 
-# Global singleton — lazy-initialized
+# 全局单例 — 懒初始化
 _global_manager: Optional[HashManager] = None
 
 
@@ -527,10 +523,10 @@ def get_hash_manager() -> HashManager:
     return _global_manager
 
 
-# ── Helper for parallel hash ──
+# ── 并行哈希辅助 ──
 
 def _mmap_hash_segment(file_path: str, offset: int, size: int, algo_name: str) -> Optional[Tuple[int, bytes]]:
-    """Worker function for parallel mmap hashing. Runs in a subprocess."""
+    """并行 mmap 哈希工作函数，子进程中执行。"""
     try:
         algo = HashAlgorithm[algo_name.upper()]
         hasher = FastHasher(algo)
@@ -548,7 +544,7 @@ def _hash_chunk(data: bytes, offset: int, size: int, algo: HashAlgorithm) -> str
     return hasher.hexdigest()
 
 
-# ── Top-level convenience functions ──
+# ── 顶层便捷函数 ──
 
 def compute_file_hash(file_path: str, algorithm: str = "xxhash64") -> HashResult:
     manager = get_hash_manager()

@@ -1,9 +1,9 @@
 # 轻量可观测性 — Counter/Gauge/Histogram/Summary/Rate/Delta，Prometheus text format 输出
-# 参考 OpenTelemetry instrument/meter 概念，但去掉 SDK 重依赖
-# Counter 用 threading.Lock 保原子性：Python int += 在 GIL 下也不原子，多线程会丢计数
+# 借鉴 OpenTelemetry instrument/meter 概念，去除 SDK 重依赖
+# Counter 以 threading.Lock 保原子性: Python int += 在 GIL 下非原子，多线程会丢计数
 #
-# Delta: 差值追踪器 —— 存储上一次值和当前值，value() 返回差值。
-# 适合追踪增量变化（如"本轮导入新增了多少条"）而无需外部维护状态。
+# Delta: 差值追踪器 —— 存储上一值和当前值，value() 返回差值。
+# 适合追踪增量变化（如"本轮导入新增条数"）无需外部维护状态。
 
 import contextlib
 import json
@@ -57,9 +57,9 @@ class Gauge:
 
 
 class Delta:
-    """差值追踪器 — 存当前值和上一次值，返回增量。
+    """差值追踪器 — 存当前值与上一次值，返回增量。
 
-    典型用法：跟踪数据库行数变化率。每轮调用 update(new_count)，
+    典型用法: 追踪数据库行数变化率。每轮调用 update(new_count),
     value() 返回 new_count - previous_count。
     """
 
@@ -131,7 +131,7 @@ class Histogram:
 
 
 class Summary:
-    """滑动窗口 Summary —— 存原始样本，按需算分位数。"""
+    """滑动窗口 Summary —— 保留原始样本，按需计算分位数。"""
 
     def __init__(self, name: str, help_text: str = "",
                  max_samples: int = 2000, labels: Dict[str, str] = None):
@@ -175,7 +175,7 @@ class Summary:
 
 
 class Rate:
-    """滑动窗口速率计 —— 追踪最近 window_sec 内的事件频率。"""
+    """滑动窗口速率计 —— 追踪最近 window_sec 内事件频率。"""
 
     def __init__(self, name: str, help_text: str = "",
                  window_sec: float = 10.0, slots: int = 10,
@@ -216,7 +216,7 @@ class Rate:
 
 
 class Timer:
-    """一行计时的上下文管理器。"""
+    """单行计时上下文管理器。"""
     __slots__ = ("_target", "_start")
 
     def __init__(self, target):
@@ -354,10 +354,10 @@ class MetricsRegistry:
         return result
 
     def reset_all(self):
-        """清空所有已注册指标 —— 用于测试清理和进程重启。
+        """清空全部已注册指标 —— 用于测试清理和进程重启。
 
-        注意：这会删除所有指标对象，之后 get_registry().counter('x')
-        会创建新的 Counter 实例（从零开始计数）。
+        调用后所有指标对象被删除，下次 get_registry().counter('x')
+        会创建新 Counter 实例（从零计数）。
         """
         with self._lock:
             self._counters.clear()

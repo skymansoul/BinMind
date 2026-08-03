@@ -1,9 +1,9 @@
-#  Memory and heap analysis toolkit.
-#  Stack trace monitoring, allocator metadata introspection, and heap layout engineering.
+# Memory 堆分析工具集
+# 栈追踪监控、分配器元数据内省、堆布局工程
 #
-# Round 6: Race condition detection for heap operations — TOCTOU patterns in
-# double-checked locking, lock ordering violations in multi-allocator code,
-# and concurrent free/use detection via timestamp correlation.
+# Round 6: 堆操作竞态条件检测 — TOCTOU 模式
+# 双重检查锁定、多分配器代码中的锁顺序违反
+# 并发 free/use 检测（时间戳相关性）
 
 from typing import Dict, Any, List, Optional
 import logging, re, os, json, subprocess, hashlib, time, threading, sqlite3
@@ -90,7 +90,7 @@ class MemoryCorruptionPreciseLocator:
         self.corruption_patterns['double_free'] = {
             'signature': [r'free\s*\(', r'free\s*\('],
             'constraint': 'free_count > 1', 'severity': 'critical'}
-        # Round 6: 竞态条件模式 — TOCTOU (Time-of-Check Time-of-Use)
+        # Round 6: TOCTOU 竞态模式 (Time-of-Check Time-of-Use)
         self.corruption_patterns['toctou_race'] = {
             'signature': [r'access\s*\(', r'open\s*\(', r'stat\s*\(',
                          r'chmod\s*\(', r'chown\s*\(', r'rename\s*\('],
@@ -150,43 +150,43 @@ class MemoryCorruptionPreciseLocator:
                                            location: Dict[str, Any],
                                            trace: Dict[str, Any]) -> str:
         report = f'''
-# Memory Corruption Precise Location Report
+# 内存破坏精确定位报告
 
-## Vulnerability Type
+## 漏洞类型
 {vulnerability.get('type', 'unknown')}
 
-## Trigger Instruction
+## 触发指令
 Address: {hex(location.get('trigger_addr', 0))}
 Instruction: {location.get('trigger_instruction', 'unknown')}
 Operation Type: {trace.get('operation_type', 'unknown')}
 '''
         if trace.get('preceding_operations'):
-            report += '\n### Preceding Operations:\n'
+            report += '\n### 前置操作:\n'
             for op in trace['preceding_operations']:
                 report += f"- {op['instruction']} {op['destination']}, [{op['address_expression']}]\n"
         return report
 
-# ── Round 6: Race condition detection ───────────────────────────────────
+# ── Round 6: 竞态条件检测 ───────────────────────────────────
 
 @dataclass
 class RaceCondition:
-    """检测到的竞态条件记录。包含TOCTOU文件操作和双重检查锁定两类。"""
+    """检测到的竞态条件记录，包含 TOCTOU 文件操作和双重检查锁定。"""
     race_id: str; race_type: str    # toctou | lock_order | double_checked_lock
     location: str                    # 函数名:行号
-    first_call: str                  # check操作 (e.g. access/stat)
-    second_call: str                 # use操作 (e.g. open/chmod)
-    window_size_estimate: int = 0    # check-use窗口中的指令数估计
+    first_call: str                  # check 操作 (e.g. access/stat)
+    second_call: str                 # use 操作 (e.g. open/chmod)
+    window_size_estimate: int = 0    # check-use 窗口中的指令数估计
     severity: str = "high"
     annotation: str = ""
 
 class RaceDetector:
     """竞态条件检测器 — 基于调用序列分析和时间戳相关性。
 
-    TOCTOU：查找 access()+open() 或 stat()+chmod() 等 "先检查后使用" 模式。
-    若两个调用之间存在时间窗口(window_size > 0)且无互斥锁保护，则构成潜在竞态。
+    TOCTOU：查找 access()+open() 或 stat()+chmod() 等先检查后使用模式。
+    若两调用间存在时间窗口且无互斥锁保护，构成潜在竞态。
 
-    双重检查锁定：if(!ptr){lock; if(!ptr){...}} 模式中，
-    外层检查缺少内存屏障时，编译器/CPU可能重排指令导致partial initialization泄漏。
+    双重检查锁定：(!ptr){lock; (!ptr){...}} 模式中，
+    外层检查缺少内存屏障时，编译器/CPU 可能重排导致部分初始化泄漏。
     """
 
     TOCTOU_PAIRS = [
@@ -207,9 +207,9 @@ class RaceDetector:
         return f"RACE-{self._counter:04d}"
 
     def detect_toctou(self, code_context: str, function_name: str = "") -> List[RaceCondition]:
-        """在反编译代码中检测TOCTOU竞态条件模式。
-        扫描同一函数内的 access+open / stat+chmod 配对。
-        配对间的指令数作为竞态窗口大小的估计值。"""
+        """在反编译代码中检测 TOCTOU 竞态条件模式。
+        扫描同一函数内的 access+open / stat+chmod 配对，
+        配对间的指令数作为竞态窗口大小的估计。"""
         findings = []
         lines = code_context.split('\n')
         for check_pat, use_pat in self.TOCTOU_PAIRS:
@@ -222,7 +222,7 @@ class RaceDetector:
                 if re.search(use_pat, line, re.IGNORECASE):
                     use_positions.append(i)
 
-            # 对每个check，找最近的use
+            # 对每个 check，找最近的 use
             for cp in check_positions:
                 for up in use_positions:
                     if up > cp and up - cp <= 20:
@@ -235,20 +235,19 @@ class RaceDetector:
                             window_size_estimate=up - cp,
                             severity="high",
                             annotation=f"TOCTOU window of ~{up-cp} instructions between check and use"))
-                        break  # 每个check只匹配最近的use
+                        break  # 每个 check 只匹配最近的 use
         self._findings.extend(findings)
         return findings
 
     def detect_lock_ordering(self, lock_sequences: List[List[str]]) -> List[RaceCondition]:
         """检测锁顺序不一致导致的潜在死锁。
-        如果线程A按(L1, L2)顺序获取锁，线程B按(L2, L1)顺序获取，
-        则存在死锁风险。这是经典的锁顺序违反检测。"""
+        线程 A 按 (L1,L2) 获取锁，线程 B 按 (L2,L1) 获取 → 死锁风险。"""
         findings = []
         seq_pairs = []
         for i, seq_a in enumerate(lock_sequences):
             for j, seq_b in enumerate(lock_sequences):
                 if i >= j: continue
-                # 检查是否有锁顺序反转
+                # 检查锁顺序反转
                 for idx_a, lock_a in enumerate(seq_a):
                     for idx_b, lock_b in enumerate(seq_b):
                         if lock_a == lock_b and idx_a != idx_b:
@@ -313,19 +312,23 @@ def trigger_exploit(): pass
     def detect_security_mitigations(self) -> Dict[str, bool]:
         m = {'safe_linking': False, 'tcache_key': False, 'alignment_check': False}
         try:
-            major, minor = self.libc_version.split('.')[:2] if self.libc_version else ('2', '0')
+            parts = self.libc_version.split('.')[:2] if self.libc_version else ('2', '0')
+            major, minor = parts
             ver = (int(major), int(minor))
-            if ver >= (2, 34): m['tcache_key'] = m['safe_linking'] = True
-            elif ver >= (2, 32): m['safe_linking'] = True
-            if ver >= (2, 35): m['alignment_check'] = True
-        except (ValueError, AttributeError): pass
+            if ver >= (2, 34):
+                m['tcache_key'] = m['safe_linking'] = True
+            elif ver >= (2, 32):
+                m['safe_linking'] = True
+            if ver >= (2, 35):
+                m['alignment_check'] = True
+        except (ValueError, AttributeError):
+            pass
         return m
 
-    # Round 6: 竞态条件感知的堆操作调度 — 在多线程堆操作序列中
-    # 检测竞态窗口并建议序列化点
+    # Round 6: 竞态感知堆操作调度 — 多线程序列中检测竞态窗口
     def detect_heap_races(self, code_snippets: List[str]) -> List[RaceCondition]:
-        """在多线程堆操作代码段中检测TOCTOU和锁顺序违反。
-        返回RaceCondition列表供利用策略选择参考。"""
+        """在多线程堆操作代码段中检测 TOCTOU 和锁顺序违反，
+        返回列表供利用策略选择参考。"""
         findings = []
         for i, snippet in enumerate(code_snippets):
             toctou = self._race_detector.detect_toctou(snippet, f"heap_func_{i}")
@@ -345,7 +348,8 @@ class HeapLayoutPredictionVisualizer:
         chunk = {'address': address, 'size': size, 'allocated': allocated,
                  'type': 'allocated' if allocated else 'free',
                  'color': self._ALLOC_COLOR if allocated else self._FREE_COLOR}
-        self.heap_chunks.append(chunk); return chunk
+        self.heap_chunks.append(chunk)
+        return chunk
 
     def predict_heap_layout(self, allocation_sequence: List[Dict[str, Any]]) -> Dict[str, Any]:
         layout = {'chunks': [], 'total_size': 0, 'free_chunks': 0,
@@ -365,14 +369,15 @@ class HeapLayoutPredictionVisualizer:
                         chunk['color'] = self._FREE_COLOR
                         layout['free_chunks'] += 1; layout['allocated_chunks'] -= 1
                         break
-            layout['total_size'] = current_addr - 0x1000
-        self.predicted_layout = layout; return layout
+        layout['total_size'] = current_addr - 0x1000
+        self.predicted_layout = layout
+        return layout
 
     def generate_visualization_json(self) -> str:
         return json.dumps({
             'heap_chunks': self.heap_chunks, 'predicted_layout': self.predicted_layout,
             'visualization_config': {'width': 800, 'height': 400, 'chunk_height': 30,
-                                      'address_scale': 'linear'}}, indent=2)
+                                     'address_scale': 'linear'}}, indent=2)
 
     def record_heap_state(self, state: Dict[str, Any]):
         state['timestamp'] = datetime.now().isoformat(); self.heap_state_history.append(state)
@@ -384,21 +389,23 @@ class HeapLayoutPredictionVisualizer:
             {'action': 'alloc', 'size': target_size - 8},
             {'action': 'free', 'address': 0x1000},
             {'action': 'alloc', 'size': target_size}]
-        strategy['description'] = f'Attempt {target_size} bytes at target position'
-        strategy['probability'] = 0.3; return strategy
+        strategy['description'] = f'Attempt {target_size} bytes target position'
+        strategy['probability'] = 0.3
+        return strategy
 
     def frame_shift_mutate(self, sequence: List[HeapOperation],
                            preserve_sizes: bool = True) -> List[HeapOperation]:
         mutated = list(sequence)
-        if len(mutated) < 2: return mutated
+        if len(mutated) < 2:
+            return mutated
         alloc_sizes: Dict[int, int] = {}
         for op in mutated:
             if op.op_type == 'alloc': alloc_sizes[op.address] = op.size
         i = 0
         while i < len(mutated) - 1:
             a, b = mutated[i], mutated[i + 1]
-            if not (a.op_type == 'alloc' and b.op_type == 'free' and
-                    b.address == a.address):
+            if (a.op_type == 'alloc' and b.op_type == 'free'
+                    and b.address == a.address):
                 if i % 3 == 0: mutated[i], mutated[i + 1] = b, a
             i += 1
         return mutated

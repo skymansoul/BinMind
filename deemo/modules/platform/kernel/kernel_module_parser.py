@@ -1,6 +1,5 @@
-# 2026-07-20
-# Raw ELF parser for Linux .ko kernel modules — no pyelftools dependency
-# 手动解析ELF结构，提取modinfo/符号表/vermagic，用于离线内核模块审计
+# 原生ELF解析器，面向Linux .ko内核模块 — 零外部依赖
+# 手解ELF结构，抽取modinfo/符号表/vermagic，支持离线审计
 
 import struct
 import os
@@ -32,7 +31,7 @@ SHN_ABS    = 0xFFF1
 
 @dataclass
 class SectionInfo:
-    """ELF节区信息。"""
+    """ELF节区元信息。"""
     name: str = ""
     sh_type: int = 0
     sh_flags: int = 0
@@ -46,7 +45,7 @@ class SectionInfo:
 
 @dataclass
 class SymbolInfo:
-    """ELF符号信息。"""
+    """ELF符号元信息。"""
     name: str = ""
     st_info: int = 0
     st_other: int = 0
@@ -56,7 +55,7 @@ class SymbolInfo:
 
 @dataclass
 class KernelModule:
-    """解析后的内核模块。"""
+    """解析完成的内核模块。"""
     name: str = ""
     license: str = ""
     vermagic: str = ""
@@ -70,7 +69,7 @@ class KernelModule:
     symbol_crc_count: int = 0
 
     def to_dict(self) -> dict:
-        """导出为下游工具可消费的结构化字典。"""
+        """导出结构化字典，供下游工具消费。"""
         return {
             "name": self.name, "license": self.license,
             "vermagic": self.vermagic, "dependencies": self.dependencies,
@@ -91,7 +90,7 @@ class KernelModule:
 # ===== 底层二进制解析工具 =====
 
 def _read_elf_ident(data: bytes) -> Tuple[int, int, int]:
-    """解析EI_CLASS和字节序。返回(class, endian_char, ptr_size)。"""
+    """解码EI_CLASS与字节序。返回(class, endian_char, ptr_size)。"""
     if data[:4] != ELF_MAGIC:
         raise ValueError("不是有效的ELF文件")
     _ei_class = data[4]  # EI_CLASS: 1=32bit, 2=64bit
@@ -109,7 +108,7 @@ def _read_elf_ident(data: bytes) -> Tuple[int, int, int]:
 
 
 def _parse_elf_header(data: bytes):
-    """解析ELF header返回 (ptr_size, endian, ehdr_dict)。"""
+    """解析ELF header，返回 (ptr_size, endian, ehdr_dict)。"""
     _ps, _endian, _ = _read_elf_ident(data)
     _fmt_map = {
         4: 'HHIIIIIHHHHHH',    # 32-bit
@@ -129,7 +128,7 @@ def _parse_elf_header(data: bytes):
 
 
 def _section_entry_fmt(ptr_size: int, endian: str) -> str:
-    """返回节区头格式字符串。"""
+    """节区头结构格式字符串。"""
     if ptr_size == 8:
         return endian + 'IIQQQQIIQQ'
     else:
@@ -142,7 +141,7 @@ def _section_entry_size(ptr_size: int) -> int:
 
 
 def _read_str_at(data: bytes, start: int) -> str:
-    """从data[start]开始读取null结尾的字符串。"""
+    """从data[start]读取null结尾的字符串。"""
     if start >= len(data):
         return ""
     _end = start
@@ -152,7 +151,7 @@ def _read_str_at(data: bytes, start: int) -> str:
 
 
 def _read_section_data(data: bytes, shdr: SectionInfo) -> bytes:
-    """安全读取节区数据，防止越界。"""
+    """安全读出节区原始字节，防越界。"""
     _start = shdr.sh_offset
     _end = _start + shdr.sh_size
     if _start >= len(data) or shdr.sh_size == 0:
@@ -193,7 +192,7 @@ def _parse_symbols(data: bytes, sec_data: bytes, str_data: bytes,
 
 
 def _classify_symbols(symbols: List[SymbolInfo], license_str: str) -> Dict[str, List[str]]:
-    """分类符号：exported, gpl_only, undefined, local。"""
+    """符号分桶：exported, gpl_only, undefined, local。"""
     _r = {"exported": [], "gpl_only": [], "undefined": [], "local": []}
     _is_gpl = "GPL" in license_str
 
@@ -237,8 +236,8 @@ def _parse_vermagic(vermagic_str: str) -> str:
     return vermagic_str
 
 
-# ─── BPF 程序检测 ───
-# Linux 5.x+ 内核模块可能内嵌 BPF 程序，通过节区名前缀识别
+# ─── BPF程序探测 ───
+# Linux 5.x+内核模块可能内嵌BPF程序，以节区名前缀识别
 
 _BPF_SECTION_PREFIXES = (
     ".bpf", "xdp", "tc/", "socket", "kprobe", "kretprobe",
@@ -249,30 +248,30 @@ _BPF_SECTION_PREFIXES = (
 
 
 def _detect_bpf_sections(sections: List[SectionInfo]) -> Tuple[bool, int]:
-    """检测模块中是否包含 BPF 节区，返回 (has_bpf, count)。"""
+    """探测模块中是否包含BPF节区，返回 (has_bpf, count)。"""
     count = 0
     for sec in sections:
         name = sec.name
-        # 检查节区名是否匹配 BPF 前辍
+        # 节区名是否匹配BPF前缀序列
         for prefix in _BPF_SECTION_PREFIXES:
             if name.startswith(prefix):
                 count += 1
                 break
-        # BTF 节区也是 BPF 程序的标志
+        # BTF节区同样标记BPF程序
         if name in (".BTF", ".BTF.ext", ".bpf.arena"):
             count += 1
     return count > 0, count
 
 
-# ─── GPL 兼容性检查 ───
-# 非 GPL 模块链接 EXPORT_SYMBOL_GPL 符号即违反许可证
+# ─── GPL兼容性校验 ───
+# 非GPL模块链接EXPORT_SYMBOL_GPL符号即构成许可证违规
 
 def _check_gpl_compatibility(symbols: List[SymbolInfo],
                               license_str: str,
                               gpl_syms: Optional[set] = None) -> Dict[str, Any]:
-    """检查模块的 GPL 兼容性。
+    """检查模块GPL兼容性。
 
-    若模块为非 GPL 许可证但引用了 EXPORT_SYMBOL_GPL 符号，
+    若非GPL许可证模块引用了EXPORT_SYMBOL_GPL符号，
     则标记为许可证违规。
     """
     _is_gpl = "GPL" in license_str.upper()
@@ -290,18 +289,18 @@ def _check_gpl_compatibility(symbols: List[SymbolInfo],
     }
 
 
-# ─── 符号 CRC 统计 ───
-# CONFIG_MODVERSIONS 编译的模块在 __versions 段中包含 CRC 校验和
+# ─── 符号CRC统计 ───
+# CONFIG_MODVERSIONS编译的模块在__versions段携带CRC校验和
 
 def _count_symbol_crcs(modinfo: Dict[str, str]) -> int:
-    """统计 modules 的符号版本信息条目数。
+    """统计modules的符号版本信息条目数。
 
-    __versions 段以 null 分隔的 "0xCRC\\tname\\tmodule" 格式存储。
+    __versions段以null分隔"0xCRC\\tname\\tmodule"格式存储。
     """
     _versions = modinfo.get("_raw_versions", "")
     if not _versions:
         return 0
-    # 计数非空 entry
+    # 计数非空条目
     return len([e for e in _versions.split('\x00') if e.strip()])
 
 
@@ -329,11 +328,11 @@ def parse_ko(filepath: str) -> Optional[KernelModule]:
     if _shnum == 0 or _shoff >= len(_data):
         return None
 
-    # 解析节区头 — 使用辅助函数统一 32/64 位处理
+    # 解析节区头 — 辅助函数统一处理32/64位差异
     _sec_fmt = _section_entry_fmt(_ps, _endian)
     _ent_sz  = _section_entry_size(_ps)
     _sections: List[SectionInfo] = []
-    _sh_name_offsets: List[int] = []  # 记录每个 section header 的 sh_name 字段值
+    _sh_name_offsets: List[int] = []  # 记录各section header的sh_name字段值
 
     for _idx in range(_shnum):
         _off = _shoff + _idx * _shentsize
@@ -343,22 +342,22 @@ def parse_ko(filepath: str) -> Optional[KernelModule]:
         _sh_name_idx = _f[0]
         _sh_name_offsets.append(_sh_name_idx)
         _sections.append(SectionInfo(
-            name="",  # name 在解析 shstrtab 后填入
+            name="",  # name在解析shstrtab之后回填
             sh_type=_f[1], sh_flags=_f[2], sh_addr=_f[3],
             sh_offset=_f[4], sh_size=_f[5], sh_link=_f[6],
             sh_info=_f[7], sh_addralign=_f[8], sh_entsize=_f[9]))
 
-    # 解析 section 名称字符串表
+    # 解析section名称字符串表
     _strtab_data = b""
     if _shstrndx < len(_sections):
         _strtab_data = _read_section_data(_data, _sections[_shstrndx])
 
-    # 填充 section 名称
+    # 回填section名称
     for _idx, _sec in enumerate(_sections):
         _sh_name_idx = _sh_name_offsets[_idx]
         _sec.name = _read_str_at(_strtab_data, _sh_name_idx)
 
-    # 按名称索引
+    # 按名称建立索引
     _sec_by_name: Dict[str, SectionInfo] = {s.name: s for s in _sections}
 
     # 提取 modinfo
@@ -384,14 +383,14 @@ def parse_ko(filepath: str) -> Optional[KernelModule]:
     _deps_str = _modinfo.get("depends", "")
     _deps = [d for d in _deps_str.split(",") if d] if _deps_str else []
 
-    # BPF 程序检测
+    # BPF程序探测
     _has_bpf, _bpf_count = _detect_bpf_sections(_sections)
 
-    # GPL 兼容性
+    # GPL兼容性
     _gpl_info = _check_gpl_compatibility(
         _symbols, _modinfo.get("license", ""), None)
 
-    # 符号 CRC
+    # 符号CRC
     _crc_count = _count_symbol_crcs(_modinfo)
 
     return KernelModule(
@@ -411,13 +410,13 @@ def parse_ko(filepath: str) -> Optional[KernelModule]:
 
 # ===== 快速验证 =====
 
-# ─── 安全特性检测 ───
-# 检查模块是否使用了 retpoline / IBT / CET 等控制流完整性特性。
+# ─── 安全缓解措施探测 ───
+# 检查模块是否应用了retpoline/IBT/CET等控制流完整性防护。
 
 def detect_mitigations(kmod: KernelModule) -> Dict[str, bool]:
-    """检测内核模块使用的安全缓解措施。
+    """探测内核模块启用的安全缓解措施。
 
-    在 .modinfo 和符号导入中查找缓解措施的签名。
+    在.modinfo及符号导入中检索缓解特性的签名。
     """
     _mitigations = {
         "retpoline": False, "ibt": False, "cet_shadow_stack": False,
@@ -430,24 +429,24 @@ def detect_mitigations(kmod: KernelModule) -> Dict[str, bool]:
             _mitigations["retpoline"] = True
             break
 
-    # IBT: 检查 .text 段是否有 endbr64 指令特征
+    # IBT: 检查.text段是否有endbr64指令特征
     for _sec in kmod.sections:
         if _sec.name in (".text", ".text.hot", ".text.unlikely"):
-            # 无法在不读取原始文件的情况下检测字节码
-            # 检查节区 flag 是否有 SHF_EXECINSTR
+            # 需读取原始文件字节码才能检测
+            # 此处检查节区flag是否含SHF_EXECINSTR
             pass
 
-    # CFI Clang: 检查是否有 __cfi_check_fail 或 __cfi_ 符号
+    # CFI Clang: 检查是否存在 __cfi_check_fail 或 __cfi_ 前缀符号
     _cfi_syms = {s.name for s in kmod.symbols}
     if "__cfi_check_fail" in _cfi_syms or any(
         n.startswith("__cfi_") for n in _cfi_syms):
         _mitigations["cfi_clang"] = True
 
-    # Fortify: 检查是否有 fortify_panic 符号引用
+    # Fortify: 检查是否存在 fortify_panic 符号引用
     if "fortify_panic" in _cfi_syms:
         _mitigations["fortify_source"] = True
 
-    # DMA 能力检测: 若模块调用 dma_alloc_* / pci_enable_device 系列
+    # DMA能力探测: 若模块调用dma_alloc_*/pci_enable_device系列
     _dma_apis = {
         "dma_alloc_coherent", "dma_alloc_noncoherent",
         "dma_map_single", "dma_map_page", "dma_map_sg",
@@ -464,7 +463,7 @@ def detect_mitigations(kmod: KernelModule) -> Dict[str, bool]:
 
 
 def is_valid_ko(filepath: str) -> bool:
-    """快速检查文件是否为有效.ko模块。"""
+    """快速校验文件是否为有效.ko模块。"""
     if not os.path.isfile(filepath):
         return False
     with open(filepath, 'rb') as _fh:
@@ -486,9 +485,9 @@ def is_valid_ko(filepath: str) -> bool:
 # ─── 批量目录扫描 ───
 
 def scan_directory(dirpath: str) -> List[KernelModule]:
-    """扫描目录下所有 .ko 文件，返回解析后的模块列表。
+    """扫描目录下所有.ko文件，返回解析后的模块列表。
 
-    跳过无法解析或非模块文件，不中断整体扫描流程。
+    对无法解析或非模块文件静默跳过，不中断整体扫描。
     """
     _modules: List[KernelModule] = []
     if not os.path.isdir(dirpath):

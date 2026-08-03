@@ -1,7 +1,6 @@
-# 2026-07-25
 """隐蔽信道检测器 —— 时序信道、存储信道、协议头部隧道检测。
 
-隐蔽信道分类（基于NIST SP 800-53 / NCSC指南）：
+隐蔽信道分类（NIST SP 800-53 / NCSC指南）：
 - 时序信道：通过包间延迟/顺序编码信息。检测方法：IAT熵分析 + 规律性评分。
 - 存储信道：利用协议保留字段/可选头部嵌入数据。检测方法：字段熵异常。
 - DNS/ICMP隧道：利用DNS查询/ICMP负载传输数据。检测方法：熵+长度+频率综合评分。
@@ -16,11 +15,11 @@ from statistics import mean, stdev, median
 
 _log = logging.getLogger(__name__)
 
-# 熵值阈值 —— DNS/ICMP payload的字符分布异常判定线
+# 熵值阈值 —— DNS/ICMP负载的字符分布异常判定线
 _HIGH_ENTROPY_THRESHOLD = 4.0  # 接近随机分布的熵值（base64/加密数据）
-# IAT抖动比阈值 —— 低于此值表示过于规律（可能编码了信息）
+# IAT抖动比阈值 —— 低于此值表示过度规律（可能编码了信息）
 _IAT_JITTER_COVERT = 0.05
-# 包长度序列周期检测的FFT-like自相关阈值
+# 包长序列周期检测的类FFT自相关阈值
 _AUTOCORR_THRESHOLD = 0.7
 
 
@@ -34,16 +33,8 @@ class CovertChannelAlert:
 
 
 class TimingChannelDetector:
-    """时序隐蔽信道检测器 —— 分析包间到达时间(IAT)的统计异常。
-
-    检测原理：
-    1. IAT分布的熵 —— 正常网络IAT呈长尾分布(高熵)，编码数据的IAT呈低熵离散分布
-    2. 自相关分析 —— IAT序列中存在周期性模式 → 可能使用了TDMA-like编码
-    3. 抖动比 —— IAT的标准差/均值 < 0.05 暗示精心控制的发送节奏
-
-    基准参考：Cabuk et al. (2004) IP Covert Timing Channels: Design and Detection
-    """
-
+    # 时序隐蔽信道检测器 —— 分析包间到达时间(IAT)的统计异常。
+    # 检测原理：IAT分布的熵 + 抖动比 + 自相关
     @staticmethod
     def shannon_entropy(values: List[float], bins: int = 20) -> float:
         if not values:
@@ -131,7 +122,7 @@ class StorageChannelDetector:
     - TCP 保留字段 (6bit) —— 正常情况下恒为0，非0即异常
     - IP ID字段 —— 连续递增正常，随机/恒定异常
     - DNS QNAME标签熵 —— 隧道数据编码在DNS子域名中
-    - ICMP payload熵 —— ping -p可以携带任意payload
+    - ICMP payload熵 —— ping -p 可携带任意payload
     """
 
     @staticmethod
@@ -150,7 +141,7 @@ class StorageChannelDetector:
             return [CovertChannelAlert(
                 channel_type="header_field",
                 description=f"TCP保留位非零: {len(anomalies)}/{len(tcp_flags_list)}包 —— "
-                            f"可能被用于存储信道数据嵌入",
+                            f"存储信道数据嵌入嫌疑",
                 severity="high",
                 confidence=0.75,
             )]
@@ -168,7 +159,7 @@ class StorageChannelDetector:
             return [CovertChannelAlert(
                 channel_type="header_field",
                 description=f"IP ID增量=1的比例仅{ratio:.0%} —— 非正常单调递增，"
-                            f"可能被复用为存储信道",
+                            f"存储信道复用嫌疑",
                 severity="medium",
                 confidence=0.7 - ratio,
                 evidence={"ip_id_deltas": deltas[:20]},
@@ -177,7 +168,7 @@ class StorageChannelDetector:
 
     def detect_payload_entropy(self, payloads: List[bytes],
                                 threshold: float = _HIGH_ENTROPY_THRESHOLD) -> List[CovertChannelAlert]:
-        """检测payload高熵（加密/编码数据特征）"""
+        """检测负载高熵（加密/编码数据特征）"""
         if not payloads:
             return []
         entropies = [self._byte_entropy(p) for p in payloads if len(p) > 16]
@@ -187,7 +178,7 @@ class StorageChannelDetector:
         if high_ent_count > len(entropies) * 0.5:
             return [CovertChannelAlert(
                 channel_type="storage",
-                description=f"高熵payload: {high_ent_count}/{len(entropies)}包熵>{threshold} —— "
+                description=f"高熵负载: {high_ent_count}/{len(entropies)}包熵>{threshold} —— "
                             f"疑似加密隧道或编码数据",
                 severity="medium",
                 confidence=min(high_ent_count / max(len(entropies), 1), 1.0),
@@ -200,10 +191,10 @@ class DnsTunnelDetector:
     """DNS 隧道检测 —— 综合熵+长度+频率+查询多样性评分。
 
     DNS隧道的典型特征：
-    - 查询域名标签的熵值异常高（base32/base64编码数据）
-    - 单个标签长度异常长（通常>40字符）
-    - 查询频率远高于正常DNS（隧道需要持续通信）
-    - 查询域名多样性极低（总是查询同一个隧道域名）
+    - 查询域名标签熵值异常高（base32/base64编码数据）
+    - 单个标签长度异常长（>40字符）
+    - 查询频率远高于正常DNS（隧道需持续通信）
+    - 查询域名多样性极低（总是查询同一隧道域名）
     - TXT/MX/CNAME等非A记录异常占比高
     """
 
@@ -216,7 +207,7 @@ class DnsTunnelDetector:
         domains = [q.get("domain", "") for q in queries]
         unique_domains = set(domains)
 
-        # 域名多样性 —— 隧道通信通常只有1-2个隧道域名
+        # 域名多样性 —— 隧道通信通常仅1-2个隧道域名
         diversity = len(unique_domains) / max(len(domains), 1)
         if diversity < 0.1 and len(domains) >= 10:
             # 极低多样性 + 高频查询 = 疑似隧道
@@ -275,7 +266,7 @@ class DnsTunnelDetector:
 class CovertChannelDetector:
     """隐蔽信道综合检测引擎 —— 整合时序、存储、DNS隧道三个检测器。
 
-    每条流(flow)独立评估，输出所有超阈值的隐蔽信道告警。
+    每条流独立评估，输出所有超阈值的隐蔽信道告警。
     设计为在线流式处理 —— 每个新包更新内部状态并返回增量告警。
     """
 
@@ -345,3 +336,6 @@ class CovertChannelDetector:
 __all__ = ["CovertChannelDetector", "CovertChannelAlert",
            "TimingChannelDetector", "StorageChannelDetector",
            "DnsTunnelDetector"]
+
+def _debug_print(*a,**kw):
+    if __import__("os").environ.get("BINMIND_DEBUG"):print(*a,**kw)

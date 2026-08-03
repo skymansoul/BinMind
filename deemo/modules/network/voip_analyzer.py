@@ -1,12 +1,11 @@
-# 2026-07-26
-"""VoIP/SIP/RTP 协议安全分析器 —— SIP洪水、RTP流劫持、长途欺诈模式检测。
+"""VoIP/SIP/RTP协议安全分析。SIP洪水检测、RTP流劫持、长途欺诈识别。
 
-VoIP安全面临三类典型威胁：
+VoIP安全三类威胁：
 1. SIP信令层：注册劫持、INVITE洪水、呼叫拦截
 2. RTP媒体层：流注入、DTMF窃取、SRTP降级
-3. 基础设施层：PBX密码暴力破解、国际长途欺诈(IRS)
+3. 基础设施层：PBX密码爆破、国际长途欺诈(IRS)
 
-检测基于SIP消息头分析和RTP流特征——不解码音频载荷。
+基于SIP消息头与RTP流特征检测，不解码音频载荷。
 """
 import logging, re, struct, hashlib
 from collections import defaultdict, Counter, deque
@@ -16,26 +15,26 @@ from statistics import mean, stdev
 
 _log = logging.getLogger(__name__)
 
-# SIP 请求方法
+# SIP请求方法集合 (RFC 3261)
 _SIP_METHODS = frozenset({
     "INVITE", "ACK", "BYE", "CANCEL", "REGISTER", "OPTIONS",
     "PRACK", "SUBSCRIBE", "NOTIFY", "PUBLISH", "INFO", "REFER",
     "MESSAGE", "UPDATE",
 })
 
-# RTP payload type 常见映射
+# RTP payload type 常见媒体格式映射
 _RTP_PT_MAP = {
     0: "PCMU/8000", 3: "GSM/8000", 8: "PCMA/8000",
     9: "G722/8000", 18: "G729/8000", 101: "telephone-event",
 }
 
-# SIP 响应码类别
+# SIP响应码类别映射
 _SIP_RESP_CATEGORIES = {
     1: "provisional", 2: "success", 3: "redirection",
     4: "client_error", 5: "server_error", 6: "global_failure",
 }
 
-# 长途欺诈检测 —— 高费率国际目的地前缀
+# 长途欺诈检测：高费率国际目的地号码前缀集合
 _HIGH_COST_PREFIXES = frozenset({
     "0088", "0097", "00252", "00253", "00225", "00237", "00269",
     "00508", "00689", "00691", "00881", "00882", "00224", "00263",
@@ -79,10 +78,9 @@ class VoipAlert:
 
 
 class SipMessageParser:
-    """SIP 消息解析器 —— 从UDP/TCP负载提取结构化SIP头字段。
+    """SIP消息解析。从UDP/TCP负载提取结构化SIP头字段。
 
-    SIP遵循RFC 3261文本格式，类HTTP的请求/响应行+头部。使用正则
-    提取核心字段，不构建完整SIP栈。
+    SIP遵循RFC 3261文本格式。正则提取核心字段，不构建完整SIP栈。
     """
 
     _REQ_LINE = re.compile(rb"^(\w+)\s+sip:([^\s]+)\s+SIP/2\.0", re.I)
@@ -144,10 +142,10 @@ class SipMessageParser:
 
 
 class SipFloodDetector:
-    """SIP 洪水检测 —— 基于INVITE/REGISTER速率的EWMA异常检测。
+    """SIP洪水检测。基于INVITE/REGISTER速率的EWMA异常检测。
 
-    SIP洪水是VoIP最常见的DoS攻击形式：超大量INVITE/REGISTER请求
-    耗尽PBX的并发呼叫处理能力。
+    SIP洪水为VoIP最常见DoS攻击：大量INVITE/REGISTER请求
+    耗尽PBX并发呼叫处理能力。
     """
 
     def __init__(self, alpha: float = 0.2):
@@ -156,7 +154,7 @@ class SipFloodDetector:
         self._ewma: Dict[str, float] = {}
 
     def feed(self, method: str, src_ip: str, timestamp: float) -> bool:
-        """返回True表示当前速率异常（洪水检测触发）"""
+        """输入一次SIP请求事件，返回True表示当前速率异常。"""
         key = f"{src_ip}:{method}"
         self._counters[key].append(timestamp)
 
@@ -171,13 +169,13 @@ class SipFloodDetector:
         new_ewma = self._alpha * rate + (1 - self._alpha) * prev
         self._ewma[key] = new_ewma
 
-        return rate > new_ewma * 3.0 and rate > 5.0  # 超过EWMA基线3倍且>5/秒
+        return rate > new_ewma * 3.0 and rate > 5.0  # 超EWMA基线3倍且高于5次/秒
 
 
 class RtpStreamTracker:
-    """RTP 流追踪器 —— 检测SSRC冲突、序列号跳跃、抖动异常。
+    """RTP流追踪。检测SSRC冲突、序列号跳跃、抖动异常。
 
-    RTP固定头部（12字节）：
+    RTP固定头部（12字节）布局：
     [V=2|P|X|CC(4)] [M|PT(7)] [SeqNum(16)] [Timestamp(32)] [SSRC(32)]
     """
 
@@ -192,7 +190,7 @@ class RtpStreamTracker:
 
         b0 = data[0]
         version = (b0 >> 6) & 0x03
-        if version != 2:  # RTP version must be 2
+        if version != 2:  # RTP版本必须为2
             return None
 
         pt = data[1] & 0x7F
@@ -212,14 +210,14 @@ class RtpStreamTracker:
         stream.byte_count += len(data)
         stream.payload_type = pt
 
-        # 序列号跳跃检测（>500的跳跃 = 丢包或重放）
+        # 序列号跳跃检测（>500表示丢包或重放攻击）
         if stream.last_seq > 0:
             delta = (seq - stream.last_seq) & 0xFFFF
             if delta > 500:
                 stream.lost_packets += delta - 1
         stream.last_seq = seq
 
-        # RTP 抖动估计（RFC 3550 §6.4.1）
+        # RTP抖动估计（RFC 3550 §6.4.1）
         if stream.packet_count > 1:
             transit = timestamp - ts
             d = abs(transit)
@@ -229,12 +227,12 @@ class RtpStreamTracker:
 
 
 class VoipAnalyzer:
-    """VoIP 综合分析引擎 —— SIP信令+RTP媒体+长途欺诈并行检测。
+    """VoIP综合分析引擎。SIP信令+RTP媒体+长途欺诈并行检测。
 
     分析流程：
-    1. SIP层：消息解析 → 洪水检测 → REGISTER爆破检测 → 呼叫模式分析
-    2. RTP层：流向追踪 → SSRC冲突 → SRTP缺失检测
-    3. 交叉层：呼叫方/被叫方模式 → 高费率目的地匹配
+    1. SIP层：消息解析 -> 洪水检测 -> REGISTER爆破检测 -> 呼叫模式分析
+    2. RTP层：流向追踪 -> SSRC冲突 -> SRTP缺失检测
+    3. 交叉层：呼叫方/被叫方模式 -> 高费率目的地匹配
     """
 
     def __init__(self):
@@ -247,7 +245,7 @@ class VoipAnalyzer:
 
     def feed_sip(self, data: bytes, src_ip: str = "",
                  dst_ip: str = "", timestamp: float = 0.0) -> Optional[SipMessage]:
-        """输入SIP消息负载（UDP/TCP data）"""
+        """输入SIP消息负载，逐包分析。"""
         msg = self._sip_parser.parse(data)
         if msg is None:
             return None
@@ -262,9 +260,8 @@ class VoipAnalyzer:
                     evidence={"method": msg.method},
                 ))
 
-        # REGISTER 爆破 —— 同一源IP的多次失败注册
+        # REGISTER爆破：同一源IP多次失败注册
         if msg.method == "REGISTER" and msg.is_response and msg.response_code in (401, 403):
-            # 从Via或From中提取源IP
             self._register_attempts[src_ip] += 1
 
         # 呼叫记录
@@ -279,7 +276,7 @@ class VoipAnalyzer:
 
     def feed_rtp(self, data: bytes, src_ip: str = "",
                  src_port: int = 0, timestamp: float = 0.0) -> Optional[RtpStreamInfo]:
-        """输入RTP包"""
+        """输入RTP包，流追踪。"""
         return self._rtp_tracker.feed(data, src_ip, src_port, timestamp)
 
     def detect_register_bruteforce(self) -> List[VoipAlert]:
@@ -295,7 +292,7 @@ class VoipAnalyzer:
         return alerts
 
     def detect_toll_fraud(self) -> List[VoipAlert]:
-        """检测国际长途欺诈(IRS) —— 被叫号码匹配高费率目的地前缀"""
+        """国际长途欺诈(IRS)检测。被叫号码匹配高费率目的地前缀。"""
         alerts = []
         for call in self._call_history[-100:]:
             to_uri = call.get("to_uri", "")
@@ -318,7 +315,7 @@ class VoipAnalyzer:
         return alerts
 
     def detect_rtp_hijack(self) -> List[VoipAlert]:
-        """检测RTP劫持 —— SSRC冲突（同一SSRC来自不同IP）"""
+        """RTP劫持检测。SSRC冲突及丢包率异常识别流注入/降级攻击。"""
         alerts = []
         for ssrc, info in self._rtp_tracker._streams.items():
             source = self._rtp_tracker._ssrc_sources.get(ssrc, "")
@@ -365,7 +362,7 @@ class VoipAnalyzer:
 
 def analyze_voip_traffic(sip_packets: List[Dict] = None,
                          rtp_packets: List[Dict] = None) -> Dict[str, Any]:
-    """便捷入口 —— 同时分析SIP和RTP流量"""
+    """批量分析SIP和RTP流量。便捷入口。"""
     analyzer = VoipAnalyzer()
     for p in (sip_packets or []):
         analyzer.feed_sip(

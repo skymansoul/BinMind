@@ -2,18 +2,18 @@
 """
 堆布局约束求解器
 
-基于 [HEXP 2025, IEEE TIFS] 的堆布局约束模型，
-将堆内存分配/释放序列建模为线性 Diophantine 方程，
-求解满足漏洞利用前提的堆布局。
+基于 [HEXP 2025, IEEE TIFS] 的堆布局约束模型
+将堆内存分配/释放序列建模为线性 Diophantine 方程
+求解满足漏洞利用前提的堆布局
 
 核心能力：
 - 堆操作序列提取
 - 空闲链表/arena 状态建模
 - 布局约束 ILP 求解
-- 多策略布局推荐（按 ptmalloc 版本）
+- 多策略布局（按 ptmalloc 版本）
 
 参考 [AutoPwn 2024, IEEE TIFS] 的 artifact-assisted 策略
-与 [CtxFuzz 2025] 的上下文堆操作序列分析。
+与 [CtxFuzz 2025] 的上下文堆操作序列分析
 """
 
 import logging
@@ -24,6 +24,7 @@ from dataclasses import dataclass, field
 from enum import Enum, auto
 from collections import defaultdict
 import itertools
+from collections import OrderedDict  # 保留——未使用
 
 logger = logging.getLogger(__name__)
 
@@ -54,15 +55,15 @@ class BinType(Enum):
 class Chunk:
     """
     ptmalloc malloc_chunk 模型（x86-64）
-
-    字段与 glibc 2.35+ 兼容。
+    
+    字段与 glibc 2.35+ 兼容
     """
     address: int
     size: int  # 含 metadata 的完整 chunk size
     prev_size: int = 0
     flags: int = 0  # PREV_INUSE | IS_MMAPPED | NON_MAIN_ARENA
-    fd: int = 0     # forward pointer (free list)
-    bk: int = 0     # backward pointer (free list)
+    fd: int = 0     # forward 指针 (free list)
+    bk: int = 0     # backward 指针 (free list)
     fd_nextsize: int = 0
     bk_nextsize: int = 0
     is_free: bool = False
@@ -86,8 +87,8 @@ class Chunk:
 class HeapLayout:
     """
     堆布局快照
-
-    在某个时间点的完整堆状态。
+    
+    在某个时间点的完整堆状态
     """
     chunks: List[Chunk] = field(default_factory=list)
     free_lists: Dict[BinType, List[int]] = field(
@@ -102,9 +103,9 @@ class HeapLayout:
 class HeapConstraint:
     """
     堆布局约束
-
-    表示一条与堆操作相关的约束条件，
-    可转换为 ILP 变量。
+    
+    表示一条与堆操作相关的约束条件
+    可转换为 ILP 变量
     """
     constraint_type: str  # 'allocation', 'free', 'overlap', 'adjacent', 'size'
     variables: List[str] = field(default_factory=list)
@@ -117,7 +118,7 @@ class HeapConstraint:
 @dataclass
 class ExploitStrategy:
     """
-    漏洞利用策略推荐
+    漏洞利用策略
     """
     strategy_name: str
     applicable_vuln_types: List[str]
@@ -132,9 +133,9 @@ class ExploitStrategy:
 class HeapOpSequenceExtractor:
     """
     堆操作序列提取器
-
-    从程序调用图/汇编/输出中提取 malloc/free 操作序列。
-    参考 [CtxFuzz 2025] 的 CHOS (Context Heap Operation Sequence) 提取方法。
+    
+    从程序调用图/汇编/输出中提取 malloc/free 操作序列
+    参考 [CtxFuzz 2025] 的 CHOS (Context 堆 Operation Sequence) 提取方法
     """
 
     _ALLOC_PATTERNS = [
@@ -154,9 +155,9 @@ class HeapOpSequenceExtractor:
     def extract_from_asm(self, assembly: str) -> List[Tuple[int, HeapOp, str]]:
         """
         从汇编代码中提取堆操作序列
-
-        Returns:
-            [(address, HeapOp, raw_instruction), ...]
+        
+        返回:
+        [(address, 堆Op, raw_instruction),.]
         """
         ops = []
         addr_pattern = re.compile(r'^\s*(0x[0-9a-fA-F]+)')
@@ -197,8 +198,8 @@ class HeapOpSequenceExtractor:
     ) -> List[Dict[str, Any]]:
         """
         提取带有上下文信息的堆操作序列（CHOS）
-
-        为每个操作标注：地址、调用栈深度、操作序数、前后操作类型。
+        
+        为每个操作标注：地址、调用栈深度、操作序数、前后操作类型
         """
         chos = []
         for i, (addr, op, instr) in enumerate(ops):
@@ -227,11 +228,11 @@ class HeapOpSequenceExtractor:
 class HeapLayoutSolver:
     """
     堆布局约束求解器
-
-    基于 [HEXP 2025] 的 ILP 方法建模堆布局。
-    将目标布局表示为关于分配大小和次数的线性约束，
-    使用整数线性规划求解可行的布局参数。
-
+    
+    基于 [HEXP 2025] 的 ILP 方法建模堆布局
+    将目标布局表示为关于分配大小和次数的线性约束
+    使用整数线性规划求解可行的布局参数
+    
     支持的抽象：
     - 自由块合并（unlink 操作）
     - 切割（remainder chunk）
@@ -239,10 +240,10 @@ class HeapLayoutSolver:
     - top chunk 扩展
     """
 
-    # ptmalloc 2.35+ tcache 参数（x86-64）
+    # ptmalloc 2.35+ t缓存参数（x86-64）
     TCACHE_MAX_ENTRIES = 7
-    TCACHE_MAX_SIZE = 0x410  # 1040 bytes (64 bins × 16 bytes each)
-    FASTBIN_MAX_SIZE = 0x80   # 128 bytes (6 fastbins on x86-64)
+    TCACHE_MAX_SIZE = 0x410  # 1040 bytes (64 bins × 16 bytes)
+    FASTBIN_MAX_SIZE = 0x80   # 128 bytes (6 fastbins x86-64)
     SMALLBIN_MAX_SIZE = 0x400  # 1024 bytes
 
     def __init__(self, word_size: int = 8):
@@ -257,18 +258,18 @@ class HeapLayoutSolver:
         max_iterations: int = 1000
     ) -> Optional[Dict[str, Any]]:
         """
-        求解 Use-After-Free 的堆布局
-
-        目标：在释放 target_size 大小的 chunk 后，
-        用相同大小的分配重新占据，实现类型混淆或控制流劫持。
-
+        求解 释放后使用 的堆布局
+        
+        目标：在释放 target_size 大小的 chunk 后
+        用相同大小的分配重新占据，实现类型混淆或控制流劫持
+        
         Args:
-            target_size: 目标 chunk 的用户大小
-            vulnerability_offset: 漏洞触发前需要的操作数
-            max_iterations: 最大尝试次数
-
-        Returns:
-            布局参数字典或 None
+        target_size: 目标 chunk 的用户大小
+        vulnerability_offset: 漏洞触发前需要的操作数
+        max_iterations: 最大尝试次数
+        
+        返回:
+        布局参数字典或 None
         """
         chunk_size = self._align_size(target_size + 0x10)
 
@@ -284,12 +285,12 @@ class HeapLayoutSolver:
         }
 
         if bin_type == BinType.TCACHE:
-            # tcache dup 策略: 通过 double free 使 fd 指向自身
+            # t缓存dup 策略: 通过 双重释放 使 fd 指向自身
             layout['strategy'] = 'tcache_dup'
             layout['operations'] = [
                 {'op': 'malloc', 'size': target_size},  # A
                 {'op': 'free', 'ptr': 'A'},              # free A → tcache
-                {'op': 'free', 'ptr': 'A'},              # double free A
+                {'op': 'free', 'ptr': 'A'},              # 双重释放 A
                 {'op': 'malloc', 'size': target_size},    # 取回 A
                 {'op': 'malloc', 'size': target_size},    # 再次取回 A（与上一步相同）
             ]
@@ -302,7 +303,7 @@ class HeapLayoutSolver:
                 {'op': 'malloc', 'size': target_size},
                 {'op': 'malloc', 'size': 0x20},           # 隔离 chunk
                 {'op': 'free', 'ptr': 'A'},
-                {'op': 'free', 'ptr': 'A'},               # double free
+                {'op': 'free', 'ptr': 'A'},               # 双重释放
                 {'op': 'malloc', 'size': target_size},
                 {'op': 'malloc', 'size': target_size},
             ]
@@ -334,16 +335,16 @@ class HeapLayoutSolver:
     ) -> Optional[Dict[str, Any]]:
         """
         求解堆溢出的布局约束
-
-        目标：使得溢出源 chunk 与需要覆写的目标 chunk 相邻，
-        从而实现元数据或指针覆写。
-
+        
+        目标：使得溢出源 chunk 与需要覆写的目标 chunk 相邻
+        从而实现元数据或指针覆写
+        
         Args:
-            overflow_source_size: 溢出源 chunk 大小
-            target_type: 目标类型（'adjacent', 'tcache_fd', 'fastbin_fd'）
-
-        Returns:
-            布局参数字典或 None
+        overflow_source_size: 溢出源 chunk 大小
+        target_type: 目标类型（'adjacent', 'tcache_fd', 'fastbin_fd'）
+        
+        返回:
+        布局参数字典或 None
         """
         layout = {
             'overflow_size': overflow_source_size,
@@ -368,7 +369,7 @@ class HeapLayoutSolver:
             layout['operations'] = [
                 {'op': 'malloc', 'size': overflow_source_size},   # 源
                 {'op': 'malloc', 'size': target_chunk_size},      # 目标（同大小，同 tcache bin）
-                {'op': 'free', 'ptr': 'B'},                        # B → tcache head
+                {'op': 'free', 'ptr': 'B'},                        # B → t缓存head
             ]
             layout['estimated_success'] = 0.75
 
@@ -400,12 +401,12 @@ class HeapLayoutSolver:
 
 class ExploitStrategyRecommender:
     """
-    漏洞利用策略推荐器
-
-    基于 [AutoPwn 2024] 的 artifact-assisted 策略重用方法，
-    将已知漏洞模式映射到具体的利用策略。
-
-    [HEXP 2025] 的布局约束模型用于验证推荐策略的可行性。
+    漏洞利用策略器
+    
+    基于 [AutoPwn 2024] 的 artifact-assisted 策略重用方法
+    将已知漏洞模式映射到具体的利用策略
+    
+    [HEXP 2025] 的布局约束模型用于验证策略的可行性
     """
 
     STRATEGIES = [
@@ -479,15 +480,15 @@ class ExploitStrategyRecommender:
         known_conditions: Optional[List[str]] = None
     ) -> List[Dict[str, Any]]:
         """
-        推荐适用于给定漏洞类型的利用策略
-
+        适用于给定漏洞类型的利用策略
+        
         Args:
-            vuln_type: 漏洞类型（如 'uaf', 'heap_overflow'）
-            ptmalloc_version: glibc/ptmalloc 版本
-            known_conditions: 已知满足的条件
-
-        Returns:
-            按成功概率降序排列的策略列表
+        vuln_type: 漏洞类型（如 'uaf', '堆_overflow'）
+        ptmalloc_version: glibc/ptmalloc 版本
+        known_conditions: 已知满足的条件
+        
+        返回:
+        按成功概率降序排列的策略列表
         """
         candidates = []
 
@@ -531,8 +532,8 @@ def analyze_heap_layout(
 ) -> Dict[str, Any]:
     """
     便捷函数：堆布局分析
-
-    整合序列提取 → 布局求解 → 策略推荐的完整流程。
+    
+    整合序列提取 → 布局求解 → 策略的完整流程
     """
     solver = HeapLayoutSolver()
 

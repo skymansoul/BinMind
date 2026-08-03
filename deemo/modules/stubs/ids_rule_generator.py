@@ -1,7 +1,6 @@
-# re-export from compat/ — IDS 规则生成桩
-# 编译加载策略 — 上游模块含运行时配置，需要完整 exec 环境
-# 参考: FuzzBox (arXiv:2509.05643) 嵌入式 fuzzing 输出 → IDS 规则 &
-#        FirmRec (ACM CCS 2024) 漏洞签名到检测规则的映射
+# compat/ 子模块代理 — IDS 规则构造，exec() 加载以保留上游运行时上下文。
+# 参考: FuzzBox (arXiv:2509.05643) 嵌入式模糊测试输出到 IDS 规则的映射;
+# FirmRec (ACM CCS 2024) 漏洞签名到检测规则的转换。
 import os as _os
 
 _base = _os.path.join(_os.path.dirname(_os.path.dirname(__file__)), 'core', 'compat', 'ids_rule_generator.py')
@@ -10,9 +9,9 @@ with open(_base, 'r', encoding='utf-8') as _fh:
 _code = compile(_raw_src, _base, 'exec')
 exec(_code, globals())
 
-# --- IDS 规则后处理 ---
-# FirmRec 的基于 exploitation 的签名提取 → 可映射为 Suricata/Snort 规则。
-# FuzzBox 的覆盖率引导 fuzzing 输出 → 协议异常模式 → IDS 规则模板。
+# IDS 规则格式转换
+# FirmRec: exploitation 签名提取 → Suricata/Snort 规则。
+# FuzzBox: 覆盖率引导模糊测试 → 协议异常模式 → IDS 规则。
 
 _SURICATA_TEMPLATE = (
     'alert {proto} {src} any -> {dst} {port} '
@@ -20,8 +19,8 @@ _SURICATA_TEMPLATE = (
 )
 
 def to_suricata_rule(rule_data: dict) -> str | None:
-    """将内部规则表示转换为 Suricata 兼容格式。
-    必填: proto, msg, content。可选: src, dst, port, flow, sid, classtype。"""
+    """将内部规则字典转换为 Suricata 兼容的 alert 规则字符串。
+    必要字段: proto, msg, content。选填: src, dst, port, flow, sid, classtype。"""
     required = {'proto', 'msg', 'content'}
     if not required.issubset(rule_data.keys()):
         return None

@@ -1,4 +1,4 @@
-# 26 tests: SSVC (11), purl/CPE (6), transitive risk (3), GHSA coverage (3), version edge cases (3)
+"""26项测试: SSVC (11), purl/CPE (6), 传递风险 (3), GHSA覆盖 (3), 版本边界 (3)"""
 
 import pytest
 from modules.cve.src.cve_kb import CVEKnowledgeBase
@@ -12,7 +12,7 @@ def kb():
     db.close()
 
 
-# ---- SSVC tests (11 tests) ----
+# ---- SSVC测试 (11项) ----
 
 class TestSSVC:
     def test_import(self):
@@ -21,7 +21,7 @@ class TestSSVC:
         assert Decision is not None
 
     def test_evaluate_critical_active(self):
-        """Critical CVE with active exploit → Act."""
+        """含活跃exploit的Critical CVE → Act。"""
         from modules.cve.src.cve_ssvc import evaluate_cve
         entry = _make_test_entry("CVE-2024-0001", cvss_score=9.8)
         entry._exploit_maturity = "metasploit"

@@ -1,5 +1,3 @@
-# 2026-07-26
-
 """AFLfast调度器 + 语料库持久化管理 -- 种子选择/队列裁剪/文件IO."""
 
 import json
@@ -37,6 +35,13 @@ class Scheduler:
         self._state_history: list[tuple[str, bool]] = []  # (state, is_new_find)
         self._round_robin_idx: int = 0
         self._total_picks: int = 0
+        # ISRG + Pareto: 按需懒加载, 避免默认引入开销
+        self._srg = None          # SeedRelationGraph | None
+        self._pareto = None       # ParetoArchive | None
+        self._path_cluster = None       # PathCluster | None
+        self._mutation_ensemble = None  # MutationEnsemble | None
+        self._coverage_splicer = None   # CoverageAwareSplicer | None
+        self._cost_forecaster = None    # ExecutionCostForecaster | None
 
     # //// 种子评分 -- AFLfast风格 ////
     def seed_score(self, seed: Seed) -> float:
@@ -152,15 +157,23 @@ class Scheduler:
                 return True
         return False
 
-    # //// 队列裁剪 -- 贪心最小化 ////
+    # //// 队列裁剪 -- 贪心最小化 + ISRG/Pareto保护 ////
     def cull_queue(self) -> int:
         """去除冗余种子，只保留那些贡献了独特覆盖的种子。
 
         排序依据：执行时间升序（快的优先）、覆盖边数降序（多的优先）。
         贪心算法：对于每个种子，检查其覆盖是否被已保留的种子集合完全覆盖。
+
+        ISRG/Pareto 保护: 若启用了关系图或归档, 桥接种子和 Pareto 最优种子
+        在裁剪中优先保留, 即使它们的覆盖被其他种子包含。
         """
         if len(self._seed_queue) <= 1:
             return 0
+
+        # 获取保护列表
+        _protected: set[str] = set()
+        _protected.update(self.get_bridge_seeds())
+        _protected.update(self.get_pareto_retained_ids())
 
         # 排序：快的在前，覆盖多的在前
         self._seed_queue.sort(
@@ -176,7 +189,8 @@ class Scheduler:
 
         for _s in self._seed_queue:
             _new_coverage = _s.coverage - _covered_union
-            if _new_coverage:
+            # 受保护种子: 即使无新覆盖也保留, 但通过其独有覆盖增益决定是否更新并集
+            if _new_coverage or _s.id in _protected:
                 _covered_union.update(_s.coverage)
                 _kept.append(_s)
             else:
@@ -192,7 +206,7 @@ class Scheduler:
     def get_queue_stats(self) -> dict:
         _edge_counts = [len(_s.coverage) for _s in self._seed_queue] if self._seed_queue else [0]
         _total_edges_across_all = sum(_edge_counts)
-        return {
+        _stats = {
             "queue_length": len(self._seed_queue),
             "strategy": self.strategy,
             "total_picks": self._total_picks,
@@ -201,6 +215,19 @@ class Scheduler:
             "min_edges_any_seed": min(_edge_counts),
             "unique_seeds_picked": len(self._selection_counts),
         }
+        if self._srg is not None:
+            _stats["isrg"] = self._srg.stats()
+        if self._pareto is not None:
+            _stats["pareto"] = self._pareto.stats()
+        if self._path_cluster is not None:
+            _stats["path_cluster"] = self._path_cluster.stats()
+        if self._mutation_ensemble is not None:
+            _stats["mutation_ensemble"] = self._mutation_ensemble.stats()
+        if self._coverage_splicer is not None:
+            _stats["coverage_splicer"] = self._coverage_splicer.stats()
+        if self._cost_forecaster is not None:
+            _stats["cost_forecaster"] = self._cost_forecaster.stats()
+        return _stats
 
     # //// 更新马尔可夫状态 -- 根据fuzzing结果反馈 ////
     def _update_markov_state(self, seed: Seed, is_new_find: bool) -> None:
@@ -244,6 +271,202 @@ class Scheduler:
         else:
             seed.metadata["is_recent_find"] = False
             seed.energy = max(seed.energy * 0.95, 0.1)
+
+    # //// ISRG (种子间覆盖关系图) 集成 ////
+    def enable_graph_awareness(self) -> None:
+        """启用种子关系图感知 -- 懒加载 ISRG, 开始追踪种子间覆盖关系。"""
+        if self._srg is None:
+            from fuzzing.src.seed_relation_graph import SeedRelationGraph
+            self._srg = SeedRelationGraph()
+
+    def update_relation_graph(self, seed: Seed, coverage: set) -> None:
+        """将种子及其覆盖信息录入 ISRG。
+
+        在每次执行后调用, 维护种子间覆盖关系的实时图。
+        若未启用图感知, 则无操作。
+        """
+        if self._srg is None:
+            return
+        self._srg.upsert_seed(seed.id, coverage)
+        # 此段后续可微调: 当前每 50 次更新才重建中心性以平衡精度和计算开销
+        if self._total_picks % 50 == 0:
+            self._srg.compute_flow_centrality()
+
+    def seed_diversity_bonus(self, seed_id: str) -> float:
+        """从 ISRG 获取种子的多样性奖励因子 [0, 1]。
+
+        返回 1.0 表示高度多样性 (应加分), 0.0 表示冗余 (应减分)。
+        用于在 AFLfast 评分中乘入多样性维度, 使调度偏好独特种子。
+        若未启用图感知, 返回中性值 0.5。
+        """
+        if self._srg is None:
+            return 0.5
+        return self._srg.diversity_score(seed_id)
+
+    def get_bridge_seeds(self) -> list[str]:
+        """返回 ISRG 识别出的桥接种子 ID 列表 -- 裁剪时需额外保留。"""
+        if self._srg is None:
+            return []
+        return self._srg.find_bridge_seeds()
+
+    # //// Pareto 归档集成 ////
+    def enable_pareto_archive(self, n_objectives: int = 4,
+                              max_archive_size: int = 200) -> None:
+        """启用多目标 Pareto 归档 -- 跨代保留非支配种子。"""
+        if self._pareto is None:
+            from fuzzing.src.pareto_archive import ParetoArchive
+            self._pareto = ParetoArchive(
+                n_objectives=n_objectives,
+                max_archive_size=max_archive_size,
+            )
+
+    def submit_to_pareto(self, seed: Seed, exec_time_ms: float = 10.0,
+                         rarity_score: float = 0.5) -> bool:
+        """将种子提交到 Pareto 归档评估。
+
+        返回 True 若该种子被接受进入 Pareto 前沿。
+        若未启用归档, 返回 False。
+        """
+        if self._pareto is None:
+            return False
+        from fuzzing.src.pareto_archive import ParetoArchive
+        objs = ParetoArchive.objectives_from_seed(
+            seed, edge_coverage=seed.coverage,
+            exec_time_ms=exec_time_ms, rarity_score=rarity_score,
+        )
+        return self._pareto.submit(seed.id, objs, metadata=seed.metadata)
+
+    def get_pareto_retained_ids(self) -> frozenset[str]:
+        """返回 Pareto 归档中必须保留的种子ID。"""
+        if self._pareto is None:
+            return frozenset()
+        return self._pareto.get_retained_ids()
+
+    # //// 增强的种子评分: 融合 ISRG 多样性 ////
+    def seed_score_enhanced(self, seed: Seed) -> float:
+        """基于原始 AFLfast 评分 + ISRG 多样性奖励的增强评分。
+
+        score = base_score * (0.7 + 0.3 * diversity_bonus)
+        多样性奖励最高可提升 30%, 最低降低 30%。
+        未启用 ISRG 时退化为原始评分。
+        """
+        base = self.seed_score(seed)
+        div = self.seed_diversity_bonus(seed.id)
+        return base * (0.7 + 0.3 * div)
+
+    # //// PathCluster (MinHash LSH 路径聚类) 集成 ////
+    def enable_path_clustering(self) -> None:
+        """启用执行路径聚类 — 基于 MinHash LSH 的路径相似性快速检索。"""
+        if self._path_cluster is None:
+            from fuzzing.src.path_trace_cluster import PathCluster
+            self._path_cluster = PathCluster()
+
+    def insert_execution_trace(self, seed_id: str, trace: list[int]) -> None:
+        """将种子执行 trace 插入路径聚类器。trace 为边 ID 有序列表。"""
+        if self._path_cluster is None:
+            return
+        self._path_cluster.insert(seed_id, trace)
+
+    def path_diversity_score(self, seed_id: str) -> float:
+        """从路径聚类器获取路径结构多样性 (0~1)。
+
+        与 ISRG 多样性互补: ISRG 看覆盖集合 → 静态; 此处看路径顺序 → 动态。
+        两者取 max 作为综合多样性度量。
+        """
+        if self._path_cluster is None:
+            return 0.5
+        return self._path_cluster.path_diversity_score(seed_id)
+
+    # //// MutationEnsemble (突变策略集成) 集成 ////
+    def enable_mutation_ensemble(self, learning_rate: float = 0.1) -> None:
+        """启用突变策略在线集成 — EG 自适应加权融合 8 种突变算子。"""
+        if self._mutation_ensemble is None:
+            from fuzzing.src.mutation_ensemble import MutationEnsemble
+            self._mutation_ensemble = MutationEnsemble(learning_rate=learning_rate)
+
+    def sample_mutation_strategy(self) -> str | None:
+        """从集成中采样一个突变策略名称。未启用时返回 None (使用默认策略)。"""
+        if self._mutation_ensemble is None:
+            return None
+        return self._mutation_ensemble.sample()
+
+    def update_mutation_feedback(self, strategy_name: str, reward: float,
+                                 precursor: str | None = None) -> None:
+        """向突变集成反馈一次变异的结果奖励。奖励 ∈ [0, 2]。"""
+        if self._mutation_ensemble is None:
+            return
+        self._mutation_ensemble.update(strategy_name, reward, precursor=precursor)
+
+    # //// CoverageAwareSplicer (覆盖感知拼接) 集成 ////
+    def enable_coverage_splicer(self) -> None:
+        """启用覆盖感知拼接 — 在覆盖转移边界处执行 splice, 替代随机中点。"""
+        if self._coverage_splicer is None:
+            from fuzzing.src.coverage_splicer import CoverageAwareSplicer
+            self._coverage_splicer = CoverageAwareSplicer()
+
+    def register_splice_feedback(self, seed_id: str, offset: int,
+                                 cov_before: set, cov_after: set) -> None:
+        """向覆盖感知拼接器注册变异反馈, 用于学习覆盖转移边界。"""
+        if self._coverage_splicer is None:
+            return
+        self._coverage_splicer.register_mutation(
+            seed_id, offset, cov_before, cov_after
+        )
+
+    def splice_at_boundary(self, data_a: bytes, seed_a: str,
+                           data_b: bytes, seed_b: str,
+                           cov_a: set | None = None,
+                           cov_b: set | None = None) -> tuple:
+        """在覆盖转移边界处拼接两个种子。回退到中点随机拼接。"""
+        if self._coverage_splicer is None:
+            # 回退: 中点拼接
+            mid = len(data_a) // 2 if data_a else 0
+            return (data_a[:mid] + data_b[mid:], mid, 0.0)
+        return self._coverage_splicer.splice(
+            data_a, seed_a, data_b, seed_b, cov_a, cov_b
+        )
+
+    # //// ExecutionCostForecaster (执行开销预测) 集成 ////
+    def enable_cost_forecaster(self) -> None:
+        """启用执行开销预测 — 在线分位数回归预估 P50/P95 执行时间。"""
+        if self._cost_forecaster is None:
+            from fuzzing.src.exec_cost_forecaster import ExecutionCostForecaster
+            self._cost_forecaster = ExecutionCostForecaster()
+
+    def observe_execution_time(self, seed_id: str, actual_ms: float,
+                               seed=None) -> object:
+        """记录一次实际执行时间, 返回 CostEstimate。"""
+        if self._cost_forecaster is None:
+            return None
+        return self._cost_forecaster.observe(seed_id, actual_ms, seed)
+
+    def predict_execution_time(self, seed_id: str) -> tuple[float, float]:
+        """查询种子的 P50 和 P95 执行时间预估 (ms)。未启用时返回默认值。"""
+        if self._cost_forecaster is None:
+            return (5.0, 50.0)
+        return self._cost_forecaster.predict(seed_id)
+
+    def throughput_aware_seed_score(self, seed: Seed) -> float:
+        """融合执行开销的吞吐量感知种子评分。
+
+        enhanced_score * throughput_score → 偏好快速+高潜力的种子。
+        在探索阶段使用此评分可最大化 有效执行次数/秒。
+        """
+        quality = self.seed_score_enhanced(seed)
+        if self._cost_forecaster is None:
+            return quality
+        tp = self._cost_forecaster.throughput_score(seed.id)
+        return quality * (0.5 + 0.5 * tp)
+
+    # //// 综合多样性评分: ISRG + PathCluster ////
+    def comprehensive_diversity(self, seed_id: str) -> float:
+        """融合 ISRG 覆盖多样性和 PathCluster 路径多样性的综合度量。
+
+        max(isrg_div, path_div): 偏向乐观估计 — 只要在某一个维度上独特就保留。
+        """
+        cov_div = self.seed_diversity_bonus(seed_id)
+        path_div = self.path_diversity_score(seed_id)
+        return max(cov_div, path_div)
 
     def queue_size(self) -> int:
         return len(self._seed_queue)

@@ -1,7 +1,7 @@
 # 2026-07-14
 # 沙箱编排 —— 多后端统一接口，自动选择最优执行环境
-# 设计思路：Docker 优先（隔离性好），QEMU 次之（全系统模拟），
-# Process 兜底（轻量但隔离弱），Windows Sandbox 仅 Windows 下可用
+# 设计思路：Docker 优先（隔离性好），QEMU 次之（全系统模拟）
+# Process 兜底（轻量但隔离弱），Windows 沙箱 仅 Windows 下可用
 
 import os
 import sys
@@ -98,8 +98,8 @@ class SandboxDriver(ABC):
 
 class DockerSandbox(SandboxDriver):
     """
-    Docker 容器沙箱 —— 最常用的后端。
-    完整实现：拉镜像、创建容器、执行、收集产物、清理。
+    Docker 容器沙箱 —— 最常用的后端
+    完整实现：拉镜像、创建容器、执行、收集产物、清理
     """
 
     def __init__(self):
@@ -232,9 +232,9 @@ class DockerSandbox(SandboxDriver):
 
 class QemuSandbox(SandboxDriver):
     """
-    QEMU 全系统模拟沙箱。
-    用于固件、嵌入式二进制等无法在容器中运行的场景。
-    QMP 支持标记为 TODO —— 当前通过进程信号控制。
+    QEMU 全系统模拟沙箱
+    用于固件、嵌入式二进制等无法在容器中运行的场景
+    QMP 支持标记为 TODO —— 当前通过进程信号控制
     """
 
     def __init__(self):
@@ -297,9 +297,9 @@ class QemuSandbox(SandboxDriver):
         )
 
     def stop(self) -> None:
-        """终止 QEMU 进程.
-        TODO: 实现 QMP (QEMU Machine Protocol) 优雅关机.
-              当前方案: SIGTERM → wait 3s → SIGKILL.
+        """终止 QEMU 进程
+        TODO: 实现 QMP (QEMU Machine 协议) 优雅关机
+        当前方案: SIGTERM → wait 3s → SIGKILL
         """
         if self._proc and self._proc.poll() is None:
             self._proc.terminate()
@@ -316,7 +316,7 @@ class QemuSandbox(SandboxDriver):
         if not self._disk_path or not os.path.exists(self._disk_path):
             return artifacts
         # 尝试用 guestmount 或直接读 qcow2
-        # 简化: 用 qemu-img convert 转成 raw 再搜索
+        # 简化: 用 qemu-img 转换 转成 raw 再搜索
         raw_path = tempfile.mktemp(suffix=".raw")
         subprocess.run(["qemu-img", "convert", "-f", "qcow2", "-O", "raw",
                        self._disk_path, raw_path], check=False, capture_output=True)
@@ -338,8 +338,8 @@ class QemuSandbox(SandboxDriver):
 
 class WindowsSandbox(SandboxDriver):
     """
-    Windows Sandbox 集成 —— 生成 .wsb 配置文件并启动。
-    仅 Windows 10 Pro/Enterprise (build 18362+) 可用。
+    Windows Sandbox 集成 —— 生成.wsb 配置文件并启动
+    仅 Windows 10 Pro/Enterprise (构建 18362+) 可用
     """
 
     def __init__(self):
@@ -396,7 +396,7 @@ class WindowsSandbox(SandboxDriver):
         if not self._wsb_path:
             if not self.setup(config):
                 return SandboxResult(stderr="wsb setup failed", returncode=-1, backend_used="windows_sandbox")
-        # 启动 Windows Sandbox
+        # 启动 Windows 沙箱
         try:
             subprocess.run(["cmd.exe", "/c", "start", "/wait", self._wsb_path],
                           timeout=config.timeout, check=False)
@@ -409,7 +409,7 @@ class WindowsSandbox(SandboxDriver):
         return SandboxResult(returncode=0, duration=elapsed, backend_used="windows_sandbox")
 
     def stop(self) -> None:
-        """终止 WindowsSandbox.exe 进程"""
+        """终止 Windows沙箱.exe 进程"""
         if sys.platform == "win32":
             subprocess.run(["taskkill", "/F", "/IM", "WindowsSandbox.exe"],
                           capture_output=True, check=False)
@@ -436,8 +436,7 @@ class WindowsSandbox(SandboxDriver):
 # ===== 进程沙箱 =====
 
 class ProcessSandbox(SandboxDriver):
-    """最轻量后端 —— 直接子进程执行，带超时和资源限制"""
-
+    # 最轻量后端 —— 直接子进程执行，带超时和资源限制
     def __init__(self):
         self._proc: Optional[subprocess.Popen] = None
         self._validated_binary: Optional[str] = None
@@ -454,7 +453,7 @@ class ProcessSandbox(SandboxDriver):
         return True
 
     def _apply_limits(self):
-        """设置进程资源限制 (类unix)."""
+        """设置进程资源限制 (类unix)"""
         if sys.platform == "win32":
             return
         try:
@@ -536,8 +535,8 @@ class ProcessSandbox(SandboxDriver):
 
 class SandboxOrchestrator:
     """
-    自动检测可用后端并选择最优。
-    优先级: Docker > QEMU > Process > WindowsSandbox
+    自动检测可用后端并选择最优
+    优先级: Docker > QEMU > Process > Windows沙箱
     """
 
     BACKEND_REGISTRY = {
@@ -591,8 +590,8 @@ class SandboxOrchestrator:
     def execute(self, config: SandboxConfig, command: str,
                 backend: Optional[str] = None) -> SandboxResult:
         """
-        setup → run → collect_artifacts → cleanup 完整流程.
-        返回 SandboxResult 包含 stdout/stderr/returncode/artifacts/duration.
+        setup → 运行 → collect_artifacts → cleanup 完整流程
+        返回 沙箱Result 包含 stdout/stderr/returncode/artifacts/d
         """
         backend_name = backend or self.auto_select()
         driver = self.get_backend(backend_name)
@@ -601,7 +600,7 @@ class SandboxOrchestrator:
         if not driver.setup(config):
             return SandboxResult(stderr="backend setup failed", returncode=-1,
                                 duration=time.perf_counter()-t0, backend_used=backend_name)
-        # -- run --
+        # -- 运行 --
         result = driver.run(command, config)
         # -- collect --
         if config.artifact_paths:

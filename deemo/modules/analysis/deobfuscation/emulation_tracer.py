@@ -157,17 +157,17 @@ def _map_flat(data: bytes, mu, uc, base: int = 0x100000) -> int:
     return base
 
 
-# //// SMC (Self-Modifying Code) detection hook ////
-# 原理: 利用 Unicorn 的 UC_HOOK_MEM_WRITE 追踪所有内存写入，
+# //// SMC (Self-Modifying Code) detection 钩子 ////
+# 原理: 利用 Unicorn 的 UC_HOOK_MEM_WRITE 追踪所有内存写入
 # 当写入目标落入代码区域时记录为 SMC 事件。后续在 UC_HOOK_CODE
 # 中检查是否有指令从被写入过的地址执行 —— 该行为是解壳/反混淆的
-# 典型特征（如 UPX 自解压、XOR 代码段解密等）。
+# 典型特征（如 UPX 自解压、XOR 代码段解密等）
 #
-# 参考: Unicorn Issue #2041 —— UC_HOOK_MEM_WRITE 会自动触发
-# TLB dirty 标记，确保自修改代码的缓存一致性。
+# 参考: Unicorn Issue #2041 —— UC_钩子_MEM_WRITE 会自动触发
+# TLB dirty 标记，确保自修改代码的缓存一致性
 
 def _make_smc_write_hook(trace: EmulationTrace, code_regions: List[Tuple[int, int]]):
-    """当写入目标在代码区域内时，记录 SMC 事件。"""
+    """当写入目标在代码区域内时，记录 SMC 事件"""
     written_code_addrs: Set[int] = set()
 
     def _hook_mem_write(uc_ref, access, address, size, value, user_data):
@@ -185,7 +185,7 @@ def _make_smc_write_hook(trace: EmulationTrace, code_regions: List[Tuple[int, in
 
 def _make_smc_code_hook(trace: EmulationTrace, code_regions: List[Tuple[int, int]],
                          write_hook_ref):
-    """检查执行的指令是否曾经被写入过（SMC 特征）。"""
+    """检查执行的指令是否曾经被写入过（SMC 特征）"""
     written = getattr(write_hook_ref, '_written', set())
 
     def _hook_code(uc_ref, address, size, user_data):
@@ -200,7 +200,7 @@ def _make_smc_code_hook(trace: EmulationTrace, code_regions: List[Tuple[int, int
     return _hook_code
 
 
-# //// Standard hooks ////
+# //// Standard 钩子s ////
 
 def _make_code_hook(trace: EmulationTrace, start_time: float, capstone_md,
                     inst_counter: List[int], inst_limit: int, raw_data: bytes,
@@ -286,10 +286,10 @@ def _make_mem_unmapped_hook(uc_ref_class):
     return _hook_mem_unmapped
 
 
-# ===== EmulationTracer =====
+# ===== 仿真Tracer =====
 
 class EmulationTracer:
-    """Unicorn-driven dynamic execution tracing (x86/x64)."""
+    """Unicorn-driven dynamic execution 追踪 (x86/x64)"""
 
     def __init__(self, binary_path: str, arch: str = 'x86'):
         self.binary_path = binary_path
@@ -354,7 +354,7 @@ class EmulationTracer:
         mem_read_hook = _make_mem_read_hook(trace)
         mem_unmapped_hook = _make_mem_unmapped_hook(uc)
 
-        # SMC 检测 hooks
+        # SMC 检测 钩子s
         smc_write_hook = _make_smc_write_hook(trace, code_regions)
         smc_code_hook = _make_smc_code_hook(trace, code_regions, smc_write_hook)
 

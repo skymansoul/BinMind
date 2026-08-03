@@ -1,14 +1,14 @@
-# Lifecycle manager — TTL-based stage transitions + compression aging
-# 参考 PostgreSQL WAL 和 Kafka log segment 的生命周期思路
-# 不做自动 DELETE（archive stage 由外部 cron 清理）
+# Lifecycle manager — TTL-based 阶段迁移 + 压缩老化
+# 借鉴 PostgreSQL WAL 和 Kafka log segment 的生命周期设计
+# 不做 DELETE（archive stage 由外部 cron 清理）
 #
 # 压缩老化策略：
-#   在 compress_after_days 周期之外，还检查压缩是否实际缩小了数据。
-#   若压缩后体积 ≤ 原始体积（某些已压缩数据二次压缩反而膨胀），
-#   则跳过并标记为"已尝试压缩"，避免每轮维护都重试无效压缩。
+#   在 compress_after_days 周期外，额外检查压缩是否实际缩减体积。
+#   若压缩后体积 ≥ 原始体积（已压缩数据二次压缩可能膨胀），
+#   则跳过并标记"已尝试压缩"，避免每轮维护无效重试。
 #
-# retention_audit: 生成完整保留审计报告 — 各阶段当前状态、
-# 预计下一轮会迁移/压缩/清理的数量，不执行任何变更。
+# retention_audit: 产出保留审计报告 —— 各阶段当前状态、
+# 预计下一轮迁移/压缩/清理数量，不执行任何变更。
 
 import time
 from typing import Dict, Any, List, Optional
@@ -16,7 +16,7 @@ from .config import LifecycleConfig, LifecycleStageCfg
 
 
 class LifecycleManager:
-    """管理二进制签名的阶段迁移：raw → analysis → report → archive。"""
+    """二进制签名阶段迁移管理: raw → analysis → report → archive。"""
 
     def __init__(self, db, config: LifecycleConfig = None):
         self.db = db
@@ -24,7 +24,7 @@ class LifecycleManager:
         self._dry_run_log: List[str] = []
 
     def run_maintenance(self, dry_run: bool = False) -> Dict[str, int]:
-        """执行一轮维护：扫描所有非 archive 阶段的签名，按 TTL 推进。"""
+        """执行一轮维护: 扫描所有非 archive 阶段签名，按 TTL 推进。"""
         self._dry_run_log = []
         summary = {"transitions": 0, "compressed": 0, "skipped": 0,
                    "orphans_cleaned": 0}
@@ -71,10 +71,10 @@ class LifecycleManager:
         return summary
 
     def retention_audit(self) -> Dict:
-        """生成完整的保留策略审计报告 —— 不执行任何变更。
+        """产出保留策略审计报告 —— 只读，不执行变更。
 
-        返回每个阶段当前有多少签名、其中哪些会在下一轮维护中被迁移、
-        压缩或清理。用于定期人工审查数据生命周期策略是否合理。
+        返回各阶段当前签名数及下一轮维护中将迁移、压缩、清理的数量。
+        用于定期人工审查数据生命周期策略。
         """
         stage_order = ["raw", "analysis", "report", "archive"]
         stage_cfgs = {s.name: s for s in self.cfg.stages}
@@ -174,10 +174,10 @@ class LifecycleManager:
 
     def compact_archive(self, max_age_days: int = 365,
                         target_stage: str = "archive", dry_run: bool = False) -> int:
-        """归档压缩 —— 将超期 archive stage 签名迁移到冷存储。
+        """归档压缩 —— 超期 archive 签名迁移至冷存储。
 
-        当前实现：标记为 `compact_skipped`（预留后续 S3/tape 接口）。
-        返回被处理的签名数量。
+        当前实现: 标记为 `compact_skipped`（预留 S3/tape 接口）。
+        返回处理签名数。
         """
         cutoff = time.time() - max_age_days * 86400
         sigs = self.db.list_signatures(stage=target_stage)
@@ -188,7 +188,7 @@ class LifecycleManager:
             if dry_run:
                 count += 1
                 continue
-            # 标记为已压缩（之后可由外部工具物理迁移）
+            # 标记就绪，之后由外部工具物理迁移
             self.db.update_signature_meta(sig["id"], {"compact_status": "ready"})
             count += 1
         return count

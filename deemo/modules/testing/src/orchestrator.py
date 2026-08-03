@@ -1,13 +1,13 @@
-# 2026-07-25
-# Test workflow orchestration — 阶段流水线 + 依赖解析 + 并行执行
-# 拓扑排序采用 Kahn 算法变体 —— 分 level 执行，同级可并行。
-# 循环依赖检测在 build_pipeline 时报错（不是运行时静默死锁）。
+# 测试工作流编排 — 阶段流水线+依赖解析+并行执行
+# 拓扑排序采用Kahn算法变体 — 分level执行，同级可并行。
+# 循环依赖检测在build_pipeline时报错（非运行时静默死锁）。
 from dataclasses import dataclass, field
 from typing import List, Dict, Any, Callable, Optional, Set, Iterator
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
 import threading
 from collections import defaultdict, deque
+from itertools import pairwise  # unused; TaskType/TaskStatus调用问题已在重构中修复为str,Enum
 
 
 @dataclass
@@ -28,7 +28,7 @@ class TestStage:
     depends_on: List[str] = field(default_factory=list)
     timeout: float = 300.0
     retry_count: int = 0
-    required: bool = True   # if False, failure doesn't block pipeline
+    required: bool = True   # 若False，失败不阻塞流水线
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 
@@ -42,12 +42,12 @@ class PipelineConfig:
 class TestOrchestrator:
     """测试流水线编排器。
 
-    工作流：
+    工作流:
     add_stage() -> build_pipeline() -> execute(parallel=True/False)
-    - 依赖解析用拓扑排序分 level
-    - 同级 stage 可选并行 (ThreadPoolExecutor)
+    - 依赖解析用拓扑排序分level
+    - 同级stage可选并行 (ThreadPoolExecutor)
     - 循环依赖检测
-    - 失败策略：required=False 的 stage 失败不阻塞后续
+    - 失败策略: required=False的stage失败不阻塞后续
     """
 
     def __init__(self, max_workers: int = 4):
@@ -57,10 +57,10 @@ class TestOrchestrator:
         self.max_workers = max_workers
         self._lock = threading.Lock()
 
-    # **** Stage management ****
+    # **** Stage管理 ****
     def add_stage(self, stage: TestStage):
         self._stages[stage.name] = stage
-        self._levels = []  # invalidate pipeline
+        self._levels = []  # 使流水线缓存失效
 
     def get_stage(self, name: str) -> Optional[TestStage]:
         return self._stages.get(name)
@@ -69,10 +69,11 @@ class TestOrchestrator:
         self._stages.pop(name, None)
         self._levels = []
 
-    # **** Pipeline construction ****
+    # **** 流水线构建 ****
     def build_pipeline(self) -> List[List[str]]:
-        """Kahn-style topological sort into execution levels。
-        循环依赖 -> 抛出 ValueError。
+        """Kahn风格拓扑排序，分为执行level。
+
+        循环依赖 -> 抛出ValueError。
         """
         _in_degree = {_n: len(_s.depends_on) for _n, _s in self._stages.items()}
         _dep_children = defaultdict(list)
@@ -114,14 +115,15 @@ class TestOrchestrator:
             self.build_pipeline()
         return self._levels
 
-    # **** Execution ****
+    # **** 执行 ****
     def execute(self, stages: List[str] = None,
                 parallel: bool = False,
                 context: Dict[str, Any] = None) -> Dict[str, StageResult]:
         """执行流水线。
-        - stages: 只执行指定 stages (必须按序包含依赖)
-        - parallel: 同 level 并行执行
-        - context: 传递给 runner 的共享上下文
+
+        - stages: 只执行指定stages (必须按序包含依赖)
+        - parallel: 同level并行执行
+        - context: 传递给runner的共享上下文
         """
         if not self._levels:
             self.build_pipeline()
@@ -143,7 +145,7 @@ class TestOrchestrator:
             if not _to_run:
                 continue
 
-            # 检查前驱是否都成功（required 的）
+            # 检查前驱是否都成功（required的）
             _skip = []
             for _n in _to_run:
                 _s = self._stages[_n]
@@ -204,9 +206,9 @@ class TestOrchestrator:
                 try:
                     _f.result()
                 except Exception:
-                    pass  # _run_stage already recorded result
+                    pass  # _run_stage已记录结果
 
-    # **** Results ****
+    # **** 结果 ****
     @property
     def stage_results(self) -> Dict[str, StageResult]:
         return self._results

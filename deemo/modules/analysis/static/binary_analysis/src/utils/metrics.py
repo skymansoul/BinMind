@@ -1,4 +1,3 @@
-# 2026-07-18 -- 分析计时与度量
 # 每个阶段耗时透明化，方便定位瓶颈
 
 import time
@@ -8,7 +7,7 @@ from typing import Any
 
 
 class MetricsRecorder:
-    """记录分析各阶段耗时。"""
+    """记录分析各阶段耗时"""
 
     def __init__(self):
         self._timers: dict[str, float] = {}
@@ -29,14 +28,26 @@ class MetricsRecorder:
         return elapsed
 
     def elapsed(self, label: str) -> float:
-        """返回已记录的耗时，不停止计时器。"""
+        """返回已记录的耗时，不停止计时器"""
         return self._durations.get(label, 0.0)
 
     # //// 汇总与重置
 
     def summary(self) -> dict[str, float]:
-        """返回所有已完成阶段的 {label: duration} 拷贝。"""
+        """返回所有已完成阶段的 {label: d} 拷贝"""
         return dict(self._durations)
+
+    # ---- 通用 record/ 接口 (2026-08-01) ----
+    # INTJ策略: 除了 start/stop 的耗时模式，保留 record/ 作为通用 kv 存储
+    # 方便非耗时类指标（如函数计数、错误数）也能用同一个 recorder
+
+    def record(self, key: str, value: float) -> None:
+        """记录任意键值对。会累加到已有值"""
+        self._durations[key] = self._durations.get(key, 0.0) + value
+
+    def get(self, key: str, default: float = 0.0) -> float:
+        """获取已记录的值，不存在返回 default"""
+        return self._durations.get(key, default)
 
     def reset(self) -> None:
         self._timers.clear()
@@ -50,7 +61,7 @@ class MetricsRecorder:
 # ===== ScopedTimer -- 上下文管理器 =====
 
 class ScopedTimer:
-    """进入 with 块开始计时，退出时停止并记录。"""
+    """进入 块开始计时，退出时停止并记录"""
 
     def __init__(self, recorder: MetricsRecorder, label: str):
         self._rec = recorder
@@ -72,7 +83,7 @@ class ScopedTimer:
 # ---- measure_time 装饰器 ----
 
 def measure_time(recorder: MetricsRecorder | None = None, label: str | None = None):
-    """将函数调用自动计时。recorder 为 None 时创建局部 MetricsRecorder。"""
+    """将函数调用自动计时。recorder 为 None 时创建局部 MetricsRecorder"""
     def _decorator(fn):
         _label = label or f"{fn.__module__}.{fn.__qualname__}"
 
@@ -94,7 +105,7 @@ def measure_time(recorder: MetricsRecorder | None = None, label: str | None = No
 # //// 格式化时间可读字符串
 
 def format_duration(seconds: float) -> str:
-    """1h23m45.6s 风格的可读时长。"""
+    """1h23m45.6s 风格的可读时长"""
     if seconds < 0:
         return "0.0s"
     h = int(seconds // 3600)

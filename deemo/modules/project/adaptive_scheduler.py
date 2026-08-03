@@ -1,4 +1,4 @@
-# 2026-08-02 — 自适应任务调度: 动态优先级学习 / GNN特征编码 / ET(estimated time)+优先权滚动优化
+# 自适应任务调度: 动态优先级学习/GNN特征编码/ET+优先权滚动优化
 # 参考: GATES "Cost-aware Dynamic Workflow Scheduling via GAT + Evolution Strategy" (IJCAI 2025, arXiv:2505.12355)
 #       NeurIPS 2025 "RL for One-Shot DAG Scheduling with Comparability Identification and Dense Reward"
 #       EGS "Edge Generation Scheduling for DAG Tasks Using DRL" (arXiv:2308.14647, 2024)
@@ -14,19 +14,17 @@ log = logging.getLogger(__name__)
 class PriorityTier(Enum):
     CRITICAL = 0; HIGH = 1; MEDIUM = 2; LOW = 3; BATCH = 4
 
-# ——————————————————————————————————————————————————————————
-# 任务特征编码 — GATES 启发的图注意力简化实现
-# ——————————————————————————————————————————————————————————
+# 任务特征编码，GATES启发的简化图注意力实现
 
 @dataclass
 class TaskProfile:
-    """任务画像: 用于优先级排序的特征向量."""
+    """任务画像: 优先级排序用特征向量."""
     task_id: str
-    est_duration: float                 # 估计执行时间 (s)
+    est_duration: float                 # 预估执行时间 (s)
     historical_avg_duration: float = 0.0
     historical_success_rate: float = 1.0
     dependency_count: int = 0
-    dependents_count: int = 0           # 有多少其他任务依赖此任务
+    dependents_count: int = 0           # 依赖此任务的其他任务数
     resource_intensity: float = 0.5     # [0,1] 预估资源消耗
     priority_score: float = 50.0        # 综合优先级分数 [0,100]
     last_run_timestamp: float = 0.0
@@ -46,10 +44,10 @@ class TaskProfile:
 
 
 class TaskProfiler:
-    """任务分析器: 维护 TaskProfile 历史, 计算统计量.
+    """任务分析器: 维护TaskProfile历史，指数衰减更新统计量.
 
-    使用指数衰减更新: profile = α * observed + (1-α) * prior
-    α 在 [0.1, 0.3] 之间按任务类型变化, 避免对异常值过度反应.
+    profile = alpha * observed + (1-alpha) * prior
+    alpha ∈ [0.1, 0.3]，按任务类型变化，抑制异常值过拟合.
     """
 
     def __init__(self, default_alpha: float = 0.2):
@@ -71,7 +69,7 @@ class TaskProfiler:
         profile.historical_success_rate = (
             profile.run_count - profile.failure_count) / max(profile.run_count, 1)
 
-        # 指数衰减更新 ET
+        # 指数衰减更新ET
         a = self.alpha
         profile.est_duration = (
             a * duration + (1 - a) * profile.historical_avg_duration
@@ -89,18 +87,16 @@ class TaskProfiler:
         return durations[idx]
 
 
-# ——————————————————————————————————————————————————————————
-# 优先级学习 — 基于历史反馈的自适应权重
-# ——————————————————————————————————————————————————————————
+# 优先级学习器，在线SGD权重更新
 
 class AdaptivePriorityLearner:
     """在线优先级学习器.
 
-    算法: 特征加权求和 → 预测优先级. 权重通过随机梯度下降在线更新.
-    loss = (predicted_rank - actual_rank)² 其中 actual_rank 基于最终完成时间.
+    算法: 特征加权求和→预测优先级. 权重通过SGD+momentum在线更新.
+    loss = (predicted_rank - actual_rank)^2，actual_rank基于最终完成时间.
 
-    参考 GATES (2025): 用 Evolution Strategy 替代梯度下降.
-    此处因在线场景, 采用简化的 SGD with momentum [Sutskever et al. 2013].
+    参考 GATES (2025): 原用Evolution Strategy，此处在线场景采用简化SGD
+    with momentum [Sutskever et al. 2013].
     """
 
     def __init__(self, n_features: int = 7, learning_rate: float = 0.01):
@@ -111,17 +107,16 @@ class AdaptivePriorityLearner:
         self._lk = threading.Lock()
 
     def predict(self, features: List[float]) -> float:
-        """加权求和 → [0,100] 优先级分数."""
+        """加权求和→[0,100]优先级分数."""
         if len(features) != len(self._weights):
             return 50.0
         score = sum(w * f for w, f in zip(self._weights, features))
         return min(max(score * 100.0, 0.0), 100.0)
 
     def update(self, features: List[float], actual_utility: float):
-        """SGD 更新. actual_utility ∈ [0,1] — 越高表示该优先级安排越好.
+        """SGD权重更新. actual_utility ∈ [0,1]表示该优先级安排的有效性.
 
-        utility 定义: 任务是否在预期时间内完成 + 是否释放了关键依赖.
-        若 actual_utility > predicted, 增大相关特征的权重; 否则减小.
+        utility定义: 任务是否按时完成+是否释放了关键依赖.
         """
         with self._lk:
             predicted = sum(w * f for w, f in zip(self._weights, features))
@@ -137,13 +132,11 @@ class AdaptivePriorityLearner:
             return list(self._weights)
 
 
-# ——————————————————————————————————————————————————————————
-# 自适应调度器 — 与 TaskScheduler 集成
-# ——————————————————————————————————————————————————————————
+# 自适应调度器，与TaskScheduler集成
 
 class AdaptiveScheduler:
-    # 维护 TaskProfile 数据库 → 学习优先级权重 → 重排就绪队列
-    # 可与 TaskScheduler 集成 (run_all 前调用 prioritise)
+    # TaskProfile数据库→学习优先级权重→重排就绪队列
+    # 可与TaskScheduler集成, run_all前调用prioritise
     def __init__(self, profiler: TaskProfiler = None,
                  learner: AdaptivePriorityLearner = None):
         self.profiler = profiler or TaskProfiler()
@@ -163,7 +156,7 @@ class AdaptiveScheduler:
         return profile
 
     def prioritize(self, ready_tasks: List[str]) -> List[str]:
-        """对就绪任务按其优先级分数排序 (降序)."""
+        """就绪任务优先级降序排列."""
         scored = []
         for tid in ready_tasks:
             profile = self.profiler.get_or_create(tid)
@@ -177,11 +170,11 @@ class AdaptiveScheduler:
 
     def feedback(self, task_id: str, duration: float, success: bool,
                  was_blocker: bool = False):
-        """向学习器反馈任务执行结果."""
+        """执行结果反馈至学习器."""
         self.profiler.record_run(task_id, duration, success)
         profile = self.profiler.get_or_create(task_id)
 
-        # 计算 utility: 成功=基础分, 是 blocker 则加值, 超预期时间则减值
+        # utility: 成功=基础分, blocker加值, 超时减值
         utility = 0.5
         if success:
             utility += 0.3
@@ -203,7 +196,7 @@ class AdaptiveScheduler:
         Args:
             tasks: [(task_id, est_duration), ...]
         Returns:
-            [(task_id, suggested_priority), ...] 按优先级降序
+            [(task_id, suggested_priority), ...] 降序
         """
         for tid, dur in tasks:
             self.profiler.get_or_create(tid, est_duration=dur)
@@ -217,13 +210,13 @@ class AdaptiveScheduler:
         return scored
 
     def estimate_makespan(self, task_ids: List[str]) -> float:
-        """估算给定任务集的最小完成时间 (基于关键路径). 复杂度 O(V+E)."""
-        # 构建子图
+        """关键路径makespan估算，复杂度O(V+E)."""
+        # 子图构建
         sub_deps = {}
         for tid in task_ids:
             sub_deps[tid] = [d for d in self._task_deps.get(tid, []) if d in task_ids]
 
-        # 拓扑排序 + DP
+        # 拓扑排序+DP
         indeg = {tid: len(sub_deps[tid]) for tid in task_ids}
         dist = {tid: self.profiler.get_or_create(tid).est_duration
                 for tid in task_ids}
@@ -251,17 +244,15 @@ class AdaptiveScheduler:
                 for p in self.profiler._profiles.values() if p.run_count > 0]
 
 
-# ——————————————————————————————————————————————————————————
-# 集成: 将自适应调度包装为 TaskScheduler 的优先级插件
-# ——————————————————————————————————————————————————————————
+# 自适应调度插件，包装为TaskScheduler优先级插件
 
 class AdaptiveSchedulerPlugin:
-    """TaskScheduler 的自适应插件.
+    """TaskScheduler自适应插件.
 
     用法:
       sched = TaskScheduler()
       plugin = AdaptiveSchedulerPlugin(sched)
-      sched.run_all()  # 插件在 _enq 阶段介入
+      sched.run_all()  # 插件在_enq阶段介入
     """
 
     def __init__(self, scheduler=None):
@@ -270,20 +261,18 @@ class AdaptiveSchedulerPlugin:
         self._enabled = True
 
     def wrapped_enqueue(self, original_enqueue_fn):
-        """装饰 TaskScheduler._enq: 在入队前重新排序."""
+        """装饰TaskScheduler._enq: 入队前按自适应优先级重排堆."""
         def wrapper():
-            # 先收集就绪任务
+            # 先收集就绪任务再重排序
             original_enqueue_fn()
-            # 重新排序: 按自适应优先级重建堆
             if not self._enabled:
                 return
             if not hasattr(self.scheduler, '_rq'):
                 return
-            # 取出现有队列, 重新 prioritise, 回填
+            # 取出队列→prioritise→回填
             items = []
             while self.scheduler._rq:
                 items.append(heapq.heappop(self.scheduler._rq))
-            # 用 adaptive scheduler 重新打分
             tids = [item.task_id for item in items]
             ranked = self.adaptive.prioritize(tids)
             rank_map = {tid: i for i, tid in enumerate(ranked)}
@@ -304,7 +293,7 @@ class AdaptiveSchedulerPlugin:
     def enabled(self, v: bool): self._enabled = v
 
 
-# 适配 TaskScheduler 的 _QItem
+# TaskScheduler的_QItem适配
 @dataclass(order=True)
 class _QItem2:
     priority: int

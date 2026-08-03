@@ -1,4 +1,3 @@
-# 2026-07-23
 """DDoS 攻击检测引擎 —— 多向量并行检测 + EWMA自适应阈值。
 
 检测向量：SYN flood、UDP flood、DNS amplification、NTP amplification、
@@ -14,12 +13,13 @@ from collections import defaultdict, deque, Counter
 from dataclasses import dataclass, field
 from typing import List, Dict, Optional, Tuple, Any
 from statistics import mean, stdev
+import pathlib
 
-# EWMA平滑系数 —— PARTHENON的CGM阶段使用α=0.1进行流量基线估计
+# EWMA平滑系数 —— PARTHENON的CGM阶段采用α=0.1进行流量基线估计
 _DDOS_EWMA_ALPHA = 0.1
 # 检测窗口（秒）
 _DETECT_WINDOW = 10.0
-# Sketch桶数量 —— 简化的Count-Min Sketch近似
+# Sketch桶数 —— 简化Count-Min Sketch近似
 _SKETCH_BUCKETS = 1024
 # 阈值sigma倍数
 _SIGMA_MULTIPLIER = 3.5
@@ -37,12 +37,8 @@ class DdosAlert:
 
 
 class SketchCounter:
-    """简化的Count-Min Sketch计数器 —— LARDM启发式哈希碰撞过滤。
-
-    使用2个哈希函数映射(src,dst)对到固定桶，减少内存占用。
-    对Top-K大象流检测精度≈90% [LARDM 2025评估]。
-    """
-
+    # 简化Count-Min Sketch计数器 —— LARDM启发式哈希碰撞过滤。
+    # 使用2个哈希函数映射，min取值降低过估偏差。
     def __init__(self, num_buckets: int = _SKETCH_BUCKETS):
         self.bsize = num_buckets
         self._row_a = [0] * num_buckets
@@ -81,7 +77,7 @@ class SketchCounter:
 class DdosDetector:
     """DDoS 多向量检测引擎。
 
-    架构：每向量维护独立的EWMA基线 + 滑动窗口计数器。
+    架构：每向量维护独立EWMA基线 + 滑动窗口计数器。
     异常判定：当前窗口值 > (EWMA基线 + SIGMA_MULTIPLIER × 历史标准差)。
 
     PARTHENON方法的两级借鉴：本类实现粗粒度检测(CGM)，外部可接入ML模型做细粒度(FGM)。
@@ -90,14 +86,14 @@ class DdosDetector:
     def __init__(self, window_sec: float = _DETECT_WINDOW):
         self._window = window_sec
         self._ewma: Dict[str, float] = {}       # vector → EWMA
-        self._ewma_sq: Dict[str, float] = {}    # vector → EWMA of squares (variance tracking)
+        self._ewma_sq: Dict[str, float] = {}    # vector → 平方的EWMA（方差追踪）
         self._counters: Dict[str, SketchCounter] = defaultdict(SketchCounter)
         self._history: Dict[str, deque] = defaultdict(lambda: deque(maxlen=30))
         self._alerts: List[DdosAlert] = []
         self._n_windows = 0
         self._baseline_initialized = False
 
-    # 各攻击向量的聚合键生成
+    # 各攻击向量聚合键
     @staticmethod
     def _syn_key(target: str) -> str:
         return f"syn:{target}"
@@ -117,7 +113,7 @@ class DdosDetector:
     def feed_packet(self, src_ip: str, dst_ip: str, protocol: int,
                     src_port: int, dst_port: int, length: int,
                     timestamp: float = 0.0) -> None:
-        """每包调用 —— 递增对应计数器的sketch桶。
+        """每包调用 —— 递增对应计数器sketch桶。
 
         协议映射：
         - TCP SYN (flags=0x02): 计入SYN flood sketch
@@ -149,7 +145,7 @@ class DdosDetector:
             self._counters["icmp"].add(self._icmp_key(dst_ip))
 
     def evaluate_window(self) -> List[DdosAlert]:
-        """在每个检测窗口结束时调用 —— 评估所有向量是否触发异常阈值。
+        """每个检测窗口结束时调用 —— 评估所有向量是否触发异常阈值。
 
         返回新生成的DdosAlert列表。内部更新EWMA基线。
         """
@@ -171,7 +167,7 @@ class DdosDetector:
             total = self._counters[vec_key].total()
 
             if self._n_windows <= 3:
-                # 初始基线建立阶段 —— 前3个窗口仅积累数据不告警
+                # 初始基线建立期 —— 前3个窗口仅积累数据不告警
                 self._history[vec_key].append(total)
                 if self._n_windows == 3 and len(self._history[vec_key]) >= 3:
                     vals = list(self._history[vec_key])
@@ -218,9 +214,9 @@ class DdosDetector:
         return new_alerts
 
     def slowloris_check(self, conn_tracker: Dict[str, List[float]]) -> List[DdosAlert]:
-        """Slowloris慢速攻击检测 —— 检测大量半开连接长时间占用。
+        """Slowloris慢速攻击检测 —— 大量半开连接长时间占用。
 
-        Slowloris特征：大量TCP连接处于ESTABLISHED但仅发送极小片段，
+        Slowloris特征：大量TCP连接ESTABLISHED但仅发送极小片段，
         连接持续时间远超正常HTTP事务。
 
         conn_tracker: {conn_key: [timestamps_of_packets]}

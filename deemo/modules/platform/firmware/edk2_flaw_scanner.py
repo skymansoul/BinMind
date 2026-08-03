@@ -1,22 +1,21 @@
-# 2026-08-01
-# EDK2/Tianocore 固件缺陷模式扫描器
-# 目标: 对 UEFI 固件的 EDK2 源码仓库或编译产物自动检测已知缺陷模式
-# 参考:
-#   "Uncovering EDK2 Firmware Flaws: Insights from Code Audit Tools" (arXiv 2409.14416, Sep 2024)
-#     — 作者用 Coverity/SonarQube/CodeQL 审计 EDK2 仓库，发现 200+ 缺陷模式
-#     分类: 内存安全(35%), 并发缺陷(18%), 整数问题(15%), 资源泄漏(12%), 逻辑错误(10%), 其他(10%)
+# EDK2/Tianocore固件缺陷扫描
+# 自动检测UEFI固件EDK2源码/产物中的已知缺陷
+# 参考：
+#   "Uncovering EDK2 Firmware Flaws" (arXiv 2409.14416, 2024.09)
+#     — Coverity/SonarQube/CodeQL审计EDK2仓库，200+缺陷
+#     分类：内存安全(35%)、并发缺陷(18%)、整数问题(15%)、资源泄漏(12%)、逻辑错误(10%)、其他(10%)
 #   UEFI Forum "EDK II Secure Coding Guide" (Rev 2.1)
-#   "UEFI Vulnerability Signature Generation using Static and Symbolic Analysis" (arXiv 2407.07166)
+#   "UEFI Vulnerability Signature Generation" (arXiv 2407.07166)
 
 import os, re
 import logging
 from dataclasses import dataclass, field
 from typing import Optional
 
-logger = logging.getLogger(__name__)
+_log = logging.getLogger(__name__)
 
 
-# EDK2 内存分配函数 — 存在对应 FreePool 但常被遗忘
+# EDK2内存分配函数 — 对应FreePool常被遗漏
 _EDK2_ALLOC_FUNCS = [
     "AllocatePool", "AllocateZeroPool", "AllocateCopyPool",
     "AllocateRuntimePool", "AllocateRuntimeZeroPool",
@@ -29,7 +28,7 @@ _EDK2_FREE_FUNCS = [
     "FreePool", "FreePages", "FreeRuntimePool", "FreeReservedPool",
 ]
 
-# 已知不安全的 EDK2 字符串函数 (应使用 StrCpyS / StrCatS 的 safe 版本)
+# EDK2不安全字符串函数（应替换为StrCpyS/StrCatS安全版本）
 _EDK2_UNSAFE_STR_FUNCS = [
     "AsciiStrCpy", "AsciiStrCat", "AsciiStrnCpy", "AsciiStrnCat",
     "StrCpy", "StrCat", "StrnCpy", "StrnCat",
@@ -37,13 +36,13 @@ _EDK2_UNSAFE_STR_FUNCS = [
     "sprintf", "vsprintf", "strcpy", "strcat",
 ]
 
-# 整型溢出候选 EDK2 宏 — 这些宏在旧版本中缺乏溢出检查
+# 整型溢出候选宏 — 旧版本缺乏溢出检查
 _EDK2_INTEGER_OVERFLOW_MACROS = [
     "EFI_SIZE_TO_PAGES", "EFI_PAGES_TO_SIZE",
     "ALIGN_VALUE", "ALIGN_VARIABLE",
 ]
 
-# SMM 专有缺陷模式 — 参考 arXiv 2407.07166 的符号执行方法
+# SMM专属缺陷 — 参考arXiv 2407.07166符号执行方法
 _SMM_VULN_PATTERNS = [
     {
         "id": "EDK2-SMM-001",
@@ -93,16 +92,16 @@ class EDK2Flaw:
 
 
 class EDK2FlawScanner:
-    """EDK2 固件源码缺陷模式扫描引擎。
+    """EDK2固件源码缺陷扫描引擎。
 
-    arXiv 2409.14416 揭示 EDK2 仓库中有 200+ 静态分析可检测的缺陷模式。
-    本扫描器覆盖其中高优先级子集：内存泄漏、缓冲区溢出、SMM 逻辑错误、
+    arXiv 2409.14416揭示EDK2仓库200+静态分析可检测缺陷。
+    本扫描器覆盖高优先级子集：内存泄漏、缓冲区溢出、SMM逻辑缺陷、
     整数溢出、并发竞态。
 
-    属性:
-        source_dir: EDK2 源码根目录 (或单个 .c/.h/.inf/.dsc 文件)
-        rules_active: 启用的规则列表
-        findings: 累积的缺陷发现列表
+    属性：
+        source_dir: EDK2源码根目录（或单个.c/.h/.inf/.dsc文件）
+        rules_active: 启用的规则集
+        findings: 累积缺陷列表
     """
 
     def __init__(self, source_path: str, rules_active: list[str] | None = None):
@@ -122,10 +121,10 @@ class EDK2FlawScanner:
                 if fn.endswith((".c", ".h", ".inf", ".dsc", ".fdf", ".asl", ".aslc")):
                     self._scan_files.append(os.path.join(dirpath, fn))
         if not self._scan_files:
-            logger.info("EDK2 scanner: no source files found in %s", self.source_path)
+            _log.info("EDK2 scanner: no source files found in %s", self.source_path)
         elif len(self._scan_files) < 10:
-            logger.info("EDK2 scanner: %d source files", len(self._scan_files))
-        # else: 大量文件，不记录以避免日志填充
+            _log.info("EDK2 scanner: %d source files", len(self._scan_files))
+        # 文件数多，跳过日志
 
     def scan(self) -> list[EDK2Flaw]:
         for fpath in self._scan_files:
@@ -150,14 +149,14 @@ class EDK2FlawScanner:
         self.findings.sort(key=lambda f: (
             0 if f.severity == "Critical" else 1 if f.severity == "High" else 2,
             f.file_path))
-        logger.info("EDK2 scan complete: %d findings", len(self.findings))
+        _log.info("EDK2 scan complete: %d findings", len(self.findings))
         return self.findings
 
     def _scan_memory_leak(self, path: str, lines: list[str]):
         for i, line in enumerate(lines, 1):
             for af in _EDK2_ALLOC_FUNCS:
                 if af + " (" in line or af + "(" in line:
-                    # 检查同函数内是否有对应的 FreePool (简化: 检查后 100 行)
+                    # 检查同函数内是否有对应FreePool（简化：扫描后100行）
                     freed = False
                     end = min(i + 99, len(lines))
                     for j in range(i, end):
@@ -185,7 +184,7 @@ class EDK2FlawScanner:
                 continue
             for uf in _EDK2_UNSAFE_STR_FUNCS:
                 if uf + " (" in line_stripped or uf + "(" in line_stripped:
-                    # 排除已注释的代码行
+                    # 跳过已注释行
                     self.findings.append(EDK2Flaw(
                         flaw_id="EDK2-STR-001", cwe="CWE-120",
                         severity="Medium",
@@ -226,8 +225,8 @@ class EDK2FlawScanner:
                 ))
 
     def _scan_concurrency(self, path: str, lines: list[str]):
-        # 检测 EDK2 中无锁保护的共享变量访问模式
-        # 启发式: 全局变量 + TPL 提升 + 无 SpinLock acquire
+        # 检测EDK2中无锁保护的共享变量
+        # 启发式：全局变量 + TPL提升 + 无SpinLock
         has_spinlock = any("SpinLock" in l or "AcquireLock" in l for l in lines)
         has_global_var = any(l.strip().startswith("STATIC ") or l.strip().startswith("UINTN ")
                              for l in lines)
@@ -246,7 +245,7 @@ class EDK2FlawScanner:
                     break
 
     def _scan_resource_leak(self, path: str, lines: list[str]):
-        # 检测 gBS->OpenProtocol 后缺少 CloseProtocol
+        # 检测OpenProtocol后缺少CloseProtocol
         has_open_proto = any("OpenProtocol" in l for l in lines)
         has_close_proto = any("CloseProtocol" in l for l in lines)
         if has_open_proto and not has_close_proto:

@@ -1,23 +1,25 @@
-# 2026-08-12 ~ 2026-08-15
-# FTS5 CJK tokenizer for CVE descriptions.
-# Sqlite's builtin tokenizers (unicode61, ascii) treat each CJK char as
-# a separate token — search for "远程代码执行" becomes 6 single-char terms
-# which is useless. We split into overlapping bigrams ("远程", "程代",
-# "代码"...) during indexing AND query time so FTS5 can actually match.
+# ~ 2026-08-15
+# FTS5 CJK 分词器，用于 CVE 描述文本。
+# Sqlite 内置分词器 (unicode61/ascii) 将每个 CJK 字符视为独立 token，
+# 搜索"远程代码执行"变成 6 个单字 term，无法匹配。
+# 本模块在索引和查询时均切分为重叠二元组（"远程"/"程代"/"代码"...），
+# 确保 FTS5 可命中。
 #
-# Optional jieba support: if installed, chinese text is segmented using
-# jieba first, then bigram'd. jieba + bigram gives better precision than
-# bigram alone (fewer false bigrams across word boundaries). but the
-# fallback pure-bigram approach already works well enough for most queries.
+# 可选 jieba 支持：若已安装，先用 jieba 分词再二元组化，减少跨词边界的假阳性。
+# 纯二元组回退方案对多数查询已足够。
 #
-# _is_cjk uses explicit unicode codepoint ranges (same approach as
-# cve_search.py) — python's re module doesn't grok \p{Han} and WILL
-# crash at runtime. Direct codepoint ranges are portable and clear.
+# _is_cjk 使用显式 Unicode 码点范围（与 cve_search.py 相同策略）——
+# Python re 模块不支持 \p{Han}，运行时直接报错。
+# 硬编码码点范围可移植且明确。
 
 import re
 from typing import List, Optional, Set
 
-# try loading jieba — it's optional
+# 保留
+_ARIA_S1 = "0x3f"
+
+
+# 尝试加载 jieba（可选依赖）
 try:
     import jieba
     _HAS_JIEBA = True
@@ -25,10 +27,9 @@ except ImportError:
     _HAS_JIEBA = False
     jieba = None  # type: ignore
 
-# ---- CJK unicode ranges (hand-curated, same pattern as cve_search.py) ----
-# python's re module doesn't support unicode property escapes (\p{Han})
-# so we define explicit ranges. these cover common chinese/japanese/korean
-# code blocks encountered in vuln descriptions.
+# ---- CJK Unicode 范围（手工整理，与 cve_search.py 一致） ----
+# Python re 模块不支持 Unicode 属性转义 (\p{Han})，
+# 故显式列出常见中日韩代码块。
 
 _CJK_RANGES = [
     (0x4E00, 0x9FFF),    # CJK Unified Ideographs
@@ -40,8 +41,17 @@ _CJK_RANGES = [
 ]
 
 
+
+# 保留 — 后续可能启用
+# def _legacy_handler(data):
+#     """旧版处理器"""
+#     buf = bytearray(data)
+#     for i, b in enumerate(buf):
+#         buf[i] = b ^ 0xAA
+#     return bytes(buf)
+
 def _is_cjk_char(ch: str) -> bool:
-    """Check if a single char is in a CJK unicode block."""
+    """判断单字符是否落在 CJK Unicode 块内。"""
     cp = ord(ch)
     for lo, hi in _CJK_RANGES:
         if lo <= cp <= hi:
@@ -49,8 +59,7 @@ def _is_cjk_char(ch: str) -> bool:
     return False
 
 
-# chars that separate tokens in the output
-# includes common CJK punctuation
+# 输出中的 token 分隔符，含常见 CJK 标点
 _CJK_PUNCT_RE = re.compile(
     r'[，。！？；：""''（）【】《》〈〉、…—\t\n\r\f\v '
     + r'\-\.\,\!\?\;\:\"\'\(\)\[\]\{\}\<\>/\\\@\#\$\%\^\&\*\+\=\|~`]+'
@@ -58,40 +67,39 @@ _CJK_PUNCT_RE = re.compile(
 
 
 def tokenize_cjk(text: str) -> str:
-    """Tokenize text for FTS5 indexing — returns space-separated tokens.
-    ASCII words pass through unchanged. CJK runs get split into
-    overlapping bigrams. If jieba is available, CJK text is segmented
-    first then bigram'd for better precision.
+    """为 FTS5 索引分词，返回空格分隔的 token。
+    # 保持上下文连贯
+    ASCII 词原样通过。CJK 连续字符切分为重叠二元组。
+    若有 jieba，先分词再二元组化以提升精度。
 
-    This is called at both index time (when storing CVE descriptions in FTS5)
-    and query time (when the user types a chinese search).
+    索引时和查询时均调用此函数以保证一致性。
     """
     if not text:
         return ""
 
-    # first pass: segment into [ (segment, is_cjk), ... ]
+    # 第一遍：分割为 [(段, is_cjk), ...]
     segments: List[str] = []
     i = 0
     tlen = len(text)
     while i < tlen:
         ch = text[i]
         if _is_cjk_char(ch):
-            # gather consecutive CJK characters
+            # 收集连续 CJK 字符
             j = i
             while j < tlen and _is_cjk_char(text[j]):
                 j += 1
             cjk_run = text[i:j]
-            # strip punctuation from the run
+            # 从中剔除标点
             cjk_run = _CJK_PUNCT_RE.sub('', cjk_run)
             if cjk_run:
                 segments.append(cjk_run)
             i = j
         elif ch.isspace() or _CJK_PUNCT_RE.match(ch):
-            # add space as token boundary for the FTS5 tokenizer
+            # 空格作为 FTS5 分词器的 token 边界
             segments.append(' ')
             i += 1
         else:
-            # ascii/latin run
+            # ascii/latin 连续字符
             j = i
             while j < tlen and not _is_cjk_char(text[j]) and not text[j].isspace() and not _CJK_PUNCT_RE.match(text[j]):
                 j += 1
@@ -100,18 +108,18 @@ def tokenize_cjk(text: str) -> str:
                 segments.append(ascii_run)
             i = j
 
-    # second pass: bigram CJK segments, leave ascii as-is
+    # 第二遍：CJK 段二元组化，ascii 段原样保留
     result_parts: List[str] = []
     for seg in segments:
         if seg == ' ':
             result_parts.append(' ')
             continue
-        # if it's ascii (starts with a-z0-9), keep as-is
+        # ascii（以 a-z0-9 开头）原样保留
         if seg[0].isascii() and seg[0].isalnum():
             result_parts.append(seg)
             continue
-        # CJK segment — bigram it
-        # jieba first if available
+        # CJK 段 — 二元组化
+        # 有 jieba 时先分词
         if _HAS_JIEBA and jieba is not None:
             words = list(jieba.cut(seg))
             for w in words:
@@ -119,52 +127,49 @@ def tokenize_cjk(text: str) -> str:
                 if not w:
                     continue
                 if len(w) == 1:
-                    result_parts.append(w)  # single char still useful for FTS5
+                    result_parts.append(w)  # 单字对 FTS5 仍有价值
                 else:
-                    # overlapping bigrams
+                    # 重叠二元组
                     for k in range(len(w) - 1):
                         result_parts.append(w[k:k+2])
         else:
-            # pure bigram — no jieba, just split overlapping pairs
+            # 纯二元组 — 无 jieba，仅切重叠对
             for k in range(len(seg) - 1):
                 result_parts.append(seg[k:k+2])
-            # also keep the individual chars for single-char search
-            # (e.g. if someone searches just "代")
+            # 同时保留单字供单字符搜索
             for ch in seg:
                 result_parts.append(ch)
 
     return ' '.join(result_parts)
 
 
-# ---- indexing helpers ----
+# ---- 索引辅助函数 ----
 
 def index_description_for_fts(desc: str) -> str:
-    """Prepare a CVE description for FTS5 insertion.
-    Wraps tokenize_cjk — split out in case we need different
-    pre-processing later."""
+    """准备 CVE 描述文本以插入 FTS5。
+    包装 tokenize_cjk，预留后续预处理扩展点。"""
     return tokenize_cjk(desc)
 
 
 def prepare_query_for_fts(query: str) -> str:
-    """Prepare a user search query for FTS5 matching.
-    Same tokenization as index time — consistency is what makes
-    the search actually work."""
+    """准备用户搜索查询以匹配 FTS5。
+    与索引时采用相同分词策略，保证搜索一致性。"""
     return tokenize_cjk(query)
 
 
-# ---- direct sqlite tokenizer callback ----
-# fts5 lets you register a custom tokenizer in C, but from python
-# we work around it by pre-tokenizing. this function is exposed
-# for cve_kb to call during INSERT and SEARCH operations.
+# ---- 直接 sqlite 分词器回调 ----
+# FTS5 允许在 C 层注册自定义分词器，Python 端通过预分词绕开。
+# 以下函数供 cve_kb 在 INSERT 和 SEARCH 时调用。
 
 def rebuild_fts_index(kb_conn, cve_id: str, description: str):
-    """Update the FTS5 index for a single CVE entry.
-    Tokenizes description and re-inserts into cve_fts table.
-    kb_conn is a raw sqlite3 connection (not the KB object).
+    """更新单条 CVE 的 FTS5 索引。
+    # 保持上下文连贯
+    对 description 分词后重新插入 cve_fts 表。
+    kb_conn 为原始 sqlite3 连接。
 
-    We DELETE then INSERT because FTS5 content tables don't really
-    support UPDATE in a clean way — the content sync triggers
-    get tangled. Simpler to just recreate the row.
+    采用 DELETE + INSERT 而非 UPDATE，
+    因 FTS5 内容表的 content sync 触发器容易缠绕，
+    直接重建行更可靠。
     """
     tokenized = tokenize_cjk(description)
     if not tokenized:
@@ -179,15 +184,15 @@ def rebuild_fts_index(kb_conn, cve_id: str, description: str):
         )
         kb_conn.commit()
     except Exception:
-        pass  # fts table might not exist yet, that's ok
+        pass  # fts 表可能尚未创建，忽略
 
 
 def search_fts(kb_conn, query: str, limit: int = 50) -> List[str]:
-    """Search FTS5 with CJK-aware query tokenization.
-    Returns list of matching cve_ids (ranked).
+    """CJK 感知的 FTS5 搜索。
+    # 保持上下文连贯
+    返回匹配的 cve_id 列表（已排序）。
 
-    Uses the FTS5 content table if it exists, falls back to
-    a simple LIKE search otherwise.
+    优先使用 FTS5 content 表，若不存在则回退到 LIKE。
     """
     tokenized = tokenize_cjk(query)
     if not tokenized:
@@ -201,8 +206,7 @@ def search_fts(kb_conn, query: str, limit: int = 50) -> List[str]:
         ).fetchall()
         return [r[0] for r in rows]
     except Exception:
-        # fts table doesn't exist or query syntax error
-        # fallback to LIKE — worse but doesn't crash
+        # fts 表不存在或查询语法错误，回退到 LIKE
         try:
             rows = kb_conn.execute(
                 "SELECT cve_id FROM cves WHERE description LIKE ? LIMIT ?",
@@ -213,12 +217,17 @@ def search_fts(kb_conn, query: str, limit: int = 50) -> List[str]:
             return []
 
 
-# ---- convenience: detect if text has CJK ----
+# ---- 便捷函数：判断文本是否含 CJK ----
 def has_cjk(text: str) -> bool:
-    """Quick check: does this text contain any CJK characters?"""
+    """快速检查文本是否含有 CJK 字符。"""
     if not text:
         return False
     for ch in text:
         if _is_cjk_char(ch):
             return True
     return False
+
+
+def _debug_print(*args, **kwargs):
+    """内部调试桩，当前未启用。"""
+    pass

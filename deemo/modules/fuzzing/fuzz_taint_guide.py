@@ -1,22 +1,12 @@
-# 2026-08-01
+"""污点反馈驱动的字节级变异引擎 -- 不依赖额外插桩的热字节推断。
 
-"""污点引导的变异引擎 -- 零额外执行的字节重要性推断 [ZTaint-Havoc, ISSTA 2025]。
+通过记录 havoc 变异前后的覆盖边变化, 反向推导各字节位置对覆盖率的影响力,
+构建热字节映射以指导后续变异集中在高价值位置。
 
-参考:
-  ZTaint-Havoc (ISSTA 2025)       -- 从 AFL++ havoc 阶段反向推断热字节, 零额外执行
-  Checksum-Aware Fuzzing + DTA    -- 动态污点分析+符号执行的校验和感知模糊测试
-  STAFF (arXiv:2509.18039)       -- 全系统污点辅助固件模糊测试
-  TAIFuzz (SPIE 2024)            -- 污点分析插桩基固件模糊测试
+参考: ZTaint-Havoc (ISSTA 2025) 反馈反向推断热字节, STAFF (arXiv:2509.18039) 全系统污点固件,
+TAIFuzz (SPIE 2024) 污点插桩固件测试。
 
-核心假设 (ZTaint-Havoc 验证):
-  变异某个字节后覆盖发生变化 → 该字节对程序行为有因果影响 → "热字节"。
-  通过记录 havoc 阶段每次变异前后覆盖变化, 在无额外插桩的条件下
-  逐步构建字节重要性映射, 后续变异中强化热字节区域的变异密度。
-
-与 StructureAwareMutator 的关系:
-  - StructureAwareMutator: 基于数据结构的字段划分和操作
-  - TaintGuidedMutator: 基于运行时反馈的字节重要性, 与结构无关
-  两者可叠加: 先用结构划分确定字段边界, 再在热字段内用污点权重引导变异。
+与 StructureAwareMutator 协同: 结构层先划字段边界, 字节层再用污点权重精调。
 """
 
 import hashlib
@@ -33,59 +23,55 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class ByteTaintRecord:
-    """单个字节位置的污点追踪记录。"""
+    """单个偏移位置的污点追踪累积数据。
+
+    追踪维度: 命中次数、覆盖变化次数、崩溃触发次数、新增/丢失边计数。
+    重要性分数由覆盖率变化率和变化幅度综合计算。
+    """
     offset: int
     byte_value: int
-    hit_count: int = 0            # 被变异的次数
-    coverage_change_count: int = 0  # 变异后覆盖变化的次数
-    crash_trigger_count: int = 0   # 触发崩溃的次数
-    # ZTaint-Havoc: 不仅记录是否变化, 还区分变化方向 (edge_gain / edge_loss)
+    hit_count: int = 0            # 该偏移被选为变异目标的次数
+    coverage_change_count: int = 0  # 变异后覆盖边集合发生变化的次数
+    crash_trigger_count: int = 0   # 变异触发崩溃的次数
+    # ZTaint-Havoc 区分: 新增边 vs 丢失边, 用于判断影响方向
     edge_gain_count: int = 0
     edge_loss_count: int = 0
-    last_seen: float = 0.0         # 最近一次变异的时间戳
-    importance_score: float = 0.0   # 综合重要性评分 [0, 1]
+    last_seen: float = 0.0         # 最近一次变异的时间戳 (epoch)
+    importance_score: float = 0.0   # 归一化重要性, 区间 [0, 1]
 
 
 class TaintGuidedMutator:
-    """基于运行时反馈的字节重要性引导变异。
+    """运行时覆盖反馈驱动的字节重要性评估与变异引导。
 
-    不依赖额外插桩或符号执行, 通过观察 havoc 阶段每次变异的
-    效果 (覆盖变化) 推断字节重要性, 是 ZTaint-Havoc 的 Python 实现。
-
-    使用方法:
-      tgm = TaintGuidedMutator()
-      for each seed:
-          mutated = tgm.mutate(seed, original_coverage)
-          new_cov = executor.execute(mutated)
-          tgm.feedback(original_cov, new_cov, crashed=False)
+    无插桩开销: 仅依赖 fuzzer 已有的覆盖边集合差异。
+    核心算法源自 ZTaint-Havoc (ISSTA 2025) 的 Python 等价实现。
     """
 
     def __init__(self, history_window: int = 500,
                  hot_threshold: float = 0.3):
         """
-        history_window: 保留最近多少次变异的反馈记录
-        hot_threshold: importance_score > 此值的字节被视为"热字节"
+        history_window: 变异日志的滑动窗口长度, 越旧越早丢弃
+        hot_threshold: 重要性分数高于此阈值的字节视为热字节, 优先变异
         """
         self.history_window = history_window
         self.hot_threshold = hot_threshold
-        # offset -> ByteTaintRecord
+        # 偏移 → 污点记录映射
         self._taint_map: Dict[int, ByteTaintRecord] = {}
-        # 最近变异的 (offset, old_byte, new_byte) 队列
+        # 滑动窗口: (offset, old_byte, new_byte)
         self._mutation_log: List[Tuple[int, int, int]] = []
         self._total_mutations: int = 0
         self._epoch: int = 0
 
     def mutate(self, data: bytes, base_coverage: Optional[Set[int]] = None,
                mutation_rate: float = 0.01) -> bytes:
-        """执行一次污点引导的变异。
+        """执行一次污点加权的字节变异。
 
-        base_coverage: 变异前的覆盖边集合 (可选, 用于后续 feedback)。
-        若未提供, 按均匀分布变异。
+        base_coverage 可选, 用于后续 feedback 比较; 未提供时退化为均匀随机。
 
-        算法:
-          1. 若有污点数据, 在热字节区域以更高概率变异
-          2. 若无足够数据, 回退到均匀随机变异
-          3. 记录变异位置供后续 feedback 更新
+        策略:
+          有足够污点数据 → 70% 概率在热字节区域变异, 30% 均匀探索
+          无数据 → 均匀随机选择位置
+          变异算子按比例分配: 比特翻转 0.4, 随机字节 0.3, 算术微调 0.2, 边界值 0.1
         """
         if not data:
             return data
@@ -94,17 +80,17 @@ class TaintGuidedMutator:
         n = len(raw)
         self._total_mutations += 1
 
-        # 选择变异位置: 热字节加权采样
+        # 热字节集合加权采样确定变异位置
         hot_offsets = self._get_hot_offsets(n)
         if hot_offsets and random.random() < 0.7:
-            # 70% 在热字节区域变异
+            # 热字节区域集中变异
             offset = random.choice(hot_offsets)
         else:
-            # 30% 均匀探索
+            # 均匀探索未知区域
             offset = random.randint(0, n - 1)
 
         old_byte = raw[offset]
-        # 变异操作: 比特翻转 (40%), 字节随机 (30%), 算术加减 (20%), 有趣值 (10%)
+        # 算子按概率分布: flip=0.4, random=0.3, arith=0.2, interesting=0.1
         op_roll = random.random()
 
         if op_roll < 0.4:
@@ -121,7 +107,7 @@ class TaintGuidedMutator:
                 [v for v in interesting if v != raw[offset]]
             ) if len([v for v in interesting if v != raw[offset]]) > 0 else raw[offset]
 
-        # 记录日志供 feedback 使用
+        # 滑动窗口记录, 供 feedback 阶段回溯
         self._mutation_log.append((offset, old_byte, raw[offset]))
         if len(self._mutation_log) > self.history_window:
             self._mutation_log.pop(0)
@@ -130,11 +116,11 @@ class TaintGuidedMutator:
 
     def feedback(self, prev_coverage: Set[int], new_coverage: Set[int],
                  crashed: bool = False) -> None:
-        """根据变异结果更新污点权重。
+        """依据最近一次变异的覆盖差异更新对应字节的污点权重。
 
-        prev_coverage: 变异前的覆盖边集合
-        new_coverage:  变异后的覆盖边集合
-        crashed:       是否触发崩溃
+        prev_coverage: 变异前覆盖边集合
+        new_coverage:  变异后覆盖边集合
+        crashed:       目标是否因本次变异崩溃
         """
         if not self._mutation_log:
             return
@@ -158,7 +144,7 @@ class TaintGuidedMutator:
 
         self._recalc_importance(offset)
 
-        # 每 100 次变异重新归一化所有权重
+        # 每 100 轮变异后全局归一化, 防止分数漂移
         self._epoch += 1
         if self._epoch % 100 == 0:
             self._normalize_all_scores()
@@ -172,12 +158,13 @@ class TaintGuidedMutator:
         return self._taint_map[key]
 
     def _recalc_importance(self, offset: int) -> None:
-        """ZTaint-Havoc 风格的重要性计算。
+        """按 ZTaint-Havoc 公式重新计算某偏移的重要性。
 
-        score = (coverage_change_count / hit_count) * log2(1 + edge_gain_count + edge_loss_count)
-        即: 该字节"每次变异产生覆盖变化的比率" × "变化幅度"。
+        score = (覆盖变化次数 / 命中次数) * log2(1 + edge_gain + edge_loss)
+        意为: 该位置每次变异引发覆盖变化的概率 × 变化幅度。
 
-        若 hit_count 太少 (< 3), 使用先验值 0.1 避免小样本过拟合。
+        命中不足 3 次时分数设为 0.1, 防止小样本过拟合。
+        若该偏移曾触发崩溃, 得分额外 × crash_bonus (上限 ×2)。
         """
         rec = self._taint_map.get(offset)
         if rec is None or rec.hit_count < 2:
@@ -186,14 +173,14 @@ class TaintGuidedMutator:
         hit = max(1, rec.hit_count)
         change_ratio = rec.coverage_change_count / hit
 
-        # 崩溃触发的字节 ×2 加权
+        # 崩溃触发位置加权, 最高 2 倍
         crash_bonus = 1.0 + min(1.0, rec.crash_trigger_count / max(1, hit))
 
         magnitude = math.log2(1 + rec.edge_gain_count + rec.edge_loss_count)
         rec.importance_score = min(1.0, change_ratio * magnitude * crash_bonus)
 
     def _normalize_all_scores(self) -> None:
-        """将所有字节的重要性分数归一化到 [0, 1] 并应用指数衰减。"""
+        """将全部字节的重要性分数同步缩放到 [0, 1] 区间。"""
         if not self._taint_map:
             return
         max_score = max(r.importance_score for r in self._taint_map.values()) or 1.0
@@ -201,6 +188,10 @@ class TaintGuidedMutator:
             rec.importance_score = rec.importance_score / max_score
 
     def _get_hot_offsets(self, data_len: int) -> List[int]:
+        """筛选当前数据长度内的热字节偏移列表。
+
+        若没有任何字节满足 hot_threshold, 返回全量偏移以避免空集。
+        """
         hot = []
         for off, rec in self._taint_map.items():
             if off < data_len and rec.importance_score >= self.hot_threshold:
@@ -208,9 +199,9 @@ class TaintGuidedMutator:
         return hot if hot else list(range(data_len))
 
     def get_heatmap(self, data_len: int) -> List[float]:
-        """生成当前数据的字节重要性热图 (0.0-1.0 数组)。
+        """输出长度为 data_len 的字节重要性数组, 值域 [0.0, 1.0]。
 
-        可用于可视化或喂给其他变异引擎。
+        可用于可视化或传递给其他变异引擎做加权参考。
         """
         heatmap = [0.0] * data_len
         for off, rec in self._taint_map.items():
@@ -245,29 +236,30 @@ class TaintGuidedMutator:
         self._epoch = 0
 
 
-# ===== 叠加式变异: 结构感知 + 污点引导 =====
+# 结构感知 + 污点引导双层叠加变异
 
 class HybridMutator:
-    """结构感知变异 (字段级) + 污点引导变异 (字节级) 的叠加引擎。
+    """双层变异引擎: 结构感知 (字段级) 叠加污点引导 (字节级)。
 
-    先调用 StructureAwareMutator 进行字段级变换,
-    再在此结果的字节序列上用 TaintGuidedMutator 精调。
+    第 1 层: StructureAwareMutator 做字段边界变换 (约 50% 概率执行)
+    第 2 层: TaintGuidedMutator 在结果上做字节精调 (总是执行)
+    两层独立, 结构层不可用时自动跳过。
     """
 
     def __init__(self):
         self._taint_mutator = TaintGuidedMutator()
-        self._struct_mutator = None  # 按需加载, 避免强依赖
+        self._struct_mutator = None  # 延迟导入, 解耦强依赖
 
     def mutate(self, data: bytes, boundaries: Optional[List[int]] = None,
                base_coverage: Optional[Set[int]] = None) -> bytes:
-        """两层变异叠加。
+        """依次执行结构层和污点层变异。
 
-        第1层 (可选): 结构感知变异 — 约 50% 概率执行
-        第2层 (总是): 污点引导字节级变异
+        第 1 层 (结构感知): 约半数概率触发, 未导入时跳过
+        第 2 层 (污点引导): 始终执行, 以覆盖反馈精调字节
         """
         result = data
 
-        # 第1层: 结构感知
+        # 结构感知层: 延迟导入, 避免循环依赖
         if self._struct_mutator is None:
             try:
                 from fuzzing.fuzz_structure_mutator import StructureAwareMutator
@@ -278,7 +270,7 @@ class HybridMutator:
         if self._struct_mutator is not None and random.random() < 0.5:
             result = self._struct_mutator.mutate(result, boundaries)
 
-        # 第2层: 污点引导
+        # 污点引导字节级精调
         result = self._taint_mutator.mutate(result, base_coverage)
 
         return result
@@ -293,3 +285,6 @@ class HybridMutator:
     @property
     def stats(self) -> Dict:
         return self._taint_mutator.get_stats()
+
+def _debug_print(*a,**kw):
+    if __import__("os").environ.get("BINMIND_DEBUG"):print(*a,**kw)

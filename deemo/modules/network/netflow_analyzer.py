@@ -1,8 +1,7 @@
-# 2026-07-22
 """NetFlow/IPFIX 网络遥测解析与异常检测。
 
-NetFlow v5/v9 和 IPFIX (RFC 7011) 是目前占比最高的流记录格式
-[Coutinho & Araújo 2025综述：NetFlow衍生格式占62.7%，IPFIX占45.1%]。
+NetFlow v5/v9与IPFIX (RFC 7011)是市场份额最高的流记录格式。
+NetFlow衍生格式占62.7%, IPFIX占45.1%[Coutinho & Araujo 2025综述]。
 本模块实现二进制流记录解析和流级异常评分。
 
 参考：
@@ -69,7 +68,7 @@ class NetFlowAnomaly:
 
 
 class NetFlow5Parser:
-    # NetFlow v5: 1999年老格式，每条记录固定48字节，仍在核心路由广泛使用
+    # NetFlow v5: 1999年格式，每条记录固定48字节，核心路由仍广泛使用
 
     @staticmethod
     def parse_header(data: bytes) -> Dict[str, Any]:
@@ -176,10 +175,10 @@ class IPFIXParser:
 class FlowAnomalyScorer:
     """流记录异常评分引擎 —— 多维度加权评分。
 
-    评分维度（参考 arXiv:2602.05594 的上下文感知NIDS框架）：
+    评分维度（参考上下文感知NIDS框架）：
     - 体积异常：单流字节/包数偏离基线
-    - 端口异常：非标端口上的大量数据传输
-    - 时间异常：深夜固定间隔的扫描/信标
+    - 端口异常：非标端口上大量数据传输
+    - 时间异常：深夜固定间隔扫描/信标
     - 协议异常：ICMP/UDP在非预期端口上大流量
 
     基线通过EWMA自适应维护（alpha=0.1），适应网络环境变化。
@@ -239,7 +238,7 @@ class FlowAnomalyScorer:
                 reasons.append(f"NTP放大嫌疑: 平均{amp:.0f}B/包")
                 sev = "high"
 
-        # 端口扫描 —— 单源IP对多目标的同端口尝试
+        # 端口扫描 —— 单源IP对多目标同端口探测
         flow_key = f"{record.src_addr}:{record.dst_addr}:{record.dst_port}"
         if record.pkts_count <= 3 and record.bytes_count <= 200:
             self._scan_ports[record.src_addr] += 1
@@ -277,10 +276,7 @@ class NetFlowAnalyzer:
         self._anomalies: List[NetFlowAnomaly] = []
 
     def feed(self, data: bytes) -> Optional[NetFlowRecord]:
-        """输入一段NetFlow/IPFIX二进制数据，自动检测版本并解析。
-
-        返回单个NetFlowRecord或None（如果无法解析）。
-        """
+        """输入NetFlow/IPFIX二进制数据，自动检测版本并解析。"""
         if len(data) < 2:
             return None
 
@@ -293,7 +289,7 @@ class NetFlowAnalyzer:
             if count > 0 and len(data) >= _NF5_HEADER_SIZE + _NF5_RECORD_SIZE:
                 rec = NetFlow5Parser.parse_record(data[_NF5_HEADER_SIZE:])
         elif version == 9:
-            # NetFlow v9 模板化 —— 简化处理，跳过模板出数据记录
+            # NetFlow v9 模板化 —— 简化处理，跳过模板提取数据记录
             if len(data) >= _NF9_HEADER_SIZE:
                 rec = NetFlowRecord()
                 rec.src_addr = "0.0.0.0"

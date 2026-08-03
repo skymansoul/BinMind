@@ -1,14 +1,14 @@
-"""Constraint-solving result cache with LRU eviction and SQLite persistence.
+"""Constraint-solving result 缓存with LRU eviction SQLite 持久化
 
-Constraint solving dominates symbolic execution cost. This module caches
-solutions keyed by SHA-256 of a normalized constraint form, serving hits
-from memory (LRU dict) and promoting disk entries on access. Normalization
-canonicalizes SMT-LIB operators so semantically identical constraints
-share a cache key.
+约束求解 dominates 符号执行 cost. module缓存s
+solutions keyed SHA256 a normalized constraint form, serving hits
+memory (LRU dict) promoting disk entries access. Normalization
+canonicalizes SMT-LIB operators semantically identical constraints
+share a 缓存key
 
 内存层采用 OrderedDict + 分段锁的变体: 将 key 空间按首字节拆分为 16 个
 shard，每个 shard 持独立锁，减少高频查询时的锁竞争。写入路径仍使用全局
-锁以保证 LRU 顺序一致性。
+锁以保证 LRU 顺序一致性
 """
 
 import logging
@@ -16,14 +16,26 @@ import os
 import json
 import struct
 import time
-import hashlib
 import sqlite3
 import threading
 from dataclasses import dataclass, field
 from collections import OrderedDict
 from datetime import datetime
 
-from typing import Optional, Any, Dict, List
+from typing import Optional, Any, Dict, List, Tuple
+
+from .src.constraint_serializer import (
+    NORMALIZE_PATTERNS,
+    CATEGORY_SIGNATURES,
+    normalize_constraint,
+    classify_constraint_category,
+    compute_constraint_hash_bytes,
+    compute_constraint_hash,
+    entry_to_dict,
+    entry_to_db_params,
+    db_row_to_init_kwargs,
+    json_item_to_init_kwargs,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +48,7 @@ TELEMETRY_RING_CAPACITY = 1000
 
 @dataclass
 class CachedConstraint:
-    """One entry: original constraint, normalized form, solution, and stats."""
+    """One entry: original constraint, normalized form, solution, stats"""
     constraint_hash: str
     original_constraint: str
     normalized_constraint: str
@@ -49,44 +61,33 @@ class CachedConstraint:
     ttl_seconds: float = 0.0          # 0 表示永不过期；> 0 表示从 timestamp 起的 TTL
 
     def is_expired(self, now: Optional[float] = None) -> bool:
-        """Check if entry TTL has elapsed."""
+        """检查 entry TTL elapsed"""
         if self.ttl_seconds <= 0:
             return False
         ref = now if now is not None else time.time()
         return (ref - self.timestamp) > self.ttl_seconds
 
     def to_dict(self) -> Dict[str, Any]:
-        """Serialize for JSON export."""
-        return {
-            "constraint_hash": self.constraint_hash,
-            "original_constraint": self.original_constraint,
-            "normalized_constraint": self.normalized_constraint,
-            "solution": str(self.solution) if self.solution is not None else None,
-            "solver_name": self.solver_name,
-            "solve_time_ms": self.solve_time_ms,
-            "timestamp": self.timestamp,
-            "hit_count": self.hit_count,
-            "constraint_category": self.constraint_category,
-            "ttl_seconds": self.ttl_seconds,
-        }
+        """序列化 for JSON export (delegates serializer module)"""
+        return entry_to_dict(self)
 
 
 # ---------------------------------------------------------------------------
 # CacheTelemetry: 类 Span 的操作延迟追踪器
-# 按操作类型 (get/put/evict/vacuum) 分开记录耗时到环形缓冲区
+# 按操作类型 (/put/evict/vacuum) 分开记录耗时到环形缓冲区
 # 容量上限 TELEMETRY_RING_CAPACITY，自动丢弃最旧样本
-# 对 get/put 的写路径要求 O(1) 追加，不分配新内存（pre-alloc buffer）
+# 对 /put 的写路径要求 O(1) 追加，不分配新内存（pre-alloc buffer）
 # ---------------------------------------------------------------------------
 class CacheTelemetry:
-    """Span-style operation latency tracker for cache operations.
-
-    Records elapsed durations in per-operation circular buffers (max 1000
-    samples each).  Percentile queries (p50/p95/p99) are computed via
-    in-memory sort on demand — the buffer size guarantees sub-millisecond
-    sort overhead even under heavy query load.
-
-    操作类型：get / put / evict / vacuum
-    每类操作独立环形缓冲区，追加 O(1)，百分位计算 O(n log n) 仅在查询时触发。
+    """Span-style operation 延迟 tracker for 缓存operations
+    
+    Records elapsed durations per-operation circular 缓冲区s (max 1000
+    samples). Percentile 查询 (p50/p95/p99) computed via
+    -memory 排序 demand — 缓冲区 size guarantees sub-millisecond
+    排序 overhead even under heavy query 加载
+    
+    操作类型： / put / evict / vacuum
+    每类操作独立环形缓冲区，追加 O(1)，百分位计算 O(n log n) 仅在查询时触发
     """
 
     _OPS = ("get", "put", "evict", "vacuum")
@@ -104,9 +105,9 @@ class CacheTelemetry:
         self._lock = threading.Lock()
 
     def record(self, operation: str, elapsed_seconds: float) -> None:
-        """Push a duration sample for *operation* into its ring buffer.
-
-        Thread-safe O(1) append via per-operation pre-allocated array.
+        """Push a d sample for *operation* ring 缓冲区
+        
+        线程安全 O(1) append via per-operation pre-allocated array
         """
         if operation not in self._rings:
             return
@@ -118,9 +119,9 @@ class CacheTelemetry:
                 self._counts[operation] += 1
 
     def percentile(self, operation: str, p: float) -> float:
-        """Compute the *p*-th percentile (0-100) for *operation*.
-
-        Returns 0.0 when no samples are available.
+        """计算 *p*-th percentile (0-100) for *operation*
+        
+        返回 0.0 samples available
         """
         if p < 0 or p > 100:
             return 0.0
@@ -153,13 +154,13 @@ class CacheTelemetry:
             return self._counts.get(operation, 0)
 
     def snapshot(self) -> Dict[str, Dict[str, float]]:
-        """Return {op: {p50, p95, p99, samples}} for all tracked operations."""
+        """返回 {op: {p50, p95, p99, samples}} for tracked operations"""
         result = {}
         for op in self._OPS:
             with self._lock:
                 n = self._counts[op]
             result[op] = {
-                "p50": self.p50(op) * 1000,   # convert to ms
+                "p50": self.p50(op) * 1000,   # 转换 ms
                 "p95": self.p95(op) * 1000,
                 "p99": self.p99(op) * 1000,
                 "samples": n,
@@ -169,7 +170,7 @@ class CacheTelemetry:
 
 @dataclass
 class CacheStatistics:
-    """Running counters for cache performance monitoring."""
+    """Running counters for 缓存性能 monitoring"""
     total_entries: int = 0
     max_entries: int = 1000
     hit_count: int = 0
@@ -181,7 +182,7 @@ class CacheStatistics:
 
     @property
     def hit_rate(self) -> float:
-        """Fraction of queries served from cache."""
+        """Fraction 查询 served from缓存"""
         total = self.hit_count + self.miss_count
         if total == 0:
             return 0.0
@@ -226,11 +227,11 @@ class _Shard:
             return len(self._data)
 
     def all_keys(self) -> List[str]:
-        """Snapshot of keys in this shard — caller must hold shard._lock."""
+        """快照 keys shard — caller hold shard._lock"""
         return list(self._data.keys())
 
     def remove(self, key: str) -> bool:
-        """Delete *key* from shard if present."""
+        """删除 *key* shard present"""
         with self._lock:
             if key in self._data:
                 del self._data[key]
@@ -241,16 +242,16 @@ class _Shard:
 # ---------------------------------------------------------------------------
 # CacheWarmingPolicy: 启动时按历史命中频率预加载热点条目
 # 设计取舍 — 用独立的小表（cache_frequencies）追踪频率，而非在主表上
-# 加字段，避免每次 hit 更新整行的写入放大。小表只存 hash + hits + ts，
-# 写入开销 O(1) 且与主表解耦，vacuum/预热都对主表无锁竞争。
+# 加字段，避免每次 hit 更新整行的写入放大。小表只存 hash + hits + ts
+# 写入开销 O(1) 且与主表解耦，vacuum/预热都对主表无锁竞争
 # ---------------------------------------------------------------------------
 class CacheWarmingPolicy:
-    """Pre-loads frequently-hit entries from disk into memory on startup.
-
-    Maintains a lightweight frequency table separate from the main constraint
-    cache so that hit-count writes avoid touching the wide rows of
-    ``constraint_cache``.  The top *warmup_top_n* entries (by total_hits)
-    are promoted into the sharded memory cache during :meth:`warmup`.
+    """Pre-加载 frequently-hit entries disk memory startup
+    
+    维护 a lightweight frequency table separate main constraint
+    缓存so hit-count 写入 avoid touching wide rows
+    ``constraint_cache``. top *warmup_top_n* entries (total_hits)
+    promoted sharded memory 缓存during:meth:`warmup`
     """
 
     def __init__(self, warmup_top_n: int = DEFAULT_WARMUP_TOP_N):
@@ -300,9 +301,9 @@ class CacheWarmingPolicy:
         shards: List[_Shard],
         max_entries: int,
     ) -> int:
-        """Load top-N most frequently hit entries from the main cache table.
-
-        Returns the number of entries warmed into memory.
+        """加载 top-N frequently hit entries main 缓存table
+        
+        返回 number entries warmed memory
         """
         if conn is None:
             return 0
@@ -346,17 +347,17 @@ class CacheWarmingPolicy:
 
 
 # ---------------------------------------------------------------------------
-# TTL lazy eviction daemon: 后台线程每 60 秒扫描所有 shard 和 SQLite表，
-# 剔除已过期的条目。 与 eager eviction (per-get 检查 ttl) 相比，
-# 懒驱逐在命中路径上无额外开销，适合高 QPS 场景。
-# 设计取舍 — daemon 持有 shard 锁的时间极短（逐条 pop），不会阻塞读路径。
+# TTL lazy eviction daemon: 后台线程每 60 秒扫描所有 shard 和 SQLite表
+# 剔除已过期的条目。 与 eager eviction (per- 检查 ttl) 相比
+# 懒驱逐在命中路径上无额外开销，适合高 QPS 场景
+# 设计取舍 — daemon 持有 shard 锁的时间极短（逐条 pop），不会阻塞读路径
 # ---------------------------------------------------------------------------
 class _TTLEvictionDaemon:
-    """Background thread that scans for and evicts expired cache entries.
-
-    Runs every *interval_seconds* (default 60).  Eviction is lazy —
-    expired entries remain in the cache between sweeps but are skipped
-    on lookup via :meth:`is_expired`.
+    """Background thread scans for evicts expired 缓存entries
+    
+    运行 *interval_seconds* (default 60). Eviction lazy —
+    expired entries remain 缓存between sweeps but skipped
+    lookup via:meth:`is_expired`
     """
 
     def __init__(
@@ -401,7 +402,7 @@ class _TTLEvictionDaemon:
         return self._sweeps_completed
 
     def _sweep_loop(self) -> None:
-        """Continuously scan shards + SQLite for expired entries."""
+        """Continuously scan shards + SQLite for expired entries"""
         while not self._stop_event.wait(self._interval):
             sweep_start = time.time()
             evicted_mem = self._evict_expired_from_memory()
@@ -418,7 +419,7 @@ class _TTLEvictionDaemon:
                 )
 
     def _evict_expired_from_memory(self) -> int:
-        """Walk all shards and remove expired entries."""
+        """Walk shards remove expired entries"""
         now = time.time()
         evicted = 0
         for shard in self._cache._shards:
@@ -433,8 +434,8 @@ class _TTLEvictionDaemon:
         return evicted
 
     def _evict_expired_from_disk(self) -> int:
-        """Delete expired rows from SQLite (those with ttl_seconds > 0 and
-        timestamp + ttl_seconds < now)."""
+        """删除 expired rows SQLite (ttl_seconds > 0
+        timestamp + ttl_seconds <)"""
         db = self._cache._db_connection
         if db is None:
             return 0
@@ -455,35 +456,16 @@ class _TTLEvictionDaemon:
 
 
 class ConstraintCachePersistence:
-    """Two-tier constraint cache: sharded memory LRU + SQLite disk store.
+    """Two-tier constraint缓存: sharded memory LRU + SQLite disk 存储
+    
+    Normalization rewrites SMT-LIB operators a canonical form
+    哈希, '(bvadd x y)' '(bvadd x y)' share a key"""
 
-    Normalization rewrites SMT-LIB operators to a canonical form before
-    hashing, so '(bvadd x y)' and '(bvadd  x  y)' share a key."""
+    # SMT-LIB operator canonical-symbol lookup (imported serializer)
+    NORMALIZE_PATTERNS = NORMALIZE_PATTERNS
 
-    # SMT-LIB operator to canonical-symbol lookup for normalization
-    NORMALIZE_PATTERNS = [
-        ("bvadd", "+"),
-        ("bvmul", "*"),
-        ("bvsub", "-"),
-        ("bvsdiv", "/"),
-        ("bvand", "&"),
-        ("bvor", "|"),
-        ("bvxor", "^"),
-        ("bvshl", "<<"),
-        ("bvlshr", ">>"),
-        ("bvult", "<"),
-        ("bvule", "<="),
-        ("bvugt", ">"),
-        ("bvuge", ">="),
-    ]
-
-    # 快速分类：在 normalization 阶段顺便标记约束类别，供统计和淘汰策略使用
-    CATEGORY_SIGNATURES = [
-        ("bitvector", ["bvadd", "bvmul", "bvand", "bvor", "bvxor", "bvshl", "concat", "extract"]),
-        ("integer",   ["Int", "int", "+", "*", "mod"]),
-        ("string",    ["str.", "Str", "concat", "substring"]),
-        ("boolean",   ["and", "or", "not", "=>", "ite"]),
-    ]
+    # Fast category 分类 (imported serializer)
+    CATEGORY_SIGNATURES = CATEGORY_SIGNATURES
 
     def __init__(self):
         self._shards = [_Shard() for _ in range(_NR_SHARDS)]
@@ -503,8 +485,8 @@ class ConstraintCachePersistence:
         self._ttl_daemon = _TTLEvictionDaemon(self)
 
     # ------------------------------------------------------------------
-    # shard 索引：用 struct.unpack("H", bytes[:2]) 替代 int(hash[:2],16)
-    # 避免 hex 字符串切片和解析开销 — 热路径上省掉一次 int(...,16) 调用
+    # shard 索引：用 struct.脱壳("H", bytes[:2]) 替代 int(hash[:2],16)
+    # 避免 hex 字符串切片和解析开销 — 热路径上省掉一次 int(.,16) 调用
     # ------------------------------------------------------------------
     @staticmethod
     def _shard_of(hash_bytes: bytes) -> int:
@@ -514,14 +496,14 @@ class ConstraintCachePersistence:
         return sum(len(shard) for shard in self._shards)
 
     def _get_default_db_path(self) -> str:
-        """Default SQLite path under ~/.binary_analysis_cache."""
+        """Default SQLite path under ~/.binary_analysis_cache"""
         home = os.path.expanduser("~")
         cache_dir = os.path.join(home, ".binary_analysis_cache")
         os.makedirs(cache_dir, exist_ok=True)
         return os.path.join(cache_dir, "constraint_cache.db")
 
     def _init_database(self, db_path: Optional[str] = None) -> None:
-        """Create SQLite schema if absent."""
+        """创建 SQLite schema absent"""
         self._db_path = db_path or self._get_default_db_path()
         self._db_connection = sqlite3.connect(
             self._db_path, check_same_thread=False
@@ -554,42 +536,29 @@ class ConstraintCachePersistence:
         logger.info(f"Constraint cache database initialized: {self._db_path}")
 
     def _classify_category(self, normalized: str) -> str:
-        lower = normalized.lower()
-        for cat, sigs in self.CATEGORY_SIGNATURES:
-            if any(sig.lower() in lower for sig in sigs):
-                return cat
-        return "unknown"
+        """Infer constraint category (delegates serializer module)"""
+        return classify_constraint_category(normalized)
 
     def serialize_constraint(self, constraint: str) -> str:
-        """Canonicalize a constraint string for consistent hashing.
-
-        Steps: collapse whitespace, lowercase, normalize SMT-LIB operators,
-        clean parenthesis spacing."""
-        normalized = " ".join(constraint.split())
-        normalized = normalized.lower()
-
-        for old, new in self.NORMALIZE_PATTERNS:
-            normalized = normalized.replace(f"({old} ", f"({new} ")
-
-        while "  " in normalized:
-            normalized = normalized.replace("  ", " ")
-        normalized = normalized.replace("( ", "(")
-        normalized = normalized.replace(" )", ")")
-
-        return normalized
+        """Canonicalize a constraint string (delegates serializer module)
+        
+        Steps: collapse whitespace, lowercase, 标准化 SMT-LIB operators
+        clean parenthesis spacing
+        """
+        return normalize_constraint(constraint)
 
     # ------------------------------------------------------------------
-    # 先算 raw bytes（digest），需要 hex 字符串时再 .hex()
+    # 先算 raw bytes（digest），需要 hex 字符串时再.hex()
     # 热路径（lookup/cache）直接从 bytes 取 slot_idx，省掉一次 hex 分配
     # ------------------------------------------------------------------
     @staticmethod
     def _compute_hash_bytes(normalized_constraint: str) -> bytes:
-        """SHA-256 digest as raw bytes."""
-        return hashlib.sha256(normalized_constraint.encode("utf-8")).digest()
+        """SHA256 digest raw bytes (delegates serializer module)"""
+        return compute_constraint_hash_bytes(normalized_constraint)
 
     def _compute_hash(self, normalized_constraint: str) -> str:
-        """SHA-256 over the normalized form (hex string)."""
-        return self._compute_hash_bytes(normalized_constraint).hex()
+        """SHA256 hex digest (delegates serializer module)"""
+        return compute_constraint_hash(normalized_constraint)
 
     def cache_constraint(
         self,
@@ -599,13 +568,13 @@ class ConstraintCachePersistence:
         solve_time_ms: float = 0.0,
         ttl_seconds: float = 0.0,
     ) -> str:
-        """Store a constraint→solution mapping. Returns the hash key.
-
-        If the constraint is already cached, its LRU position refreshes
-        and the hit count increments.
-
+        """存储 a constraint→solution mapping. 返回 hash key
+        
+        constraint already缓存d, LRU position refreshes
+        hit count increments
+        
         Args:
-            ttl_seconds: Optional TTL in seconds. 0 means no expiration.
+        ttl_seconds: Optional TTL seconds. 0 means expiration
         """
         put_start = time.time()
         normalized = self.serialize_constraint(constraint)
@@ -650,7 +619,7 @@ class ConstraintCachePersistence:
         return constraint_hash
 
     def _flush_write_buffer(self):
-        """Bulk-insert buffered entries into SQLite and flush frequency hits."""
+        """Bulk-插入 缓冲区ed entries SQLite flush frequency hits"""
         if self._db_connection is None:
             self._write_buffer.clear()
             return
@@ -662,18 +631,7 @@ class ConstraintCachePersistence:
                         solution, solver_name, solve_time_ms, timestamp, hit_count,
                         constraint_category, ttl_seconds)
                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                    (
-                        entry.constraint_hash,
-                        entry.original_constraint,
-                        entry.normalized_constraint,
-                        str(entry.solution) if entry.solution is not None else None,
-                        entry.solver_name,
-                        entry.solve_time_ms,
-                        entry.timestamp,
-                        entry.hit_count,
-                        entry.constraint_category,
-                        entry.ttl_seconds,
-                    ),
+                    entry_to_db_params(entry),
                 )
             self._db_connection.commit()
             self._stats.persistent_entries += len(self._write_buffer)
@@ -681,10 +639,10 @@ class ConstraintCachePersistence:
             self._write_buffer.clear()
 
     def lookup_constraint(self, constraint: str) -> Optional[Dict[str, Any]]:
-        """Query memory first, then disk. Returns entry dict or None.
-
-        Expired entries (via TTL) are treated as cache misses and removed
-        from memory inline.
+        """Query memory first, disk. 返回 entry dict or None
+        
+        Expired entries (via TTL) treated 缓存misses removed
+        memory inline
         """
         get_start = time.time()
         normalized = self.serialize_constraint(constraint)
@@ -734,7 +692,7 @@ class ConstraintCachePersistence:
         return None
 
     def _lookup_from_disk(self, constraint_hash: str) -> Optional[Dict[str, Any]]:
-        """Search SQLite; promote any hit to the memory cache."""
+        """Search SQLite; promote hit memory缓存"""
         if self._db_connection is None:
             return None
         cursor = self._db_connection.execute(
@@ -745,18 +703,9 @@ class ConstraintCachePersistence:
         if row is None:
             return None
 
-        entry = CachedConstraint(
-            constraint_hash=row[0],
-            original_constraint=row[1],
-            normalized_constraint=row[2],
-            solution=row[3],
-            solver_name=row[4],
-            solve_time_ms=row[5],
-            timestamp=row[6],
-            hit_count=row[7] + 1,
-            constraint_category=row[8] if len(row) > 8 else "",
-            ttl_seconds=row[9] if len(row) > 9 else 0.0,
-        )
+        kwargs = db_row_to_init_kwargs(row)
+        kwargs["hit_count"] = kwargs["hit_count"] + 1  # increment promotion
+        entry = CachedConstraint(**kwargs)
         slot_idx = self._shard_of(bytes.fromhex(constraint_hash))
         shard = self._shards[slot_idx]
         shard.put(constraint_hash, entry)
@@ -766,11 +715,11 @@ class ConstraintCachePersistence:
         return entry.to_dict()
 
     def evict_lru(self, count: int = 1) -> int:
-        """Remove the least-recently-used entries from memory.
-
-        采用近似 LRU：从所有 shard 中选取最旧的 entry 逐出，
-        而非全局精确排序。O(shard_count) vs O(n log n)，
-        在数千条目的规模下足够精确。
+        """Remove least-recently-used entries memory
+        
+        采用近似 LRU：从所有 shard 中选取最旧的 entry 逐出
+        而非全局精确排序。O(shard_count) vs O(n 记录 n)
+        在数千条目的规模下足够精确
         """
         evict_start = time.time()
         evicted = 0
@@ -801,7 +750,7 @@ class ConstraintCachePersistence:
         return evicted
 
     def persist_to_disk(self, db_path: Optional[str] = None) -> int:
-        """Flush the in-memory cache to SQLite."""
+        """Flush -memory 缓存to SQLite"""
         if self._db_connection is None:
             self._init_database(db_path)
 
@@ -821,18 +770,7 @@ class ConstraintCachePersistence:
                             solution, solver_name, solve_time_ms, timestamp, hit_count,
                             constraint_category, ttl_seconds)
                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                        (
-                            entry.constraint_hash,
-                            entry.original_constraint,
-                            entry.normalized_constraint,
-                            str(entry.solution) if entry.solution is not None else None,
-                            entry.solver_name,
-                            entry.solve_time_ms,
-                            entry.timestamp,
-                            entry.hit_count,
-                            entry.constraint_category,
-                            entry.ttl_seconds,
-                        ),
+                        entry_to_db_params(entry),
                     )
                     count += 1
         self._db_connection.commit()
@@ -842,7 +780,7 @@ class ConstraintCachePersistence:
         return count
 
     def load_from_disk(self, db_path: Optional[str] = None) -> int:
-        """Load the most recent entries from SQLite into memory."""
+        """加载 recent entries SQLite memory"""
         if self._db_connection is None:
             self._init_database(db_path)
         if self._db_connection is None:
@@ -855,18 +793,7 @@ class ConstraintCachePersistence:
             (limit,),
         )
         for row in cursor:
-            entry = CachedConstraint(
-                constraint_hash=row[0],
-                original_constraint=row[1],
-                normalized_constraint=row[2],
-                solution=row[3],
-                solver_name=row[4],
-                solve_time_ms=row[5],
-                timestamp=row[6],
-                hit_count=row[7],
-                constraint_category=row[8] if len(row) > 8 else "",
-                ttl_seconds=row[9] if len(row) > 9 else 0.0,
-            )
+            entry = CachedConstraint(**db_row_to_init_kwargs(row))
             slot_idx = self._shard_of(bytes.fromhex(entry.constraint_hash))
             shard = self._shards[slot_idx]
             shard.put(entry.constraint_hash, entry)
@@ -876,11 +803,11 @@ class ConstraintCachePersistence:
         return count
 
     def export_to_json(self, file_path: str) -> int:
-        """Dump memory cache to a JSON file."""
+        """转存 memory 缓存to a JSON file"""
         entries = []
         for shard in self._shards:
             with shard._lock:
-                entries.extend(e.to_dict() for e in shard._data.values())
+                entries.extend(entry_to_dict(e) for e in shard._data.values())
         with open(file_path, "w", encoding="utf-8") as f:
             json.dump(
                 {
@@ -896,7 +823,7 @@ class ConstraintCachePersistence:
         return len(entries)
 
     def import_from_json(self, file_path: str) -> int:
-        """Populate memory cache from a previously exported JSON file."""
+        """Populate memory 缓存from a previously exported JSON file"""
         if not os.path.exists(file_path):
             logger.warning(f"JSON file does not exist: {file_path}")
             return 0
@@ -913,18 +840,7 @@ class ConstraintCachePersistence:
             existing = shard.get(constraint_hash)
             if existing is not None:
                 continue
-            entry = CachedConstraint(
-                constraint_hash=constraint_hash,
-                original_constraint=item.get("original_constraint", ""),
-                normalized_constraint=item.get("normalized_constraint", ""),
-                solution=item.get("solution"),
-                solver_name=item.get("solver_name", "unknown"),
-                solve_time_ms=item.get("solve_time_ms", 0.0),
-                timestamp=item.get("timestamp", time.time()),
-                hit_count=item.get("hit_count", 0),
-                constraint_category=item.get("constraint_category", ""),
-                ttl_seconds=item.get("ttl_seconds", 0.0),
-            )
+            entry = CachedConstraint(**json_item_to_init_kwargs(item))
             shard.put(constraint_hash, entry)
             count += 1
         logger.info(f"Imported {count} constraint caches from JSON")
@@ -933,17 +849,17 @@ class ConstraintCachePersistence:
     # ------------------------------------------------------------------
     # vacuum_stale: 清理零命中且过期超过 ttl_seconds 的条目
     # 设计取舍 — 用 SQLite 的 julianday 函数做时间比对，避免将所有
-    # timestamp 读到 Python 侧再过滤，减少跨语言边界的传输量。
+    # timestamp 读到 Python 侧再过滤，减少跨语言边界的传输量
     # ------------------------------------------------------------------
     def vacuum_stale(self, ttl_seconds: float) -> int:
-        """Delete stale entries with zero hits past TTL, then VACUUM.
-
-        An entry is stale when ``hit_count == 0`` and its age in seconds
-        exceeds *ttl_seconds*.  After the delete, ``VACUUM`` reclaims
-        the freed pages on disk.
-
-        Returns:
-            Number of rows removed.
+        """删除 stale entries zero hits past TTL, VACUUM
+        
+        An entry stale ``hit_count == 0`` age seconds
+        exceeds *ttl_seconds*. 删除, ``VACUUM`` reclaims
+        freed pages disk
+        
+        返回:
+        Number rows removed
         """
         vacuum_start = time.time()
         if self._db_connection is None:
@@ -975,8 +891,8 @@ class ConstraintCachePersistence:
         return stale_count
 
     def cache_statistics(self) -> Dict[str, Any]:
-        """Return current cache performance metrics including telemetry
-        p50/p95/p99 per operation."""
+        """返回 current 缓存性能 metrics including telemetry
+        p50/p95/p99 per operation"""
         total = self._total_entries()
         self._stats.total_entries = total
         self._stats.memory_usage_estimate = total * 2048
@@ -996,7 +912,7 @@ class ConstraintCachePersistence:
         }
 
     def _get_disk_entry_count(self) -> int:
-        """Count rows in the SQLite table."""
+        """Count rows SQLite table"""
         if self._db_connection is None:
             return 0
         cursor = self._db_connection.execute(
@@ -1005,7 +921,7 @@ class ConstraintCachePersistence:
         return cursor.fetchone()[0]
 
     def clear_cache(self) -> int:
-        """Drop all in-memory entries. Returns count cleared."""
+        """Drop -memory entries. 返回 count cleared"""
         count = self._total_entries()
         for shard in self._shards:
             with shard._lock:
@@ -1015,14 +931,14 @@ class ConstraintCachePersistence:
         return count
 
     def initialize(self, config: Optional[Dict[str, Any]] = None) -> bool:
-        """Apply config, init database, and warm the cache by hit frequency.
-
-        If the config provides ``warmup_top_n``, that overrides the default
-        (200).  The warming step queries the ``cache_frequencies`` table and
-        loads the most-hit entries from disk into the sharded memory layer
-        before the cache serves its first request.
-
-        TTL lazy eviction daemon is started automatically during initialize.
+        """Apply 配置, init 数据库, warm 缓存by hit frequency
+        
+        配置 提供 ``warmup_top_n``, overrides default
+        (200). warming step 查询 ``cache_frequencies`` table
+        加载 -hit entries disk sharded memory layer
+        缓存serves first request
+        
+        TTL lazy eviction daemon started automatically 初始化
         """
         if config:
             self._config.update(config)
@@ -1050,7 +966,7 @@ class ConstraintCachePersistence:
         return True
 
     def cleanup(self) -> None:
-        """Flush write buffer, frequency hits, and close the SQLite connection."""
+        """Flush 写入 缓冲区, frequency hits, 关闭 SQLite connection"""
         self._ttl_daemon.stop()
         self._flush_write_buffer()
         if self._db_connection:
@@ -1060,7 +976,7 @@ class ConstraintCachePersistence:
             self._db_connection = None
 
     def analyze(self, **kwargs) -> Dict[str, Any]:
-        """Dispatch cache operations by 'action' key."""
+        """Dispatch 缓存operations 'action' key"""
         action = kwargs.get("action", "cache")
 
         if action == "cache":
@@ -1128,9 +1044,23 @@ class ConstraintCachePersistence:
 
 
 def manage_constraint_cache(**kwargs) -> Dict[str, Any]:
-    """Instantiate a ConstraintCachePersistence and run the requested action."""
+    """Instantiate a ConstraintCache持久化 运行 requested action"""
     cache = ConstraintCachePersistence()
     return cache.analyze(**kwargs)
 
 
-__all__ = ["ConstraintCachePersistence", "manage_constraint_cache"]
+__all__ = [
+    "ConstraintCachePersistence",
+    "manage_constraint_cache",
+    # Re-exported serializer for backward 兼容性
+    "NORMALIZE_PATTERNS",
+    "CATEGORY_SIGNATURES",
+    "normalize_constraint",
+    "classify_constraint_category",
+    "compute_constraint_hash_bytes",
+    "compute_constraint_hash",
+    "entry_to_dict",
+    "entry_to_db_params",
+    "db_row_to_init_kwargs",
+    "json_item_to_init_kwargs",
+]

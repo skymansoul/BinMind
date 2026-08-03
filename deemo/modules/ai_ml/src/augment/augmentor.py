@@ -1,5 +1,4 @@
-# 2026-07-20
-# augment/augmentor.py
+# augment/增强器.py
 # 图结构数据增强：节点丢弃、边扰动、特征掩码、子图采样
 # 设计权衡：bridge nodes（度>5）不做node_drop，保护图的连通性
 # edge_perturb用引力加权删除，优先剪断高权重边（两端节点度都低的边）

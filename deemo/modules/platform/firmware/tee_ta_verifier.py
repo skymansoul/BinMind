@@ -1,11 +1,11 @@
 """
-TEE Trusted Application verifier. Validates OP-TEE/Trusty TA binaries:
-ELF header integrity, signed header parsing, command table enumeration,
-and detection of dangerous GlobalPlatform Internal API call patterns.
+TEE可信应用验证器。验证OP-TEE/Trusty TA二进制：
+ELF头完整性、签名头解析、命令表枚举、
+GlobalPlatform Internal API危险调用模式检测。
 
-2026-07 新增: GPCheck 风格的 memref/paramTypes 类型混淆静态检测。
-参考: Busch et al., "GPCheck: Static Analysis for TEE Type-Confusion
-Vulnerabilities", USENIX Security 2024.
+2026.07新增：GPCheck风格memref/paramTypes类型混淆静态检测。
+参考：Busch et al., "GPCheck: Static Analysis for TEE Type-Confusion
+Vulnerabilities", USENIX Security 2024。
 """
 
 import struct
@@ -81,7 +81,7 @@ _EXTENDED_THREAT_SURFACE: dict[str, str] = {
     "TEE_Realloc": "realloc without MTE/ASAN mitigations",
 }
 
-# GPCheck 风格: GP TEE 参数类型标签 (TEEC_MEMREF_* / TEEC_VALUE_*)
+# GPCheck风格：GP TEE参数类型标签（TEEC_MEMREF_* / TEEC_VALUE_*）
 _PARAM_TYPE_TAGS = {
     0x00: "TEEC_NONE",
     0x01: "TEEC_VALUE_INPUT",
@@ -96,7 +96,7 @@ _PARAM_TYPE_TAGS = {
     0x11: "TEEC_MEMREF_PARTIAL_INOUT",
 }
 
-# memref 使用但 paramTypes 检查缺失的模式
+# memref引用但缺少paramTypes检查的模式
 _MEMREF_USE_NO_CHECK = re.compile(
     rb'(?:TEE_GetParameter|TEE_GetParamTypes|params\[)\s*.{0,64}'
     rb'(?:TEEC_MEMREF|memref|TEE_PARAM_TYPE_MEMREF)',
@@ -155,8 +155,8 @@ def _parse_trusty_header(data: bytes) -> tuple[bool, str, int]:
     return True, uid, app_id
 
 
-# GPCheck 风格类型混淆检测: 搜索 memref 使用点但缺少 paramTypes 验证的代码路径。
-# 误报率 ~10%，在设计上选择偏向标记更多候选点而非遗漏 —— 因为 TA 二进制不可重新编译，
+# GPCheck风格类型混淆检测：搜索memref使用点但缺少paramTypes验证的代码路径。
+# 误报率~10%，偏向标记更多候选点而非遗漏 — TA二进制不可重编译，
 # 静态分析是唯一可行的离线验证手段。
 def _detect_type_confusion(data: bytes) -> list[dict]:
     risks = []
@@ -176,14 +176,14 @@ def _detect_type_confusion(data: bytes) -> list[dict]:
                 "cwe": "CWE-843",
             })
         else:
-            # paramTypes 存在但可能在错误的控制流路径中 —— 探测性标记
+            # paramTypes存在但可能在错误控制流路径中 — 探测性标记
             risks.append({
                 "type": "paramtypes_present",
                 "severity": "INFO",
                 "finding": "paramTypes check present — review for completeness on all code paths",
             })
 
-    # 检测多个 memref 参数但仅检查单个 paramTypes 标志的模式
+    # 检测多memref参数但仅单paramTypes标志检查的模式
     memref_count = len(re.findall(r'TEEC_MEMREF_|TEE_PARAM_TYPE_MEMREF', text))
     if memref_count >= 3 and has_param_types:
         risks.append({
@@ -197,7 +197,7 @@ def _detect_type_confusion(data: bytes) -> list[dict]:
 
 
 class TEEAalyzer:
-    """Static validator for OP-TEE and Trusty TA binaries: headers, commands, syscalls."""
+    """OP-TEE/Trusty TA二进制静态验证器：头解析、命令枚举、系统调用检查。"""
 
     SHDR_MAGIC = SHDR_MAGIC
     TA_UUID_OFFSET = 8
@@ -232,7 +232,7 @@ class TEEAalyzer:
         return result
 
     def _parse_optee_header(self, data: bytes, result: TEEResult):
-        """Scan for OP-TEE signed header magic; fall back to Trusty header detection."""
+        """扫描OP-TEE签名头魔数；回退至Trusty头检测。"""
         for off in range(0, min(len(data) - 20, 65536), 4):
             if struct.unpack_from("<I", data, off)[0] == SHDR_MAGIC:
                 result.header_valid = True
@@ -254,7 +254,7 @@ class TEEAalyzer:
                 result.metadata["trusty_app_id"] = app_id
 
     def _extract_cmd_table(self, data: bytes, result: TEEResult):
-        """Enumerate TA command IDs from string references matching TEE_CMD_ / CMD_ / command_N patterns."""
+        """枚举TA命令ID，匹配TEE_CMD_/CMD_/command_N字符串引用模式。"""
         cmd_id_pattern = re.compile(rb'TEE_CMD_(\w+)|CMD_(\w+)|command[_\s]*(\d+)')
         for m in cmd_id_pattern.finditer(data):
             name = (m.group(1) or m.group(2) or f"cmd_{m.group(3)}").decode('ascii', errors='replace')
@@ -262,7 +262,7 @@ class TEEAalyzer:
         result.entry_count = len(result.commands)
 
     def _check_syscall_usage(self, data: bytes, result: TEEResult):
-        """Scan decoded string table for dangerous GlobalPlatform syscall references."""
+        """扫描解码字符串表，检测GlobalPlatform危险系统调用引用。"""
         text = data.decode('ascii', errors='replace')
         for syscall, risk_desc in DANGEROUS_SYSCALLS.items():
             if syscall in text:

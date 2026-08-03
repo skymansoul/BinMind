@@ -1,4 +1,4 @@
-# 2026-07-31 — vuln_detection 配置子系统
+# vuln_detection配置子系统
 # JSON/YAML配置加载 + 环境变量覆盖 + 默认值回退
 
 import os

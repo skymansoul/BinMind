@@ -1,4 +1,4 @@
-# 多级冷存储策略 — 按数据温度自动迁移 + 分层压缩
+"""多级冷存储调度 — 按数据温度自主迁移 + 分层压缩"""
 # 参考 "Taming Server Memory TCO with Multiple Software-Defined Compressed Tiers"
 # [Kumar et al., arXiv:2404.13886] 的多级压缩内存模型，适配到磁盘存储场景。
 # AVS [arXiv:2511.19453] 的两级存储 (SSD hot → HDD archive) 提供分层灵感。
@@ -9,9 +9,9 @@
 #   cold  — 30-180 天，HDD 存储，zstd level 6 压缩
 #   frozen — > 180 天，HDD + zstd level 12 压缩，可离线
 #
-# 迁移策略由 StoragePolicy 定义，TierManager 执行实际的数据搬迁。
-# 与 LifecycleManager 的区别: LifecycleManager 管理语义阶段迁移
-# (raw→analysis→report→archive)，TierManager 管理物理存储位置和压缩等级。
+# 迁移调度由 StoragePolicy 定义，TierManager 执行实际数据搬迁。
+# 与 LifecycleManager 的区分: LifecycleManager 管控语义阶段迁移
+# (raw→analysis→report→archive)，TierManager 管控物理存储位置和压缩等级。
 import os
 import time
 import logging
@@ -27,7 +27,7 @@ _log = logging.getLogger(__name__)
 
 @dataclass
 class TierSpec:
-    """一层存储规格: 名称、温度范围、压缩参数。"""
+    """单层存储规格: 命名、温度阈值、压缩参数。"""
     name: str                     # hot / warm / cold / frozen
     max_age_days: int             # 此 tier 上限天数，0 表示无上限
     compress_algo: str = "zstd"
@@ -50,16 +50,16 @@ DEFAULT_TIERS = [
 
 @dataclass
 class StoragePolicy:
-    """完整的分层存储策略 —— 组合多条 rule。"""
+    """完整分层存储策略 —— 组合多条 tier rule。"""
     tiers: List[TierSpec] = field(default_factory=lambda: DEFAULT_TIERS)
-    # 可选: 基于访问频率的动态降冷规则 (access-count-based promotion)
+    # 基于访问频次的动态回暖阈值
     promotion_threshold: int = 5   # warm→hot 的最小访问次数
-    # 可选: 定时迁移窗口 (ISO weekday list: ['sat','sun'] = 仅周末)
+    # 定时迁移窗口 (ISO weekday list: ['sat','sun'] = 仅周末)
     migration_windows: List[str] = field(default_factory=list)
-    auto_compact: bool = True      # 迁移后自动 VACUUM
+    auto_compact: bool = True      # 迁移后自主 VACUUM
 
     def tier_for_age(self, age_days: float) -> TierSpec:
-        """根据数据年龄返回对应的 tier。"""
+        """根据数据年龄匹配对应 tier。"""
         for tier in self.tiers:
             if tier.max_age_days == 0:
                 return tier
@@ -69,17 +69,16 @@ class StoragePolicy:
 
 
 # ---------------------------------------------------------------------------
-# TierManager — 执行实际的数据搬迁
+# TierManager — 执行实际数据搬迁
 # ---------------------------------------------------------------------------
 
 class TierManager:
-    """管理二进制签名的物理存储分层。
+    """签名数据的物理存储分层管理。
 
     核心操作:
-      classify:  评估所有签名的温度分布（只读）。
-      promote:   将 warm zone 的热数据提升到 hot zone。
-      demote:    将过期的 hot/warm/cold 数据降级到更冷的 tier。
-      rebalance: 对指定 tier 执行压缩/解压/搬迁。
+      classify:  统计所有签名的温度分布（只读评估）。
+      demote:    将过期热数据按策略降级到更冷的 tier。
+      rebalance: 对指定 tier 执行压缩/解压/搬迁操作。
     """
 
     def __init__(self, db, policy: StoragePolicy = None):
@@ -88,17 +87,17 @@ class TierManager:
         self._migration_log: List[dict] = []
 
     def classify(self) -> Dict[str, dict]:
-        """分类统计: 返回各 tier 当前的签名数量和占用空间估计。
+        """分类统计: 按 tier 汇总签名数量和估算存储占用。
 
-        通过 db.list_signatures() 遍历所有签名，检查 updated_at →
-        计算 age → 分配到对应 tier。不执行任何变更。
+        遍历 db.list_signatures()，根据 updated_at 计算 age →
+        分配至对应 tier。只读操作，无副作用。
         """
         now = time.time()
         bins: Dict[str, dict] = {}
         for t in self.policy.tiers:
             bins[t.name] = {"count": 0, "est_bytes": 0, "oldest_days": 0.0}
 
-        sigs = self.db.list_signatures(limit=100000)  # 最多扫 10 万条
+        sigs = self.db.list_signatures(limit=100000)  # 扫描上限 10 万条
         for sig in sigs:
             age_days = (now - sig.get("updated_at", 0)) / 86400.0
             tier = self.policy.tier_for_age(age_days)
@@ -110,7 +109,7 @@ class TierManager:
         return bins
 
     def demote(self, dry_run: bool = False) -> Dict[str, int]:
-        """将过期数据降级到更冷 tier —— 按 StoragePolicy 指定的温度阈值。"""
+        """将过期数据降级至更冷 tier —— 按 StoragePolicy 温度阈值判定。"""
         from .compression import compress as _cmp
         results = {"hot→warm": 0, "warm→cold": 0, "cold→frozen": 0, "skipped": 0}
         now = time.time()
@@ -145,7 +144,7 @@ class TierManager:
         return tier.name
 
     def _apply_demotion(self, sig: dict, target: TierSpec):
-        """执行单条签名的降级。"""
+        """执行单条签名的降级迁移。"""
         conn = self.db.get_connection()
         conn.execute(
             "UPDATE signatures SET stage=(CASE "
@@ -155,7 +154,7 @@ class TierManager:
             "ELSE stage END), updated_at=? WHERE id=?",
             (time.time(), sig["id"]),
         )
-        # 标记压缩级别变更
+        # 同步标记压缩级别变更
         self.db.update_signature_meta(sig["id"], {
             "storage_tier": target.name,
             "compress_level": target.compress_level,
@@ -163,7 +162,7 @@ class TierManager:
         conn.commit()
 
     def rebalance(self, tier_name: str, dry_run: bool = False) -> int:
-        """对指定 tier 内所有未压缩数据执行统一压缩。"""
+        """对指定 tier 内未压缩数据执行统一压缩处理。"""
         tier = next((t for t in self.policy.tiers if t.name == tier_name), None)
         if tier is None or tier.compress_level == 0:
             return 0
@@ -194,14 +193,14 @@ class TierManager:
         return count
 
     def migration_report(self) -> List[dict]:
-        """返回本轮迁移操作的详细日志。"""
+        """返回本轮迁移操作的完整日志。"""
         return list(self._migration_log)
 
     def cost_estimate(self) -> dict:
-        """估算当前存储成本 —— 基于各 tier 的数据量 × 假设的 $/GB 单价。
+        """估算当期存储成本 —— 各 tier 数据量 × 假设 $/GB 单价。
 
         hot: $0.08/GB-mo, warm: $0.04/GB-mo, cold: $0.01/GB-mo, frozen: $0.002/GB-mo。
-        实际成本计算应替换为对应存储后端的实时定价。
+        实际部署应替换为对应存储后端的实时定价。
         """
         prices = {"hot": 0.08, "warm": 0.04, "cold": 0.01, "frozen": 0.002}
         dist = self.classify()

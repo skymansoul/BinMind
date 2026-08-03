@@ -1,15 +1,15 @@
 # 运行时漏洞验证器——通过动态执行确认静态分析发现的漏洞。
-# 参考VulDebugger (arXiv:2504.07634) 的GDB驱动运行时状态比较和CogniCrypt
-# (arXiv:2603.09044) 的混合执行+LLM路径优先。
+# 参考VulDebugger (arXiv:2504.07634) GDB驱动运行时状态比较和CogniCrypt
+# (arXiv:2603.09044) 混合执行+LLM路径优先。
 #
 # 核心机制:
-#   - 崩溃复现——用PoC输入运行目标，验证崩溃发生在预期的漏洞点
+#   - 崩溃复现——PoC输入运行目标，验证崩溃发生在预期漏洞点
 #   - ASAN/UBSAN/MSAN集成——收集sanitizer报告与静态finding做差异比对
 #   - 可达性追踪——从污点源到漏洞点的实际执行路径覆盖验证
-#   - 内存状态诊断——在崩溃点检查寄存器值和栈帧布局
+#   - 内存状态诊断——在崩溃点检查寄存器值与栈帧布局
 #
-# 2026-07-26 —— 初版，GDB崩溃复现
-# 2026-07-30 —— 新增ASAN集成和可达性验证
+# —— 初版，GDB崩溃复现
+# —— 新增ASAN集成和可达性验证
 
 import os, re, subprocess, json, time, logging, tempfile, shutil
 from typing import Dict, List, Optional, Any, Tuple, Set
@@ -30,7 +30,7 @@ class VerificationStatus(str, Enum):
 
 @dataclass
 class RuntimeState:
-    """崩溃时的运行时状态快照。"""
+    """崩溃时运行时状态快照。"""
     registers: Dict[str, int] = field(default_factory=dict)
     stack_frames: List[Dict[str, Any]] = field(default_factory=list)
     signal_info: Dict[str, Any] = field(default_factory=dict)
@@ -41,7 +41,7 @@ class RuntimeState:
 
 @dataclass
 class VerificationResult:
-    """运行时验证的完整结果。"""
+    """运行时验证完整结果。"""
     status: VerificationStatus
     finding_id: str = ""
     crash_confirmed: bool = False
@@ -58,23 +58,23 @@ class VerificationResult:
 # ---- GDB集成 ----
 
 class GDBRunner:
-    """GDB子进程管理——以脚本模式驱动调试器执行预设命令。
+    """GDB子进程管理——脚本模式驱动调试器执行预设命令。
 
     通过临时GDB脚本文件传递命令，避免交互式GDB的pty复杂性。
     """
 
     GDB_SCRIPT_TEMPLATE = """set pagination off
-set confirm off
-set height 0
-file {binary}
-{input_method}
-run
-info registers
-bt
-info frame
-x/16i $pc
-quit
-"""
+	set confirm off
+	set height 0
+	file {binary}
+	{input_method}
+	run
+	info registers
+	bt
+	info frame
+	x/16i $pc
+	quit
+	"""
 
     def __init__(self, gdb_path: str = "gdb", timeout: int = 30):
         self.gdb_path = gdb_path
@@ -135,7 +135,7 @@ quit
             state.signal_info['signal'] = sig_match.group(1)
             state.signal_info['address'] = int(sig_match.group(2), 16)
 
-        # 寄存器解析 (GDB format: rax 0x... rbx 0x...)
+        # 寄存器解析 (GDB格式: rax 0x... rbx 0x...)
         reg_pattern = re.findall(
             r'^([re]?[abcd]x|[re]?[sd]i|[re]?[sb]p|r\d+)\s+(0x[0-9a-fA-F]+)',
             gdb_output, re.MULTILINE)
@@ -198,7 +198,7 @@ class ASANRunner:
 
     @staticmethod
     def classify_asan_report(asan_output: str) -> Dict[str, Any]:
-        """分类ASAN报告类型和提取关键信息。
+        """分类ASAN报告类型并提取关键信息。
 
         返回: {type, address, access_type, allocation_info, stack_trace, ...}
         """
@@ -247,15 +247,15 @@ class ASANRunner:
 class RuntimeVulnVerifier:
     """运行时漏洞验证器——编排GDB和ASAN执行，验证静态分析发现。
 
-    核心思路:
+    核心流程:
         1. 构造触发输入（基于静态分析推断的溢出大小）
-        2. GDB运行目标，捕获崩溃时的运行时状态
+        2. GDB运行目标，捕获崩溃时运行时状态
         3. 比较崩溃位置与静态分析预测的漏洞位置
         4. ASAN运行确认内存错误类型
         5. 综合评分输出VerificationResult
 
     参考:
-        - VulDebugger (arXiv:2504.07634): GDB驱动的漏洞自修复
+        - VulDebugger (arXiv:2504.07634): GDB驱动漏洞自修复
         - CogniCrypt (arXiv:2603.09044): 符号执行+LLM路径优先
     """
 
@@ -276,8 +276,8 @@ class RuntimeVulnVerifier:
         参数:
             binary_path: 目标二进制
             function_name: 预测存在漏洞的函数名
-            predicted_vuln_addr: 预测的漏洞点地址
-            overflow_size: 估计的溢出大小（构造输入用）
+            predicted_vuln_addr: 预测漏洞点地址
+            overflow_size: 估计溢出大小（构造输入用）
             vuln_type: 漏洞类型
             extra_args: 额外参数
 
@@ -292,20 +292,20 @@ class RuntimeVulnVerifier:
                 error_message=f"文件不存在: {binary_path}",
                 elapsed_seconds=time.time() - t0)
 
-        # 构造触发输入——简单pattern填充检测边界错误
+        # 构造触发输入——pattern填充检测边界错误
         trigger_input = self._craft_trigger_input(overflow_size, vuln_type)
 
-        # 1. GDB运行
+        # GDB运行
         gdb_ret, gdb_out = self.gdb.run_with_input(
             binary_path, trigger_input, extra_args)
         runtime_state = self.gdb.parse_crash_info(gdb_out)
 
-        # 2. ASAN运行
+        # ASAN运行
         asan_ret, asan_out = self.asan.run_with_asan(
             binary_path, trigger_input, extra_args)
         asan_report = self.asan.classify_asan_report(asan_out)
 
-        # 3. 综合判定
+        # 综合判定
         crash_confirmed = runtime_state is not None and runtime_state.signal_info
         crash_at_expected = False
         if crash_confirmed and predicted_vuln_addr > 0:
@@ -354,7 +354,7 @@ class RuntimeVulnVerifier:
 
         对buffer overflow: 超长'A'序列
         对format string: 多个%s格式符
-        对use-after-free: 特殊的分配-释放-重用序列
+        对use-after-free: 特殊分配-释放-重用序列
         对integer overflow: 大整数值
         """
         if vuln_type in ('buffer_overflow', 'stack_overflow'):
@@ -368,7 +368,7 @@ class RuntimeVulnVerifier:
         return b'A' * 256
 
     def _assess_exploitability(self, state, asan_rpt, vuln_type):
-        """评估漏洞的可利用性——基于运行时状态和ASAN报告。
+        """评估漏洞可利用性——基于运行时状态与ASAN报告。
 
         返回描述字符串。
         """

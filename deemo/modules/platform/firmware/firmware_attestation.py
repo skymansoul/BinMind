@@ -1,9 +1,8 @@
-# 2026-08-01
-# 固件远程证明 (Remote Attestation) 与 TPM/IMA 度量链验证
-# 参考:
+# 固件远程证明与TPM/IMA度量链验证
+# 参考：
 #   "Bringing Forensic Readiness to Modern Computer Firmware" (arXiv 2505.05697, 2025)
-#     — 提出固件取证就绪框架，将 TPM PCR 度量值映射到具体 UEFI 模块
-#   NIST SP 800-155 (BIOS Integrity Measurement Guidelines)
+#     — 固件取证就绪框架，TPM PCR度量值映射至具体UEFI模块
+#   NIST SP 800-155（BIOS完整性度量指南）
 #   TCG PC Client Platform Firmware Profile Specification 1.05
 
 import os
@@ -15,16 +14,16 @@ from dataclasses import dataclass, field
 from typing import Optional
 from enum import IntEnum
 
-logger = logging.getLogger(__name__)
+_log = logging.getLogger(__name__)
 
-# TPM PCR 索引分配 — 遵循 TCG EFI Platform Specification
-# PCR0: 固件代码度量 (CRTM + PEI + DXE)
+# TPM PCR索引分配 — 遵循TCG EFI Platform Specification
+# PCR0: 固件代码度量（CRTM + PEI + DXE）
 # PCR1: 平台配置数据
-# PCR2: 外部 ROM 数据 (Option ROM)
+# PCR2: 外部ROM数据（Option ROM）
 # PCR3: 固件配置数据
-# PCR4: 启动管理器代码 (通常是 OS loader)
-# PCR5: 启动管理器配置 (GPT 分区表等)
-# PCR7: 安全启动策略 (Secure Boot PK/KEK/db/dbx)
+# PCR4: 启动管理器代码（通常为OS loader）
+# PCR5: 启动管理器配置（GPT分区表等）
+# PCR7: 安全启动策略（Secure Boot PK/KEK/db/dbx）
 _TCG_PCR_MEANING: dict[int, str] = {
     0: "CRTM+PEI+DXE firmware code",
     1: "Platform configuration",
@@ -39,7 +38,7 @@ _TCG_PCR_MEANING: dict[int, str] = {
     10: "IMA measurement log",
 }
 
-# IMA (Integrity Measurement Architecture) 度量日志条目正则
+# IMA度量日志条目正则
 _IMA_LOG_RE = re.compile(
     r'(?:ima\s+)?(\S+)\s+'
     r'(?:template=(\S+)\s+)?'
@@ -49,8 +48,8 @@ _IMA_LOG_RE = re.compile(
     r'(.+)'
 )
 
-# 已知良好度量值的白名单 — 来自发行版提供的参考值
-# 格式: {path_pattern: set of known_good_hashes}
+# 已知良好度量值白名单 — 发行版参考值
+# 格式：{path_pattern: set of known_good_hashes}
 _KNOWN_GOOD_HASHES: dict[str, set[str]] = {}
 
 
@@ -65,12 +64,12 @@ class PCRMeasurement:
 
 @dataclass
 class IMAEntry:
-    """单条 IMA 度量日志记录。"""
-    path: str                # 被度量的文件路径
+    """IMA度量日志单条记录。"""
+    path: str                # 被度量文件路径
     hash_algo: str           # sha1 / sha256
     hash_value: str          # hex string
     template: str = "ima-ng"
-    signature: str = ""      # 若有 IMA appraisal 扩展
+    signature: str = ""      # IMA appraisal扩展
 
 
 @dataclass
@@ -89,20 +88,20 @@ class AttestationReport:
 class FirmwareAttestationVerifier:
     """固件远程证明验证引擎。
 
-    根据 arXiv 2505.05697 的取证就绪框架：
-    1. 解析 TPM 事件日志 (binary EV_EFI_* 结构)
-    2. 验证 PCR 引用值 (quote) 是否与重放的度量链一致
-    3. 解析 IMA 度量日志并交叉验证文件系统完整性
-    4. 对异常条目（签名缺失、哈希不匹配）生成取证报告
+    基于arXiv 2505.05697取证就绪框架：
+    1. 解析TPM事件日志（binary EV_EFI_*结构）
+    2. 验证PCR引用值与重放度量链的一致性
+    3. 解析IMA度量日志，交叉验证文件系统完整性
+    4. 对异常条目（签名缺失、哈希不匹配）输出取证报告
 
-    输入:
-    - pcr_quote: {pcr_index: (digest_alg, hex_digest)} — 来自 TPM2_Quote 的输出
-    - event_log_path: TPM 事件日志文件路径 (binary)
-    - ima_log_path:  IMA /sys/kernel/security/ima/ascii_runtime_measurements 导出
-    - reference_hashes: 已知良好哈希的补充字典
+    输入：
+    - pcr_quote: {pcr_index: (digest_alg, hex_digest)} — TPM2_Quote输出
+    - event_log_path: TPM事件日志文件路径（binary）
+    - ima_log_path: IMA /sys/kernel/security/ima/ascii_runtime_measurements导出
+    - reference_hashes: 补充已知良好哈希字典
     """
 
-    # 常见哈希算法的 TPM ALG_ID → 字符串
+    # 常见哈希算法的TPM ALG_ID → 字符串
     _TPM_ALG_MAP = {0x0004: "sha1", 0x000B: "sha256", 0x000C: "sha384", 0x000D: "sha512"}
 
     def __init__(self, pcr_quote: dict | None = None,
@@ -118,19 +117,19 @@ class FirmwareAttestationVerifier:
 
     def verify(self) -> AttestationReport:
         rpt = AttestationReport(firmware_image=self.event_log_path or "unknown")
-        # 第一步: 解析 TPM 事件日志
+        # 1. 解析TPM事件日志
         pcr_banks: dict[int, dict[str, bytes]] = {}
         if self.event_log_path and os.path.exists(self.event_log_path):
             pcr_banks = self._parse_tpm_event_log(self.event_log_path)
             rpt.tpm_event_log_available = True
-        # 第二步: 重放事件日志 → 计算各 PCR 复合值
+        # 2. 重放事件日志 → 计算各PCR复合值
         replayed = self._replay_pcr_banks(pcr_banks)
         rpt.pcr_measurements = [
             PCRMeasurement(pcr_index=idx, digest_alg=alg, digest_value=val,
                           pcr_meaning=_TCG_PCR_MEANING.get(idx, f"PCR{idx}"))
             for idx, bank in replayed.items() for alg, val in bank.items()
         ]
-        # 第三步: 比对 quote 值与重放值
+        # 3. 比对quote值与重放值
         for pcr_idx_str, (alg, expected_hex) in self.pcr_quote.items():
             idx = int(pcr_idx_str)
             if idx in replayed and alg in replayed[idx]:
@@ -153,13 +152,13 @@ class FirmwareAttestationVerifier:
                     "type": "pcr_not_replayable", "pcr": idx, "algorithm": alg,
                     "severity": "High"
                 })
-        # 第四步: 解析 IMA 日志
+        # 4. 解析IMA日志
         if self.ima_log_path and os.path.exists(self.ima_log_path):
             ima_entries = self._parse_ima_log(self.ima_log_path)
             rpt.ima_log = ima_entries
             rpt.ima_log_available = True
             self._cross_verify_ima(ima_entries, rpt)
-        # 最终判定
+        # 判定
         if not rpt.failed_pcrs and not rpt.anomalies:
             rpt.overall_trust = "TRUSTED"
         elif rpt.failed_pcrs:
@@ -169,8 +168,8 @@ class FirmwareAttestationVerifier:
         return rpt
 
     def _parse_tpm_event_log(self, path: str) -> dict[int, dict[str, bytes]]:
-        # 解析 TCG TPM2 事件日志: PCRIndex + EventType + DigestCount + digests[] + Event
-        # 每个 digest 条目: AlgorithmId(2B LE) + Digest(变长, sha1=20B sha256=32B)
+        # 解析TCG TPM2事件日志：PCRIndex + EventType + DigestCount + digests[] + Event
+        # 每个digest条目：AlgorithmId(2B LE) + Digest（变长，sha1=20B sha256=32B）
         pcr_bank: dict[int, dict[str, bytes]] = {}
         with open(path, "rb") as fh:
             raw = fh.read()
@@ -204,15 +203,15 @@ class FirmwareAttestationVerifier:
                 pcr_bank[pcr_idx] = {}
             for alg, dgst in digests_for_event.items():
                 pcr_bank[pcr_idx][alg] = dgst
-        logger.info("Parsed TPM event log: %d PCRs with digest entries", len(pcr_bank))
+        _log.info("Parsed TPM event log: %d PCRs with digest entries", len(pcr_bank))
         return pcr_bank
 
     def _replay_pcr_banks(self, pcr_banks: dict) -> dict[int, dict[str, bytes]]:
-        """TPM PCR 扩展操作的重放: PCR_new = H(PCR_old || digest)。
+        """TPM PCR扩展操作重放：PCR_new = H(PCR_old || digest)。
 
-        每个 PCR 初始值为全零。事件日志中的每个 digest 视为一次 Extend 操作。
-        逐事件重放以验证最终 PCR quote 值是否为日志的合法累积结果。
-        TPM 2.0 的 Extend 操作对每个 bank 独立执行此过程。
+        PCR初始值为全零。事件日志中每个digest视为一次Extend操作。
+        逐事件重放以验证最终PCR quote值是否为日志的合法累积。
+        TPM 2.0 Extend操作对每个bank独立执行。
         """
         result: dict[int, dict[str, bytes]] = {}
         for idx, bank in pcr_banks.items():
@@ -222,7 +221,7 @@ class FirmwareAttestationVerifier:
                 cumulative = b'\x00' * hash_func().digest_size
                 cumulative = hash_func(cumulative + dgst).digest()
                 result[idx][alg] = cumulative
-        # 实际实现应逐事件处理；此处取简化路径（每个 PCR 只有一个事件记录）
+        # 实际应逐事件处理；此处简化（每个PCR仅一条事件记录）
         return result
 
     def _parse_ima_log(self, path: str) -> list[IMAEntry]:
@@ -243,7 +242,7 @@ class FirmwareAttestationVerifier:
                     template=tmpl or "ima-ng",
                     signature=evt_type if "sig" in (evt_type or "") else ""
                 ))
-        logger.info("Parsed IMA log: %d entries", len(entries))
+        _log.info("Parsed IMA log: %d entries", len(entries))
         return entries
 
     def _cross_verify_ima(self, entries: list[IMAEntry], report: AttestationReport):
@@ -270,7 +269,7 @@ class FirmwareAttestationVerifier:
 
 
 def _get_hashlib(algo_name: str):
-    # 映射 TPM 算法名到 hashlib 构造器
+    # TPM算法名 → hashlib构造器映射
     if algo_name == "sha1":
         return hashlib.sha1
     if algo_name == "sha384":
@@ -289,9 +288,9 @@ def verify_firmware_attestation(pcr_quote: dict, event_log: str = "",
     return verifier.verify()
 
 
-# ---- TPM 事件日志直接读取 (非验证模式) ----
+# ---- TPM事件日志直接读取（非验证模式）----
 def read_tpm_event_log(path: str) -> list[dict]:
-    """快速读取 TPM 事件日志为人类可读的字典列表 — 用于取证预览。"""
+    """快速读取TPM事件日志为可读字典列表 — 取证预览用。"""
     verifier = FirmwareAttestationVerifier(event_log_path=path)
     banks = verifier._parse_tpm_event_log(path)
     out = []

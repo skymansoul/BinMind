@@ -1,0 +1,125 @@
+# ===========================================================================
+# BinMind Fuzzing Module — 默认配置
+# 2026-08-02 hermit1016, 深度重构时从硬编码常量和注释中提取
+#
+# 优先级: CLI 参数 > 环境变量 (BINMIND_FUZZ_*) > 此文件 > 代码默认值
+# 用法:
+#   python -m fuzzing.src.cli --config config/default.yaml fault-inject -b /tmp/test.bin
+# ===========================================================================
+
+# ── 故障注入 ──────────────────────────────────────────────
+fault_injection:
+  binary_path: ""                 # 目标二进制路径
+  max_injections: 300             # 最大注入点数
+  arch: "x86_64"                  # 目标架构: x86_64, x86, arm, arm64
+  base_addr: 0x100000             # 加载基址
+  sensitive_patterns:             # 敏感代码模式 (空列表 = 使用代码默认值)
+    - "mprotect"
+    - "system"
+    - "execve"
+    - "popen"
+    - "VirtualProtect"
+    - "WriteProcessMemory"
+  format_patterns:                # 格式化字符串漏洞模式
+    - "%s"
+    - "%n"
+    - "%x"
+  injection_types:                # 启用的注入类型
+    - "bit_flip"
+    - "instruction_skip"
+    - "nop_sled"
+    - "register_corruption"
+  unicorn_timeout_us: 500000      # Unicorn 模拟超时 (微秒)
+  max_instructions_per_block: 500 # 每个基本块最大模拟指令数
+
+# ── 集群自动伸缩 ──────────────────────────────────────────
+cluster:
+  tick_interval: 5.0              # tick 循环间隔 (秒)
+  scale_up_threshold: 5           # 队列积压超过此值触发扩容
+  scale_down_threshold: 1         # 队列积压低于此值触发缩容
+  min_nodes: 1
+  max_nodes: 50
+  cooldown_seconds: 60            # 两次扩缩操作最小间隔
+  scale_up_increment: 2           # 单次扩容新增节点数
+  scale_down_increment: 1
+  ewma_alpha: 0.3                 # EWMA 平滑因子
+  heartbeat_timeout: 30.0         # 心跳超时 (秒)
+  default_cpu_cores: 4            # 默认节点 CPU 核数
+  default_memory_mb: 8192         # 默认节点内存 (MB)
+  persist_path: ""                # 任务队列持久化路径 (空=自动生成)
+  corpus_sync_interval: 3         # 语料同步周期间隔 (每N个tick)
+
+# ── 覆盖率可视化 ──────────────────────────────────────────
+coverage:
+  binary_path: ""
+  input_file: ""                  # 覆盖率 JSON 输入文件
+  output_dir: "./coverage_output"
+  stagnation_window: 5            # 停滞检测窗口 (样本数)
+  stagnation_epsilon: 0.001       # 停滞判定 epsilon
+  enable_html_report: true
+  enable_flamegraph: true
+
+# ── 字典生成 ──────────────────────────────────────────────
+dictionary:
+  binary_path: ""
+  format: "json"                  # afl, libfuzzer, honggfuzz, json, raw
+  output_path: ""
+  min_string_len: 3               # 最小字符串提取长度
+  max_string_len: 256             # 最大字符串提取长度 (保留)
+  use_llm: true                   # 是否启用 LLM 增强
+  llm_host: "http://localhost:11434"
+  llm_model: "qwen2.5-coder:7b"
+  llm_timeout: 120                # LLM 请求超时 (秒)
+  max_llm_entries: 50
+  enable_entropy_boundary: true   # 熵边界检测开关
+  enable_unicode_extraction: true
+  enable_feedback_recycle: true
+
+# ── Harness 优化器 ────────────────────────────────────────
+harness:
+  binary_path: ""
+  func_name: ""                   # 目标函数名
+  output_path: ""                 # Harness 输出路径
+  corpus_dir: ""                  # 初始语料输出目录
+  language: "cpp"
+  mode: "standard"                # standard, persistent, multi_func
+  max_seeds: 16                   # 最大组合种子数
+  sanitizers: []                  # 启用的 sanitizer: asan, ubsan, msan, tsan
+  checksum_detect: true           # 自动检测校验和函数
+  persistent_loop_count: 10000
+
+# ── 种子进化 (遗传算法) ───────────────────────────────────
+seed_evolution:
+  seed_dir: ""                    # 初始种子目录
+  population_size: 100            # 种群规模
+  generations: 10                 # 进化代数
+  selection_strategy: "tournament"  # tournament, roulette, elitism
+  mutation_rate: 0.01
+  crossover_rate: 0.5
+  use_fitness_sharing: true
+  use_entropy_guidance: true
+  use_simulated_annealing: true
+  annealing_initial_temp: 2.0
+  annealing_cooling_rate: 0.85
+  sigma_share: 5.0                # 适应度共享阈值
+  elite_ratio: 0.05               # 精英保留比例 (5%)
+
+# ── LLM 全局配置 ──────────────────────────────────────────
+llm:
+  host: "http://localhost:11434"
+  model: "qwen2.5-coder:7b"
+  timeout: 120
+  retry_attempts: 3
+  retry_backoff: 2.0              # 指数退避基数 (秒)
+  fallback_enabled: true          # LLM 失败时回退到规则生成
+
+# ── 通用设置 ──────────────────────────────────────────────
+general:
+  log_level: "INFO"               # DEBUG, INFO, WARNING, ERROR
+  log_file: ""                    # 日志文件 (空=仅控制台)
+  data_dir: "./fuzz_data"         # 数据存储根目录
+  temp_dir: ""                    # 临时文件目录 (空=系统默认)
+  max_concurrent_tasks: 8
+  r2_path: "r2"                   # radare2 可执行文件路径
+  r2_timeout: 120                 # radare2 调用超时 (秒)
+  strings_path: "strings"         # 系统 strings 命令路径

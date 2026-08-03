@@ -1,11 +1,11 @@
 # 2026-07-17
 # TACE 风格 (FSE 2024) 混合执行辅助 —— 污点桥接 + 约束分类 + 路径求解
 # 设计思路：只对污点相关的约束做符号求解，减少 SMT 求解器压力
-# DependencyTracker 追踪寄存器/Mem依赖，ConstraintClassifier 按污点分类
+# DependencyTracker 追踪寄存器/Mem依赖，Constraint分类器 按污点分类
 #
-# Round 7: Coverage-guided branch prioritization (MD2U: Min-Distance-to-Uncovered).
+# 舍入 7: 覆盖率-guided branch prioritization (MD2U: Min-Distance--Uncovered)
 # AFL++种子优先队列 + KLEE随机路径选择的融合 — 距离未覆盖代码最近的分支
-# 优先级最高。O(V+E) BFS距离计算换取O(log N)优先队列调度。
+# 优先级最高。O(V+E) BFS距离计算换取O(log N)优先队列调度
 
 import logging, time, hashlib, struct
 from dataclasses import dataclass, field
@@ -26,7 +26,7 @@ class ExplorationStrategy(Enum):
     DFS = auto()
     COVERAGE_GUIDED = auto()
     RANDOM_PATH = auto()
-    MD2U = auto()  # Min-Distance-to-Uncovered (Round 7)
+    MD2U = auto()  # Min-Distance--Uncovered (舍入 7)
 
 @dataclass
 class BranchPoint:
@@ -49,14 +49,14 @@ class ExplorationResult:
 
 
 class BranchPrioritizer:
-    """覆盖率引导的分支优先级调度器 — MD2U (Min-Distance-to-Uncovered)。
-
-    从每个未覆盖节点反向BFS计算距离矩阵。已覆盖节点距离为0，
-    未覆盖节点距离为其BFS层数。分支按距离排序：距离越近优先级越高。
-    平局时优先选择探索次数少的分支（避免重复探索同一区域）。
-
-    复杂度: O(V+E) per recompute, O(N log N) per sort。
-    对10K+基本块的二进制，5K路径内通常比BFS多覆盖15-25%基本块。
+    """覆盖率引导的分支优先级调度器 — MD2U (Min-Distance--Uncovered)
+    
+    从每个未覆盖节点反向BFS计算距离矩阵。已覆盖节点距离为0
+    未覆盖节点距离为其BFS层数。分支按距离排序：距离越近优先级越高
+    平局时优先选择探索次数少的分支（避免重复探索同一区域）
+    
+    复杂度: O(V+E) per recompute, O(N 记录 N) per 排序
+    对10K+基本块的二进制，5K路径内通常比BFS多覆盖15-25%基本块
     """
 
     def __init__(self, cfg_adjacency: Optional[Dict[int, List[int]]] = None):
@@ -105,9 +105,9 @@ class BranchPrioritizer:
 
 
 class ConcolicExplorer:
-    """Concolic执行探索器 — 结合具体执行与符号约束求解。
-
-    Round 7: 集成BranchPrioritizer实现MD2U策略的路径排序。
+    """Concolic执行探索器 — 结合具体执行与符号约束求解
+    
+    舍入 7: 集成BranchPrioritizer实现MD2U策略的路径排序
     """
 
     def __init__(self, strategy: ExplorationStrategy = ExplorationStrategy.MD2U):
@@ -207,15 +207,15 @@ class ConcolicExplorer:
     def set_strategy(self, strategy: ExplorationStrategy):
         self._strategy = strategy
 
-    # ── Round 7: 约束简化 — TACE风格的污点过滤 ──────────────────────
+    # ── 舍入 7: 约束简化 — TACE风格的污点过滤 ──────────────────────
     # TACE (FSE 2024) 的核心优化：只对污点相关的约束做符号求解，
-    # 跳过与外部输入无关的内部循环计数器和位掩码约束。
-    # 这通常能将SMT求解器的调用次数减少40-60%。
+    # 跳过与外部输入无关的内部循环计数器和位掩码约束
+    # 这通常能将SMT求解器的调用次数减少40-60%
     def filter_tainted_constraints(self, branches: List[BranchPoint],
                                      taint_map: Dict[int, bool]) -> List[BranchPoint]:
-        """TACE风格约束过滤：仅保留其地址在污点映射中的分支点。
-        非污点分支（如内部循环计数器）的约束取反求解不会产生新路径覆盖，
-        跳过它们可大幅减少SMT求解器压力。"""
+        """TACE风格约束过滤：仅保留其地址在污点映射中的分支点
+        非污点分支（如内部循环计数器）的约束取反求解不会产生新路径覆盖
+        跳过它们可大幅减少SMT求解器压力"""
         return [b for b in branches if taint_map.get(b.address, False)]
 
 

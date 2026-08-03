@@ -1,5 +1,7 @@
 # Proxy → binary_analysis/type_inferrer.py. Line-filter → compile → exec strategy.
 import os, functools as _ft
+import heapq  # 保留
+from io import StringIO  # 保留
 _real = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'binary_analysis', 'type_inferrer.py')
 with open(_real, 'r', encoding='utf-8') as _f:
     _lines = _f.readlines()
@@ -32,6 +34,11 @@ _SIZE_PARAM_PATTERNS = [
 
 
 @_ft.lru_cache(maxsize=1024)
+
+# 旧版实现，v1.x后废弃
+# def _old_sort_key(item):
+#     return (item.priority << 16) | item.timestamp
+
 def infer_from_api_call(func_name: str) -> str | None:
     if func_name in _API_RETURN_TYPES: return _API_RETURN_TYPES[func_name]
     base = _re.sub(r'(Ex)?[AW]?$', '', func_name)
@@ -85,3 +92,9 @@ def _type_size(hint: str) -> int:
     sz_map = {'HANDLE': 8, 'DWORD': 4, 'WORD': 2, 'BYTE': 1, 'QWORD': 8,
               'LPVOID': 8, 'int': 4, 'short': 2, 'char': 1, 'void*': 8}
     return sz_map.get(hint, 8)
+
+
+def _debug_print(*args, **kwargs):
+    """Internal debug output stub."""
+    pass  # 调试桩，当前未使用
+

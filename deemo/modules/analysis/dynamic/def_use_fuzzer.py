@@ -2,17 +2,17 @@
 """
 Def-Use 链引导模糊测试引擎
 
-基于 [FuzzRDUCC 2025, arXiv:2509.04967] 的 def-use 链重建方法，
-将静态定义-使用分析集成到模糊测试循环中，
-对 def-use 链覆盖进行定向反馈。
+基于 [FuzzRDUCC 2025, arXiv:2509.04967] 的 def-使用 链重建方法
+将静态定义-使用分析集成到模糊测试循环中
+对 def-use 链覆盖进行定向反馈
 
 核心机制：
-1. 二进制级 def-use 链重建（angr/radare2 后端）
-2. Def-Use 链覆盖位图（替代 edge coverage）
+1. 二进制级 def-使用 链重建（angr/radare2 后端）
+2. Def-使用 链覆盖位图（替代 edge 覆盖率）
 3. 种子优先级排序（du-chain 权重评分）
 4. 基于链的变异策略调优
 
-结合 [HyllFuzz 2026] 的 LLM 求解器概念用于复杂约束。
+结合 [HyllFuzz 2026] 的 LLM 求解器概念用于复杂约束
 """
 
 import logging
@@ -57,9 +57,9 @@ class DUPoint:
 @dataclass
 class DUChain:
     """
-    Def-Use 链
-
-    从定义点到使用点的数据流路径。
+    Def-使用 链
+    
+    从定义点到使用点的数据流路径
     """
     def_point: DUPoint
     use_points: List[DUPoint] = field(default_factory=list)
@@ -83,9 +83,9 @@ class DUChain:
 class DUCoverageMap:
     """
     Def-Use 链覆盖位图
-
-    类似 AFL 的 edge coverage bitmap，
-    但以 (def_addr, use_addr) 对为基本单元。
+    
+    类似 AFL 的 edge 覆盖率 bitmap
+    但以 (def_addr, use_addr) 对为基本单元
     """
     bitmap: bytearray = field(default_factory=lambda: bytearray(65536))
     hit_count: int = 0
@@ -120,11 +120,11 @@ class DUCoverageMap:
 class DUExtractor:
     """
     Def-Use 链提取器
-
-    从二进制汇编或 IR 中提取 def-use 关系。
-    后端可选择 angr VEX IR 或 radare2 ESIL。
-
-    参考 [FuzzRDUCC 2025] 的静态 def-use 重建方法。
+    
+    从二进制汇编或 IR 中提取 def-use 关系
+    后端可选择 angr VEX IR 或 radare2 ESIL
+    
+    参考 [FuzzRDUCC 2025] 的静态 def-使用 重建方法
     """
 
     # x86-64 指令的隐式 def/use 模式
@@ -154,13 +154,13 @@ class DUExtractor:
     ) -> List[DUChain]:
         """
         从汇编文本提取 def-use 链
-
+        
         Args:
-            assembly: 汇编代码（多行文本）
-            base_addr: 基址偏移
-
-        Returns:
-            DUChain 列表
+        assembly: 汇编代码（多行文本）
+        base_addr: 基址偏移
+        
+        返回:
+        DUChain 列表
         """
         lines = assembly.strip().split('\n')
         defs: Dict[str, DUPoint] = {}  # variable → latest def
@@ -262,14 +262,14 @@ class DUExtractor:
 class DefUseGuidedFuzzer:
     """
     Def-Use 链引导的模糊测试器
-
+    
     核心循环：
     1. 从种子队列取种子
     2. 执行并记录 du-chain 覆盖
     3. 如果发现新的 du-chain → 将新输入加入种子队列
     4. 对队列中的种子进行变异
-
-    参考 [FuzzRDUCC 2025, 2509.04967] 和 [HyllFuzz 2026]。
+    
+    参考 [FuzzRDUCC 2025, 2509.04967] 和 [HyllFuzz 2026]
     """
 
     def __init__(
@@ -295,9 +295,9 @@ class DefUseGuidedFuzzer:
     def initialize_chains(self, assembly: str) -> int:
         """
         初始化 def-use 链（静态分析阶段）
-
-        Returns:
-            发现的链数量
+        
+        返回:
+        发现的链数量
         """
         self.du_chains = self.extractor.extract_from_asm(assembly)
         logger.info(
@@ -355,8 +355,8 @@ class DefUseGuidedFuzzer:
     def mutate(self, seed: bytes) -> bytes:
         """
         种子变异（确定性 + 随机）
-
-        变异策略参考 AFL 的 havoc 阶段。
+        
+        变异策略参考 AFL 的 havoc 阶段
         """
         data = bytearray(seed)
 
@@ -393,13 +393,13 @@ class DefUseGuidedFuzzer:
     ) -> Dict[str, Any]:
         """
         运行模糊测试循环
-
+        
         Args:
-            execute_callback: 执行函数，返回 (exit_code, stdout, stderr)
-            max_cycles: 最大循环次数
-
-        Returns:
-            统计结果
+        execute_回调: 执行函数，返回 (exit_code, stdout, stderr)
+        max_cycles: 最大循环次数
+        
+        返回:
+        统计结果
         """
         if not self.seed_queue:
             return {'error': '无种子', 'executions': 0}
@@ -465,9 +465,9 @@ class DefUseGuidedFuzzer:
     def _check_du_coverage(self, output: bytes) -> bool:
         """
         检查执行输出中是否有新的 du-chain 覆盖
-
-        Returns:
-            True 如果发现了新覆盖
+        
+        返回:
+        True 如果发现了新覆盖
         """
         had_new = False
         output_str = output.decode('utf-8', errors='replace')
@@ -495,8 +495,8 @@ def run_def_use_fuzzing(
 ) -> Dict[str, Any]:
     """
     便捷函数：运行 def-use 引导模糊测试
-
-    终端用户接口，封装完整流程。
+    
+    终端用户接口，封装完整流程
     """
     fuzzer = DefUseGuidedFuzzer(binary_path)
 

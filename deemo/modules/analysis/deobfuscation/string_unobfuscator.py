@@ -31,11 +31,11 @@ class DecodeResult:
 
 
 class XORDecoder:
-    """XOR decoder."""
+    """XOR decoder"""
 
     @staticmethod
     def detect_key(data: bytes) -> Optional[int]:
-        """Heuristic detection of single-byte XOR key."""
+        """Heuristic detection single-byte XOR key"""
         if not data:
             return None
         for key in range(1, 256):
@@ -96,7 +96,7 @@ class XORDecoder:
 
 
 class Base64Decoder:
-    """Base64 decoder."""
+    """Base64 decoder"""
 
     @staticmethod
     def is_base64(data: bytes) -> bool:
@@ -117,7 +117,7 @@ class Base64Decoder:
 
 
 class RC4Decoder:
-    """RC4 decoder."""
+    """RC4 decoder"""
 
     @staticmethod
     def decode(data: bytes, key: bytes) -> bytes:
@@ -140,12 +140,12 @@ class RC4Decoder:
 # AES-ECB 模式检测 —— 通过块级熵分析识别 AES 加密的字符串
 # AES-ECB 密文的特征：16 字节对齐、块间无相关性、字节分布均匀
 # 检测策略：将数据按 16 字节分块，计算块间汉明距的标准差——
-# AES-ECB 密文各块间汉明距接近 64（均匀随机），标准差 < 10。
+# AES-ECB 密文各块间汉明距接近 64（均匀随机），标准差 < 10
 # ---------------------------------------------------------------------------
 
 def _detect_aes_ecb(data: bytes) -> Optional[bytes]:
-    """检测 AES-ECB 加密模式并尝试使用常用密钥解密。
-    返回解密后的数据或 None。
+    """检测 AES-ECB 加密模式并尝试使用常用密钥解密
+    返回解密后的数据或 None
     """
     if not data or len(data) < 32:
         return None
@@ -172,7 +172,7 @@ def _detect_aes_ecb(data: bytes) -> Optional[bytes]:
 
 
 class MicroInterpreter:
-    """Micro-interpreter for static emulation of decode logic."""
+    """Micro-interpreter for static 仿真 解码 logic"""
 
     def __init__(self):
         self.registers: Dict[str, int] = {}
@@ -233,7 +233,7 @@ _MOV_IMM_PATTERNS = [
 
 
 class StringUnobfuscator:
-    """String deobfuscator."""
+    """String deobfuscator"""
 
     _STACK_STRING_PATTERNS = [
         rb'\xc7\x45[\x80-\xff].{3}',
@@ -283,7 +283,7 @@ class StringUnobfuscator:
         return results
 
     def find_string_constructors(self) -> List[Tuple[int, bytes]]:
-        """Find stack string construction instructions."""
+        """查找 栈 string construction instructions"""
         results = []
         try:
             with open(self.binary_path, "rb") as f:
@@ -304,8 +304,8 @@ class StringUnobfuscator:
         return results
 
     def decode_string(self, raw: bytes) -> Optional[DecodedString]:
-        """Decode a single string with multi-layer pipeline.
-        尝试顺序: XOR single → XOR multi → RC4 → Base64 → AES-ECB detect
+        """解码 a single string multi-layer 流水线
+        尝试顺序: XOR single → XOR multi → RC4 → Base64 → AES-ECB 检测
         """
         if not raw:
             return None
@@ -387,7 +387,7 @@ class StringUnobfuscator:
         return None
 
     def _looks_plausible(self, s: str) -> bool:
-        """检查解码后的字符串是否像合理的文本。"""
+        """检查解码后的字符串是否像合理的文本"""
         if not s:
             return False
         printable = sum(1 for c in s if 0x20 <= ord(c) < 0x7F)

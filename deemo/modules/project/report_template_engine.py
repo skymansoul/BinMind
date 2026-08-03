@@ -1,4 +1,4 @@
-"""Report template engine with compliance-clause mapping and data extraction."""
+"""报告模板引擎 with 合规条款映射和数据提取."""
 import logging, os, re, json, time, hashlib, threading
 from typing import Dict, Any, List, Optional, Callable, Set, Union
 from dataclasses import dataclass, field

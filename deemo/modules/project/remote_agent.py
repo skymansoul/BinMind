@@ -1,4 +1,4 @@
-"""JSON-RPC 2.0 agent channel — TCP/UDS transport, heartbeat keepalive, reconnection backoff."""
+"""JSON-RPC 2.0 agent channel, TCP/UDS传输, 心跳保活, 重连退避."""
 import json, logging, random, socket, ssl, struct, threading, time, abc, os as _os
 from dataclasses import dataclass, field
 from enum import Enum, auto
@@ -11,11 +11,14 @@ DEFAULT_TO = 30.0; HB_INT = 15.0; RECON_DELAY = 3.0; MAX_RECON = 10; MAX_BACKOFF
 
 class AgentStatus(Enum): DISCONNECTED = auto(); CONNECTING = auto(); CONNECTED = auto(); SHUTDOWN = auto()
 class AgentType(Enum): CLIENT = "client"; SERVER = "server"
-@dataclass class AgentInfo: host: str; port: int; agent_type: AgentType; status: AgentStatus = AgentStatus.DISCONNECTED
-@dataclass class Task: task_id: str; method: str; params: Dict[str, Any] = field(default_factory=dict)
-@dataclass class TaskResult: task_id: str; success: bool; data: Any = None; error: str = ""
+@dataclass
+class AgentInfo: host: str; port: int; agent_type: AgentType; status: AgentStatus = AgentStatus.DISCONNECTED
+@dataclass
+class Task: task_id: str; method: str; params: Dict[str, Any] = field(default_factory=dict)
+@dataclass
+class TaskResult: task_id: str; success: bool; data: Any = None; error: str = ""
 
-# ABC for transport layer
+# ABC传输层
 class _Transport(abc.ABC):
     @abc.abstractmethod
     def send(self, data: bytes) -> None: ...
@@ -125,8 +128,7 @@ class RemoteAgent:
             if self.connect(): return
         _log.error("Reconnect exhausted")
 
-    @property
-    def connected(self): return self._status == AgentStatus.CONNECTED
+    connected = property(lambda self: self._status == AgentStatus.CONNECTED)
 
 
 class AgentServer:

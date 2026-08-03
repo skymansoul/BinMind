@@ -1,40 +1,40 @@
-"""Priority-based symbolic execution scheduler with resource allocation.
+"""Priority-based 符号执行 scheduler resource allocation
 
-Functions are scored by complexity (cyclomatic, call depth, historical
+Functions scored complexity (cyclomatic, call depth, historical
 runtime, dangerous-function reachability), assigned a resource budget
-proportional to that score, and scheduled on a two-tier priority heap
-(active vs. background). The executor supports interruptible runs with
-timeout-based preemption and checkpoint persistence.
+proportional score, scheduled a two-tier priority 堆
+(active vs. background). executor 支持 中断ible 运行
+timeout-based preemption 检查点 持久化
 
 增强 — 死锁预测与依赖提升：active heap 中的任务若依赖 background heap 中
-尚未完成的任务，自动将后者提升至 active heap 以避免调度死锁。
+尚未完成的任务，自动将后者提升至 active heap 以避免调度死锁
 
-增强 — Critical Profile：confirmed vulnerability 路径自动获得 EXTREME
-以上的 CRITICAL 资源分配（timeout=3600s, memory=8192MB, states=16384）。
+增强 — Critical Profile：confirmed 漏洞 路径自动获得 EXTREME
+以上的 CRITICAL 资源分配（timeout=3600s, memory=8192MB, states=16384）
 
-增强 — log2 查找表：ComplexityScorer 预计算 log2(1+n) 值，避免频繁 math.log2 调用。
+增强 — log2 查找表：ComplexityScorer 预计算 log2(1+n) 值，避免频繁 math.log2 调用
 
-增强 — 资源监控与自适应降载：ResourceMonitor 实时追踪 CPU 和内存负载，
-高负载时自动缩减并发度、暂停后台堆，防止调度器压垮宿主机。
+增强 — 资源监控与自适应降载：ResourceMonitor 实时追踪 CPU 和内存负载
+高负载时自动缩减并发度、暂停后台堆，防止调度器压垮宿主机
 
-增强 — 公平共享调度：FairShareScheduler 按二进制文件平均分配执行时间预算，
-超预算任务降优先级，避免单个大文件独占执行器。
+增强 — 公平共享调度：FairShareScheduler 按二进制文件平均分配执行时间预算
+超预算任务降优先级，避免单个大文件独占执行器
 
-增强 — 甘特图导出：export_gantt_chart() 输出任务调度时序 JSON，
-用于可视化调度效率与负载分布。
+增强 — 甘特图导出：export_gantt_chart() 输出任务调度时序 JSON
+用于可视化调度效率与负载分布
 
 四轮增强 — PredictiveScheduler：使用 ComplexityScorer 的 historical_seconds
-预测任务运行时间。采用最短作业优先启发式（shortest-job-first），
+预测任务运行时间。采用最短作业优先启发式（shortest-job-first）
 优先调度短任务以最小化平均完成时间。同时预留一个 "长任务槽"
-防止大型任务被无限期推迟（饥饿防护）。
+防止大型任务被无限期推迟（饥饿防护）
 
 四轮增强 — ResourceOvercommitDetector：监控所有运行中任务的已分配内存总量
 与系统可用内存的比值。若 total_allocated > available，暂停新任务分发
-直至运行中任务完成并释放内存 —— 防止 OOM killer 终止 worker 进程。
+直至运行中任务完成并释放内存 —— 防止 OOM killer 终止 worker 进程
 
-四轮增强 — ScheduleReplay：将所有调度决策（task_id, worker_id, start_ts,
+四轮增强 — ScheduleReplay：将所有调度决策（task_id, worker_id, start_ts
 end_ts, reason）记录到 SQLite 数据库。提供 replay_schedule() 重建
-甘特图并识别调度低效（队列非空时存在空闲 worker 的窗口）。
+甘特图并识别调度低效（队列非空时存在空闲 worker 的窗口）
 """
 
 import heapq
@@ -60,7 +60,7 @@ __log = logging.getLogger(__name__)
 
 
 class ResourceProfile(Enum):
-    """Resource allocation tiers: timeout, memory, and state limits per tier."""
+    """Resource allocation tiers: timeout, memory, state limits per tier"""
     MINIMAL = "minimal"
     LIGHT = "light"
     STANDARD = "standard"
@@ -71,7 +71,7 @@ class ResourceProfile(Enum):
 
 @dataclass
 class FunctionComplexity:
-    """Multi-factor complexity score for one function."""
+    """Multi-factor complexity score for one function"""
     func_name: str
     cyclomatic_complexity: int = 1
     call_depth: int = 0
@@ -83,7 +83,7 @@ class FunctionComplexity:
 
 @dataclass
 class TaskSpec:
-    """A scheduled function with priority, resource profile, and deadline."""
+    """A scheduled function priority, resource profile, deadline"""
     func_name: str
     priority: int
     resource_profile: ResourceProfile
@@ -97,7 +97,7 @@ class TaskSpec:
 
 @dataclass
 class ResourceBudget:
-    """Concrete limits derived from a ResourceProfile."""
+    """Concrete limits derived a ResourceProfile"""
     timeout_seconds: int
     memory_mb: int
     max_states: int
@@ -105,7 +105,7 @@ class ResourceBudget:
 
 @dataclass
 class TaskResult:
-    """Output of executing one scheduled task."""
+    """输出 executing one scheduled task"""
     func_name: str
     success: bool
     elapsed: float
@@ -117,15 +117,15 @@ class TaskResult:
 
 @dataclass
 class ScheduleRecord:
-    """One scheduling decision logged for replay analysis.
-
-    task_id: function name.
-    worker_id: binary_path or worker identifier.
-    start_ts: monotonic timestamp when task was dispatched.
-    end_ts: monotonic timestamp when task completed.
-    reason: why this task was chosen (e.g., "shortest_job_first", "long_slot",
-            "normal_pop", "dependency_promotion").
-    predicted_seconds: estimated runtime from PredictiveScheduler.
+    """One scheduling decision logged for replay analysis
+    
+    task_id: function name
+    worker_id: binary_path or worker identifier
+    start_ts: monotonic timestamp task dispatched
+    end_ts: monotonic timestamp task completed
+    reason: task chosen (e.g., "shortest_job_first", "long_slot"
+    "normal_pop", "dependency_promotion")
+    predicted_seconds: estimated runtime PredictiveScheduler
     """
     task_id: str
     worker_id: str
@@ -154,9 +154,9 @@ def _fast_log2(n: float) -> float:
 
 
 class ComplexityScorer:
-    """Scores a function by combining cyclomatic complexity, call depth,
-    historical execution time, and dangerous-function reachability into
-    a single log-scale value. Higher → more resources warranted."""
+    """Scores a function combining cyclomatic complexity, call depth
+    historical execution time, dangerous-function reachability
+    a single 记录-scale value. Higher → resources warranted"""
 
     def __init__(self, history_db: Optional[str] = None):
         self.history_db = history_db
@@ -168,7 +168,7 @@ class ComplexityScorer:
               historical_seconds: Optional[float] = None,
               dangerous_funcs_reached: int = 0,
               reach_dangerous_path: bool = False) -> FunctionComplexity:
-        """Compute the composite complexity score using LUT-accelerated log2."""
+        """计算 composite complexity score using LUT-accelerated log2"""
         if historical_seconds is None and func_name in self._hist_cache:
             samples = self._hist_cache[func_name]
             historical_seconds = sum(samples) / max(1, len(samples))
@@ -193,22 +193,22 @@ class ComplexityScorer:
         )
 
     def record(self, func_name: str, seconds: float):
-        """Store execution time for future scoring (keeps last 10 samples)."""
+        """存储 execution time for future scoring (keeps last 10 samples)"""
         self._hist_cache[func_name].append(seconds)
         self._hist_cache[func_name] = self._hist_cache[func_name][-10:]
 
     def predict_runtime(self, func_name: str, fallback: float = 0.0) -> float:
-        """Predict the runtime for a function based on historical samples.
-
-        取最近 10 次执行的中位数作为预测值。若无历史数据则返回 fallback。
-        中位数比均值更抗异常值（单次执行因系统负载偶发过长）。
-
+        """Predict runtime for a function 基于 historical samples
+        
+        取最近 10 次执行的中位数作为预测值。若无历史数据则返回 fallback
+        中位数比均值更抗异常值（单次执行因系统负载偶发过长）
+        
         Args:
-            func_name: 函数名。
-            fallback: 无历史数据时的回退预测值。
-
-        Returns:
-            float: 预测运行秒数。
+        func_name: 函数名
+        fallback: 无历史数据时的回退预测值
+        
+        返回:
+        float: 预测运行秒数
         """
         samples = self._hist_cache.get(func_name, [])
         if not samples:
@@ -220,7 +220,7 @@ class ComplexityScorer:
         return (sorted_samples[n // 2 - 1] + sorted_samples[n // 2]) / 2.0
 
     def get_historical_seconds(self, func_name: str) -> float:
-        """Return the average historical execution time for a function."""
+        """返回 average historical execution time for a function"""
         samples = self._hist_cache.get(func_name, [])
         if not samples:
             return 0.0
@@ -228,7 +228,7 @@ class ComplexityScorer:
 
 
 class ResourceAllocator:
-    """Maps a complexity score to a resource profile with concrete limits."""
+    """Maps a complexity score a resource profile concrete limits"""
 
     PROFILES: Dict[ResourceProfile, ResourceBudget] = {
         ResourceProfile.MINIMAL:    ResourceBudget(30,   256,   256),
@@ -241,7 +241,7 @@ class ResourceAllocator:
 
     def allocate(self, complexity: FunctionComplexity,
                  is_critical: bool = False) -> ResourceProfile:
-        """Select the profile whose score band contains complexity.score."""
+        """Select profile score band 包含 complexity.score"""
         if is_critical:
             return ResourceProfile.CRITICAL
         s = complexity.score
@@ -256,7 +256,7 @@ class ResourceAllocator:
         return ResourceProfile.EXTREME
 
     def budget_of(self, profile: ResourceProfile) -> ResourceBudget:
-        """Look up the concrete budget for a profile."""
+        """Look up concrete budget for a profile"""
         return self.PROFILES[profile]
 
 
@@ -265,19 +265,19 @@ class ResourceAllocator:
 #
 # 降载两级：
 #   1. sys_load_pct > 80% → 活跃并发度减半，跳过非 CRITICAL 任务分发
-#   2. 内存使用率 > 90% → 暂停 background heap 的全部调度，
+# 2. 内存使用率 > 90% → 暂停 background heap 的全部调度
 #      仅允许 CRITICAL 任务通过，防止 OOM
 #
-# psutil 为可选依赖；缺失时降级为无操作模式，不影响核心调度逻辑。
+# psutil 为可选依赖；缺失时降级为无操作模式，不影响核心调度逻辑
 # ---------------------------------------------------------------------------
 
 
 class ResourceMonitor:
-    """Monitors system-wide CPU and memory load, providing backpressure signals.
-
-    When ``sys_load_pct`` exceeds 80%, active concurrency is halved and
-    non-critical task dispatch is skipped.  When memory usage exceeds 90%,
-    background-heap execution is paused entirely to prevent OOM.
+    """监控 system-wide CPU memory 加载, providing backpressure signals
+    
+    ``sys_load_pct`` exceeds 80%, active 并发 halved
+    non-critical task dispatch skipped. memory usage exceeds 90%
+    background-堆 execution paused entirely prevent OOM
     """
 
     # 复用同一实例避免频繁 import 检查
@@ -304,10 +304,10 @@ class ResourceMonitor:
         return cls._instance
 
     def sample(self) -> Tuple[float, float]:
-        """Collect one snapshot of CPU and memory usage.
-
-        Returns (sys_load_pct, mem_usage_pct).  Falls back to (0.0, 0.0)
-        when psutil is unavailable.
+        """Collect one 快照 CPU memory usage
+        
+        返回 (sys_load_pct, mem_usage_pct). Falls back (0.0, 0.0)
+        psutil unavailable
         """
         if not _HAS_PSUTIL:
             return 0.0, 0.0
@@ -316,9 +316,9 @@ class ResourceMonitor:
         return cpu, mem
 
     def refresh(self):
-        """Refresh load readings and update backpressure flags.
-
-        每次调度轮询前调用，决策是否进入降载模式。
+        """Refresh 加载 readings 更新 backpressure flags
+        
+        每次调度轮询前调用，决策是否进入降载模式
         """
         with self._lock:
             cpu, mem = self.sample()
@@ -328,16 +328,16 @@ class ResourceMonitor:
             self.high_memory = mem > self.mem_high
 
     def should_throttle_active(self) -> bool:
-        """True when system CPU is overloaded and active concurrency should halve."""
+        """True system CPU overloaded active 并发 halve"""
         return self.high_cpu
 
     def should_pause_background(self) -> bool:
-        """True when memory pressure is critical and all background tasks should pause."""
+        """True memory pressure critical background tasks pause"""
         return self.high_memory
 
     def can_dispatch(self, task: TaskSpec) -> bool:
-        """Decide whether a task is allowed to go out for execution.
-
+        """Decide whether a task allowed out for execution
+        
         规则：
         - 内存 > 90% → 仅允许 CRITICAL 通过
         - CPU > 80% → 跳过非关键（非 CRITICAL / 无危险路径）任务
@@ -352,7 +352,7 @@ class ResourceMonitor:
         return True
 
     def status(self) -> Dict[str, Any]:
-        """Expose current load snapshot for observability."""
+        """Expose current 加载 快照 for observability"""
         return {
             'sys_load_pct': self.sys_load_pct,
             'mem_usage_pct': self.mem_usage_pct,
@@ -362,24 +362,24 @@ class ResourceMonitor:
 
 
 # ---------------------------------------------------------------------------
-# 公平共享调度器：每个 binary_path 获得等量的执行时间预算。
+# 公平共享调度器：每个 binary_path 获得等量的执行时间预算
 #
 # 核心思路：
-#   每个二进制文件的 fair_share_budget = 总分配时间 / 活跃二进制文件数。
-#   调度时按 per_binary_consumed 字典累加每个二进制文件的已消耗时间，
-#   超预算的任务优先级下调 (priority -= 100)，使其排到同预算任务之后。
+# 每个二进制文件的 fair_share_budget = 总分配时间 / 活跃二进制文件数
+# 调度时按 per_binary_consumed 字典累加每个二进制文件的已消耗时间
+# 超预算的任务优先级下调 (priority -= 100)，使其排到同预算任务之后
 #
-# 意图 — 避免单个大型二进制文件独占所有执行槽位，保证多目标分析的公平性。
+# 意图 — 避免单个大型二进制文件独占所有执行槽位，保证多目标分析的公平性
 # ---------------------------------------------------------------------------
 
 
 class FairShareScheduler:
-    """Fair-share wrapper around a PriorityScheduler.
-
-    Every ``binary_path`` receives an equal ``fair_share_budget`` of total
-    executor wall-clock time.  Tasks from binaries that have already
-    consumed their budget are deprioritized (``priority -= 100``) so that
-    under-served binaries get scheduled first.
+    """Fair-share 封装 a PriorityScheduler
+    
+    ``binary_path`` 接收 an equal ``fair_share_budget`` total
+    executor wall-clock time. Tasks binaries
+    consumed budget deprioritized (``priority -= 100``)
+    under-served binaries scheduled first
     """
 
     def __init__(self, scheduler: "PriorityScheduler"):
@@ -393,8 +393,8 @@ class FairShareScheduler:
         self.fair_share_budget: Optional[float] = None
 
     def compute_budgets(self, total_time: float, binary_paths: Set[str]):
-        """Allocate fair_share_budget evenly across active binaries.
-
+        """Allocate fair_share_budget evenly across active binaries
+        
         :param total_time: 本轮执行可用的总时间预算
         :param binary_paths: 参与本轮调度的所有二进制文件集合
         """
@@ -402,15 +402,15 @@ class FairShareScheduler:
         self.fair_share_budget = total_time / n
 
     def record_consumed(self, binary_path: str, elapsed: float):
-        """Accumulate consumed time per binary after a task completes."""
+        """Accumulate consumed time per binary a task completes"""
         with self._lock:
             self.per_binary_consumed[binary_path] += elapsed
 
     def adjust_priority(self, task: TaskSpec) -> int:
-        """Return adjusted priority for a task considering fair-share.
-
-        若按 binary_path 查询到的已消耗时间超过 fair_share_budget，
-        则 priority -= 100，将该任务降级处理。
+        """返回 adjusted priority for a task considering fair-share
+        
+        若按 binary_path 查询到的已消耗时间超过 fair_share_budget
+        则 priority -= 100，将该任务降级处理
         """
         if self.fair_share_budget is None or self.fair_share_budget <= 0:
             return task.priority
@@ -420,7 +420,7 @@ class FairShareScheduler:
         return task.priority
 
     def stats(self) -> Dict[str, Any]:
-        """Expose fair-share state for telemetry."""
+        """Expose fair-share state for telemetry"""
         return {
             'fair_share_budget': self.fair_share_budget,
             'per_binary_consumed': dict(self.per_binary_consumed),
@@ -430,9 +430,9 @@ class FairShareScheduler:
 # =============================================================================
 # 四轮增强 — PredictiveScheduler：最短作业优先 + 长任务槽预留
 #
-# 原理：在符号执行调度中，任务运行时间差异极大（几秒到几十分钟）。
+# 原理：在符号执行调度中，任务运行时间差异极大（几秒到几钟）
 # SJF 启发式显著降低平均完成时间。但纯 SJF 会导致长任务饥饿 ——
-# 长任务槽（LongSlot）机制保证至少一个 slot 始终可用于长任务。
+# 长任务槽（LongSlot）机制保证至少一个 slot 始终可用于长任务
 #
 # 实现：
 # - 每次调度前对所有就绪任务按 predicted_runtime 排序
@@ -443,21 +443,21 @@ class FairShareScheduler:
 
 
 class PredictiveScheduler:
-    """Shortest-job-first scheduler with starvation prevention via a long-task slot.
-
-    四轮增强 — 利用 ComplexityScorer.predict_runtime() 预测每个任务的执行时间。
-    在每次调度决策中，从就绪队列中选择预测执行时间最短的任务，
-    显著降低平均任务完成时间（Average Completion Time）。
-
+    """Shortest-job-first scheduler starvation prevention via a long-task slot
+    
+    四轮增强 — 利用 ComplexityScorer.predict_runtime() 预测每个任务的执行时间
+    在每次调度决策中，从就绪队列中选择预测执行时间最短的任务
+    显著降低平均任务完成时间（Average Completion Time）
+    
     LongSlot 机制：
-    - 维护一个长任务计数槽（默认 1），仅允许长任务使用。
-    - 长任务定义：predicted_runtime > 所有就绪任务预测时间中位数的 2 倍。
-    - 长任务槽被占用后，后续长任务按常规优先级排队。
-
+    - 维护一个长任务计数槽（默认 1），仅允许长任务使用
+    - 长任务定义：predicted_runtime > 所有就绪任务预测时间中位数的 2 倍
+    - 长任务槽被占用后，后续长任务按常规优先级排队
+    
     Attributes:
-        scorer: ComplexityScorer 实例，提供 predict_runtime()。
-        long_slot_count: 预留的长任务槽数量（默认 1）。
-        long_ratio_threshold: 预测时间 > median * ratio 视为长任务。
+    scorer: ComplexityScorer 实例，提供 predict_runtime()
+    long_slot_count: 预留的长任务槽数量（默认 1）
+    long_ratio_threshold: 预测时间 > median * ratio 视为长任务
     """
 
     def __init__(self,
@@ -472,16 +472,16 @@ class PredictiveScheduler:
         self._lock = threading.Lock()
 
     def predict(self, task: TaskSpec) -> float:
-        """Predict runtime for a task, using cached value if available.
-
-        优先使用 historical_seconds 已有的值，其次调用 scorer.predict_runtime()。
-        Fallback: 用 complexity.score / 10.0 做粗略估算（高复杂度 ≈ 长运行时间）。
-
+        """Predict runtime for a task, using缓存d value available
+        
+        优先使用 historical_seconds 已有的值，其次调用 scorer.predict_runtime()
+        Fallback: 用 complexity.score / 10.0 做粗略估算（高复杂度 ≈ 长运行时间）
+        
         Args:
-            task: 待预测的任务规格。
-
-        Returns:
-            float: 预测执行秒数。
+        task: 待预测的任务规格
+        
+        返回:
+        float: 预测执行秒数
         """
         if task.func_name in self._prediction_cache:
             return self._prediction_cache[task.func_name]
@@ -501,14 +501,14 @@ class PredictiveScheduler:
         return predicted
 
     def select_next_task(self, tasks: List[TaskSpec]) -> Tuple[Optional[TaskSpec], str]:
-        """Select the next task to execute using SJF with long-slot reservation.
-
+        """Select next task 执行 using SJF long-slot reservation
+        
         Args:
-            tasks: 当前所有就绪任务的列表。
-
-        Returns:
-            Tuple[Optional[TaskSpec], str]: (选中的任务, 选择原因字符串)。
-            reason: "shortest_job_first", "long_slot", "fallback", "no_tasks"。
+        tasks: 当前所有就绪任务的列表
+        
+        返回:
+        Tuple[Optional[TaskSpec], str]: (选中的任务, 选择原因字符串)
+        reason: "shortest_job_first", "long_slot", "回退", "no_tasks"
         """
         if not tasks:
             return None, "no_tasks"
@@ -551,13 +551,13 @@ class PredictiveScheduler:
             return None, "no_tasks"
 
     def release_long_slot(self):
-        """Release a long-task slot after a long task completes."""
+        """释放 a long-task slot a long task completes"""
         with self._lock:
             if self._long_slots_used > 0:
                 self._long_slots_used -= 1
 
     def reset(self):
-        """Reset prediction cache and long-slot usage for a new scheduling round."""
+        """重置 prediction 缓存and long-slot usage for a new scheduling 舍入"""
         with self._lock:
             self._prediction_cache.clear()
             self._long_slots_used = 0
@@ -573,7 +573,7 @@ class PredictiveScheduler:
         return (sorted_vals[n // 2 - 1] + sorted_vals[n // 2]) / 2.0
 
     def stats(self) -> Dict[str, Any]:
-        """Expose predictive scheduling state."""
+        """Expose predictive scheduling state"""
         with self._lock:
             return {
                 'long_slots_used': self._long_slots_used,
@@ -586,32 +586,32 @@ class PredictiveScheduler:
 # =============================================================================
 # 四轮增强 — ResourceOvercommitDetector：防止 OOM
 #
-# 符号执行是内存密集型任务。当多个 worker 进程同时运行大状态空间的任务时，
+# 符号执行是内存密集型任务。当多个 worker 进程同时运行大状态空间的任务时
 # 累计分配的内存可能超过系统可用物理内存，触发 Linux OOM killer 随机
-# kill 进程，导致整个分析任务失败且难以调试。
+# kill 进程，导致整个分析任务失败且难以调试
 #
 # ResourceOvercommitDetector 在每次调度前检查：
 #   total_allocated_mb (所有运行中任务的 budget 总和)
 #   vs system_available_mb (psutil.virtual_memory().available)
 #
-# 若 total_allocated_mb > system_available_mb * safety_ratio，
-# 阻塞新任务分发直至运行中任务完成并释放资源。
+# 若 total_allocated_mb > system_available_mb * safety_ratio
+# 阻塞新任务分发直至运行中任务完成并释放资源
 # =============================================================================
 
 
 class ResourceOvercommitDetector:
-    """Monitor memory overcommit and pause dispatch to prevent OOM.
-
-    四轮增强 — 跟踪所有已分发但尚未完成的任务的内存预算。
-    当累计分配超过系统可用内存的安全比例时，阻止新任务分发。
-
+    """监控 memory overcommit pause dispatch prevent OOM
+    
+    四轮增强 — 跟踪所有已分发但尚未完成的任务的内存预算
+    当累计分配超过系统可用内存的安全比例时，阻止新任务分发
+    
     触发条件：total_allocated_mb > system_available_mb * safety_ratio
-    默认 safety_ratio = 0.85，即保留 15% 余量给系统和其他进程。
-
+    默认 safety_ratio = 0.85，即保留 15% 余量给系统和其他进程
+    
     Attributes:
-        safety_ratio: 安全比例，超过此值即视为过度分配。
-        total_allocated_mb: 当前所有运行中任务的 budget 内存总和。
-        running_tasks: {task_id: allocated_mb} 运行中任务跟踪。
+    safety_ratio: 安全比例，超过此值即视为过度分配
+    total_allocated_mb: 当前所有运行中任务的 budget 内存总和
+    running_tasks: {task_id: allocated_mb} 运行中任务跟踪
     """
 
     # 默认安全比例 —— 保留 15% 内存余量
@@ -624,11 +624,11 @@ class ResourceOvercommitDetector:
         self._lock = threading.Lock()
 
     def register_allocation(self, task: TaskSpec, allocator: ResourceAllocator):
-        """Record a task's memory allocation before dispatch.
-
+        """Record a task's memory allocation dispatch
+        
         Args:
-            task: 即将分发的任务。
-            allocator: ResourceAllocator 实例，用于查询内存预算。
+        task: 即将分发的任务
+        allocator: ResourceAllocator 实例，用于查询内存预算
         """
         budget = allocator.budget_of(task.resource_profile)
         with self._lock:
@@ -640,10 +640,10 @@ class ResourceOvercommitDetector:
             )
 
     def release_allocation(self, task: TaskSpec):
-        """Release a task's memory allocation after completion.
-
+        """释放 a task's memory allocation completion
+        
         Args:
-            task: 已完成的任务。
+        task: 已完成的任务
         """
         with self._lock:
             if task.func_name in self.running_tasks:
@@ -655,10 +655,10 @@ class ResourceOvercommitDetector:
                 )
 
     def is_overcommitted(self) -> bool:
-        """Check if total allocated memory exceeds system available * safety_ratio.
-
-        Returns:
-            True if dispatcher should pause and wait for tasks to complete.
+        """检查 total allocated memory exceeds system available * safety_ratio
+        
+        返回:
+        True 分发器 pause wait for tasks complete
         """
         if not _HAS_PSUTIL:
             return False
@@ -679,13 +679,13 @@ class ResourceOvercommitDetector:
         return is_over
 
     def get_available_mb(self) -> float:
-        """Return system available memory in MB, or a large fallback if psutil missing."""
+        """返回 system available memory MB, or a large 回退 psutil missing"""
         if not _HAS_PSUTIL:
             return float('inf')
         return psutil.virtual_memory().available / (1024 * 1024)
 
     def status(self) -> Dict[str, Any]:
-        """Expose overcommit monitoring state for observability."""
+        """Expose overcommit monitoring state for observability"""
         with self._lock:
             return {
                 'total_allocated_mb': round(self.total_allocated_mb, 1),
@@ -707,39 +707,39 @@ class ResourceOvercommitDetector:
 
 
 class ScheduleReplay:
-    """Record and replay scheduling decisions for audit and inefficiency detection.
-
+    """Record replay scheduling decisions for audit inefficiency detection
+    
     四轮增强 — 将每次调度操作记录到 SQLite 中（task dispatch、task complete、
-    task requeue）。支持离线重建调度时间线，自动识别调度低效。
-
+    task requeue）。支持离线重建调度时间线，自动识别调度低效
+    
     数据库 schema::
-
-        CREATE TABLE schedule_events (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            task_id TEXT NOT NULL,
-            worker_id TEXT NOT NULL,
-            event_type TEXT NOT NULL,  -- 'dispatch', 'complete', 'requeue'
-            timestamp_ts REAL NOT NULL,
-            reason TEXT DEFAULT '',
-            predicted_seconds REAL DEFAULT 0.0
-        );
-
+    
+    创建 TABLE schedule_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT
+    task_id TEXT NULL
+    worker_id TEXT NULL
+    event_type TEXT NULL, -- 'dispatch', 'complete', 're队列'
+    timestamp_ts REAL NULL
+    reason TEXT DEFAULT ''
+    predicted_seconds REAL DEFAULT 0.0
+    );
+    
     Usage::
-
-        recorder = ScheduleReplay(":memory:")
-        recorder.record_dispatch("func_a", "bin1", reason="shortest_job_first")
-        # ... tasks execute ...
-        recorder.record_complete("func_a", "bin1")
-        inefficiencies = recorder.replay_schedule()
-        # → [{'type': 'idle_while_queued', 'window_start': ..., ...}]
+    
+    recorder = ScheduleReplay(":memory:")
+    recorder.record_dispatch("func_a", "bin1", reason="shortest_job_first")
+    #. tasks 执行
+    recorder.record_complete("func_a", "bin1")
+    inefficiencies = recorder.replay_schedule()
+    # → [{'type': 'idle_while_队列d', 'window_start':.,.}]
     """
 
     def __init__(self, db_path: str = ":memory:"):
-        """Initialize the replay database.
-
+        """初始化 replay 数据库
+        
         Args:
-            db_path: SQLite 数据库路径。默认 ":memory:" 为内存数据库。
-                     使用文件路径可在进程重启后恢复分析。
+        db_path: SQLite 数据库路径。默认 ":memory:" 为内存数据库
+        使用文件路径可在进程重启后恢复分析
         """
         self.db_path = db_path
         self._conn = sqlite3.connect(db_path, check_same_thread=False)
@@ -747,7 +747,7 @@ class ScheduleReplay:
         self._init_schema()
 
     def _init_schema(self):
-        """Create the schedule_events table if not exists."""
+        """创建 schedule_events table exists"""
         with self._lock:
             self._conn.execute("""
                 CREATE TABLE IF NOT EXISTS schedule_events (
@@ -774,13 +774,13 @@ class ScheduleReplay:
     def record_dispatch(self, task_id: str, worker_id: str,
                         reason: str = "normal_pop",
                         predicted_seconds: float = 0.0):
-        """Record a task dispatch event.
-
+        """Record a task dispatch event
+        
         Args:
-            task_id: 函数名称。
-            worker_id: 二进制路径或 worker 标识。
-            reason: 调度原因（如 "shortest_job_first", "long_slot"）。
-            predicted_seconds: 预测执行时间。
+        task_id: 函数名称
+        worker_id: 二进制路径或 worker 标识
+        reason: 调度原因（如 "shortest_job_first", "long_slot"）
+        predicted_seconds: 预测执行时间
         """
         with self._lock:
             self._conn.execute(
@@ -791,11 +791,11 @@ class ScheduleReplay:
             self._conn.commit()
 
     def record_complete(self, task_id: str, worker_id: str):
-        """Record a task completion event.
-
+        """Record a task completion event
+        
         Args:
-            task_id: 函数名称。
-            worker_id: 二进制路径或 worker 标识。
+        task_id: 函数名称
+        worker_id: 二进制路径或 worker 标识
         """
         with self._lock:
             self._conn.execute(
@@ -806,12 +806,12 @@ class ScheduleReplay:
             self._conn.commit()
 
     def record_requeue(self, task_id: str, worker_id: str, reason: str = ""):
-        """Record a task requeue event (e.g., deferred due to resource pressure).
-
+        """Record a task re队列 event (e.g., deferred due resource pressure)
+        
         Args:
-            task_id: 函数名称。
-            worker_id: 二进制路径或 worker 标识。
-            reason: requeue 原因。
+        task_id: 函数名称
+        worker_id: 二进制路径或 worker 标识
+        reason: re队列 原因
         """
         with self._lock:
             self._conn.execute(
@@ -822,22 +822,22 @@ class ScheduleReplay:
             self._conn.commit()
 
     def replay_schedule(self) -> Dict[str, Any]:
-        """Reconstruct the Gantt timeline and identify scheduling inefficiencies.
-
+        """重建 Gantt timeline identify scheduling inefficiencies
+        
         分析：
         1. 为每个任务构建 (dispatch_ts, complete_ts) 对，生成 Gantt 条目
-        2. 扫描时间线寻找 "idle_while_queued" 窗口：
-           在某个时间点，至少有一个任务在队列中等待（已 dispatch-requeue
-           但未被 complete），同时没有正在运行的任务。
+        2. 扫描时间线寻找 "idle_while_队列d" 窗口：
+        在某个时间点，至少有一个任务在队列中等待（已 dispatch-requeue
+        但未被 complete），同时没有正在运行的任务
         3. 计算 worker 利用率 = busy_time / total_time
-
-        Returns:
-            Dict with:
-            - 'gantt_entries': [(task_id, worker_id, start_ts, end_ts), ...]
-            - 'inefficiencies': [{'type': str, 'window_start': float, 'window_end': float, ...}, ...]
-            - 'worker_utilization': float (0-1)
-            - 'total_time_span': float
-            - 'event_count': int
+        
+        返回:
+        Dict:
+        - 'gantt_entries': [(task_id, worker_id, start_ts, end_ts),.]
+        - 'inefficiencies': [{'type': str, 'window_start': float, 'window_end': float,.},.]
+        - 'worker_utilization': float (0-1)
+        - 'total_time_span': float
+        - 'event_count': int
         """
         with self._lock:
             rows = self._conn.execute(
@@ -924,7 +924,7 @@ class ScheduleReplay:
         # 构建时间点上的活跃任务计数
         timeline: List[Tuple[float, int]] = []  # (time, delta)
         for entry in gantt_entries:
-            timeline.append((entry[2], +1))  # start
+            timeline.append((entry[2], +1))  # 启动
             timeline.append((entry[3], -1))  # end
         timeline.sort(key=lambda x: x[0])
 
@@ -993,27 +993,27 @@ class ScheduleReplay:
         }
 
     def export_gantt_json(self) -> str:
-        """Export Gantt chart data as JSON string for visualization.
-
-        Returns:
-            JSON string with timeline data compatible with Plotly/D3 Gantt.
+        """Export Gantt chart data JSON string for visualization
+        
+        返回:
+        JSON string timeline data compatible Plotly/D3 Gantt
         """
         replay = self.replay_schedule()
         return json.dumps(replay['gantt_entries'], ensure_ascii=False, indent=2)
 
     def close(self):
-        """Close the SQLite connection."""
+        """关闭 SQLite connection"""
         with self._lock:
             self._conn.close()
 
 
 class PriorityScheduler:
-    """Two-tier min-heap scheduler. Dangerous-path functions go to the active
-    heap; everything else goes to background. next_task() drains active first,
-    then background, then falls back to active.
-
-    增强 — 依赖提升：当 active heap 任务引用的依赖函数在 background heap 中时，
-    将后者提升至 active heap，避免调度死锁。"""
+    """Two-tier min-堆 scheduler. Dangerous-path functions active
+    堆; everything else background. next_task() drains active first
+    background, falls back active
+    
+    增强 — 依赖提升：当 active heap 任务引用的依赖函数在 background heap 中时
+    将后者提升至 active heap，避免调度死锁"""
 
     def __init__(self,
                  active_threshold: int = 50,
@@ -1041,7 +1041,7 @@ class PriorityScheduler:
                reach_dangerous_path: bool = False,
                depends_on: Optional[List[str]] = None,
                is_critical: bool = False) -> TaskSpec:
-        """Score a function, allocate resources, and push onto the correct heap."""
+        """Score a function, allocate resources, push correct 堆"""
         complexity = self.scorer.score(
             func_name,
             cyclomatic=cyclomatic,
@@ -1079,10 +1079,10 @@ class PriorityScheduler:
         return task
 
     def _promote_dependencies(self, task: TaskSpec):
-        """若 active task 依赖 background task，提升后者至 active。
-
-        死锁场景：task_A（active）依赖 task_B（background），
-        若 background 永远不被调度，task_A 将永远阻塞。"""
+        """若 active task 依赖 background task，提升后者至 active
+        
+        死锁场景：task_A（active）依赖 task_B（background）
+        若 background 永远不被调度，task_A 将永远阻塞"""
         for dep_name in task.depends_on:
             dep_task = self._func_names.get(dep_name)
             if dep_task is None:
@@ -1097,7 +1097,7 @@ class PriorityScheduler:
                     break
 
     def next_task(self, prefer_active: bool = True) -> Optional[TaskSpec]:
-        """Pop the next task. Active heap drained first; background is fallback."""
+        """Pop next task. Active 堆 drained first; background 回退"""
         with self._lock:
             if prefer_active and self.active_heap:
                 _, _, task = heapq.heappop(self.active_heap)
@@ -1119,7 +1119,7 @@ class PriorityScheduler:
         return bool(self.active_heap or self.background_heap)
 
     def get_pending_tasks(self) -> List[TaskSpec]:
-        """Return all pending tasks across both heaps (for PredictiveScheduler)."""
+        """返回 pending tasks across 堆s (for PredictiveScheduler)"""
         with self._lock:
             result = []
             for _, _, t in self.active_heap:
@@ -1136,11 +1136,11 @@ class PriorityScheduler:
 
 
 class InterruptibleExecutor:
-    """Runs scheduled tasks with per-task timeout preemption.
-
-    增强 — 使用 time.monotonic() 替代 time.time()，免疫系统时钟调整。
-
-    四轮增强 — 集成 PredictiveScheduler、ResourceOvercommitDetector、ScheduleReplay。
+    """运行 scheduled tasks per-task timeout preemption
+    
+    增强 — 使用 time.monotonic() 替代 time.time()，免疫系统时钟调整
+    
+    四轮增强 — 集成 PredictiveScheduler、ResourceOvercommitDetector、ScheduleReplay
     """
 
     def __init__(self, scheduler: PriorityScheduler):
@@ -1195,9 +1195,9 @@ class InterruptibleExecutor:
             return None
 
     def run_one(self, task: TaskSpec, runner) -> TaskResult:
-        """Execute a single task under its resource budget timeout.
-
-        使用 monotonic clock 确保时间预算不受系统时钟调整影响。"""
+        """执行 a single task under resource budget timeout
+        
+        使用 monotonic clock 确保时间预算不受系统时钟调整影响"""
         budget = self.scheduler.allocator.budget_of(task.resource_profile)
         start_mono = time.monotonic()
         interrupted = False
@@ -1357,9 +1357,9 @@ class InterruptibleExecutor:
 # ---------------------------------------------------------------------------
 # 甘特图导出：将任务调度时序序列化为 JSON，用于可视化调度效率
 #
-# 每条记录包含 task_id、worker_id、start_ts、end_ts。
-# gantt_json 可直接渲染为甘特图（Plotly / D3 / matplotlib），
-# 帮助分析任务并行度、空闲窗口和长尾延迟。
+# 每条记录包含 task_id、worker_id、start_ts、end_ts
+# gantt_json 可直接渲染为甘特图（Plotly / D3 / matplotlib）
+# 帮助分析任务并行度、空闲窗口和长尾延迟
 # ---------------------------------------------------------------------------
 
 # 全局甘特图记录缓冲区（线程安全）
@@ -1369,9 +1369,9 @@ _gantt_lock = threading.Lock()
 
 def record_gantt_entry(task_id: str, worker_id: str,
                        start_ts: float, end_ts: float):
-    """Push one Gantt record into the global timeline buffer.
-
-    由 Executor 在每个任务完成时调用，收集调度时序数据。
+    """Push one Gantt record global timeline 缓冲区
+    
+    由 Executor 在每个任务完成时调用，收集调度时序数据
     """
     with _gantt_lock:
         _gantt_records.append({
@@ -1383,26 +1383,26 @@ def record_gantt_entry(task_id: str, worker_id: str,
 
 
 def clear_gantt_records():
-    """Reset the Gantt buffer (e.g. between run_loop invocations)."""
+    """重置 Gantt 缓冲区 (e.g. run_loop invocations)"""
     with _gantt_lock:
         _gantt_records.clear()
 
 
 def export_gantt_chart() -> str:
-    """Export the accumulated task-execution timeline as a JSON string.
-
-    Returns:
-        A JSON string (``gantt_json``) whose value is an array of objects
-        with keys ``task_id``, ``worker_id``, ``start_ts``, ``end_ts``.
-
+    """Export accumulated task-execution timeline a JSON string
+    
+    返回:
+    A JSON string (``gantt_json``) value an array objects
+    keys ``task_id``, ``worker_id``, ``start_ts``, ``end_ts``
+    
     Usage::
-
-        schedule_symbolic_analysis(...)
-        gantt_json = export_gantt_chart()
-        with open('timeline.json', 'w') as f:
-            f.write(gantt_json)
-
-    输出格式适用于 Plotly timeline、D3 Gantt 或 matplotlib broken_barh。
+    
+    schedule_symbolic_analysis(.)
+    gantt_json = export_gantt_chart()
+    打开('timeline.json', 'w') f:
+    f.写入(gantt_json)
+    
+    输出格式适用于 Plotly timeline、D3 Gantt 或 matplotlib broken_barh
     """
     with _gantt_lock:
         snapshot = list(_gantt_records)
@@ -1415,8 +1415,8 @@ def schedule_symbolic_analysis(
     function_specs: List[Dict[str, Any]],
     runner=None
 ) -> Dict[str, Any]:
-    """One-shot: score functions, allocate resources, enqueue, and drain the
-    scheduler. Uses a trivial sleep-based runner when none is supplied."""
+    """One-shot: score functions, allocate resources, en队列, drain
+    scheduler. 使用 a trivial sleep-based runner none supplied"""
     scheduler = PriorityScheduler()
     executor = InterruptibleExecutor(scheduler)
 

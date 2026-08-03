@@ -28,7 +28,7 @@ class ParamType(str, Enum):
     UNKNOWN = "unknown"
 
 
-# ── 结构感知解析标记 ────────────────────────────────────────────
+# ── 结构级解析类型定义 ──────────────────────────────────────────────
 
 @dataclass
 class StructField:
@@ -37,8 +37,8 @@ class StructField:
     size: int
     ctype: ParamType
     constraints: List[str] = field(default_factory=list)
-    is_checksum: bool = False           # 标记校验和字段
-    depends_on: Optional[str] = None     # 依赖字段 (校验和依赖)
+    is_checksum: bool = False           # 标记为校验和字段
+    depends_on: Optional[str] = None     # 依赖的源字段
 
 
 @dataclass
@@ -51,12 +51,12 @@ class FuncParam:
     nullable: bool = False
 
 
-# ── Harness 生成模式 ────────────────────────────────────────────
+# ── 注入模式枚举 ────────────────────────────────────────────────────
 
 class HarnessMode(str, Enum):
-    STANDARD = "standard"      # 单次 LLVMFuzzerTestOneInput
-    PERSISTENT = "persistent"  # AFL++ 持久模式
-    MULTI_FUNC = "multi_func"  # 多函数组合
+    STANDARD = "standard"      # 单次 LLVMFuzzerTestOneInput 调用
+    PERSISTENT = "persistent"  # AFL++ 持久模式，进程复用
+    MULTI_FUNC = "multi_func"  # 多函数组合注入
 
 
 @dataclass
@@ -70,7 +70,7 @@ class HarnessSpec:
     entry: str = ""
     initial_corpus: List[bytes] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
-    # 增强字段
+    # 增强配置字段
     mode: HarnessMode = HarnessMode.STANDARD
     sanitizers: List[str] = field(default_factory=list)
     target_funcs: List[str] = field(default_factory=list)
@@ -79,7 +79,7 @@ class HarnessSpec:
     checksum_info: Dict[str, Any] = field(default_factory=dict)
 
 
-# ── 常见校验和算法检测模式 ──────────────────────────────────────
+# ── 校验和函数签名匹配模式 ──────────────────────────────────────────
 
 _CHECKSUM_FUNC_PATTERNS = [
     (r'\b(crc|CRC)\w*', 'CRC variant'),
@@ -92,7 +92,7 @@ _CHECKSUM_FUNC_PATTERNS = [
 
 
 class ParamTypeInferencer:
-    """从反编译伪代码中通过正则匹配推断 C 参数类型"""
+    """反编译伪代码 → C 类型推断，基于正则匹配签名。"""
 
     TYPE_PATTERNS = [
         (r"\bint8_t\b|\b__int8\b|\bchar\b(?!\s*\*)", ParamType.INT8),
@@ -115,7 +115,7 @@ class ParamTypeInferencer:
         decomp = self._decompile_func(binary_path, func_name)
         if not decomp:
             return []
-        # 从反编译伪代码中提取函数签名
+        # 正则捕获 C 签名: ret_type func_name(params)
         sig_match = re.search(
             r"([\w\s\*]+?)\s+" + re.escape(func_name) +
             r"\s*\(([^)]*)\)", decomp
@@ -151,8 +151,7 @@ class ParamTypeInferencer:
             return ""
 
     def _parse_arg(self, arg: str) -> Tuple[str, ParamType]:
-        # 解析形如 "int argc" 或 "char *argv" 的参数声明
-        # 末尾标识符为参数名，其前各 token 组成类型
+        # "int argc" / "char *argv" → 末 token 为形参名，前缀为类型声明
         tokens = arg.strip().split()
         if not tokens:
             return ("", ParamType.UNKNOWN)
@@ -164,10 +163,10 @@ class ParamTypeInferencer:
                 return (name, pt)
         return (name, ParamType.INT32)
 
-    # ── 批量反编译发现全校验和函数 ──────────────────────────────
+    # ── 符号表扫描: 校验和函数发现 ──────────────────────────────────
 
     def detect_checksum_funcs(self, binary_path: str) -> List[str]:
-        """在反编译输出中搜索校验和函数名模式。"""
+        """遍历二进制符号表，匹配已知校验和函数名正则模式。"""
         import subprocess
         try:
             r = subprocess.run(
@@ -188,9 +187,9 @@ class ParamTypeInferencer:
 
 
 class InitialCorpusGenerator:
-    """初始语料种子生成 — 边界值 + 笛卡尔积组合"""
+    """初始种子语料构造 — 边界值注入 + 参数笛卡尔积组合。"""
 
-    # 各参数类型的边界及特殊取值
+    # 参数类型 → 关键边界值集合
     INTERESTING_VALUES = {
         ParamType.INT8:  [0, 1, -1, 127, -128, 64],
         ParamType.INT16: [0, 1, -1, 32767, -32768, 256, 0x7fff],
@@ -210,13 +209,13 @@ class InitialCorpusGenerator:
     def generate(self, params: List[FuncParam],
                  max_seeds: int = 16) -> List[bytes]:
         seeds: List[bytes] = []
-        # 单参数种子: 逐参数取边界值
+        # 单参数边界值独立种子
         for p in params:
             for val in self.INTERESTING_VALUES.get(p.type, [0, 1]):
                 seed = self._encode_args([(p, val)])
                 if seed:
                     seeds.append(seed)
-        # 组合种子: 参数间笛卡尔积
+        # 跨参数笛卡尔积组合种子
         for combo in self._combinations(params)[:max_seeds]:
             seed = self._encode_args(combo)
             if seed:
@@ -224,7 +223,7 @@ class InitialCorpusGenerator:
         return seeds[:max_seeds]
 
     def _combinations(self, params: List[FuncParam]) -> List[List[Tuple[FuncParam, Any]]]:
-        """所有参数边界值的笛卡尔积展开"""
+        """所有参数前 3 个边界值的笛卡尔积。"""
         if not params:
             return [[]]
         result = [[]]
@@ -238,7 +237,7 @@ class InitialCorpusGenerator:
         return result
 
     def _encode_args(self, args: List[Tuple[FuncParam, Any]]) -> bytes:
-        # 将类型化参数值序列化为 libFuzzer 兼容的字节序列
+        # 类型化参数 → libFuzzer 兼容字节流
         out = bytearray()
         for p, v in args:
             try:
@@ -255,7 +254,7 @@ class InitialCorpusGenerator:
                 elif p.type in (ParamType.FLOAT, ParamType.DOUBLE):
                     out += float(v).hex().encode("utf-8")[:8].ljust(8, b'\x00')
                 elif p.type in (ParamType.POINTER, ParamType.CHAR_PTR):
-                    # 指针无法有意义地编码，以空字节占位
+                    # 指针类型不可序列化，零字节占位
                     out.append(0)
                 else:
                     out.append(0)
@@ -265,7 +264,7 @@ class InitialCorpusGenerator:
 
 
 class HarnessTemplate:
-    """C++ Harness 代码生成 — 填充 LLVMFuzzerTestOneInput 骨架"""
+    """C++ harness 骨架渲染器 — 按模式选择对应骨架填充。"""
 
     CPP_TEMPLATE = r"""// Fuzz harness for {func_name}
 
@@ -285,7 +284,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {{
 }}
 """
 
-    # ── 持久模式模板 (AFL++ persistent mode) ────────────────────
+    # ── AFL++ 持久模式骨架 ──────────────────────────────────────────
 
     PERSISTENT_TEMPLATE = r"""// Persistent harness for {func_name}
 // 编译: afl-clang-fast -o harness harness.c
@@ -314,10 +313,10 @@ int main(int argc, char **argv) {{
 }}
 """
 
-    # ── 多函数组合模板 ──────────────────────────────────────────
+    # ── 多目标函数组合骨架 ──────────────────────────────────────────
 
     MULTI_FUNC_TEMPLATE = r"""// Multi-function fuzz harness
-// 由 {target_funcs} 生成
+// 由 {target_funcs} 构造
 
 #include <cstdint>
 #include <cstring>
@@ -335,7 +334,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {{
 }}
 """
 
-    # ── 带校验和绕过的模板 ──────────────────────────────────────
+    # ── 校验和感知骨架 — 运行时重算校验字段以绕过完整性检查 ────────────────
 
     CHECKSUM_AWARE_TEMPLATE = r"""// Checksum-aware harness for {func_name}
 // 自动重算 {checksum_field} 字段使输入通过完整性检查
@@ -347,7 +346,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {{
 
 extern "C" int {func_name}({param_signature});
 
-// 由工具自动生成的校验和补丁函数
+// 工具自动构造的校验和补丁函数
 static inline void fix_{checksum_field}(
     uint8_t *buf, size_t size, size_t cs_offset, size_t data_start)
 {{
@@ -363,7 +362,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {{
     uint8_t buf[{max_buf_size}];
     memcpy(buf, data, size);
 
-    // 在每一轮变异后重算校验和，确保输入始终有效
+    // 每轮变异后重算校验和，确保输入始终有效
     fix_{checksum_field}(buf, size, {cs_offset}, {data_start});
 
     {setup}
@@ -372,7 +371,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {{
 }}
 """
 
-    # ── 渲染 ────────────────────────────────────────────────────
+    # ── 模式分发渲染 ────────────────────────────────────────────────
 
     def render(self, spec: HarnessSpec) -> str:
         if spec.mode == HarnessMode.PERSISTENT:
@@ -405,7 +404,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {{
         )
         setup, arg_list, offset = self._build_setup(spec.params)
         invocation = f"    {spec.func_name}({', '.join(arg_list)});"
-        # 持久模式在每次循环中重新执行 setup，以更新参数指针
+        # 持久模式: 每轮迭代重建参数指针
         persistent_setup = f"    size_t __len = __AFL_FUZZ_TESTCASE_LEN;\n"
         persistent_setup += f"    if (__len < {offset or 1}) continue;"
         return self.PERSISTENT_TEMPLATE.format(
@@ -508,7 +507,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {{
 
 
 class FuzzHarnessOptimizer:
-    """Harness 优化管线: 反编译 → 类型推断 → 语料生成 → C++ 模板渲染"""
+    """Harness 构建管线 — 反编译 → 类型推断 → 种子构造 → 代码渲染。"""
 
     def __init__(self):
         self.inferencer = ParamTypeInferencer()
@@ -525,7 +524,7 @@ class FuzzHarnessOptimizer:
         params = self.inferencer.infer(func_name, binary_path)
         corpus = self.corpus_gen.generate(params)
 
-        # 检测校验和依赖
+        # 探测二进制中的校验和依赖关系
         has_cs = False
         cs_info: Dict[str, Any] = {}
         if checksum_detect:
@@ -571,23 +570,23 @@ class FuzzHarnessOptimizer:
                     f.write(seed)
             spec.metadata['corpus_dir'] = corpus_dir
 
-        # 若启用 sanitizer，生成编译建议写入 metadata
+        # sanitizer 启用时注入编译标志
         if sanitizers:
             spec.metadata['compile_flags'] = self._sanitizer_flags(sanitizers)
 
         return spec
 
-    # ── 多函数批量优化 ──────────────────────────────────────────
+    # ── 多函数共享 harness 批量构造 ────────────────────────────────
 
     def optimize_multi(
         self, binary_path: str, func_names: List[str],
         output_path: Optional[str] = None,
         corpus_dir: Optional[str] = None,
     ) -> HarnessSpec:
-        """为多个函数生成共享 harness — 单次输入分别注入每个目标函数。
+        """多函数共享 harness — 单输入依次注入全部目标函数。
 
-        适用于 API 级别的 fuzz 测试，如同时测试 parse()/serialize()/free()
-        三个函数组成的生命周期。"""
+        适用场景: API 生命周期测试 (parse → serialize → free)。
+        """
         if not func_names:
             raise ValueError("func_names 不能为空")
         primary = func_names[0]
@@ -637,7 +636,7 @@ def optimize_fuzz_harness(
     output_path: Optional[str] = None,
     corpus_dir: Optional[str] = None
 ) -> Dict[str, Any]:
-    # 模块级便捷入口
+    # 模块顶层快捷入口，构造优化器后返回结构化结果
     opt = FuzzHarnessOptimizer()
     spec = opt.optimize(binary_path, func_name, output_path, corpus_dir)
     return {

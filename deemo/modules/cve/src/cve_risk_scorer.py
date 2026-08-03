@@ -1,21 +1,20 @@
-# 2026-09-22 ~ 2026-09-24
-# Temporal CVE Risk Scoring — combines EPSS, SSVC, KEV, and exploit maturity
-# into a single 0-100 score that reflects "how worried should I be right now?"
+# ~ 2026-09-24
+# 时态CVE风险评分——将EPSS、SSVC、KEV与exploit成熟度合并为0-100分，
+# 反映"此刻应多担忧？"
 #
-# CVSS is static (set at disclosure, rarely changes). EPSS is a 30-day forward
-# prediction but doesn't account for patch availability. SSVC gives a decision
-# category but not a numeric rank. KEV says "this is exploited in the wild" but
-# not how urgently. Exploit maturity tells you if a PoC exists but not the weaponization level.
+# CVSS为静态（披露时确定，鲜有变更）。EPSS为30天前向预测但不考虑补丁可用性。
+# SSVC给出决策类别但无数值排名。KEV表示"野外利用中"但不指示紧迫度。
+# Exploit成熟度告知PoC是否存在但不包含武器化级别。
 #
-# This module unifies them into a temporal score with:
-#   - Base: CVSS score (0-10 → 0-50)
-#   - EPSS multiplier: higher EPSS → score boost (0-30)
-#   - SSVC decision weighting: Act=+20, Attend=+10, Track*=+5, Track=+0
-#   - KEV bonus: +15 if in CISA KEV catalog
-#   - Exploit maturity bonus: weaponized=+15, metasploit=+12, functional=+8, poc=+5
-#   - Temporal decay: score decays over time if a fix is available
+# 本模块将其统一为时态评分:
+#   - 基础: CVSS评分 (0-10 → 0-50)
+#   - EPSS乘数: EPSS越高 → 评分提升 (0-30)
+#   - SSVC决策加权: Act=+20, Attend=+10, Track*=+5, Track=+0
+#   - KEV加成: 若在CISA KEV目录中 +15
+#   - Exploit成熟度加成: weaponized=+15, metasploit=+12, functional=+8, poc=+5
+#   - 时态衰减: 若有可用修复，评分随时间衰减
 #
-# Final score is clamped to 0-100.
+# 最终评分截断至0-100。
 
 import time
 from datetime import datetime, timezone
@@ -23,19 +22,19 @@ from typing import Dict, List, Optional, Tuple, Any, Union
 
 from .cve_models import CVEEntry, Severity
 
-# ---- scoring weights ----
-# these are tuned empirically based on observing ~1000 real CVEs.
-# adjust if you have better calibration data.
+# ---- 评分权重 ----
+# 基于观察约1000个真实CVE的经验调参。
+# 若有更好校准数据可调整。
 
-_CVSS_MAX_CONTRIBUTION = 50   # max points from CVSS base score
-_EPSS_MAX_CONTRIBUTION = 30   # max points from EPSS percentile
+_CVSS_MAX_CONTRIBUTION = 50   # CVSS基础分最大贡献
+_EPSS_MAX_CONTRIBUTION = 30   # EPSS百分位最大贡献
 _SSVC_WEIGHTS = {
     "Act": 20, "act": 20,
     "Attend": 10, "attend": 10,
     "TrackStar": 5, "track*": 5, "trackstar": 5,
     "Track": 0, "track": 0,
 }
-_KEV_BONUS = 15               # flat bonus for CISA KEV presence
+_KEV_BONUS = 15               # CISA KEV存在时的固定加成
 _EXPLOIT_MATURITY_BONUS = {
     "weaponized": 15,
     "metasploit": 12,
@@ -45,10 +44,10 @@ _EXPLOIT_MATURITY_BONUS = {
     "unknown": 0,
 }
 
-# temporal decay: score drops by this fraction per day after fix publication
-# higher values = faster decay. 0.005 means ~half score after 140 days.
+# 时态衰减: 修复发布后每天评分衰减比例
+# 值越高衰减越快。0.005意味着约140天后评分减半。
 _DECAY_RATE_PER_DAY = 0.005
-# cap: score won't drop below this fraction of original
+# 下限: 评分不低于原始值的此比例
 _MIN_SCORE_FRACTION = 0.2
 
 
@@ -57,18 +56,17 @@ def compute_risk_score(
     ssvc_decision: Optional[str] = None,
     days_since_fix: Optional[float] = None,
 ) -> Dict[str, Any]:
-    """Compute a unified temporal risk score for a CVE entry.
+    """计算CVE条目的统一时态风险评分。
 
-    entry: CVEEntry or dict with cvss_score, epss_score, epss_percentile,
-           cisa_kev, exploit_maturity, fix_version, patched_version.
-    ssvc_decision: pre-computed SSVC decision string (Act/Attend/Track*/Track).
-                   If None, SSVC contribution is skipped.
-    days_since_fix: days since a fix was published. If None, no temporal decay.
+    entry: CVEEntry或含cvss_score, epss_score, epss_percentile,
+           cisa_kev, exploit_maturity, fix_version, patched_version的字典。
+    ssvc_decision: 预计算的SSVC决策字符串（Act/Attend/Track*/Track）。
+                   为None时跳过SSVC贡献。
+    days_since_fix: 修复发布以来的天数。为None时不应用时态衰减。
 
-    Returns dict with:
-      score, breakdown, label (LOW/MEDIUM/HIGH/CRITICAL)
+    返回含score, breakdown, label（LOW/MEDIUM/HIGH/CRITICAL）的字典。
     """
-    # ---- extract fields ----
+    # ---- 提取字段 ----
     cvss = _get_num(entry, "cvss_score") or 0.0
     epss = _get_num(entry, "epss_score") or 0.0
     epss_pct = _get_num(entry, "epss_percentile") or 0.0
@@ -81,38 +79,38 @@ def compute_risk_score(
     breakdown = {}
     total = 0.0
 
-    # ---- 1. CVSS base ----
-    # linear mapping: 0 → 0, 10 → _CVSS_MAX_CONTRIBUTION
+    # ---- 1. CVSS基础 ----
+    # 线性映射: 0 → 0, 10 → _CVSS_MAX_CONTRIBUTION
     cvss_contrib = (cvss / 10.0) * _CVSS_MAX_CONTRIBUTION
     breakdown["cvss_contribution"] = round(cvss_contrib, 1)
     total += cvss_contrib
 
     # ---- 2. EPSS ----
-    # use the higher of raw EPSS score or percentile-norm'd value
+    # 取原始EPSS评分与百分位归一化值中的较高者
     epss_effective = max(epss, epss_pct)
     epss_contrib = epss_effective * _EPSS_MAX_CONTRIBUTION
     breakdown["epss_contribution"] = round(epss_contrib, 1)
     total += epss_contrib
 
-    # ---- 3. SSVC decision ----
+    # ---- 3. SSVC决策 ----
     ssvc_contrib = 0.0
     if ssvc_decision is not None:
         ssvc_contrib = _SSVC_WEIGHTS.get(ssvc_decision, 0)
     breakdown["ssvc_contribution"] = ssvc_contrib
     total += ssvc_contrib
 
-    # ---- 4. KEV bonus ----
+    # ---- 4. KEV加成 ----
     kev_contrib = _KEV_BONUS if cisa_kev else 0.0
     breakdown["kev_contribution"] = kev_contrib
     total += kev_contrib
 
-    # ---- 5. Exploit maturity ----
+    # ---- 5. Exploit成熟度 ----
     mat_key = maturity.lower().strip().replace(" ", "_")
     maturity_contrib = _EXPLOIT_MATURITY_BONUS.get(mat_key, 0)
     breakdown["maturity_contribution"] = maturity_contrib
     total += maturity_contrib
 
-    # ---- 6. Temporal decay ----
+    # ---- 6. 时态衰减 ----
     decay_factor = 1.0
     if days_since_fix is not None and days_since_fix > 0 and has_fix:
         decay_factor = max(
@@ -122,11 +120,11 @@ def compute_risk_score(
     breakdown["decay_factor"] = round(decay_factor, 3)
     total *= decay_factor
 
-    # clamp
+    # 截断
     total = max(0.0, min(100.0, total))
     score = round(total, 1)
 
-    # label
+    # 标签
     if score >= 75:
         label = "CRITICAL"
     elif score >= 50:
@@ -147,21 +145,21 @@ def batch_risk_scores(
     entries: List[Union[CVEEntry, Dict]],
     ssvc_decisions: Optional[Dict[str, str]] = None,
 ) -> List[Dict[str, Any]]:
-    """Compute risk scores for a batch of entries.
-    ssvc_decisions: optional dict of cve_id → ssvc_decision.
+    """批量计算风险评分。
+    ssvc_decisions: 可选 cve_id → ssvc_decision字典。
 
-    Returns list of {cve_id, score, label, breakdown} sorted by score desc."""
+    返回按评分降序排列的 {cve_id, score, label, breakdown} 列表。"""
     results = []
     for entry in entries:
         cid = _get_str(entry, "cve_id")
         ssvc = ssvc_decisions.get(cid) if ssvc_decisions else None
 
-        # estimate days since fix from published_date if available
+        # 若published_date可用则估算修复以来的天数
         days_since_fix = None
         pub_date = _get_str(entry, "published_date")
         if pub_date and _get_str(entry, "fix_version"):
             try:
-                # handle ISO date strings
+                # 处理ISO日期字符串
                 pub_dt = datetime.fromisoformat(pub_date.replace("Z", "+00:00"))
                 now = datetime.now(timezone.utc)
                 days_since_fix = (now - pub_dt).total_seconds() / 86400
@@ -177,8 +175,8 @@ def batch_risk_scores(
 
 
 def risk_summary(scores: List[Dict]) -> Dict[str, Any]:
-    """Aggregate risk scores into a summary.
-    Returns {total, by_label: {CRITICAL: n, HIGH: n, ...}, avg_score, top_5, ...}"""
+    """将风险评分聚合为摘要。
+    返回 {total, by_label: {CRITICAL: n, HIGH: n, ...}, avg_score, top_5, ...}"""
     if not scores:
         return {"total": 0, "by_label": {}, "avg_score": 0.0, "top_cves": []}
 
@@ -203,12 +201,12 @@ def risk_summary(scores: List[Dict]) -> Dict[str, Any]:
     }
 
 
-# ---- helper: extract estimated days since fix ----
+# ---- 辅助: 估算修复以来的天数 ----
 
 def estimate_days_since_fix(entry) -> Optional[float]:
-    """Heuristic estimate of days since a fix became available.
-    Uses published_date as a proxy — when NVD publishes, the fix is usually known.
-    Returns days (float) or None if can't determine."""
+    """启发式估算修复可用以来的天数。
+    以published_date为代理——NVD发布时通常已知修复。
+    返回天数（浮点数）或无法确定时返回None。"""
     pub = _get_str(entry, "published_date")
     has_fix = _get_str(entry, "fix_version") or _get_str(entry, "patched_version")
     if not pub or not has_fix:
@@ -221,7 +219,7 @@ def estimate_days_since_fix(entry) -> Optional[float]:
         return None
 
 
-# ---- field access helpers ----
+# ---- 字段访问辅助 ----
 
 def _get_num(entry, field: str) -> Optional[float]:
     if hasattr(entry, field):

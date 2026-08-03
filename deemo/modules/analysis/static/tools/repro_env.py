@@ -35,7 +35,7 @@ class GeneratedFile:
     file_path: str = ""
 
 class ReproducerGenerator:
-    # Exploit reproduction environment generator
+    # 漏洞利用 reproduction environment generator
 
     LIBC_VERSION_MAP = {
         '2.31': {

@@ -1,10 +1,10 @@
 """
-现代语言运行时分析——Rust协程/Go协程/Swift ARC + Ruby-inspired unsafe Rust检测。
+现代语言运行时解析——Rust协程/Go协程/Swift ARC及Ruby式unsafe Rust识别。
 
-Ruby (arXiv 2211.00111v3, July 2026) 核心洞察：
-  unsafe Rust编译后safe/unsafe边界在二进制中不可见，
-  但编译器优化差异导致不同的指令模式。
-  unsafe代码的特征：更少bound checks、直接指针运算、volatile内存访问。
+Ruby论文 (arXiv 2211.00111v3, 2026.07) 核心结论：
+  unsafe Rust编译后，safe/unsafe边界于二进制中不可复原，
+  然编译器优化差异可产生互异的指令模式。
+  unsafe代码标识：bound check缺失、裸指针运算、volatile访存。
 """
 
 from enum import StrEnum
@@ -37,20 +37,20 @@ def _demangle_rust_name(mangled:str)->Optional[str]:
             parts.append(remaining[i:i+length]); remaining=remaining[i+length:]
             if remaining and remaining[0]=='E': break
         return '::'.join(parts) if parts else mangled
-    except: return mangled
+    except (IndexError, ValueError): return mangled  # 修正：裸except收窄→IndexError/ValueError
 
-# ── Ruby-inspired unsafe Rust heuristics ──
-# unsafe代码在ARM64二进制中的特征指令模式
+# ── Ruby式unsafe Rust启发规则 ──
+# unsafe代码于ARM64二进制中的指纹指令模式
 _UNSAFE_RUST_PATTERNS = [
-    # volatile内存访问——典型的unsafe指针操作（addr_of!或直接*ptr）
+    # volatile访存——unsafe裸指针操作的标志（addr_of!或*ptr）
     (re.compile(rb'(?:ldar|ldarb|stlr|stlrb)\s',re.I), "volatile_memory_access", 0.6),
-    # 缺少bound check的数组访问——safe Rust会插入panic边界检查
+    # 无边界检查的数组访问——safe Rust应插入panic越界检查
     (re.compile(rb'ldr\s+x\d+,\s*\[x\d+,\s*x\d+,\s*lsl\s*#\d+\]',re.I), "unchecked_array_index", 0.7),
-    # 直接指针比较——safe Rust中极少出现原始指针比较
+    # 裸指针比较——safe Rust中极少出现此类模式
     (re.compile(rb'cmp\s+x\d+,\s*x\d+\s*\n.{0,16}(?:b\.ne|b\.eq)\s',re.I), "raw_pointer_comparison", 0.5),
-    # FFI边界——BL跳转到外部符号暗示unsafe FFI调用
+    # FFI边界——BL跳转至外部符号暗示unsafe FFI调用链
     (re.compile(rb'bl\s+[a-z_][a-z0-9_]*\s*<\w+@plt>',re.I), "ffi_boundary_call", 0.4),
-    # 内联汇编特征——safe Rust不允许内联汇编
+    # 内联汇编痕迹——safe Rust禁止内联asm
     (re.compile(rb'(?:msr|mrs|sys|isb|dsb)\s',re.I), "inline_assembly", 0.8),
 ]
 
@@ -59,7 +59,7 @@ class RustCoroutineAnalyzer:
     def _rb(s):
         try:
             with open(s.binary_path,'rb') as f: return f.read()
-        except: return b''
+        except OSError: return b''  # 修正：裸except收窄→OSError
     def find_coroutine_symbols(s)->List[Dict[str,Any]]:
         syms=[]; sd=s.data.decode('utf-8',errors='ignore')
         for m in re.finditer(r'_ZN[0-9a-zA-Z_]+7resume[0-9a-zA-Z_]*',sd): syms.append({'name':m.group(),'type':'resume','offset':m.start()})
@@ -69,13 +69,13 @@ class RustCoroutineAnalyzer:
         return syms
 
     def _detect_unsafe_regions(s)->List[int]:
-        """Ruby-inspired unsafe Rust区域检测。
+        """Ruby式unsafe Rust区域检测。
 
-        基于编译器优化差异：safe Rust生成更多bound check指令和panic路径，
-        unsafe Rust跳过这些检查。在ARM64中主要表现为：
-        - 缺少LDR后的CMP+CINC序列（跳过数组边界检查）
+        基于编译器优化差异：safe Rust产出更多bound check指令与panic路径，
+        unsafe Rust略过这些检查。在ARM64中主要表征为：
+        - LDR后无CMP+CINC序列（数组边界检查被跳过）
         - 存在volatile内存屏障（LDA*系列指令）
-        - 直接系统寄存器访问
+        - 寄存器系统级直接访问
         """
         regions=[]
         for pat,pname,conf in _UNSAFE_RUST_PATTERNS:
@@ -92,7 +92,7 @@ class RustCoroutineAnalyzer:
             for sym in syms:
                 if sym['type']=='drop' and bn in sym['name']: coro.drop_fn=sym['offset']; coro.addresses.append(sym['offset']); break
             coro.has_poll_ready=coro.drop_fn!=0
-            # 将附近的unsafe区域关联到此协程
+            # 将邻近unsafe区域绑定至当前协程
             nearby_unsafe=[off for off in unsafe_offsets if abs(off-resume['offset'])<4096]
             coro.unsafe_regions=nearby_unsafe
             s.coroutines.append(coro)
@@ -114,7 +114,7 @@ class GoRoutineAnalyzer:
     def _rb(s):
         try:
             with open(s.binary_path,'rb') as f: return f.read()
-        except: return b''
+        except OSError: return b''  # 修正：裸except收窄→OSError
     def _verify_go_binary(s)->bool: return b'Go build ID:' in s.data or b'go.buildid' in s.data
     def find_goroutine_functions(s)->List[Dict[str,Any]]:
         return [{'name':p.decode('utf-8',errors='replace').replace('.','_'),'offset':s.data.find(p),'type':'goroutine_scheduler' if b'runtime' in p else 'user'} for p in s._SCHEDULER_FNS if s.data.find(p)!=-1]
@@ -158,7 +158,7 @@ class SwiftARCAnalyzer:
     def _rb(s):
         try:
             with open(s.binary_path,'rb') as f: return f.read()
-        except: return b''
+        except OSError: return b''  # 修正：裸except收窄→OSError
     def find_swift_metadata(s)->List[Dict[str,Any]]:
         md=[]; off=0
         while True:
@@ -190,7 +190,7 @@ class SwiftARCAnalyzer:
             if not hd and len(cn)>5: vulns.append(SwiftARCVulnerability('Missing Deinitializer','Medium',f'类{cn}缺少析构器',f'0x{md["offset"]:x}','添加析构器'))
             if hc and not hd: vulns.append(SwiftARCVulnerability('Potential Memory Leak','Medium',f'类{cn}有copy但缺deinit',f'0x{md["offset"]:x}','确保正确释放'))
         vulns.extend(s._detect_strong_reference_cycles())
-        # 新增：Swift unsafe检测——volatile内存模式
+        # 扩充：Swift unsafe检测——volatile访存模式
         has_volatile=any(p in s.data for p in [b'_swift_bridgeObjectRetain',b'Builtin.BridgeObject'])
         if has_volatile: vulns.append(SwiftARCVulnerability('Unsafe BridgeObject','Low','检测到Swift桥接对象——可能存在unsafe引用计数操作','code','使用安全包装类型替代BridgeObject'))
         return vulns

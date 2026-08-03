@@ -1,6 +1,6 @@
-"""JIT engine fingerprinting, spray-pattern detection, and exploit-guidance synthesis.
+"""JIT engine fingerprinting, spray-pattern detection, 漏洞利用-guidance synthesis
 2025 升级: JIT代码年龄评估——通过分析JIT代码页的时间戳模式识别
-"热"页面（频繁重编译）和"冷"页面（稳定代码），辅助利用策略选择。
+"热"页面（频繁重编译）和"冷"页面（稳定代码），辅助利用策略选择
 """
 
 import re, struct, math as _math
@@ -56,16 +56,16 @@ class LuaJITAnalyzer:
 
 # ── JIT 代码页年龄/热度评估 ────────────────────────────────────────────────
 # JIT 引擎动态生成代码页。通过分析代码密度、重编译痕迹（同一函数
-# 的多个版本）、以及页内指令的"新鲜度"模式来推断页面的年龄。
-# 热页面（新编译的代码）可能还包含调试信息，更容易被利用。
+# 的多个版本）、以及页内指令的"新鲜度"模式来推断页面的年龄
+# 热页面（新编译的代码）可能还包含调试信息，更容易被利用
 
 class JITPageAgeEstimator:
-    """JIT 代码页年龄估计器——基于代码密度和重编译痕迹。"""
+    """JIT 代码页年龄估计器——基于代码密度和重编译痕迹"""
     _PROLOGUE_DENSITY_THRESHOLD = 3  # 每页至少3个函数序言才算"活跃"
 
     @classmethod
     def estimate_page_age(cls, page_data: bytes) -> float:
-        """估计单个 JIT 代码页的"年龄"——0.0=刚生成, 1.0=稳定老代码。"""
+        """估计单个 JIT 代码页的"年龄"——0.0=刚生成, 1.0=稳定老代码"""
         if len(page_data) < 64: return 1.0
         # 序言密度: push rbp; mov rbp, rsp
         prologue = rb'\x55\x48\x89\xe5'
@@ -83,7 +83,7 @@ class JITPageAgeEstimator:
 
     @classmethod
     def find_hot_pages(cls, data: bytes, page_size: int = 0x1000) -> List[int]:
-        """返回"热"页面（年龄 < 0.4）的偏移列表——JIT 活跃区域。"""
+        """返回"热"页面（年龄 < 0.4）的偏移列表——JIT 活跃区域"""
         hot_offsets: List[int] = []
         for off in range(0, len(data), page_size):
             chunk = data[off:min(off + page_size, len(data))]

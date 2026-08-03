@@ -99,6 +99,7 @@ class GNURadioXMLParser(GNURadioParser):
     def parse(self, binary_data: bytes) -> FlowGraph:
         try:
             import xml.etree.ElementTree as ET
+            from functools import lru_cache
 
             flow_graph = FlowGraph(name="parsed_flowgraph")
 
@@ -266,18 +267,11 @@ class SignalInjectionDetector:
 
 
 class IQSampleIntegrityChecker:
-    """IQ 样本完整性分析 —— 检测 DC 偏移与相位噪声
-
-    DC 偏移：IQ 星座中心偏离原点 —— 常见于直接变频接收器前端失配。
-    相位噪声：相邻样本相位差分方差超阈值 —— 指示本地振荡器不稳定。
-
-    基准：正常 SDR 前端 DC 偏移 < -30 dBFS，相位噪声 < -90 dBc/Hz @ 10kHz offset。
-    超过阈值的偏移可能是硬件故障或旁路攻击侧信道特征。
-    """
-
+    # IQ 样本完整性分析 —— 检测 DC 偏移与相位噪声
+    # DC 偏移：IQ 星座中心偏离原点 —— 常见于直接变频架构
     @staticmethod
     def check_dc_offset(iq_samples: list[complex]) -> dict:
-        """计算 IQ 样本的 DC 偏移估计 —— 样本均值幅值"""
+        """计算 IQ 样本 DC 偏移估计 —— 样本均值幅值"""
         if not iq_samples:
             return {"dc_offset_db": 0.0, "risk": "info"}
         n = len(iq_samples)
@@ -296,7 +290,7 @@ class IQSampleIntegrityChecker:
     def check_phase_noise(iq_samples: list[complex], sample_rate: float = 1.0) -> dict:
         """相位差分方差 —— 估计本地振荡器相噪
 
-        计算相邻样本的相位差，再算该差分序列的方差。
+        计算相邻样本相位差，再算差分序列方差。
         方差 > 0.1 rad² 暗示相位噪声偏高。
         """
         if len(iq_samples) < 2:

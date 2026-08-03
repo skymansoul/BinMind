@@ -1,8 +1,7 @@
-# 2026-07-31
-# 生存分析与风险建模 — Kaplan-Meier估计 + Cox比例风险 + 脆弱性生命周期
-# 将漏洞视为"生存事件"：披露→修复为生存时间，分析方法借鉴医学统计
-# 参考：Kaplan & Meier. JASA 1958. Cox. JRSS-B 1972.
-#       Frei et al. Vulnerability Lifecycle Modeling. SOUPS 2024.
+# 漏洞生存分析：Kaplan-Meier估计 + 对数秩检验 + 脆弱性生命周期阶段划分
+# 将漏洞视为生存事件，披露→修复间隔作为生存时间，工具链源自医学统计
+# 基础文献：Kaplan & Meier. JASA 1958. Cox. JRSS-B 1972.
+#          Frei et al. Vulnerability Lifecycle Modeling. SOUPS 2024.
 
 import math
 from typing import Dict, List, Optional, Tuple, Any
@@ -11,13 +10,13 @@ from collections import defaultdict
 
 
 # ============================================================================
-# Kaplan-Meier 生存估计 — 非参数生存函数
-# S(t) = ∏_{t_i ≤ t} (1 - d_i / n_i)，其中 d_i = 时间 t_i 的事件数，n_i = 风险集
+# Kaplan-Meier 生存函数：非参数估计
+# S(t) = ∏_{t_i ≤ t} (1 - d_i / n_i)，d_i = t_i 时刻事件数，n_i = 该时刻风险集
 # ============================================================================
 
 @dataclass
 class SurvivalCurve:
-    """生存曲线数据容器。"""
+    """生存曲线完整输出：时间点序列、生存概率、风险集、事件计数与摘要统计量。"""
     times: List[float] = field(default_factory=list)
     survival_probs: List[float] = field(default_factory=list)
     n_at_risk: List[int] = field(default_factory=list)
@@ -39,14 +38,14 @@ class SurvivalCurve:
 def kaplan_meier(survival_times: List[float],
                  event_observed: List[bool],
                  time_horizon: Optional[float] = None) -> SurvivalCurve:
-    """Kaplan-Meier 生存函数估计。
+    """估计漏洞修复时间的生存函数。
 
-    survival_times: 每个漏洞的观测时间（天）——从披露到最后观测。
-    event_observed: True=已修复（事件发生），False=仍未修复（删失）。
-    time_horizon: 计算限制平均生存时间的时间上限，None时自动取最大时间。
+    survival_times: 每个漏洞自披露起的观测天数。
+    event_observed: True=已修复（事件发生），False=观测截止时未修复（右删失）。
+    time_horizon: 限制平均生存时间（RMST）的截断上限，None时用最大观测时间。
 
-    中位生存时间：S(t)首次降至0.5以下的时间点。
-    若生存曲线始终未降至0.5，则表示大多数漏洞在被观测期内未被修复。
+    中位生存时间定义为 S(t) 首次 ≤ 0.5 的时刻。
+    若曲线全程高于 0.5，则多数漏洞在观测窗口内未完成修复。
     """
     _N = len(survival_times)
     if _N < 3:
@@ -54,7 +53,7 @@ def kaplan_meier(survival_times: List[float],
 
     _pairs = sorted(zip(survival_times, event_observed), key=lambda p: p[0])
 
-    # 构建每个唯一时间点的统计
+    # 逐时间点聚合：同一时刻的多个事件合并统计
     _unique_times: List[float] = []
     _events: List[int] = []
     _censored: List[int] = []
@@ -72,7 +71,7 @@ def kaplan_meier(survival_times: List[float],
         else:
             _censored[-1] += 1
 
-    # 风险集计算（从后向前累加）
+    # 反向累加确定各时刻的风险集规模
     _n_timepoints = len(_unique_times)
     _n_risk = [0] * _n_timepoints
     _remaining = _N
@@ -80,7 +79,7 @@ def kaplan_meier(survival_times: List[float],
         _n_risk[_i] = _remaining
         _remaining -= (_events[_i] + _censored[_i])
 
-    # 累积生存概率
+    # 累积乘积计算生存概率
     _surv_probs: List[float] = []
     _current_surv = 1.0
     _median_time = 0.0
@@ -94,7 +93,7 @@ def kaplan_meier(survival_times: List[float],
             _median_time = _unique_times[_i]
             _median_found = True
 
-    # 限制平均生存时间（梯形积分）
+    # 梯形积分计算限制平均生存时间（RMST）
     _horizon = time_horizon or (_unique_times[-1] if _unique_times else 0.0)
     _rmst = 0.0
     for _i in range(_n_timepoints):
@@ -114,22 +113,22 @@ def kaplan_meier(survival_times: List[float],
 
 
 # ============================================================================
-# Log-Rank检验 — 比较两组漏洞的生存曲线是否显著不同
-# 常用于：补丁前 vs 补丁后，或严重 vs 非严重漏洞的修复速度比较
+# 对数秩检验 — 比较两组漏洞生存曲线是否存在显著差异
+# 典型用途：补丁发布前后、严重/非严重漏洞的修复速度对比
 # ============================================================================
 
 def log_rank_test(group_a_times: List[float], group_a_events: List[bool],
                   group_b_times: List[float], group_b_events: List[bool]
                   ) -> Dict[str, float]:
-    """Log-Rank 检验：比较两组生存曲线差异。
+    """对数秩检验：判断两组的生存函数是否同分布。
 
-    零假设：两组生存函数相同。
-    卡方统计量 ~ χ²(1)，p值通过 Wilson-Hilferty 近似计算。
+    零假设 H0：两组生存曲线无差异。
+    检验统计量服从 χ²(1)，p 值通过标准正态近似得出。
 
-    返回：{'chi2': ..., 'p_value': ..., 'hazard_ratio': ..., 'significant': bool}
-    p < 0.05 提示存在显著差异——如补丁确实缩短了漏洞存活时间。
+    返回字典字段：chi2、p_value、hazard_ratio、significant。
+    p < 0.05 表明两组修复速度存在统计意义差异。
     """
-    # 合并所有时间点
+    # 统一时间轴，标记组别
     _all_data = (
         [(_t, _e, 'a') for _t, _e in zip(group_a_times, group_a_events)] +
         [(_t, _e, 'b') for _t, _e in zip(group_b_times, group_b_events)]
@@ -141,9 +140,9 @@ def log_rank_test(group_a_times: List[float], group_a_events: List[bool],
     if _n_a < 3 or _n_b < 3:
         return {'chi2': 0.0, 'p_value': 1.0, 'hazard_ratio': 1.0, 'significant': False}
 
-    _O_a = 0.0   # 观察事件数 A
-    _E_a = 0.0   # 期望事件数 A
-    _V_a = 0.0   # 方差 A
+    _O_a = 0.0   # A组观测事件数
+    _E_a = 0.0   # A组期望事件数（H0下）
+    _V_a = 0.0   # A组方差
 
     _remaining_a = _n_a
     _remaining_b = _n_b
@@ -172,7 +171,7 @@ def log_rank_test(group_a_times: List[float], group_a_events: List[bool],
                         * (_total_remaining - _total_events)
                         / (_total_remaining * _total_remaining * (_total_remaining - 1)))
 
-        # 更新风险集（该时间点之后的删失在下一个循环处理）
+        # 更新风险集规模
         _remaining_a -= _events_a
         _remaining_b -= _events_b
 
@@ -181,10 +180,10 @@ def log_rank_test(group_a_times: List[float], group_a_events: List[bool],
 
     _chi2 = (_O_a - _E_a) ** 2 / _V_a
 
-    # χ²(1) p值近似
+    # 标准正态近似计算 χ²(1) 的双尾 p 值
     _p = 1.0 - math.erf(math.sqrt(_chi2) / math.sqrt(2.0))
 
-    # 风险比近似
+    # 风险比：A组相对B组的事件发生率比值估计
     _hr = (_O_a / (_O_a + (_n_b - sum(group_b_events)) + 1)
            ) / ((sum(group_a_events) - _O_a + 1) / (_n_a - sum(group_a_events) + 1)) if _O_a > 0 else 0.0
 
@@ -197,38 +196,37 @@ def log_rank_test(group_a_times: List[float], group_a_events: List[bool],
 
 
 # ============================================================================
-# 半衰期估计 — 计算漏洞修复的半衰期
+# 半衰期估计 — 漏洞修复的中位时间
 # ============================================================================
 
 def median_time_to_fix(times: List[float], events: List[bool]) -> float:
-    """计算修复时间的半衰期（中位时间）。
+    """漏洞修复半衰期：KM估计的中位生存时间。
 
-    调用 Kaplan-Meier 并提取 median_survival_time。
-    半衰期短→修复快→安全响应敏捷。
-    半衰期长→延迟修复→可能缺少资源或意识。
+    调用 kaplan_meier 并提取 median_survival_time 字段。
+    半衰期短反映安全团队响应速度快；半衰期长提示资源不足或感知滞后。
     """
     _curve = kaplan_meier(times, events)
     return _curve.median_survival_time
 
 
 # ============================================================================
-# 风险评分 — 将漏洞严重度与生存概率结合，生成优先级评分
-# 高严重度 + 低修复概率 (= 高生存概率) → 最高优先级
+# 综合风险评分 — 严重度 × 可利用性 × (1 - 修复概率)
+# 高严重度且低修复概率的漏洞获得最高优先处理等级
 # ============================================================================
 
 def vulnerability_risk_score(severity_score: float,
                               survival_prob_at_t: float,
                               exploitability_score: float = 5.0) -> float:
-    """综合风险评分：严重度 × 可利用率 × (1 - 修复概率)
+    """漏洞优先级评分：严重度 × 可利用度 × 仍存续概率。
 
-    survival_prob_at_t: 在时间 t 仍未修复的概率（来自 KM 估计）。
-    乘积越高→漏洞越危险且越不可能被修复→优先级最高。
+    survival_prob_at_t: KM曲线在该时刻的生存概率（未修复概率估计）。
+    分值越高，漏洞危害越大且修复前景越不确定，应优先处置。
     """
     return round(severity_score * exploitability_score * (1.0 - survival_prob_at_t + 0.01), 2)
 
 
 # ============================================================================
-# 条件生存概率 — 已存活 t₀ 天后，再存活 t₁ 天的概率
+# 条件生存概率 — 已存续 t₀ 天后，继续存续 t₁ 天的概率
 # ============================================================================
 
 def conditional_survival(km_curve: SurvivalCurve,
@@ -236,14 +234,14 @@ def conditional_survival(km_curve: SurvivalCurve,
                           additional_days: float) -> float:
     """条件生存概率：S(t₀ + t₁ | T > t₀) = S(t₀ + t₁) / S(t₀)。
 
-    用于回答：一个漏洞已在系统中存活了 N 天，未来 M 天内仍不被修复的概率。
+    用途：已知某漏洞已未被修复持续 N 天，估计未来 M 天内仍不被修复的几率。
     """
     _times = km_curve.times
     _probs = km_curve.survival_probs
     if not _times:
         return 1.0
 
-    # 查找 S(survived_days) 和 S(survived_days + additional_days)
+    # 从已有KM曲线中插值 S(t) 的值
     def _surv_at(t: float) -> float:
         for _i in range(len(_times) - 1, -1, -1):
             if _times[_i] <= t:
@@ -258,16 +256,16 @@ def conditional_survival(km_curve: SurvivalCurve,
 
 
 # ============================================================================
-# Nelson-Aalen累积风险 — 比KM更适合小样本的替代估计
+# Nelson-Aalen 累积风险 — 小样本下优于 KM 的替代估计量
 # H(t) = Σ_{t_i ≤ t} d_i / n_i
 # ============================================================================
 
 def nelson_aalen_cumulative_hazard(times: List[float],
                                      events: List[bool]) -> List[Tuple[float, float]]:
-    """Nelson-Aalen 累积风险估计。
+    """Nelson-Aalen 累积风险函数估计。
 
-    H(t) 在概念上是"到时间 t 为止累积了多少单位的事件风险"。
-    与 KM 的关系：Ŝ(t) = exp(-Ĥ(t))，在小样本下 NA 的偏误通常小于 KM。
+    H(t) 物理含义：截至时间 t 的事件风险累积总量。
+    与 KM 的关系：Ŝ_NA(t) = exp(-Ĥ(t))。在小样本条件中 NA 估计偏误更小。
     """
     _pairs = sorted(zip(times, events), key=lambda p: p[0])
     _unique_t: List[float] = []
@@ -297,20 +295,19 @@ def nelson_aalen_cumulative_hazard(times: List[float],
 
 
 # ============================================================================
-# 脆弱性生命周期阶段检测 — 将漏洞历史划分为不同生存阶段
-# 阶段：acute（急性期，<30天）、chronic（慢性期，30-180天）、
-#       endemic（地方病期，180-365天）、resolved（已解决）
+# 脆弱性生命周期阶段检测 — 四阶段划分
+# acute (<30天)、chronic (30-180天)、endemic (180-365天)、resolved (已修复/超365天)
 # ============================================================================
 
 def vulnerability_lifecycle_stage(days_since_disclosure: float,
                                     patched: bool = False) -> str:
     """判定漏洞当前所处的生命周期阶段。
 
-    参考：Frei et al. SOUPS 2024 的漏洞生态系统模型。
-    acute: 0-30天，厂商可能仍在评估。
-    chronic: 31-180天，已知但未修复，风险积累期。
-    endemic: 181-365天，长期存在，可能已被遗忘或依赖链限制修复。
-    resolved: 已修复或已过365天视为"历史性"。
+    阶段划分依据 Frei et al. SOUPS 2024 的漏洞生态模型：
+    acute (0-30天): 厂商评估期，尚未制定修复方案。
+    chronic (31-180天): 已知未修复，风险窗口持续积累。
+    endemic (181-365天): 长期驻留，可能因依赖链锁定而推迟修复。
+    resolved: 已完成修复或超过365天视为归档。
     """
     if patched:
         return 'resolved'
@@ -324,7 +321,7 @@ def vulnerability_lifecycle_stage(days_since_disclosure: float,
 
 
 # ============================================================================
-# 层别分析 — 按严重度分层比较生存曲线
+# 分层生存分析 — 按标签（严重度/类型）分别估计各子群的生存曲线
 # ============================================================================
 
 def stratified_survival(times: List[float], events: List[bool],

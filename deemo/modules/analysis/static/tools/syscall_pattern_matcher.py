@@ -73,8 +73,8 @@ class SyscallPatternMatcher:
         return sorted(matches, key=lambda m: m['coverage'], reverse=True)
 
     def calculate_threat_score(self) -> float:
-        """计算整体威胁评分——按严重级别加权求和所有匹配的覆盖率。
-        CRITICAL=4, HIGH=3, MEDIUM=2, LOW=1。"""
+        """计算整体威胁评分——按严重级别加权求和所有匹配的覆盖率
+        CRITICAL=4, HIGH=3, MEDIUM=2, LOW=1"""
         weights = {'CRITICAL': 4, 'HIGH': 3, 'MEDIUM': 2, 'LOW': 1}
         matches = self.match_patterns()
         if not matches: return 0.0

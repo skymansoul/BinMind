@@ -1,6 +1,5 @@
-# 2026-07-22
-# Offline syscall table analysis — Linux x86_64 & Windows SSDT hook detection
-# 离线分析系统调用表，检测hook/rootkit篡改
+# 离线syscall表分析 — Linux x86_64与Windows SSDT hook检测
+# 离线比对系统调用表，侦测hook及rootkit篡改痕迹
 
 import struct
 import os
@@ -140,7 +139,7 @@ SYSCALL_TABLE_X64: Dict[int, str] = {
     362: "listmount",        363: "lsm_get_self_attr",
     364: "lsm_set_self_attr", 365: "lsm_list_modules",
     366: "mseal",            367: "fchmodat2",
-    # uringspawn/process_mappings — future entries — reserving slots
+    # uringspawn/process_mappings — 预留槽位
     370: "copy_file_range_ex",
 }
 
@@ -169,9 +168,9 @@ class SyscallEntry:
 
 # ===== Linux syscall hook 检测 =====
 
-# x86_64 syscall handler 的典型函数序言 — 用于检测 inline hook
-# 正常 handler: endbr64; push rbp; mov rbp, rsp; ...
-# 被 hook 后: jmp <abs_addr>; int3; int3; ...
+# x86_64 syscall handler典型函数序言 — 用于inline hook识别
+# 正常handler: endbr64; push rbp; mov rbp, rsp; ...
+# 被hook后: jmp <abs_addr>; int3; int3; ...
 _SYSCALL_PROLOGUE_PATTERNS: Dict[str, bytes] = {
     "endbr64":     b'\xf3\x0f\x1e\xfa',
     "push_rbp":    b'\x55',
@@ -181,7 +180,7 @@ _SYSCALL_PROLOGUE_PATTERNS: Dict[str, bytes] = {
 
 
 def _check_inline_hook(handler_bytes: bytes) -> Tuple[bool, str]:
-    """检查 handler 的前 8 字节是否包含 inline hook 特征。
+    """检查handler前8字节是否含inline hook特征。
 
     返回 (is_hooked, evidence_description)。
     """
@@ -196,25 +195,25 @@ def _check_inline_hook(handler_bytes: bytes) -> Tuple[bool, str]:
     if handler_bytes[0:2] == b'\xff\xe0':  # jmp rax
         return True, "jmp rax — register redirect"
 
-    # 检测 push/mov 指令后紧跟 ret (ret2usr 或 gadget 特征)
+    # 检测push/mov指令后紧跟ret (ret2usr或gadget特征)
     if len(handler_bytes) >= 4:
-        if handler_bytes[0:3] == b'\x48\xcf':  # iretq (不是正常的 syscall 返回)
+        if handler_bytes[0:3] == b'\x48\xcf':  # iretq (非正常syscall返回路径)
             return True, "iretq as first instruction — abnormal prologue"
 
     return False, ""
 
 
-# 已知的 KPTI trampoline 特征序列
-# swapgs; jmp __entry_SYSCALL_64 的变体或直接 swapgs 开头
+# 已知KPTI trampoline特征序列
+# swapgs; jmp __entry_SYSCALL_64变体或直接swapgs开头
 _KPTI_TRAMPOLINE_PATTERN = b'\x0f\x01\xf8'  # swapgs
 
 
 def _detect_kpti_trampoline(handler_bytes: bytes) -> bool:
-    """检测 handler 是否通过 KPTI trampoline 包装。
+    """检测handler是否经KPTI trampoline包装。
 
-    KPTI 内核将 syscall handler 的第一条指令替换为
-    swapgs + 跳转到实际实现。若 handler 的前几条指令
-    包含 swapgs 且直接跳转，标记为 KPTI trampoline。
+    KPTI内核将syscall handler的第一条指令替换为
+    swapgs + 跳转至实际实现。若handler前几条指令
+    含swapgs且直接跳转，标记为KPTI trampoline。
     """
     if len(handler_bytes) < 4:
         return False
@@ -228,11 +227,11 @@ def detect_linux_hooks(syscall_table_entries: Dict[int, int],
     """
     检测Linux系统调用表hook。
 
-    设计思路：
-    - syscall handler应在kernel text段内
-    - 落在模块地址区间的标记为HIGH
-    - 完全在kernel之外的标记为CRITICAL（rootkit概率高）
-    - 可选手持 handler 字节码检测 inline hook 和 KPTI trampoline
+    判定逻辑：
+    - syscall handler应落在kernel text段内
+    - 落在模块地址区间 → 标记HIGH
+    - 完全在kernel之外 → 标记CRITICAL（rootkit高度可疑）
+    - 可选：手持handler字节码检测inline hook及KPTI trampoline
     """
     _results: List[SyscallEntry] = []
     _handler_bytes = handler_memory or {}
@@ -249,7 +248,7 @@ def detect_linux_hooks(syscall_table_entries: Dict[int, int],
         elif kernel_text_start <= _addr < kernel_text_end:
             _entry.is_hooked = False
             _entry.severity = "INFO"
-            # 即使在 text 段内，检查 inline hook
+            # 即便在text段内，仍需检查inline hook
             if _nr in _handler_bytes:
                 _hooked, _evidence = _check_inline_hook(_handler_bytes[_nr])
                 if _hooked:
@@ -272,7 +271,7 @@ def detect_linux_hooks(syscall_table_entries: Dict[int, int],
 
 # ===== Windows SSDT hook 检测 =====
 
-# 常用Windows SSDT索引 -> 函数名 (展开至 Win11 24H2)
+# 常用Windows SSDT索引 -> 函数名 (展开至Win11 24H2)
 WINDOWS_SSDT_INDICES: Dict[int, str] = {
     0x00: "NtMapUserPhysicalPagesScatter",
     0x01: "NtWaitForSingleObject",
@@ -329,7 +328,7 @@ WINDOWS_SSDT_INDICES: Dict[int, str] = {
     0xA0: "NtQueueApcThread",
     0xAA: "NtAlpcSendWaitReceivePort",
     0xB0: "NtCreateIoCompletion",
-    # 高风险目标 — 常用于进程/驱动隐藏
+    # 高风险目标 — 常被用于进程/驱动隐藏
     0xC0: "NtOpenProcess",
     0xC8: "NtSuspendProcess",
     0xCA: "NtResumeProcess",
@@ -372,10 +371,10 @@ def detect_windows_hooks(ntoskrnl_path: str,
     """
     解析Windows SSDT并检测hook。
 
-    设计思路：
+    判定逻辑：
     - 解析ntoskrnl.exe的PE结构，定位.text段范围
-    - KiServiceTable中每个offset右移4位得到指令数，解码实际handler地址
-    - 检查handler是否在ntoskrnl .text段内
+    - KiServiceTable中每offset右移4位得指令数，解码实际handler地址
+    - 检查handler是否落在ntoskrnl .text段内
     """
     _results: List[SyscallEntry] = []
     if not os.path.isfile(ntoskrnl_path):
@@ -412,16 +411,16 @@ def detect_windows_hooks(ntoskrnl_path: str,
     return _results
 
 
-# ─── KiServiceTable 边界验证 ───
-# rootkit 可能通过修改 KiServiceLimit 来隐藏高编号的 hook
+# ─── KiServiceTable边界验证 ───
+# rootkit可能通过修改KiServiceLimit隐藏高编号hook
 
 def validate_service_limit(ssdt_entries: Dict[int, int],
                             declared_limit: int) -> List[Dict]:
-    """验证 SSDT 条目数是否与 KiServiceLimit 一致。
+    """验证SSDT条目数是否与KiServiceLimit一致。
 
-    KiServiceLimit 应为 SSDT 中的条目总数。
-    若实际条目超过声明值，说明有 rootkit 在 service_limit 之后
-    添加了 hook（但 service_limit 保持不变以逃避基于 limit 的扫描）。
+    KiServiceLimit应为SSDT条目总数。
+    若实际条目超出声明值，说明有rootkit在service_limit之后
+    追加了hook（但service_limit保持不变以逃避基于limit的扫描）。
     """
     _findings = []
     _actual_max = max(ssdt_entries.keys()) + 1 if ssdt_entries else 0
@@ -434,22 +433,22 @@ def validate_service_limit(ssdt_entries: Dict[int, int],
             "actual_max_index": _actual_max,
             "entries_beyond_limit": len(_entries_beyond),
             "severity": "CRITICAL",
-            "description": "SSDT条目超过KiServiceLimit — 可能是隐藏的hook或rootkit扩展",
+            "description": "SSDT条目超过KiServiceLimit — 疑似隐藏hook或rootkit扩展",
         })
     return _findings
 
 
-# ─── WOW64 syscall 表交叉验证 ───
-# Windows x64 维护了两份 syscall 表：一份用于 native x64 调用，
-# 另一份用于 WOW64 (32-bit 进程在 x64 内核上的系统调用)。
-# rootkit 有时仅 hook native 表而忽略 WOW64 表 — 提供检测机会。
+# ─── WOW64 syscall表交叉验证 ───
+# Windows x64维护两份syscall表：一份用于native x64调用，
+# 另一份用于WOW64 (32位进程在x64内核上的系统调用)。
+# rootkit有时仅hook native表而忽略WOW64表 — 提供检测窗口。
 
 def detect_wow64_hook_gap(native_ssdt: Dict[int, int],
                            wow64_ssdt: Dict[int, int]) -> List[Dict]:
-    """检测 native SSDT 与 WOW64 SSDT 之间的 hook 不一致。
+    """检测native SSDT与WOW64 SSDT之间的hook不一致。
 
-    若同一 SSN 在两表中指向不同 handler，且有一个在 ntoskrnl 内
-    而另一个不在，标记为 hook gap（选择性 hook 的证据）。
+    若同SSN在两表中指向不同handler，且一个在ntoskrnl内
+    而另一个不在，标记为hook gap（选择性hook的证据）。
     """
     _findings = []
     _common_ssns = set(native_ssdt.keys()) & set(wow64_ssdt.keys())
@@ -472,16 +471,16 @@ def detect_wow64_hook_gap(native_ssdt: Dict[int, int],
     return _findings
 
 
-# ─── Hell's Hollow 感知 ───
+# ─── Hell's Hollow探测 ───
 
 def detect_hells_hollow(syscall_entries: List[SyscallEntry]) -> List[Dict]:
     """
     检测Hell's Hollow间接syscall特征。
 
-    判断逻辑：
-    - SSN对应的handler地址与ntdll导出地址不一致
+    判定逻辑：
+    - SSN对应handler地址与ntdll导出地址不一致
     - 存在非ntdll!Zw*前缀的handler调用
-    - 多个连续 SSN 被同时 hook（批量间接 syscall 劫持模式）
+    - 多个连续SSN被同时hook（批量间接syscall劫持模式）
     """
     _findings: List[Dict] = []
     _hooked = [_e for _e in syscall_entries if _e.is_hooked]
@@ -493,7 +492,7 @@ def detect_hells_hollow(syscall_entries: List[SyscallEntry]) -> List[Dict]:
         elif len(_hooked) >= 5:
             _confidence = "MEDIUM"
 
-        # 检测连续 hook 模式 — 更可能是工具化的间接 syscall
+        # 检测连续hook模式 — 更可能是工具化的间接syscall
         _hooked_nrs = sorted(e.number for e in _hooked)
         _consecutive_runs = 0
         _max_run = 0
@@ -518,8 +517,8 @@ def detect_hells_hollow(syscall_entries: List[SyscallEntry]) -> List[Dict]:
 
 
 # ─── 系统调用序列异常检测 ───
-# rootkit 常 hook 特定 syscall 并在其中注入额外行为。
-# 通过分析被 hook 的 syscall 之间的功能分组，推断 rootkit 目的。
+# rootkit常hook特定syscall并在其中注入额外行为。
+# 通过分析被hook的syscall之间的功能分组，推测rootkit意图。
 
 _SYSCALL_FUNCTIONAL_GROUPS = {
     "process_hide": {"kill", "getpid", "open", "ptrace", "getdents64",
@@ -536,7 +535,7 @@ _SYSCALL_FUNCTIONAL_GROUPS = {
 
 
 def classify_hook_intent(hooked_syscalls: List[SyscallEntry]) -> List[Dict]:
-    """根据被 hook 的 syscall 推断 rootkit 的功能意图。"""
+    """根据被hook的syscall推断rootkit功能意图。"""
     _hooked_names = {e.name for e in hooked_syscalls if e.is_hooked}
     _intents = []
 

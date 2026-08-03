@@ -8,7 +8,7 @@ __dbg = _logging.getLogger(__name__)
 
 
 class ReturnViolation:
-    """Return-address integrity violation record."""
+    """返回-address integrity violation record"""
     __slots__ = ('addr', 'expected', 'actual', 'sev')
 
     def __init__(self, addr, expected=0, actual=0, sev='HIGH'):
@@ -17,11 +17,11 @@ class ReturnViolation:
         self.actual   = int(actual) if actual is not None else 0
         self.sev      = str(sev) if sev else 'HIGH'
 
-# ── Round 5: ROP gadget catalog ─────────────────────────────────────────
-# 影子栈检测的基础上增加ROP gadget分类和利用难度评估。
-# Gadget按功能分为: 栈操作 (pop;ret), 寄存器加载, 内存写入 (mov [reg];ret),
-# 系统调用 (syscall;ret), 间接跳转 (jmp [reg]) 五类。
-# 分类结果指示攻击者可用的原语丰富度，辅助ROP防护策略选择。
+# ── 舍入 5: ROP构件 catalog ─────────────────────────────────────────
+# 影子栈检测的基础上增加ROP gadget分类和利用难度评估
+# Gadget按功能分为: 栈操作 (pop;ret), 寄存器加载, 内存写入 (mov [reg];ret)
+# 系统调用 (系统调用;ret), 间接跳转 (jmp [reg]) 五类
+# 分类结果指示攻击者可用的原语丰富度，辅助ROP防护策略选择
 
 class ROPGadget:
     __slots__ = ('address', 'instructions', 'category', 'regs_modified', 'side_effects')
@@ -30,9 +30,9 @@ class ROPGadget:
                  regs_modified=None, side_effects=""):
         self.address = int(address) if address else 0
         self.instructions = str(instructions)
-        self.category = str(category)         # stack_op | reg_load | mem_write | syscall | indirect_jmp
+        self.category = str(category)         # 栈_op | reg_load | mem_write | 系统调用 | indirect_jmp
         self.regs_modified = list(regs_modified) if regs_modified else []
-        self.side_effects = str(side_effects)  # e.g. "clobbers rax, reads [rdi]"
+        self.side_effects = str(side_effects)  # e.g. "clobbers rax, 读取 [rdi]"
 
 _GADGET_PATTERNS = [
     # (regex, category, typical_use)
@@ -46,13 +46,13 @@ _GADGET_PATTERNS = [
 ]
 
 class ShadowStackDetector:
-    """Return-address overwrite detector via disassembly pattern matching.
-
-    Scans disassembly for stack-relative writes (rbp/rsp displacement) and
-    checks whether a RET follows within the next four instructions. A hit
-    indicates a likely return-address clobber — a ROP or stack-smash signal.
-
-    Round 5: Added ROP gadget cataloging for exploit primitive assessment.
+    """返回-address overwrite detector via 反汇编 pattern matching
+    
+    Scans 反汇编 for 栈-relative 写入 (rbp/rsp displacement)
+    检查 whether a RET follows next four instructions. A hit
+    indicates a likely 返回-address clobber — a ROP or 栈-smash signal
+    
+    舍入 5: Added ROP构件 cataloging for 漏洞利用原语 assessment
     """
 
     _kRetPats = (
@@ -74,7 +74,7 @@ class ShadowStackDetector:
         self._gadgets: list[ROPGadget] = []
 
     def find_violations(self):
-        """Pattern-match stack writes followed by RET; return violation list."""
+        """Pattern-match 栈 写入 followed RET; 返回 violation list"""
         viols = []
         try:
             cmd = ['r2', '-q', '-c', 'aaaa; pD $SS @ $S; q', self.__path]
@@ -112,7 +112,7 @@ class ShadowStackDetector:
         return viols
 
     def assess_rop(self):
-        """Score ROP resilience: start at 100, subtract 15 per violation."""
+        """Score ROP resilience: 启动 100, subtract 15 per violation"""
         viols = self.find_violations()
         score = 100 - len(viols) * 15
         if score < 0:
@@ -128,14 +128,14 @@ class ShadowStackDetector:
             ),
         }
 
-    # ── Round 5: ROP gadget cataloging ──────────────────────────────────
+    # ── 舍入 5: ROP构件 cataloging ──────────────────────────────────
     def catalog_gadgets(self, gadget_count: int = 50) -> List[ROPGadget]:
         """从二进制中提取并分类ROP gadget。使用radare2的/R命令搜索
         ret-terminated指令序列，然后按功能分类（栈操作/寄存器加载/
-        内存写入/系统调用/间接跳转）。
-
+        内存写入/系统调用/间接跳转）
+        
         分类结果用于评估ROP利用难度：若存在syscall gadget+寄存
-        器加载gadget，那么实现execve("/bin/sh")的难度显著降低。"""
+        器加载gadget，那么实现execve("/bin/sh")的难度显著降低"""
         gadgets = []
         try:
             # 使用radare2搜索ret-terminated序列
@@ -174,7 +174,7 @@ class ShadowStackDetector:
         return gadgets
 
     def gadget_summary(self) -> Dict[str, Any]:
-        """生成ROP gadget分类摘要。统计每类gadget的数量并评估利用可行性。"""
+        """生成ROP gadget分类摘要。统计每类gadget的数量并评估利用可行性"""
         if not self._gadgets:
             self.catalog_gadgets()
 
@@ -206,7 +206,7 @@ class ShadowStackDetector:
         }
 
     def detect_stack_canary(self) -> Dict[str, Any]:
-        """检测栈金丝雀保护机制。"""
+        """检测栈金丝雀保护机制"""
         canary_symbols = ['__stack_chk_fail', '___stack_chk_guard',
                           '__security_check_cookie', '__GSHandlerCheck',
                           '__stack_chk_guard']
@@ -223,7 +223,7 @@ class ShadowStackDetector:
                 'severity_if_missing': 'high'}
 
     def assess_cet_compatibility(self) -> Dict[str, Any]:
-        """检测CET (Control-flow Enforcement Technology) 兼容性。"""
+        """检测CET (Control-flow Enforcement Technology) 兼容性"""
         endbr64_count = 0
         try:
             with open(self.__path, 'rb') as fh:
@@ -242,7 +242,7 @@ class ShadowStackDetector:
         }
 
     def export_report(self) -> str:
-        """生成完整的Markdown审计报告。"""
+        """生成完整的Markdown审计报告"""
         rop = self.assess_rop()
         canary = self.detect_stack_canary()
         cet = self.assess_cet_compatibility()
@@ -279,6 +279,6 @@ class ShadowStackDetector:
 
 
 def detect_shadow_stack_violations(f_binpath):
-    """Single-call entry: scan binary and return ROP resilience assessment."""
+    """Single-call entry: scan binary 返回 ROP resilience assessment"""
     det = ShadowStackDetector(f_binpath)
     return det.assess_rop()

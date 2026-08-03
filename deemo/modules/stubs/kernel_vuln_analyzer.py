@@ -1,10 +1,10 @@
-# kernel_vuln_analyzer.py — 内核漏洞分析器
-# 检测 Linux/Windows 内核中的 UAF、竞态条件、权限提升漏洞。
-# 参考: FUZE (Wu, USENIX 2018) — 内核 UAF 利用生成 &
-#   SLAKE (CCS 2025) — Slab 内存操纵 &
-#   RetSpill (CCS 2023) — 用户态数据注入内核 &
-#   K-LEAK (NDSS 2025) — 多步信息泄露利用 &
-#   DDRace — 并发 UAF 定向模糊测试
+# kernel_vuln_analyzer.py — 内核漏洞模式分析
+# 检测 UAF、竞态条件、权限提升等内核级漏洞模式。
+# FUZE (Wu, USENIX 2018) — 内核 UAF 利用编排
+# SLAKE (CCS 2025) — Slab 内存操纵
+# RetSpill (CCS 2023) — 用户态数据注入内核
+# K-LEAK (NDSS 2025) — 多步信息泄露利用
+# DDRace — 并发 UAF 定向模糊测试
 import re as _re
 from dataclasses import dataclass as _dc
 
@@ -16,7 +16,7 @@ class KernelVulnCandidate:
     confidence: float
     evidence: list[str]
 
-# FUZE 识别的高风险内核模式
+# FUZE 识别的内核高风险模式
 _KERNEL_RISK_PATTERNS = {
     'uaf': [
         _re.compile(r'(?:kfree|free)\s*\(.*\).*\n.*\1', _re.DOTALL),
@@ -39,9 +39,9 @@ _KERNEL_RISK_PATTERNS = {
 
 def scan_kernel_code(source_text: str) -> list[KernelVulnCandidate]:
     """扫描内核源码/伪代码中的已知漏洞模式。
-    FUZE 方法: 先静态识别风险点，再动态符号执行验证可利用性。"""
+    先静态匹配风险点，后续符号执行验证可利用性（FUZE范式）。"""
     candidates = []
-    # 按函数边界分割（简化: 空行分隔）
+    # 按函数边界分割
     functions = source_text.split('\n\n')
     for func_block in functions:
         func_name = 'unknown'
@@ -56,7 +56,7 @@ def scan_kernel_code(source_text: str) -> list[KernelVulnCandidate]:
                 if m:
                     evidence.append(m.group()[:80])
             if evidence:
-                # 基础信心 — FUZE 用符号执行验证，此处用启发式
+                # 启发式置信度 — FUZE用符号执行精化
                 conf = 0.45 + len(evidence) * 0.1
                 candidates.append(KernelVulnCandidate(
                     func_name=func_name, vuln_type=vtype,
@@ -68,10 +68,10 @@ def scan_kernel_code(source_text: str) -> list[KernelVulnCandidate]:
 
 
 def assess_exploitability(vuln: KernelVulnCandidate, protections: set[str]) -> float:
-    """评估内核漏洞的可利用性。retSpill: 保护机制强度影响利用难度。
+    """评估内核漏洞可利用性。
     protections 示例: {'KASLR', 'SMEP', 'SMAP', 'KPTI', 'CFI', 'SELinux'}"""
     base = vuln.confidence
-    # 每种保护机制的折扣因子 (RetSpill 启发式)
+    # 每种保护的折扣因子（RetSpill启发式）
     mitigation_penalty = {
         'KASLR': 0.85, 'SMEP': 0.80, 'SMAP': 0.75,
         'KPTI': 0.90, 'CFI': 0.60, 'SELinux': 0.85,

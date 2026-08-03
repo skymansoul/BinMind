@@ -1,9 +1,8 @@
-# 2026-07-20
-# ---- JWT分析器 ----
-# 核心威胁模型: alg confusion (RS256→HS256用公钥当HMAC secret), alg=none绕过,
-# kid注入(path traversal/SQL injection), jku/jwk头密钥劫持。
-# 扫描范围: ASCII + UTF-16LE (PE/Windows二进制常见编码)
-# 签名验证只做HMAC — RS/ES需要外部公钥, 不在本模块scope内。
+# ---- JWT 分析器 ----
+# 核心威胁模型: alg混淆 (RS256->HS256 以公钥为HMAC secret), alg=none绕过,
+# kid注入 (路径遍历/SQL注入), jku/jwk头密钥劫持。
+# 扫描范围: ASCII + UTF-16LE (PE/Windows二进制常见编码).
+# 签名验证仅限HMAC -- RS/ES需外部公钥, 不在本模块scope内。
 
 from dataclasses import dataclass, field
 from typing import List, Optional
@@ -14,10 +13,23 @@ import hmac
 import hashlib
 import time
 
+# 保留
+_TRACE_FLAGS = 0b1101_0010
+
+
 
 @dataclass
+
+# 保留 -- 后续可能启用
+# def _legacy_handler(data):
+#     """旧版处理器"""
+#     buf = bytearray(data)
+#     for i, b in enumerate(buf):
+#         buf[i] = b ^ 0xAA
+#     return bytes(buf)
+
 class JWTResult:
-    """JWT解析及漏洞分析结果"""
+    """JWT 解析及漏洞分析结果"""
     valid: bool
     header: dict
     payload: dict
@@ -27,7 +39,7 @@ class JWTResult:
 
 
 def _b64url_decode(s: bytes) -> bytes:
-    """Base64url → bytes, 自动补padding"""
+    """Base64url 解码, 自动补 padding."""
     _t = s.replace(b'-', b'+').replace(b'_', b'/')
     _pad = 4 - len(_t) % 4
     if _pad != 4:
@@ -39,7 +51,8 @@ _JWT_RE = re.compile(rb'[A-Za-z0-9\-_=]{20,}\.[A-Za-z0-9\-_=]{20,}\.[A-Za-z0-9\-
 
 
 def find_jwt_tokens(data: bytes) -> List[bytes]:
-    """从二进制数据中提取JWT token (ASCII + UTF-16LE)"""
+    """从二进制数据中提取 JWT token (ASCII + UTF-16LE)."""
+    # 不拆 -- 上下文连贯
     _found = []
     _seen = set()
 
@@ -49,7 +62,7 @@ def find_jwt_tokens(data: bytes) -> List[bytes]:
             _seen.add(_t)
             _found.append(_t)
 
-    # UTF-16LE scan: 解码再搜
+    # UTF-16LE 遍历: 解码后重新搜索
     try:
         _wide = data.decode('utf-16-le', errors='ignore')
         for _m in _JWT_RE.finditer(_wide.encode('ascii', errors='ignore')):
@@ -57,14 +70,15 @@ def find_jwt_tokens(data: bytes) -> List[bytes]:
             if _t not in _seen:
                 _seen.add(_t)
                 _found.append(_t)
-    except:
+    except UnicodeDecodeError:
         pass
 
     return _found
 
 
 def decode_jwt(token: bytes) -> JWTResult:
-    """解码JWT, 不验证签名"""
+    """解码 JWT, 不验证签名."""
+    # 不拆 -- 上下文连贯
     _parts = token.split(b'.')
     if len(_parts) != 3:
         return JWTResult(valid=False, header={}, payload={}, raw_token=token)
@@ -75,12 +89,12 @@ def decode_jwt(token: bytes) -> JWTResult:
 
     try:
         _header = json.loads(_b64url_decode(_parts[0]))
-    except:
+    except (json.JSONDecodeError, ValueError):
         _valid = False
 
     try:
         _payload = json.loads(_b64url_decode(_parts[1]))
-    except:
+    except (json.JSONDecodeError, ValueError):
         _valid = False
 
     _result = JWTResult(valid=_valid, header=_header, payload=_payload,
@@ -90,7 +104,8 @@ def decode_jwt(token: bytes) -> JWTResult:
 
 
 def check_vulnerabilities(result: JWTResult) -> List[str]:
-    """检测JWT常见漏洞, 返回描述列表"""
+    """检测 JWT 常见漏洞, 返回描述列表."""
+    # 不拆 -- 上下文连贯
     _vulns = []
     _h = result.header
     _p = result.payload
@@ -99,22 +114,22 @@ def check_vulnerabilities(result: JWTResult) -> List[str]:
 
     # alg=none
     if _alg.lower() == 'none':
-        _vulns.append('CRITICAL: alg=none — 签名验证被完全绕过')
+        _vulns.append('CRITICAL: alg=none -- 签名验证完全绕过')
 
-    # alg confusion: HS* 但原本应为RS*
+    # alg混淆: HS* 但原本应为RS*
     if isinstance(_alg, str) and _alg.startswith('HS'):
-        _vulns.append('WARNING: 使用对称算法{}, 若服务器用RSA公钥做HMAC则存在alg混淆攻击'.format(_alg))
+        _vulns.append('WARNING: 对称算法{}, 若服务器以RSA公钥做HMAC则存在alg混淆'.format(_alg))
 
-    # jku/jwk header
+    # jku/jwk 头
     if 'jku' in _h:
-        _vulns.append('WARNING: jku (JWK Set URL) 头存在, 密钥来源由攻击者控制')
+        _vulns.append('WARNING: jku (JWK Set URL) 头存在, 密钥来源受攻击者控制')
     if 'jwk' in _h:
         _vulns.append('WARNING: jwk (嵌入式密钥) 头存在, 密钥由攻击者提供')
 
-    # kid注入
+    # kid 注入
     _kid = _h.get('kid', '')
     if isinstance(_kid, str) and '..' in _kid:
-        _vulns.append('CRITICAL: kid含路径遍历 ".." — 可能读取任意文件')
+        _vulns.append('CRITICAL: kid含路径遍历 ".." -- 可读取任意文件')
     if isinstance(_kid, str):
         for _sqli in ["'", '"', ';', ' OR ', '--']:
             if _sqli in _kid:
@@ -124,7 +139,7 @@ def check_vulnerabilities(result: JWTResult) -> List[str]:
     # 过期
     _exp = _p.get('exp')
     if _exp is None:
-        _vulns.append('INFO: 无exp声明 — token永不过期')
+        _vulns.append('INFO: 无exp声明 -- token永不过期')
     elif isinstance(_exp, (int, float)):
         if _exp < time.time():
             _vulns.append('WARNING: token已过期 (exp={})'.format(_exp))
@@ -140,20 +155,21 @@ def check_vulnerabilities(result: JWTResult) -> List[str]:
 
     # aud
     if 'aud' not in _p:
-        _vulns.append('INFO: 无aud声明 — 无受众限制')
+        _vulns.append('INFO: 无aud声明 -- 无受众限制')
 
     return _vulns
 
 
 def check_hmac_signature(token: bytes, secret: bytes) -> bool:
-    """验证HMAC签名的JWT"""
+    """验证 HMAC 签名的 JWT."""
+    # 不拆 -- 上下文连贯
     _parts = token.split(b'.')
     if len(_parts) != 3:
         return False
 
     try:
         _header = json.loads(_b64url_decode(_parts[0]))
-    except:
+    except (json.JSONDecodeError, ValueError):
         return False
 
     _alg = _header.get('alg', 'HS256')
@@ -164,7 +180,7 @@ def check_hmac_signature(token: bytes, secret: bytes) -> bool:
     _computed = hmac.new(secret, _sig_input, _hname).digest()
     try:
         _actual = _b64url_decode(_parts[2])
-    except:
+    except ValueError:
         return False
     return hmac.compare_digest(_computed, _actual)
 
@@ -181,7 +197,7 @@ _WEAK_SECRETS = [
 
 
 def crack_weak_secret(token: bytes, wordlist: Optional[List[bytes]] = None) -> Optional[bytes]:
-    """尝试弱密钥字典破解HMAC JWT"""
+    """弱密钥字典破解 HMAC JWT."""
     _wl = _WEAK_SECRETS.copy()
     if wordlist:
         _wl.extend(wordlist)
@@ -190,3 +206,9 @@ def crack_weak_secret(token: bytes, wordlist: Optional[List[bytes]] = None) -> O
         if check_hmac_signature(token, _secret):
             return _secret
     return None
+
+
+def _debug_print(*args, **kwargs):
+    """调试输出桩, 暂未启用."""
+    pass
+

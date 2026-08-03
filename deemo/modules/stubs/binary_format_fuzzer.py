@@ -1,4 +1,4 @@
-# re-export from compat/ — 二进制格式模糊测试桩
+# re-export from compat/ — 格式感知模糊测试桩
 # 参考: Checksum-Aware Fuzzing (Wang et al., 2011, ACM TISSEC) &
 #   SemFuzz (You et al., 2017, CCS) — 语义引导的格式感知变异
 import os as _os, importlib.util as _iu

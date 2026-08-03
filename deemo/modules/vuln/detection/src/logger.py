@@ -1,5 +1,4 @@
-# 2026-07-29 — vuln_detection 日志子系统
-# 支持文件滚动+控制台着色+级别过滤
+# vuln_detection日志子系统——文件滚动+控制台着色+级别过滤
 
 import logging
 import sys
@@ -22,7 +21,7 @@ def setup_logger(name: str = "vuln_detection",
                  backup_count: int = 3) -> logging.Logger:
     """配置并返回命名日志器。
 
-    默认INFO级别，控制台输出。若指定log_file则同时写入滚动日志文件。
+    默认INFO级别控制台输出。指定log_file时同时写入滚动日志文件。
     """
     if name in _loggers:
         return _loggers[name]

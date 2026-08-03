@@ -8,7 +8,7 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from modules.fuzz_integration import (
+from modules.fuzzing.fuzz_integration import (
     FuzzManager,
     create_fuzz_manager,
     list_available_fuzzers,

@@ -1,5 +1,5 @@
-# Extended CVE tests — CJK support, edge cases, compat
-# Tests from the original test_cve_extended.py
+# CVE扩展测试——CJK支持、边界情况、兼容性
+# 来自原始test_cve_extended.py
 
 import pytest
 from modules.cve.src.cve_kb import CVEKnowledgeBase
@@ -14,10 +14,10 @@ def kb():
 
 
 class TestCJKSearch:
-    """CJK (Chinese/Japanese/Korean) search support."""
+    """CJK（中日韩）搜索支持。"""
 
     def test_cjk_cve_search(self, kb):
-        """Search with CJK characters in description."""
+        """在描述中使用CJK字符搜索。"""
         kb.insert({
             "cve_id": "CVE-2024-0001",
             "description": "Apache Log4j 远程代码执行漏洞",
@@ -34,7 +34,7 @@ class TestCJKSearch:
         assert total >= 1
 
     def test_mixed_cjk_latin_search(self, kb):
-        """Search with mixed CJK and Latin query."""
+        """使用混合CJK与拉丁字符查询搜索。"""
         kb.insert({
             "cve_id": "CVE-2024-0001",
             "description": "Apache Log4j RCE 漏洞",
@@ -45,10 +45,10 @@ class TestCJKSearch:
 
 
 class TestDictCompat:
-    """Dict-based entries that test backward compatibility."""
+    """基于dict的条目测试向后兼容性。"""
 
     def test_dict_with_alternate_keys(self, kb):
-        """Entries with alternate key names should work."""
+        """使用备用键名的条目应正常工作。"""
         kb.insert({
             "id": "CVE-2024-0001",
             "desc": "Test description",
@@ -58,13 +58,13 @@ class TestDictCompat:
         assert e is not None
 
     def test_dict_with_no_severity(self, kb):
-        """Entry without severity defaults to UNKNOWN."""
+        """未指定severity的条目默认为UNKNOWN。"""
         kb.insert({"cve_id": "CVE-2024-0001"})
         e = kb.get("CVE-2024-0001")
         assert e.severity == "UNKNOWN"
 
     def test_dict_edge_case_keys(self, kb):
-        """Test with edge-case dict keys to match older test style."""
+        """使用边界dict键测试以兼容旧测试风格。"""
         kb.insert({
             "cve_id": "CVE-2024-0001",
             "product": "single-product",  # singular, not list
@@ -75,16 +75,16 @@ class TestDictCompat:
 
 
 class TestVersionEdgeCases:
-    """Version-related edge cases from extended tests."""
+    """版本相关边界情况——来自扩展测试。"""
 
     def test_version_with_build_metadata(self):
-        """Versions with build metadata should be handled."""
+        """含构建元数据的版本应正确处理。"""
         from modules.cve.src.cve_matcher import _parse_cpe
         result = _parse_cpe("cpe:2.3:a:vendor:product:1.0.0+20130313144700:*:*:*:*:*:*:*")
         assert result is not None
 
     def test_version_with_tilde(self):
-        """Versions with tilde prefix."""
+        """含波浪线前缀的版本。"""
         from modules.cve.src.cve_matcher import _parse_cpe
         result = _parse_cpe("cpe:2.3:a:vendor:product:~1.0.0:*:*:*:*:*:*:*")
         assert result is not None
@@ -100,7 +100,7 @@ class TestGHSACompat:
         assert search_ghsa is not None
 
     def test_source_confidence_field(self):
-        """Merged entries should have source_confidence field."""
+        """合并条目应含source_confidence字段。"""
         from modules.cve.src.cve_ghsa import merge_with_confidence
         result = merge_with_confidence([
             {"entries": [{"cve_id": "CVE-2024-0001", "source": "nvd", "source_confidence": 1.0}]}
@@ -109,17 +109,17 @@ class TestGHSACompat:
 
 
 class TestImportPaths:
-    """Verify all public API imports work from expected locations."""
+    """验证所有公开API导入可从预期位置工作。"""
 
     def test_top_level_imports(self):
-        """Main imports from cve module work."""
+        """从cve模块的主导入正常工作。"""
         from modules.cve import CVEKnowledgeBase, CVEEntry, Severity
         assert CVEKnowledgeBase is not None
         assert CVEEntry is not None
         assert Severity is not None
 
     def test_submodule_imports(self):
-        """Individual submodule imports work."""
+        """各子模块导入正常工作。"""
         from modules.cve.src.cve_models import CVEEntry, CPEPart
         from modules.cve.src.cve_kb import CVEKnowledgeBase
         from modules.cve.src.cve_ssvc import evaluate_cve

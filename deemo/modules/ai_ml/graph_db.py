@@ -1,5 +1,5 @@
-# 2026-07-17: preserved; minor optimizations applied.
-# 2026-07-23: 持久化支持、子图提取、综合图统计指标，数据生命周期才算闭环
+# 已优化.
+# 持久化支持、子图提取、综合图统计指标，数据生命周期才算闭环
 import logging
 import json
 import hashlib

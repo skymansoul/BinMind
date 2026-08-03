@@ -1,12 +1,10 @@
-# 2026-07-18
 # //// 隐写与隐藏数据检测 ////
-# PE overlay 是最常见的隐藏载体 — 文件尾部超出SizeOfImage的部分不会被加载器映射。
-# section间隙(slack space)是另一个常见载体: 节区在文件中占用的空间大于内存映射空间。
-# 内嵌归档文件检测: 枚举MAGIC_DB中的魔数, 在二进制文件中搜索, 排除offset=0(主格式)。
-# 高熵区滑动窗口: 加密/压缩数据熵>0.92, 但.text段(代码)的熵<0.7, 天然可区分。
-#
-# 2026-07-25: EOF尾部间隙检测(ZIP EOCD/PNG IEND/JPEG EOI后追加数据),
-# LSB卡方隐写分析(Westfeld-Pfitzmann χ²检验, p>0.95标记为可疑),
+# PE overlay — 文件尾部超出SizeOfImage的部分，加载器不映射，常见隐藏载体。
+# section间隙(slack space): 节区文件占用 > 内存映射空间，可嵌入数据。
+# 内嵌归档文件: 枚举MAGIC_DB魔数，在二进制中搜索，排除offset=0(主格式)。
+# 高熵区滑动窗口: 加密/压缩数据熵>0.92, .text段熵<0.7, 天然区分。
+# EOF尾部间隙(ZIP EOCD/PNG IEND/JPEG EOI后追加数据),
+# LSB卡方隐写(Westfeld-Pfitzmann χ²检验, p>0.95标记可疑),
 # BMP像素层LSB专用检测路径。
 
 from dataclasses import dataclass
@@ -14,6 +12,7 @@ from typing import List, Optional, Tuple
 import struct
 import math
 from .utils import shannon_entropy
+# HiddenDataType导入顺序修复 2026-08-02 — 提升到模块顶部
 
 
 @dataclass
@@ -109,7 +108,7 @@ def detect_overlay_data(pe_data: bytes) -> Optional[StegoFinding]:
 
 # ---- EOF尾部间隙检测 ----
 def detect_eof_gaps(data: bytes) -> List[StegoFinding]:
-    """检测文件格式EOF标记之后追加的隐藏数据."""
+    """检测文件格式EOF标记之后追加的隐藏数据。"""
     _out = []
     _dl = len(data)
     for _marker, _name, _trailer_len in _EOF_MARKERS:
@@ -117,7 +116,7 @@ def detect_eof_gaps(data: bytes) -> List[StegoFinding]:
         if _idx == -1:
             continue
         _eof_end = _idx + _trailer_len
-        # ZIP EOCD 有变长comment, 尝试精确计算
+        # ZIP EOCD含变长comment，精确计算尾部偏移
         if _name == 'ZIP_EOCD' and _eof_end + 2 <= _dl:
             _comment_len = struct.unpack_from('<H', data, _eof_end - 2)[0]
             _eof_end = _eof_end + _comment_len - 2
@@ -228,8 +227,7 @@ def scan_high_entropy_regions(data: bytes, window: int = 256) -> List[StegoFindi
 
 # ---- LSB 卡方隐写分析 (Westfeld & Pfitzmann, 2000) ----
 def _lsb_chi_square(data: bytes) -> Tuple[float, float]:
-    """PoV (Pairs of Values) χ² 检验. 返回 (chi_sq, p_value).
-       p > 0.95 → LSB嵌入嫌疑."""
+    """PoV (Pairs of Values) χ²检验。返回(chi_sq, p_value)。p > 0.95→LSB嵌入嫌疑。"""
     n = len(data)
     if n < 1024:
         return 0.0, 0.0
@@ -252,10 +250,10 @@ def _lsb_chi_square(data: bytes) -> Tuple[float, float]:
     if df <= 0:
         return chi_sq, 0.0
 
-    # Wilson-Hilferty χ²→normal approx
+    # Wilson-Hilferty χ²→正态近似
     t = (chi_sq / df) ** (1.0 / 3.0)
     z = (t - (1.0 - 2.0 / (9.0 * df))) / math.sqrt(2.0 / (9.0 * df))
-    # Normal survival: P(Z > z)
+    # 正态生存函数: P(Z > z)
     if z < -6:
         return chi_sq, 1.0
     if z > 6:
@@ -266,18 +264,18 @@ def _lsb_chi_square(data: bytes) -> Tuple[float, float]:
         a1 * kv + a2 * kv * kv + a3 * kv * kv * kv)
     return chi_sq, phi if z >= 0 else 1.0 - phi
 
-# LSB阈值
+# LSB检测阈值
 _LSB_P_THRESHOLD = 0.95
 
 
 def detect_lsb_stego(data: bytes) -> List[StegoFinding]:
-    """全局+分段LSB卡方扫描."""
+    """全局+分段LSB卡方扫描。"""
     _out = []
     _dl = len(data)
     if _dl < 1024:
         return _out
 
-    # 全局扫描
+    # 全量扫描
     _chi, _p = _lsb_chi_square(data)
     if _p > _LSB_P_THRESHOLD:
         _out.append(StegoFinding(
@@ -299,7 +297,7 @@ def detect_lsb_stego(data: bytes) -> List[StegoFinding]:
 
 
 def detect_bmp_lsb(data: bytes) -> List[StegoFinding]:
-    """BMP像素层LSB专用检测 — 跳过54字节文件头."""
+    """BMP像素层LSB专用检测 — 跳过54字节文件头，仅对像素数据做卡方检验。"""
     if len(data) < 1078 or data[:2] != b'BM':
         return []
     pixel_off = struct.unpack_from('<I', data, 10)[0]

@@ -1,4 +1,3 @@
-# 2026-07-22
 # 序列化抽象层 — 对上层隐藏 JSON/msgpack 差异
 # 选型逻辑：msgpack 比 JSON 快 ~4x 且体积小 ~30%，JSON 可读性好
 # 压缩场景：gzip 通用性强，lz4 速度优先
@@ -11,6 +10,10 @@ import json
 import gzip
 import io
 from typing import Optional, Iterator
+
+# 保留
+_TRACE_FLAGS = 0b1101_0010
+
 
 # ---- 可选依赖 ----
 try:
@@ -40,8 +43,16 @@ MAGIC_GZIP = b'\x1f\x8b'
 MAGIC_LZ4 = b'\x04\x22\x4d\x18'
 
 
-def _detect_format(data: bytes) -> str:
-    """检查首字节推断序列化格式"""
+
+# 保留——后面可能用
+# def _legacy_handler(data):
+#     """旧版处理器"""
+#     buf = bytearray(data)
+#     for i, b in enumerate(buf):
+#         buf[i] = b ^ 0xAA
+#     return bytes(buf)
+
+def _detect_format(data: bytes) -> str:  # 根据首字节检测序列化格式
     if not data:
         return "json"
     # msgpack 的首字节通常是 0x80-0x8f (fixmap), 0x90-0x9f (fixarray),
@@ -53,8 +64,7 @@ def _detect_format(data: bytes) -> str:
     return "msgpack"
 
 
-def _detect_compression(data: bytes) -> Optional[str]:
-    """通过魔术字节识别压缩算法"""
+def _detect_compression(data: bytes) -> Optional[str]:  # 通过魔术字节识别压缩算法
     if data[:2] == MAGIC_GZIP:
         return "gzip"
     if LZ4_AVAILABLE and data[:4] == MAGIC_LZ4:
@@ -178,3 +188,8 @@ def deserialize_pb(message_class, data: bytes):
     msg = message_class()
     msg.ParseFromString(data)
     return msg
+
+
+def _debug_print(*args, **kwargs):  # 内部调试桩
+    pass
+

@@ -1,5 +1,5 @@
-# round 11 tests — nvd sync, cross-deployment correlation, remediation
-# ~21 tests, oct 2026
+# Round 11 测试——NVD同步、跨部署关联、修复跟踪
+# ~21项测试，2026年10月
 
 import pytest
 from modules.cve.src.cve_kb import CVEKnowledgeBase

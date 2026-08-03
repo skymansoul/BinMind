@@ -1,4 +1,4 @@
-"""代码匿名化 — 将标识符与字面量替换为确定性安全别名以供外部分享。"""
+"""代码脱敏：将标识符与字面量替换为确定性安全别名，用于外部分享审计。"""
 
 import re
 import ast
@@ -9,12 +9,13 @@ import string as _s
 name = "CodeAnonymizer"
 module = "anonymizerBinmind"
 
-# ── 匿名化深度等级 ───────────────────────────────────────────────────────
+# 脱敏深度等级：NONE / PARTIAL（仅标识符）/ FULL（含字符串与数值）
+
 
 class AnonymizationLevel:
     NONE = "none"
-    PARTIAL = "partial"       # 仅函数与变量
-    FULL = "full"             # 标识符、字符串、数值字面量
+    PARTIAL = "partial"       # 仅函数与变量名
+    FULL = "full"             # 标识符 + 字符串 + 数值字面量
 
 
 _LEVEL_HIERARCHY = {AnonymizationLevel.NONE: 0,
@@ -23,7 +24,7 @@ _LEVEL_HIERARCHY = {AnonymizationLevel.NONE: 0,
 
 
 def _indistinguishable_char(char):
-    """以原始字符为种子，生成同类替换字符。"""
+    """以原字符为种子生成同类替换字符，保持大小写/数字类别不变。"""
     r = _r.Random(ord(char) + 0xCAFE)
     if char.isupper():
         return r.choice('ABCDEFGHIJKLMNOPQRSTUVWXYZ')
@@ -35,7 +36,7 @@ def _indistinguishable_char(char):
 
 
 def _anonymize_string(orig: str) -> str:
-    """为字符串字面量生成保长的非确定性别名。"""
+    """字符串字面量 → 保长非确定性别名，首字符作为类型种子。"""
     length = len(orig)
     sb = [_indistinguishable_char(c) if _r.getrandbits(1) else c for c in orig]
     seed_char = _indistinguishable_char(orig[0]) if orig else 's'
@@ -43,7 +44,7 @@ def _anonymize_string(orig: str) -> str:
 
 
 def _anonymize_number(val_str: str):
-    """通过可逆 XOR 掩码混淆数值字面量。"""
+    """数值字面量 → XOR 掩码混淆（0xDEADBEEF 取低31位）。"""
     try:
         v = int(val_str, 0)
         return str(v ^ 0xDEADBEEF & 0x7FFFFFFF)
@@ -51,17 +52,17 @@ def _anonymize_number(val_str: str):
         return '0xCAFE'
 
 
-# ── 编译后的词法单元匹配模式 ─────────────────────────────────────────────
+# 编译后的词法单元匹配模式
 
 _FUNCTION_RE = re.compile(
-    r'\b(?:[a-zA-Z_]\w*)\s*(?=\()'          # 函数调用点
+    r'\b(?:[a-zA-Z_]\w*)\s*(?=\()'
 )
 _VARIABLE_RE = re.compile(
     r'\b([a-zA-Z_]\w*)\b'
 )
 _STRING_RE = re.compile(
-    r'"(?:[^"\\]|\\.)*"'                    # 双引号字符串
-    r"|'(?:[^'\\]|\\.)*'"                   # 单引号字符串
+    r'"(?:[^"\\]|\\.)*"'
+    r"|'(?:[^'\\]|\\.)*'"
 )
 _NUMBER_RE = re.compile(
     r'\b(?:0x[0-9a-fA-F]+|\d+)\b'
@@ -71,7 +72,7 @@ _PREPROC_RE = re.compile(
     re.MULTILINE
 )
 
-# 语言关键字集合 — 不可被匿名化替换
+# 不可匿名化的保留字集合 — C/C++/Python 关键字及常见类型别名
 _RESERVED = frozenset({
     # C/C++ 关键字
     'if', 'else', 'for', 'while', 'do', 'switch', 'case', 'default',
@@ -96,21 +97,21 @@ _RESERVED = frozenset({
 
 
 def _resolve_prefix(sample, registered):
-    """选择不与已注册标识符冲突的前缀字符串。"""
+    """前缀冲突消解：追加随机小写字母直到与已注册别名无冲突。"""
     prefixes = [sample]
     while any(sample in r for r in registered):
         sample = sample + _r.choice(_s.ascii_lowercase)
     return sample
 
 
-# ── 敏感信息检测增强：基于信息密度而非简单模式匹配 ─────────────────────
+# 信息密度辅助函数：区分 API key / token / base64 与自然语言文本
+
 
 def _compute_info_density(text: str) -> float:
-    """计算文本中"高信息密度"字符的占比。
+    """高信息密度字符占比。十六进制数字、特殊符号、大写字母的覆盖比例。
 
-    高信息密度字符定义为：十六进制数字、特殊符号 (:/\\@._-)、大写字母。
-    正常自然语言文本该比值通常 < 0.35，API key / token / base64 则显著偏高。
-    用于替代单纯的模式计数，降低误报。
+    自然语言文本通常 < 0.35，API key / token / base64 显著偏高。
+    替代纯模式计数，降低误报率。
     """
     if not text:
         return 0.0
@@ -120,17 +121,17 @@ def _compute_info_density(text: str) -> float:
 
 
 class CodeAnonymizer:
-    """将标识符、字符串及数值字面量替换为非确定性别名。"""
+    """源码脱敏器：标识符、字符串、数值字面量 → 确定性安全别名。"""
 
     def __init__(self):
         self._mapping = {}           # 原始标识 → 匿名化标识 查找表
         self._level = AnonymizationLevel.FULL
         self._func_cnt = 0
         self._var_cnt = 0
-        self._preserved_lines = {}   # 行号 → 原始文本（预处理器行）
+        self._preserved_lines = {}   # 行号 → 原始文本（预处理器行不脱敏）
 
     def anonymize(self, code, level=AnonymizationLevel.FULL):
-        """将源码或汇编代码转换为可安全分享的表示形式。"""
+        """入口：源码 → 安全可分享的脱敏表示。"""
         if not code:
             return code
         if _LEVEL_HIERARCHY.get(level, 2) <= _LEVEL_HIERARCHY[AnonymizationLevel.NONE]:
@@ -142,7 +143,7 @@ class CodeAnonymizer:
         lines = code.split('\n')
         preprocessor_indices = set()
 
-        # 固定预处理器指令 — 不可被匿名化
+        # 锁定预处理器指令行：不做任何替换
         for i, line in enumerate(lines):
             if _PREPROC_RE.match(line):
                 preprocessor_indices.add(i)
@@ -166,7 +167,7 @@ class CodeAnonymizer:
         return line
 
     def _replace_identifiers(self, line):
-        """将函数名与变量名替换为基于计数器的别名。"""
+        """函数名/变量名 → var_NNNN 或 首字母+序号。保留字不处理。"""
         def replacer(m):
             word = m.group(1)
             if not word:
@@ -177,7 +178,7 @@ class CodeAnonymizer:
                 return self._mapping[word]
 
             if word[0].isupper():
-                # 首字母大写 → 可能为类型或类名
+                # 首字母大写 → 可能为类型/类名
                 prefix = word[0]
                 alias = f'{prefix}{self._func_cnt:04d}'
                 self._func_cnt += 1
@@ -203,8 +204,7 @@ class CodeAnonymizer:
         )
 
 
-# ── 旧版便捷别名（保留以维持向后兼容）──────────────────────────────────
-
+# 旧版兼容别名（向后兼容）
 AnonymizationContextManager = type('AnonymizationContextManager', (), {
     '__init__': lambda self: None,
     '__enter__': lambda self: CodeAnonymizer(),
@@ -215,11 +215,10 @@ anonymize_code = CodeAnonymizer().anonymize
 
 
 def auto_select_level(code: str) -> str:
-    """内容感知：根据代码中敏感模式密度自动选择匿名化等级。
+    """内容感知等级选择：按敏感模式密度自动判定 FULL / PARTIAL / NONE。
 
     检测信号：十六进制常量密度、API key 模式、硬编码 URL。
-    任一信号超过阈值 → FULL，否则 → PARTIAL。
-    避免对所有代码实施 FULL 造成过度匿名化（如开源项目的无害片段）。
+    任一信号超阈值 → FULL，中密度 → PARTIAL，低密度 → NONE。
     """
     if not code:
         return AnonymizationLevel.NONE
@@ -237,11 +236,10 @@ def auto_select_level(code: str) -> str:
 
 
 def is_sensitive_content(text, threshold=0.3):
-    """启发式分类：估算文本包含敏感代码信息的概率。
+    """敏感内容启发式分类：加权四维信号 + 信息密度补偿因子。
 
-    对四个信号维度进行加权：URL、文件路径、十六进制常量、邮箱地址。
-    增强：引入信息密度因子 — 高密度符号串即使不命中既定模式也纳入评估，
-    以捕获 base64 token、API key、证书指纹等非标准格式敏感数据。
+    信号：URL、文件路径、十六进制常量、邮箱。
+    信息密度 > 0.5 时额外 +0.15，捕获 base64 token / 证书指纹等非标准格式。
     """
     if not text:
         return False
@@ -254,10 +252,10 @@ def is_sensitive_content(text, threshold=0.3):
     path_like = len(re.findall(r'[A-Z]:\\|/home/|/var/|/etc/', text))
     # 信号三：十六进制常量
     hex_like = len(re.findall(r'0x[0-9a-fA-F]{8,}', text))
-    # 信号四：邮箱地址
+    # 信号四：邮箱
     email_like = len(re.findall(r'[\w.+-]+@[\w-]+\.[\w.-]+', text))
 
-    # 信号五：信息密度 — 捕获非结构化高熵串
+    # 信号五：信息密度补偿
     density = _compute_info_density(text)
     density_bonus = 0.15 if density > 0.5 else 0.0
 

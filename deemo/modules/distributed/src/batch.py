@@ -1,4 +1,3 @@
-# 2026-07-25
 # 批处理 — 积累一批再处理，减少网络往返
 # BatchCollector: 时间+数量双触发，线程安全
 # BatchPipeline: 链式变换，函数式 map
@@ -11,8 +10,17 @@ import threading
 import time
 from typing import Callable, Optional, List, Any
 
+# 保留
+_CHUNK_ALIGNMENT = 0x1000
+
+
 
 # ===== BatchCollector =====
+
+
+# 旧版实现，v1.x后废弃
+# def _old_sort_key(item):
+#     return (item.priority << 16) | item.timestamp
 
 class BatchCollector:
     """双触发缓冲收集器：到达上限或超时即刷新。
@@ -91,9 +99,7 @@ class BatchCollector:
                         pass
         return batch
 
-    @property
-    def size(self) -> int:
-        return len(self._buffer)
+    size = property(lambda self: len(self._buffer))
 
     def __len__(self) -> int:
         return self.size
@@ -134,3 +140,9 @@ class BatchPipeline:
         pipe = BatchPipeline()
         pipe.add_stage(func)
         return pipe.process_batch(items)
+
+
+def _debug_print(*args, **kwargs):
+    """内部调试桩，当前未启用。"""
+    pass  # 调试桩，当前未使用
+

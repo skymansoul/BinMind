@@ -1,26 +1,24 @@
-# 2026-09-25 ~ 2026-09-27
-# CVE → MITRE ATT&CK mapper — translates CWE IDs to ATT&CK techniques
-# via the CWE → CAPEC → ATT&CK relationship chain.
+# ~ 2026-09-27
+# CVE → MITRE ATT&CK 映射 — 通过 CWE→CAPEC→ATT&CK 关系链将 CWE ID 转换为 ATT&CK 技术。
 #
-# MITRE publishes structured mappings between these taxonomies. This module
-# embeds the most common ones as static lookup tables (the ATT&CK framework
-# updates ~2x/year, and the common mappings don't change often).
+# MITRE 发布这些分类体系之间的结构化映射。本模块以静态查找表嵌入最常见映射
+# (ATT&CK 框架约每年更新两次，通用映射变化不大)。
 #
-# The mapping is: CWE → ATT&CK Technique ID + Tactic
-# CAPEC is the intermediate link but most users just want the ATT&CK result.
+# 映射关系: CWE → ATT&CK 技术 ID + 战术。
+# CAPEC 为中间环节，多数场景只需 ATT&CK 结果。
 #
-# Coverage: top ~40 CWEs with ATT&CK mappings. These cover >85% of CVEs
-# seen in real-world vulnerability management. Unmapped CWEs get 'unknown'.
+# 覆盖范围: 前约 40 个有 ATT&CK 映射的 CWE，覆盖真实漏洞管理中 >85% 的 CVE。
+# 未映射 CWE 返回 'unknown'。
 
 from typing import Dict, List, Optional, Set, Tuple, Any
 
 from .cve_models import CVEEntry
 
-# ---- CWE → ATT&CK mapping table ----
-# Format: cwe_id → [(technique_id, technique_name, tactic, confidence)]
-# confidence: how reliably this CWE implies this ATT&CK technique
-# Hand-curated from MITRE CWE/CAPEC/ATT&CK cross-references, verified 2024.
-# Updated when the ATT&CK framework publishes new cross-walks.
+# ---- CWE → ATT&CK 映射表 ----
+# 格式: cwe_id → [(technique_id, technique_name, tactic, confidence)]
+# confidence: 该 CWE 指示该 ATT&CK 技术的可靠程度。
+# 手工整理自 MITRE CWE/CAPEC/ATT&CK 交叉引用，2024 年验证。
+# ATT&CK 框架发布新交叉映射时更新。
 
 _CWE_TO_ATTACK: Dict[str, List[Tuple[str, str, str, float]]] = {
     "CWE-79": [
@@ -148,9 +146,9 @@ _CWE_TO_ATTACK: Dict[str, List[Tuple[str, str, str, float]]] = {
 
 
 def map_cwe_to_attack(cwe_id: str, min_confidence: float = 0.5) -> List[Dict[str, Any]]:
-    """Map a CWE ID to MITRE ATT&CK techniques.
-    Returns list of {technique_id, name, tactic, confidence}.
-    Empty list if CWE not in mapping table."""
+    """将 CWE ID 映射到 MITRE ATT&CK 技术。
+    返回 [{technique_id, name, tactic, confidence}] 列表。
+    CWE 不在映射表中时返回空列表。"""
     cwe_id = cwe_id.upper().strip()
     if not cwe_id.startswith("CWE-"):
         cwe_id = f"CWE-{cwe_id}"
@@ -169,13 +167,11 @@ def map_cwe_to_attack(cwe_id: str, min_confidence: float = 0.5) -> List[Dict[str
 
 
 def map_cve_to_attack(entry, min_confidence: float = 0.5) -> Dict[str, Any]:
-    """Map a CVE entry to MITRE ATT&CK techniques via its CWEs.
-    entry: CVEEntry or dict with cwes field.
+    """通过 CWE 将 CVE 条目映射到 MITRE ATT&CK 技术。
+    entry: CVEEntry 或含 cwes 字段的 dict。
 
-    Returns {
-      cve_id, cwes, techniques: [{technique_id, name, tactic, confidence, cwe}],
-      tactics: [unique tactic names], summary: str
-    }"""
+    返回 {cve_id, cwes, techniques: [{technique_id, name, tactic, confidence, cwe}],
+    tactics: [去重战术列表], summary: str}"""
     cid = _get(entry, "cve_id", "")
     cwes = _get(entry, "cwes", [])
     if isinstance(cwes, str):
@@ -193,7 +189,7 @@ def map_cve_to_attack(entry, min_confidence: float = 0.5) -> Dict[str, Any]:
                 m["cwe"] = cwe
                 all_techniques.append(m)
 
-    # sort by confidence desc
+    # 按置信度降序排列
     all_techniques.sort(key=lambda x: x["confidence"], reverse=True)
 
     tactics = list(dict.fromkeys(t["tactic"] for t in all_techniques))
@@ -215,18 +211,17 @@ def batch_map_to_attack(
     entries: List,
     min_confidence: float = 0.5,
 ) -> List[Dict[str, Any]]:
-    """Map a batch of CVE entries to ATT&CK techniques.
-    Returns list of results sorted by total technique count desc (more
-    techniques = broader attack surface)."""
+    """批量映射 CVE 条目到 ATT&CK 技术。
+    返回按技术数量降序排列的结果列表（技术越多 = 攻击面越广）。"""
     results = [map_cve_to_attack(e, min_confidence) for e in entries]
     results.sort(key=lambda x: len(x["techniques"]), reverse=True)
     return results
 
 
 def get_tactic_summary(entries: List) -> Dict[str, Any]:
-    """Aggregate ATT&CK tactics across multiple CVE entries.
-    Shows which tactics are most prevalent in your vulnerability landscape.
-    Returns {total_techniques, tactic_counts, top_tactics, ...}"""
+    """跨多个 CVE 条目聚合 ATT&CK 战术。
+    展示漏洞格局中最常见的战术。
+    返回 {total_techniques, tactic_counts, top_tactics, ...}"""
     tactic_counts: Dict[str, int] = {}
     technique_counts: Dict[str, int] = {}
     total = 0
@@ -251,8 +246,8 @@ def get_tactic_summary(entries: List) -> Dict[str, Any]:
     }
 
 
-# ---- lookup specific technique details ----
-# minimal ATT&CK technique metadata for the ones we map to
+# ---- 查找特定技术详情 ----
+# 所映射技术的 ATT&CK 技术最小元数据集。
 
 _ATTACK_TECHNIQUE_INFO: Dict[str, Dict[str, str]] = {
     "T1189": {"name": "Drive-by Compromise", "url": "https://attack.mitre.org/techniques/T1189"},
@@ -285,11 +280,11 @@ _ATTACK_TECHNIQUE_INFO: Dict[str, Dict[str, str]] = {
 
 
 def get_technique_info(technique_id: str) -> Optional[Dict[str, str]]:
-    """Get ATT&CK technique metadata. Returns None if not in our lookup."""
+    """获取 ATT&CK 技术元数据。不在查找表中时返回 None。"""
     return _ATTACK_TECHNIQUE_INFO.get(technique_id)
 
 
-# ---- helper ----
+# ---- 辅助函数 ----
 
 def _get(entry, field: str, default=None):
     if hasattr(entry, field):

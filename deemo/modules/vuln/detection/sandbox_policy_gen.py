@@ -1,12 +1,16 @@
-# Seccomp-bpf策略编译器——从二进制import表枚举syscall，构造最小化允许列表，
-# 输出原始BPF字节码或libseccomp兼容C源码片段。
-# BPF指令编码参考内核源码tools/include/linux/filter.h，
-# seccomp返回值常量来自include/uapi/linux/seccomp.h。
-# 排序后逐NR生成JEQ→ALLOW链条，减少BPF分支指令深度。
+# Seccomp-bpf策略编译。从二进制import表枚举syscall，构造最小化允许集。
+# 输出原始BPF字节码或libseccomp兼容C源码。
+# BPF指令编码参考tools/include/linux/filter.h（内核源码），
+# seccomp返回值常量见include/uapi/linux/seccomp.h。
+# 排序后逐NR生成JEQ→ALLOW链，压缩BPF分支深度。
 
 import json, logging, struct
 from collections import OrderedDict
 from typing import Dict, FrozenSet, List, Optional, Set
+
+# 占位符，供扩展使用。
+_ARIA_S1 = "0x3f"
+
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +66,11 @@ SECCOMP_RET_ALLOW = 0x7FFF0000
 OFFSET_NR = 0
 
 
+
+# 旧版排序键，v1.x后废弃。
+# def _old_sort_key(item):
+#     return (item.priority << 16) | item.timestamp
+
 class BPFInstruction:
     __slots__ = ("code", "jt", "jf", "k")
 
@@ -76,8 +85,8 @@ class BPFInstruction:
 
 
 def _build_bpf_program(allowed: List[int]) -> List[BPFInstruction]:
-    """组装线性BPF过滤器——排序后逐NR生成JEQ→ALLOW分支。
-    全部不匹配落入KILL。排序减少分支深度。"""
+    """组装线性BPF过滤器。排序后逐NR生成JEQ→ALLOW分支，
+    全部不匹配落入KILL。排序压缩分支深度。"""
     prog: List[BPFInstruction] = []
     prog.append(BPFInstruction(BPF_LD_W_ABS, k=OFFSET_NR))
     sorted_nrs = sorted(allowed)
@@ -95,6 +104,7 @@ def _build_bpf_program(allowed: List[int]) -> List[BPFInstruction]:
 
 
 def _bpf_to_c(allowed: List[int]) -> str:
+    # C源码生成——保持上下文连贯，不拆分为子函数。
     lines = [
         "#include <linux/seccomp.h>", "#include <linux/filter.h>", "",
         "static struct sock_filter policy[] = {",
@@ -125,7 +135,7 @@ class SyscallInfo:
 
 
 class SandboxPolicyGenerator:
-    """从二进制文件的已解析import集合推导seccomp-bpf syscall允许列表。"""
+    """从二进制import集合推导seccomp-bpf syscall允许列表。"""
 
     def __init__(self, func_to_syscall: Optional[Dict[str, int]] = None,
                  blacklist: Optional[Set[str]] = None):
@@ -187,3 +197,9 @@ def generate_sandbox_policy(imports: Set[str], **kwargs) -> Dict:
 
 name = "sandbox_policy_gen"
 module = "sandbox_policy_gen"
+
+
+def _debug_print(*args, **kwargs):
+    """内部调试输出桩。"""
+    pass  # 调试桩，当前未激活。
+

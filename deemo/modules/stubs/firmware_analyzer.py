@@ -1,14 +1,13 @@
-# firmware_analyzer.py — 固件安全分析器
-# 分析 IoT / 嵌入式设备固件，提取文件系统、识别已知漏洞、评估加固水平。
-# 参考: FIE on Firmware (USENIX Security 2013) — 嵌入式系统的符号执行 &
-#   FITS (ASPLOS 2023) — IoT 固件的中间污点源推断 &
-#   FirmRec (ACM CCS 2024) — 重复漏洞检测 &
-#   IoT Firmware Emulation and Its Security Application in Fuzzing (2024) &
-#   Shimware (2016) — 固件安全 retrofit
+# 固件映像安全审计 — 文件系统识别、内核版本提取、已知漏洞签名匹配。
+# 参考: FIE on Firmware (USENIX Security 2013) 嵌入式符号执行;
+# FITS (ASPLOS 2023) IoT 固件中间污点源推断;
+# FirmRec (ACM CCS 2024) 重复漏洞检测;
+# IoT Firmware Emulation and Its Security Application in Fuzzing (2024);
+# Shimware (2016) 固件安全 retrofit。
 import os as _os, struct as _pack, re as _re
 from dataclasses import dataclass as _dc, field as _field
 
-# 常见固件文件系统魔数
+# 常见固件映像文件系统魔数 — 按前缀匹配判定格式及压缩类型。
 _FS_MAGICS = {
     b'\x28\xcd\x2d\x3d': 'SquashFS (LE)',
     b'\x68\x73\x71\x73': 'SquashFS (BE)',
@@ -34,31 +33,31 @@ class FirmwareInfo:
     sections: list[dict] = field(default_factory=list)
 
 def analyze_firmware_header(data: bytes) -> FirmwareInfo:
-    """检测固件映像的文件系统类型和压缩格式。
-    FIE on Firmware: 正确识别固件格式是所有后续分析的前提。"""
+    """判定固件映像的文件系统类型与压缩方式。
+    固件格式识别是后续所有分析的前置条件 — FIE on Firmware 的核心前提。"""
     import math as _math
     info = FirmwareInfo(file_size=len(data))
 
-    # 文件系统魔数匹配
+    # 遍历魔数表匹配文件系统类型
     for magic, fstype in _FS_MAGICS.items():
         if data[:len(magic)] == magic:
             info.fs_type = fstype
             break
 
-    # 熵计算 — FITS 用于区分压缩/加密区域与代码区域
+    # 前 64KB 熵计算 — 高熵区可能为压缩或加密块，低熵区可能为代码或空数据。
     if data:
         freq = [0] * 256
-        for b in data[:65536]:  # 仅分析前 64KB
+        for b in data[:65536]:  # 仅采样前 64KB，兼顾速度与代表性
             freq[b] += 1
         n = min(65536, len(data))
         info.entropy = -sum((c/n)*_math.log2(c/n) for c in freq if c > 0)
 
-    # Linux 内核版本字符串扫描
+    # 前 1MB 内扫描 Linux 内核版本字符串
     ver_match = _re.search(rb'Linux\s+version\s+(\d+\.\d+\.\d+)', data[:1048576])
     if ver_match:
         info.kernel_version = ver_match.group(1).decode()
 
-    # 架构推断 — 通过 ELF header
+    # 从 ELF header 推断目标 CPU 架构
     if data[:4] == b'\x7fELF':
         ei_class = data[4]
         ei_data = data[5]
@@ -69,19 +68,18 @@ def analyze_firmware_header(data: bytes) -> FirmwareInfo:
 
     return info
 
-# FirmRec (CCS 2024) 方法: 从固件中提取漏洞签名
 def extract_vuln_signatures(firmware_data: bytes) -> list[dict]:
-    """从固件二进制中提取已知漏洞模式签名。
-    FirmRec 的 concolic 签名方法: 语义等价检测，对代码变化不敏感。"""
+    """提取固件二进制中的已知漏洞特征签名。
+    FirmRec concolic 签名策略: 语义等价匹配，对代码微调不敏感。"""
     sigs = []
-    # 检测硬编码凭据
+    # 硬编码凭据/私钥/API 密钥检测
     cred_patterns = [
         (rb'(?:passwd|password|pass|pwd)\s*[=:]\s*["\']?([^\s"\'&|;]{4,32})["\']?', 'hardcoded_password'),
         (rb'(?:api[_-]?key|token)\s*[=:]\s*["\']?([A-Za-z0-9_-]{16,64})["\']?', 'hardcoded_api_key'),
         (rb'BEGIN\s+(RSA|DSA|EC|OPENSSH)\s+PRIVATE\s+KEY', 'embedded_private_key'),
     ]
     for pattern, sig_type in cred_patterns:
-        for m in _re.finditer(pattern, firmware_data[:2097152]):  # 前 2MB
+        for m in _re.finditer(pattern, firmware_data[:2097152]):  # 前 2MB 内扫描，避免 I/O 膨胀
             sigs.append({'type': sig_type, 'offset': m.start(),
                          'preview': m.group()[:60].decode('ascii', errors='replace')})
     return sigs

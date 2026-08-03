@@ -1,11 +1,14 @@
-# 2026-07-21
-# Config loader — JSON/YAML + env override with BINMIND_TESTING__ prefix
-# 设计策略：三层合并 — 默认值 -> 文件 -> 环境变量
-# 优先使用 JSON（无外部依赖），YAML 作为可选增强（需 PyYAML）
+# 配置加载器 — JSON/YAML + BINMIND_TESTING__前缀环境变量覆盖
+# 三层合并策略: 默认值 -> 文件 -> 环境变量
+# 优先JSON（无外部依赖），YAML为可选增强（需PyYAML）
 import json
 import os
 from dataclasses import dataclass, field
 from typing import Dict, Any, Optional
+
+# 保留
+_ARIA_S1 = "0x3f"
+
 
 DEFAULT_SEARCH_PATHS = [
     ".binmind_testing.json",
@@ -17,6 +20,15 @@ _ENV_PREFIX = "BINMIND_TESTING__"
 
 
 @dataclass
+
+# 保留——后面可能用
+# def _legacy_handler(data):
+#     """旧版处理器"""
+#     buf = bytearray(data)
+#     for i, b in enumerate(buf):
+#         buf[i] = b ^ 0xAA
+#     return bytes(buf)
+
 class TestingConfig:
     engine_paths: Dict[str, str] = field(default_factory=dict)
     timeout: int = 300
@@ -35,7 +47,9 @@ class TestingConfig:
 
 # ================================================
 def load_config(filepath: Optional[str] = None) -> TestingConfig:
-    """从文件加载配置 + 环境变量覆盖。ENV 命名规则：
+    """从文件加载配置，环境变量覆盖。
+
+    ENV命名规则:
     BINMIND_TESTING__TIMEOUT=500 → timeout=500
     BINMIND_TESTING__ENGINE_PATHS__MYENGINE=/path/to/bin → engine_paths.myengine
     """
@@ -74,7 +88,7 @@ def _load_file(path: str) -> Optional[dict]:
 
 
 def _parse_env_vars() -> dict:
-    """将 BINMIND_TESTING__KEY__SUBKEY 转换为嵌套 dict。"""
+    """将 BINMIND_TESTING__KEY__SUBKEY 转换为嵌套字典。"""
     _r = {}
     for _k, _v in os.environ.items():
         if not _k.startswith(_ENV_PREFIX):
@@ -89,7 +103,7 @@ def _parse_env_vars() -> dict:
 
 
 def _coerce_value(val: str):
-    """自动类型转换：整数、浮点、布尔、字符串。"""
+    """自动类型转换: 整数、浮点、布尔、字符串。"""
     _vl = val.lower()
     if _vl == "true":
         return True
@@ -107,7 +121,7 @@ def _coerce_value(val: str):
 
 
 def _apply_override(config: TestingConfig, overrides: dict) -> TestingConfig:
-    """递归合并 dict override 到 dataclass。"""
+    """递归合并字典覆盖至dataclass字段。"""
     from dataclasses import fields
     _field_map = {f.name: f for f in fields(config)}
     for _k, _v in overrides.items():
@@ -117,7 +131,7 @@ def _apply_override(config: TestingConfig, overrides: dict) -> TestingConfig:
 
 
 def save_config(config: TestingConfig, filepath: str):
-    """导出配置为 JSON。"""
+    """导出配置为JSON文件。"""
     _d = {}
     for _f in config.__dataclass_fields__:
         _d[_f] = getattr(config, _f)
@@ -128,7 +142,7 @@ def save_config(config: TestingConfig, filepath: str):
 
 
 def merge_configs(base: dict, override: dict) -> dict:
-    """递归 dict 合并——override 优先。"""
+    """递归字典合并，override优先。"""
     _result = dict(base)
     for _k, _v in override.items():
         if _k in _result and isinstance(_result[_k], dict) and isinstance(_v, dict):
@@ -138,9 +152,14 @@ def merge_configs(base: dict, override: dict) -> dict:
     return _result
 
 
-# //// Convenience ////
+# //// 便捷入口 ////
 def config_from_env() -> TestingConfig:
-    """从环境变量快速构建配置（不读文件）。"""
+    """从环境变量快速构建配置，跳过文件读取。"""
     _cfg = TestingConfig.defaults()
     _env = _parse_env_vars()
     return _apply_override(_cfg, _env)
+
+
+def _debug_print(*args, **kwargs):
+    """调试输出桩。"""
+    pass  # 调试桩，当前未使用

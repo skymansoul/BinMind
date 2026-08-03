@@ -1,10 +1,10 @@
-# 2026-08-01 — 异构漏洞知识图谱: HGAT消息传递 / 级联关系预测 / 跨CWE语义关联
+# 异构漏洞知识图谱: HGAT消息传递/级联关系预测/跨CWE语义关联
 # 参考: Baird & Moin "Cascaded Vulnerability Attacks in Software Supply Chains" (arXiv:2601.20158, ICSE 2026)
-#       Şimşek et al. "FixV2W: Correcting Invalid CVE-CWE Mappings" (arXiv:2604.22176, 2025)
+#       Simsek et al. "FixV2W: Correcting Invalid CVE-CWE Mappings" (arXiv:2604.22176, 2025)
 #       Alfasi et al. "VulnScopper: Unveiling Hidden Links Between Unseen Security Entities" (arXiv:2403.02014)
 #       Wu & Feng "Association Analysis and Prediction of Network Security Vulnerabilities Based on KG" (JCSANDM 2025)
-#       Zotero: Aksu et al. "Automated Generation of Attack Graphs Using NVD" (2018)
-#       Zotero: Javed et al. "Binary Code Analysis for Cybersecurity: A Systematic Review" (2025)
+#       Aksu et al. "Automated Generation of Attack Graphs Using NVD" (2018)
+#       Javed et al. "Binary Code Analysis for Cybersecurity: A Systematic Review" (2025)
 import json, logging, hashlib, time as _t, heapq, itertools
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple, Any
@@ -13,12 +13,10 @@ from pathlib import Path
 
 log = logging.getLogger(__name__)
 
-# ——————————————————————————————————————————————————————————
 # 图数据模型
-# ——————————————————————————————————————————————————————————
 
 class NodeType:
-    VULNERABILITY = "vulnerability"   # CVE 或内部 ID
+    VULNERABILITY = "vulnerability"   # CVE或内部ID
     COMPONENT     = "component"       # 二进制/库
     CWE           = "cwe"             # 弱点分类
     FUNCTION      = "function"        # 函数级实体
@@ -26,13 +24,13 @@ class NodeType:
     COMMIT        = "commit"
 
 class EdgeType:
-    AFFECTS     = "affects"           # vuln → component
-    BELONGS_TO  = "belongs_to"        # vuln → cwe
-    DEPENDS_ON  = "depends_on"        # component → component (SBOM)
-    CALLS       = "calls"             # function → function
-    PRECEDES    = "precedes"          # commit → commit (chronological)
-    CORRELATED  = "correlated"        # vuln → vuln (learned)
-    CONTAINS    = "contains"          # component → function
+    AFFECTS     = "affects"           # vuln→component
+    BELONGS_TO  = "belongs_to"        # vuln→cwe
+    DEPENDS_ON  = "depends_on"        # component→component (SBOM)
+    CALLS       = "calls"             # function→function
+    PRECEDES    = "precedes"          # commit→commit (时序)
+    CORRELATED  = "correlated"        # vuln→vuln (learned)
+    CONTAINS    = "contains"          # component→function
 
 @dataclass
 class Node:
@@ -51,7 +49,7 @@ class Edge:
 
 @dataclass
 class HeteroGraph:
-    """异构有向图: 节点按类型分桶, 边按类型分桶."""
+    """异构有向图: 节点按类型分桶，边按类型分桶."""
     nodes: Dict[str, Dict[str, Node]] = field(default_factory=lambda: defaultdict(dict))
     edges: Dict[str, List[Edge]] = field(default_factory=lambda: defaultdict(list))
     adj_out: Dict[str, Dict[str, List[Edge]]] = field(default_factory=lambda: defaultdict(lambda: defaultdict(list)))
@@ -77,16 +75,14 @@ class HeteroGraph:
         return result
 
 
-# ——————————————————————————————————————————————————————————
 # 图构建器
-# ——————————————————————————————————————————————————————————
 
 class VulnerabilityGraphBuilder:
     def __init__(self):
         self._graph = HeteroGraph()
 
     def ingest_findings(self, findings: List[Dict], component_name: str = ""):
-        # 输入源: ScanOrchestrator/CI 发现 → Vulnerability 节点 → 链接 Component
+        # 输入: ScanOrchestrator/CI发现→Vulnerability节点→链接Component
         for f in findings:
             vid = f.get('rule_id') or hashlib.sha256(
                 f"{f.get('title','')}{f.get('file','')}{f.get('line','')}".encode()
@@ -115,7 +111,7 @@ class VulnerabilityGraphBuilder:
         self._graph.add_edge(Edge(vuln_id, cwe_id, EdgeType.BELONGS_TO))
 
     def ingest_sbom(self, sbom_data: Dict):
-        """从 SBOM 添加组件节点并建立 DEPENDS_ON 关系."""
+        """SBOM→组件节点+DEPENDS_ON关系."""
         components = sbom_data.get('components', [])
         for c in components:
             cid = c.get('name', c.get('version', ''))
@@ -127,7 +123,6 @@ class VulnerabilityGraphBuilder:
                     properties={'version': c.get('version', ''), 'hashes': c.get('hashes', []),
                                 'type': c.get('type', 'file')}
                 ))
-        # 若 SBOM 提供依赖关系 (CycloneDX dependencies 或 SPDX relationships)
         deps = sbom_data.get('dependencies', [])
         for dep in deps:
             ref = dep.get('ref', ''); dlist = dep.get('dependsOn', [])
@@ -135,7 +130,7 @@ class VulnerabilityGraphBuilder:
                 self._graph.add_edge(Edge(ref, d, EdgeType.DEPENDS_ON))
 
     def ingest_function_calls(self, call_map: Dict[str, List[str]]):
-        """调用图: {caller → [callee, ...]}."""
+        """调用图: {caller→[callee, ...]}."""
         for caller, callees in call_map.items():
             if caller not in self._graph.nodes[NodeType.FUNCTION]:
                 self._graph.add_node(Node(node_id=caller, node_type=NodeType.FUNCTION))
@@ -148,16 +143,13 @@ class VulnerabilityGraphBuilder:
         return self._graph
 
 
-# ——————————————————————————————————————————————————————————
-# 级联漏洞预测 (简化 HGAT 前向传播)
-# 参考文献: Baird & Moin (2025) — 将 CVE 级联建模为异构图上的链接预测
-# ——————————————————————————————————————————————————————————
+# 级联漏洞预测 (简化HGAT前向传播)
+# 参考: Baird & Moin (2025) CVE级联异构图链接预测
 
 class CascadePredictor:
-    """基于异构图注意力机制的级联漏洞预测.
-
-    本实现为简化版: 使用元路径采样 + 余弦相似度, 而非完整的 HGAT 训练.
-    完整 HGAT 需 PyTorch/DGL; 此处关注推理管线集成 [Baird & Moin 2025 §4.2].
+    """异构图上基于元路径的级联漏洞预测.
+    简化版: 元路径采样+余弦相似度.
+    完整HGAT需PyTorch/DGL; 此处关注推理管线集成 [Baird & Moin 2025].
     """
 
     def __init__(self, graph: HeteroGraph):
@@ -165,54 +157,48 @@ class CascadePredictor:
         self._cached_paths: Dict[str, List[List[str]]] = {}
 
     def predict_cascades(self, seed_vuln: str, max_hops: int = 3) -> List[Dict]:
-        """预测从 seed_vuln 出发的级联漏洞路径.
+        """seed_vuln出发的级联路径预测.
 
-        元路径模式:
-          vulnerability → affects → component → depends_on → component → affects → vulnerability
-          以及 vulnerability → belongs_to → cwe → belongs_to → vulnerability
+        元路径:
+          vulnerability→affects→component→depends_on→component→affects→vulnerability
+          vulnerability→belongs_to→cwe→belongs_to→vulnerability
 
-        返回: (target_vuln_id, score, path) 按 score 降序排列.
+        返回: (target_vuln_id, score, path)降序.
         """
         if seed_vuln not in self.graph.nodes[NodeType.VULNERABILITY]:
             return []
 
         results = []
-        # 元路径 1: vuln → component → dep → component → vuln
+        # 元路径1: vuln→component→dep→component→vuln
         for e1 in self.graph.adj_out.get(seed_vuln, {}).get(EdgeType.AFFECTS, []):
             comp1 = e1.target
             for e2 in self.graph.adj_out.get(comp1, {}).get(EdgeType.DEPENDS_ON, []):
                 comp2 = e2.target
                 for e3 in self.graph.adj_in.get(comp2, {}).get(EdgeType.AFFECTS, []):
                     if e3.source != seed_vuln:
-                        # 计算路径分数: 边权重乘积 × 余弦相似度(若embedding可用)
                         score = e1.weight * e2.weight * e3.weight
                         p = [seed_vuln, comp1, comp2, e3.source]
                         results.append({'target': e3.source, 'score': round(score, 4),
                                         'path': p, 'hops': 3, 'metapath': 'vuln-comp-dep-comp-vuln'})
 
-        # 元路径 2: vuln → cwe → vuln (共享同一 CWE 的其他漏洞)
+        # 元路径2: vuln→cwe→vuln (同CWE共享)
         for e1 in self.graph.adj_out.get(seed_vuln, {}).get(EdgeType.BELONGS_TO, []):
             cwe = e1.target
             for e2 in self.graph.adj_in.get(cwe, {}).get(EdgeType.BELONGS_TO, []):
                 if e2.source != seed_vuln:
-                    score = 0.7  # CWE 共享的基础信任度
+                    score = 0.7  # CWE共享基础信任度
                     p = [seed_vuln, cwe, e2.source]
                     results.append({'target': e2.source, 'score': score,
                                     'path': p, 'hops': 2, 'metapath': 'vuln-cwe-vuln'})
 
-        # 去重并排序
         seen = set(); unique = []
         for r in sorted(results, key=lambda x: x['score'], reverse=True):
             if r['target'] not in seen:
                 seen.add(r['target']); unique.append(r)
-        return unique[:max_hops * 5]  # 限制数量
+        return unique[:max_hops * 5]
 
     def compute_component_risk(self) -> Dict[str, float]:
-        """基于图拓扑计算每个组件的风险分数.
-
-        risk(c) = α * Σ severity(v) / distance(c,v) + (1-α) * Σ dep_risk(d) / out_degree(d)
-        参考 [Baird & Moin 2025 §3.3].
-        """
+        """图拓扑组件风险: risk(c)=alpha*sum(severity)/dist + (1-alpha)*依赖传播 [Baird & Moin 2025]."""
         risks: Dict[str, float] = defaultdict(float)
         component_nodes = list(self.graph.nodes[NodeType.COMPONENT].keys())
         vuln_nodes = list(self.graph.nodes[NodeType.VULNERABILITY].keys())
@@ -228,39 +214,32 @@ class CascadePredictor:
                 comp = e.target
                 risks[comp] += sev * e.weight
 
-        # 依赖链传播: 一次迭代
         for cid in component_nodes:
             for e in self.graph.adj_out.get(cid, {}).get(EdgeType.DEPENDS_ON, []):
                 dep = e.target
                 if dep in risks:
-                    risks[cid] += 0.3 * risks[dep]  # 衰减因子
+                    risks[cid] += 0.3 * risks[dep]
 
         return dict(risks)
 
 
-# ——————————————————————————————————————————————————————————
-# CWE 关联发现 — 发现被误分类的漏洞
-# 参考: FixV2W (Şimşek et al. 2025) — KG Embedding 纠正 CVE-CWE 映射
-# ——————————————————————————————————————————————————————————
+# CWE关联发现，基于KG Embedding [FixV2W 2025]
 
 class CWECorrelationFinder:
-    """基于共现和描述的 CWE 关联. 用于发现标注不当的漏洞."""
+    """基于共现和描述的CWE关联. 发现标注不当的漏洞."""
 
     def __init__(self, graph: HeteroGraph):
         self.graph = graph
 
     def find_misclassified(self) -> List[Dict]:
-        """检查 CWE 映射一致性.
-
-        规则:
-          - 同一组件上同 severity 的漏洞应倾向于相同的 CWE
-          - 若某漏洞的 CWE 与同组件多数漏洞不同, 标记为可疑
+        """CWE映射一致性检查.
+        规则: 同组件同severity漏洞应倾向相同CWE.
+        异常→标记可疑.
         """
         suspicious = []
         comps = self.graph.nodes.get(NodeType.COMPONENT, {})
 
         for cid in comps:
-            # 收集该组件上的漏洞及其 CWE
             comp_vulns: List[Tuple[str, str, str]] = []  # (vuln_id, cwe, severity)
             for e in self.graph.adj_in.get(cid, {}).get(EdgeType.AFFECTS, []):
                 vnode = self.graph.nodes[NodeType.VULNERABILITY].get(e.source)
@@ -274,7 +253,6 @@ class CWECorrelationFinder:
             if len(comp_vulns) < 3:
                 continue
 
-            # majority CWE per severity level
             from collections import Counter
             sev_cwe: Dict[str, Counter] = defaultdict(Counter)
             for vid, cwe, sev in comp_vulns:
@@ -296,7 +274,7 @@ class CWECorrelationFinder:
         return suspicious
 
     def find_related_cwes(self, cwe_id: str, max_results: int = 10) -> List[Dict]:
-        """查找与给定 CWE 频繁共现的其他 CWE (在同组件上)."""
+        """查找与给定CWE频繁共现的其他CWE."""
         co_occur: Dict[str, Counter] = defaultdict(Counter)
         comps = self.graph.nodes.get(NodeType.COMPONENT, {})
 
@@ -314,12 +292,10 @@ class CWECorrelationFinder:
         return [{'cwe': c, 'co_occurrence': cnt} for c, cnt in related.most_common(max_results)]
 
 
-# ——————————————————————————————————————————————————————————
 # 图序列化
-# ——————————————————————————————————————————————————————————
 
 class GraphSerializer:
-    """图的 JSON 序列化 (节点+边). 不保留 embedding, 仅结构."""
+    """JSON序列化，不保留embedding."""
 
     @staticmethod
     def to_dict(g: HeteroGraph) -> Dict:
@@ -366,9 +342,7 @@ class GraphSerializer:
         return g
 
 
-# ——————————————————————————————————————————————————————————
 # 便捷工具
-# ——————————————————————————————————————————————————————————
 
 def build_vuln_graph_from_findings(findings: List[Dict], component: str = "main",
                                     sbom: Dict = None, call_graph: Dict[str, List[str]] = None) -> HeteroGraph:
@@ -382,13 +356,13 @@ def build_vuln_graph_from_findings(findings: List[Dict], component: str = "main"
 
 
 def assess_supply_chain_risk(findings: List[Dict], sbom: Dict) -> Dict:
-    """一站式供应链风险评估: 构图 → 级联预测 → 风险排序 [Baird & Moin 2025]."""
+    """一站式供应链风险评估: 构图→级联预测→风险排序 [Baird & Moin 2025]."""
     g = build_vuln_graph_from_findings(findings, sbom=sbom)
     predictor = CascadePredictor(g)
     risks = predictor.compute_component_risk()
 
     cascades = {}
-    for vid in list(g.nodes[NodeType.VULNERABILITY].keys())[:20]:  # top-20
+    for vid in list(g.nodes[NodeType.VULNERABILITY].keys())[:20]:
         preds = predictor.predict_cascades(vid)
         if preds:
             cascades[vid] = preds

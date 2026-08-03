@@ -1,12 +1,10 @@
 """
-Network traffic cryptographic analysis: TLS/DTLS/SSH/QUIC/WireGuard detection,
-key extraction, decryption. Three-tier decryption fallback: cryptography →
-PyCryptodome → pure-Python XOR.
+网络流量密码学分析: TLS/DTLS/SSH/QUIC/WireGuard检测、密钥提取、解密。
+三级解密回退: cryptography → PyCryptodome → 纯Python XOR。
 
-2026-07: Added WireGuard Noise handshake detection, SSHv2 KEX algorithm
-enumeration, JA4 TLS client fingerprinting, QUIC v2 (RFC 9369) version
-negotiation, DTLS 1.3 record-layer detection, Encrypted ClientHello (ECH)
-recognition, GREASE cipher-suite filtering to suppress false positives.
+2026-07: 新增WireGuard Noise握手检测、SSHv2 KEX算法枚举、
+JA4 TLS客户端指纹、QUIC v2 (RFC 9369)版本协商、DTLS 1.3记录层检测、
+Encrypted ClientHello (ECH)识别、GREASE密码套件过滤以抑制误报。
 """
 
 import re
@@ -18,7 +16,7 @@ from enum import Enum
 from typing import Any, Optional, List, Tuple
 
 from .utils import safeReadBytes
-# from .constants import AES_SBOX  # Removed: irrelevant to traffic analysis
+# from .constants import AES_SBOX  # 已移除: 与流量分析无关
 
 _log = logging.getLogger(__name__)
 
@@ -59,13 +57,13 @@ _TLS_CIPHER_SUITE_MAP = {
     0x1301: "TLS_AES_128_GCM_SHA256",
     0x1302: "TLS_AES_256_GCM_SHA384",
     0x1303: "TLS_CHACHA20_POLY1305_SHA256",
-    # TLS 1.3 additional suites
+    # TLS 1.3附加套件
     0x1304: "TLS_AES_128_CCM_SHA256",
     0x1305: "TLS_AES_128_CCM_8_SHA256",
-    # GREASE values — 0x0A0A, 0x1A1A, ..., 0xFADA — suppress from findings
+    # GREASE值 — 0x0A0A, 0x1A1A, ..., 0xFADA — 从结果中排除
 }
 
-# GREASE cipher suite values (RFC 8701) — identify as noise, not real suites
+# GREASE密码套件值(RFC 8701) — 识别为噪声, 非真实套件
 _GREASE_CIPHER_SUITES = {0x0A0A, 0x1A1A, 0x2A2A, 0x3A3A, 0x4A4A, 0x5A5A,
                           0x6A6A, 0x7A7A, 0x8A8A, 0x9A9A, 0xAAAA, 0xBABA,
                           0xCACA, 0xDADA, 0xEAEA, 0xFAFA}
@@ -80,7 +78,7 @@ _TLS_HANDSHAKE_TYPES = {1: "client_hello", 2: "server_hello", 11: "certificate",
 _TLS_VERSIONS = {0x0301: "TLS 1.0", 0x0302: "TLS 1.1", 0x0303: "TLS 1.2", 0x0304: "TLS 1.3"}
 _DTLS_VERSIONS = {0xFEFF: "DTLS 1.0", 0xFEFD: "DTLS 1.2", 0xFEFC: "DTLS 1.3 (draft)"}
 
-# TLS extension type → (name, hex if relevant) — subset critical for fingerprinting
+# TLS扩展类型 → (名称, 相关十六进制) — 指纹识别的关键子集
 _TLS_EXTENSIONS = {
     0: "server_name", 5: "status_request", 10: "supported_groups",
     11: "ec_point_formats", 13: "signature_algorithms", 16: "application_layer_protocol_negotiation",
@@ -89,19 +87,19 @@ _TLS_EXTENSIONS = {
     17513: "application_settings",
 }
 
-# SSHv2 KEX algorithms — detected via string matching in SSH_MSG_KEXINIT payloads
+# SSHv2 KEX算法 — 通过SSH_MSG_KEXINIT payload字符串匹配检测
 _SSH_KEX_ALGORITHMS = [
     b'curve25519-sha256', b'curve25519-sha256@libssh.org',
     b'ecdh-sha2-nistp256', b'ecdh-sha2-nistp384', b'ecdh-sha2-nistp521',
     b'diffie-hellman-group-exchange-sha256', b'diffie-hellman-group14-sha256',
     b'diffie-hellman-group16-sha512', b'sntrup761x25519-sha512@openssh.com',
-    # Weak: should be flagged
+    # 弱算法: 应标记
     b'diffie-hellman-group1-sha1', b'diffie-hellman-group-exchange-sha1',
     b'diffie-hellman-group14-sha1',
 ]
 
-# WireGuard Noise handshake protocol identifiers
-_WG_INITIATION_MAGIC = struct.pack('<I', 1)  # message type 1 = initiation
+# WireGuard Noise握手协议标识符
+_WG_INITIATION_MAGIC = struct.pack('<I', 1)  # 消息类型1 = initiation
 _WG_RESPONSE_MAGIC   = struct.pack('<I', 2)
 _WG_COOKIE_MAGIC     = struct.pack('<I', 3)
 _WG_CONSTRUCTION     = b"Noise_IKpsk2_25519_ChaChaPoly_BLAKE2s"
@@ -134,27 +132,27 @@ class TrafficAnalysisResult:
         self.cipher_suites: list[str] = []
         self.sni: str = ""
         self.session_id: str = ""
-        self.ja4_fingerprint: str = ""       # JA4 hash (RFC-draft compliant)
+        self.ja4_fingerprint: str = ""       # JA4哈希 (RFC草案兼容)
         self.ssh_kex_algorithms: list[str] = []
         self.quic_version: str = ""
 
 
-# ── GREASE filter ──
+# ── GREASE过滤器 ──
 
 def _is_grease(value: int) -> bool:
-    """RFC 8701 GREASE: values of the form 0x{byte}{byte} where byte ∈ {0A..FA}."""
+    """RFC 8701 GREASE: 0x{byte}{byte}形式的值, 其中byte ∈ {0A..FA}。"""
     return value in _GREASE_CIPHER_SUITES
 
 
-# ── TLS record-layer parsing ──
+# ── TLS记录层解析 ──
 
 def _detect_tls_record(data: bytes, offset: int) -> Optional[dict]:
     if offset + 5 > len(data):
         return None
     content_type = data[offset]
-    if content_type not in _TLS_CONTENT_TYPES and content_type != 0x17:  # DTLS app_data also 0x17
+    if content_type not in _TLS_CONTENT_TYPES and content_type != 0x17:  # DTLS app_data同为0x17
         return None
-    # Check for DTLS first — leading version byte is 0xFE in DTLS
+    # 先检查DTLS — DTLS版本首字节为0xFE
     if data[offset + 1] == 0xFE:
         return _detect_dtls_record(data, offset)
     version_raw = struct.unpack(">H", data[offset + 1:offset + 3])[0]
@@ -164,7 +162,7 @@ def _detect_tls_record(data: bytes, offset: int) -> Optional[dict]:
 
 
 def _detect_dtls_record(data: bytes, offset: int) -> Optional[dict]:
-    """Parse a DTLS record (RFC 9147 for DTLS 1.3)."""
+    """解析DTLS记录 (DTLS 1.3参考RFC 9147)。"""
     if offset + 13 > len(data):
         return None
     content_type = data[offset]
@@ -177,13 +175,13 @@ def _detect_dtls_record(data: bytes, offset: int) -> Optional[dict]:
             "epoch": epoch, "sequence": seq}
 
 
-# ── JA4 TLS fingerprint computation ──
+# ── JA4 TLS指纹计算 ──
 # JA4 = md5(QUIC|tls_version|SNI|alpns|cipher_suites|extensions)
 
 def _compute_ja4(tls_version: str, sni: str, cipher_suites: List[str],
                  alpns: List[str] = None, extensions: List[int] = None,
                  is_quic: bool = False) -> str:
-    """Compute JA4 fingerprint hash per the JA4+ specification."""
+    """按JA4+规范计算JA4指纹哈希。"""
     proto = "q" if is_quic else "t"
     ver = tls_version.replace(" ", "").replace(".", "")
     sn = sni if sni else ""
@@ -194,7 +192,7 @@ def _compute_ja4(tls_version: str, sni: str, cipher_suites: List[str],
     return hashlib.md5(raw).hexdigest()[:12]
 
 
-# ── ClientHello parsing ──
+# ── ClientHello解析 ──
 
 def _parse_client_hello(data: bytes, offset: int) -> Optional[dict]:
     try:
@@ -215,7 +213,7 @@ def _parse_client_hello(data: bytes, offset: int) -> Optional[dict]:
                 break
             cs = struct.unpack(">H", data[pos:pos + 2])[0]; pos += 2
             if _is_grease(cs):
-                continue  # suppress GREASE entries
+                continue  # 排除GREASE条目
             cipher_suites.append(_TLS_CIPHER_SUITE_MAP.get(cs, f"unknown (0x{cs:04X})"))
         return {"tls_version": tls_version, "cipher_suites": cipher_suites}
     except (struct.error, IndexError):
@@ -223,7 +221,7 @@ def _parse_client_hello(data: bytes, offset: int) -> Optional[dict]:
 
 
 def _extract_sni(data: bytes) -> str:
-    # Extract Server Name Indication via domain-name regex heuristic
+    # 通过域名正则启发式提取Server Name Indication
     for match in re.finditer(rb'[\w.-]{3,60}\.[\w.-]{2,20}', data):
         candidate = match.group().decode("ascii", errors="ignore")
         if "." in candidate and not candidate.startswith("."):
@@ -232,7 +230,7 @@ def _extract_sni(data: bytes) -> str:
 
 
 def _extract_alpns(data: bytes) -> List[str]:
-    """Extract ALPN protocol strings from TLS extensions. Heuristic scan."""
+    """从TLS扩展中提取ALPN协议字符串。启发式扫描。"""
     alpns: List[str] = []
     alpn_pat = re.compile(rb'\x00\x10\x00\x0e\x08(http/1\.[01]|h2|h3|spdy/\d)', re.IGNORECASE)
     known = {b'h2', b'h3', b'http/1.0', b'http/1.1', b'spdy/1', b'spdy/2', b'spdy/3',
@@ -244,7 +242,7 @@ def _extract_alpns(data: bytes) -> List[str]:
                 alpns.append(alpn)
         except Exception:
             pass
-    # Also scan for raw known ALPN strings
+    # 同时扫描原始已知ALPN字符串
     for kw in known:
         if kw in data and kw.decode() not in alpns:
             alpns.append(kw.decode())
@@ -252,28 +250,28 @@ def _extract_alpns(data: bytes) -> List[str]:
 
 
 def _extract_tls_extensions(data: bytes, start: int, end_hint: int) -> List[int]:
-    """Naively scan for TLS extension type bytes near the ClientHello."""
+    """在ClientHello附近粗略扫描TLS扩展类型字节。"""
     exts = []
     for off in range(start, min(start + 300, end_hint, len(data) - 1)):
         ext_type = struct.unpack(">H", data[off:off + 2])[0]
         if ext_type in _TLS_EXTENSIONS and ext_type not in exts:
             exts.append(ext_type)
-        if ext_type == 65037:  # ECH extension marker
+        if ext_type == 65037:  # ECH扩展标记
             exts.append(ext_type)
     return exts
 
 
-# ── WireGuard Noise handshake detection ──
+# ── WireGuard Noise握手检测 ──
 
 def _detect_wireguard(data: bytes) -> Optional[dict]:
-    """Detect WireGuard handshake messages via Noise protocol framing."""
+    """通过Noise协议帧检测WireGuard握手消息。"""
     findings: dict = {"protocol": "wireguard", "messages": []}
-    # Search for WireGuard identifier string
+    # 搜索WireGuard标识字符串
     if _WG_CONSTRUCTION in data:
         findings["noise_protocol"] = _WG_CONSTRUCTION.decode()
     if _WG_IDENTIFIER in data:
         findings["identifier_found"] = True
-    # Message type detection (4 bytes header: type (LE u32) + 3 reserved)
+    # 消息类型检测 (4字节头: type (LE u32) + 3 reserved)
     for off in range(0, min(len(data) - 4, len(data)), 4):
         msg_type = struct.unpack_from("<I", data, off)[0]
         if msg_type == 1:  # Initiation (148 bytes)
@@ -288,10 +286,10 @@ def _detect_wireguard(data: bytes) -> Optional[dict]:
     return findings if findings["messages"] or "noise_protocol" in findings else None
 
 
-# ── SSHv2 KEX parsing ──
+# ── SSHv2 KEX解析 ──
 
 def _parse_ssh_kex(data: bytes) -> dict:
-    """Extract SSH KEX algorithm names from binary data."""
+    """从二进制数据中提取SSH KEX算法名称。"""
     result: dict = {"kex_algorithms": [], "weak_kex": []}
     for algo in _SSH_KEX_ALGORITHMS:
         if algo in data:
@@ -302,7 +300,7 @@ def _parse_ssh_kex(data: bytes) -> dict:
     return result
 
 
-# ── QUIC version parsing ──
+# ── QUIC版本解析 ──
 
 _QUIC_VERSIONS = {
     0x00000001: "QUIC v1 (RFC 8999)",
@@ -315,10 +313,10 @@ _QUIC_VERSIONS = {
 }
 
 def _detect_quic(data: bytes) -> Optional[dict]:
-    """Detect QUIC long-header packets and extract version."""
+    """检测QUIC长头包并提取版本。"""
     findings: dict = {"protocol": "quic", "versions": [], "packets": []}
-    # QUIC long header: Header Form (1) | Fixed Bit (1) | Long Packet Type (2) | Reserved (2) | Packet Number Len (2) = byte 0
-    # Byte 0: 0b11000000 = 0xC0 mask for long header
+    # QUIC长头: Header Form(1) | Fixed Bit(1) | Long Packet Type(2) | Reserved(2) | Packet Number Len(2) = byte 0
+    # Byte 0: 0b11000000 = 0xC0 长头掩码
     long_header_mask = 0xC0
     min_header = 6  # 1 byte flags + 4 bytes version + 1 byte DCIL
 
@@ -335,19 +333,19 @@ def _detect_quic(data: bytes) -> Optional[dict]:
     return findings if findings["versions"] else None
 
 
-# ── ECH (Encrypted ClientHello) detection ──
+# ── ECH (Encrypted ClientHello) 检测 ──
 
 def _detect_ech(data: bytes) -> bool:
     """
-    Detect Encrypted ClientHello (TLS extension type 0xFE0D = 65037).
-    ECH encrypts the SNI and other privacy-sensitive ClientHello fields.
-    Presence indicates a client that supports TLS privacy enhancement.
+    检测Encrypted ClientHello (TLS扩展类型0xFE0D = 65037)。
+    ECH加密SNI及其他隐私敏感ClientHello字段。
+    存在则表明客户端支持TLS隐私增强。
     """
     ech_ext = struct.pack(">H", 65037)
     return ech_ext in data
 
 
-# Protocol fingerprint patterns for known encrypted transports
+# 已知加密传输的协议指纹模式
 _crypto_patterns = {
     "ssl_handshake": re.compile(rb"\x16\x03[\x01-\x04]"),
     "dtls_handshake": re.compile(rb"\x16\xfe[\xfd\xff]"),
@@ -356,7 +354,7 @@ _crypto_patterns = {
 }
 
 
-# ── Primary traffic analyzer ──
+# ── 主流量分析器 ──
 
 class CryptoTrafficAnalyzer:
     def __init__(self):
@@ -377,7 +375,7 @@ class CryptoTrafficAnalyzer:
                     self._enrich_quic(result, data)
                 self._results.append(result)
 
-        # WireGuard detection runs independently (not pattern-triggered)
+        # WireGuard检测独立运行(非模式触发)
         wg_result = _detect_wireguard(data)
         if wg_result and (wg_result.get("messages") or wg_result.get("noise_protocol")):
             wg_traffic = TrafficAnalysisResult()
@@ -402,13 +400,13 @@ class CryptoTrafficAnalyzer:
             result.tls_version = ch.get("tls_version", result.tls_version)
             result.findings.append({"cipher_suites": ch["cipher_suites"]})
 
-        # JA4 fingerprint
+        # JA4指纹
         alpns = _extract_alpns(data)
         tls_exts = _extract_tls_extensions(data, offset, offset + 2000)
         result.ja4_fingerprint = _compute_ja4(
             result.tls_version, sni, result.cipher_suites, alpns, tls_exts)
 
-        # ECH detection
+        # ECH检测
         if _detect_ech(data[offset:offset + 3000]):
             result.findings.append({"ech": "Encrypted ClientHello extension present"})
 
@@ -425,7 +423,7 @@ class CryptoTrafficAnalyzer:
             result.findings.append(quic_info)
 
 
-# ── Key material extraction ──
+# ── 密钥材料提取 ──
 
 class KeyExtractor:
     def __init__(self):
@@ -433,7 +431,7 @@ class KeyExtractor:
             (re.compile(rb'(?:key|KEY)[=:]\s*[\"\']?([A-Za-z0-9+/=]{16,64})[\"\']?'), "string_pattern"),
             (re.compile(rb'\x04\x20([\x20-\x7e]{32})'), "padded_32_byte"),
             (re.compile(rb'static\s+(?:const\s+)?unsigned\s+char\s+\w+\[\]\s*=\s*\{([^}]+)\}'), "c_array_init"),
-            # Additional: bare hex strings adjacent to "key" / "secret" labels
+            # 附加: "key"/"secret"标签旁的裸十六进制字符串
             (re.compile(rb'(?:secret|password|passwd|pwd)[=:]\s*[\"\']([A-Fa-f0-9]{16,64})[\"\']'), "hex_key_string"),
         ]
 
@@ -461,7 +459,7 @@ class KeyExtractor:
         return keys
 
 
-# ── Decryptor with three-tier library fallback ──
+# ── 三级库回退解密器 ──
 
 class TrafficDecryptor:
     def decrypt(self, data: bytes, key: bytes | KeyMaterial | None) -> DecryptionResult:
@@ -475,7 +473,7 @@ class TrafficDecryptor:
             result.error = f"key too short ({len(actual_key)} bytes)"
             return result
 
-        # Tier 1: cryptography (preferred — hardware-accelerated, actively maintained)
+        # 第一级: cryptography (首选 — 硬件加速, 活跃维护)
         try:
             from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
             use_key = actual_key[:32] if len(actual_key) >= 32 else actual_key[:16].ljust(16, b"\x00")
@@ -488,7 +486,7 @@ class TrafficDecryptor:
         except ImportError:
             pass
 
-        # Tier 2: PyCryptodome (widely available, pure-Python fallback)
+        # 第二级: PyCryptodome (广泛可用, 纯Python回退)
         try:
             from Crypto.Cipher import AES as PyAES
             ak = actual_key[:32] if len(actual_key) >= 32 else actual_key[:16].ljust(16, b"\x00")
@@ -499,7 +497,7 @@ class TrafficDecryptor:
         except ImportError:
             pass
 
-        # Tier 3: Pure-Python XOR — last resort, zero dependencies, minimal cryptographic value
+        # 第三级: 纯Python XOR — 最后手段, 零依赖, 密码学价值极低
         try:
             result.plaintext = bytes(a ^ b for a, b in zip(
                 data[:len(actual_key)], actual_key * ((len(data) // len(actual_key)) + 1)))
@@ -511,7 +509,7 @@ class TrafficDecryptor:
         return result
 
 
-# ── Convenience exports ──
+# ── 便捷导出 ──
 
 def extract_keys(binary: bytes | str) -> list[KeyMaterial]:
     return KeyExtractor().extract(binary)
@@ -527,11 +525,11 @@ def analyze_traffic(data: bytes) -> list[TrafficAnalysisResult]:
     return CryptoTrafficAnalyzer().analyze(data)
 
 
-# ── TLS 1.3 0-RTT Early Data 检测 (2026-07-28) ──
-# 0-RTT 允许客户端在首次飞行中发送应用数据, 代价是重放攻击面。
-# 检测指标: (1) ClientHello含 early_data(TLS扩展42),
-# (2) pre_shared_key 扩展含 early_data_indication,
-# (3) 编译的字符串标识 "enable-early-data"/"0rtt"/"early_data"
+# ── TLS 1.3 0-RTT Early Data检测 (2026-07-28) ──
+# 0-RTT允许客户端首次飞行发送应用数据, 代价是重放攻击面。
+# 检测指标: (1) ClientHello含early_data(TLS扩展42),
+# (2) pre_shared_key扩展含early_data_indication,
+# (3) 编译的字符串标识"enable-early-data"/"0rtt"/"early_data"
 
 _EARLY_DATA_STRINGS = [
     b'enable-early-data', b'early_data', b'0rtt', b'0-RTT',
@@ -542,7 +540,7 @@ _EARLY_DATA_STRINGS = [
 
 
 def detect_0rtt_support(data: bytes) -> dict:
-    """检测二进制/TLS流中的0-RTT early data支持."""
+    """检测二进制/TLS流中的0-RTT early data支持。"""
     result = {'0rtt_detected': False, 'evidence': []}
 
     # 检查TLS扩展42 (early_data)

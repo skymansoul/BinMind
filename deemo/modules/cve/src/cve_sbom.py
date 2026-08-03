@@ -1,18 +1,16 @@
-# 2026-08-01
-# cve_sbom.py — thin compat wrapper.
-# Tests that were written before the rename (cve_sbom → cve_sbom_matcher)
-# import from this module name. Rather than updating all test imports
-# (break other feature branches), this re-exports from cve_sbom_matcher.
+# cve_sbom.py — 薄兼容包装层。
+# 在重命名（cve_sbom → cve_sbom_matcher）之前编写的测试从此模块名导入。
+# 与其更新所有测试的导入（可能破坏其他特性分支），不如从cve_sbom_matcher重导出。
 #
-# NOT importing from cve_sbom_import — that's the SBOM *import* module
-# (parse/generate SBOMs from project files). Different concern.
+# 注意：不导入cve_sbom_import——那是SBOM *导入*模块（从项目文件解析/生成SBOM）。
+# 不同职责。
 
 import json
 import os
 import re
 from typing import Dict, List, Optional, Any
 
-# re-export everything from the matcher
+# 从匹配器重导出全部符号
 from .cve_sbom_matcher import (
     match_component,
     match_sbom,
@@ -24,7 +22,7 @@ from .cve_sbom_matcher import (
     _kb_lookup,
 )
 
-# re-export purl translation tools
+# 重导出purl转换工具
 from .cve_purl_cpe import (
     purl_to_cpe,
     cpe_to_purl,
@@ -51,25 +49,24 @@ __all__ = [
 ]
 
 
-# ---- purl parsing with patches ----
+# ---- 带补丁的purl解析 ----
 
-# npm scoped package pattern: @scope/name
+# npm作用域包模式: @scope/name
 _NPM_SCOPED_RE = re.compile(r"^@([^/]+)/(.+)$")
 
-# Go module path: domain/org/repo or similar
+# Go模块路径: domain/org/repo等
 _GO_MODULE_RE = re.compile(r"^([^/]+\.[^/]+)/(.+)$")
 
 
 def parse_purl(purl_str: str) -> Optional[Dict]:
-    """Parse a purl string, with patches for npm scoped packages and Go modules.
-    This wraps the cve_purl_cpe.parse_purl but adds ecosystem-specific
-    handling that the base parser intentionally omits (to keep the base
-    parser clean for the PURL→CPE pipeline)."""
+    """解析purl字符串，含npm作用域包和Go模块的生态系统特定补丁。
+    包装cve_purl_cpe.parse_purl，但增加了基础解析器为保持PURL→CPE管道纯净
+    而有意图省略的生态系统特定处理。"""
 
     if not purl_str or not purl_str.startswith("pkg:"):
         return None
 
-    # delegate to the base parser
+    # 委托给基础解析器
     from .cve_purl_cpe import parse_purl as _base_parse_purl
 
     result = _base_parse_purl(purl_str)
@@ -80,22 +77,22 @@ def parse_purl(purl_str: str) -> Optional[Dict]:
     name = result.get("name", "")
     namespace = result.get("namespace", "")
 
-    # npm scoped packages: ensure namespace is set
+    # npm作用域包：确保namespace已设置
     if eco == "npm" and not namespace:
         m = _NPM_SCOPED_RE.match(name)
         if m:
             result["namespace"] = m.group(1)
             result["name"] = m.group(2)
         else:
-            # also check the raw name field which might have @scope/name
+            # 同时检查可能含@scope/name的原始名称字段
             raw_name = result.get("raw", "")
             if raw_name:
-                # try to extract from qualified purl path
+                # 尝试从限定purl路径中提取
                 pass
 
-    # Go modules: normalize module path
+    # Go模块：规范化模块路径
     if eco == "golang":
-        # if there's a namespace but it looks like a full path, re-parse
+        # 若namespace看起来像完整路径，重新解析
         full_name = f"{namespace}/{name}" if namespace else name
         m = _GO_MODULE_RE.match(full_name)
         if m:
@@ -105,12 +102,11 @@ def parse_purl(purl_str: str) -> Optional[Dict]:
     return result
 
 
-# ---- SBOM file import ----
+# ---- SBOM文件导入 ----
 
 def import_sbom(path: str) -> Dict:
-    """Load an SBOM JSON file and return a normalized dict.
-    Handles both CycloneDX and SPDX formats. The returned dict always
-    has a 'components' key for downstream consumers."""
+    """加载SBOM JSON文件并返回规范化字典。
+    同时处理CycloneDX和SPDX格式。返回字典始终包含'components'键供下游使用。"""
 
     if not os.path.exists(path):
         raise FileNotFoundError(f"SBOM file not found: {path}")
@@ -118,7 +114,7 @@ def import_sbom(path: str) -> Dict:
     with open(path, "r", encoding="utf-8") as f:
         sbom = json.load(f)
 
-    # normalize to a common format
+    # 规范化为统一格式
     result = {
         "source_path": os.path.abspath(path),
         "format": "unknown",
@@ -131,7 +127,7 @@ def import_sbom(path: str) -> Dict:
         result["format"] = "cyclonedx"
         result["metadata"] = sbom.get("metadata", {})
         result["components"] = sbom.get("components", [])
-        # also handle services (SaaSBOM)
+        # 同时处理services（SaaSBOM）
         if "services" in sbom:
             for svc in sbom.get("services", []):
                 svc["_type"] = "service"
@@ -155,7 +151,7 @@ def import_sbom(path: str) -> Dict:
                 "cpe": None,
                 "ecosystem": None,
             }
-            # extract purl/cpe from externalRefs
+            # 从externalRefs提取purl/cpe
             for ref in pkg.get("externalRefs", []):
                 ref_type = ref.get("referenceType", "")
                 ref_locator = ref.get("referenceLocator", "")
@@ -165,7 +161,7 @@ def import_sbom(path: str) -> Dict:
                     comp["cpe"] = ref_locator
             result["components"].append(comp)
 
-    # Unknown/raw format — assume components key
+    # 未知/裸格式——假设包含components键
     else:
         result["format"] = "raw"
         if isinstance(sbom, list):

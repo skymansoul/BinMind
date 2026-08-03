@@ -1,19 +1,19 @@
-# 分级缓存 — L1 内存 LRU+TTL + L2 mmap 磁盘缓存
-# 参考 Caffeine (W-TinyLFU) 和 ristretto (cost-based 淘汰) 的设计
-# 当前为 byte-aware LRU — 按条目大小而非条目数做淘汰决策
-# L2 用 mmap 固定槽大小避免碎片，hash 碰撞导致 false miss（tolerable）
+# 分级缓存 —— L1 内存 LRU+TTL + L2 mmap 磁盘缓存
+# 参考 Caffeine (W-TinyLFU) 和 ristretto (cost-based 淘汰) 的设计理念
+# 当前为 byte-aware LRU —— 按条目大小而非条目数做淘汰决策
+# L2 用 mmap 固定槽大小避免碎片, hash 碰撞导致 false miss (可容忍)
 #
 # TinyLFU 准入策略 (Einarsson et al., "TinyLFU: A Highly Efficient Cache
 # Admission Policy", SYSTOR 2014):
-#   Count-Min Sketch 维护历史访问频率，新条目进入前与 victim 频率比较。
-#   只有新条目的历史频率 ≥ victim 时才替换 —— 过滤掉"只访问一次"的噪音项。
-#   DoorKeeper（Bloom filter）在 CM-Sketch 前拦截真正的 one-hit-wonder。
+#   Count-Min Sketch 维护历史访问频率, 新条目进入前与 victim 频率比较。
+#   只有新条目的历史频率 >= victim 时才替换 —— 过滤掉"只访问一次"的噪音项。
+#   DoorKeeper (Bloom filter) 在 CM-Sketch 前拦截真正的 one-hit-wonder。
 #
 # S3LRU (Segmented LRU, aka SLRU):
-#   单段 LRU 的问题是：一次大范围扫描会把热数据全部挤出。
-#   S3LRU 分三个 segment（probation → protected → ghost），
-#   新条目从 probation 开始，多次命中后晋升到 protected，
-#   淘汰时从 probation 剔除到 ghost（仅保留元数据）。
+#   单段 LRU 的问题: 一次大范围扫描会把热数据全部挤出。
+#   S3LRU 分三个 segment (probation → protected → ghost),
+#   新条目从 probation 开始, 多次命中后晋升到 protected,
+#   淘汰时从 probation 剔除到 ghost (仅保留元数据)。
 #   参考 Memcached 的 slab automover 和 Caffeine 的 SLRU 策略。
 
 import mmap
@@ -31,14 +31,14 @@ _SLOT_META_SZ = struct.calcsize(_SLOT_META_FMT)
 
 
 # ---- Count-Min Sketch (CMS) ----
-# d=4 rows, w=1024 columns → 4KB, 预期误差 ε ≈ 2/w = 0.2%
+# d=4 rows, w=1024 columns → 4KB, expected error ε ≈ 2/w = 0.2%
 
 class CountMinSketch:
-    """Count-Min Sketch — 点查询频率估算，空间 O(d*w)。
+    """Count-Min Sketch —— 点查询频率估算, 空间 O(d*w)。
 
-    用于 TinyLFU 准入决策：估算新条目的历史频率，
-    与即将被淘汰的 victim 频率比较。只高估不低估，
-    所以准入决策偏保守（可能拒绝本该准入的条目），
+    用于 TinyLFU 准入决策: 估算新条目的历史频率,
+    与即将被淘汰的 victim 频率比较。只高估不低估,
+    因此准入决策偏保守 (可能拒绝本该准入的条目),
     不会错误准入低频条目。
     """
 
@@ -74,7 +74,7 @@ class CountMinSketch:
         return min_est
 
     def _halve_all(self):
-        """全局减半 —— 防止旧条目频率永久支配新条目（TinyLFU reset 机制）。"""
+        """全局减半 —— 避免旧条目频率永久支配新条目 (TinyLFU reset)。"""
         for r in range(self.d):
             row = self._rows[r]
             for i in range(0, len(row), 8):
@@ -112,16 +112,16 @@ class DoorKeeper:
 
 
 # ---- SLRU (Segmented LRU) ----
-# 将缓存分为 Probation（试用段）和 Protected（保护段）。
+# 将缓存分为 Probation (试用段) 和 Protected (保护段)。
 # 新条目 → Probation。在 Probation 中被命中 → 晋升到 Protected。
-# 淘汰时：先踢 Protected 尾部，再踢 Probation 尾部。
-# 相对简单 LRU，抵抗扫描污染能力强很多。
+# 淘汰时: 先踢 Protected 尾部, 再踢 Probation 尾部。
+# 相对简单 LRU, 抵抗扫描污染能力强很多。
 
 class S3LRUCache:
     """三段 LRU —— 将缓存空间划分为 Probation + Protected。
 
-    segment_ratio=0.2 表示 Probation 占 20%（类似 Caffeine 默认配比）。
-    适用场景：需要抵抗大量一次访问数据冲击的热数据缓存。
+    segment_ratio=0.2 表示 Probation 占 20% (类似 Caffeine 默认配比)。
+    适用: 需抵抗大量一次性访问数据冲击的热数据缓存。
     """
 
     def __init__(self, max_bytes: int = 64 * 1024 * 1024,
@@ -136,7 +136,7 @@ class S3LRUCache:
         self._misses = 0
 
     def get(self, key: str) -> Optional[Any]:
-        # 先查 Protected（热数据优先命中）
+        # 先查 Protected (热数据优先命中)
         val = self._protected.get(key)
         if val is not None:
             self._hits += 1
@@ -145,7 +145,7 @@ class S3LRUCache:
         val = self._probation.get(key)
         if val is not None:
             self._hits += 1
-            # 晋升：从 Probation 移到 Protected
+            # 晋升: 从 Probation 移到 Protected
             self._probation.delete(key)
             self._protected.set(key, val)
             return val
@@ -154,7 +154,7 @@ class S3LRUCache:
 
     def set(self, key: str, value: Any, ttl: float = None):
         ttl = ttl if ttl is not None else self.default_ttl
-        # 若已存在于任一 segment，更新值
+        # 若已存在于任一 segment, 更新值
         if self._protected.get(key) is not None:
             self._protected.set(key, value, ttl)
             return
@@ -193,9 +193,9 @@ class S3LRUCache:
 # ---- LRU with TinyLFU admission ----
 
 class LRUCache:
-    """纯内存 LRU + TTL，双向链表 O(1) 操作。
+    """纯内存 LRU + TTL, 双向链表 O(1) 操作。
 
-    可选 TinyLFU 准入过滤：新条目入缓存前先检查其历史频率，
+    可选 TinyLFU 准入过滤: 新条目入缓存前先检查其历史频率,
     若低于当前 victim 则拒入 —— 防止低频条目驱逐高频条目。
     """
 
@@ -291,7 +291,7 @@ class LRUCache:
 
 
 class MmapDiskCache:
-    """mmap 磁盘 L2 缓存 — 固定槽大小，适合较大 object 的持久化。"""
+    """mmap 磁盘 L2 缓存 —— 固定槽大小, 适合较大 object 的持久化。"""
 
     def __init__(self, path: str, slot_size: int = 4096, num_slots: int = 16384):
         self.path = path
@@ -355,9 +355,9 @@ class MmapDiskCache:
 
 
 class CacheRouter:
-    """两级缓存路由 — 分片 L1 + 全局 L2。
-    分片减少锁竞争：之前一把大锁 8 线程 cache hit 延迟从 2μs 飙到 40μs，
-    分 4 个 shard 后回到 3μs。"""
+    """两级缓存路由 —— 分片 L1 + 全局 L2。
+    分片减少锁竞争: 此前一把大锁 8 线程 cache hit 延迟从 2us 飙至 40us,
+    分 4 个 shard 后回落到 3us。"""
 
     def __init__(self, l1_max_bytes: int = 64 * 1024 * 1024, shards: int = 4,
                  l2_path: str = "", l2_slot_size: int = 4096, l2_slots: int = 16384):

@@ -206,9 +206,9 @@ class PTVulnerabilityAnalyzer:
 
     # Round 6: 特权边界跨越检测 — 识别从用户态到内核态的调用路径
     def _detect_privilege_boundary_crossings(self, cfg: PTControlFlowGraph) -> List[Dict[str, Any]]:
-        """在CFG中检测特权边界跨越（syscall/int 0x80/sysenter调用）。
-        统计每个函数中系统调用的频率和类型，识别直接系统调用接口包裹函数。
-        这有助于审计最小权限原则——发现本不应直接调用syscall的用户态函数。"""
+        """在CFG中检测特权边界跨越（系统调用/int 0x80/sysenter调用）
+        统计每个函数中系统调用的频率和类型，识别直接系统调用接口包裹函数
+        这有助于审计最小权限原则——发现本不应直接调用syscall的用户态函数"""
         crossings = []
         syscall_markers = {0x050F: 'syscall', 0x34CD: 'int 0x80', 0x340F: 'sysenter'}
         for edge in cfg.edges:
@@ -241,16 +241,16 @@ class PTVulnerabilityAnalyzer:
                 'recommend_deep_pt_analysis': len(pt_only) > len(pt_edges) * 0.2}
 
 
-# ── Round 6: Side-channel constant-time auditor ──────────────────────────
+# ── 舍入 6: Side-channel constant-time auditor ──────────────────────────
 class SideChannelAuditor:
-    """基于PT trace的侧信道恒定时间审计器。
-
-    原理：通过PT的TSC/CYC包计算每个基本块的执行周期变异系数(CV)。
-    CV > 0.3 的块如果处于权限检查或密码运算路径上，则构成侧信道风险。
-
+    """基于PT trace的侧信道恒定时间审计器
+    
+    原理：通过PT的TSC/CYC包计算每个基本块的执行周期变异系数(CV)
+    CV > 0.3 的块如果处于权限检查或密码运算路径上，则构成侧信道风险
+    
     与密码专用常数时间检测不同，此审计器适用于所有代码路径——
     包括权限检查（如sudoers解析）、认证比较（如memcmp式密码验证）、
-    和访问控制决策——这些路径同样需要恒定时间保护。
+    和访问控制决策——这些路径同样需要恒定时间保护
     """
 
     CONSTANT_TIME_THRESHOLD = 0.3
@@ -301,8 +301,8 @@ class SideChannelAuditor:
 
     @staticmethod
     def _on_auth_path(addr: int) -> bool:
-        """检查地址是否位于认证/权限决策路径上。
-        启发式：地址值在典型代码段范围内，且不是数据段或堆地址。"""
+        """检查地址是否位于认证/权限决策路径上
+        启发式：地址值在典型代码段范围内，且不是数据段或堆地址"""
         return 0x400000 <= addr <= 0x7FFFFFFFFFFF
 
     @staticmethod

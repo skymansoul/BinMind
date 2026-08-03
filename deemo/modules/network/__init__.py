@@ -1,5 +1,6 @@
-# 2026-07-16
-# network — network traffic analysis & threat detection
+# 网络流量分析与威胁检测入口
+# FIXME: __version__ 应从单一 VERSION 文件读取；
+#        当前在 3 个 __init__.py 中重复定义
 
 __version__ = "0.5.0"
 
@@ -26,7 +27,7 @@ _submodules = {
     "network_forensics": ".network_forensics",
     "network_ids": ".network_ids",
     "pcap_processor": ".pcap_processor",
-    # 2026-07 新增模块 — 广度拓展
+    # 2026-07 广度扩展
     "quic_analyzer": ".quic_analyzer",
     "encrypted_traffic_classifier": ".encrypted_traffic_classifier",
     "netflow_analyzer": ".netflow_analyzer",
@@ -37,7 +38,7 @@ _submodules = {
     "snmp_analyzer": ".snmp_analyzer",
     "voip_analyzer": ".voip_analyzer",
     "topology_mapper": ".topology_mapper",
-    # Zotero 文献驱动模块 — 协议模糊测试编排 + RFC合规校验
+    # 协议模糊测试编排 + RFC 合规校验
     "protocol_fuzz_orchestrator": ".protocol_fuzz_orchestrator",
     "rfc_compliance_checker": ".rfc_compliance_checker",
 }
@@ -49,3 +50,7 @@ def __getattr__(name):
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 __all__ = list(_submodules.keys()) + ["__version__"]
+
+# 注册 MH-Flow 多视图异构图加密流量分类 + 环境偏移鲁棒流图
+_submodules["mh_flow"] = ".mh_flow"
+

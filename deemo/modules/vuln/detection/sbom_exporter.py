@@ -1,6 +1,6 @@
-# SBOM导出器——SPDX 2.3 / CycloneDX 1.4双格式输出，含验证与摘要。
-# 参考SPDX规范v2.3附录H与CycloneDX规范v1.4的必填字段约束。
-# 许可证归一化通过SPDX_LICENSE_MAP做模糊匹配，未识别许可证回退至NOASSERTION。
+# SBOM导出。SPDX 2.3 / CycloneDX 1.4双格式输出，含格式校验与摘要。
+# 参考SPDX规范v2.3附录H及CycloneDX规范v1.4必填字段约束。
+# 许可证归一化经SPDX_LICENSE_MAP模糊匹配，未识别回退至NOASSERTION。
 
 import typing, os, json, logging, hashlib, uuid, re
 from datetime import datetime, timezone

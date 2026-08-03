@@ -1,14 +1,13 @@
-# 2026-08-01
-# eBPF 验证器拒绝诊断差距分析器
+# eBPF 验证器拒绝诊断缝隙分析
 # 参考:
 #   "Characterizing and Bridging the Diagnostic Gap in eBPF Verifier Rejections"
 #    (arXiv 2607.02748, Jul 2026)
-#    发现: Linux eBPF verifier 的拒绝消息中 42% 缺乏可操作的诊断信息,
-#    平均调试时间 3.7 小时; 提出 GAPFIX 框架自动补充诊断上下文
+#    核心发现: Linux eBPF 验证器拒绝消息中 42% 无可执行的诊断信息,
+#    平均调试耗时 3.7 小时; 提出 GAPFIX 框架自动补齐诊断上下文
 #   "A Flow-Sensitive Refinement Type System for Verifying eBPF Programs"
-#    (ACM POPL 2025) — 精化类型系统提高验证精度
+#    (ACM POPL 2025) — 精化类型体系提升验证精度
 #   "Heimdall: Formally Verified Automated Migration of Legacy eBPF Programs to Rust"
-#    (arXiv 2605.25411, May 2026) — 形式化迁移工具
+#    (arXiv 2605.25411, May 2026) — 形式化验证的迁移工具链
 
 import os
 import re
@@ -19,8 +18,8 @@ from collections import Counter
 
 logger = logging.getLogger(__name__)
 
-# ── 已知的 eBPF verifier 拒绝错误类别 (来自 arXiv 2607.02748 的分类学) ──
-# 每条包含: 正则匹配 verifier 输出的模式 → 人类可读解释 + 修复建议
+# ── 已知的 eBPF verifier 拒绝错误类别 (基于 arXiv 2607.02748 分类学) ──
+# 各条目结构: 正则匹配验证器输出模式 → 可执行解释 + 补救方向
 _VERIFIER_ERROR_TYPES: list[dict] = [
     {
         "id": "E001",
@@ -120,16 +119,16 @@ class VerifierGapFinding:
 
 
 class EbpfVerifierGapAnalyzer:
-    """eBPF 验证器诊断差距分析器 (arXiv 2607.02748)。
+    """eBPF 验证器诊断缝隙分析 (arXiv 2607.02748)。
 
     输入: Linux eBPF verifier 的输出日志 (bpftool prog load 的 stderr)
-    输出: 每条拒绝错误的结构化诊断 + 可操作的修复建议
+    输出: 每条拒绝的结构化诊断 + 可执行的修复建议
 
-    方法:
-    1. 解析 verifier 输出中的错误行
-    2. 匹配已知错误模式 → 分类
+    处理流程:
+    1. 解析验证器输出中的错误行
+    2. 匹配已知错误模式 → 归类
     3. 评估诊断质量 (GAPFIX 框架): poor / fair / actionable
-    4. 生成包含寄存器状态上下文的修复建议
+    4. 产生含寄存器状态上下文的修复建议
     """
 
     def __init__(self, verifier_log: str = "", log_path: str = ""):
@@ -180,12 +179,12 @@ class EbpfVerifierGapAnalyzer:
 
     def _assess_diagnostic_quality(self, message: str,
                                     rule: dict) -> str:
-        """评估 verifier 错误消息的诊断质量。
+        """评估验证器错误消息的诊断质量。
 
-        标准 (来自 GAPFIX 论文 Section 3.2):
+        评判标准 (源自 GAPFIX 论文 Section 3.2):
         - actionable: 消息明确指出具体寄存器和修复方向
-        - fair: 消息指出问题类型但缺少具体数值
-        - poor: 仅报告拒绝，无任何上下文
+        - fair: 消息指出了问题类型但缺少具体数值
+        - poor: 仅报告拒绝，无任何上下文信息
         """
         has_register_info = bool(re.search(r'R\d+', message))
         has_value_range = bool(re.search(r'(min|max)\s+value\s+is', message))
@@ -198,7 +197,7 @@ class EbpfVerifierGapAnalyzer:
 
     def generate_fix_report(self, findings: list[VerifierGapFinding] | None = None
                             ) -> str:
-        """生成 Markdown 格式的修复建议报告。"""
+        """导出 Markdown 格式的修复建议报告。"""
         findings = findings or self.analyze()
         lines = ["# eBPF Verifier Diagnostic Gap Report",
                  f"Total findings: {len(findings)}",

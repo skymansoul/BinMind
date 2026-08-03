@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """
-移动端 SSL/TLS Pinning 安全分析。
+移动端 SSL/TLS Pinning 安全审计。
 
 分析维度：
-  1. 证书/SHA256公钥hash提取与固定证据识别
+  1. 证书/SHA256公钥hash提取及固定证据识别
   2. 主流 SSL Pinning 库检测
   3. Network Security Config 审计 (Android 7+)
   4. ATS (App Transport Security) plist 分析
-  5. Pinning绕过可行性评估 (无backup pin, 过期证书, 弱验证回调)
+  5. Pinning绕过可行性评估 (无备选pin, 过期证书, 弱验证回调)
   6. 原生层 TLS 回调挂钩点检测 (JNI_OnLoad + SSL_CTX_set_verify)
   7. 证书透明度 (Certificate Transparency) SCT 验证支持
-  8. HPKP回溯兼容——检测已弃用但仍被引用的静态pinning模式
+  8. HPKP回溯兼容——检测已弃用但被引用的静态pinning模式
 
 技术基础：
   - 字符串/常量匹配 + 模式推导
@@ -254,7 +254,7 @@ class ATSConfigParser:
 
 
 class SSLPinningAnalyzer:
-    """SSL/TLS Pinning 综合分析器。"""
+    """SSL/TLS Pinning 综合审计分析器。"""
 
     def __init__(self, binary_path: str = "", binary_data: bytes = b""):
         self.binary_path = binary_path; self.data = binary_data

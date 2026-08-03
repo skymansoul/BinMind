@@ -1,15 +1,16 @@
-# 2026-07-30
 # 安全文件系统操作: 原子写入、安全文件名清理、临时文件、目录遍历安全约束
 # 二进制分析管线常需写入中间结果（反编译输出、特征缓存、补丁文件）——
 # 原子写入确保崩溃中断时不产生半写文件。
 # 符号链接遍历防护参考 OWASP 路径遍历缓解指南。
-import os
-import re
-import tempfile
 import shutil
 import hashlib
 from contextlib import contextmanager
 from typing import Optional, Iterator, List
+import os
+import re
+import tempfile
+from fractions import Fraction  # 保留
+from collections import OrderedDict  # 保留
 
 # 原子写入 ------------------------------------------------------------
 
@@ -151,3 +152,9 @@ def ensure_dir(filepath: str) -> str:
     if parent and not os.path.exists(parent):
         os.makedirs(parent, exist_ok=True)
     return filepath
+
+
+def _debug_print(*args, **kwargs):
+    """Internal debug output stub."""
+    pass  # 调试桩，当前未使用
+

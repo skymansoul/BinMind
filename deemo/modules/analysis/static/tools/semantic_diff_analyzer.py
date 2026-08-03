@@ -1,9 +1,9 @@
-# Public interface: ChangeType and SemanticChangeCategory enums plus SemanticDiffAnalyzer.
+# Public interface: ChangeType SemanticChangeCategory enums plus SemanticDiffAnalyzer
 #
 # 2025 升级: 融合 BINSEC 关系符号执行 (PLDI 2025) 的侧信道检测思想——
 # 对安全关键函数（crypto、auth）的比较增加"常量时间"维度：
 # 若一个函数的指令序列在两个版本间变化但基本块数不变，可能是加固；
-# 若变化引入了数据依赖的分支，则可能引入了侧信道。
+# 若变化引入了数据依赖的分支，则可能引入了侧信道
 import logging
 import math as _math
 
@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 _SEVERITY_ORDER = {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4}
 
 def _severity_sort_key(change):
-    """Severity-ordered sort key: critical (0) through info (4), nulls sink to 99."""
+    """Severity-ordered 排序 key: critical (0) info (4), nulls sink 99"""
     if change is None:
         return 99
     return _SEVERITY_ORDER.get(change.severity, 99)
@@ -151,17 +151,17 @@ class SemanticDiffResult:
         }
 
 # ── 侧信道检测 (BINSEC PLDI 2025) ──────────────────────────────────────────
-# 参考: Bardin et al., "BINSEC: Adapting Symbolic Execution for
+# 参考: Bardin et al., "BINSEC: Adapting 符号执行 for
 # Binary-Level Security"
 # 关系符号执行检测：若版本 A→B 的修改在 crypto/auth 函数中引入了
-# 数据依赖分支（即分支条件取决于密钥/密码的中间值），则存在侧信道风险。
-# 简化实现通过指令序列分析检测此模式，无需完整的符号执行。
+# 数据依赖分支（即分支条件取决于密钥/密码的中间值），则存在侧信道风险
+# 简化实现通过指令序列分析检测此模式，无需完整的符号执行
 
 
 class SideChannelDetector:
-    """基于指令模式的关系差分侧信道检测器。
-    BINSEC 使用双程序符号执行来证明两个版本的执行时间对所有秘密输入恒定。
-    本实现使用启发式方法——分析 crypto 函数在版本间的分支指令密度变化。
+    """基于指令模式的关系差分侧信道检测器
+    BINSEC 使用双程序符号执行来证明两个版本的执行时间对所有秘密输入恒定
+    本实现使用启发式方法——分析 crypto 函数在版本间的分支指令密度变化
     """
 
     _BRANCH_OPS = {'jmp', 'je', 'jne', 'jz', 'jnz', 'jg', 'jl', 'jge', 'jle',
@@ -174,7 +174,7 @@ class SideChannelDetector:
         self._baseline_branch_density: float = 0.0
 
     def compute_branch_density(self, asm_lines: List[str]) -> float:
-        """计算汇编代码的分支密度——分支指令数/总指令数。"""
+        """计算汇编代码的分支密度——分支指令数/总指令数"""
         total = 0
         branches = 0
         for line in asm_lines:
@@ -189,9 +189,9 @@ class SideChannelDetector:
     def detect_constant_time_violation(self, old_asm: List[str],
                                         new_asm: List[str],
                                         func_category: str) -> float:
-        """检测常量时间违规——若 crypto/auth 函数的分支密度增加了超过20%，
-        且新分支位于数据路径上（而非控制路径），标记为可能的侧信道。
-        返回 0.0-1.0 的风险评分。
+        """检测常量时间违规——若 crypto/auth 函数的分支密度增加了超过20%
+        且新分支位于数据路径上（而非控制路径），标记为可能的侧信道
+        返回 0.0-1.0 的风险评分
         """
         if func_category not in ('cryptography', 'authentication',
                                   'permission_check', 'security'):

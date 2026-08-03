@@ -181,7 +181,7 @@ class VectorIndex:
             except Exception as e:
                 logger.warning(f"FAISS search error: {e}")
 
-        # Numpy fallback
+        # Numpy 回退
         scores = np.dot(np.array(self._embeddings), query)
         top_indices = np.argsort(scores)[::-1][:top_k]
 

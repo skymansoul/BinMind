@@ -1,5 +1,4 @@
-# 2026-08-02
-# 污点传播引擎 — 多源污点追踪，支持寄存器/内存/立即数三种粒度
+"""污点传播引擎 — 多源污点追踪，支持寄存器/内存/立即数三种粒度"""
 # 参考: TACE (FSE 2024) — 污点加速的符号执行，污点引导约束简化，提速 50x
 # 参考: LATTE (ACM TOSEM 2025) — LLM 增强的静态二进制污点分析
 # 参考: FuzzRDUCC (Feng et al. 2025) — Def-Use 链引导的变异调度
@@ -14,25 +13,25 @@ from typing import Any
 
 
 class TaintTag:
-    __slots__ = ('src_id', 'src_kind', 'byte_off', 'conf', 'depth')
+    __slots__ = ('source_id', 'source_type', 'offset', 'confidence', 'propagation_depth')
 
     def __init__(self, source_id: str, source_type: str = 'input',
                  offset: int = 0, confidence: float = 1.0):
-        self.src_id = source_id
-        self.src_kind = source_type     # file_input|network|register|memory|immediate
+        self.source_id = source_id
+        self.source_type = source_type     # file_input|network|register|memory|immediate
         self.offset = offset
-        self.conf = confidence           # decays during indirect propagation
-        self.depth = 0                   # hop count → controls decay rate
+        self.confidence = confidence       # decays during indirect propagation
+        self.propagation_depth = 0         # hop count → controls decay rate
 
     def decay(self, factor: float = 0.95) -> 'TaintTag':
         """每传播一步，置信度乘以衰减因子。
         衰减因子 0.95 基于经验观察 → 10 步后置信度降至 ~0.6。"""
-        tag = TaintTag(self.src_id, self.src_kind, self.offset, self.confidence * factor)
+        tag = TaintTag(self.source_id, self.source_type, self.offset, self.confidence * factor)
         tag.propagation_depth = self.propagation_depth + 1
         return tag
 
     def __repr__(self):
-        return (f'Taint({self.src_id}:{self.offset}, '
+        return (f'Taint({self.source_id}:{self.offset}, '
                 f'conf={self.confidence:.2f}, depth={self.propagation_depth})')
 
 
@@ -149,18 +148,18 @@ def propagate_instruction(mnemonic: str, operands: list[str],
 
     if m in ('mov', 'movzx', 'movsx', 'movsxd', 'lea'):
         if len(operands) >= 2:
-            src_taint = _get_operand_taint(operands[1], reg_state)
+            src_taint = _extract_operand_taint(operands[1], reg_state)
             _set_operand_taint(operands[0], src_taint, reg_state)
 
     elif m in ('add', 'sub', 'xor', 'and', 'or', 'imul', 'shl', 'shr', 'sar', 'rol', 'ror'):
         if len(operands) >= 2:
-            dst_taint = _get_operand_taint(operands[0], reg_state)
-            src_taint = _get_operand_taint(operands[1], reg_state)
+            dst_taint = _extract_operand_taint(operands[0], reg_state)
+            src_taint = _extract_operand_taint(operands[1], reg_state)
             _set_operand_taint(operands[0], dst_taint.union(src_taint), reg_state)
 
     elif m == 'push':
         if len(operands) >= 1:
-            src_taint = _get_operand_taint(operands[0], reg_state)
+            src_taint = _extract_operand_taint(operands[0], reg_state)
             # push → 写入栈顶 [rsp]
             rsp_val = 0  # 在真实环境中从 VSA 获取
             reg_state.write_mem(rsp_val - 8, src_taint, 8)
@@ -184,13 +183,13 @@ def propagate_instruction(mnemonic: str, operands: list[str],
 
     elif m == 'xchg':
         if len(operands) >= 2:
-            t1 = _get_operand_taint(operands[0], reg_state)
-            t2 = _get_operand_taint(operands[1], reg_state)
+            t1 = _extract_operand_taint(operands[0], reg_state)
+            t2 = _extract_operand_taint(operands[1], reg_state)
             _set_operand_taint(operands[0], t2, reg_state)
             _set_operand_taint(operands[1], t1, reg_state)
 
 
-def _get_operand_taint(operand: str, reg_state: TaintRegisterState) -> TaintSet:
+def _extract_operand_taint(operand: str, reg_state: TaintRegisterState) -> TaintSet:
     """解析操作数并返回其污点状态。
     支持: 寄存器 (rax, eax)、内存 ([rax], [rbp-8])、立即数。"""
     op = operand.strip()

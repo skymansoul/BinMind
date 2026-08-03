@@ -1,5 +1,4 @@
-# 2026-07-22
-# testing/src/fuzzing — multi-engine fuzzing subsystem
+# 多引擎模糊测试子系统
 
 __version__ = "0.3.0"
 
@@ -16,6 +15,8 @@ _submodules = {
     "complexity": ".complexity",
     "multi_fuzz": ".multi_fuzz",
     "asan_parser": ".asan_parser",
+    "vuln_search": ".vuln_search",
+    "input_infer": ".input_infer",
 }
 
 def __getattr__(name):

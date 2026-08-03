@@ -1,7 +1,6 @@
 """
-分布式分析任务 Worker 模块
+基于 Celery + Redis 的分布式任务队列 Worker。
 
-基于 Celery + Redis 实现的分布式任务队列 Worker
 功能包括：
 - 任务执行：运行完整的分析流水线
 - 任务优先级：支持高/中/低优先级队列
@@ -24,8 +23,8 @@ from typing import Dict, Any, List, Optional, Callable
 from pathlib import Path
 
 from config import (
-    Config, 
-    get_celery_broker_url, 
+    Config,
+    get_celery_broker_url,
     get_celery_result_backend,
     mask_redis_url,
     get_task_cache_key,
@@ -60,31 +59,28 @@ _heartbeat_stop_event = threading.Event()
 
 def get_redis_client():
     """
-    获取 Redis 客户端实例
-    
-    Returns:
-        Redis 客户端实例，不可用时返回 None
+    获取 Redis 客户端实例，不可用时返回 None。
     """
     global _redis_client
-    
+
     if _redis_client is not None:
         return _redis_client
-    
+
     if not REDIS_PY_AVAILABLE:
         return None
-    
+
     try:
         from urllib.parse import urlparse
         redis_url = get_celery_broker_url()
         parsed = urlparse(redis_url)
-        
+
         db = 0
         if parsed.path and parsed.path.startswith('/'):
             try:
                 db = int(parsed.path.lstrip('/').split('/')[0])
             except (ValueError, IndexError):
                 pass
-        
+
         client = redis.Redis(
             host=parsed.hostname,
             port=parsed.port or 6379,
@@ -92,7 +88,7 @@ def get_redis_client():
             db=db,
             decode_responses=True
         )
-        
+
         client.ping()
         _redis_client = client
         logger.info("[Worker] Redis 客户端连接成功")
@@ -104,31 +100,28 @@ def get_redis_client():
 
 def get_worker_app() -> Optional['Celery']:
     """
-    获取或创建 Celery 应用实例（单例）
-    
-    Returns:
-        Celery 应用实例，Celery 未安装时返回 None
+    获取或创建 Celery 应用实例（单例），Celery 未安装时返回 None。
     """
     global _worker_app
-    
+
     if _worker_app is not None:
         return _worker_app
-    
+
     if not CELERY_AVAILABLE:
         return None
-    
+
     broker_url = get_celery_broker_url()
     result_backend = get_celery_result_backend()
-    
+
     logger.info(f"[Worker] 初始化 Celery 应用，Broker: {mask_redis_url(broker_url)}")
-    
+
     _worker_app = Celery(
         'deemo_worker',
         broker=broker_url,
         backend=result_backend,
         broker_connection_retry_on_startup=True
     )
-    
+
     _worker_app.conf.update(
         task_serializer='json',
         accept_content=['json'],
@@ -150,16 +143,13 @@ def get_worker_app() -> Optional['Celery']:
         task_acks_late=True,
         task_reject_on_worker_lost=True,
     )
-    
+
     return _worker_app
 
 
 def get_worker_id() -> str:
     """
-    生成唯一的 Worker ID
-    
-    Returns:
-        Worker ID 字符串
+    生成唯一的 Worker ID。
     """
     hostname = socket.gethostname()
     pid = os.getpid()
@@ -168,19 +158,19 @@ def get_worker_id() -> str:
 
 def register_worker_heartbeat(worker_id: str, tags: List[str] = None) -> bool:
     """
-    注册 Worker 心跳
-    
+    注册 Worker 心跳。
+
     Args:
         worker_id: Worker ID
         tags: Worker 标签列表
-        
+
     Returns:
         是否注册成功
     """
     r = get_redis_client()
     if r is None:
         return False
-    
+
     try:
         heartbeat_key = f"deemo:worker:{worker_id}"
         status = {
@@ -197,11 +187,11 @@ def register_worker_heartbeat(worker_id: str, tags: List[str] = None) -> bool:
             'started_at': datetime.now().isoformat(),
             'last_heartbeat': datetime.now().isoformat()
         }
-        
+
         r.hset(heartbeat_key, mapping=status)
         r.expire(heartbeat_key, Config.WORKER_TIMEOUT * 2)
         r.sadd('deemo:workers:active', worker_id)
-        
+
         logger.info(f"[Worker] Worker {worker_id} 已注册心跳")
         return True
     except Exception as e:
@@ -210,42 +200,42 @@ def register_worker_heartbeat(worker_id: str, tags: List[str] = None) -> bool:
 
 
 def update_worker_heartbeat(
-    worker_id: str, 
-    status: str = 'idle', 
+    worker_id: str,
+    status: str = 'idle',
     current_task: str = None,
     tasks_completed: int = 0,
     tasks_failed: int = 0
 ) -> bool:
     """
-    更新 Worker 心跳
-    
+    更新 Worker 心跳。
+
     Args:
         worker_id: Worker ID
         status: Worker 状态 (idle, busy, error)
         current_task: 当前任务 ID
         tasks_completed: 已完成任务数
         tasks_failed: 失败任务数
-        
+
     Returns:
         是否更新成功
     """
     r = get_redis_client()
     if r is None:
         return False
-    
+
     try:
         heartbeat_key = f"deemo:worker:{worker_id}"
         import psutil
-        
+
         process = psutil.Process()
         memory_mb = process.memory_info().rss / (1024 * 1024)
-        
+
         load_avg = 0.0
         try:
             load_avg = psutil.getloadavg()[0] if hasattr(psutil, 'getloadavg') else 0.0
         except Exception:
             pass
-        
+
         updates = {
             'status': status,
             'current_task': current_task or '',
@@ -255,10 +245,10 @@ def update_worker_heartbeat(
             'memory_usage_mb': str(round(memory_mb, 2)),
             'last_heartbeat': datetime.now().isoformat()
         }
-        
+
         r.hset(heartbeat_key, mapping=updates)
         r.expire(heartbeat_key, Config.WORKER_TIMEOUT * 2)
-        
+
         return True
     except ImportError:
         try:
@@ -283,23 +273,23 @@ def update_worker_heartbeat(
 
 def unregister_worker_heartbeat(worker_id: str) -> bool:
     """
-    注销 Worker 心跳
-    
+    注销 Worker 心跳。
+
     Args:
         worker_id: Worker ID
-        
+
     Returns:
         是否注销成功
     """
     r = get_redis_client()
     if r is None:
         return False
-    
+
     try:
         heartbeat_key = f"deemo:worker:{worker_id}"
         r.delete(heartbeat_key)
         r.srem('deemo:workers:active', worker_id)
-        
+
         logger.info(f"[Worker] Worker {worker_id} 已注销心跳")
         return True
     except Exception as e:
@@ -309,10 +299,7 @@ def unregister_worker_heartbeat(worker_id: str) -> bool:
 
 def get_all_workers_status() -> Dict[str, Any]:
     """
-    获取所有 Worker 的状态
-    
-    Returns:
-        包含所有 Worker 状态的字典
+    获取所有 Worker 的状态快照。
     """
     r = get_redis_client()
     if r is None:
@@ -323,21 +310,21 @@ def get_all_workers_status() -> Dict[str, Any]:
             'active_workers': 0,
             'busy_workers': 0
         }
-    
+
     try:
         active_workers = r.smembers('deemo:workers:active')
         workers = []
         now = datetime.now()
         active_count = 0
         busy_count = 0
-        
+
         for worker_id in active_workers:
             heartbeat_key = f"deemo:worker:{worker_id}"
             data = r.hgetall(heartbeat_key)
-            
+
             if not data:
                 continue
-            
+
             last_heartbeat_str = data.get('last_heartbeat', '')
             is_online = False
             if last_heartbeat_str:
@@ -346,7 +333,7 @@ def get_all_workers_status() -> Dict[str, Any]:
                     is_online = (now - last_heartbeat) < timedelta(seconds=Config.WORKER_TIMEOUT)
                 except Exception:
                     pass
-            
+
             status = data.get('status', 'unknown')
             if is_online:
                 active_count += 1
@@ -354,7 +341,7 @@ def get_all_workers_status() -> Dict[str, Any]:
                     busy_count += 1
             else:
                 status = 'offline'
-            
+
             worker_info = {
                 'worker_id': worker_id,
                 'hostname': data.get('hostname', ''),
@@ -371,9 +358,9 @@ def get_all_workers_status() -> Dict[str, Any]:
                 'last_heartbeat': last_heartbeat_str
             }
             workers.append(worker_info)
-        
+
         workers.sort(key=lambda x: x['hostname'])
-        
+
         return {
             'timestamp': datetime.now().isoformat(),
             'workers': workers,
@@ -396,18 +383,18 @@ def get_all_workers_status() -> Dict[str, Any]:
 
 def check_cached_result(cache_key: str) -> Optional[Dict[str, Any]]:
     """
-    检查缓存中是否已有分析结果
-    
+    检查缓存中是否已有分析结果。
+
     Args:
         cache_key: 缓存键
-        
+
     Returns:
-        缓存的结果，如果不存在则返回 None
+        缓存的结果，不存在则返回 None
     """
     r = get_redis_client()
     if r is None:
         return None
-    
+
     try:
         cache_data = r.get(f"deemo:cache:result:{cache_key}")
         if cache_data:
@@ -415,30 +402,30 @@ def check_cached_result(cache_key: str) -> Optional[Dict[str, Any]]:
             return json.loads(cache_data)
     except Exception as e:
         logger.debug(f"[Worker] 检查缓存失败: {e}")
-    
+
     return None
 
 
 def save_cached_result(cache_key: str, result: Dict[str, Any], ttl: int = None) -> bool:
     """
-    保存分析结果到缓存
-    
+    保存分析结果到缓存。
+
     Args:
         cache_key: 缓存键
         result: 要缓存的结果
         ttl: 缓存过期时间（秒），默认使用 Config.CACHE_TTL
-        
+
     Returns:
         是否保存成功
     """
     r = get_redis_client()
     if r is None:
         return False
-    
+
     try:
         if ttl is None:
             ttl = Config.CACHE_TTL
-        
+
         r.setex(
             f"deemo:cache:result:{cache_key}",
             ttl,
@@ -453,20 +440,20 @@ def save_cached_result(cache_key: str, result: Dict[str, Any], ttl: int = None) 
 
 def update_task_progress(task_id: str, progress: int, message: str = '') -> bool:
     """
-    更新任务进度
-    
+    更新任务进度。
+
     Args:
         task_id: 任务 ID
         progress: 进度百分比 (0-100)
         message: 进度消息
-        
+
     Returns:
         是否更新成功
     """
     r = get_redis_client()
     if r is None:
         return False
-    
+
     try:
         progress_key = f"deemo:task:progress:{task_id}"
         r.hset(progress_key, mapping={
@@ -486,21 +473,21 @@ def execute_analysis_pipeline(
     options: Dict[str, Any] = None
 ) -> Dict[str, Any]:
     """
-    执行完整的分析流水线（供 Worker 调用）
-    
+    执行完整的分析流水线（供 Worker 调用）。
+
     Args:
         binary_path: 二进制文件路径
         options: 分析选项
-        
+
     Returns:
         分析结果字典
     """
     from main import run_pipeline
-    
+
     options = options or {}
-    
+
     logger.info(f"[Worker] 开始分析流水线: {binary_path}")
-    
+
     try:
         functions = options.get('functions')
         crash_data = options.get('crash_data')
@@ -519,7 +506,7 @@ def execute_analysis_pipeline(
         fuzzer_type = options.get('fuzzer_type')
         expert_mode = options.get('expert_mode', False)
         no_rop = options.get('no_rop', False)
-        
+
         result = run_pipeline(
             binary_path=binary_path,
             functions_to_analyze=functions,
@@ -541,7 +528,7 @@ def execute_analysis_pipeline(
             expert_mode=expert_mode,
             no_rop=no_rop
         )
-        
+
         if 'error' in result:
             logger.error(f"[Worker] 流水线执行失败: {result['error']}")
             return {
@@ -550,7 +537,7 @@ def execute_analysis_pipeline(
                 'binary_path': binary_path,
                 'completed_at': datetime.now().isoformat()
             }
-        
+
         return {
             'success': True,
             'binary_path': binary_path,
@@ -565,7 +552,7 @@ def execute_analysis_pipeline(
             'corpus_files': result.get('corpus_files'),
             'completed_at': datetime.now().isoformat()
         }
-        
+
     except Exception as e:
         logger.exception(f"[Worker] 流水线执行异常: {e}")
         return {
@@ -577,13 +564,13 @@ def execute_analysis_pipeline(
 
 
 if CELERY_AVAILABLE:
-    
+
     app = get_worker_app()
-    
+
     _tasks_completed = 0
     _tasks_failed = 0
     _worker_id = get_worker_id()
-    
+
     @app.task(
         bind=True,
         name='modules.worker.analyze_binary',
@@ -594,34 +581,34 @@ if CELERY_AVAILABLE:
     )
     def analyze_binary_task(self, binary_path: str, options: Dict[str, Any] = None) -> Dict[str, Any]:
         """
-        核心分析任务（中等优先级，默认）
-        
+        核心分析任务（中等优先级，默认）。
+
         Args:
             self: Celery 任务实例
             binary_path: 二进制文件路径
             options: 分析选项
-            
+
         Returns:
             分析结果
         """
         global _tasks_completed, _tasks_failed
-        
+
         options = options or {}
         use_cache = options.get('use_cache', True)
         task_id = self.request.id
-        
+
         logger.info(f"[Worker] 任务 {task_id} 开始: {binary_path}")
-        
+
         try:
             update_worker_heartbeat(
-                _worker_id, 
-                status='busy', 
+                _worker_id,
+                status='busy',
                 current_task=task_id,
                 tasks_completed=_tasks_completed,
                 tasks_failed=_tasks_failed
             )
             update_task_progress(task_id, 5, '任务初始化完成')
-            
+
             if use_cache:
                 cache_key = get_task_cache_key(binary_path, options)
                 cached = check_cached_result(cache_key)
@@ -634,20 +621,20 @@ if CELERY_AVAILABLE:
                         'result': cached,
                         'completed_at': datetime.now().isoformat()
                     }
-            
+
             update_task_progress(task_id, 10, '开始信息收集')
-            
+
             result = execute_analysis_pipeline(binary_path, options)
-            
+
             if result.get('success') and use_cache:
                 cache_key = get_task_cache_key(binary_path, options)
                 save_cached_result(cache_key, result)
-            
+
             _tasks_completed += 1
             update_task_progress(task_id, 100, '分析完成')
-            
+
             return result
-            
+
         except SoftTimeLimitExceeded:
             _tasks_failed += 1
             logger.error(f"[Worker] 任务 {task_id} 软超时")
@@ -663,13 +650,13 @@ if CELERY_AVAILABLE:
             raise self.retry(exc=exc, countdown=Config.CELERY_RETRY_BACKOFF)
         finally:
             update_worker_heartbeat(
-                _worker_id, 
-                status='idle', 
+                _worker_id,
+                status='idle',
                 current_task=None,
                 tasks_completed=_tasks_completed,
                 tasks_failed=_tasks_failed
             )
-    
+
     @app.task(
         bind=True,
         name='modules.worker.analyze_binary_high',
@@ -680,13 +667,11 @@ if CELERY_AVAILABLE:
     )
     def analyze_binary_high(self, binary_path: str, options: Dict[str, Any] = None) -> Dict[str, Any]:
         """
-        高优先级分析任务
-        
-        用于紧急分析、关键漏洞验证等场景
+        高优先级分析任务 — 用于紧急分析、关键漏洞验证等场景。
         """
         logger.info(f"[Worker] 高优先级任务: {self.request.id}")
         return analyze_binary_task(binary_path, options)
-    
+
     @app.task(
         bind=True,
         name='modules.worker.analyze_binary_medium',
@@ -695,12 +680,10 @@ if CELERY_AVAILABLE:
     )
     def analyze_binary_medium(self, binary_path: str, options: Dict[str, Any] = None) -> Dict[str, Any]:
         """
-        中等优先级分析任务（默认）
-        
-        用于常规分析任务
+        中等优先级分析任务（默认） — 用于常规分析任务。
         """
         return analyze_binary_task(binary_path, options)
-    
+
     @app.task(
         bind=True,
         name='modules.worker.analyze_binary_low',
@@ -709,9 +692,7 @@ if CELERY_AVAILABLE:
     )
     def analyze_binary_low(self, binary_path: str, options: Dict[str, Any] = None) -> Dict[str, Any]:
         """
-        低优先级分析任务
-        
-        用于批量分析、后台扫描等非紧急任务
+        低优先级分析任务 — 用于批量分析、后台扫描等非紧急任务。
         """
         logger.info(f"[Worker] 低优先级任务: {self.request.id}")
         return analyze_binary_task(binary_path, options)
@@ -723,37 +704,37 @@ def submit_analysis_task(
     priority: str = 'medium'
 ) -> Optional[str]:
     """
-    提交分析任务到 Celery 队列
-    
+    提交分析任务到 Celery 队列。
+
     Args:
         binary_path: 二进制文件路径
         options: 分析选项
         priority: 任务优先级 ('high', 'medium', 'low')
-        
+
     Returns:
         任务 ID，提交失败返回 None
     """
     if not CELERY_AVAILABLE:
         logger.warning("[Worker] Celery 未安装，无法提交分布式任务")
         return None
-    
+
     if not os.path.exists(binary_path):
         logger.error(f"[Worker] 二进制文件不存在: {binary_path}")
         return None
-    
+
     app = get_worker_app()
     if app is None:
         return None
-    
+
     options = options or {}
-    
+
     try:
         task_func = {
             'high': analyze_binary_high,
             'medium': analyze_binary_medium,
             'low': analyze_binary_low
         }.get(priority.lower(), analyze_binary_medium)
-        
+
         task = task_func.delay(binary_path, options)
         logger.info(f"[Worker] 任务已提交: {task.id} (优先级: {priority})")
         return task.id
@@ -764,26 +745,26 @@ def submit_analysis_task(
 
 def get_task_result(task_id: str, timeout: float = 1.0) -> Optional[Dict[str, Any]]:
     """
-    获取任务结果
-    
+    获取任务结果。
+
     Args:
         task_id: 任务 ID
         timeout: 等待超时时间（秒）
-        
+
     Returns:
         任务结果，任务未完成或不存在返回 None
     """
     if not CELERY_AVAILABLE:
         return None
-    
+
     app = get_worker_app()
     if app is None:
         return None
-    
+
     try:
         from celery.result import AsyncResult
         result = AsyncResult(task_id, app=app)
-        
+
         if result.ready():
             if result.successful():
                 return result.result
@@ -800,22 +781,22 @@ def get_task_result(task_id: str, timeout: float = 1.0) -> Optional[Dict[str, An
 
 def start_worker_heartbeat_daemon(worker_id: str, tags: List[str] = None):
     """
-    启动 Worker 心跳守护线程
-    
+    启动 Worker 心跳守护线程。
+
     Args:
         worker_id: Worker ID
         tags: Worker 标签列表
     """
     global _heartbeat_thread, _heartbeat_stop_event
-    
+
     if _heartbeat_thread is not None and _heartbeat_thread.is_alive():
         logger.warning("[Worker] 心跳线程已在运行")
         return
-    
+
     register_worker_heartbeat(worker_id, tags)
-    
+
     _heartbeat_stop_event.clear()
-    
+
     def heartbeat_loop():
         while not _heartbeat_stop_event.is_set():
             try:
@@ -823,9 +804,9 @@ def start_worker_heartbeat_daemon(worker_id: str, tags: List[str] = None):
             except Exception:
                 pass
             _heartbeat_stop_event.wait(Config.WORKER_HEARTBEAT_INTERVAL)
-        
+
         unregister_worker_heartbeat(worker_id)
-    
+
     _heartbeat_thread = threading.Thread(
         target=heartbeat_loop,
         daemon=True,
@@ -836,9 +817,9 @@ def start_worker_heartbeat_daemon(worker_id: str, tags: List[str] = None):
 
 
 def stop_worker_heartbeat_daemon():
-    """停止 Worker 心跳守护线程"""
+    """停止 Worker 心跳守护线程。"""
     global _heartbeat_stop_event
-    
+
     _heartbeat_stop_event.set()
     logger.info("[Worker] 心跳守护线程正在停止...")
 
@@ -850,8 +831,8 @@ def start_worker(
     hostname: str = None
 ):
     """
-    启动 Celery Worker（用于命令行模式）
-    
+    启动 Celery Worker（用于命令行模式）。
+
     Args:
         concurrency: Worker 并发数
         queues: 要监听的队列列表
@@ -861,27 +842,27 @@ def start_worker(
     if not CELERY_AVAILABLE:
         logger.error("[Worker] Celery 未安装，无法启动 Worker")
         sys.exit(1)
-    
+
     ensure_directories()
-    
+
     app = get_worker_app()
     if app is None:
         logger.error("[Worker] 无法创建 Celery 应用")
         sys.exit(1)
-    
+
     worker_id = get_worker_id()
     worker_hostname = hostname or f"{worker_id}@%h"
-    
+
     if queues is None:
         queues = [Config.CELERY_TASK_QUEUE]
-    
+
     start_worker_heartbeat_daemon(worker_id, tags)
-    
+
     try:
         logger.info(f"[Worker] 启动 Worker: {worker_hostname}")
         logger.info(f"[Worker] 监听队列: {queues}")
         logger.info(f"[Worker] 并发数: {concurrency}")
-        
+
         app.worker_main([
             'worker',
             f'--loglevel={logging.INFO}',
@@ -898,33 +879,33 @@ def start_worker(
 
 if __name__ == '__main__':
     import argparse
-    
+
     parser = argparse.ArgumentParser(description='Deemo 分布式分析 Worker')
     parser.add_argument('-c', '--concurrency', type=int, default=1, help='Worker 并发数 (默认: 1)')
     parser.add_argument('-Q', '--queues', help='监听的队列列表，逗号分隔')
     parser.add_argument('-n', '--hostname', help='Worker 主机名')
     parser.add_argument('-t', '--tags', help='Worker 标签，逗号分隔')
     parser.add_argument('--loglevel', default='INFO', help='日志级别')
-    
+
     args = parser.parse_args()
-    
+
     queues = None
     if args.queues:
         queues = [q.strip() for q in args.queues.split(',')]
-    
+
     tags = None
     if args.tags:
         tags = [t.strip() for t in args.tags.split(',')]
-    
+
     logging.basicConfig(
         level=getattr(logging, args.loglevel.upper(), logging.INFO),
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     )
-    
+
     root_logger = logging.getLogger()
     for handler in root_logger.handlers:
         handler.addFilter(SensitiveFilter())
-    
+
     start_worker(
         concurrency=args.concurrency,
         queues=queues,

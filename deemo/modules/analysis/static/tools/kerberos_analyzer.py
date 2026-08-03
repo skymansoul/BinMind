@@ -130,9 +130,9 @@ class KerberosAnalyzer:
         return {'findings': [f.to_dict() for f in findings]}
 
     def detect_diamond_ticket(self, domain_info: Dict[str, Any]) -> Dict[str, Any]:
-        """检测 Diamond Ticket 攻击条件——AES key 已被泄露或可被解密。
+        """检测 Diamond Ticket 攻击条件——AES key 已被泄露或可被解密
         Diamond Ticket 比 Golden Ticket 更难检测，因为它使用正确的 AES key
-        而不是 RC4，绕过了基于加密类型异常（事件 4769）的检测。
+        而不是 RC4，绕过了基于加密类型异常（事件 4769）的检测
         """
         findings = []
         aes_key_exposed = domain_info.get('aes_key_exposed', False)

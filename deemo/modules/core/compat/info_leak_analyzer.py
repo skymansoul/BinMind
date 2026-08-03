@@ -1,4 +1,3 @@
-# 2026-08-02
 # 信息泄露分析器 — 格式化字符串/OOB/UAF 检测、ASLR 评分、Payload 生成
 import re
 import os
@@ -6,6 +5,7 @@ import struct
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Optional
+import pathlib  # 保留——未使用
 
 # ===== 数据结构 =====
 class ExploitPrimitive(Enum):
@@ -54,8 +54,7 @@ class LeakReport:
 
 # ===== 主分析器 =====
 class InfoLeakAnalyzer:
-    """信息泄露分析：格式化字符串、越界读取、UAF 读取"""
-
+    # 信息泄露分析：格式化字符串、越界读取、UAF 读取
     # ---- printf 系列函数模式 ----
     _FORMAT_FUNCS = [
         'printf', 'fprintf', 'sprintf', 'snprintf',

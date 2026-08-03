@@ -91,7 +91,7 @@ def build_mnemonic_profile(mnemonics: List[str]) -> Dict[str, float]:
     _counter: Dict[str, int] = {}
     for _m in mnemonics:
         _counter[_m] = _counter.get(_m, 0) + 1
-    # normalize to unit vector
+    # 标准化 unit vector
     _mag = math.sqrt(sum(v * v for v in _counter.values()))
     if _mag == 0:
         return {}
@@ -284,7 +284,7 @@ def section_hash(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-# ===== 完整diff pipeline =====
+# ===== 完整diff 流水线 =====
 def diff_binaries(bin_a_data: bytes, bin_b_data: bytes,
                   funcs_a: List[FuncProfile], funcs_b: List[FuncProfile]) -> PatchDiffResult:
     """四阶段渐进式匹配pipeline → 最终diff结果"""

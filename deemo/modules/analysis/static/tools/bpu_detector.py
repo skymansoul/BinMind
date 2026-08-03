@@ -75,8 +75,8 @@ class BranchScanner:
         return underflows
 
     def classify_spectre_variant(self, code_section: bytes) -> Tuple[int, int]:
-        """将检测到的 Spectre 模式分类为 v1 (bounds check bypass) 或 v2 (BTB poisoning)。
-        返回 (v1_count, v2_count)。"""
+        """将检测到的 Spectre 模式分类为 v1 (bounds 检查 bypass) 或 v2 (BTB poisoning)
+        返回 (v1_count, v2_count)"""
         v1 = len(self._SPECTRE_V1_PAT.findall(code_section))
         v2 = len(self._SPECTRE_V2_PAT.findall(code_section))
         return v1, v2
@@ -131,7 +131,7 @@ class BPUDetector:
     def runBp(self) -> DetectionResult:
         branches = self.scanner.scanBp()
         conflicts = self.analyzer.find_conflictsBp(branches)
-        # 读取 .text 段进行 Spectre 变种分类
+        # 读取.text 段进行 Spectre 变种分类
         v1, v2 = 0, 0
         try:
             with open(self.binary_path, 'rb') as fh:

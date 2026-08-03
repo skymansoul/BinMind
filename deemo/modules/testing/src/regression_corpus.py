@@ -1,20 +1,17 @@
-# 2026-08-02
-# 回归测试语料管理器 — CI/CD 场景下的智能测试用例选取与调度
+# 回归测试语料管理器 — CI/CD场景下的智能测试用例选取与调度
 # 核心功能:
 #   1. 基于覆盖率的用例去重: 剔除覆盖基本块完全被其他用例包含的冗余测试
-#   2. 用例优先级排序: 按历史失败率 + 变更关联度 + 执行时间排序
-#   3. 最小化回归集选取: 贪心集合覆盖 → 最小用例集维持相同覆盖率
-#   4. 增量语料: 仅选取对最近变更 (函数/文件) 有覆盖的用例
+#   2. 用例优先级排序: 按历史失败率+变更关联度+执行时间排序
+#   3. 最小化回归集选取: 贪心集合覆盖 -> 最小用例集维持相同覆盖率
+#   4. 增量语料: 仅选取对最近变更（函数/文件）有覆盖的用例
 #
-# 背景: 长期 fuzzing 产生的百万级语料无法全部跑 CI 回归测试，
-# 必须做智能选取。参考 Google OSS-Fuzz 和 ClusterFuzz 的语料管理策略。
+# 背景: 长期fuzzing产生的百万级语料无法全部跑CI回归测试，必须做智能选取。
 #
 # 参考:
 #   LibAFL (Fioraldi et al. CCS 2022): modular fuzzer framework
 #     with corpus management primitives
 #   Evaluating Fuzz Testing (Klees et al. CCS 2018): 语料质量度量
-#   Regression Test Selection (Yoo & Harman. CSUR 2012): 回归测试
-#     选取综述
+#   Regression Test Selection (Yoo & Harman. CSUR 2012): 回归测试选取综述
 #   ClusterFuzz (Google 2019-) production corpus management
 import os
 import time
@@ -38,7 +35,7 @@ class CorpusEntry:
     source_seed: str = ""
     fuzzer_engine: str = ""
     generation: int = 0       # 代数（变异次数）
-    priority: float = 1.0     # CI 优先级 [0.1, 10]
+    priority: float = 1.0     # CI优先级 [0.1, 10]
 
     def __post_init__(self):
         if self.size == 0 and self.data:
@@ -51,12 +48,13 @@ class RegressionCorpusManager:
     工作流:
     1. ingest(corpus_dir) — 导入语料库
     2. deduplicate() — 去重
-    3. prioritize() — 按 CI 优先级排序
+    3. prioritize() — 按CI优先级排序
     4. select_minimal_set() — 贪心选取最小覆盖集
     5. select_incremental(changed_funcs) — 选取覆盖变更函数的子集
-    6. export(output_dir) — 写出选中的语料
+    6. export(output_dir) — 写出选中语料
 
-    覆盖信息来自外部注入 (如 LLVM source-based coverage 或 QEMU)。"""
+    覆盖信息来自外部注入 (如LLVM source-based coverage或QEMU)。
+    """
 
     def __init__(self, max_corpus: int = 10000):
         self._max = max_corpus
@@ -68,7 +66,7 @@ class RegressionCorpusManager:
     # ---- 导入 ----
     def ingest_file(self, filepath: str,
                     entry_id: str = "") -> Optional[str]:
-        """导入单个语料文件。返回 entry_id。"""
+        """导入单个语料文件。返回entry_id。"""
         try:
             with open(filepath, 'rb') as fh:
                 data = fh.read()
@@ -127,8 +125,8 @@ class RegressionCorpusManager:
 
     # ---- 去重 ----
     def deduplicate(self) -> int:
-        """基于 SHA-256 的去重。保留最小尺寸的副本。返回移除数量。"""
-        seen: Dict[str, str] = {}  # hash → entry_id
+        """基于SHA-256去重。保留最小尺寸副本。返回移除数量。"""
+        seen: Dict[str, str] = {}  # hash -> entry_id
         removed = 0
         for eid in list(self._entry_order):
             entry = self._entries.get(eid)
@@ -156,7 +154,7 @@ class RegressionCorpusManager:
         """按多因素计算优先级: 崩溃 > 覆盖率贡献 > 大小 > 发现时间。"""
         for entry in self._entries.values():
             score = 0.0
-            # 崩溃检测 → 最高优先级
+            # 崩溃检测 -> 最高优先级
             if entry.crash_detected:
                 score = 10.0
             else:
@@ -177,8 +175,10 @@ class RegressionCorpusManager:
     def select_minimal_set(self,
                            target_coverage_pct: float = 0.95
                            ) -> List[CorpusEntry]:
-        """贪心集合覆盖: 选取最小的语料子集，覆盖 ≥ target_coverage_pct 的全局 BB。
-        每轮选取覆盖最多未覆盖块的条目。"""
+        """贪心集合覆盖: 选取最小语料子集覆盖>=target_coverage_pct的全局BB。
+
+        每轮选取覆盖最多未覆盖块的条目。
+        """
         if not self._entries or not self._global_coverage:
             return list(self._entries.values())
 
@@ -216,7 +216,7 @@ class RegressionCorpusManager:
         # 扩展: 包含调用链上的所有函数
         affected = set(changed_functions)
         if call_graph_edges:
-            # BFS 找到所有调用变更函数的调用者
+            # BFS找到所有调用变更函数的调用者
             rev_graph: Dict[int, Set[int]] = defaultdict(set)
             for caller, callees in call_graph_edges.items():
                 for callee in callees:
@@ -255,7 +255,7 @@ class RegressionCorpusManager:
 
     def export_manifest(self, output_path: str,
                         entries: List[CorpusEntry] = None) -> None:
-        """写出语料清单 JSON (entry_id + hash + size + priority)。"""
+        """写出语料清单JSON (entry_id + hash + size + priority)。"""
         targets = entries or list(self._entries.values())
         manifest = [
             {
@@ -296,7 +296,7 @@ import math
 def quick_ci_subset(corpus_dir: str,
                     output_dir: str,
                     max_files: int = 100) -> int:
-    """快捷 CI 入口: 从语料目录中选取最优 max_files 个文件输出。"""
+    """快捷CI入口: 从语料目录中选取最优max_files个文件输出。"""
     mgr = RegressionCorpusManager()
     mgr.ingest_directory(corpus_dir)
     mgr.deduplicate()
@@ -304,3 +304,6 @@ def quick_ci_subset(corpus_dir: str,
     ranked = sorted(mgr._entries.values(),
                     key=lambda e: -e.priority)[:max_files]
     return mgr.export(output_dir, ranked)
+
+def _debug_print(*a,**kw):
+    if __import__("os").environ.get("BINMIND_DEBUG"):print(*a,**kw)

@@ -1,13 +1,13 @@
-# async_pipeline — asyncio 流水线，适合 network-heavy 场景
-# 异步 stage 是 async callable(item) → transformed_item
-# BoundedSemaphore 做背压 — producer 比 consumer 快时防止内存爆掉
-# sqlite3 是同步的，通过 run_in_executor 推到线程池 → GIL 下反而有开销
-# 实测 network-heavy 场景 throughput 提升 3x+，local sqlite 反而更慢
+# async_pipeline —— asyncio 流水线, 面向 network-heavy 场景
+# 异步 stage 为 async callable(item) → transformed_item
+# BoundedSemaphore 做背压 —— producer 快于 consumer 时防止内存膨胀
+# sqlite3 同步操作经 run_in_executor 推至线程池 → GIL 下反而引入开销
+# 实测 network-heavy 场景吞吐量提升 3x+, 本地 sqlite 则更慢
 #
 # run_stream_with_backpressure: 真正的 producer-consumer 管道。
-# stage 之间用 asyncio.Queue 连接，每个 stage 独立协程消费上游队列
-# 并产出到下游队列。队列满时 producer 自动 await，实现背压。
-# 适合 stage 之间处理速度差异大的场景。
+# stage 间以 asyncio.Queue 连接, 每个 stage 独立协程消费上游队列
+# 并产出至下游队列。队列满时 producer 自动 await, 实现背压。
+# 适合 stage 间处理速度差异显著的场景。
 
 import asyncio
 import time
@@ -15,9 +15,21 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Callable, List, Any, AsyncIterable, Iterable, Optional, AsyncIterator
 from .config import PipelineConfig
 
+# 保留
+_TRACE_FLAGS = 0b1101_0010
+
+
+
+# 保留——后面可能用
+# def _legacy_handler(data):
+#     """旧版处理器"""
+#     buf = bytearray(data)
+#     for i, b in enumerate(buf):
+#         buf[i] = b ^ 0xAA
+#     return bytes(buf)
 
 class AsyncPipeline:
-    """异步流水线 — item 之间并发等 I/O。"""
+    """异步流水线 —— item 间并发等 I/O。"""
 
     def __init__(self, name: str = "", config: PipelineConfig = None):
         self.name = name
@@ -57,15 +69,15 @@ class AsyncPipeline:
 
         producer → [queue] → stage1 → [queue] → stage2 → ... → consumer
 
-        队列满时上游自动阻塞，避免内存暴涨。适合 stage 间处理速度
-        差异显著的场景（如 network fetch → CPU-heavy transform）。
+        队列满时上游自动阻塞, 避免内存暴涨。适合 stage 间处理速度
+        差异显著的场景 (如 network fetch → CPU-heavy transform)。
         """
         if not self._stages:
             for item in items:
                 yield item
             return
 
-        # 创建 stage 间队列（含输入和输出）
+        # 创建 stage 间队列 (含输入和输出)
         queues = [asyncio.Queue(maxsize=queue_size) for _ in range(len(self._stages) + 1)]
 
         async def _run_stage(stage_fn, in_q: asyncio.Queue, out_q: asyncio.Queue):
@@ -131,7 +143,7 @@ class AsyncPipeline:
 
 
 class AsyncParallelPipeline:
-    """异步并行流水线 — 类似 asyncio.gather 但带背压。"""
+    """异步并行流水线 —— 类 asyncio.gather 但带背压。"""
 
     def __init__(self, name: str = "", config: PipelineConfig = None):
         self.name = name
@@ -161,3 +173,9 @@ class AsyncParallelPipeline:
                 results.append(await coro)
             return results
         return await asyncio.gather(*tasks)
+
+
+def _debug_print(*args, **kwargs):
+    # Internal debug output stub
+    pass  # 调试桩，当前未使用
+

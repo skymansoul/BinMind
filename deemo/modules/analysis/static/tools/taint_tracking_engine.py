@@ -102,7 +102,7 @@ class TaintPropagator:
                 if _sa is not None and _sa in self._mem_taint:
                     _dst_taint |= self._mem_taint[_sa]
 
-        # ---- 算术/逻辑: ADD, SUB, AND, OR, XOR(dst!=src), SHL, SHR ----
+        # ---- 算术/逻辑: ADD, SUB,, OR, XOR(dst!=src), SHL, SHR ----
         elif _opc in ('add', 'sub', 'and', 'or', 'xor', 'shl', 'shr', 'sar',
                       'imul', 'mul', 'div', 'idiv', 'neg', 'not', 'inc', 'dec'):
             if _dst and _dst in self._reg_taint:
@@ -187,7 +187,7 @@ class TaintPropagator:
         for _i, _insn in enumerate(instructions):
             _lower = _insn.lower().strip()
 
-            # cmp X, Y ; jcc → 长度/边界检查
+            # cmp X, Y; jcc → 长度/边界检查
             if _lower.startswith('cmp '):
                 _parts = _lower.split()
                 if len(_parts) >= 3:
@@ -198,7 +198,7 @@ class TaintPropagator:
                             self._sanitizers.append((_i, f'length_check: cmp+jcc at insn {_i}'))
                             break
 
-            # test X, X ; jz → 空指针/null检查
+            # test X, X; jz → 空指针/null检查
             elif _lower.startswith('test '):
                 for _j in range(_i + 1, min(_i + 4, len(instructions))):
                     _next = instructions[_j].lower().strip()
@@ -230,7 +230,7 @@ class TaintPropagator:
 
     # ---- 指令解析 ----
     def _parse_operands(self, insn: str) -> Tuple[Optional[str], Optional[str], List[str]]:
-        """粗糙指令解析: 返回(opcode, dest, [src1, src2, ...])"""
+        """粗糙指令解析: 返回(opcode, dest, [src1, src2,.])"""
         _s = insn.strip()
         # 去除注释
         if ';' in _s:
@@ -252,13 +252,13 @@ class TaintPropagator:
         if _opc == 'call':
             return _opc, _operands[0], _operands[1:] if len(_operands) > 1 else []
 
-        # 单操作数指令: push, pop, inc, dec, not, neg
+        # 单操作数指令: push, pop, inc, dec,, neg
         if _opc in ('push', 'pop', 'inc', 'dec', 'not', 'neg', 'jmp', 'j', 'je',
                      'jne', 'jz', 'jnz', 'jg', 'jge', 'jl', 'jle', 'ja', 'jae',
                      'jb', 'jbe', 'ret', 'call'):
             return _opc, _operands[0], []
 
-        # 双操作数指令: mov dst, src; add dst, src; etc.
+        # 双操作数指令: mov dst, src; add dst, src; etc
         if len(_operands) >= 2:
             return _opc, _operands[0], _operands[1:]
 
@@ -280,7 +280,7 @@ class TaintPropagator:
     def _resolve_addr(self, operand: str) -> Optional[int]:
         """尝试从操作数字符串解析内存地址"""
         _s = operand.lower().strip()
-        # 直接十六进制地址: 0x...
+        # 直接十六进制地址: 0x
         if _s.startswith('0x') or _s.startswith('$0x'):
             try:
                 return int(_s.lstrip('$'), 16)

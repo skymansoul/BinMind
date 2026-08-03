@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # ── 2025 升级: HELIOS (arXiv 2601.14598) 启发的层次化图抽象 ───────────────
-# 将 CFG + FCG 编码为结构化文本表示，供 LLM 进行更准确的虚表恢复。
-# 核心方法: 对每个类的构造函数→虚表初始化→虚调用点构建三层图结构，
-# 将控制流、数据流和类型层次关系编码为统一的邻接表示。
+# 将 CFG + FCG 编码为结构化文本表示，供 LLM 进行更准确的虚表恢复
+# 核心方法: 对每个类的构造函数→虚表初始化→虚调用点构建三层图结构
+# 将控制流、数据流和类型层次关系编码为统一的邻接表示
 import logging
 import os
 from dataclasses import dataclass, field
@@ -40,10 +40,10 @@ class RecoveryResult:
 
 
 class HierarchicalGraphEncoder:
-    """将虚表关系编码为层次化图文本表示。
+    """将虚表关系编码为层次化图文本表示
     HELIOS 论文证明：将 CFG/FCG 编码为结构化文本比平面代码表示
-    能让 LLM 更好地进行类型推理和函数边界识别。
-    此处将此方法论应用于虚表恢复。
+    能让 LLM 更好地进行类型推理和函数边界识别
+    此处将此方法论应用于虚表恢复
     """
     __slots__ = ()
 
@@ -55,7 +55,7 @@ class HierarchicalGraphEncoder:
         L1: 类节点（虚表地址→类名）
         L2: 虚函数边（虚表→虚表条目目标地址）
         L3: 调用点边（调用点→虚表偏移→目标函数）
-        输出格式为 LLM 友好的结构化文本。
+        输出格式为 LLM 友好的结构化文本
         """
         lines = ["<vtgraph>"]
         # L1: 类节点
@@ -87,8 +87,8 @@ class HierarchicalGraphEncoder:
 
     @staticmethod
     def infer_inheritance(vtables: List[VTable]) -> Dict[str, List[str]]:
-        """从虚表条目重叠推断继承关系——若类 B 的虚表前 N 条与类 A 完全匹配，
-        则 B 可能是 A 的子类（重用了父类的前 N 个虚函数）。
+        """从虚表条目重叠推断继承关系——若类 B 的虚表前 N 条与类 A 完全匹配
+        则 B 可能是 A 的子类（重用了父类的前 N 个虚函数）
         """
         hierarchy: Dict[str, List[str]] = {}
         vt_entries: Dict[str, Set[int]] = {}
@@ -112,7 +112,7 @@ class HierarchicalGraphEncoder:
 
 
 class VTableScanner:
-    """VTable scanner -- probes .rodata for function pointer arrays via radare2."""
+    """VTable scanner -- probes.rodata for function 指针 arrays via radare2"""
 
     vtable_heuristics = [
         r'(?:\.word|\.long|\.quad|\.dword)\s+0x[0-9a-f]+',
@@ -169,7 +169,7 @@ class VTableScanner:
 
 
 class VTableHeuristicDetector:
-    """基于数据流模式的 vtable 启发式检测——补充符号表之外的虚表。"""
+    """基于数据流模式的 vtable 启发式检测——补充符号表之外的虚表"""
 
     _VTABLE_INIT_PATTERN = __import__('re').compile(
         rb'mov\s+(?:qword\s+)?\[r\w+\]\s*,\s*(?:offset\s+)?(0x[0-9a-f]+)',
@@ -196,7 +196,7 @@ class VTableHeuristicDetector:
 
 
 class CallContextAnalyzer:
-    """Call context analyzer -- resolves virtual call sites and binds concrete targets."""
+    """Call context analyzer -- 解析 virtual call sites binds concrete targets"""
 
     def __init__(self, binary_path: str):
         self.binary_path = binary_path
@@ -239,7 +239,7 @@ class CallContextAnalyzer:
 
 
 class VTableRecovery:
-    """VTable recovery pipeline -- scan vtables then analyze virtual calls."""
+    """VTable recovery 流水线 -- scan vtables 分析 virtual calls"""
 
     def __init__(self, binary_path: str):
         self.binary_path = os.path.abspath(binary_path)
@@ -248,7 +248,7 @@ class VTableRecovery:
         self.analyzer = CallContextAnalyzer(binary_path)
 
     def run(self) -> RecoveryResult:
-        """Primary entry point: scan vtables then resolve call contexts."""
+        """Primary 入口: scan vtables 解析 call contexts"""
         try:
             vtables = self.scanner.scan()
             extra_addrs = self.heuristic.detect_from_constructors()

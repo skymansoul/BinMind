@@ -1,0 +1,312 @@
+# output pipeline — 设计草图
+# 保留作为实现的历史背景，不保证与当前代码一致
+
+## 当前模块描述
+输出模块：报告生成、web API、证据链报告。将分析结论汇总为结构化报告与证据链。
+
+## 设计的深度创新点: 事件溯源可审计证据链报告 (EventSourcedEvidence)
+
+### 创新动机与理论依据
+现有证据链报告为静态快照，无法追溯推导过程。借鉴 ESAA-Security的事件溯源架构：将每次分析动作（输入、中间结论、来源引用）记录为事件序列，报告生成时按事件回放重建证据链；借鉴 DEER 的报告结构基准评估报告的信息完整性；引入逻辑一致性检查避免结论跳步。差异点：现有报告只含结论，新增方案记录推导事件并支持回放审计。
+
+### 支撑论文
+  [1] ESAA-Security: An Event-Sourced, Verifiable Architecture for Agent-Assisted Security Audits of AI-Generated Code — arXiv:2603.06365 (2026).
+  [2] DEER: A Benchmark for Evaluating Deep Research Agents on Expert Report Generation — arXiv:2512.17776 (2025).
+  [3] ReportLogic: Evaluating Logical Quality in Deep Research Reports — arXiv:2602.18446 (2026).
+
+## 当前模块代码 (关键文件摘要)
+```python
+# === output\report.py (70562 字节) ===
+import logging
+import os
+from datetime import datetime
+from typing import Dict, Any, List, Optional, Tuple
+
+from prompts import REPORT_SUMMARY_TEMPLATE
+from modules.info.info_collect import format_info_for_report
+
+logger = logging.getLogger(__name__)
+
+
+class ReportGenerator:
+    """
+    报告生成器
+
+
+
+
+
+    
+    """
+    
+    def __init__(self, output_dir: str = './reports'):
+        """
+        初始化报告生成器
+        
+        Args:
+            output_dir: 输出目录
+        """
+        self.output_dir = output_dir
+        self.analysis_steps = []
+        self.steps = []
+        self._ensure_output_dir()
+    
+    def _ensure_output_dir(self):
+        """
+        确保输出目录存在
+
+
+        
+        """
+        try:
+            if not os.path.exists(self.output_dir):
+                os.makedirs(self.output_dir)
+        except Exception as e:
+            logger.error(f"创建输出目录失败: {e}")
+    
+    def add_step(self, name: str, data=None, result=None):
+        """
+        添加一个分析步骤
+        
+        Args:
+            name: 步骤名称
+            data: 步骤数据（可选）
+            result: 步骤结果（可选）
+        """
+        self.steps.append({
+            'name': name,
+            'data': data,
+            'result': result
+        })
+        self.analysis_steps.append({
+            'step': name,
+            'timestamp': datetime.now().isoformat(),
+            'data': data or {}
+        })
+        logger.info(f"记录分析步骤: {name}")
+    
+    def format_binary_info_section(self, binary_info: Dict[str, Any]) -> str:
+        """
+        格式化二进制信息部分
+        """
+        return format_info_for_report(binary_info)
+    
+    def format_decomp_analysis_section(
+        self,
+        function_name: str,
+        pseudocode: str,
+        analysis_result: Dict[str, Any]
+    ) -> str:
+
+# === output\web_api.py (28080 字节) ===
+import os
+import logging
+import uuid
+import hashlib
+from typing import Dict, Any, List, Optional, Union
+from datetime import datetime
+from pathlib import Path
+
+from config import Config
+
+logger = logging.getLogger(__name__)
+
+FASTAPI_AVAILABLE = False
+try:
+    from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File
+    from fastapi.responses import FileResponse, JSONResponse
+    from fastapi.middleware.cors import CORSMiddleware
+    from pydantic import BaseModel, Field
+    import uvicorn
+    FASTAPI_AVAILABLE = True
+except ImportError:
+    logger.warning("[WebAPI] FastAPI 或 uvicorn 未安装，Web API 服务不可用")
+
+
+if FASTAPI_AVAILABLE:
+    
+    class AnalysisRequest(BaseModel):
+        """分析请求模型"""
+        binary_name: str = Field(..., description="二进制文件名")
+        binary_hash: Optional[str] = Field(None, description="二进制文件哈希")
+        binary_format: Optional[str] = Field(None, description="文件格式: ELF/PE/MACH-O")
+        architecture: Optional[str] = Field(None, description="架构: amd64, i386 等")
+        function_names: Optional[List[str]] = Field(None, description="指定要分析的函数列表")
+        enable_symbolic: bool = Field(False, description="是否启用符号执行")
+        enable_exploit_gen: bool = Field(False, description="是否启用利用脚本生成")
+        fuzzer_type: Optional[str] = Field(None, description="Fuzzer 类型: libfuzzer, afl")
+        expert_mode: bool = Field(False, description="专家模式")
+        report_formats: List[str] = Field(default_factory=lambda: ['md', 'html'], description="报告格式")
+        
+        class Config:
+            schema_extra = {
+                "example": {
+                    "binary_name": "vulnerable_app",
+                    "binary_format": "ELF",
+                    "architecture": "amd64",
+                    "function_names": ["main", "process_input"],
+                    "enable_symbolic": False,
+                    "enable_exploit_gen": True,
+                    "fuzzer_type": "libfuzzer",
+                    "expert_mode": False,
+                    "report_formats": ["md", "html", "json"]
+                }
+            }
+    
+    class VulnerabilityQuery(BaseModel):
+        """漏洞查询模型"""
+        vulnerability_type: Optional[str] = Field(None, description="漏洞类型")
+        function_name: Optional[str] = Field(None, description="函数名")
+        binary_format: Optional[str] = Field(None, description="文件格式")
+        architecture: Optional[str] = Field(None, description="架构")
+        severity: Optional[str] = Field(None, description="严重程度")
+        limit: int = Field(20, ge=1, le=100, description="返回数量限制")
+        offset: int = Field(0, ge=0, description="偏移量")
+    
+    class AnalysisTaskStatus(BaseModel):
+        """分析任务状态"""
+        task_id: str
+        status: str
+        created_at: str
+        updated_at: Optional[str]
+        progress: int
+        message: Optional[str]
+        result: Optional[Dict[str, Any]]
+    
+    class APIResponse(BaseModel):
+        """通用 API 响应模型"""
+        success: bool
+        message: Optional[str]
+        data: Optional[Any]
+    
+
+# === output\evidence_chain_report.py (5170 字节) ===
+"""
+证据链驱动的自适应报告引擎 — RAVEN + Veritas 启发。
+
+理论依据:
+  RAVEN (arXiv:2604.17948): 4-agent RAG 框架 → Project Zero RCA 模板。
+  Veritas (arXiv:2605.15097): 证据驱动三段式验证 → 90% 召回, 零误报。
+
+模块位置: output/evidence_chain_report.py
+"""
+
+import json, hashlib
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any, Dict, List, Optional
+import logging
+_log = logging.getLogger(__name__)
+
+
+class ReportAudience(Enum):
+    EXECUTIVE = "executive"
+    TECHNICAL = "technical"
+    COMPLIANCE = "compliance"
+
+
+@dataclass
+class EvidenceNode:
+    """证据链节点 — 追溯每个发现的来源。"""
+    finding_id: str
+    source_module: str           # ai_ml | crypto | vuln | analysis | ...
+    evidence_type: str           # static | dynamic | llm | fuzz | symbex
+    confidence: float
+    intermediate_results: Dict = field(default_factory=dict)
+    children: List["EvidenceNode"] = field(default_factory=list)
+
+
+@dataclass
+class ReportSection:
+    """报告章节 — 自适应格式。"""
+    title: str
+    content: str
+    severity: str = "INFO"
+    evidence_chain: Optional[EvidenceNode] = None
+    collapsible: bool = True
+
+
+class EvidenceChainReporter:
+    """
+    证据链追踪报告生成器 — RAVEN 启发。
+
+    核心功能:
+      1. 每个发现自动关联证据链 (哪个模块产生、哪些中间结果支撑)
+      2. 根据受众自适应格式 (高管摘要/技术深度/合规审计)
+      3. RAG 增强的 AI 摘要生成
+    """
+
+    def __init__(self, api_key: str = ""):
+        self._api_key = api_key
+        self._evidence_registry: Dict[str, EvidenceNode] = {}
+
+    def register_evidence(self, finding_id: str, node: EvidenceNode):
+        self._evidence_registry[finding_id] = node
+
+    def generate_report(
+        self, findings: List[Dict], audience: ReportAudience = ReportAudience.TECHNICAL
+    ) -> str:
+        """生成自适应格式报告。"""
+        sections = []
+        for f in findings:
+            fid = f.get("id", hashlib.md5(str(f).encode()).hexdigest()[:8])
+            evidence = self._evidence_registry.get(fid)
+            chain_text = self._format_evidence_chain(evidence) if evidence else ""
+
+            if audience == ReportAudience.EXECUTIVE:
+                sections.append(self._exec_section(f, chain_text))
+            elif audience == ReportAudience.COMPLIANCE:
+                sections.append(self._compliance_section(f, chain_text))
+            else:
+                sections.append(self._technical_section(f, chain_text))
+
+        return "\n\n".join(sections)
+```
+
+## 开发要求 (必须严格遵守)
+
+### 1. 保留所有原有功能与注释
+- 绝不删除或修改任何已有函数、类、枚举、变量。
+- 绝不删除或修改任何已有注释（包括中文和英文注释）。
+- 新增代码只能追加在文件末尾或作为新的独立文件添加。
+
+### 2. 新增注释规范
+- 使用中文 INTJ 风格注释：仅陈述设计意图、算法依据、边界条件、与参考论文的对应关系。
+- 禁止情绪化表达与无关事实陈述。
+- 示例格式：
+  ```python
+  # 设计依据: R1-Fuzz (arXiv:2509.20384) GRPO 奖励建模，
+  # 以覆盖率增益为唯一奖励源，避免稀疏奖励导致的训练发散。
+  # 边界: 当状态维度超过 100 时降级为上下文老虎机，防止组合爆炸。
+  def _grpo_mutation_reward(state_vector, coverage_gain):
+      ...
+  ```
+
+### 3. 代码风格要求
+- 编写自然、一致、可维护的代码：错误处理方式应贴合函数实际场景（不同函数使用
+  不同粒度的异常处理，不必统一模板），命名风格与所在文件既有风格保持一致。
+- 避免机械重复：核心算法给出详细注释，简单辅助函数仅一行注释，注释疏密自然。
+- 绝不为了风格统一而破坏代码正确性，所有功能必须可运行。
+
+### 4. 文件时间戳
+- 不要修改任何文件的时间戳。时间戳由主控脚本处理。
+
+## 输出格式要求
+
+你必须返回所有需要新增或修改的文件的完整内容。对每个文件使用以下分隔符格式：
+
+```
+===FILE_START: output/新文件名.py ===
+# 完整文件内容
+===FILE_END: output/新文件名.py ===
+```
+
+对于需要修改的现有文件（追加内容），也提供完整文件内容。
+
+请确保：
+1. 每个新增文件至少包含 100 行有意义的代码（非注释非空行）。
+2. 文件直接写在 output/ 目录下（flat structure，子目录可用 src/）。
+3. 所有 import 语句使用相对导入（如 from .xxx import yyy）或标准库。
+4. 代码可以直接运行，不需要额外安装依赖（除非已有可选依赖检测模式）。
+
+现在，请为模块 `output` 实现上述创新点。

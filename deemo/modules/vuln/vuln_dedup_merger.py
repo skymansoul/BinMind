@@ -1,6 +1,6 @@
-# 2026-07-23 — CRDT风格多源漏洞合并
-# 三趟匹配：CVE ID精确 → 函数名+类型 → 地址邻近(±8字节)
-# 冲突解决按字段优先级选取，产出统一合并结果
+# CRDT风格多源漏洞归并引擎
+# 三趟匹配链：CVE ID精确 → 函数名+类型 → 地址邻近(±8字节容差)
+# 冲突按字段优先级规则消解，产出归一化合并结果
 
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any, Tuple, Set
@@ -17,7 +17,7 @@ class MatchConfidence(str, Enum):
 
 @dataclass
 class MergedFinding:
-    """合并后的单条漏洞发现"""
+    """归并后的单条漏洞记录"""
     cve_id: str = ""
     vuln_type: str = ""
     function_name: str = ""
@@ -27,23 +27,23 @@ class MergedFinding:
     description: str = ""
     file_path: str = ""
     line_number: int = 0
-    sources: List[str] = field(default_factory=list)  # ["ghidra", "ida", "r2"]
+    sources: List[str] = field(default_factory=list)  # 数据来源标识
     source_data: Dict[str, Dict] = field(default_factory=dict)
     match_confidence: str = "none"
 
 
 @dataclass
 class MergeConflict:
-    """合并冲突记录——同一漏洞不同源描述不一致"""
+    """归并冲突——同漏洞多源描述不一致"""
     field: str
     values: Dict[str, Any]  # source → value
     resolved_value: Any
-    resolution_method: str  # "majority", "max_severity", "first_seen"
+    resolution_method: str  # 消解策略标识
 
 
 @dataclass
 class MergeResult:
-    """多源合并的完整产出"""
+    """多源归并完整输出"""
     merged: List[MergedFinding] = field(default_factory=list)
     conflicts: List[MergeConflict] = field(default_factory=list)
     stats: Dict[str, int] = field(default_factory=dict)
@@ -51,8 +51,7 @@ class MergeResult:
     total_input: int = 0
 
 
-# ==== 字段优先级表 ====
-# 不同工具对同一字段的可靠性不同。IDA函数名更准，Ghidra类型推断更强。
+# 字段置信度优先级——IDA函数名更可靠，Ghidra类型推断更强
 _FIELD_PRECEDENCE = {
     "function_name": ["ida", "ghidra", "r2"],
     "severity": ["ghidra", "ida", "r2"],
@@ -67,18 +66,18 @@ _FIELD_PRECEDENCE = {
 
 
 class VulnDedupMerger:
-    """多源漏洞发现合并器。
+    """多源漏洞发现归并器。
 
-    核心函数:
+    核心入口:
         merge_from_sources(ghidra_findings, ida_findings, r2_findings) → MergeResult
-        三趟匹配 + CRDT字段合并，解决多工具分析时同一漏洞被重复报告的问题。
+        执行三趟匹配+CRDT字段归并，消除多工具分析重复。
     """
 
     def __init__(self, address_tolerance: int = 8):
         self.address_tolerance = address_tolerance
         self._conflicts: List[MergeConflict] = []
 
-    # 规范化：统一各工具的字段格式
+    # 字段规范化——统一各工具输出的异构格式
     @staticmethod
     def _norm(finding: Dict) -> Dict:
         nf = dict(finding)
@@ -94,12 +93,12 @@ class VulnDedupMerger:
             nf["address"] = 0
         return nf
 
-    # ==== 三趟匹配 ====
+    # ==== 三趟匹配链路 ====
 
     def _round1_cve_id(self, sources: Dict[str, List[Dict]]) -> Tuple[
             List[List[Tuple[str, int]]], Set[Tuple[str, str, int]]]:
-        """第一趟：CVE ID精确匹配。CID非空的finding，相同CID直接归组。"""
-        groups: Dict[str, List[Tuple[str, int]]] = {}  # cve_id → [(source, idx)]
+        """第一趟：CVE ID精确匹配——CID非空的finding按相同CID归组"""
+        groups: Dict[str, List[Tuple[str, int]]] = {}
         for src, findings in sources.items():
             for i, f in enumerate(findings):
                 nf = self._norm(f)
@@ -117,15 +116,13 @@ class VulnDedupMerger:
 
     def _round2_func_type(self, sources: Dict[str, List[Dict]],
                           matched: Set[Tuple[str, str, int]]) -> List[List[Tuple[str, int]]]:
-        """第二趟：函数名+漏洞类型匹配。同一函数中同类型漏洞视为同一。"""
-        # 找出尚未匹配的findings
+        """第二趟：函数名+漏洞类型匹配——同函数同类型视为同一漏洞"""
         remaining = {}
         for src, findings in sources.items():
             for i, f in enumerate(findings):
                 if (src, f.get("cve_id", ""), i) not in matched:
                     remaining.setdefault(src, {})[i] = self._norm(f)
 
-        # 按(func_name_lower, vuln_type)分组
         groups: Dict[Tuple[str, str], List[Tuple[str, int]]] = {}
         for src, idx_map in remaining.items():
             for idx, nf in idx_map.items():
@@ -143,7 +140,7 @@ class VulnDedupMerger:
 
     def _round3_addr_proximity(self, sources: Dict[str, List[Dict]],
                                matched: Set[Tuple]) -> List[List[Tuple[str, int]]]:
-        """第三趟：地址邻近匹配（±8字节容差内视为同一漏洞）。"""
+        """第三趟：地址邻近匹配——±8字节容差内归为同源"""
         remaining = {}
         for src, findings in sources.items():
             for i, f in enumerate(findings):
@@ -157,14 +154,13 @@ class VulnDedupMerger:
                 if not already:
                     remaining.setdefault(src, {})[i] = self._norm(f)
 
-        # 构建地址空间索引
-        addr_list: List[Tuple[str, int, Dict]] = []  # (source, idx, normalized)
+        addr_list: List[Tuple[str, int, Dict]] = []
         for src, idx_map in remaining.items():
             for idx, nf in idx_map.items():
                 if nf["address"] > 0:
                     addr_list.append((src, idx, nf))
 
-        # 距离聚类
+        # 地址距离聚类
         groups = []
         used = set()
         tol = self.address_tolerance
@@ -183,10 +179,10 @@ class VulnDedupMerger:
                 groups.append(cluster)
         return groups
 
-    # ==== 字段合并 ====
+    # ==== 字段级归并 ====
 
     def _merge_fields(self, entries: List[Tuple[str, Dict]]) -> Tuple[Dict, List[MergeConflict]]:
-        """CRDT风格字段合并：按优先级选取最可信源的值。"""
+        """CRDT风格字段归并——按来源优先级选取最可信值"""
         result = {}
         conflicts = []
         fields_to_merge = ["function_name", "severity", "cvss_score",
@@ -229,17 +225,17 @@ class VulnDedupMerger:
                            ida_findings: List[Dict] = None,
                            r2_findings: List[Dict] = None,
                            **extra_sources) -> MergeResult:
-        """合并多源漏洞发现。
+        """多源漏洞发现归并。
 
         用法:
-            merge = VulnDedupMerger()
-            result = merge.merge_from_sources(
+            merger = VulnDedupMerger()
+            result = merger.merge_from_sources(
                 ghidra_findings=ghidra_results,
                 ida_findings=ida_results,
                 r2_findings=r2_results,
             )
 
-        返回MergeResult，包含merged列表、conflicts列表和统计。
+        返回MergeResult，含merged列表、conflicts列表及统计信息。
         """
         sources = {}
         if ghidra_findings:
@@ -253,7 +249,7 @@ class VulnDedupMerger:
         total = sum(len(v) for v in sources.values())
         self._conflicts = []
 
-        # Normalize all
+        # 全部规范化
         normed: Dict[str, List[Dict]] = {}
         for src, f_list in sources.items():
             normed[src] = [self._norm(f) for f in f_list]
@@ -265,9 +261,9 @@ class VulnDedupMerger:
 
         all_groups = r1_groups + r2_groups + r3_groups
 
-        # 构建merged findings
+        # 构建归并记录
         merged = []
-        seen_keys: Set[Tuple] = set()  # 每个(source, idx)只归一组
+        seen_keys: Set[Tuple] = set()  # 每个(source, idx)仅归入一组
 
         for group in all_groups:
             entries = []
@@ -293,7 +289,7 @@ class VulnDedupMerger:
             )
             merged.append(mf)
 
-        # 未匹配的孤立findings
+        # 未匹配的孤立发现
         unmatched: Dict[str, List[Dict]] = {}
         for src, f_list in normed.items():
             for i, f in enumerate(f_list):
@@ -319,5 +315,5 @@ class VulnDedupMerger:
         )
 
     def merge_two_lists(self, list_a: List[Dict], list_b: List[Dict]) -> MergeResult:
-        """两列表快速合并"""
+        """双列表快速归并"""
         return self.merge_from_sources(ida_findings=list_a, ghidra_findings=list_b)

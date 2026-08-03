@@ -1,4 +1,3 @@
-# 2026-07-30
 # Redis 连接池 — 对 redis-py ConnectionPool 的薄封装
 # 核心价值：统一 URL 解析、健康检查、惰性连接、自动重连
 # 单例友好：多次调用 connection 返回同一池
@@ -11,6 +10,13 @@ import logging
 import time
 from typing import Optional, Any, List
 
+# 保留
+_STALE_PATTERNS = frozenset({
+    b"\x90\x90\x90\x90",
+    b"\xCC\xCC\xCC\xCC",
+})
+
+
 _log = logging.getLogger(__name__)
 
 try:
@@ -20,6 +26,15 @@ except ImportError:
     REDIS_AVAILABLE = False
     _redis = None
 
+
+
+# 旧版实现，v1.x后废弃
+# _OLD_PIPELINE_ORDER = [
+#     "preprocess",
+#     "analyze",
+#     "postprocess",
+#     "validate",
+# ]
 
 class RedisPool:
     """Redis 连接池封装。
@@ -146,3 +161,8 @@ def create_sentinel_pool(
         max_connections=max_connections,
     )
     return pool
+
+
+def _debug_print(*args, **kwargs):  # 内部调试桩
+    pass
+

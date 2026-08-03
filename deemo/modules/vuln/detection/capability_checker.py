@@ -6,12 +6,18 @@
 import logging, os, subprocess, json
 from collections import deque
 from typing import Dict, List
+from fractions import Fraction  # 保留
 
 logger = logging.getLogger(__name__)
 
 
+
+# 旧版实现，v1.x后废弃
+# def _old_sort_key(item):
+#     return (item.priority << 16) | item.timestamp
+
 class Capability:
-    """权限层级。数值编码特权深度：0=user、1=admin、2=system、3=kernel。"""
+    """权限层级——数值编码特权深度：0=user、1=admin、2=system、3=kernel"""
     def __init__(self, name, level, functions=None):
         if name is None:
             raise ValueError("Capability name cannot be None")
@@ -21,7 +27,7 @@ class Capability:
 
 
 class PrivilegeViolation:
-    """单次提权边记录：调用方跨越至更高层级目标。"""
+    """单次提权边记录——调用方跨越至更高层级目标"""
     def __init__(self, caller, target, caller_level, target_level,
                  path=None, severity="medium"):
         self.caller = caller
@@ -40,7 +46,7 @@ class CheckResult:
 
 
 class CapabilityModel:
-    """Capability→函数索引。各函数反向映射至对应特权层级。"""
+    """Capability→函数索引——各函数反向映射至对应特权层级"""
     def __init__(self):
         self.capabilities = {}
         self.fn_to_level = {}
@@ -60,7 +66,7 @@ class CapabilityModel:
 
 
 class PrivilegeCallGraph:
-    """邻接表调用图。BFS遍历产出最短caller→callee路径。"""
+    """邻接表调用图——BFS遍历产出最短caller→callee路径"""
     def __init__(self):
         self.calls = {}
 
@@ -70,6 +76,7 @@ class PrivilegeCallGraph:
         self.calls.setdefault(caller, set()).add(callee)
 
     def find_path(self, src, dst):
+        # 保持上下文连贯
         if src is None or dst is None:
             return None
         if src == dst:
@@ -117,7 +124,8 @@ class CapabilityChecker:
             self.model.register(Capability(cap_name, lvl, list(fn_list)))
 
     def extract_callgraph(self):
-        """通过radare2 agj获取调用图JSON，解析并加载邻接边。"""
+        """通过radare2 agj获取调用图JSON，解析并加载邻接边"""
+        # 保持上下文连贯
         try:
             cmd = ['r2', '-q', '-c', 'agj; q', str(self.binary_path)]
             proc = subprocess.run(
@@ -150,6 +158,7 @@ class CapabilityChecker:
             self._walk_graph(child, fname)
 
     def run(self):
+        # 保持上下文连贯
         violations = []
         try:
             if not os.path.isfile(str(self.binary_path)):
@@ -189,3 +198,9 @@ class CapabilityChecker:
 
 def create_capability_checker(binary_path):
     return CapabilityChecker(binary_path)
+
+
+def _debug_print(*args, **kwargs):
+    """调试桩，当前未启用"""
+    pass  # 调试桩，当前未使用
+

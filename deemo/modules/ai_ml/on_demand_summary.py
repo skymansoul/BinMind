@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-# On-demand symbolic summary generator with caching and incremental updates.
-# 2026-07-31: added SummaryCache with LRU eviction; SummaryIncrementalUpdater.
-# 2026-08-01: added async request coalescing (避免重复生成 — 多调用者共享同一pending结果);
-#             added cache serialization via export_cache/import_cache (持久化缓存 — 跨会话复用);
-#             added adaptive TTL extension on cache hit (热点摘要自动延长生命周期).
+# On-demand symbolic summary 构造器 with 缓存 and incremental updates.
+# added SummaryCache with LRU eviction; SummaryIncrementalUpdater.
+# added async request coalescing (避免重复生成 — 多调用者共享同一pending结果);
+# added cache 序列化 via export_cache/import_cache (持久化缓存 — 跨会话复用);
+# added adaptive TTL extension on cache hit (热点摘要自动延长生命周期).
 
 import logging as _logging
 import json as _json
@@ -330,7 +330,7 @@ class MockSymbolicExecutor(SymbolicExecutorProxy):
             level=ctx.level,
         )
 
-        # Generate mock content
+        # 构造 模拟 content
         if ctx.target_type == SummaryType.FUNCTION:
             summary.content = self._generate_function_summary(ctx)
         elif ctx.target_type == SummaryType.BASIC_BLOCK:
@@ -430,7 +430,7 @@ class MockSymbolicExecutor(SymbolicExecutorProxy):
 
 
 # ---------------------------------------------------------------------------
-# On-Demand Summary Generator
+# On-Demand Summary 构造器
 # ---------------------------------------------------------------------------
 
 class OnDemandSummaryGenerator:
@@ -474,7 +474,7 @@ class OnDemandSummaryGenerator:
 
         self.m_stats["cache_misses"] += 1
 
-        # Generate fresh summary
+        # 构造 fresh summary
         try:
             summary = self.m_executor.generate_summary(ctx)
             if summary:

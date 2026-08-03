@@ -45,7 +45,7 @@ _orig_gv = _m.GPUVulnerability.__init__ if hasattr(_m.GPUVulnerability, '__init_
 if _orig_gv:
     def _gv_init(self, vuln_category=None, **kw):
         try: _orig_gv(self)
-        except: pass
+        except Exception: pass  # 修复: bare except → Exception
         for k, v in (kw or {}).items(): setattr(self, k, v)
         if vuln_category: self.vuln_category = vuln_category
     _m.GPUVulnerability.__init__ = _gv_init
@@ -59,7 +59,7 @@ _orig_ts_init = _m.ThreadSynchronization.__init__ if hasattr(_m.ThreadSynchroniz
 if _orig_ts_init:
     def _ts_init(self, sync_type=None, **kw):
         try: _orig_ts_init(self)
-        except: pass
+        except Exception: pass  # 修复: bare except → Exception
         for k, v in (kw or {}).items(): setattr(self, k, v)
         if sync_type: self.sync_type = sync_type
     _m.ThreadSynchronization.__init__ = _ts_init

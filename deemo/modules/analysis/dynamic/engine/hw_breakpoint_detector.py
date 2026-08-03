@@ -1,9 +1,9 @@
 """
-Hardware breakpoint detection and anti-debug analysis engine.
+硬件断点 detection 反调试 analysis engine
 
-Detects the presence of hardware breakpoints, Intel CET shadow stacks,
-single-step debugging (Trap Flag manipulation), and timing-based
-HWBP anomalies via RDTSC profiling.
+检测 presence 硬件断点s, Intel CET shadow 栈s
+single-step debugging (Trap Flag manipulation), timing-based
+HWBP anomalies via RDTSC 性能分析
 """
 
 import os
@@ -27,7 +27,7 @@ _IS_LINUX = _CURRENT_PLATFORM == "linux"
 
 
 # ---------------------------------------------------------------------------
-# Intel CET shadow stack instruction opcodes
+# Intel CET shadow 栈 instruction opcodes
 #
 # rdsspq = F3 0F 1E /1 (ModRM.reg == 1): read shadow stack pointer
 # incsspq = F3 0F AE /5 (ModRM.reg == 5): increment shadow stack pointer
@@ -38,19 +38,19 @@ _IS_LINUX = _CURRENT_PLATFORM == "linux"
 # wrssq = NP 0F 38 F6 /r: write to shadow stack (64-bit store)
 # wrussq = 66 0F 38 F5 /r: write to user shadow stack
 #
-# 检测逻辑：在二进制中搜索这些指令的操作码字节序列，
-# 出现 > 0 条即表明二进制使用了 CET 影子栈功能。
+# 检测逻辑：在二进制中搜索这些指令的操作码字节序列
+# 出现 > 0 条即表明二进制使用了 CET 影子栈功能
 # ---------------------------------------------------------------------------
 
-# rdsspq: F3 0F 1E with ModRM.reg == 1 (C8-CF)
+# rdsspq: F3 0F 1E ModRM.reg == 1 (C8-CF)
 _CET_SS_RDSSPQ_RE = re.compile(b'\xF3\x0F\x1E[\xC8-\xCF]', re.DOTALL)
-# incsspq: F3 0F AE with ModRM.reg == 5 (E8-EF)
+# incsspq: F3 0F AE ModRM.reg == 5 (E8-EF)
 _CET_SS_INCSSPQ_RE = re.compile(b'\xF3\x0F\xAE[\xE8-\xEF]', re.DOTALL)
-# rstorssp: F3 0F 01 with ModRM.reg == 5 (E8-EF)
+# rstorssp: F3 0F 01 ModRM.reg == 5 (E8-EF)
 _CET_SS_RSTORSSP_RE = re.compile(b'\xF3\x0F\x01[\xE8-\xEF]', re.DOTALL)
 # saveprevssp: F3 0F 01 EA
 _CET_SS_SAVEPREVSSP_BYTES = bytes([0xF3, 0x0F, 0x01, 0xEA])
-# setssbsy: F3 0F 01 with ModRM.reg == 1 (C8-CF)
+# setssbsy: F3 0F 01 ModRM.reg == 1 (C8-CF)
 _CET_SS_SETSSBSY_RE = re.compile(b'\xF3\x0F\x01[\xC8-\xCF]', re.DOTALL)
 # wrssq: NP 0F 38 F6
 _CET_SS_WRSSQ_BYTES = bytes([0x0F, 0x38, 0xF6])
@@ -61,10 +61,10 @@ _CET_SS_WRUSSQ_BYTES = bytes([0x66, 0x0F, 0x38, 0xF5])
 # Trap Flag (TF) manipulation patterns
 #
 # PUSHFQ (9C) + modify [rsp] + POPFQ (9D) 是经典的 TF 设置惯用法。
-# 恶意代码和反调试器常通过这种方式偷偷启用单步执行。
+# 恶意代码和反调试器常通过这种方式偷偷启用单步执行
 # 额外的检测模式：
-#   OR [rsp], 0x100   ; 设置 TF (bit 8)
-#   AND [rsp], ~0x100 ; 清除 TF
+# OR [rsp], 0x100; 设置 TF (bit 8)
+# [rsp], ~0x100; 清除 TF
 # ---------------------------------------------------------------------------
 
 # PUSHFQ (9C) ... POPFQ (9D) 序列的最大指令跨度
@@ -75,12 +75,12 @@ _TF_OR_PATTERN_RE = re.compile(
     b'\x83\x0C\x24\x00\x01', re.DOTALL          # OR DWORD [RSP], 100h
 )
 _TF_AND_PATTERN_RE = re.compile(
-    b'\x83\x24\x24\xFF\xFE', re.DOTALL          # AND DWORD [RSP], ~100h
+    b'\x83\x24\x24\xFF\xFE', re.DOTALL          # DWORD [RSP], ~100h
 )
 
 
 class DetectionMethod(Enum):
-    """Hardware breakpoint detection technique taxonomy."""
+    """硬件断点 detection technique taxonomy"""
     REGISTER_SCAN = "register_scan"              # 直接读 DR0-DR7
     TIMING_ANOMALY = "timing_anomaly"            # RDTSC 时序分析
     CET_SS_DETECT = "cet_ss_detect"             # CET 影子栈指令扫描
@@ -91,7 +91,7 @@ class DetectionMethod(Enum):
 
 @dataclass
 class CETShadowStackEvidence:
-    """Evidence of Intel CET shadow stack usage in a binary."""
+    """Evidence Intel CET shadow 栈 usage a binary"""
     instruction_type: str
     address: int                                 # 文件偏移或虚拟地址
     opcode_hex: str                              # 匹配到的操作码（hex）
@@ -109,7 +109,7 @@ class CETShadowStackEvidence:
 
 @dataclass
 class TimingMeasurement:
-    """RDTSC-based timing sample for a code block."""
+    """RDTSC-based timing sample for a code block"""
     block_address: int
     sample_count: int
     min_cycles: int
@@ -136,7 +136,7 @@ class TimingMeasurement:
 
 @dataclass
 class TrapFlagDetection:
-    """Evidence of Trap Flag manipulation (single-step debugging)."""
+    """Evidence Trap Flag manipulation (single-step debugging)"""
     address: int
     pattern_type: str                            # pushfq_modify / or_immediate / and_immediate
     instruction_sequence: List[str]
@@ -155,7 +155,7 @@ class TrapFlagDetection:
 
 @dataclass
 class HWBPDetectionResult:
-    """Aggregated result of all hardware breakpoint detection methods."""
+    """Aggregated result 硬件断点 detection methods"""
     method: DetectionMethod
     detected: bool
     confidence: float
@@ -173,13 +173,13 @@ class HWBPDetectionResult:
 
 
 class HWBreakpointDetector:
-    """Multi-method hardware breakpoint and anti-debug detection engine.
-
-    Combines register scanning, timing profiling, CET shadow stack
-    instruction detection, and Trap Flag manipulation analysis into
-    a unified detection pipeline. Each method produces independent
-    results that are aggregated by confidence-weighted voting.
-
+    """Multi-method 硬件断点 反调试 detection engine
+    
+    Combines 寄存器 scanning, timing 性能分析, CET shadow 栈
+    instruction detection, Trap Flag manipulation analysis
+    a unified detection 流水线. method produces independent
+    results aggregated confidence-weighted voting
+    
     策略优先级：
     1. 直接寄存器扫描（最可靠，但需要 ptrace/内核级访问）
     2. 时序异常检测（无需特权，但受噪声影响）
@@ -211,7 +211,7 @@ class HWBreakpointDetector:
         self._trap_flag_detections: List[TrapFlagDetection] = []
 
     def _loaded_binary(self) -> None:
-        """Load the binary file into a memory buffer for static analysis."""
+        """加载 binary file a memory 缓冲区 for 静态分析"""
         if not self._binary_path or not os.path.exists(self._binary_path):
             return
         try:
@@ -223,17 +223,17 @@ class HWBreakpointDetector:
             __log.warning("Failed to load binary for HWBP detection: %s", exc)
 
     # ------------------------------------------------------------------
-    # Direct register scan
+    # Direct 寄存器 scan
     # ------------------------------------------------------------------
 
     def detect_via_register_scan(self) -> HWBPDetectionResult:
-        """Directly read DR0-DR7 to detect active hardware breakpoints.
-
-        Linux: 通过 ptrace(PTRACE_PEEKUSER, offsetof(debugreg)) 读取。
-        Windows: 通过 GetThreadContext 读取 CONTEXT 结构中的 Dr0-Dr7。
-
-        限制：此方法需要 ptrace 附加权限或 PROCESS_QUERY_INFORMATION。
-        如果没有权限，返回 detected=False 而非抛出异常。
+        """Directly 读取 DR0-DR7 检测 active 硬件断点s
+        
+        Linux: 通过 ptrace(PTRACE_PEEKUSER, offsetof(debugreg)) 读取
+        Windows: 通过 GetThreadContext 读取 CONTEXT 结构中的 Dr0-Dr7
+        
+        限制：此方法需要 ptrace 附加权限或 PROCESS_QUERY_INFORMATION
+        如果没有权限，返回 detected=False 而非抛出异常
         """
         evidence: List[Dict[str, Any]] = []
         detected = False
@@ -279,29 +279,29 @@ class HWBreakpointDetector:
         return result
 
     def _read_debug_registers(self) -> Dict[str, int]:
-        """Platform-specific debug register reading stub."""
+        """Platform-specific debug 寄存器 reading stub"""
         # 完整实现依赖 ptrace / GetThreadContext
         # 此处返回空字典表示"无法读取"
         return {}
 
     # ------------------------------------------------------------------
-    # Intel CET shadow stack detection
+    # Intel CET shadow 栈 detection
     # ------------------------------------------------------------------
 
     def detect_cet_shadow_stack(self) -> HWBPDetectionResult:
-        """Scan binary for Intel CET shadow stack instructions.
-
+        """Scan binary for Intel CET shadow 栈 instructions
+        
         检测 rdsspq、incsspq、rstorssp、saveprevssp、wrssq、wrussq
         等 CET 硬件影子栈操作指令。这些指令的出现表明：
-
+        
         1. 二进制在 CET 感知的编译器中编译（GCC -fcf-protection=full）
         2. 二进制使用了影子栈保护（可能阻碍传统的栈溢出利用）
         3. 运行时环境（CPU + OS）可能启用了 CET 强制保护
-
+        
         检测意义：
         - 攻击面评估：CET 影子栈使传统 ROP 无法工作（ret 指令会触发 #CP）
-        - 兼容性：在非 CET 硬件上这些指令被视为 NOP（F3 前缀忽略），
-          但从二进制分析角度仍需识别其存在
+        - 兼容性：在非 CET 硬件上这些指令被视为 NOP（F3 前缀忽略）
+        但从二进制分析角度仍需识别其存在
         """
         if not self._binary_bytes:
             return HWBPDetectionResult(
@@ -377,23 +377,23 @@ class HWBreakpointDetector:
         return result
 
     # ------------------------------------------------------------------
-    # Timing-based hardware breakpoint detection
+    # Timing-based 硬件断点 detection
     # ------------------------------------------------------------------
 
     def detect_via_timing_analysis(self) -> HWBPDetectionResult:
-        """Detect hardware breakpoints via RDTSC-based timing anomaly analysis.
-
+        """检测 硬件断点s via RDTSC-based timing anomaly analysis
+        
         原理：x86 硬件断点触发时，处理器需要执行微码辅助流程
-        （保存 DR6、调用 #DB 处理程序、单步恢复），这个开销在微秒级别。
+        （保存 DR6、调用 #DB 处理程序、单步恢复），这个开销在微秒级别
         正常执行没有这个开销，因此多次采样中如果某些执行明显慢于
-        基线，可能表明硬件断点被安装在相关地址上。
-
+        基线，可能表明硬件断点被安装在相关地址上
+        
         检测流程：
         1. 为每个目标代码块采集 N 次 RDTSC 测量
         2. 计算均值、标准差
         3. 标记超出 threshold 个标准差的异常样本
         4. 异常样本比例超过 20% 的代码块标记为"suspected HWBP"
-
+        
         限制：
         - 系统负载、缓存未命中、中断都可能产生类似的时序抖动
         - 需要多次采样来抵消噪声（采样数越多，置信度越高）
@@ -498,10 +498,10 @@ class HWBreakpointDetector:
         return result
 
     def _collect_rdtsc_samples(self, block_address: int) -> List[int]:
-        """Collect RDTSC samples for timing analysis (stub).
-
-        完整实现需要内联汇编或通过性能计数器读取。
-        此处返回合成数据用于框架验证。
+        """Collect RDTSC samples for timing analysis (stub)
+        
+        完整实现需要内联汇编或通过性能计数器读取
+        此处返回合成数据用于框架验证
         """
         # Stub: 返回空列表表示"无法采集"
         # 完整实现：int __rdtsc() 内联汇编，每个样本之间加 mfence/lfence
@@ -512,18 +512,18 @@ class HWBreakpointDetector:
     # ------------------------------------------------------------------
 
     def detect_step_debugging(self) -> HWBPDetectionResult:
-        """Detect Trap Flag (TF) single-step debugging patterns.
-
-        TF (bit 8 of RFLAGS/EFLAGS) 启用 x86 单步执行模式——
+        """检测 Trap Flag (TF) single-step debugging patterns
+        
+        TF (bit 8 RFLAGS/EFLAGS) 启用 x86 单步执行模式——
         每条指令执行后触发 INT1 (#DB 异常)。调试器通过 TF 实现
-        "单步步入"功能。
-
+        "单步步入"功能
+        
         检测的恶意/反调试模式：
         1. PUSHFQ + OR [rsp], 0x100 + POPFQ 序列 —— 显式设置 TF
         2. PUSHFQ + BTR [rsp], 8 序列 —— 通过位测试设置 TF
         3. OR [rsp], imm32 模式（立即数包含 0x100）—— 更隐蔽的 TF 设置
-        4. AND [rsp], ~0x100 序列 —— 清除 TF（调试器退出单步模式）
-
+        4. [rsp], ~0x100 序列 —— 清除 TF（调试器退出单步模式）
+        
         风险评估：
         - HIGH: 显式的 PUSHFQ/OR/POPFQ 序列，几乎肯定是调试相关
         - MEDIUM: 间接的 TF 操作（通过 XOR/BTR 等）
@@ -540,7 +540,7 @@ class HWBreakpointDetector:
         detections: List[TrapFlagDetection] = []
         binary_len = len(self._binary_bytes)
 
-        # 检测 PUSHFQ (9C) ... POPFQ (9D) 序列
+        # 检测 PUSHFQ (9C). POPFQ (9D) 序列
         pushfq_positions: List[int] = []
         for i in range(binary_len - 1):
             if self._binary_bytes[i] == 0x9C:
@@ -594,13 +594,13 @@ class HWBreakpointDetector:
             # （可能是保存/恢复整个 EFLAGS 的正常操作）
             if len(between_chunk) >= 1:
                 # 仅当序列极短（<= 3 条指令）且没有其他操作时才标记
-                # 跳过——这在正常的 save/restore 场景中很常见
+                # 跳过——这在正常的 save/restore 场景中常见
                 pass
 
         # 独立检测直接修改标志的模式（无 PUSHFQ 配对）
         for match in _TF_OR_PATTERN_RE.finditer(self._binary_bytes):
             pos = match.start()
-            # 确认不是 PUSHFQ...POPFQ 模式的一部分（避免重复）
+            # 确认不是 PUSHFQ.POPFQ 模式的一部分（避免重复）
             already_captured = any(
                 abs(d.address - pos) < _TF_SEQUENCE_MAX_SPAN
                 and d.pattern_type == "pushfq_or_tf_popqf"
@@ -656,11 +656,11 @@ class HWBreakpointDetector:
     # ------------------------------------------------------------------
 
     def run_all_detections(self) -> List[HWBPDetectionResult]:
-        """Execute all detection methods and return aggregated results.
-
-        检测顺序按可靠性降序排列：寄存器扫描 > CET 指令 > TF 扫描 > 时序分析。
-
-        聚合投票：任何方法返回 detected=True 即标记为整体检测到 HWBP。
+        """执行 detection methods 返回 aggregated results
+        
+        检测顺序按可靠性降序排列：寄存器扫描 > CET 指令 > TF 扫描 > 时序分析
+        
+        聚合投票：任何方法返回 detected=True 即标记为整体检测到 HWBP
         """
         self._detection_results.clear()
 
@@ -673,14 +673,14 @@ class HWBreakpointDetector:
         return self._detection_results
 
     def is_hwbp_detected(self) -> bool:
-        """Quick check: was any detection method positive?"""
+        """Quick 检查: detection method positive?"""
         return any(r.detected for r in self._detection_results)
 
     def get_overall_confidence(self) -> float:
-        """Aggregate confidence across all detection methods.
-
+        """Aggregate confidence across detection methods
+        
         加权投票：寄存器扫描（权重 0.5）、CET 检测（0.25）、
-        TF 扫描（0.15）、时序分析（0.1）。
+        TF 扫描（0.15）、时序分析（0.1）
         """
         weights = {
             DetectionMethod.REGISTER_SCAN: 0.50,
@@ -699,23 +699,23 @@ class HWBreakpointDetector:
     # ------------------------------------------------------------------
 
     def get_detection_results(self) -> List[HWBPDetectionResult]:
-        """Retrieve all detection results."""
+        """Retrieve detection results"""
         return list(self._detection_results)
 
     def get_timing_measurements(self) -> List[TimingMeasurement]:
-        """Retrieve timing measurements."""
+        """Retrieve timing measurements"""
         return list(self._timing_measurements)
 
     def get_cet_evidence(self) -> List[CETShadowStackEvidence]:
-        """Retrieve CET shadow stack evidence."""
+        """Retrieve CET shadow 栈 evidence"""
         return list(self._cet_evidence)
 
     def get_trap_flag_detections(self) -> List[TrapFlagDetection]:
-        """Retrieve Trap Flag manipulation detections."""
+        """Retrieve Trap Flag manipulation detections"""
         return list(self._trap_flag_detections)
 
     def get_detection_summary(self) -> Dict[str, Any]:
-        """Generate a diagnostic summary of all detection results."""
+        """构造 a diagnostic summary detection results"""
         suspicious_blocks = [
             m for m in self._timing_measurements if m.suspected_hwbp
         ]
@@ -742,7 +742,7 @@ class HWBreakpointDetector:
         }
 
     def clear(self) -> None:
-        """Reset all detection state."""
+        """重置 detection state"""
         self._detection_results.clear()
         self._timing_measurements.clear()
         self._cet_evidence.clear()

@@ -1,0 +1,39 @@
+# 堆破坏检测规则
+# 关注 malloc/free/realloc 的错误使用模式及 UAF/double-free 的静态线索
+# 静态检测堆漏洞天然有高误报率——规则侧重标记"需要人工审查的模式"而非判定漏洞
+
+rules:
+  - id: HC-001
+    pattern: "free\\s*\\(([^)]+)\\)[\\s\\S]{0,200}\\1"
+    description: "同一指针在相邻作用域内被多次传递给 free()——疑似 double-free"
+    severity: Critical
+    cwe: CWE-415
+    func_pattern: "free"
+
+  - id: HC-002
+    pattern: "free\\s*\\(([^)]+)\\)[\\s\\S]{0,200}(?!free)\\1\\s*[-=]"
+    description: "指针在 free() 后被解引用——疑似 use-after-free"
+    severity: Critical
+    cwe: CWE-416
+    func_pattern: "free"
+
+  - id: HC-003
+    pattern: "malloc\\s*\\([^)]*\\)\\s*;[\\s\\S]{0,100}(?!if\\s*\\([^)]*\\))[\\s\\S]{0,50}\\1\\s*[-=]"
+    description: "malloc() 返回值未做 NULL 检查就直接使用——低概率触发但后果严重"
+    severity: Low
+    cwe: CWE-476
+    func_pattern: "malloc"
+
+  - id: HC-004
+    pattern: "realloc\\s*\\(([^,]+),\\s*0\\)"
+    description: "realloc(ptr, 0) 行为等价于 free(ptr)——若后续继续使用 ptr 则 UAF"
+    severity: Medium
+    cwe: CWE-416
+    func_pattern: "realloc"
+
+  - id: HC-005
+    pattern: "(malloc|calloc)\\s*\\(\\s*[a-zA-Z_]\\w*\\s*\\*\\s*[a-zA-Z_]\\w*\\s*\\)"
+    description: "malloc(size * count) 模式——若 size 和 count 来自用户输入则整数溢出后可分配不足"
+    severity: Medium
+    cwe: CWE-190
+    func_pattern: "malloc"

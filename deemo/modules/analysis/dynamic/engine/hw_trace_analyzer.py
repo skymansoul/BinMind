@@ -85,8 +85,8 @@ class BaseTraceDecoder:
 
     def decode(self, trace_data: bytes) -> List[TracePacket]:
         """
-        Convert raw trace bytes into a structured packet sequence.
-
+        转换 raw trace bytes a structured 数据包 sequence
+        
         """
         pass
 
@@ -95,14 +95,14 @@ class IntelPTDecoder(BaseTraceDecoder):
 
     def __init__(self, binary_path: str):
         """
-        Bind decoder instance to a target binary for symbol resolution.
-
+        Bind decoder instance a target binary for symbol resolution
+        
         """
         self.binary_path = binary_path
         self._check_libipt()
 
     def _check_libipt(self):
-        # Verify libipt Python bindings are importable
+        # Verify libipt Python bindings importable
         try:
             import ptpython
             self.ptpython = ptpython
@@ -112,13 +112,13 @@ class IntelPTDecoder(BaseTraceDecoder):
             self.ptpython = None
 
     def decode(self, trace_data: bytes) -> List[TracePacket]:
-        # Route PT packet decode through the available backend
+        # Route PT 数据包 解码 available backend
         if self.ptpython:
             return self._decode_with_libipt(trace_data)
         return self._decode_simplified(trace_data)
 
     def _decode_with_libipt(self, trace_data: bytes) -> List[TracePacket]:
-        # Native libipt decode pipeline
+        # Native libipt 解码 流水线
         try:
             packets = []
             logger.info("Decoding PT data via libipt native bindings")
@@ -128,7 +128,7 @@ class IntelPTDecoder(BaseTraceDecoder):
             return self._decode_simplified(trace_data)
 
     def _decode_simplified(self, trace_data: bytes) -> List[TracePacket]:
-        """Heuristic packet parser that operates without native dependencies."""
+        """Heuristic 数据包 解析器 operates native dependencies"""
         packets = []
         offset = 0
 
@@ -170,11 +170,11 @@ class PerfDecoder(BaseTraceDecoder):
     # Perf event record decoder
 
     def __init__(self):
-        # Stateless decoder — no initialization required
+        # Stateless decoder — initialization required
         pass
 
     def decode(self, trace_data: bytes) -> List[TracePacket]:
-        # Parse raw perf buffer into structured packet objects
+        # 解析 raw perf 缓冲区 structured 数据包 objects
         packets = []
 
         offset = 0
@@ -207,18 +207,18 @@ class PerfDecoder(BaseTraceDecoder):
 
 class HWTraceAnalyzer:
     """
-    Hardware trace analyzer for Intel PT and ARM ETM streams.
-
-    Decodes PT packets via libipt or perf tooling, reconstructs precise
-    control flow and data flow paths, extracts vulnerability-triggering
-    execution traces, and prunes obfuscated dead code through
-    reachability analysis.
+    Hardware trace analyzer for Intel PT ARM ETM streams
+    
+    解码 PT 数据包s via libipt or perf tooling, 重建 precise
+    控制流 数据流 paths, 提取 漏洞-triggering
+    execution traces, prunes 被混淆 dead code
+    reachability analysis
     """
 
     def __init__(self, binary_path: str, trace_type: TraceType = TraceType.INTEL_PT):
         """
-        Instantiate analyzer with target binary and trace backend selection.
-
+        Instantiate analyzer target binary trace backend selection
+        
         """
         self.binary_path = binary_path
         self.trace_type = trace_type
@@ -226,7 +226,7 @@ class HWTraceAnalyzer:
         self._validate_binary()
 
     def _create_decoder(self) -> BaseTraceDecoder:
-        # Select decoder strategy by trace type
+        # Select decoder strategy trace type
         if self.trace_type == TraceType.INTEL_PT:
             return IntelPTDecoder(self.binary_path)
         elif self.trace_type == TraceType.PERF_RECORD:
@@ -235,14 +235,14 @@ class HWTraceAnalyzer:
             return IntelPTDecoder(self.binary_path)
 
     def _validate_binary(self):
-        # Assert binary file exists on filesystem before proceeding
+        # Assert binary file exists 文件系统 proceeding
         if not os.path.exists(self.binary_path):
             raise FileNotFoundError(f"binaryfile not found: {self.binary_path}")
 
     def collect_trace(self, target_command: str, timeout: int = 60) -> bytes:
         """
-        Capture Intel PT trace via perf record for the given target command.
-
+        Capture Intel PT trace via perf record for target command
+        
         """
         with tempfile.NamedTemporaryFile(suffix=".data", delete=False) as f:
             output_file = f.name
@@ -280,8 +280,8 @@ class HWTraceAnalyzer:
 
     def analyze_trace(self, trace_data: bytes) -> TraceAnalysisResult:
         """
-        Process raw trace data through the full analysis pipeline.
-
+        Process raw trace data full analysis 流水线
+        
         """
         if not trace_data:
             return TraceAnalysisResult(
@@ -327,7 +327,7 @@ class HWTraceAnalyzer:
             )
 
     def _reconstruct_instructions(self, packets: List[TracePacket]) -> List[TraceInstruction]:
-        """Reconstruct ordered instruction sequence from decoded packet stream."""
+        """重建 ordered instruction sequence decoded 数据包 stream"""
         instructions = []
         addresses = set()
 
@@ -344,7 +344,7 @@ class HWTraceAnalyzer:
         return sorted(instructions, key=lambda x: x.timestamp)
 
     def _identify_functions(self, instructions: List[TraceInstruction]) -> List[TraceFunction]:
-        # Infer function boundaries from address gaps in the trace
+        # Infer function boundaries address gaps trace
         if not instructions:
             return []
 
@@ -377,7 +377,7 @@ class HWTraceAnalyzer:
         return functions
 
     def _build_control_flow_graph(self, instructions: List[TraceInstruction]) -> Dict[int, List[int]]:
-        # Build directed graph mapping each instruction to its successor
+        # 构建 directed graph mapping instruction successor
         cfg = {}
 
         for i, instr in enumerate(instructions[:-1]):
@@ -393,11 +393,11 @@ class HWTraceAnalyzer:
         return cfg
 
     def _extract_data_flows(self, instructions: List[TraceInstruction]) -> List[DataFlow]:
-        # Derive data flow edges from sequential instruction adjacency
+        # Derive 数据流 edges sequential instruction adjacency
         data_flows = []
 
         for i, instr in enumerate(instructions):
-            # Adjacency-based flow inference: each consecutive pair forms a data edge
+            # Adjacency-based flow inference: consecutive pair forms a data edge
             if i > 0:
                 data_flows.append(DataFlow(
                     source=instructions[i-1].address,
@@ -412,10 +412,10 @@ class HWTraceAnalyzer:
         if not instructions:
             return []
 
-        # Collect all instruction addresses observed during execution
+        # Collect instruction addresses observed execution
         executed_addrs = set(instr.address for instr in instructions)
 
-        # BFS from entry point to identify reachable nodes
+        # BFS 入口 identify reachable nodes
         reachable = set()
         if instructions:
             reachable.add(instructions[0].address)
@@ -429,14 +429,14 @@ class HWTraceAnalyzer:
                             reachable.add(next_addr)
                             queue.append(next_addr)
 
-        # Retain reachable instructions only
+        # Retain reachable instructions
         pruned = [instr for instr in instructions if instr.address in reachable]
 
         logger.info(f"Dead-code pruning: {len(instructions)} → {len(pruned)} instructions")
         return pruned
 
     def _extract_function_calls(self, functions: List[TraceFunction]) -> List[Tuple[int, int]]:
-        # Derive call sequence from ordered function list
+        # Derive call sequence ordered function list
         calls = []
 
         for i, func in enumerate(functions[:-1]):
@@ -447,8 +447,8 @@ class HWTraceAnalyzer:
     # --- 新增: 热点函数分析 ---
     # 统计函数执行次数和执行时间，识别性能瓶颈和关键逻辑
     def analyze_hot_functions(self, functions: List[TraceFunction]) -> Dict[str, Any]:
-        """分析函数的执行热点 — 执行次数和指令密度最高的函数。
-        热点函数通常对应核心业务逻辑或加解密循环，是逆向分析的重点目标。"""
+        """分析函数的执行热点 — 执行次数和指令密度最高的函数
+        热点函数通常对应核心业务逻辑或加解密循环，是逆向分析的重点目标"""
         if not functions:
             return {"hot_functions": []}
 
@@ -472,16 +472,16 @@ class HWTraceAnalyzer:
 
     def trace_and_analyze(self, target_command: str, timeout: int = 60) -> TraceAnalysisResult:
         """
-        Collect trace data from a target process and execute full analysis.
-
+        Collect trace data a target process 执行 full analysis
+        
         """
         trace_data = self.collect_trace(target_command, timeout)
         return self.analyze_trace(trace_data)
 
     def generate_report(self, result: TraceAnalysisResult) -> str:
         """
-        Produce a human-readable analysis summary from structured results.
-
+        Produce a human-readable analysis summary structured results
+        
         """
         report = []
         report.append("=" * 60)
@@ -511,8 +511,8 @@ class HWTraceAnalyzer:
 
     def save_result(self, result: TraceAnalysisResult, output_path: str) -> bool:
         """
-        Serialize analysis results to a JSON file.
-
+        序列化 analysis results a JSON file
+        
         """
         try:
             result_dict = {

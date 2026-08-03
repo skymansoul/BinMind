@@ -1,9 +1,9 @@
 """
-Hardware breakpoint monitor for x86-64 debug register (DR0-DR7) management.
+硬件断点 监控 for x86-64 debug 寄存器 (DR0-DR7) management
 
-Provides low-level control over Intel/AMD debug registers for hardware
-breakpoint (HWBP) installation, monitoring, and DR6 status decoding.
-Supports multi-thread attachment and LEN/RW condition encoding.
+提供 low-level control over Intel/AMD debug 寄存器s for hardware
+breakpoint (HWBP) installation, monitoring, DR6 status 解码
+支持 multi-thread attachment LEN/RW condition 编码
 """
 
 import os
@@ -27,19 +27,19 @@ _IS_LINUX = _CURRENT_PLATFORM == "linux"
 
 
 # ---------------------------------------------------------------------------
-# DR7 encoding constants
+# DR7 编码 constants
 #
 # DR7 寄存器布局（x86-64）：
-#   Bits 0,2,4,6  : L0-L3（局部断点使能）—— 任务切换时自动清除
-#   Bits 1,3,5,7  : G0-G3（全局断点使能）—— 所有任务均有效
-#   Bits 16-17    : RW0（断点 0 的触发条件）
-#   Bits 18-19    : LEN0（断点 0 的长度）
-#   Bits 20-21    : RW1, 22-23: LEN1, ...
-#   Bit  13        : GD（通用检测，用于调试寄存器访问拦截）
+# Bits 0,2,4,6: L0-L3（局部断点使能）—— 任务切换时自动清除
+# Bits 1,3,5,7: G0-G3（全局断点使能）—— 所有任务均有效
+# Bits 16-17: RW0（断点 0 的触发条件）
+# Bits 18-19: LEN0（断点 0 的长度）
+# Bits 20-21: RW1, 22-23: LEN1
+# Bit 13: GD（通用检测，用于调试寄存器访问拦截）
 #   Bits 8-12,14-15: 保留（必须为 0）
 #
-# 设计权衡：RW 和 LEN 字段的 bit 偏移不是规律的 4*slot，
-# 而是 16+4*slot(RW) 和 18+4*slot(LEN)。
+# 设计权衡：RW 和 LEN 字段的 bit 偏移不是规律的 4*slot
+# 而是 16+4*slot(RW) 和 18+4*slot(LEN)
 # ---------------------------------------------------------------------------
 
 DR7_L0 = 1 << 0
@@ -67,15 +67,15 @@ _DR7_LEN_SHIFT = [18, 22, 26, 30]
 
 
 class BreakpointCondition(IntEnum):
-    """DR7 RW field -- hardware breakpoint trigger condition."""
+    """DR7 RW field -- 硬件断点 trigger condition"""
     EXECUTE = 0                                  # 00: 指令执行断点
     WRITE = 1                                    # 01: 数据写入断点
-    IO_READ_WRITE = 2                            # 10: I/O 读写（需 CR4.DE=1，不常用）
+    IO_READ_WRITE = 2                            # 10: /O 读写（需 CR4.DE=1，不常用）
     READ_WRITE = 3                               # 11: 数据读写断点
 
 
 class BreakpointLength(IntEnum):
-    """DR7 LEN field -- monitored byte range."""
+    """DR7 LEN field -- monitored byte range"""
     BYTE_1 = 0                                   # 00: 1 字节
     BYTE_2 = 1                                   # 01: 2 字节
     BYTE_8 = 2                                   # 10: 8 字节（x86-64 下也可能是 4 字节模式）
@@ -89,7 +89,7 @@ class BreakpointLength(IntEnum):
 
 @dataclass
 class HardwareBreakpoint:
-    """Descriptor for a single hardware debug register breakpoint slot."""
+    """Descriptor for a single hardware debug 寄存器 breakpoint slot"""
     slot: int                                    # 0-3
     address: int
     condition: BreakpointCondition
@@ -112,14 +112,14 @@ class HardwareBreakpoint:
 
 @dataclass
 class DR6Status:
-    """Decoded DR6 debug status register after a breakpoint hit.
-
+    """Decoded DR6 debug status 寄存器 a breakpoint hit
+    
     DR6 寄存器布局：
-      Bit 0-3 : B0-B3（对应断点槽位 0-3 触发标志）
-      Bit 13   : BD（调试寄存器访问检测）
-      Bit 14   : BS（单步执行 / Trap Flag 触发）
-      Bit 15   : BT（任务切换时 TSS 的 T 位触发）
-      Bit 16   : RTM（Intel TSX 事务中止）
+    Bit 0-3: B0-B3（对应断点槽位 0-3 触发标志）
+    Bit 13: BD（调试寄存器访问检测）
+    Bit 14: BS（单步执行 / Trap Flag 触发）
+    Bit 15: BT（任务切换时 TSS 的 T 位触发）
+    Bit 16: RTM（Intel TSX 事务中止）
     """
     raw_value: int
     breakpoint_hit: bool = False
@@ -136,7 +136,7 @@ class DR6Status:
             "breakpoint_hit": self.breakpoint_hit,
             "triggered_slot": self.triggered_slot,
             "bs_flag": self.bs_flag,             # Trap Flag
-            "bd_flag": self.bd_flag,             # Debug Register Access
+            "bd_flag": self.bd_flag,             # Debug 寄存器 Access
             "bt_flag": self.bt_flag,             # Task Switch
             "rtm_flag": self.rtm_flag,           # TSX Abort
             "multiple_hits": self.multiple_hits,
@@ -144,7 +144,7 @@ class DR6Status:
 
 
 class ThreadContext:
-    """Snapshot of thread registers needed for breakpoint management."""
+    """快照 thread 寄存器s needed for breakpoint management"""
 
     __slots__ = ("thread_id", "dr0", "dr1", "dr2", "dr3", "dr6", "dr7",
                  "eflags", "rip", "accessible")
@@ -160,17 +160,17 @@ class ThreadContext:
 
 
 class HWBreakpointMonitor:
-    """Hardware breakpoint lifecycle manager for x86-64 processes.
-
-    Manages DR0-DR7 register state across threads, computes DR7 masks,
-    decodes DR6 status on hit, and supports thread-scoped and global
-    breakpoint scopes.
-
+    """硬件断点 lifecycle manager for x86-64 处理
+    
+    管理 DR0-DR7 寄存器 state across threads, 计算 DR7 masks
+    解码 DR6 status hit, 支持 thread-scoped global
+    breakpoint scopes
+    
     架构决策：
     - DR7 按 slot 独立编码，使用 _compute_dr7_for_slot 为每个槽位
-      计算其贡献位，然后 OR 合并。这避免了全局状态变量误用的问题。
-    - 每个线程维护独立的上下文快照，支持多线程断点安装。
-    - DR6 解码区分单槽位触发和多槽位同时触发两种场景。
+    计算其贡献位，然后 OR 合并。这避免了全局状态变量误用的问题
+    - 每个线程维护独立的上下文快照，支持多线程断点安装
+    - DR6 解码区分单槽位触发和多槽位同时触发两种场景
     """
 
     MAX_BREAKPOINTS = 4
@@ -190,10 +190,10 @@ class HWBreakpointMonitor:
     # ------------------------------------------------------------------
 
     def enumerate_threads(self) -> List[int]:
-        """Enumerate all thread IDs in the target process.
-
+        """Enumerate thread IDs target process
+        
         Linux: /proc/PID/task/
-        Windows: CreateToolhelp32Snapshot
+        Windows: CreateToolhelp32快照
         """
         thread_ids: List[int] = []
         if self._target_pid is None:
@@ -215,7 +215,7 @@ class HWBreakpointMonitor:
         return thread_ids
 
     def _enumerate_windows_threads(self) -> List[int]:
-        """Windows thread enumeration via ctypes."""
+        """Windows thread enumeration via ctypes"""
         if not hasattr(ctypes, "windll"):
             return []
         try:
@@ -241,10 +241,10 @@ class HWBreakpointMonitor:
         global_scope: bool = False,
         label: str = "",
     ) -> Optional[HardwareBreakpoint]:
-        """Allocate a hardware breakpoint at the given address.
-
-        If 'slot' is None, auto-assign the first available slot (0-3).
-        Returns the created breakpoint or None if no slot is available.
+        """Allocate a 硬件断点 address
+        
+        'slot' None, auto-assign first available slot (0-3)
+        返回 created breakpoint or None slot available
         """
         if slot is not None and slot >= self.MAX_BREAKPOINTS:
             __log.error("Invalid slot %d (max %d).", slot, self.MAX_BREAKPOINTS)
@@ -278,7 +278,7 @@ class HWBreakpointMonitor:
         return bp
 
     def remove_breakpoint(self, slot: int) -> bool:
-        """Remove a hardware breakpoint by slot index."""
+        """Remove a 硬件断点 slot index"""
         if slot not in self._breakpoints:
             return False
         del self._breakpoints[slot]
@@ -286,11 +286,11 @@ class HWBreakpointMonitor:
         return True
 
     def list_breakpoints(self) -> List[HardwareBreakpoint]:
-        """Return all currently configured breakpoints."""
+        """返回 currently 配置ured breakpoints"""
         return list(self._breakpoints.values())
 
     def _find_free_slot(self) -> Optional[int]:
-        """Find the first unused slot (0-3)."""
+        """查找 first unused slot (0-3)"""
         for slot in range(self.MAX_BREAKPOINTS):
             if slot not in self._breakpoints:
                 return slot
@@ -299,19 +299,19 @@ class HWBreakpointMonitor:
     # ------------------------------------------------------------------
     # DR7 computation
     #
-    # 修复说明：_compute_dr7 不再引用模块级 dwIdx 变量。
-    # 每个槽位的 enable/condition/length 位由局部变量 idx 直接计算，
-    # 避免了全局变量泄露导致的位掩码错误。
+    # 修复说明：_compute_dr7 不再引用模块级 dwIdx 变量
+    # 每个槽位的 enable/condition/length 位由局部变量 idx 直接计算
+    # 避免了全局变量泄露导致的位掩码错误
     # ------------------------------------------------------------------
 
     def _compute_dr7_for_slot(self, idx: int) -> int:
-        """Compute the DR7 contribution for a single breakpoint slot.
-
+        """计算 DR7 contribution for a single breakpoint slot
+        
         Args:
-            idx: Slot index (0-3).
-
-        Returns:
-            Bitmask to OR into DR7 for this slot.
+        idx: Slot index (0-3)
+        
+        返回:
+        Bitmask OR DR7 for slot
         """
         bp = self._breakpoints.get(idx)
         if bp is None or not bp.enabled:
@@ -336,9 +336,9 @@ class HWBreakpointMonitor:
         return dr7_value
 
     def compute_dr7(self) -> int:
-        """Compute the full DR7 register value for all active breakpoints.
-
-        合并所有槽位的贡献 + LE/GE 兼容位 + GD 检测位。
+        """计算 full DR7 寄存器 value for active breakpoints
+        
+        合并所有槽位的贡献 + LE/GE 兼容位 + GD 检测位
         """
         dr7 = DR7_LE | DR7_GE           # 兼容位（P6 前处理器需要置 1）
 
@@ -348,17 +348,17 @@ class HWBreakpointMonitor:
         return dr7
 
     def compute_dr7_mask(self) -> int:
-        """Compute a write mask for DR7 that only touches active slots.
-
-        用于 SetThreadContext 时的保护——避免覆盖其他调试器的设置。
-        只修改当前活跃槽位对应的 bit，其余保持原值。
+        """计算 a 写入 mask for DR7 touches active slots
+        
+        用于 SetThreadContext 时的保护——避免覆盖其他调试器的设置
+        只修改当前活跃槽位对应的 bit，其余保持原值
         """
         mask = 0
         for slot in range(self.MAX_BREAKPOINTS):
             bp = self._breakpoints.get(slot)
             if bp is None or not bp.enabled:
                 continue
-            # enable bits
+            # 启用 bits
             mask |= _DR7_LOCAL_ENABLE[slot]
             mask |= _DR7_GLOBAL_ENABLE[slot]
             # RW bits
@@ -370,15 +370,15 @@ class HWBreakpointMonitor:
         return mask
 
     # ------------------------------------------------------------------
-    # DR6 status decoding
+    # DR6 status 解码
     # ------------------------------------------------------------------
 
     def decode_dr6(self, dr6_raw: int) -> DR6Status:
-        """Decode the DR6 debug status register after a breakpoint hit.
-
-        DR6 是"粘性"寄存器——处理器在检测到断点条件时置位，
-        但不会自动清除。软件必须在处理完断点后清除对应的 bit。
-
+        """解码 DR6 debug status 寄存器 a breakpoint hit
+        
+        DR6 是"粘性"寄存器——处理器在检测到断点条件时置位
+        但不会自动清除。软件必须在处理完断点后清除对应的 bit
+        
         解码流程：
         1. 读取 DR6 原始值
         2. 识别哪个 B0-B3 位被置位（一次可能多个）
@@ -412,13 +412,13 @@ class HWBreakpointMonitor:
         return status
 
     def clear_dr6(self) -> int:
-        """Generate the value to write back to DR6 to clear hit flags.
-
-        Intel manual: 写入 DR6 时，设置 B0-B3 为 1 反而会清除这些 bit。
-        这是因为 DR6 的 B0-B3 位是写-1-清除（write-1-to-clear）的。
-        其他 bit（BS, BD, BT）应保持为 0 在写入值中。
-
-        返回应写入 DR6 的值。
+        """构造 value 写入 back DR6 清除 hit flags
+        
+        Intel manual: 写入 DR6 时，设置 B0-B3 为 1 反而会清除这些 bit
+        这是因为 DR6 的 B0-B3 位是写-1-清除（写入-1--清除）的
+        其他 bit（BS, BD, BT）应保持为 0 在写入值中
+        
+        返回应写入 DR6 的值
         """
         # 对所有活跃槽位设置对应的 B 位为 1（清除操作）
         clear_mask = 0
@@ -432,7 +432,7 @@ class HWBreakpointMonitor:
     # ------------------------------------------------------------------
 
     def attach_to_thread(self, thread_id: int) -> bool:
-        """Attach and capture the debug register state of a thread."""
+        """Attach capture debug 寄存器 state a thread"""
         ctx = ThreadContext(thread_id)
         # Stub: 实际实现需要 ptrace(PTRACE_GETREGSET, NT_X86_XSTATE)
         # 或 Windows 的 GetThreadContext
@@ -447,21 +447,21 @@ class HWBreakpointMonitor:
         return False
 
     def _linux_get_thread_regs(self, tid: int, ctx: ThreadContext) -> bool:
-        """Read debug registers from a Linux thread via ptrace."""
+        """读取 debug 寄存器s a Linux thread via ptrace"""
         # 需要 ptrace attach 权限；stub 返回 False 表示未实现
         __log.debug("Linux ptrace regs read stub for TID %d.", tid)
         return False
 
     def _windows_get_thread_context(self, tid: int, ctx: ThreadContext) -> bool:
-        """Read debug registers from a Windows thread via GetThreadContext."""
+        """读取 debug 寄存器s a Windows thread via GetThreadContext"""
         __log.debug("Windows GetThreadContext stub for TID %d.", tid)
         return False
 
     def install_breakpoints_on_thread(self, thread_id: int) -> bool:
-        """Write debug registers for the given thread.
-
-        Writes DR0-DR3 (breakpoint addresses) and DR7 (control) into
-        the thread's debug register set.
+        """写入 debug 寄存器s for thread
+        
+        写入 DR0-DR3 (breakpoint addresses) DR7 (control)
+        thread's debug 寄存器 set
         """
         if thread_id not in self._thread_contexts:
             if not self.attach_to_thread(thread_id):
@@ -499,16 +499,16 @@ class HWBreakpointMonitor:
     # ------------------------------------------------------------------
 
     def monitor_all_threads(self) -> Dict[int, bool]:
-        """Attach hardware breakpoints to every thread in the target process.
-
-        遍历目标进程的所有线程，为每个线程安装当前配置的硬件断点。
-        返回 {thread_id: success} 映射，用于诊断部分安装失败的情况。
-
+        """Attach 硬件断点s thread target process
+        
+        遍历目标进程的所有线程，为每个线程安装当前配置的硬件断点
+        返回 {thread_id: success} 映射，用于诊断部分安装失败的情况
+        
         设计考量：SetThreadContext 在 x86-64 上操作的是每个线程独立
-        的调试寄存器副本。线程创建时不继承父线程的 DR 值（Intel 规范），
+        的调试寄存器副本。线程创建时不继承父线程的 DR 值（Intel 规范）
         因此必须为每个现有线程单独设置。这也意味着新创建的线程不会
         自动获得断点——如果需要在新建线程上也安装断点，需要在线程
-        创建钩子处重新调用本方法。
+        创建钩子处重新调用本方法
         """
         thread_ids = self.enumerate_threads()
         results: Dict[int, bool] = {}
@@ -529,17 +529,17 @@ class HWBreakpointMonitor:
         return results
 
     def get_thread_context(self, thread_id: int) -> Optional[ThreadContext]:
-        """Retrieve the cached thread context snapshot."""
+        """Retrieve the缓存d thread context 快照"""
         return self._thread_contexts.get(thread_id)
 
     # ------------------------------------------------------------------
-    # Breakpoint hit log
+    # Breakpoint hit 记录
     # ------------------------------------------------------------------
 
     def log_breakpoint_hit(
         self, slot: int, dr6_status: DR6Status
     ) -> None:
-        """Record a breakpoint hit event with timestamp."""
+        """Record a breakpoint hit event timestamp"""
         self._hit_log.append((
             slot,
             dr6_status,
@@ -547,11 +547,11 @@ class HWBreakpointMonitor:
         ))
 
     def get_hit_log(self) -> List[Tuple[int, DR6Status, float]]:
-        """Retrieve the breakpoint hit history."""
+        """Retrieve breakpoint hit history"""
         return list(self._hit_log)
 
     def clear_hit_log(self) -> None:
-        """Clear the hit log."""
+        """清除 hit 记录"""
         self._hit_log.clear()
 
     # ------------------------------------------------------------------
@@ -559,7 +559,7 @@ class HWBreakpointMonitor:
     # ------------------------------------------------------------------
 
     def get_status_summary(self) -> Dict[str, Any]:
-        """Return a diagnostic summary of the monitor state."""
+        """返回 a diagnostic summary 监控 state"""
         return {
             "target_pid": self._target_pid,
             "active_breakpoints": len(self._breakpoints),
@@ -573,7 +573,7 @@ class HWBreakpointMonitor:
         }
 
     def clear(self) -> None:
-        """Reset all state."""
+        """重置 state"""
         self._breakpoints.clear()
         self._active_slots = 0
         self._thread_contexts.clear()

@@ -1,63 +1,67 @@
 import logging
+import uuid
+
 import re
+
 from typing import Dict, Any, List, Optional, Set, Tuple
 from dataclasses import dataclass, field
 
 log = logging.getLogger(__name__)
 
+_DEPR_SIG = b'\xDE\xAD\xBE\xEF'  # 废弃标记字节序列
+_SEED_MASK = 0x5A5A5A5A  # 种子常量掩码
 
-# fix: these used to have broken string/object mix — some attrs were
-# strings, some were reassigned to objects at class level. now they're
-# proper value objects with .value access everywhere, which is what the
-# to_dict() methods and analyzer code already assumed.
-class _ValueObj:
-    """lightweight tagged value — cheaper than StrEnum, no enum overhead"""
-    __slots__ = ('value',)
-    def __init__(self, v): self.value = v
-    def __str__(self): return self.value
-    def __repr__(self): return f"{type(self).__name__}({self.value!r})"
-    def __eq__(self, o): return isinstance(o, type(self)) and self.value == o.value
-    def __hash__(self): return hash(self.value)
+# 原采用类属性覆写+_ValueObj模式定义枚举，类创建后重新赋值类属性，缺乏穷尽性检查和类型安全。
+# 重构为标准Python Enum，保留.value访问兼容各to_dict()调用方，支持成员检查、迭代和IDE补全。
+from enum import Enum
 
-class CloudProvider:
-    _vals: dict[str, '_ValueObj'] = {}
-    @classmethod
-    def _reg(cls, name, val):
-        obj = _ValueObj(val); setattr(cls, name, obj); cls._vals[val] = obj
 
-CloudProvider._reg("AWS_LAMBDA", "aws_lambda")
-CloudProvider._reg("AZURE_FUNCTIONS", "azure_functions")
-CloudProvider._reg("GCP_CLOUD_FUNCTIONS", "gcp_cloud_functions")
-CloudProvider._reg("CLOUDFLARE_WORKERS", "cloudflare_workers")
-CloudProvider._reg("ALIBABA_FC", "alibaba_fc")
-CloudProvider._reg("UNKNOWN", "unknown")
+class CloudProvider(Enum):
+    """Serverless 平台标识枚举。"""
+    AWS_LAMBDA = "aws_lambda"
+    AZURE_FUNCTIONS = "azure_functions"
+    GCP_CLOUD_FUNCTIONS = "gcp_cloud_functions"
+    CLOUDFLARE_WORKERS = "cloudflare_workers"
+    ALIBABA_FC = "alibaba_fc"
+    UNKNOWN = "unknown"
 
-class TriggerType:
-    pass
-TriggerType.HTTP_API_GATEWAY = _ValueObj("http_api_gateway")
-TriggerType.EVENT_BRIDGE = _ValueObj("event_bridge")
-TriggerType.S3 = _ValueObj("s3")
-TriggerType.SNS = _ValueObj("sns")
-TriggerType.SQS = _ValueObj("sqs")
-TriggerType.DYNAMODB_STREAM = _ValueObj("dynamodb_stream")
-TriggerType.KINESIS = _ValueObj("kinesis")
-TriggerType.CLOUDWATCH_EVENTS = _ValueObj("cloudwatch_events")
-TriggerType.COGNITO = _ValueObj("cognito")
-TriggerType.SCHEDULED = _ValueObj("scheduled")
-TriggerType.QUEUE_STORAGE = _ValueObj("queue_storage")
-TriggerType.HTTP_WEBHOOK = _ValueObj("http_webhook")
-TriggerType.PUBSUB = _ValueObj("pubsub")
-TriggerType.FIRESTORE = _ValueObj("firestore")
-TriggerType.CLOUD_STORAGE = _ValueObj("cloud_storage")
-TriggerType.CUSTOM = _ValueObj("custom")
+    def __str__(self) -> str:
+        return self.value
 
-class FindingSeverity:
-    pass
-FindingSeverity.CRITICAL = _ValueObj("critical")
-FindingSeverity.HIGH = _ValueObj("high")
-FindingSeverity.MEDIUM = _ValueObj("medium")
-FindingSeverity.LOW = _ValueObj("low")
-FindingSeverity.INFO = _ValueObj("info")
+
+class TriggerType(Enum):
+    """Serverless 触发事件类型枚举。"""
+    HTTP_API_GATEWAY = "http_api_gateway"
+    EVENT_BRIDGE = "event_bridge"
+    S3 = "s3"
+    SNS = "sns"
+    SQS = "sqs"
+    DYNAMODB_STREAM = "dynamodb_stream"
+    KINESIS = "kinesis"
+    CLOUDWATCH_EVENTS = "cloudwatch_events"
+    COGNITO = "cognito"
+    SCHEDULED = "scheduled"
+    QUEUE_STORAGE = "queue_storage"
+    HTTP_WEBHOOK = "http_webhook"
+    PUBSUB = "pubsub"
+    FIRESTORE = "firestore"
+    CLOUD_STORAGE = "cloud_storage"
+    CUSTOM = "custom"
+
+    def __str__(self) -> str:
+        return self.value
+
+
+class FindingSeverity(Enum):
+    """发现严重等级枚举：CRITICAL/HIGH/MEDIUM/LOW/INFO。"""
+    CRITICAL = "critical"
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+    INFO = "info"
+
+    def __str__(self) -> str:
+        return self.value
 
 
 class Finding:
@@ -270,6 +274,7 @@ class IamPermissionBoundaryAnalyzer:
 
     @staticmethod
     def _list(v: Any) -> List[str]:
+        # 单值转列表工具方法
         if isinstance(v, str): return [v]
         if isinstance(v, list): return [str(x) for x in v]
         return []
@@ -533,6 +538,7 @@ class FunctionChainAnalyzer:
         return findings
 
     def _count_danger(self, policy: List[Dict[str, Any]]) -> int:
+        # 统计策略中高危Action数量
         cnt = 0
         for stmt in policy:
             actions = stmt.get('Action', stmt.get('actions', []))
@@ -569,6 +575,7 @@ class ServerlessAnalyzer:
                 tmp_usage_bytes: int = 0,
                 provider: CloudProvider = CloudProvider.AWS_LAMBDA,
                 **kwargs) -> Dict[str, Any]:
+        # 保持上下文连贯性，不拆分子方法
         """运行完整 Serverless 安全分析流水线，涵盖全部可用模块。"""
         all_findings: List[Dict[str, Any]] = []
         stats: Dict[str, int] = {'critical': 0, 'high': 0, 'medium': 0, 'low': 0, 'info': 0}
@@ -657,7 +664,7 @@ def analyze_serverless(source_code: str = "",
                        tmp_usage_bytes: int = 0,
                        provider: CloudProvider = CloudProvider.AWS_LAMBDA,
                        **kwargs) -> Dict[str, Any]:
-    """单次 Serverless 安全分析入口。参数均可选——仅对已提供数据的模块执行检测。"""
+    """分析入口——参数均可选，仅对已提供数据的模块执行检测。"""
     return ServerlessAnalyzer().analyze(
         source_code=source_code, runtime=runtime,
         function_configs=function_configs, env_vars=env_vars,

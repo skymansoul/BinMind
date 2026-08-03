@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-# Multimodal embedding — CFG graph, instruction text, and structural feature fusion
-# with confidence-weighted blending and signal-richness normalization.
-# 2026-07-24: confidence-weighted fusion with softmax-normalized weights
+# Multimodal 嵌入 — CFG 图, instruction text, and structural feature fusion
+# with confidence-weighted blending and signal-richness 归一化.
+# confidence-weighted fusion with softmax-normalized weights
 # derived from signal richness metrics.
-# 2026-07-29: 单轮消息传递 GNN 邻域聚合；注意力池化替代均值池化；
+# 单轮消息传递 GNN 邻域聚合；注意力池化替代均值池化；
 # FusionResult 序列化/反序列化支持缓存与跨服务传输。
 
 import logging as _logging
@@ -405,7 +405,7 @@ class InstructionTextEmbedder:
         self.m_attn_query: List[List[float]] = self._init_weights(dim, dim // 4)
         self.m_attn_key: List[List[float]] = self._init_weights(dim, dim // 4)
         self.m_attn_value: List[List[float]] = self._init_weights(dim, dim)
-        # 全局上下文向量（可学习）— 与投影后的 query 做内积得到注意力分数
+        # 全局上下文向量（可学习）— 与投影后的 查询 做内积得到注意力分数
         _r.seed(101)
         self.m_context: List[float] = [_r.uniform(-0.2, 0.2) for _ in range(dim // 4)]
 
@@ -651,10 +651,10 @@ class MultiModalEmbedder:
         Graph, text, and structural vectors are blended with softmax-normalized
         weights derived from signal richness metrics.
         """
-        # Graph embedding
+        # Graph 嵌入
         graph_emb = self.m_graph_embedder.embed(nodes, edges)
 
-        # Text embedding
+        # Text 嵌入
         if instructions is None:
             instructions = []
         text_emb = self.m_text_embedder.embed(instructions)
@@ -692,7 +692,7 @@ class MultiModalEmbedder:
             fused.append(val)
             di += 1
 
-        # L2 normalize fused vector
+        # L2 normalize fused 向量
         norm = _math.sqrt(sum(v * v for v in fused))
         if norm > 0:
             di = 0

@@ -1,4 +1,3 @@
-# 2026-07-15
 # 固件分析模块入口 — 懒加载所有子模块和核心类
 
 _LAZY_IMPORTS = {
@@ -14,7 +13,7 @@ _LAZY_IMPORTS = {
     "SummaryStats": ".src.reporter",
     "UEFIAnalyzer": ".uefi_analyzer", "UEFIFirmwareAnalyzer": ".uefi_analyzer",
     "FSScanner": ".fs_scanner", "FlashLayoutParser": ".flash_layout",
-    "EnclaveAnalyzer": ".enclave_analyzer", "TEEAalyzer": ".tee_ta_verifier",
+    "EnclaveAnalyzer": ".enclave_analyzer", "TEEAnalyzer": ".tee_ta_verifier",
     "SecureBootChecker": ".secure_boot_checker", "OTADiffAnalyzer": ".ota_diff_analyzer",
     "FirmwareSymbolRecoverer": ".firmware_symbol_recovery",
     "UEFIRuntimeSecurityAnalyzer": ".uefi_runtime_security_analyzer",

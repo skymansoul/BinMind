@@ -1,4 +1,3 @@
-# 2026-08-04
 # 自适应熔断器 — 动态阈值替代静态配置
 # Multi-Objective Adaptive Rate Limiting [arXiv:2511.03279]: DRL 动态平衡吞吐量和延迟
 # 此处不引入 DRL 框架，改用更轻量的 EMA 反馈回路实现阈值自适应
@@ -19,6 +18,7 @@ from __future__ import annotations
 import time
 import threading
 import math
+import random
 from collections import deque
 from typing import Optional
 
@@ -114,7 +114,7 @@ class AdaptiveCircuitBreaker:
         调整幅度不超过 base_threshold 的 50%，避免剧烈振荡。
         """
         rate = self._failure_ema.value
-        # 当故障率在 5% 以下认为健康，10% 以上认为异常
+        # 当故障率在 5% 以下认为健康，20% 以上认为异常
         if rate <= 0.05:
             self._current_threshold = min(
                 self._max_thr,
@@ -227,9 +227,7 @@ class AdaptiveCircuitBreaker:
 
     # ---- 状态 ----
 
-    @property
-    def state(self) -> str:
-        return self._state
+    state = property(lambda self: self._state)
 
     @property
     def effective_threshold(self) -> float:
@@ -291,7 +289,7 @@ class FractionalCircuitBreaker(AdaptiveCircuitBreaker):
                     self._half_open_ratio = 0.2
                     return True
                 # 分数拒绝：保留一小部分请求探测下游是否恢复
-                import random
+                # random 已模块级导入，零每次调用开销
                 if random.random() < self._reject_prob:
                     return False
                 return True

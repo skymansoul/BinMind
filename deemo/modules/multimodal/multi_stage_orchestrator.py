@@ -1,8 +1,8 @@
-"""Multi-stage exploit orchestrator.
+"""多阶段漏洞利用编排器。
 
 链式攻击编排：管理 recon → exploit → post-exploit → cleanup 生命周期。
-阶段间的依赖关系通过 Kahn 拓扑排序解析，支持并行阶段调度。
-支持三种执行策略：sequential（线性）、parallel_layer（层内并行）、best_effort（失败继续）。
+阶段间依赖关系通过 Kahn 拓扑排序解析，支持并行阶段调度。
+三种执行策略：sequential（线性）、parallel_layer（层内并行）、best_effort（失败继续）。
 支持 subprocess 真实执行、目标类型感知过滤、链式模糊变异、动态策略自选。
 """
 from enum import Enum
@@ -24,6 +24,7 @@ import math
 
 logger = logging.getLogger(__name__)
 
+_EPS: float = 1e-9
 
 # ---------------------------------------------------------------------------
 # 枚举定义
@@ -68,7 +69,7 @@ class TargetType(Enum):
 
 
 # ---------------------------------------------------------------------------
-# 步骤执行输出 — 捕获单个步骤的完整执行轨迹
+# 步骤执行输出 — 捕获单步骤的完整执行轨迹
 # ---------------------------------------------------------------------------
 @dataclass
 class StepOutput:
@@ -110,7 +111,7 @@ class ChainStep:
     fuzzable: bool = False
 
     def satisfied(self, ctx: Dict[str, Any]) -> bool:
-        """检查前置条件是否在上下文中全部满足。"""
+        """检查前置条件在上下文中是否全部满足。"""
         for cond in self.pre_conditions:
             if cond not in ctx:
                 return False
@@ -133,11 +134,11 @@ class ChainStep:
             return []
         variants: List[str] = []
         base = self.shell_command
-        # 变异 1: 替换 null-byte 占位为相邻值
+        # 变异 1: null-byte 占位替换为相邻值
         if '{null_byte}' in base:
             for b in range(1, 5):
                 variants.append(base.replace('{null_byte}', f'\\x{b:02x}'))
-        # 变异 2: 空格替换为制表符或换行
+        # 变异 2: 空格→制表符/换行
         if ' ' in base:
             variants.append(base.replace(' ', '\t'))
         # 变异 3: payload 大小写混淆
@@ -181,7 +182,7 @@ class AttackChain:
     def complexity(self) -> Dict[str, Any]:
         """McCabe 风格依赖图复杂度度量。
 
-        edges = 前置条件总数，nodes = step 数。
+        edges = 前置条件总数，nodes = 步骤数。
         环路数 = edges - nodes + 2*components（连通分量）。
         高复杂度链 (>10 边) 建议拆分。
         """
@@ -200,8 +201,8 @@ class AttackChain:
     def success_rate_estimate(self) -> float:
         """基于链结构的启发式成功率估算。
 
-        复杂度越高、步骤越多、前置条件越密集→成功率越低。
-        公式：exp(-0.15 * cyclomatic) * exp(-0.05 * len(steps))
+        复杂度越高、步骤越多、前置条件越密集 → 成功率越低。
+        公式: exp(-0.15 * cyclomatic) * exp(-0.05 * len(steps))
         """
         comp = self.complexity()
         return round(math.exp(-0.15 * comp['cyclomatic'])
@@ -209,13 +210,13 @@ class AttackChain:
 
 
 # ---------------------------------------------------------------------------
-# 依赖解析器 — Kahn 算法解决阶段间依赖，检测环路
+# 依赖解析器 — Kahn 算法处理阶段间依赖，检测环路
 # ---------------------------------------------------------------------------
 class DependencyResolver:
     """对有向无环依赖图做拓扑排序，输出可并行执行的阶段批次。
 
     若检测到环路，不抛异常，而是将环内节点并入同一批次执行——
-    这在 exploit 链中对应互相依赖的阶段（如 recon 和 exploit 交替）仍需尝试执行。
+    在 exploit 链中对应互相依赖的阶段（如 recon 和 exploit 交替）仍需尝试执行。
     """
 
     def resolve(self, steps: List[ChainStep]) -> List[List[ChainStep]]:
@@ -260,13 +261,13 @@ class DependencyResolver:
 
 
 # ---------------------------------------------------------------------------
-# 脚本生成器 — 模板插值 + payload 嵌入
+# 脚本生成器 — 占位符插值 + payload 嵌入
 # ---------------------------------------------------------------------------
 class ScriptGenerator:
-    """将 ChainStep 列表转换为可执行的脚本。
+    """将 ChainStep 列表转换为可执行脚本。
 
-    内置简单的模板变量替换：{payload}, {target}, {stage_name}。
-    生产环境中可替换为 Jinja2 或自研 DSL。
+    内置占位符替换: {payload}, {target}, {stage_name}。
+    生产环境可替换为 Jinja2 或自定义 DSL。
     """
 
     _BOILERPLATE = (
@@ -351,433 +352,9 @@ class OrchestrationResult:
     step_outputs: List[StepOutput] = field(default_factory=list)
 
 
-class ChainOrchestrator:
-    """链式攻击编排器。
-
-    执行流程：
-    1. 验证所有 step 的 StageCapability 与目标环境兼容
-    2. 依赖解析 → 分层执行计划
-    3. 逐层执行，层内可并行（由调用方控制）
-    4. 失败时向上层报告，触发回滚钩子
-
-    策略说明：
-    - sequential: 严格逐步骤执行，失败即停
-    - parallel_layer: 同层步骤并发，层间串行
-    - best_effort: 失败不中断，记录后继续执行后续步骤
-    - auto: 基于链复杂度和历史成功率自动选择
-
-    步骤执行支持两种模式：
-    - shell_command 非空时通过 subprocess 真实执行
-    - shell_command 为空时走模拟执行（钩子驱动）
-    """
-
-    def __init__(self):
-        self._capabilities: Dict[ExploitStage, StageCapability] = {}
-        self._resolver = DependencyResolver()
-        self._script_gen = ScriptGenerator()
-        self._hooks: Dict[str, Callable] = {}
-        self._executed_actions: Set[str] = set()
-        self._checkpoints: List[Checkpoint] = []
-        self._step_outputs: List[StepOutput] = []
-        self._history: List[Dict[str, Any]] = []
-
-    def register_capability(self, stage: ExploitStage, cap: StageCapability) -> None:
-        self._capabilities[stage] = cap
-
-    def add_stage(self, step: ChainStep) -> None:
-        if not hasattr(self, '_pending_steps'):
-            self._pending_steps: List[ChainStep] = []
-        self._pending_steps.append(step)
-
-    def on(self, event: str, callback: Callable) -> None:
-        """注册生命周期钩子：pre_exec, post_exec, on_fail, rollback。"""
-        self._hooks[event] = callback
-
-    # -------------------------------------------------------------------
-    # 动态策略选择 — 基于链特征自动决定最佳策略
-    # -------------------------------------------------------------------
-    def _auto_select_strategy(self, chain: AttackChain) -> ExecutionStrategy:
-        comp = chain.complexity()
-        # 低复杂度少步骤 → sequential 最快
-        if comp['nodes'] <= 3 and comp['cyclomatic'] <= 1:
-            return ExecutionStrategy.SEQUENTIAL
-        # 中等复杂度且历史成功率低 → best_effort 保底
-        if self._history:
-            recent_success = sum(1 for h in self._history[-10:]
-                                if h.get('success')) / max(1, len(self._history[-10:]))
-            if recent_success < 0.6:
-                return ExecutionStrategy.BEST_EFFORT
-        # 高复杂度多步骤 → parallel_layer 加速
-        if comp['nodes'] >= 5 or comp['cyclomatic'] >= 3:
-            return ExecutionStrategy.PARALLEL_LAYER
-        return ExecutionStrategy.SEQUENTIAL
-
-    # -------------------------------------------------------------------
-    # subprocess 执行 — 带超时强制终止和沙箱隔离
-    # -------------------------------------------------------------------
-    def _run_step_command(self, step: ChainStep,
-                          target_info: Dict[str, Any]) -> StepOutput:
-        """通过 subprocess 执行 step.shell_command，捕获输出并强制超时。
-
-        超时时先 SIGTERM，1.5s 后若未退出则 SIGKILL。
-        在临时目录中执行以隔离步骤间的文件副作用。
-        """
-        if not step.shell_command:
-            return StepOutput(action=step.action, exit_code=0)
-
-        t0 = time.monotonic()
-        cmd = step.shell_command.format(**target_info, action=step.action)
-        timeout = step.timeout_seconds
-
-        sandbox_dir = tempfile.mkdtemp(prefix=f"chain_{step.action}_")
-        try:
-            proc = subprocess.Popen(
-                cmd, shell=True, cwd=sandbox_dir,
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                text=True)
-            stdout, stderr = proc.communicate(timeout=timeout)
-            elapsed = time.monotonic() - t0
-            return StepOutput(
-                action=step.action, stdout=stdout.strip(), stderr=stderr.strip(),
-                exit_code=proc.returncode, elapsed_seconds=round(elapsed, 3))
-        except subprocess.TimeoutExpired:
-            elapsed = time.monotonic() - t0
-            try:
-                proc.terminate()
-                proc.wait(timeout=1.5)
-            except subprocess.TimeoutExpired:
-                proc.kill()
-                proc.wait()
-            except OSError:
-                pass
-            return StepOutput(
-                action=step.action, timed_out=True,
-                elapsed_seconds=round(elapsed, 3), exit_code=-1)
-        except Exception as exc:
-            elapsed = time.monotonic() - t0
-            return StepOutput(
-                action=step.action, stderr=str(exc),
-                elapsed_seconds=round(elapsed, 3), exit_code=-1)
-        finally:
-            try:
-                shutil.rmtree(sandbox_dir, ignore_errors=True)
-            except Exception:
-                pass
-
-    # -------------------------------------------------------------------
-    # 链式模糊 — 对 fuzzable 步骤生成变异版本并执行
-    # -------------------------------------------------------------------
-    def fuzz_chain(self, target_info: Optional[Dict[str, Any]] = None,
-                   variants_per_step: int = 5) -> List[OrchestrationResult]:
-        """对标记为 fuzzable 的步骤生成变异版链并执行。
-
-        每个变异版本独立执行，收集成功/失败的变异模式。
-        返回所有变异执行的结果列表。
-
-        设计意图：识别哪些 payload 变体能绕过输入过滤/WAF。
-        """
-        steps = getattr(self, '_pending_steps', [])
-        if not steps:
-            return []
-
-        fuzzable_steps = [s for s in steps if s.fuzzable and s.shell_command]
-        if not fuzzable_steps:
-            return []
-
-        results: List[OrchestrationResult] = []
-        target_info = target_info or {}
-
-        for _fs in fuzzable_steps:
-            variants = _fs.fuzz_variants(variants_per_step)
-            for vi, variant_cmd in enumerate(variants):
-                # 创建变异副本
-                mutated = ChainStep(
-                    stage=_fs.stage, action=f"{_fs.action}_fuzz{vi}",
-                    shell_command=variant_cmd,
-                    pre_conditions=list(_fs.pre_conditions),
-                    post_conditions=list(_fs.post_conditions),
-                    timeout_seconds=_fs.timeout_seconds,
-                    produces=list(_fs.produces),
-                    applicable_targets=list(_fs.applicable_targets),
-                )
-                saved_steps = list(steps)
-                # 替换原始步骤为变异版
-                mod_steps = [s if s.action != _fs.action else mutated for s in saved_steps]
-                saved_pending = list(self._pending_steps)
-                self._pending_steps = mod_steps
-                try:
-                    result = self.execute(target_info,
-                                         strategy=ExecutionStrategy.BEST_EFFORT)
-                    result.artifacts['fuzz_variant'] = variant_cmd
-                    result.artifacts['fuzz_original'] = _fs.action
-                    results.append(result)
-                finally:
-                    self._pending_steps = saved_pending
-
-        return results
-
-    def execute(self, target_info: Optional[Dict[str, Any]] = None,
-                strategy: ExecutionStrategy = ExecutionStrategy.SEQUENTIAL,
-                deadline_seconds: Optional[float] = None,
-                target_type: Optional[TargetType] = None
-                ) -> OrchestrationResult:
-        steps = getattr(self, '_pending_steps', [])
-        if not steps:
-            return OrchestrationResult(success=False, output_log="No steps registered")
-
-        target_info = target_info or {}
-        t_start = time.monotonic()
-
-        # 目标类型感知过滤
-        applicable = [s for s in steps if s.applies_to(target_type)]
-        skipped_by_target = len(steps) - len(applicable)
-        if not applicable:
-            return OrchestrationResult(
-                success=False,
-                output_log=f"No steps applicable for target_type={target_type}")
-
-        chain = AttackChain(name=target_info.get('name', 'unnamed'))
-        for s in applicable:
-            chain.add_step(s)
-        chain.deadline_seconds = deadline_seconds
-
-        # AUTO 策略：动态选择
-        if strategy == ExecutionStrategy.AUTO:
-            strategy = self._auto_select_strategy(chain)
-
-        if deadline_seconds and chain.estimated_duration() > deadline_seconds:
-            return OrchestrationResult(
-                success=False, chain=chain,
-                output_log=f"Estimated {chain.estimated_duration():.0f}s exceeds deadline {deadline_seconds}s")
-
-        layers = self._resolver.resolve(applicable)
-        executed = 0
-        output_lines: List[str] = []
-        ctx: Dict[str, Any] = {}
-        failures: List[str] = []
-
-        if skipped_by_target:
-            output_lines.append(f"[FILTER] {skipped_by_target} steps excluded by target_type={target_type}")
-
-        for layer_idx, layer in enumerate(layers):
-            for step in layer:
-                if not step.satisfied(ctx):
-                    skipped_msg = (f"[SKIP] layer={layer_idx} action={step.action} "
-                                   f"missing pre-conditions: "
-                                   f"{set(step.pre_conditions) - set(ctx.keys())}")
-                    output_lines.append(skipped_msg)
-                    if strategy != ExecutionStrategy.BEST_EFFORT:
-                        continue
-
-                hook = self._hooks.get('pre_exec')
-                if hook:
-                    hook(step, ctx)
-
-                # 实际执行
-                try:
-                    if step.shell_command:
-                        output_lines.append(
-                            f"[EXEC] {step.stage.value}:{step.action} (shell)")
-                        so = self._run_step_command(step, target_info)
-                        self._step_outputs.append(so)
-                        if so.timed_out:
-                            raise TimeoutError(
-                                f"step timed out after {step.timeout_seconds}s")
-                        if so.exit_code != 0:
-                            raise RuntimeError(
-                                f"exit={so.exit_code} stderr={so.stderr[:200]}")
-                        if so.stdout:
-                            output_lines.append(f"  stdout: {so.stdout[:500]}")
-                    else:
-                        output_lines.append(
-                            f"[EXEC] {step.stage.value}:{step.action} (simulated)")
-                        self._step_outputs.append(
-                            StepOutput(action=step.action, exit_code=0,
-                                       elapsed_seconds=0.001))
-
-                    ctx[step.action] = True
-                    for post in step.post_conditions:
-                        ctx[post] = True
-                    for artifact_key in step.produces:
-                        ctx[artifact_key] = f"artifact_from_{step.action}"
-                    self._executed_actions.add(step.action)
-                    executed += 1
-
-                    cp = Checkpoint(
-                        chain_name=chain.name,
-                        last_completed_action=step.action,
-                        executed_actions=list(self._executed_actions),
-                        context_snapshot=dict(ctx),
-                        timestamp=time.strftime('%Y-%m-%dT%H:%M:%S'),
-                        checksum=hashlib.md5(
-                            str(list(self._executed_actions)).encode()).hexdigest()[:8])
-                    self._checkpoints.append(cp)
-                except TimeoutError as exc:
-                    output_lines.append(f"[TIMEOUT] {step.action}: {exc}")
-                    fail_hook = self._hooks.get('on_fail')
-                    if fail_hook:
-                        fail_hook(step, exc)
-                    if strategy == ExecutionStrategy.BEST_EFFORT:
-                        failures.append(step.action)
-                        continue
-                    return OrchestrationResult(
-                        success=False, chain=chain, executed_steps=executed,
-                        failed_step=step.action,
-                        output_log="\n".join(output_lines),
-                        duration_seconds=round(time.monotonic() - t_start, 2),
-                        checkpoints=self._checkpoints,
-                        step_outputs=self._step_outputs)
-                except Exception as exc:
-                    output_lines.append(f"[FAIL] {step.action}: {exc}")
-                    fail_hook = self._hooks.get('on_fail')
-                    if fail_hook:
-                        fail_hook(step, exc)
-                    if strategy == ExecutionStrategy.BEST_EFFORT:
-                        failures.append(step.action)
-                        continue
-                    return OrchestrationResult(
-                        success=False, chain=chain, executed_steps=executed,
-                        failed_step=step.action,
-                        output_log="\n".join(output_lines),
-                        duration_seconds=round(time.monotonic() - t_start, 2),
-                        checkpoints=self._checkpoints,
-                        step_outputs=self._step_outputs)
-
-                post_hook = self._hooks.get('post_exec')
-                if post_hook:
-                    post_hook(step, ctx)
-
-            if strategy == ExecutionStrategy.PARALLEL_LAYER:
-                output_lines.append(f"[LAYER {layer_idx}] parallel batch complete")
-
-        all_ok = len(failures) == 0
-        result = OrchestrationResult(
-            success=all_ok, chain=chain, executed_steps=executed,
-            output_log="\n".join(output_lines),
-            artifacts={'context': ctx, 'actions_executed': list(self._executed_actions),
-                       'failures': failures, 'selected_strategy': strategy.value},
-            duration_seconds=round(time.monotonic() - t_start, 2),
-            checkpoints=self._checkpoints,
-            step_outputs=self._step_outputs)
-
-        self._history.append({'success': all_ok, 'strategy': strategy.value,
-                              'steps': executed, 'duration': result.duration_seconds})
-        return result
-
-    def dry_run(self, target_info: Optional[Dict[str, Any]] = None,
-                target_type: Optional[TargetType] = None) -> OrchestrationResult:
-        """模拟执行：解析依赖、验证前置条件，但不触发任何 payload。
-
-        返回预估步骤数及依赖完整性报告，用于链设计阶段的快速验证。
-        """
-        steps = getattr(self, '_pending_steps', [])
-        if not steps:
-            return OrchestrationResult(success=False, output_log="No steps registered")
-
-        target_info = target_info or {}
-        applicable = [s for s in steps if s.applies_to(target_type)]
-        chain = AttackChain(name=target_info.get('name', 'unnamed'))
-        for s in applicable:
-            chain.add_step(s)
-
-        layers = self._resolver.resolve(applicable)
-        ctx: Dict[str, Any] = {}
-        sim_log: List[str] = []
-        unresolved: List[str] = []
-        skipped_by_target = len(steps) - len(applicable)
-
-        if skipped_by_target:
-            sim_log.append(f"[FILTER] {skipped_by_target} steps excluded by target_type={target_type}")
-
-        for layer_idx, layer in enumerate(layers):
-            for step in layer:
-                sim_log.append(f"[SIM] layer={layer_idx} {step.stage.value}:{step.action}"
-                               f" {'(shell)' if step.shell_command else ''}"
-                               f" {'(fuzzable)' if step.fuzzable else ''}")
-                for post in step.post_conditions:
-                    ctx[post] = True
-                ctx[step.action] = True
-                if not step.satisfied({}):
-                    missing = set(step.pre_conditions)
-                    if missing:
-                        unresolved.append(f"{step.action} needs: {missing}")
-
-        return OrchestrationResult(
-            success=len(unresolved) == 0,
-            chain=chain,
-            output_log="\n".join(sim_log),
-            artifacts={
-                'total_steps': len(applicable),
-                'filtered_out': skipped_by_target,
-                'layers': len(layers),
-                'unresolved_deps': unresolved,
-                'complexity': chain.complexity(),
-                'estimated_success_rate': chain.success_rate_estimate(),
-                'suggested_strategy': self._auto_select_strategy(chain).value,
-            })
-
-    def resume_from_checkpoint(self, target_info: Optional[Dict[str, Any]] = None
-                                ) -> OrchestrationResult:
-        """从最近的检查点恢复执行，跳过已完成的步骤。"""
-        if not self._checkpoints:
-            return OrchestrationResult(success=False, output_log="No checkpoint to resume from")
-
-        last_cp = self._checkpoints[-1]
-        steps = getattr(self, '_pending_steps', [])
-        remaining = [s for s in steps
-                     if s.action not in last_cp.executed_actions]
-
-        if not remaining:
-            return OrchestrationResult(
-                success=True, output_log="All steps already completed",
-                checkpoints=self._checkpoints)
-
-        self._pending_steps = remaining
-        self._executed_actions = set(last_cp.executed_actions)
-
-        return self.execute(target_info=target_info)
-
-    def generate_report(self) -> str:
-        steps = getattr(self, '_pending_steps', [])
-        chain = AttackChain()
-        for s in steps:
-            chain.add_step(s)
-        comp = chain.complexity()
-        lines = [
-            "# Exploit Chain Report",
-            f"## {len(steps)} steps configured",
-            f"- Cyclomatic complexity: {comp['cyclomatic']}",
-            f"- Edge density: {comp['density']}",
-            f"- Est. duration: {comp['estimated_duration']}s",
-            f"- Est. success rate: {chain.success_rate_estimate()}",
-            f"- Suggested strategy: {self._auto_select_strategy(chain).value}",
-            "",
-            "## Steps"
-        ]
-        for s in steps:
-            extra = []
-            if s.shell_command:
-                extra.append(f"cmd={s.shell_command[:60]}")
-            if s.fuzzable:
-                extra.append("fuzzable")
-            if s.applicable_targets:
-                extra.append(f"targets={[t.value for t in s.applicable_targets]}")
-            suffix = f" ({'; '.join(extra)})" if extra else ""
-            lines.append(f"- [{s.stage.value}] {s.action}"
-                         f" (pre: {s.pre_conditions}, post: {s.post_conditions}){suffix}")
-        return "\n".join(lines)
-
-    def rollback(self) -> OrchestrationResult:
-        """按执行逆序调用回滚钩子。"""
-        rollback_hook = self._hooks.get('rollback')
-        if not rollback_hook:
-            return OrchestrationResult(success=True, output_log="No rollback hook registered")
-        try:
-            rollback_hook(list(self._executed_actions))
-            return OrchestrationResult(success=True, output_log="Rollback complete")
-        except Exception as exc:
-            return OrchestrationResult(success=False, output_log=f"Rollback failed: {exc}")
-
+# ChainOrchestrator 提取至 src.chain_orchestrator_core
+# 此处 import 用于向后兼容；模块级重导出。
+from .src.chain_orchestrator_core import ChainOrchestrator  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -788,7 +365,7 @@ class ChainOrchestrator:
 def chain_diff(chain_a: AttackChain, chain_b: AttackChain) -> Dict[str, Any]:
     """对比两条链的差异，返回最小变更操作。
 
-    操作类型：added（B有A无）、removed（A有B无）、modified（同名但属性不同）。
+    操作类型: added（B有A无）、removed（A有B无）、modified（同名但属性不同）。
     """
     _a_actions = {s.action: s for s in chain_a.steps}
     _b_actions = {s.action: s for s in chain_b.steps}
@@ -828,7 +405,7 @@ def chain_diff(chain_a: AttackChain, chain_b: AttackChain) -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 def annotate_chain(chain: AttackChain) -> Dict[str, Any]:
-    """分析攻击链特征并输出策略建议与风险标注。
+    """分析攻击链特征，输出策略建议与风险标注。
 
     基于链复杂度、步骤密度、fuzzable 比例、shell 执行比例
     四维特征做启发式最佳策略推荐及风险预警。
@@ -896,17 +473,17 @@ orchestrate_exploit_chain = None
 
 # ============================================================================
 # MCTS链规划 — 蒙特卡洛树搜索选择最优步骤序列
-# 参考：Silver et al. Mastering Chess and Shogi by Self-Play... AlphaZero.
+# 参考: Silver et al. Mastering Chess and Shogi by Self-Play... AlphaZero.
 #       Science 2018. + Browne et al. A Survey of MCTS Methods. 2012.
-# 将 exploit chain 视为决策树：每个节点=一个步骤，边=执行结果
-# MCTS在可能的步骤序列空间中探索，通过 UCB 权衡探索 vs 利用
+# exploit chain 视为决策树：每个节点=一个步骤，边=执行结果。
+# MCTS 在步骤序列空间中探索，通过 UCB 权衡探索 vs 利用。
 # ============================================================================
 
 class MCTSChainPlanner:
     """蒙特卡洛树搜索链规划器。
 
-    使用四步迭代：Selection → Expansion → Simulation → Backpropagation。
-    UCB1 公式：score = avg_success + c_puct * sqrt(log(N_parent) / N_child)
+    四步迭代: Selection → Expansion → Simulation → Backpropagation。
+    UCB1 公式: score = avg_success + c_puct * sqrt(log(N_parent) / N_child)
     """
 
     def __init__(self, exploration_weight: float = 1.4, n_simulations: int = 100):
@@ -917,13 +494,13 @@ class MCTSChainPlanner:
     def plan(self, steps: List[ChainStep],
              target_info: Optional[Dict[str, Any]] = None,
              max_steps: int = 10) -> List[str]:
-        """MCTS规划：返回最优步骤顺序（action名列表）。
+        """MCTS规划: 返回最优步骤顺序（action名列表）。
 
-        每次模拟从根节点出发：
-        - 选择：沿树下降，选 UCB1 最大的子节点
-        - 扩展：到达叶节点后，展开一个未尝试的步骤
-        - 模拟：随机完成剩余步骤，评估最终奖励
-        - 反向传播：将奖励沿路径回溯更新统计
+        每轮模拟从根节点出发:
+        - 选择: 沿树下降，选 UCB1 最大的子节点
+        - 扩展: 到达叶节点后，展开一个未尝试的步骤
+        - 模拟: 随机完成剩余步骤，评估最终奖励
+        - 反向传播: 将奖励沿路径回溯更新统计
         """
         if not steps:
             return []
@@ -987,10 +564,10 @@ class MCTSChainPlanner:
 
     def _rollout(self, path: List[str], steps: List[ChainStep],
                   target_info: Optional[Dict[str, Any]] = None) -> float:
-        """模拟执行：启发式评估路径的成功概率。
+        """模拟执行: 启发式评估路径成功概率。
 
-        考虑因素：步骤前置条件满足度、shell命令可靠性、
-        fuzzable步骤的变异成功率。
+        考虑因素: 步骤前置条件满足度、shell命令可靠性、
+        fuzzable 步骤的变异成功率。
         """
         _score = 1.0
         _step_map = {s.action: s for s in steps}
@@ -1039,31 +616,31 @@ class MCTSChainPlanner:
 
 
 # ============================================================================
-# 贝叶斯优化 — 对fuzzing payload参数做自动调优
-# 参考：Snoek et al. Practical Bayesian Optimization of ML Algorithms. NIPS 2012.
-# 高斯过程代理模型 + Expected Improvement (EI) 采集函数
-# 在连续参数空间（payload大小、超时、变异强度）中寻找最优配置
+# 贝叶斯优化 — fuzzing payload参数自动调优
+# 参考: Snoek et al. Practical Bayesian Optimization of ML Algorithms. NIPS 2012.
+# 高斯过程代理模型 + Expected Improvement (EI) 采集函数。
+# 在连续参数空间（payload大小、超时、变异强度）中搜索最优配置。
 # ============================================================================
 
 class BayesianPayloadOptimizer:
-    """贝叶斯优化器：在高维payload参数空间中高效搜索。
+    """贝叶斯优化器: 在高维 payload 参数空间中高效搜索。
 
-    适用于：NOP sled长度、shellcode编码方式选择、timeout设置等。
-    使用 GP 代理 + EI 采集，比 Grid Search 少 5-10× 评估次数。
+    适用于: NOP sled 长度、shellcode 编码方式选择、timeout 设置等。
+    使用 GP 代理 + EI 采集，比 Grid Search 少 5-10x 评估次数。
     """
 
     def __init__(self, param_bounds: Dict[str, Tuple[float, float]],
                  n_initial: int = 5):
         self.bounds = param_bounds  # {param_name: (min, max)}
         self.n_initial = n_initial
-        self._X: List[List[float]] = []  # 已评估的参数组合
+        self._X: List[List[float]] = []  # 已评估参数组合
         self._y: List[float] = []        # 对应得分
         self._param_order = list(param_bounds.keys())
         self._n_dims = len(self._param_order)
 
     def _rbf_kernel(self, x1: List[float], x2: List[float],
                      length_scale: float = 1.0) -> float:
-        """RBF 核：k(x, x') = exp(-0.5 * ||x-x'||² / l²)"""
+        """RBF 核: k(x, x') = exp(-0.5 * ||x-x'||² / l²)"""
         _sq_dist = sum((x1[i]-x2[i])**2 for i in range(len(x1)))
         return math.exp(-0.5 * _sq_dist / (length_scale**2))
 
@@ -1090,7 +667,7 @@ class BayesianPayloadOptimizer:
         _best_ei = -float('inf')
         _best_cand = _candidates[0]
         for _cand in _candidates:
-            # 简化GP预测：加权平均
+            # 简化GP预测: 加权平均
             if self._X:
                 _k_self = [[self._rbf_kernel(self._X[i], self._X[j])
                            for j in range(len(self._X))] for i in range(len(self._X))]
@@ -1126,7 +703,7 @@ class BayesianPayloadOptimizer:
         self._y.append(score)
 
     def best_params(self) -> Dict[str, float]:
-        """返回当前观察到的最优参数。"""
+        """返回当前观测到的最优参数。"""
         if not self._y:
             return {}
         _best_idx = max(range(len(self._y)), key=lambda i: self._y[i])

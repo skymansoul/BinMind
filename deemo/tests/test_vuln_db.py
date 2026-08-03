@@ -1,7 +1,4 @@
-<<<<<<< HEAD
-=======
 
->>>>>>> d81973a (精简冗余模块)
 import os
 import sys
 import tempfile
@@ -13,39 +10,23 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 class TestVulnerabilityDatabase(unittest.TestCase):
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> d81973a (精简冗余模块)
     def setUp(self):
         self.temp_db = tempfile.mktemp(suffix='.db')
-        from modules.vuln_db import VulnerabilityDatabase
+        from modules.vuln.vuln_db import VulnerabilityDatabase
         self.VulnDB = VulnerabilityDatabase
-<<<<<<< HEAD
-    
-    def tearDown(self):
-        if os.path.exists(self.temp_db):
-            os.remove(self.temp_db)
-    
-=======
 
     def tearDown(self):
 
         if os.path.exists(self.temp_db):
             os.remove(self.temp_db)
 
->>>>>>> d81973a (精简冗余模块)
     def test_init_db(self):
         db = self.VulnDB(self.temp_db)
         self.assertIsNotNone(db.connection)
         self.assertTrue(os.path.exists(self.temp_db))
         db.close()
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> d81973a (精简冗余模块)
     def test_add_vulnerability(self):
         db = self.VulnDB(self.temp_db)
 
@@ -66,16 +47,9 @@ class TestVulnerabilityDatabase(unittest.TestCase):
         )
 
         self.assertIsNotNone(vuln_id)
-<<<<<<< HEAD
-        self.assertGreater(vuln_id, 0)
-        db.close()
-    
-=======
-lass字段完整性$/d
         self.assertGreater(vuln_id, 0)
         db.close()
 
->>>>>>> d81973a (精简冗余模块)
     def test_get_by_id(self):
         db = self.VulnDB(self.temp_db)
 
@@ -93,11 +67,7 @@ lass字段完整性$/d
         self.assertEqual(result['vulnerability_type'], 'Test Vuln')
         self.assertEqual(result['binary_name'], 'test')
         db.close()
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> d81973a (精简冗余模块)
     def test_search_by_function(self):
         db = self.VulnDB(self.temp_db)
 
@@ -125,11 +95,7 @@ lass字段完整性$/d
         any_main = any('main' in r.get('function_name', '') for r in results)
         self.assertTrue(any_main)
         db.close()
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> d81973a (精简冗余模块)
     def test_search_by_type(self):
         db = self.VulnDB(self.temp_db)
 
@@ -156,11 +122,7 @@ lass字段完整性$/d
         any_match = any('Stack' in r.get('vulnerability_type', '') for r in results)
         self.assertTrue(any_match)
         db.close()
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> d81973a (精简冗余模块)
     def test_get_all(self):
         db = self.VulnDB(self.temp_db)
 
@@ -177,11 +139,7 @@ lass字段完整性$/d
         results = db.get_all(limit=10)
         self.assertEqual(len(results), 5)
         db.close()
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> d81973a (精简冗余模块)
     def test_update_vulnerability(self):
         db = self.VulnDB(self.temp_db)
 
@@ -201,11 +159,7 @@ lass字段完整性$/d
             severity='Critical',
             notes='Updated note'
         )
-<<<<<<< HEAD
-        
-=======
 
->>>>>>> d81973a (精简冗余模块)
         self.assertTrue(success)
 
         updated = db.get_by_id(vuln_id)
@@ -213,11 +167,7 @@ lass字段完整性$/d
         self.assertEqual(updated['severity'], 'Critical')
         self.assertEqual(updated['notes'], 'Updated note')
         db.close()
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> d81973a (精简冗余模块)
     def test_delete_vulnerability(self):
         db = self.VulnDB(self.temp_db)
 
@@ -239,11 +189,7 @@ lass字段完整性$/d
         after = db.get_by_id(vuln_id)
         self.assertIsNone(after)
         db.close()
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> d81973a (精简冗余模块)
     def test_get_statistics(self):
         db = self.VulnDB(self.temp_db)
 
@@ -275,11 +221,7 @@ lass字段完整性$/d
         self.assertIn('by_architecture', stats)
         self.assertIn('by_severity', stats)
         db.close()
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> d81973a (精简冗余模块)
     def test_export_import(self):
         db1 = self.VulnDB(self.temp_db)
 
@@ -310,10 +252,6 @@ lass字段完整性$/d
         self.assertEqual(imported, 1)
 
         all_records = db2.get_all()
-<<<<<<< HEAD
-=======
-lass字段完整性$/d
->>>>>>> d81973a (精简冗余模块)
         self.assertEqual(len(all_records), 1)
 
         db1.close()
@@ -323,11 +261,7 @@ lass字段完整性$/d
             os.remove(export_path)
         if os.path.exists(temp_db2):
             os.remove(temp_db2)
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> d81973a (精简冗余模块)
     def test_hash_pseudocode(self):
         db = self.VulnDB(self.temp_db)
 
@@ -342,14 +276,9 @@ lass字段完整性$/d
         self.assertEqual(hash1, hash2)
         self.assertNotEqual(hash1, hash3)
         db.close()
-<<<<<<< HEAD
-    
-    def test_search_similar(self):
-=======
 
     def test_search_similar(self):
         # 先前实现存档——支持代码考古
->>>>>>> d81973a (精简冗余模块)
         db = self.VulnDB(self.temp_db)
 
         db.add_vulnerability(
@@ -385,28 +314,17 @@ lass字段完整性$/d
 
 
 class TestVulnDbWithMocks(unittest.TestCase):
-<<<<<<< HEAD
-    
-    def test_get_vuln_db_function(self):
-        from modules.vuln_db import get_vuln_db, VulnerabilityDatabase
-        
-        db = get_vuln_db()
-        self.assertIsInstance(db, VulnerabilityDatabase)
-        db.close()
-    
-=======
 
     def test_get_vuln_db_function(self):
-        from modules.vuln_db import get_vuln_db, VulnerabilityDatabase
+        from modules.vuln.vuln_db import get_vuln_db, VulnerabilityDatabase
 
         db = get_vuln_db()
         self.assertIsInstance(db, VulnerabilityDatabase)
         db.close()
 
->>>>>>> d81973a (精简冗余模块)
     def test_empty_db_operations(self):
         temp_db = tempfile.mktemp(suffix='.db')
-        from modules.vuln_db import VulnerabilityDatabase
+        from modules.vuln.vuln_db import VulnerabilityDatabase
         db = VulnerabilityDatabase(temp_db)
 
         self.assertEqual(len(db.get_all()), 0)
@@ -420,9 +338,5 @@ class TestVulnDbWithMocks(unittest.TestCase):
             os.remove(temp_db)
 
 
-<<<<<<< HEAD
-=======
-
->>>>>>> d81973a (精简冗余模块)
 if __name__ == '__main__':
     unittest.main()

@@ -1,12 +1,11 @@
-# 2026-07-20
 # injection_detect — 10 种代码注入技术检测
-# 每种技术按 MITRE ATT&CK 映射到 TID，检测方式为
-# API 导入表模式匹配 + 字符串特征匹配的组合判定
+# 每种技术映射 MITRE ATT&CK TID，检测方式为 API 导入 + 字符串特征联合判定
 
 import re
 from typing import List, Dict, Tuple
+from itertools import chain
 
-# ===== MITRE ATT&CK 映射 =====
+# ===== MITRE ATT&CK 技术ID映射 =====
 MITRE_ATTACK = {
     "pe_injection": "T1055.001",
     "process_hollowing": "T1055.012",
@@ -20,11 +19,10 @@ MITRE_ATTACK = {
     "extra_window_memory": "T1055.011",
 }
 
-# ---- API 模式定义 ----
-# 每组为 (required_apis, optional_apis, string_hints)
-# required: 至少一组匹配才算 detected
-# optional: 增加置信度
-# string_hints: 字符串中出现的可疑模式
+# 注入模式定义：(required_apis, optional_apis, string_hints)
+# required 匹配至少一项才判定为 detected
+# optional 提高置信度
+# string_hints 用于字符串侧的辅助证据
 
 _INJECTION_PATTERNS = {
     "pe_injection": (
@@ -79,6 +77,7 @@ _INJECTION_PATTERNS = {
     ),
 }
 
+# 字符串侧的非 API 可疑关键词
 _NON_API_STRINGS = {
     "inject", "payload", "shellcode", "meterpreter", "beacon",
     "cobaltstrike", "cobalt_strike", "metasploit", "reverse_tcp",
@@ -89,7 +88,7 @@ _NON_API_STRINGS = {
 
 
 def _normalize_api_name(name: str) -> str:
-    """去除 A/W 后缀和大小写归一化。"""
+    """去 A/W 后缀 + 小写归一化，统一 API 名称匹配。"""
     _n = name.strip().lower()
     if _n.endswith('a') and len(_n) > 1:
         _core = _n[:-1]
@@ -100,7 +99,7 @@ def _normalize_api_name(name: str) -> str:
 
 
 def _extract_api_set(imports: dict) -> set:
-    """从导入表提取归一化 API 名称集合。"""
+    """导入表 → 归一化 API 名称集合。"""
     _apis = set()
     for _dll, _funcs in imports.items():
         for _f in _funcs:
@@ -116,9 +115,8 @@ def _extract_string_set(strings: list) -> set:
     return _r
 
 
-# //// 单技术检测 ////
 def detect_pe_injection(imports: dict, strings: list, sections: list = None) -> dict:
-    """PE injection: VirtualAllocEx + WriteProcessMemory + CreateRemoteThread 链。"""
+    """PE 注入：VirtualAllocEx + WriteProcessMemory + CreateRemoteThread 经典链。"""
     _apis = _extract_api_set(imports)
     _strs = _extract_string_set(strings)
     _required = {"virtualallocex", "writeprocessmemory", "createremotethread"}
@@ -314,13 +312,9 @@ _DETECTORS = {
 }
 
 
-# //// 批量检测 ////
 def detect_all(imports: dict, strings: list, sections: list = None) -> dict:
-    """运行全部 10 种注入检测器，返回综合结果与风险评分。
-
-    风险评分 = 各技术 confidence 加权求和，归一化到 0-100。
-    返回:
-        { "findings": {...}, "overall_risk": float, "summary": str }
+    """执行全部 10 种注入检测，汇总风险评分。
+    风险 = 各技术 confidence 加权，归一化到 0-100，叠加可疑字符串加分。
     """
     _results = {}
     _risk = 0.0
@@ -346,7 +340,6 @@ def detect_all(imports: dict, strings: list, sections: list = None) -> dict:
     elif _detected_count >= 1:
         _summary = "LOW_RISK"
 
-    # 额外的字符串可疑度评分
     _str_set = _extract_string_set(strings)
     _suspicious_strings = _str_set & _NON_API_STRINGS
     if _suspicious_strings:

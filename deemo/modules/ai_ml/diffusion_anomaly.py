@@ -1,9 +1,9 @@
-# 2026-07-24 13:20
-# diffusion_anomaly.py
-# 基于扩散过程的图异常检测
+# 基于迭代邻居均值传播的图异常检测
 # 依据: DDGAD [arXiv 2605.26446, 2026] 的轨迹动力学扩散异常检测
-#        "Trajectory Dynamics for Diffusion-Based Graph Anomaly Detection"
-# 核心思路: 正常节点在扩散过程中表示稳定, 异常节点表现出不稳定/冲突的轨迹动态
+# "Trajectory Dynamics for Diffusion-Based Graph Anomaly Detection"
+# 核心思路: 正常节点在迭代传播过程中表示稳定, 异常节点表现出不稳定/冲突的轨迹动态
+# 实现: 线性意见动力学 x_{t+1}=(1-α)x_t + α·mean(neighbors) + noise,
+#       不采用完整的扩散 PDE / 拉普拉斯谱分解
 # 三个异常信号: 邻居不一致性 / 可靠性权重 / 动态冲突能量
 
 from __future__ import annotations

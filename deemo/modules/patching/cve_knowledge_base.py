@@ -1,11 +1,10 @@
-# 2026-08-01
-"""CVE knowledge base — CVE-Genie [arXiv:2509.01835] inspired structured data store.
+"""CVE 知识库 — CVE-Genie [arXiv:2509.01835] 启发的结构化存储。
 
-CVE-Genie 使用 multi-agent 流水线将 CVE 描述、patch diff 和安全公告转化为
-结构化知识库。本模块实现其 Processor 阶段的核心数据结构：从 NVD JSON / 本地
-JSON 文件加载 CVE 信息，构建可查询的因果关系图。
+CVE-Genie 通过多代理流水线将 CVE 描述、补丁 diff 和安全公告转化为
+结构化知识。本模块实现其 Processor 阶段的核心数据结构：
+从 NVD JSON / 本地 JSON 加载 CVE 信息，构建可查询的因果图。
 
-不做 CVE 复现（CVE-Genie Builder 的工作），仅做元数据管理。
+不做 CVE 复现（CVE-Genie Builder 的职责），仅元数据管理。
 """
 
 import os, json, re, logging, hashlib, sqlite3
@@ -19,7 +18,7 @@ _lgr = logging.getLogger(__name__)
 
 @dataclass
 class CVEEntry:
-    """CVE 条目 — CVE-Genie Processor 阶段提取的结构化信息。"""
+    """CVE 条目 — Processor 阶段提取的结构化字段。"""
     cve_id: str
     description: str = ""
     cwe_ids: List[str] = field(default_factory=list)
@@ -33,7 +32,7 @@ class CVEEntry:
     impact_score: float = 0.0
     references: List[str] = field(default_factory=list)
     tags: List[str] = field(default_factory=list)
-    # CVE-Genie 风格: patch diff 摘要
+    # CVE-Genie 风格: 补丁 diff 摘要
     patch_summary: str = ""
     root_cause_hypothesis: str = ""
 
@@ -62,7 +61,7 @@ class CVEQueryResult:
     search_time_ms: float = 0.0
     cwe_distribution: Dict[str, int] = field(default_factory=dict)
     severity_distribution: Dict[str, int] = field(default_factory=dict)
-    # CVE-Genie 风格: 因果图
+    # CVE-Genie 风格: 因果边
     causal_links: List[Tuple[str, str, str]] = field(default_factory=list)
 
     def to_dict(self) -> Dict:
@@ -76,20 +75,20 @@ class CVEQueryResult:
 
 
 # ── NVD JSON 解析 ──────────────────────────────────────────────────────
-# NVD API 2.0 格式: https://services.nvd.nist.gov/rest/json/cves/2.0
+# NVD API 2.0: https://services.nvd.nist.gov/rest/json/cves/2.0
 
 class NVDParser:
-    """NVD CVE JSON 解析器 — 提取 CVE-Genie 所需的结构化字段。"""
+    """NVD CVE JSON 解析器 — 抽取 Processor 所需的结构化字段。"""
 
-    # CWE 提取模式 — 从 NVD weaknesses 字段抽取
+    # CWE 提取 — 从 NVD weaknesses 字段匹配
     _CWE_PATTERN = re.compile(r'CWE-(\d+)')
 
-    # 产品/厂商提取 — 从 CPE 字符串解析
+    # 产品/厂商 — 从 CPE 字符串剥离
     _CPE_PATTERN = re.compile(r'cpe:2\.3:[aho*\-]:([^:]+):([^:]+):')
 
     @classmethod
     def parse_nvd_json(cls, nvd_data: Dict) -> List[CVEEntry]:
-        """解析 NVD API 2.0 响应中的 CVE 条目。"""
+        """解析 NVD API 2.0 响应，返回 CVE 条目列表。"""
         _entries = []
         _vulns = nvd_data.get('vulnerabilities', [])
         for _item in _vulns:
@@ -146,7 +145,7 @@ class NVDParser:
 
     @classmethod
     def _extract_metrics(cls, item: Dict) -> Dict:
-        """Extract CVSS v3.1 metrics. Falls back to v2.0."""
+        """提取 CVSS v3.1 评分，回退到 v2.0。"""
         _metrics = item.get('metrics', {})
         # CVSS v3.1
         _cvss31 = _metrics.get('cvssMetricV31', [])
@@ -185,11 +184,11 @@ class NVDParser:
         return _refs[:20]
 
 
-# ── 本地 JSON 格式解析 ─────────────────────────────────────────────────
-# 简化格式: [{"id": "CVE-...", "desc": "...", ...}]
+# ── 本地简化 JSON 解析 ─────────────────────────────────────────────────
+# 格式: [{"id": "CVE-...", "desc": "...", ...}]
 
 class SimpleCVEParser:
-    """本地简化 CVE JSON 解析器。"""
+    """本地简化 CVE JSON 的解析适配。"""
 
     @classmethod
     def parse(cls, data: List[Dict]) -> List[CVEEntry]:
@@ -216,11 +215,11 @@ class SimpleCVEParser:
 # ── CVE 知识库 ─────────────────────────────────────────────────────────
 
 class CVEKnowledgeBase:
-    """CVE-Genie 风格知识库 — 支持导入、查询、因果分析。
+    """CVE-Genie 风格知识库 — 导入、查询、因果分析。
 
-    存储后端: SQLite（与 BackupManager 保持一致的技术选择）。
-    CVE-Genie 的 Processor 阶段产物：从 NVD + 安全公告 + patch diff
-    中提取的 CWE → 受影响函数 → 补丁链接的因果图。
+    存储后端: SQLite（与 BackupManager 一致）。
+    Processor 阶段产物：从 NVD + 安全公告 + patch diff
+    中提取 CWE → 受影响函数 → 补丁链接的因果图。
     """
 
     def __init__(self, db_path: str = ".cve_kb/cve_kb.db"):
@@ -268,7 +267,7 @@ class CVEKnowledgeBase:
         self._conn.commit()
 
     # ============================================================
-    # import_entries: 批量导入 CVE
+    # 批量导入
     # ============================================================
     def import_entries(self, entries: List[CVEEntry]) -> int:
         _count = 0
@@ -305,14 +304,14 @@ class CVEKnowledgeBase:
         return _count
 
     def import_from_nvd_json(self, nvd_json_path: str) -> int:
-        """从 NVD API JSON 文件导入 CVE。"""
+        """从 NVD API JSON 文件批量导入。"""
         with open(nvd_json_path, 'r', encoding='utf-8') as _fh:
             _data = json.load(_fh)
         _entries = NVDParser.parse_nvd_json(_data)
         return self.import_entries(_entries)
 
     def import_from_simple_json(self, json_path: str) -> int:
-        """从简化 JSON 格式导入。"""
+        """从本地简化 JSON 格式导入。"""
         with open(json_path, 'r', encoding='utf-8') as _fh:
             _data = json.load(_fh)
         _entries = SimpleCVEParser.parse(_data)
@@ -321,7 +320,7 @@ class CVEKnowledgeBase:
     # ── 查询 ──────────────────────────────────────────────────────────
 
     def query_by_cwe(self, cwe_id: str) -> CVEQueryResult:
-        """按 CWE ID 查询相关 CVE。"""
+        """按 CWE ID 检索相关 CVE，按 CVSS 降序。"""
         _rows = self._conn.execute(
             "SELECT * FROM cve_entries WHERE cwe_ids LIKE ? ORDER BY cvss_score DESC",
             ('%"' + cwe_id + '"%',)).fetchall()
@@ -333,7 +332,7 @@ class CVEKnowledgeBase:
         return _result
 
     def query_by_product(self, product: str) -> CVEQueryResult:
-        """按产品名查询。"""
+        """按产品名模糊检索。"""
         _rows = self._conn.execute(
             "SELECT * FROM cve_entries WHERE products LIKE ? ORDER BY cvss_score DESC",
             ('%' + product + '%',)).fetchall()
@@ -344,7 +343,7 @@ class CVEKnowledgeBase:
         return _result
 
     def query_by_function(self, func_name: str) -> CVEQueryResult:
-        """按受影响函数名查询 — 直接关联 patch 建议。"""
+        """按受影响函数名检索 — 可直接关联补丁建议。"""
         _rows = self._conn.execute(
             "SELECT * FROM cve_entries WHERE functions LIKE ?",
             ('%' + func_name + '%',)).fetchall()
@@ -354,7 +353,7 @@ class CVEKnowledgeBase:
         return _result
 
     def query_high_severity(self, min_score: float = 7.0) -> CVEQueryResult:
-        """获取高严重度 CVE。"""
+        """列出高于阈值的严重漏洞。"""
         _rows = self._conn.execute(
             "SELECT * FROM cve_entries WHERE cvss_score >= ? ORDER BY cvss_score DESC",
             (min_score,)).fetchall()
@@ -369,8 +368,8 @@ class CVEKnowledgeBase:
     # ── CVE-Genie 风格因果图 ──────────────────────────────────────────
 
     def _build_causal_links(self):
-        """构建 CVE 间的因果关系图。相同 CWE → same_cwe，相同产品 → same_product。"""
-        self._conn.execute("DELETE FROM causal_links")  # 重建因果图
+        """构建 CVE 间因果边：同 CWE → same_cwe，同产品 → same_product。"""
+        self._conn.execute("DELETE FROM causal_links")  # 全量重建
         _rows = self._conn.execute("SELECT cve_id, cwe_ids, products, functions FROM cve_entries").fetchall()
 
         _by_cwe = defaultdict(list)
@@ -405,7 +404,7 @@ class CVEKnowledgeBase:
         self._conn.commit()
 
     def get_causal_links(self, cve_id: str) -> List[Dict]:
-        """获取与指定 CVE 有因果关系的 CVE 列表。"""
+        """获取与指定 CVE 关联的因果边列表。"""
         _rows = self._conn.execute(
             """SELECT * FROM causal_links
             WHERE source_cve = ? OR target_cve = ?
@@ -498,7 +497,7 @@ class CVEKnowledgeBase:
         self._conn.close()
 
 
-# ── 便捷函数 ──────────────────────────────────────────────────────────
+# ── 快捷入口 ──────────────────────────────────────────────────────────
 
 def create_cve_kb(db_path: str = ".cve_kb/cve_kb.db") -> CVEKnowledgeBase:
     return CVEKnowledgeBase(db_path)

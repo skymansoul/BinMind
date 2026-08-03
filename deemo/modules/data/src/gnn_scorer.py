@@ -1,36 +1,29 @@
-# 图结构二进制相似度评分 — 基于函数调用图 (call graph) 的图核匹配
-# 参考:
-#   Collyer et al., "Know Your Neighborhood: General and Zero-Shot Capable
-#     Binary Function Search Powered by Call Graphlets" (arXiv:2406.02606, 2024)
-#   HermesSim [He et al., USENIX Security 2024]: SOG + GNN with multi-head
-#     softmax aggregator, x64 跨架构检索 recall 比 Trex 高 184%
+# 图结构二进制相似度评分 — 基于函数调用图的图核匹配
+# 文献依据:
+#   Collyer et al., "Know Your Neighborhood..." (arXiv:2406.02606, 2024)
+#   HermesSim [He et al., USENIX Security 2024]: SOG + GNN + multi-head softmax, x64 跨架构召回比 Trex 高 184%
 #   GBsim [Du & Wei, Entropy 2025]: GCN + BERT, MRR=0.901, Recall@1=0.831
-#   Zotero 文库补充:
-#     "Bin2vec: learning representations of binary executable programs for
-#       security tasks" — 二进制函数嵌入的 baseline 方法
-#     "VulANalyzeR: Explainable Binary Vulnerability Detection with Multi-task
-#       Learning and Attentional Graph Convolution" — GCN+attention 架构
-#     "BEDetector: A Two-Channel Encoding Method to Detect Vulnerabilities
-#       Based on Binary Similarity" — 双通道编码策略
-#     "VulHawk: Cross-architecture Vulnerability Detection with Entropy-based
-#       Binary Code Search" — 熵引导的跨架构搜索 (与本模块的 WL kernel 互补)
-#     "Unsupervised Binary Code Translation with Application to Code
-#       Similarity Detection and Vulnerability Discovery" — 无监督跨架构翻译
+#   补充参考:
+#     Bin2vec — 二进制函数嵌入 baseline 方案
+#     VulANalyzeR — GCN+attention 结构, 多任务联合训练
+#     BEDetector — 双通道编码策略
+#     VulHawk — 熵引导跨架构搜索 (与 WL kernel 互补)
+#     Unsupervised Binary Code Translation — 无监督跨架构翻译
 
 import math
 from typing import Dict, List, Tuple, Set, Optional, Any
 from collections import Counter, defaultdict
 
 # ---------------------------------------------------------------------------
-# CallGraphBuilder — 从 analysis findings 构建调用图
+# CallGraphBuilder — 从分析结果构造调用图
 # ---------------------------------------------------------------------------
 
 class CallGraph:
-    """简化的有向调用图。
+    """有向调用图。
 
     节点: 函数地址 (int/str)
     边: caller → callee
-    无向版本用于 WL kernel (子树模式)。
+    无向版本供 WL kernel 做子树模式提取。
     """
 
     def __init__(self):
@@ -60,9 +53,9 @@ class CallGraph:
 
     @classmethod
     def from_findings(cls, findings: List[dict]) -> "CallGraph":
-        """从 analysis findings 列表中提取调用图。
+        """从分析结果列表构造调用图。
 
-        支持的 findings 格式:
+        接受的 findings 格式:
           {"type": "call_edge", "caller": "0x401000", "callee": "0x402000"}
           {"type": "function_call", "from": "main", "to": "printf"}
           {"call_graph": [{"src": "...", "dst": "..."}, ...]}
@@ -96,20 +89,20 @@ class CallGraph:
 
 
 # ---------------------------------------------------------------------------
-# GraphletCounter — 计数 3-node / 4-node 子图模式
-# 参考 Collyer et al. (2024) 的 call graphlets 方法。
-# 3-node graphlet: 3 个连通节点的子图有 2 种非同构模式
+# GraphletCounter — 3-node / 4-node 子图模式计数
+# 参考 Collyer et al. (2024) 的 call graphlets 方案。
+# 3-node graphlet: 3 个连通节点有 2 种非同构模式
 #   - triangle (3 条边: A-B, B-C, C-A)
 #   - path (2 条边: A-B-C)
-# 4-node graphlet: 有 6 种非同构连通模式
+# 4-node graphlet: 6 种非同构连通模式
 # ---------------------------------------------------------------------------
 
 def count_graphlets(cg: CallGraph, node: str, size: int = 3) -> Counter:
-    """计算单个节点周围的 graphlet 分布。
+    """单节点 graphlet 分布统计。
 
     size=3: 统计该节点参与的所有 3-node graphlet → Counter({pattern: count})
-    每个 pattern 的 key 是规范化后的度序列字符串 (如 "1-1-2" = path, "2-2-2" = triangle)。
-    对于图核应用，graphlet 谱作为节点的特征向量。
+    pattern key = 规范化度序列串 (如 "1-1-2" = path, "2-2-2" = triangle)。
+    graphlet 谱作为节点的特征向量供图核使用。
     """
     nb = cg.neighbors(node)
     nb_list = list(nb)
@@ -136,10 +129,10 @@ def count_graphlets(cg: CallGraph, node: str, size: int = 3) -> Counter:
 
 
 def graphlet_spectrum(cg: CallGraph, sample_size: int = 100) -> List[float]:
-    """整图的 graphlet 频谱 —— 所有节点的 graphlet 计数归一化为固定维度向量。
+    """整图 graphlet 频谱 —— 所有节点 graphlet 计数经归一化后压入定长向量。
 
-    采样策略: 若节点数 > sample_size，随机取 sample_size 个节点做近似。
-    输出: 固定长度的 float 向量，用于图间相似度比较。
+    采样: 节点数 > sample_size 时随机取 sample_size 个节点做近似。
+    输出: 定长 float 向量，供图间相似度比对。
     """
     import random
     nodes = list(cg.nodes)
@@ -157,32 +150,32 @@ def graphlet_spectrum(cg: CallGraph, sample_size: int = 100) -> List[float]:
 
     # 归一化为频率向量
     if total_graphlets == 0:
-        return [0.0] * 16   # fallback 维度
+        return [0.0] * 16   # 无可用数据时的回退维度
 
     patterns_sorted = sorted(pattern_counter.keys())
     vec = [pattern_counter[p] / total_graphlets for p in patterns_sorted]
-    # 填充/截断到固定维度
+    # 对齐至固定维度
     while len(vec) < 16:
         vec.append(0.0)
     return vec[:16]
 
 
 # ---------------------------------------------------------------------------
-# Weisfeiler-Lehman Subtree Kernel — 经典的图核方法
+# Weisfeiler-Lehman Subtree Kernel — 经典图核方法
 # Shervashidze et al., "Weisfeiler-Lehman Graph Kernels", JMLR 2011.
-# WL kernel 通过迭代标签压缩 (label compression) 捕获子树模式，
-# 对调用图的局部结构敏感，且计算复杂度为 O(h·m) (h 轮迭代, m 边数)。
+# 通过迭代标签压缩捕获子树模式，对调用图局部结构敏感，
+# 计算复杂度 O(h·m) (h 轮迭代, m 边数)。
 # ---------------------------------------------------------------------------
 
 def wl_subtree_features(cg: CallGraph, iterations: int = 3) -> Dict[str, Counter]:
-    """WL 子树核的特征提取 —— 返回每轮迭代的压缩标签计数。
+    """WL 子树核特征提取 —— 每轮迭代返回压缩标签的计数分布。
 
-    算法流程:
-      1. 初始化: 所有节点标签 = degree (字符串化)
+    流程:
+      1. 初始化: 各节点标签 = degree 字符串
       2. 每轮: 收集邻域标签 → 排序拼接 → 哈希压缩 → 新标签
-      3. 记录每轮的标签分布 (Counter)
-    返回值 {iter_0: Counter, iter_1: Counter, ...}，
-    两个图的相似度 = sum_i dot(feats_a[i], feats_b[i]) / (norm_a * norm_b)
+      3. 记录每轮标签分布 (Counter)
+    返回值 {iter_0: Counter, iter_1: Counter, ...},
+    两图相似度 = sum_i dot(feats_a[i], feats_b[i]) / (norm_a * norm_b)
     """
     labels: Dict[str, str] = {}
     for node in cg.nodes:
@@ -208,7 +201,7 @@ def wl_subtree_features(cg: CallGraph, iterations: int = 3) -> Dict[str, Counter
 
 
 # ---------------------------------------------------------------------------
-# GraphScorer — 综合评分器
+# GraphScorer — 多信号融合评分
 # ---------------------------------------------------------------------------
 
 class GraphScorer:
@@ -229,7 +222,7 @@ class GraphScorer:
         self._cache: Dict[int, tuple] = {}
 
     def build_features(self, sig_id: int, findings: List[dict]) -> tuple:
-        """为签名构建缓存的特征 tuple (graphlet_vec, wl_features, has_graph)。"""
+        """为签名构建缓存特征三元组 (graphlet_vec, wl_features, has_graph)。"""
         cg = CallGraph.from_findings(findings)
         has_graph = len(cg.nodes) > 0
         if has_graph:
@@ -245,7 +238,7 @@ class GraphScorer:
               findings_a: List[dict] = None,
               findings_b: List[dict] = None,
               meta_a: dict = None, meta_b: dict = None) -> float:
-        """返回 [0, 1] 相似度评分。"""
+        """返回 [0, 1] 区间的相似度分值。"""
         if findings_a is not None:
             self.build_features(sig_a, findings_a)
         if findings_b is not None:
@@ -254,7 +247,7 @@ class GraphScorer:
         f_a = self._cache.get(sig_a)
         f_b = self._cache.get(sig_b)
         if f_a is None or f_b is None:
-            return 0.0   # 缓存未命中，无可用特征
+            return 0.0   # 缓存未命中
 
         gv_a, wl_a, has_a = f_a
         gv_b, wl_b, has_b = f_b
@@ -265,9 +258,9 @@ class GraphScorer:
         if has_a and has_b and gv_a and gv_b:
             scores.append((self.wg, _cosine(gv_a, gv_b)))
         elif not has_a and not has_b:
-            scores.append((self.wg, 1.0))  # 都没图 → 视为结构上不可辨
+            scores.append((self.wg, 1.0))  # 双方均无图 → 结构维度视为不可区分
         else:
-            scores.append((self.wg, 0.2))  # 一个有图一个没有 → 低相似度
+            scores.append((self.wg, 0.2))  # 单方有图 → 低相似
 
         # WL 相似度
         if has_a and has_b and wl_a and wl_b:
@@ -288,7 +281,7 @@ class GraphScorer:
 
     def top_k(self, query_sig: int, candidate_ids: List[int],
               db, k: int = 10) -> List[Tuple[int, float]]:
-        """从候选集中找出与 query_sig 最相似的 k 个签名。"""
+        """从候选集中返回与 query_sig 最相似的 k 个签名。"""
         q_findings_raw = db.get_analyses(query_sig)
         q_findings = _flatten_findings(q_findings_raw)
         q_meta = db.get_signature_by_id(query_sig) or {}
@@ -346,7 +339,7 @@ def _cosine(a: List[float], b: List[float]) -> float:
 
 def _wl_similarity(feats_a: Dict[str, Counter],
                    feats_b: Dict[str, Counter]) -> float:
-    """两个 WL 特征集的余弦相似度 —— 各迭代拼接所有的标签频率。"""
+    """两个 WL 特征集的余弦相似度 —— 各迭代层标签频率拼接后计算。"""
     keys = sorted(set(feats_a.keys()) | set(feats_b.keys()))
     if not keys:
         return 0.0
@@ -363,7 +356,7 @@ def _wl_similarity(feats_a: Dict[str, Counter],
 
 
 def _metadata_similarity(meta_a: dict, meta_b: dict) -> float:
-    """基于签名元数据的启发式相似度。"""
+    """签名元数据启发式相似度 —— 基于 file_size + stage + tags。"""
     score = 0.0
     w = 0.0
 

@@ -4,9 +4,13 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import List, Optional, Dict
 
+# 保留
+_VERSION_HINT = (2, 1, 4)
+
+
 _log = logging.getLogger(__name__)
 
-# compat placeholders
+# compat 占位符
 DANGEROUS_LIBRARIES = None; PATH_TRAVERSAL_PATTERNS = None; BINARY_SIGNATURES = None
 
 _DANGEROUS_INSTRUCTIONS = [
@@ -45,8 +49,8 @@ _BASE_IMAGE_CVE_PATTERNS = {
     "node:<18": {"CVE-2023-38552": 7.5, "CVE-2024-27980": 8.1},
 }
 
-# ---- supply chain risk patterns ----
-# detects non-official registry usage, curl|sh patterns, typosquatting vectors
+# ---- 供应链风险模式 ----
+# 检测非官方注册中心使用、curl|sh模式、拼写仿冒向量
 _SUPPLY_CHAIN_RISK = [
     re.compile(r"(pip|pip3)\s+install\s+.*--extra-index-url", re.I),
     re.compile(r"(npm|yarn)\s+install\s+.*--registry\s+https?://(?!registry\.npmjs)", re.I),
@@ -56,6 +60,15 @@ _SUPPLY_CHAIN_RISK = [
 ]
 
 @dataclass
+
+# 旧版实现，v1.x后废弃
+# _OLD_PIPELINE_ORDER = [
+#     "preprocess",
+#     "analyze",
+#     "postprocess",
+#     "validate",
+# ]
+
 class BinaryFileInfo:
     path: str; size: int = 0; sha256: str = ""; setuid: bool = False
     capabilities: List[str] = field(default_factory=list)
@@ -96,26 +109,27 @@ class ContainerImageScanner:
         return report
 
     def _scan_dockerfile(self, path: str, report: ContainerSecurityReport) -> ContainerSecurityReport:
+        # 不拆——保持上下文连贯
         with open(path, "r", encoding="utf-8", errors="replace") as fh: lines = fh.readlines()
         for idx, raw in enumerate(lines, 1):
             stripped = raw.strip()
             if not stripped or stripped.startswith("#"): continue
             m = re.match(r"^\s*FROM\s+(\S+)", stripped, re.I)
             if m: report.base_image = m.group(1)
-            # dangerous instruction patterns
+            # 危险指令模式
             for pat in _DANGEROUS_INSTRUCTIONS:
                 if pat.search(stripped):
                     report.findings.append(Finding(severity="HIGH",
                         category="dangerous_instruction",
                         title=f"Dangerous pattern in line {idx}",
                         description=stripped[:120], line=idx)); break
-            # docker run flags
+            # docker run 标志
             for flag, desc in _DANGEROUS_RUN_FLAGS.items():
                 if f" {flag}" in stripped or stripped.startswith(flag):
                     report.findings.append(Finding(severity="HIGH",
                         category="dangerous_flag", title=desc,
                         description=f"Flag `{flag}` in line {idx}", line=idx))
-            # supply chain risk
+            # 供应链风险
             for pat in _SUPPLY_CHAIN_RISK:
                 if pat.search(stripped):
                     report.findings.append(Finding(severity="CRITICAL",
@@ -156,3 +170,9 @@ class ContainerImageScanner:
             return vulns
         except (subprocess.TimeoutExpired, FileNotFoundError, json.JSONDecodeError) as exc:
             _log.debug("Trivy scan skipped: %s", exc); return []
+
+
+def _debug_print(*args, **kwargs):
+    """内部调试输出桩。"""
+    pass  # 调试桩，当前未使用
+

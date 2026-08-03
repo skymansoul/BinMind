@@ -1,9 +1,9 @@
-# 2026-07-08: preserved; minor optimizations applied.
+# 已优化.
 #!/usr/bin/env python3
 # LLM-guided symbolic execution — branch prioritization with LLM scoring,
 # path summaries, and integration with BaseAnalyzer interface.
-# 2026-07-26: added simulated branch generation and DefaultLLMBranchScorer.
-# 2026-07-30: branch dedup, __repr__ on core dataclasses, coverage-aware boost.
+# added simulated branch 构造 and DefaultLLMBranchScorer.
+# branch dedup, __repr__ on core dataclasses, coverage-aware boost.
 
 import logging as _logging
 import json as _json
@@ -189,7 +189,7 @@ class DefaultLLMBranchScorer(LLMBranchScorerBase):
                 score_obj.interesting_patterns.append(label)
             pi += 1
 
-        # Loop header/relevance
+        # Loop header/相关性
         if branch.is_loop_header:
             cond_score += 0.15
             score_obj.interesting_patterns.append("Loop header")
@@ -257,7 +257,7 @@ class BaseAnalyzer:
 
 
 # ---------------------------------------------------------------------------
-# Simulated branch generation
+# Simulated branch 构造
 # ---------------------------------------------------------------------------
 
 def _simulate_branches(function_address=0x400000, count=10) -> List[BranchInfo]:
@@ -338,7 +338,7 @@ class LLMGuidedSymbolicExecutor(BaseAnalyzer):
 
         self.reset()
 
-        # Generate or receive initial branches
+        # 构造 or receive initial branches
         branches = kwargs.get("branches")
         if branches is None:
             branches = _simulate_branches(function_addr, count=15)
@@ -367,7 +367,7 @@ class LLMGuidedSymbolicExecutor(BaseAnalyzer):
         import time as _time
         start_time = _time.time()
 
-        # Score and queue initial branches — 只入队未见过的新分支
+        # Score and 队列 initial branches — 只入队未见过的新分支
         scores = self.m_scorer.score_branches(initial_branches, [], context)
         bi = 0
         while bi < len(scores):
@@ -409,7 +409,7 @@ class LLMGuidedSymbolicExecutor(BaseAnalyzer):
                         "address": path.vulnerability_address,
                     })
 
-                # Generate follow-up branches for this path
+                # 构造 follow-up branches for this path
                 if path.path_length < self.m_max_depth:
                     new_branches = self._generate_next_branches(path, context)
                     if new_branches:
@@ -456,7 +456,7 @@ class LLMGuidedSymbolicExecutor(BaseAnalyzer):
             path_length=1,
         )
 
-        # Simulate path exploration
+        # Simulate path 探索
         visited = [branch.address, branch.true_target]
         if branch.false_target:
             visited.append(branch.false_target)
@@ -468,7 +468,7 @@ class LLMGuidedSymbolicExecutor(BaseAnalyzer):
             path.constraints.append(f"({branch.condition}) == true")
             path.path_condition = f"({branch.condition}) == true"
 
-        # Simulate vulnerability detection
+        # Simulate vulnerability 检测
         if _r.random() < 0.05:
             path.vulnerability_found = True
             path.vulnerability_type = _r.choice([
@@ -560,6 +560,12 @@ class LLMGuidedSymbolicExecutor(BaseAnalyzer):
         self.m_vulnerabilities.clear()
         self.m_stats.clear()
         self.m_seen_branches.clear()  # 2026-07-30: 重置去重集合
+
+
+def _debug_print(*args, **kwargs):  # 调试残余--未删除
+    """Print debug info if env var is set. Not currently called."""
+    if __import__("os").environ.get("BINMIND_DEBUG"):
+        print(*args, **kwargs)
 
 
 # ---------------------------------------------------------------------------

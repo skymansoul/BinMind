@@ -1,13 +1,13 @@
-# re-export from compat/ — 二进制签名验证桩
-# 上游模块依赖 binary_analysis/ 子目录，使用 sys.path 注入策略
-# 参考: BinEGA (SANER 2025) 的轻量图对齐过滤 & 代码签名在供应链安全中的角色
+# compat 重导出 — 二进制签名验证桩
+# sys.path 注入使上游模块在 compat 命名空间内可被 import 解析
+# 参考: BinEGA (SANER 2025) 轻量图对齐过滤 & 代码签名在供应链安全中的角色
 import os as _os, sys as _sys
 
 _pkg_dir = _os.path.dirname(_os.path.dirname(__file__))
 _upstream = _os.path.join(_pkg_dir, 'core', 'compat')
 _module_name = 'binary_signing'
 
-# sys.path 注入 — 允许上游模块的本地 import 在 compat 命名空间中解析
+# sys.path 注入：上游模块本地 import 解析于 compat 命名空间
 if _upstream not in _sys.path:
     _sys.path.insert(0, _upstream)
 import binary_signing as _mod
@@ -15,9 +15,9 @@ _sys.path.remove(_upstream)
 
 globals().update({k: getattr(_mod, k) for k in dir(_mod) if not k.startswith('_')})
 
-# --- 签名校验增强: PE Authenticode 时间戳验证 ---
-# BinEGA 的图对齐过滤技术可类比为签名结构的子字段对齐校验，
-# 此处为 PE 签名增加时间戳有效性检查，防止过期证书签名通过验证。
+# PE Authenticode 签名时间戳校验
+# 解析 PE Security Directory 内 PKCS#7 SignedData 的 signingTime 字段，
+# 拦截超出有效期阈值的证书签名。
 import struct as _pack
 
 def verify_pe_timestamp(sign_data: bytes, max_age_days: int = 365) -> dict:
@@ -29,8 +29,7 @@ def verify_pe_timestamp(sign_data: bytes, max_age_days: int = 365) -> dict:
     if len(sign_data) < 8:
         return result
     try:
-        # PKCS#7 SigningTime 通常以 UTCTime/GeneralizedTime 编码在 signerInfos 中
-        # 简易扫描 OID 1.2.840.113549.1.9.5 (signingTime)
+        # 定位 OID 1.2.840.113549.1.9.5 (signingTime)，解码 UTCTime 时间戳
         oid = b'\x2a\x86\x48\x86\xf7\x0d\x01\x09\x05'
         idx = sign_data.find(oid)
         if idx < 0:

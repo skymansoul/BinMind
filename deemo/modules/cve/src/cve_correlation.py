@@ -1,13 +1,13 @@
-# 2026-10-17 ~ 2026-10-19
-# Cross-deployment CVE correlation — when you have multiple SBOMs from
-# different services/deployments, find the intersection and blast radius.
+# ~ 2026-10-19
+# 跨部署 CVE 关联 — 当有多个不同服务/部署的 SBOM 时，
+# 查找交集和爆炸半径。
 #
-# Use case: you run 5 microservices. Each has its own SBOM. After matching
-# each SBOM against the CVE KB, you have 5 match lists. Which CVEs affect
-# all 5 services? Which affect just one? What's the blast radius of each CVE?
+# 用例: 运行 5 个微服务，各有独立 SBOM。将各 SBOM 与 CVE KB 匹配后，
+# 得到 5 个匹配列表。哪些 CVE 影响全部 5 个服务？哪些仅影响一个？
+# 每个 CVE 的爆炸半径是多少？
 #
-# This module takes multiple match result sets (from build_sbom_report or
-# match_sbom) and computes cross-deployment statistics.
+# 本模块接收多个匹配结果集（来自 build_sbom_report 或 match_sbom），
+# 计算跨部署统计。
 
 from collections import defaultdict
 from typing import Dict, List, Optional, Set, Tuple, Any
@@ -16,25 +16,25 @@ from typing import Dict, List, Optional, Set, Tuple, Any
 def correlate_deployments(
     deployment_matches: Dict[str, List[Dict]],
 ) -> Dict[str, Any]:
-    """Correlate CVE matches across multiple deployments.
+    """跨多个部署关联 CVE 匹配。
 
-    deployment_matches: dict of deployment_name → list of match dicts.
-      Each match dict should have at minimum: cve_id, severity, component.
-      (Output from build_sbom_report()['matches'] works directly.)
+    deployment_matches: deployment_name → 匹配 dict 列表的映射。
+      每个匹配 dict 至少需包含: cve_id, severity, component。
+      （build_sbom_report()['matches'] 可直接使用。）
 
-    Returns {
+    返回 {
       deployments: {name: {cve_count, component_count, top_cves}},
-      intersection: {cve_ids present in ALL deployments},
-      union: {all unique cve_ids across all deployments},
-      blast_radius: [{cve_id, deployment_count, severity, ...}] sorted by radius desc,
+      intersection: {所有部署中均存在的 cve_ids},
+      union: {所有部署中唯一的 cve_ids 全集},
+      blast_radius: [{cve_id, deployment_count, severity, ...}] 按半径降序,
       by_severity: {CRITICAL: {intersection: [...], per_deployment: {...}}},
-      uniqueness: {cve_id: [deployments it appears in]} for single-deployment CVEs,
+      uniqueness: {cve_id: [所在部署列表]} 仅单部署 CVE,
     }
     """
     if not deployment_matches:
         return {"error": "no deployments provided", "deployments": {}}
 
-    # per-deployment stats
+    # 各部署统计
     dep_stats: Dict[str, Dict] = {}
     dep_cve_sets: Dict[str, Set[str]] = {}
     all_cves: Set[str] = set()
@@ -73,7 +73,7 @@ def correlate_deployments(
             ],
         }
 
-    # intersection: CVEs present in ALL deployments
+    # 交集: 所有部署中均存在的 CVE
     dep_names = list(dep_cve_sets.keys())
     if dep_names:
         intersection = dep_cve_sets[dep_names[0]].copy()
@@ -82,7 +82,7 @@ def correlate_deployments(
     else:
         intersection = set()
 
-    # blast radius: how many deployments each CVE affects
+    # 爆炸半径: 每个 CVE 影响的部署数
     cve_to_deps: Dict[str, List[str]] = defaultdict(list)
     for dep_name, cves in dep_cve_sets.items():
         for cid in cves:
@@ -90,7 +90,7 @@ def correlate_deployments(
 
     blast_radius: List[Dict] = []
     for cid, deps in cve_to_deps.items():
-        # find the max severity across all deployments
+        # 在所有部署中取最高严重程度
         max_sev = "UNKNOWN"
         max_score = None
         sev_order = {"CRITICAL": 5, "HIGH": 4, "MEDIUM": 3, "LOW": 2, "NONE": 1, "UNKNOWN": 0}
@@ -115,14 +115,14 @@ def correlate_deployments(
 
     blast_radius.sort(key=lambda x: (x["deployment_count"], sev_order.get(x["max_severity"], 0)), reverse=True)
 
-    # by severity breakdown
+    # 按严重程度分组
     by_severity: Dict[str, Dict] = {}
     for sev in ("CRITICAL", "HIGH", "MEDIUM", "LOW"):
         sev_cves = {cid for cid, br in zip(
             [b["cve_id"] for b in blast_radius],
             blast_radius,
         ) if br.get("max_severity") == sev} if False else set()
-        # rebuild properly
+        # 正确重建
         sev_cves = set()
         sev_per_dep: Dict[str, int] = defaultdict(int)
         for br in blast_radius:
@@ -137,7 +137,7 @@ def correlate_deployments(
             "per_deployment": dict(sev_per_dep),
         }
 
-    # uniqueness: CVEs that appear in exactly one deployment
+    # 唯一性: 仅出现在一个部署中的 CVE
     uniqueness = {
         cid: deps for cid, deps in cve_to_deps.items() if len(deps) == 1
     }
@@ -156,7 +156,7 @@ def correlate_deployments(
 
 
 def _build_overlap_matrix(dep_cve_sets: Dict[str, Set[str]]) -> List[Dict]:
-    """Build pairwise overlap matrix between deployments."""
+    """构建部署间两两重叠矩阵。"""
     names = sorted(dep_cve_sets.keys())
     matrix: List[Dict] = []
     for i, name_a in enumerate(names):
@@ -181,8 +181,8 @@ def _build_overlap_matrix(dep_cve_sets: Dict[str, Set[str]]) -> List[Dict]:
 def find_common_cves(
     *match_lists: List[Dict],
 ) -> List[str]:
-    """Find CVE IDs common to ALL provided match lists.
-    Convenience wrapper for the common case."""
+    """查找所有给定匹配列表中均存在的 CVE ID。
+    便捷包装，覆盖常见场景。"""
     if not match_lists:
         return []
 
@@ -197,7 +197,7 @@ def find_common_cves(
 
 
 def blast_radius_summary(correlation: Dict) -> str:
-    """Human-readable blast radius summary."""
+    """人类可读的爆炸半径摘要。"""
     br = correlation.get("blast_radius", [])
     if not br:
         return "No CVEs to correlate."
@@ -211,7 +211,7 @@ def blast_radius_summary(correlation: Dict) -> str:
         f"{intersection} CVEs affect ALL deployments (intersection)",
     ]
 
-    # top 3 blast radius
+    # 爆炸半径 top 3
     top3 = [b for b in br if b["deployment_count"] > 1][:3]
     if top3:
         lines.append("Top blast radius CVEs:")

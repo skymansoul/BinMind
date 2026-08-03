@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""secure_boot_checker — verify boot chain integrity.
+"""secure_boot_checker — 启动链完整性验证。
 
-ARM Trusted Firmware / U-Boot / Linux boot stages:
+ARM Trusted Firmware / U-Boot / Linux启动阶段：
   ROM -> SPL -> U-Boot -> Kernel
 
-Each stage is verified against a stored hash or signature.
-Reports tampering and matches bootloader versions against
-a database of known CVE-impacted releases.
+每个阶段以存储哈希或签名验证。
+报告篡改情况，并将bootloader版本与已知CVE数据库匹配。
 
-2026-07 新增: TCG 度量启动事件日志解析 + VFF 风格验证器函数 BB 模式检测。
-参考: "VFF: Precise Identification of Firmware Validator Functions Based on
-Basic Block Layout Patterns", Zenodo Jan 2026.
+2026.07新增：TCG度量启动事件日志解析 + VFF风格验证器函数BB模式检测。
+参考："VFF: Precise Identification of Firmware Validator Functions Based on
+Basic Block Layout Patterns", Zenodo Jan 2026。
 """
 
 import hashlib as _hl
@@ -82,7 +81,7 @@ _EVT_TYPES = {
     0x80000006: "EV_EFI_VARIABLE_AUTHORITY", 0x80000007: "EV_EFI_ACTION",
 }
 
-# VFF 风格: 启动验证器函数的 BB 布局模式 — 用于在固件中识别签名/哈希验证代码
+# VFF风格：启动验证器函数BB布局模式 — 识别固件中签名/哈希验证代码
 _VALIDATOR_BB_SIGS = [
     (b'\x00\x28', "cmp_r0_zero", "ARM Thumb compare-zero pattern in validator return"),
     (b'\x00\xf0\x00\x80', "memcmp_branch", "memcmp result conditional in signature check"),
@@ -93,7 +92,7 @@ _VALIDATOR_BB_SIGS = [
 
 
 def _detect_validator_bb(data: bytes) -> list[dict]:
-    """VFF 风格验证器基本块布局检测: 在二进制中定位签名校验函数"""
+    """VFF风格验证器BB布局检测：定位二进制中签名校验函数"""
     found = []
     for sig_bytes, tag, desc in _VALIDATOR_BB_SIGS:
         off = 0
@@ -209,7 +208,7 @@ def _parse_tcg_event_log(raw: bytes) -> list[dict]:
 
 
 class SecureBootChecker:
-    """Verify a boot stage chain: hash validation, version detection, CVE matching."""
+    """启动链验证：哈希校验、版本检测、CVE匹配。"""
 
     def __init__(self, chain_file: Optional[str] = None):
         self._chain: List[Dict[str, str]] = []
@@ -241,7 +240,7 @@ class SecureBootChecker:
                         for cve in self._check_known_vulnerabilities(stage, sv.version):
                             if cve not in report.vulnerabilities:
                                 report.vulnerabilities.append(cve)
-                    # VFF 验证器检测: 对每个阶段扫描签名/哈希验证函数
+                    # VFF验证器检测：各阶段扫描签名/哈希验证函数
                     report.validators_detected.extend(_detect_validator_bb(sample))
                 except OSError:
                     pass

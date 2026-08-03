@@ -1,12 +1,11 @@
-# 2026-07-23
-# spoofing — 进程伪造检测：Hollowing / Doppelganging / Token / PPID / RunPE
-# 检测策略：双层 —— API 模式匹配 (高置信度) + 字符串特征 (辅助验证)
-# PE section 不匹配检测需配合 binary_info 模块获取段信息
+# spoofing — 进程伪装检测：Hollowing / Doppelganging / Token / PPID / RunPE
+# 双层策略：API 导入模式匹配（主路径）+ 字符串特征（辅助交叉验证）
+# PE 节表异常检测依赖 binary_info 模块提供段元信息
 
 import re
 from typing import List, Dict, Tuple, Set
 
-# ---- 检测模式 ----
+# ---- 特征模式库 ----
 
 _PROCESS_HOLLOWING_APIS = [
     "CreateProcess", "NtUnmapViewOfSection", "ZwUnmapViewOfSection",
@@ -61,7 +60,7 @@ _RUNPE_STRINGS = [
 ]
 
 _PARENT_CHILD_ANOMALIES = [
-    # (suspicious_parent, suspicious_child)
+    # (可疑父进程, 可疑子进程)
     ("services.exe", "cmd.exe"),
     ("svchost.exe", "powershell.exe"),
     ("winlogon.exe", "cmd.exe"),
@@ -69,7 +68,7 @@ _PARENT_CHILD_ANOMALIES = [
     ("explorer.exe", "rundll32.exe"),
 ]
 
-# API 导入表 → 归一化集合
+# 导入表归一化：展开 DLL→函数映射，去除 ANSI/W 后缀，转小写
 def _norm_api(imports: dict) -> Set[str]:
     _r = set()
     for _dll, _funcs in imports.items():
@@ -79,6 +78,7 @@ def _norm_api(imports: dict) -> Set[str]:
     return _r
 
 
+# 字符串归一化：提取文本内容，转小写集合
 def _norm_strings(strings: list) -> Set[str]:
     _r = set()
     for _s in strings:
@@ -97,7 +97,7 @@ def detect_process_hollowing(imports: dict, strings: list, sections: list = None
     _resume = "resumethread" in _apis
     _conf = 0.25 * _unmap + 0.20 * _write + 0.15 * _resume + 0.10 * (_api_m / max(len(_PROCESS_HOLLOWING_APIS), 1))
     _conf += 0.10 * (_str_m / max(len(_PROCHOL_STRINGS), 1))
-    # section 不匹配检测
+    # 节表异常：压壳特征 / 非标准段名
     _s_anomaly = False
     if sections:
         _s_names = {s.get("name", "") if isinstance(s, dict) else str(s) for s in sections}

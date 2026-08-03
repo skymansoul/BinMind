@@ -1,5 +1,5 @@
-# behavior_tracer.py — dynamic API-call-sequence profiler
-# Categorises sequences into behaviour profiles: file, network, process, registry.
+# behavior_tracer.py：dynamic API-call-sequence profiler
+# Categorises sequences behaviour profiles: file, 网络, process, registry
 
 import re
 import json
@@ -78,11 +78,11 @@ CATEGORY_MAP = [
 ]
 
 _MALICIOUS_CHAINS = [
-    # RAT: network -> file -> process
+    # RAT: 网络 -> file -> process
     ([BehaviorCategory.NETWORK, BehaviorCategory.FILE_IO, BehaviorCategory.PROCESS], 0.9),
-    # dropper: file write + process create
+    # dropper: file 写入 + process 创建
     ([BehaviorCategory.FILE_IO, BehaviorCategory.PROCESS], 0.7),
-    # ransomware: file scan + crypto + file write
+    # ransomware: file scan + crypto + file 写入
     ([BehaviorCategory.FILE_IO, BehaviorCategory.CRYPTO, BehaviorCategory.FILE_IO], 0.95),
     # process injection: memory alloc + process + memory protect
     ([BehaviorCategory.MEMORY_MANIP, BehaviorCategory.PROCESS], 0.85),
@@ -105,7 +105,7 @@ class ApiCall:
         return f"<ApiCall {self.name}({len(self.args)} args)>"
 
 class TraceResult:
-    """Container returned after tracing a binary."""
+    """Container returned 追踪 a binary"""
     def __init__(self):
         self.calls = []
         self.categories_detected = BehaviorCategory.NONE
@@ -140,7 +140,7 @@ def _classify_single(api_name):
 
 
 def _extract_sequence_category(calls):
-    """Find the ordered sequence of unique behavior categories."""
+    """查找 ordered sequence unique behavior categories"""
     seen = set()
     seq = []
     for c in calls:
@@ -151,7 +151,7 @@ def _extract_sequence_category(calls):
 
 
 def _sliding_window_match(seq, pattern, window_len):
-    """Sliding-window partial-order match for malicious behavior."""
+    """Sliding-window partial-order match for malicious behavior"""
     pat_len = len(pattern)
     for start in range(len(seq) - pat_len + 1):
         window = seq[start:start + pat_len]
@@ -163,19 +163,19 @@ def _sliding_window_match(seq, pattern, window_len):
 # ── main tracer ────────────────────────────────────────────────────────────
 
 class BehaviorTracer:
-    """Dynamic API-call-sequence behaviour classifier."""
+    """Dynamic API-call-sequence behaviour 分类器"""
 
     def __init__(self, sensitivity=0.5):
         self.sensitivity = sensitivity
 
     def trace(self, binary):
-        """Trace API calls from binary or call list."""
+        """Trace API调用s binary or call list"""
         result = TraceResult()
 
         if isinstance(binary, list):
             calls = binary
         elif isinstance(binary, str):
-            # Try parsing as JSON trace log
+            # Try parsing JSON trace 记录
             try:
                 with open(binary, 'r') as fh:
                     raw = json.load(fh)
@@ -201,7 +201,7 @@ class BehaviorTracer:
         result.categories_detected = cat_flags
         result.behavior_summary = OrderedDict(cat_counts.most_common())
 
-        # Build timeline for visualization
+        # 构建 timeline for visualization
         n = len(calls)
         for i in range(min(n, 100)):
             result.timeline.append({
@@ -217,7 +217,7 @@ class BehaviorTracer:
             if _sliding_window_match(seq, pattern, len(pattern)):
                 max_score = max(max_score, weight)
 
-        # Bonus: detect anomalies (excessive registry + process in short window)
+        # Bonus: 检测 anomalies (excessive registry + process short window)
         proc_hits = cat_counts.get('process', 0)
         reg_hits = cat_counts.get('registry', 0)
         if proc_hits >= 3 and reg_hits >= 5:
@@ -238,18 +238,18 @@ class BehaviorTracer:
     # --- 新增: ATT&CK 战术映射 ---
     # 将行为分类映射到MITRE ATT&CK战术ID，支持后续威胁情报关联
     def map_to_attack_tactics(self, result: TraceResult) -> List[str]:
-        """将检测到的行为类别映射到MITRE ATT&CK战术ID。
-        例如: NETWORK + PROCESS + MEMORY_MANIP → T1055, T1059, T1574 等。"""
+        """将检测到的行为类别映射到MITRE ATT&CK战术ID
+        例如: 网络 + PROCESS + MEMORY_MANIP → T1055, T1059, T1574 等"""
         tactics = []
         cat = result.categories_detected
         if cat & BehaviorCategory.NETWORK:
-            tactics.extend(['TA0011'])  # Command and Control
+            tactics.extend(['TA0011'])  # Command Control
         if cat & BehaviorCategory.PROCESS:
             tactics.extend(['TA0002'])  # Execution
         if cat & BehaviorCategory.MEMORY_MANIP:
-            tactics.extend(['TA0004'])  # Privilege Escalation / TA0005 Defense Evasion
+            tactics.extend(['TA0004'])  # 权限提升 / TA0005 Defense Evasion
         if cat & BehaviorCategory.CRYPTO:
             tactics.extend(['TA0010'])  # Exfiltration (encryption before exfil)
         if cat & BehaviorCategory.REGISTRY:
-            tactics.extend(['TA0003'])  # Persistence
+            tactics.extend(['TA0003'])  # 持久化
         return list(set(tactics))

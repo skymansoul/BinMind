@@ -8,7 +8,7 @@ import shutil
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from modules.info_collect import (
+from modules.info.info_collect import (
     detect_language,
     get_language_specific_dangerous_functions,
     get_language_analysis_hints,

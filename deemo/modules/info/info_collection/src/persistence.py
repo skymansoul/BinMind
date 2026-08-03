@@ -1,12 +1,12 @@
-# 2026-07-22
-# persistence — 跨平台持久化检测：Windows / Linux / Mac
-# 每个平台按具体技术细分，用字符串 + API 双通道匹配
-# Windows 侧重注册表和服务，Linux 侧重 cron/systemd/rc
+# persistence — 跨平台持久化检测：Windows/Linux/Mac
+# 按平台→技术细分，覆盖注册表/服务/计划任务/cron/systemd/launchd 等
+# 字符串 + API 双通道，加权分定级
 
 import re
 from typing import List, Dict, Set
+from collections import OrderedDict
 
-# ===== Windows 持久化模式 =====
+# ===== Windows 持久化特征库 =====
 _WIN_REGISTRY_KEYS = [
     r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run",
     r"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Run",
@@ -59,7 +59,7 @@ _WIN_COM_HIJACK = [
     "TreatAs", "ProgID",
 ]
 
-# ===== Linux 持久化模式 =====
+# ===== Linux 持久化特征库 =====
 _LINUX_CRON_PATHS = [
     "/etc/crontab", "/etc/cron.d", "/var/spool/cron/crontabs",
     "/var/spool/cron", "/etc/cron.hourly", "/etc/cron.daily",
@@ -95,7 +95,7 @@ _LINUX_XDG_AUTOSTART = [
     ".desktop", "X-GNOME-Autostart",
 ]
 
-# ===== Mac 持久化模式 =====
+# ===== Mac 持久化特征库 =====
 _MAC_LAUNCHD_PATHS = [
     "~/Library/LaunchAgents", "/Library/LaunchAgents",
     "/Library/LaunchDaemons", "/System/Library/LaunchDaemons",
@@ -116,9 +116,8 @@ def _norm(s: str) -> str:
     return s.lower().replace('\\', '\\\\')
 
 
-# //// 各平台检测函数 ////
-
 def detect_windows_persistence(imports: dict, strings: list) -> dict:
+    """Windows 持久化：注册表Run键/服务/计划任务/WMI/COM劫持/BITS/AppInit。"""
     _results = []
     _joined = " ".join(
         (s[1] if isinstance(s, tuple) else s).lower()
@@ -129,7 +128,6 @@ def detect_windows_persistence(imports: dict, strings: list) -> dict:
         for _f in _funcs:
             _api_set.add(_f.lower())
 
-    # 注册表 Run key 检测
     _reg_hits = []
     for _key in _WIN_REGISTRY_KEYS:
         if _norm(_key) in _joined:
@@ -141,7 +139,6 @@ def detect_windows_persistence(imports: dict, strings: list) -> dict:
             "risk": "HIGH",
         })
 
-    # 服务
     _svc_api = sum(1 for a in _WIN_SERVICE_APIS if a.lower() in str(_api_set))
     _svc_str = sum(1 for s in _WIN_SERVICE_STRINGS if s.lower() in _joined)
     if _svc_api >= 2 or _svc_str >= 2:
@@ -151,7 +148,6 @@ def detect_windows_persistence(imports: dict, strings: list) -> dict:
             "risk": "MEDIUM",
         })
 
-    # Scheduled Tasks
     _task_api = sum(1 for a in _WIN_SCHEDULED_TASK_APIS if a.lower() in str(_api_set))
     _task_str = sum(1 for s in _WIN_SCHEDULED_TASK_STRINGS if s.lower() in _joined)
     if _task_api >= 1 or _task_str >= 1:
@@ -161,7 +157,6 @@ def detect_windows_persistence(imports: dict, strings: list) -> dict:
             "risk": "MEDIUM",
         })
 
-    # WMI 事件订阅
     _wmi_hits = [w for w in _WIN_WMI_PERSIST if w.lower() in _joined]
     if len(_wmi_hits) >= 2:
         _results.append({
@@ -170,7 +165,6 @@ def detect_windows_persistence(imports: dict, strings: list) -> dict:
             "risk": "HIGH",
         })
 
-    # Startup 文件夹
     if any(p.lower() in _joined for p in _WIN_STARTUP_FOLDER):
         _results.append({
             "type": "startup_folder",
@@ -178,7 +172,6 @@ def detect_windows_persistence(imports: dict, strings: list) -> dict:
             "risk": "MEDIUM",
         })
 
-    # COM 劫持
     _com_hits = sum(1 for c in _WIN_COM_HIJACK if c.lower() in _joined)
     if _com_hits >= 2:
         _results.append({
@@ -187,7 +180,6 @@ def detect_windows_persistence(imports: dict, strings: list) -> dict:
             "risk": "HIGH",
         })
 
-    # BITS 作业
     if "bits" in _joined and any(k in _joined for k in ["transfer", "job", "background"]):
         _results.append({
             "type": "bits_job",
@@ -195,7 +187,6 @@ def detect_windows_persistence(imports: dict, strings: list) -> dict:
             "risk": "MEDIUM",
         })
 
-    # AppInit_DLLs / Winlogon
     _appinit = any("appinit_dlls" in _joined for k in [""]) or "appinit" in _joined
     _winlogon = any("winlogon" in _joined and ("shell" in _joined or "userinit" in _joined))
     if _appinit or _winlogon:
@@ -215,13 +206,13 @@ def detect_windows_persistence(imports: dict, strings: list) -> dict:
 
 
 def detect_linux_persistence(imports: dict, strings: list) -> dict:
+    """Linux 持久化：cron/systemd/rc.local/shell RC/LD_PRELOAD/PAM/XDG。"""
     _results = []
     _joined = " ".join(
         (s[1] if isinstance(s, tuple) else s).lower()
         for s in strings
     )
 
-    # Cron 检测
     _cron_paths = sum(1 for p in _LINUX_CRON_PATHS if p.lower() in _joined)
     _cron_keywords = sum(1 for k in ["@reboot", "crontab", "cron job"] if k.lower() in _joined)
     if _cron_paths >= 1 or _cron_keywords >= 1:
@@ -231,7 +222,6 @@ def detect_linux_persistence(imports: dict, strings: list) -> dict:
             "risk": "MEDIUM" if _cron_keywords >= 2 else "LOW",
         })
 
-    # systemd
     _sysd = sum(1 for p in _LINUX_SYSTEMD_PATHS if p.lower() in _joined)
     if _sysd >= 1:
         _results.append({
@@ -240,7 +230,6 @@ def detect_linux_persistence(imports: dict, strings: list) -> dict:
             "risk": "MEDIUM",
         })
 
-    # rc.local / init.d
     _rc_hits = sum(1 for p in _LINUX_RC_PATHS if p.lower() in _joined)
     if _rc_hits >= 1:
         _results.append({
@@ -249,7 +238,6 @@ def detect_linux_persistence(imports: dict, strings: list) -> dict:
             "risk": "MEDIUM",
         })
 
-    # Shell 配置修改
     _shell_hits = sum(1 for p in _LINUX_SHELL_MODS if p.lower().replace('~', '') in _joined)
     if _shell_hits >= 1:
         _results.append({
@@ -258,7 +246,6 @@ def detect_linux_persistence(imports: dict, strings: list) -> dict:
             "risk": "LOW",
         })
 
-    # LD_PRELOAD
     if any(p.lower() in _joined for p in _LINUX_LD_PRELOAD):
         _results.append({
             "type": "ld_preload",
@@ -266,7 +253,6 @@ def detect_linux_persistence(imports: dict, strings: list) -> dict:
             "risk": "HIGH",
         })
 
-    # PAM 模块
     _pam_hits = sum(1 for p in _LINUX_PAM_MODS if p.lower() in _joined)
     if _pam_hits >= 2:
         _results.append({
@@ -275,7 +261,6 @@ def detect_linux_persistence(imports: dict, strings: list) -> dict:
             "risk": "HIGH",
         })
 
-    # XDG autostart
     if any(p.lower() in _joined for p in _LINUX_XDG_AUTOSTART):
         _results.append({
             "type": "xdg_autostart",
@@ -293,13 +278,13 @@ def detect_linux_persistence(imports: dict, strings: list) -> dict:
 
 
 def detect_mac_persistence(imports: dict, strings: list) -> dict:
+    """Mac 持久化：LaunchAgents/LaunchDaemons/Login Items/cron。"""
     _results = []
     _joined = " ".join(
         (s[1] if isinstance(s, tuple) else s).lower()
         for s in strings
     )
 
-    # launchd plists
     _launch = sum(1 for p in _MAC_LAUNCHD_PATHS if p.lower() in _joined)
     if _launch >= 1:
         _results.append({
@@ -308,7 +293,6 @@ def detect_mac_persistence(imports: dict, strings: list) -> dict:
             "risk": "MEDIUM",
         })
 
-    # Login Items
     _login = sum(1 for p in _MAC_LOGIN_ITEMS if p.lower() in _joined)
     if _login >= 1:
         _results.append({
@@ -317,7 +301,6 @@ def detect_mac_persistence(imports: dict, strings: list) -> dict:
             "risk": "LOW",
         })
 
-    # cron (Mac)
     _mcron = sum(1 for p in _MAC_CRON if p.lower() in _joined)
     if _mcron >= 1:
         _results.append({
@@ -335,11 +318,9 @@ def detect_mac_persistence(imports: dict, strings: list) -> dict:
     }
 
 
-# //// 统一入口 ////
 def detect_all(imports: dict, strings: list, sections: list = None) -> dict:
-    """跨平台持久化检测统一入口。
-
-    返回: { "windows": {...}, "linux": {...}, "mac": {...}, "overall_risk": str, "total_findings": int }
+    """三平台持久化统一检测入口。
+    取各平台最大风险分定级：>=6 CRITICAL, >=3 HIGH, >=1 MEDIUM, 其他 CLEAN。
     """
     _windows = detect_windows_persistence(imports, strings)
     _linux = detect_linux_persistence(imports, strings)

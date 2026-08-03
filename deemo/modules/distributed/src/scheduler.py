@@ -1,5 +1,4 @@
-# 2026-07-24
-# Cron 调度器 — 借鉴 Quartz/Airflow 的 cron 语义，但去掉框架依赖
+# Cron 调度器 — 借鉴 Quartz/Airflow 的 cron 语义，零框架依赖
 # CronExpr 五段式（分 时 日 月 星期），支持 step/range/list
 # next_match 用蛮力+步长法：不需要复杂的 cron 公式，按分钟递进探测
 #
@@ -9,6 +8,7 @@ from __future__ import annotations
 
 import time
 import json
+import re
 from dataclasses import dataclass, field
 from typing import Optional, Set
 
@@ -129,7 +129,7 @@ def parse_cron(expr: str) -> CronExpr:
 # //// 下一个匹配时间 ////
 
 def _month_days(year: int, month: int) -> int:
-    """某年某月的天数"""
+    # 某年某月的天数
     if month == 2:
         if (year % 4 == 0 and year % 100 != 0) or (year % 400 == 0):
             return 29
@@ -198,7 +198,6 @@ def every(spec: str) -> CronExpr:
     """
     total_minutes = 0.0
     remaining = spec.strip().lower()
-    import re
 
     for match in re.finditer(r'(\d+)([smhd])', remaining):
         val = int(match.group(1))

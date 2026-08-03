@@ -1,10 +1,8 @@
-# 2026-08-02
-# 内存访问模式分析器 — 检测模糊测试输入触发的内存安全问题
-# 通过分析程序在执行特定输入时的内存分配/访问模式，识别：
-#   1. 空间内存安全：缓冲区溢出（分配 N 字节但访问 N+K 偏移）
-#   2. 时间内存安全：use-after-free（访问已释放区域的地址）
-#   3. 分配异常：异常大的分配请求、整数溢出导致的过小分配
-#   4. 内存泄漏模式：持续增长的内存占用、无对应释放的分配
+# 通过分析程序在执行特定输入时的内存分配/访问模式，识别:
+#   1. 空间内存安全: 缓冲区溢出（分配N字节但访问N+K偏移）
+#   2. 时间内存安全: use-after-free（访问已释放区域的地址）
+#   3. 分配异常: 异常大的分配请求、整数溢出导致过小分配
+#   4. 内存泄漏模式: 持续增长的内存占用、无对应释放的分配
 # 参考:
 #   MemLock (ICSE 2020) — memory consumption guided fuzzing
 #   Cheng et al. 2023, "MemAIFuzz" — memory access pattern aware fuzzing
@@ -48,45 +46,46 @@ class MemoryViolation:
     detail: str
     alloc_record: Optional[AllocRecord] = None
     access_record: Optional[AccessRecord] = None
-    offset_violation: int = 0   # 违规的偏移量（用于 overflow）
+    offset_violation: int = 0   # 违规偏移量（用于overflow）
 
 
 class MemoryAccessPatternAnalyzer:
     """内存访问模式分析引擎。
 
     工作流:
-      1. record_alloc/record_free → 维护活跃分配集合
-      2. record_access → 对每次访问检查是否在合法范围内
-      3. analyze → 产出 MemoryViolation 列表
-      4. compute_memory_pressure → 评估当前内存压力值 [0, 1]
+      1. record_alloc/record_free -> 维护活跃分配集合
+      2. record_access -> 对每次访问检查是否在合法范围内
+      3. analyze -> 产出MemoryViolation列表
+      4. compute_memory_pressure -> 评估当前内存压力值 [0, 1]
 
     内存压力 = f(活跃分配数, 碎片化程度, 泄漏嫌疑),
-    高压力下应降低变异复杂度（AFL 的 -m 限制类比）。"""
+    高压力下应降低变异复杂度（AFL的-m限制类比）。
+    """
 
     def __init__(self, max_alloc_table: int = 16384):
         """
-        max_alloc_table: 同时追踪的最大分配数。超出后淘汰最旧的记录
-        （LRU 策略），用于控制长期 fuzzing 下的内存占用。
+        max_alloc_table: 同时追踪的最大分配数。超出后淘汰最旧记录
+        （LRU策略），用于控制长期fuzzing下的内存占用。
         """
         self._allocations: Dict[int, AllocRecord] = {}
-        self._active_allocs: Set[int] = set()    # 未释放的 allocation id
-        self._freed_addrs: Dict[int, float] = {}  # 已释放地址 → 释放时间
+        self._active_allocs: Set[int] = set()    # 未释放的allocation id
+        self._freed_addrs: Dict[int, float] = {}  # 已释放地址 -> 释放时间
         self._access_history: deque[AccessRecord] = deque(maxlen=256)
         self._violations: List[MemoryViolation] = []
         self._max_allocs = max_alloc_table
         self._alloc_counter = 0
         self._total_alloc_bytes = 0
         self._total_free_bytes = 0
-        # 内存泄漏追踪: 每 1000 次分配记录一次水位
+        # 内存泄漏追踪: 每1000次分配记录一次水位
         self._watermark_history: List[Tuple[float, int]] = []
 
-    # ---- 记录 API ----
+    # ---- 记录API ----
     def record_alloc(self, address: int, size: int,
                      alloc_site: str = "") -> int:
-        """记录一次内存分配。返回 alloc_id。"""
+        """记录一次内存分配。返回alloc_id。"""
         self._alloc_counter += 1
 
-        # LRU 淘汰
+        # LRU淘汰
         if len(self._allocations) >= self._max_allocs:
             self._evict_lru()
 
@@ -106,13 +105,13 @@ class MemoryAccessPatternAnalyzer:
         return alloc.alloc_id
 
     def record_free(self, alloc_id: int, free_site: str = "") -> bool:
-        """记录一次释放。若 alloc_id 已释放 → double free 违规。"""
+        """记录一次释放。若alloc_id已释放 -> double free违规。"""
         alloc = self._allocations.get(alloc_id)
         if alloc is None:
             return False
 
         if alloc.freed:
-            # double free 检测
+            # double free检测
             self._violations.append(MemoryViolation(
                 violation_type='double_free',
                 severity='high',
@@ -138,7 +137,7 @@ class MemoryAccessPatternAnalyzer:
             timestamp=time.time())
         self._access_history.append(access)
 
-        # 检查 1: 是否踩在已释放的内存上 (UAF)
+        # 检查1: 是否踩在已释放内存上 (UAF)
         for freed_addr, freed_time in list(self._freed_addrs.items()):
             if (freed_addr <= address < freed_addr + 4096
                     and time.time() - freed_time < 300.0):
@@ -151,14 +150,14 @@ class MemoryAccessPatternAnalyzer:
                 del self._freed_addrs[freed_addr]
                 break
 
-        # 检查 2: 是否在某个活跃分配的范围内越界
+        # 检查2: 是否在某个活跃分配范围内越界
         for alloc_id in list(self._active_allocs)[:128]:
             alloc = self._allocations.get(alloc_id)
             if alloc is None:
                 continue
             alloc_end = alloc.address + alloc.size
             access_end = address + size
-            # 部分重叠但不完全在分配内 → 可能溢出
+            # 部分重叠但不完全在分配内 -> 可能溢出
             if (address < alloc_end and access_end > alloc_end
                     and address >= alloc.address):
                 overflow = access_end - alloc_end
@@ -188,9 +187,9 @@ class MemoryAccessPatternAnalyzer:
         return list(self._violations)
 
     def _check_memory_leaks(self) -> None:
-        """检查内存泄漏：活跃分配中持续时间超过 5 分钟且无对应释放的。"""
+        """检查内存泄漏: 活跃分配中超过5分钟且无对应释放的。"""
         now = time.time()
-        stale_threshold = 300.0  # 5 分钟
+        stale_threshold = 300.0  # 5分钟
         leak_count = 0
         for alloc_id in self._active_allocs:
             alloc = self._allocations.get(alloc_id)
@@ -202,23 +201,24 @@ class MemoryAccessPatternAnalyzer:
             self._violations.append(MemoryViolation(
                 violation_type='memory_leak',
                 severity='medium',
-                detail=f'{leak_count} 个活跃分配超过 5 分钟未释放，'
-                       f'疑似内存泄漏'))
+                detail=f'{leak_count} 个活跃分配超过5分钟未释放，疑似内存泄漏'))
 
     def compute_memory_pressure(self) -> float:
         """计算内存压力值 [0, 1]。
-        压力 = 加权和(活跃分配数饱和比, 碎片率, 泄漏嫌疑比, 违规密度)"""
+
+        压力 = 加权和(活跃分配数饱和比, 碎片率, 泄漏嫌疑比, 违规密度)
+        """
         if not self._allocations:
             return 0.0
 
-        # 因子 1: 分配表饱和度
+        # 因子1: 分配表饱和度
         saturation = min(1.0, len(self._active_allocs) / self._max_allocs)
 
-        # 因子 2: 碎片率（已释放 vs 总分配）
+        # 因子2: 碎片率（已释放 vs 总分配）
         fragmentation = 1.0 - (self._total_free_bytes /
                                max(1, self._total_alloc_bytes))
 
-        # 因子 3: 泄漏嫌疑（水位持续上升）
+        # 因子3: 泄漏嫌疑（水位持续上升）
         leak_suspect = 0.0
         if len(self._watermark_history) >= 3:
             recent = self._watermark_history[-3:]
@@ -226,7 +226,7 @@ class MemoryAccessPatternAnalyzer:
                    for i in range(len(recent) - 1)):
                 leak_suspect = 0.7
 
-        # 因子 4: 违规密度（过去 256 次访问中的违规数）
+        # 因子4: 违规密度（过去256次访问中的违规数）
         violation_density = min(
             1.0, len(self._violations) / max(1, len(self._access_history)))
 
@@ -291,11 +291,12 @@ class MemoryAccessPatternAnalyzer:
 
 
 class AllocationPatternProfiler:
-    """分配模式分析：识别分配大小分布、常见的分配序列、
-    高频调用点等。喂入 fuzzer 的种子调度决策：对触发异常
-    分配模式的种子施加更多变异压力。
+    """分配模式分析: 识别分配大小分布、常见分配序列、高频调用点。
 
-    参考 MemLock (Wen et al. ICSE 2020) 的内存消耗建模。"""
+    喂入fuzzer种子调度决策: 对触发异常分配模式的种子施加更多变异压力。
+
+    参考MemLock (Wen et al. ICSE 2020)的内存消耗建模。
+    """
 
     def __init__(self):
         self._size_distribution: Dict[int, int] = defaultdict(int)
@@ -304,7 +305,7 @@ class AllocationPatternProfiler:
 
     def record_sequence(self, alloc_sizes: List[int],
                         alloc_sites: List[str]) -> None:
-        """记录一次分配序列（如单次 fuzz 输入引发的分配序列）。"""
+        """记录一次分配序列（如单次fuzz输入引发的分配序列）。"""
         for sz in alloc_sizes:
             self._size_distribution[sz] += 1
         for site in alloc_sites:
@@ -331,8 +332,10 @@ class AllocationPatternProfiler:
 
 def check_overflow_pattern(alloc_size: int, access_offset: int,
                            access_len: int) -> Optional[MemoryViolation]:
-    """独立校验：给定分配大小和访问范围，判断是否存在溢出。
-    不依赖内存地址，仅按语义判断。可用于静态分析结果的二次确认。"""
+    """独立校验: 给定分配大小和访问范围，判断是否存在溢出。
+
+    不依赖内存地址，仅按语义判断。可用于静态分析结果二次确认。
+    """
     if access_offset + access_len > alloc_size:
         overflow = access_offset + access_len - alloc_size
         return MemoryViolation(

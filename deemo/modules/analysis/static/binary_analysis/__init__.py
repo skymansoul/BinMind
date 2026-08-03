@@ -1,4 +1,4 @@
-# BinMind v0.5.0 — Protocol classes, timeout guards, compression, delta encoding
+# BinMind v0.5.0 — 协议 classes, timeout guards, 压缩, delta 编码
 import importlib,sys,os,uuid,hashlib,functools,atexit,threading as _t,signal as _sig,glob as _glob,gzip,lzma
 from typing import Any,Protocol,runtime_checkable
 
@@ -13,16 +13,16 @@ class _LazyLoader:
         if self._l is None: self._l=importlib.import_module(self._n)
         return self._l
 
-_LAZY_MODS={m:_LazyLoader(__package__+"."+m) for m in _ALL_MODS}
+_LAZY_MODS={m:_LazyLoader(__package__+"."+m) for m in _ALL_MODULES}
 def __getattr__(n):
     if n in _LAZY_MODS: return _LAZY_MODS[n]()
     raise AttributeError(f"module {__name__!r} has no attribute {n!r}")
-def list_modules(): return[{'name':m,'loaded':_LAZY_MODS[m]._l is not None}for m in _ALL_MODS]
+def list_modules(): return[{'name':m,'loaded':_LAZY_MODS[m]._l is not None}for m in _ALL_MODULES]
 
-# //// Plugin Protocol ////
+# //// Plugin 协议 ////
 @runtime_checkable
 class AnalysisPlugin(Protocol):
-    """插件接口协议: 所有动态加载的插件必须实现此接口。"""
+    """插件接口协议: 所有动态加载的插件必须实现此接口"""
     __version__:str
     def register_plugin(self)->dict: ...
     def analyze(self,filepath:str,**kwargs)->dict: ...
@@ -33,7 +33,7 @@ def init_trace(cid=None): c=cid or uuid.uuid4().hex[:12]; _tl.cid=c; _tl.st=__im
 def current_trace_id(): return getattr(_tl,'cid','000000000000')
 def trace_elapsed(): s=getattr(_tl,'st',0); return __import__('time').time()-s if s else 0.0
 
-# validation
+# 校验
 def validate_path(fn):
     @functools.wraps(fn)
     def w(fp,*a,**kw):
@@ -41,7 +41,7 @@ def validate_path(fn):
         return fn(fp,*a,**kw)
     return w
 
-# cache key
+# 缓存key
 def result_cache_key(bp,at):
     h=hashlib.sha256()
     try:
@@ -55,7 +55,7 @@ def register_cleanup(cb): _cbs.append(cb)
 def _run_cbs():
     for cb in reversed(_cbs):
         try: cb()
-        except: pass
+        except Exception: pass  # 修复: bare except → 异常
 atexit.register(_run_cbs)
 
 # signals
@@ -67,7 +67,7 @@ def _hs(sig,_f):
     _sd.set(); [cb()for cb in reversed(_sh)]; _run_cbs(); os._exit(0)
 for _sn in('SIGTERM','SIGINT'):
     try: _sig.signal(getattr(_sig,_sn),_hs)
-    except: pass
+    except Exception: pass  # 修复: bare except → 异常
 
 # features
 _ff={}
@@ -87,23 +87,23 @@ def all_counters():
 
 # //// Per-operation timeout guard ////
 class OpTimeout:
-    """操作超时守卫: 在with块内设置SIGALRM超时(仅Unix), 超时时抛出TimeoutError。"""
+    """操作超时守卫: 在with块内设置SIGALRM超时(仅Unix), 超时时抛出TimeoutError"""
     def __init__(self,seconds:float,label:str=''): self._s=seconds; self._lb=label
     def __enter__(self):
         if self._s<=0: return self
         try: _sig.signal(_sig.SIGALRM,lambda s,f:exec('raise TimeoutError(self._lb)'))
-        except: pass
+        except Exception: pass  # 修复: bare except → 异常
         try: _sig.alarm(int(self._s))
-        except: pass
+        except Exception: pass  # 修复: bare except → 异常
         return self
     def __exit__(self,*_):
         try: _sig.alarm(0)
-        except: pass
+        except Exception: pass  # 修复: bare except → 异常
         return False
 
-# //// Compression helpers ////
+# //// 压缩 辅助函数 ////
 def compress_json(data:dict,method:str='gz')->bytes:
-    """压缩JSON数据: 'gz'=gzip, 'xz'=lzma, 'none'=raw。"""
+    """压缩JSON数据: 'gz'=gzip, 'xz'=lzma, 'none'=raw"""
     raw=json.dumps(data,default=str).encode('utf-8')
     if method=='gz': return gzip.compress(raw,9)
     if method=='xz': return lzma.compress(raw)
@@ -113,9 +113,9 @@ def decompress_json(blob:bytes,method:str='gz')->dict:
     if method=='xz': return json.loads(lzma.decompress(blob).decode('utf-8'))
     return json.loads(blob.decode('utf-8'))
 
-# //// Delta encoding for diff results ////
+# //// Delta 编码 for diff results ////
 def delta_encode(prev:dict,curr:dict)->dict:
-    """对两个分析结果字典做delta编码: 只存储变更的键。"""
+    """对两个分析结果字典做delta编码: 只存储变更的键"""
     d={}
     all_keys=set(prev.keys())|set(curr.keys())
     for k in all_keys:
@@ -132,10 +132,10 @@ def check_compatibility()->dict:
     try:
         import subprocess; o=subprocess.run(['r2','-v'],capture_output=True,text=True,timeout=5)
         v=o.stdout.split()[1]if len(o.stdout.split())>1 else'0'; r['radare2']={'ok':v>=_MIN_VERSIONS['radare2'],'v':v}
-    except: r['radare2']={'ok':False,'v':'N/A'}
+    except (FileNotFoundError, subprocess.SubprocessError): r['radare2']={'ok':False,'v':'N/A'}  # 修复: bare except → subprocess errors
     for mod,mv in[('capstone','4.0.0'),('angr','9.0.0'),('z3','4.8.0')]:
         try: m=importlib.import_module(mod); mv2=getattr(m,'__version__',getattr(m,'VERSION','0')); r[mod]={'ok':str(mv2)>=mv,'v':str(mv2)}
-        except: r[mod]={'ok':False,'v':'N/A'}
+        except (ImportError, AttributeError): r[mod]={'ok':False,'v':'N/A'}  # 修复: bare except → ImportError
     return r
 def discover_plugins(pd=None)->list:
     if pd is None: pd=os.path.join(os.path.dirname(__file__),'plugins')
@@ -147,7 +147,7 @@ def discover_plugins(pd=None)->list:
             spec=importlib.util.spec_from_file_location(f"{__package__}.plugins.{nm}",fp)
             mod=importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
             if isinstance(mod,AnalysisPlugin): pl.append({'name':nm,'path':fp,'v':getattr(mod,'__version__','0.1.0'),'proto':True})
-        except: pass
+        except Exception: pass  # 修复: bare except → 异常
     return pl
 def layered_config(cli_args=None,env_prefix='BINMIND_')->dict:
     cfg={}

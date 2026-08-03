@@ -1,18 +1,15 @@
-# 2026-08-01 ~ 2026-08-25
-# GitHub Security Advisory (GHSA) integration.
-# GHSA entries complement NVD data — some advisories appear on GitHub days or
-# weeks before the NVD publishes them. The merge logic picks the best description
-# (longest non-empty) and combines references from both sources.
+# ~ 2026-08-25
+# GitHub Security Advisory (GHSA) 集成。
+# GHSA 条目补充 NVD 数据 — 部分公告在 GitHub 上比 NVD 发布早数天到数周。
+# 合并逻辑选取最佳描述（最长非空）并合并两源的参考链接。
 #
-# The source_confidence field was originally AFTER the return statement in
-# merge_entries() — classic error from editing near the end of a function.
-# Moved it before return.
+# source_confidence 字段原先在 merge_entries() 的 return 语句之后 —
+# 函数末尾编辑的典型错误。已移至 return 之前。
 #
-# Aug 24-25: finally implemented pagination via Link header parsing. the
-# GitHub API returns at most 100 per page and we were silently truncating.
-# also added description-based dedup for GHSA entries that don't have CVE IDs
-# (GHSA-only advisories like GHSA-xxxx-xxxx-xxxx). these can now be fuzzy-matched
-# against NVD entries by description overlap, not just CVE ID equality.
+# 8月24-25日: 最终通过 Link header 解析实现了分页。GitHub API 每页最多
+# 返回 100 条，之前静默截断。同时为无 CVE ID 的 GHSA 条目
+# (如 GHSA-xxxx-xxxx-xxxx) 增加了基于描述的重复检测。这些条目现可
+# 通过描述重叠而非仅 CVE ID 相等与 NVD 条目模糊匹配。
 
 import json
 import re
@@ -24,10 +21,10 @@ from typing import List, Dict, Optional, Any, Tuple
 
 from .cve_models import CVEEntry
 
-# GHSA API base
+# GHSA API 基础地址
 _GHSA_API_BASE = "https://api.github.com/advisories"
 
-# optional env var for github token (higher rate limit)
+# 可选环境变量用于 github token (更高速率限制)
 _GHSA_TOKEN = None
 try:
     import os
@@ -35,16 +32,16 @@ try:
 except Exception:
     pass
 
-# max pages to fetch — safety cap, real queries rarely go beyond page 20
+# 最大页数 — 安全上限，实际查询很少超过 20 页
 _MAX_PAGES = 50
 
-# delay between pages for rate limiting
-# 60 req/hr unauthenticated → 1 req/min. with token: 5000/hr → 0.72s delay
+# 页面间延迟用于速率限制
+# 无认证 60 次/小时 → 1 次/分钟。有 token: 5000/小时 → 0.72s 延迟
 _PAGE_DELAY = 1.0 if _GHSA_TOKEN is None else 0.8
 
 
-# ---- GHSA-specific severity mapping ----
-# GitHub uses their own levels — map to our Severity enum
+# ---- GHSA 特定严重程度映射 ----
+# GitHub 使用自己的等级 — 映射到我们的 Severity 枚举
 _GHSA_SEVERITY_MAP = {
     "LOW": "LOW",
     "MODERATE": "MEDIUM",
@@ -56,7 +53,7 @@ _GHSA_SEVERITY_MAP = {
 
 @dataclass
 class GHSAEntry:
-    """GitHub Security Advisory entry — similar to CVEEntry but GHSA-specific fields."""
+    """GitHub Security Advisory 条目 — 类似 CVEEntry 但含 GHSA 特定字段。"""
     ghsa_id: str
     cve_id: Optional[str] = None
     summary: str = ""
@@ -74,15 +71,15 @@ class GHSAEntry:
     ecosystem: str = ""
     package_name: str = ""
     source: str = "ghsa"
-    source_confidence: float = 0.8  # GHSA is usually high quality but not authoritative
+    source_confidence: float = 0.8  # GHSA 通常质量高但非权威来源
 
     @classmethod
     def from_ghsa_json(cls, data: Dict) -> "GHSAEntry":
-        """Parse a GHSA API response dict into a GHSAEntry."""
+        """解析 GHSA API 响应 dict 为 GHSAEntry。"""
         ghsa_id = data.get("ghsa_id", "")
         cve_id = data.get("cve_id") or None
 
-        # GitHub advisory has both summary and description
+        # GitHub advisory 同时有 summary 和 description
         summary = data.get("summary", "") or ""
         description = data.get("description", "") or ""
 
@@ -112,7 +109,7 @@ class GHSAEntry:
 
         vulnerabilities = data.get("vulnerabilities", [])
 
-        # extract ecosystem/package from first vulnerability
+        # 从首个 vulnerability 提取 ecosystem/package
         ecosystem = ""
         package_name = ""
         if vulnerabilities:
@@ -141,11 +138,11 @@ class GHSAEntry:
         )
 
     def to_cve_entry(self) -> Optional[CVEEntry]:
-        """Convert to CVEEntry format. Returns None if no CVE ID."""
+        """转换为 CVEEntry 格式。无 CVE ID 时返回 None。"""
         if not self.cve_id:
             return None
 
-        # prefer description over summary (description is usually more detailed)
+        # 优先 description 而非 summary（description 通常更详细）
         desc = self.description if self.description else self.summary
 
         return CVEEntry(
@@ -162,14 +159,14 @@ class GHSAEntry:
         )
 
 
-# ---- internal: parse github link header (rfc 5988) ----
-# github returns: <url>; rel="next", <url>; rel="last"
-# we need to extract the "next" url to walk pages
+# ---- 内部: 解析 github link header (RFC 5988) ----
+# github 返回: <url>; rel="next", <url>; rel="last"
+# 需提取 "next" url 以遍历页面
 _LINK_RE = re.compile(r'<([^>]+)>\s*;\s*rel="([^"]+)"')
 
 
 def _parse_next_link(link_header: str) -> Optional[str]:
-    """Extract 'next' URL from a GitHub Link header. Returns None if no next page."""
+    """从 GitHub Link header 提取 'next' URL。无下一页时返回 None。"""
     if not link_header:
         return None
     parts = link_header.split(",")
@@ -181,8 +178,8 @@ def _parse_next_link(link_header: str) -> Optional[str]:
 
 
 def _ghsa_request(url: str) -> Tuple[List[Dict], Optional[str]]:
-    """Make a single GHSA API request. Returns (items_list, next_url_or_None).
-    Uses GitHub token if available (higher rate limit)."""
+    """单次 GHSA API 请求。返回 (items_list, next_url_or_None)。
+    若可用则使用 GitHub token (更高速率限制)。"""
     headers = {
         "Accept": "application/vnd.github+json",
         "User-Agent": "BinMind-CVE/1.0",
@@ -200,19 +197,19 @@ def _ghsa_request(url: str) -> Tuple[List[Dict], Optional[str]]:
     return items, next_url
 
 
-# ---- search ----
+# ---- 搜索 ----
 def search_ghsa(
     query: str,
     ecosystem: Optional[str] = None,
     limit: int = 100,
     max_pages: int = _MAX_PAGES,
 ) -> List[GHSAEntry]:
-    """Search the GitHub Advisory Database with full pagination.
-    Walks Link headers to fetch all pages up to limit or max_pages.
-    Respects rate limits with a delay between page requests.
+    """搜索 GitHub Advisory Database，含完整分页。
+    遍历 Link headers 获取所有页面，直到 limit 或 max_pages。
+    页面间延迟以遵守速率限制。
 
-    max_pages caps the number of pages to fetch — safety valve.
-    limit is the total number of results desired (not per-page)."""
+    max_pages 限制获取页数 — 安全阀。
+    limit 是期望的结果总数（非每页数）。"""
     params_parts = [f"type=reviewed"]
 
     if query:
@@ -221,7 +218,7 @@ def search_ghsa(
     if ecosystem:
         params_parts.append(f"ecosystem={urllib.request.quote(ecosystem)}")
 
-    # per_page is always 100 (api max), use limit to control total
+    # per_page 始终为 100 (API 最大值)，使用 limit 控制总数
     params_parts.append("per_page=100")
 
     base_url = f"{_GHSA_API_BASE}?{'&'.join(params_parts)}"
@@ -248,16 +245,15 @@ def search_ghsa(
         pages_fetched += 1
         current_url = next_url
 
-        # stop if we have enough results
+        # 结果足够时停止
         if len(results) >= limit:
             break
 
     return results[:limit]
 
 
-# ---- search_advisories: search + optional nvd dedup ----
-# this is the main entry point for "find all advisories for ecosystem X
-# and merge them with what we already have in the KB"
+# ---- search_advisories: 搜索 + 可选 NVD 去重 ----
+# 主要入口: "查找生态系统 X 的所有公告并与 KB 已有数据合并"
 
 def search_and_dedup(
     kb,
@@ -265,25 +261,25 @@ def search_and_dedup(
     ecosystem: Optional[str] = None,
     limit: int = 200,
 ) -> Dict[str, Any]:
-    """Search GHSA, then dedup against KB using CVE ID + description overlap.
-    Returns:
+    """搜索 GHSA，然后通过 CVE ID + 描述重叠与 KB 去重。
+    返回:
       {merged: [...], ghsa_only: [...], nvd_only: [...], stats: {...}}
 
-    GHSA entries that have a CVE ID are matched 1:1 with KB entries.
-    GHSA entries WITHOUT a CVE ID are fuzzy-matched by description overlap
-    (>0.6 Jaccard on normalized tokens). Unmatched GHSA-only entries go
-    into ghsa_only for manual review.
+    有 CVE ID 的 GHSA 条目与 KB 条目 1:1 匹配。
+    无 CVE ID 的 GHSA 条目通过描述重叠模糊匹配
+    (归一化 token 的 Jaccard > 0.6)。未匹配的 GHSA 专有条目
+    放入 ghsa_only 供人工审核。
     """
     ghsa_entries = search_ghsa(query, ecosystem=ecosystem, limit=limit)
 
-    # get all KB entries matching the same query
+    # 获取匹配同一查询的所有 KB 条目
     kb_entries, _ = kb.search(query=query, limit=limit) if hasattr(kb, 'search') else ([], 0)
 
     merged: List[Dict] = []
     ghsa_only: List[Dict] = []
     matched_kb_ids: set = set()
 
-    # pass 1: match by CVE ID
+    # 第一遍: 按 CVE ID 匹配
     kb_by_cve: Dict[str, Any] = {}
     for e in kb_entries:
         cid = e.cve_id if hasattr(e, 'cve_id') else e.get('cve_id', '')
@@ -309,8 +305,8 @@ def search_and_dedup(
                 "permalink": ghsa.permalink,
             })
 
-    # pass 2: for GHSA-only entries (no CVE ID), try description overlap
-    # against unmatched KB entries. threshold tuned empirically.
+    # 第二遍: GHSA 专有条目 (无 CVE ID)，对未匹配的 KB 条目
+    # 尝试描述重叠。阈值经验调参。
     still_unmatched: List[Dict] = []
     for gonly in ghsa_only:
         if gonly["has_cve"]:
@@ -342,7 +338,7 @@ def search_and_dedup(
         else:
             still_unmatched.append(gonly)
 
-    # unmatched NVD entries
+    # 未匹配的 NVD 条目
     nvd_only = [
         e.cve_id if hasattr(e, 'cve_id') else e.get('cve_id', '')
         for e in kb_entries
@@ -363,15 +359,14 @@ def search_and_dedup(
     }
 
 
-# ---- description similarity for cross-source dedup ----
-# simple token overlap — not as fancy as the sbom matcher's _norm_name
-# but it doesn't need to be. we're comparing vulnerability descriptions,
-# not package names.
+# ---- 跨源去重的描述相似度 ----
+# 简单的 token 重叠 — 不如 SBOM 匹配器的 _norm_name 精细
+# 但无需那么精细。正在比较漏洞描述而非包名。
 
 def _desc_overlap(desc1: str, desc2: str) -> float:
-    """Jaccard similarity on word tokens from two descriptions.
-    Both are lowercased, split on non-alphanumeric, min 3 chars per token.
-    Returns 0.0–1.0."""
+    """两个描述词 token 的 Jaccard 相似度。
+    均转小写，按非字母数字分割，每 token 至少 3 字符。
+    返回 0.0–1.0。"""
     if not desc1 or not desc2:
         return 0.0
 
@@ -386,20 +381,20 @@ def _desc_overlap(desc1: str, desc2: str) -> float:
     return len(t1 & t2) / len(t1 | t2)
 
 
-# expose the raw paginated search under a different name
-# so existing callers of search_ghsa aren't affected
+# 以不同名称暴露原始分页搜索
+# 使 search_ghsa 的现有调用方不受影响
 fetch_ghsa_paginated = search_ghsa
 
 
-# ---- merge logic ----
+# ---- 合并逻辑 ----
 def merge_entries(ghsa_entry: GHSAEntry, nvd_entry: CVEEntry) -> CVEEntry:
-    """Merge GHSA and NVD data into a single CVEEntry.
-    Picks best description (longest non-empty), combines references.
-    source_confidence is set BEFORE the return — was originally unreachable
-    code after return, fixed by moving it up."""
-    # pick best description
-    # GHSA descriptions are often more detailed (with impact analysis)
-    # but NVD descriptions are more standardized
+    """将 GHSA 和 NVD 数据合并为单个 CVEEntry。
+    选取最佳描述（最长非空），合并参考链接。
+    source_confidence 在 return 之前设置 — 原本在 return 之后，
+    为不可达代码，修复为前移。"""
+    # 选取最佳描述
+    # GHSA 描述通常更详细（含影响分析）
+    # 但 NVD 描述更标准化
     nvd_desc = nvd_entry.description or ""
     ghsa_desc = ghsa_entry.description or ghsa_entry.summary or ""
 
@@ -410,16 +405,16 @@ def merge_entries(ghsa_entry: GHSAEntry, nvd_entry: CVEEntry) -> CVEEntry:
         description = nvd_desc
         desc_source = "nvd"
 
-    # combine references (dedup)
+    # 合并参考链接 (去重)
     refs = list(set(nvd_entry.references + ghsa_entry.references))
 
-    # pick best CVSS — prefer NVD (more authoritative) unless missing
+    # 选取最佳 CVSS — 优先 NVD (更权威)，除非缺失
     score = nvd_entry.cvss_score or ghsa_entry.cvss_score
     vector = nvd_entry.cvss_vector or ghsa_entry.cvss_vector
     severity = nvd_entry.severity if nvd_entry.severity != "UNKNOWN" else ghsa_entry.severity
 
-    # source_confidence: average of both sources, weighted toward NVD
-    # was originally after return — unreachable. Fixed by moving here.
+    # source_confidence: 两源平均，偏向 NVD
+    # 原本在 return 之后 — 不可达。修复为移动到此处。
     source_confidence = (nvd_entry.source_confidence * 0.6 + ghsa_entry.source_confidence * 0.4)
 
     merged = CVEEntry(
@@ -449,10 +444,10 @@ def cross_source_coverage(
     nvd_entries: List[CVEEntry],
     ghsa_entries: List[GHSAEntry],
 ) -> Dict[str, Any]:
-    """Quantify how much value GHSA adds on top of NVD alone.
-    Returns {only_nvd, only_ghsa, both, coverage_pct}."""
+    """量化 GHSA 在 NVD 基础上的增量价值。
+    返回 {only_nvd, only_ghsa, both, coverage_pct}。"""
     nvd_ids = {e.cve_id for e in nvd_entries}
-    # GHSA entries may not have CVE IDs (some are GHSA-only)
+    # GHSA 条目可能无 CVE ID (部分为 GHSA 专有)
     ghsa_cve_ids = {e.cve_id for e in ghsa_entries if e.cve_id}
 
     only_nvd = list(nvd_ids - ghsa_cve_ids)
@@ -472,21 +467,20 @@ def cross_source_coverage(
 
 
 def merge_with_confidence(entries_list: List[CVEEntry]) -> List[CVEEntry]:
-    """Annotate field provenance for debugging cross-source discrepancies.
-    Each entry's source_confidence is set based on which fields were populated.
-    This is useful when debugging why a merged entry picked one source's data
-    over another's."""
+    """为调试跨源差异标注字段来源。
+    每个条目的 source_confidence 根据填充的字段设置。
+    在调试合并条目为何选取某源而非另一源的数据时有帮助。"""
     for entry in entries_list:
-        # start with base confidence
+        # 从基础置信度开始
         confidence = entry.source_confidence
 
-        # if entry has NVD-quality metadata, boost confidence
+        # 若条目有 NVD 质量的元数据，提升置信度
         if entry.cvss_vector and entry.cvss_score is not None:
             confidence = max(confidence, 0.9)
         if entry.cwes:
             confidence = max(confidence, 0.85)
         if not entry.description:
-            confidence = 0.3  # no description = low quality
+            confidence = 0.3  # 无描述 = 低质量
 
         entry.source_confidence = min(confidence, 1.0)
 

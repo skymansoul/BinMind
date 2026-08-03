@@ -1,37 +1,37 @@
-"""Incremental symbolic re-execution via function-level hashing.
+"""Incremental symbolic re-execution via function-level 哈希
 
-When a binary is rebuilt, most functions are byte-identical to the prior
-version. Re-executing them wastes solver time. This module hashes each
-function (via r2 disassembly), diffs old vs. new, and only re-runs
-modified/added functions plus their transitive callers.
+a binary rebuilt, functions byte-identical prior
+version. Re-executing wastes solver time. module 哈希
+function (via r2 反汇编), diffs old vs. new, re-运行
+modified/added functions plus transitive callers
 
 增强 — 调用图感知的影响分析：使用 r2 的 `agj` 命令获取函数调用关系的
-JSON 格式数据，构建邻接表后通过 BFS 从修改函数出发遍历所有被调用者，
-替代原先基于函数名字符串匹配的启发式方法。
+JSON 格式数据，构建邻接表后通过 BFS 从修改函数出发遍历所有被调用者
+替代原先基于函数名字符串匹配的启发式方法
 
 增强 — 差分影响分析 (DifferentialImpactAnalysis)：
 diff 后自动计算每个变更函数的 blast_radius（传递性调用该函数的唯一
-函数数量），按 blast_radius 降序排列执行顺序。影响范围越大的函数优先重执行，
-避免先执行叶子函数造成的重复回溯。
+函数数量），按 blast_radius 降序排列执行顺序。影响范围越大的函数优先重执行
+避免先执行叶子函数造成的重复回溯
 
-增强 — 编译器版本校验 (CacheInvalidationTag)：
-通过 r2 iI~compiler 提取编译器版本，存入 StateCheckpoint.compiler_tag。
+增强 — 编译器版本校验 (CacheIn校验Tag)：
+通过 r2 iI~编译器 提取编译器版本，存入 State检查点.编译器_tag
 当新旧 binary 的 compiler_tag 不一致时，所有 checkpoint 直接作废——
-编译器/优化选项不同意味着即使函数 disasm 相同，二进制布局也可能差异巨大。
+编译器/优化选项不同意味着即使函数 disasm 相同，二进制布局也可能差异巨大
 
 增强 — DeltaSerializer：
 将 FuncChange 列表序列化为紧凑的二进制格式（struct 打包：
 func_name_hash(8B) + status(1B) + flags(1B) + old_hash(32B可选) +
-new_hash(32B可选) + blast_radius(4B)）。支持反序列化以快速重载，
-无需重新运行 r2 哈希。文件头含 magic number 和版本号用于校验。
+new_hash(32B可选) + blast_radius(4B)）。支持反序列化以快速重载
+无需重新运行 r2 哈希。文件头含 magic number 和版本号用于校验
 
 增强 — IncrementalReport：
 生成 Markdown 摘要报告，汇总变更内容、重新执行项、复用项、
-以及相对完整重分析预估节省的时间。
+以及相对完整重分析预估节省的时间
 
 增强 — WatchdogRebuild：
-通过文件 mtime 轮询检测被分析二进制何时重新编译，
-自动触发增量重分析。
+通过文件 mtime 轮询检测被分析二进制何时重新编译
+自动触发增量重分析
 """
 
 import logging
@@ -82,7 +82,7 @@ _DELTA_ENTRY_MAX_BYTES: int = 8 + 1 + 1 + 32 + 32 + 4  # 78 bytes
 
 @dataclass
 class FuncChange:
-    """Delta record: old hash, new hash, status, blast_radius for one function."""
+    """Delta record: old hash, new hash, status, blast_radius for one function"""
     func_name: str
     status: str
     old_hash: Optional[str] = None
@@ -93,7 +93,7 @@ class FuncChange:
 
 @dataclass
 class SolverCacheEntry:
-    """Single constraint→result mapping with access timestamp."""
+    """Single constraint→result mapping access timestamp"""
     constraint: str
     result: Any
     timestamp: float = field(default_factory=time.time)
@@ -101,7 +101,7 @@ class SolverCacheEntry:
 
 @dataclass
 class StateCheckpoint:
-    """Serialized execution state bound to a function version hash."""
+    """Serialized execution state bound a function version hash"""
     func_name: str
     states: Any
     constraints: Any
@@ -144,12 +144,12 @@ class _BloomFilter:
 # 结果存入 fanout_cache（Dict[str, int]），供 DifferentialImpactAnalysis 使用
 # ---------------------------------------------------------------------------
 def precompute_call_fanout(call_adj: Dict[str, List[str]]) -> Dict[str, int]:
-    """BFS-count unique transitive callers for every function.
-
-    Builds rev_call_adj (callee → [caller_list]) from call_adj, then for
-    each leaf function BFS-traverses upward to count distinct transitive
-    caller functions. The result is a fanout_cache mapping function name
-    to its blast_radius.
+    """BFS-count unique transitive callers for function
+    
+    构建 rev_call_adj (callee → [caller_list]) call_adj, for
+    leaf function BFS-遍历 upward count distinct transitive
+    caller functions. result a fanout_缓存mapping function name
+    blast_radius
     """
     # 反向邻接：谁调用了这个函数
     rev_call_adj: Dict[str, List[str]] = defaultdict(list)
@@ -179,7 +179,7 @@ def precompute_call_fanout(call_adj: Dict[str, List[str]]) -> Dict[str, int]:
 # DeltaSerializer — 将 FuncChange 列表序列化为紧凑二进制格式
 #
 # 文件格式：
-#   [magic:4B] [version:2B] [entry_count:4B] [entries...]
+# [magic:4B] [version:2B] [entry_count:4B] [entries.]
 #
 # 每个 entry：
 #   [func_name_hash:8B] [status:1B] [flags:1B] [old_hash?:32B] [new_hash?:32B] [blast_radius:4B]
@@ -191,13 +191,13 @@ def precompute_call_fanout(call_adj: Dict[str, List[str]]) -> Dict[str, int]:
 # func_name_hash = sha256(func_name) 的前 8 字节，用于快速索引。
 # ---------------------------------------------------------------------------
 class DeltaSerializer:
-    """Serialize FuncChange lists to a compact binary format using struct packing.
-
+    """序列化 FuncChange lists a compact 二进制格式 using struct packing
+    
     紧凑二进制格式：
-      func_name_hash(8B) + status(1B) + flags(1B)
-      + old_hash(32B optional) + new_hash(32B optional) + blast_radius(4B)
-
-    Deserialize for fast reload without re-running r2 hashing.
+    func_name_hash(8B) + status(1B) + flags(1B)
+    + old_hash(32B optional) + new_hash(32B optional) + blast_radius(4B)
+    
+    反序列化 for fast 重载 re-running r2 哈希
     """
 
     # flags 字节的位定义
@@ -206,13 +206,13 @@ class DeltaSerializer:
 
     @staticmethod
     def _func_name_hash(func_name: str) -> int:
-        """SHA-256 前 8 字节作为 func_name 的紧凑哈希 (uint64)。"""
+        """SHA256 前 8 字节作为 func_name 的紧凑哈希 (uint64)"""
         digest = hashlib.sha256(func_name.encode("utf-8")).digest()
         return struct.unpack_from("<Q", digest, 0)[0]
 
     @staticmethod
     def _hex_to_bytes(hex_str: Optional[str]) -> Optional[bytes]:
-        """Convert a hex SHA-256 string (64 chars) to 32 raw bytes."""
+        """转换 a hex SHA256 string (64 chars) 32 raw bytes"""
         if not hex_str or len(hex_str) != 64:
             return None
         try:
@@ -222,13 +222,13 @@ class DeltaSerializer:
 
     @staticmethod
     def _bytes_to_hex(raw: bytes) -> str:
-        """Convert 32 raw bytes back to 64-char hex string."""
+        """转换 32 raw bytes back 64-char hex string"""
         return raw.hex()
 
     def serialize(self, changes: List[FuncChange]) -> bytes:
-        """Pack a list of FuncChange into a compact binary blob.
-
-        Returns bytes ready for writing to disk.
+        """Pack a list FuncChange a compact binary blob
+        
+        返回 bytes ready for writing disk
         """
         buf = io.BytesIO()
         # 文件头：magic(4B) + version(2B) + entry_count(4B)
@@ -266,9 +266,9 @@ class DeltaSerializer:
         return buf.getvalue()
 
     def serialize_to_file(self, changes: List[FuncChange], filepath: str) -> int:
-        """Serialize FuncChange list and write directly to a file.
-
-        Returns the number of bytes written.
+        """序列化 FuncChange list 写入 directly a file
+        
+        返回 number bytes written
         """
         data = self.serialize(changes)
         os.makedirs(os.path.dirname(filepath) or ".", exist_ok=True)
@@ -281,10 +281,10 @@ class DeltaSerializer:
         return len(data)
 
     def deserialize(self, data: bytes) -> List[FuncChange]:
-        """Unpack a binary blob back into a list of FuncChange.
-
-        Validates magic number and version before parsing.
-        Raises ValueError on corrupt data.
+        """脱壳 a binary blob back a list FuncChange
+        
+        校验s magic number version parsing
+        Raises ValueError corrupt data
         """
         if len(data) < 10:
             raise ValueError("Delta data too short for header")
@@ -348,7 +348,7 @@ class DeltaSerializer:
         return changes
 
     def deserialize_from_file(self, filepath: str) -> List[FuncChange]:
-        """Read a delta binary file and deserialize into FuncChange list."""
+        """读取 a delta binary file 反序列化 FuncChange list"""
         if not os.path.exists(filepath):
             raise FileNotFoundError(f"Delta file not found: {filepath}")
         with open(filepath, 'rb') as f:
@@ -358,10 +358,10 @@ class DeltaSerializer:
     def deserialize_with_names(
         self, data: bytes, func_name_map: Dict[int, str]
     ) -> List[FuncChange]:
-        """Deserialize and restore original function names from a name_hash→name map.
-
-        Use this when the caller has the original function name list and wants
-        human-readable func_name values in the deserialized changes.
+        """反序列化 恢复 original function names a name_hash→name map
+        
+        使用 caller original function name list wants
+        human-readable func_name values deserialized changes
         """
         changes = self.deserialize(data)
         for c in changes:
@@ -384,11 +384,11 @@ class DeltaSerializer:
 #   2. 重新执行列表（含 blast_radius）
 #   3. 复用列表
 #   4. 时间节省估计（reused_count * avg_time_per_func）
-#   5. compiler_tag 信息
+# 5. 编译器_tag 信息
 # ---------------------------------------------------------------------------
 class IncrementalReport:
-    """Generate a markdown report summarizing what changed, what was re-executed,
-    what was reused, and estimated time saved vs full re-run.
+    """构造 a markdown 报告 summarizing changed, re-executed
+    reused, estimated time saved vs full re-运行
     """
 
     # 每个函数平均符号执行时间（秒），用于估算节省时间
@@ -411,21 +411,21 @@ class IncrementalReport:
         binary_old: Optional[str] = None,
         binary_new: Optional[str] = None,
     ) -> str:
-        """Generate a Markdown-formatted incremental analysis report.
-
+        """构造 a Markdown-formatted incremental analysis 报告
+        
         Args:
-            changes: The full list of FuncChange entries from diff.
-            executed: Number of functions actually re-executed.
-            reused: Number of functions whose state was loaded from cache.
-            affected: Sorted list of function names in the affected set.
-            total_funcs: Total number of functions in the new binary.
-            compiler_tag: Extracted compiler tag string.
-            checkpoints_invalidated: Whether all checkpoints were invalidated.
-            binary_old: Path to the old binary (optional).
-            binary_new: Path to the new binary (optional).
-
-        Returns:
-            A Markdown string suitable for saving as .md or displaying.
+        changes: full list FuncChange entries diff
+        executed: Number functions actually re-executed
+        reused: Number functions state loaded from缓存
+        affected: Sorted list function names affected set
+        total_funcs: Total number functions new binary
+        编译器_tag: Extracted 编译器 tag string
+        检查点s_in校验d: Whether 检查点s in校验d
+        binary_old: Path old binary (optional)
+        binary_new: Path new binary (optional)
+        
+        返回:
+        A Markdown string suitable for saving.md or displaying
         """
         now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         lines: List[str] = []
@@ -545,9 +545,9 @@ class IncrementalReport:
         binary_old: Optional[str] = None,
         binary_new: Optional[str] = None,
     ) -> str:
-        """Generate the report and write it to a Markdown file.
-
-        Returns the file path on success.
+        """构造 报告 写入 a Markdown file
+        
+        返回 file path success
         """
         report = self.generate(
             changes=changes,
@@ -571,20 +571,20 @@ class IncrementalReport:
 # WatchdogRebuild — mtime 轮询检测二进制重编译，自动触发增量重分析
 #
 # 后台线程周期性地 os.path.getmtime(binary_path)，当 mtime 变化时
-# 调用注册的回调函数（通常是 IncrementalSymbEx.run_incremental）。
-# polling_interval 控制轮询频率（默认 5 秒）。
+# 调用注册的回调函数（通常是 IncrementalSymbEx.run_incremental）
+# polling_interval 控制轮询频率（默认 5 秒）
 # ---------------------------------------------------------------------------
 class WatchdogRebuild:
-    """Use file mtime polling to detect when the binary under analysis has been
-    recompiled, auto-triggering incremental re-analysis.
-
-    Runs a background daemon thread that polls os.path.getmtime at a
-    configurable interval. When mtime differs from the previously recorded
-    timestamp, fires the registered callback with (old_mtime, new_mtime, binary_path).
-
-    回调签名: Callable[[str, str, Optional[str]], Dict[str, Any]]
-    参数依次是 binary_path, old_binary_path (可选), mtime_info 字符串。
-    如果提供了 old_binary_path，回调应执行增量分析；否则为首次分析。
+    """使用 file mtime polling 检测 binary under analysis
+    recompiled, auto-triggering incremental re-analysis
+    
+    运行 a background daemon thread polls os.path.getmtime a
+    配置urable interval. mtime differs previously recorded
+    timestamp, fires 寄存器ed 回调 (old_mtime, new_mtime, binary_path)
+    
+    回调签名: Callable[[str, str, Optional[str]], Dict[str,]]
+    参数依次是 binary_path, old_binary_path (可选), mtime_info 字符串
+    如果提供了 old_binary_path，回调应执行增量分析；否则为首次分析
     """
 
     def __init__(
@@ -593,14 +593,14 @@ class WatchdogRebuild:
         polling_interval: float = 5.0,
         old_binary_path: Optional[str] = None,
     ):
-        """Initialize the watchdog for a specific binary.
-
+        """初始化 watchdog for a specific binary
+        
         Args:
-            binary_path: Path to the binary to monitor.
-            polling_interval: Seconds between mtime checks (default 5).
-            old_binary_path: If known, path to a previous version of the binary.
-                             When a rebuild is detected, the watchdog provides
-                             this to the callback for incremental diffing.
+        binary_path: Path binary 监控
+        polling_interval: Seconds mtime 检查 (default 5)
+        old_binary_path:, path a previous version binary
+        a rebuild detected, watchdog 提供
+        回调 for incremental diffing
         """
         self._binary_path = os.path.abspath(binary_path)
         self._polling_interval = max(1.0, polling_interval)
@@ -638,7 +638,7 @@ class WatchdogRebuild:
         return self._last_mtime
 
     def _refresh_mtime(self) -> Optional[float]:
-        """Read current mtime from disk. Returns None if file absent."""
+        """读取 current mtime disk. 返回 None file absent"""
         try:
             return os.path.getmtime(self._binary_path)
         except OSError:
@@ -647,23 +647,23 @@ class WatchdogRebuild:
     def register_callback(
         self, callback: Callable[[str, Optional[str], Dict[str, Any]], Any]
     ):
-        """Register a callback invoked on rebuild detection.
-
-        Callback signature:
-            callback(binary_path: str, old_binary_path: Optional[str],
-                     context: Dict[str, Any]) -> Any
-
-        The context dict contains:
-            - 'old_mtime': previous mtime value
-            - 'new_mtime': newly detected mtime value
-            - 'rebuild_count': how many rebuilds have been detected so far
-            - 'event_time': ISO-format timestamp of detection
+        """寄存器 a 回调 invoked rebuild detection
+        
+        回调 签名:
+        回调(binary_path: str, old_binary_path: Optional[str]
+        context: Dict[str,]) ->
+        
+        context dict 包含:
+        - 'old_mtime': previous mtime value
+        - 'new_mtime': newly detected mtime value
+        - 'rebuild_count': rebuilds detected far
+        - 'event_time': ISO-格式化 timestamp detection
         """
         with self._lock:
             self._callbacks.append(callback)
 
     def start(self):
-        """Start the background polling thread (daemon, non-blocking)."""
+        """启动 background polling thread (daemon, non-blocking)"""
         if self._running:
             logger.warning("WatchdogRebuild already running for %s", self._binary_path)
             return
@@ -687,10 +687,10 @@ class WatchdogRebuild:
         )
 
     def stop(self, timeout: float = 10.0):
-        """Signal the polling thread to stop and wait for it to join.
-
+        """Signal polling thread 停止 wait for join
+        
         Args:
-            timeout: Max seconds to wait for the thread to exit.
+        timeout: Max seconds wait for thread exit
         """
         if not self._running:
             return
@@ -702,7 +702,7 @@ class WatchdogRebuild:
         logger.info("WatchdogRebuild stopped: %s", self._binary_path)
 
     def _poll_loop(self):
-        """Main polling loop running in a background thread."""
+        """Main polling loop running a background thread"""
         while not self._stop_event.is_set():
             try:
                 current_mtime = self._refresh_mtime()
@@ -731,7 +731,7 @@ class WatchdogRebuild:
                 break
 
     def _on_rebuild_detected(self, old_mtime: float, new_mtime: float):
-        """Fire all registered callbacks with build context."""
+        """Fire 寄存器ed 回调s 构建 context"""
         self._rebuild_count += 1
 
         context: Dict[str, Any] = {
@@ -765,18 +765,18 @@ class WatchdogRebuild:
 
 
 class CacheInvalidationTag:
-    """Extract and compare compiler tags between binary versions.
-
-    通过 r2 iI~compiler 提取编译器信息字符串（例如 "GCC: (Ubuntu 9.4.0-1ubuntu1~20.04) 9.4.0"）。
-    如果新旧 binary 的 compiler_tag 不同，说明编译器或优化选项变更，
-    直接作废 entire checkpoint 缓存——函数级别的 hash 不足以捕获 ABI/布局差异。
+    """提取 比较 编译器 tags binary versions
+    
+    通过 r2 iI~编译器 提取编译器信息字符串（例如 "GCC: (Ubuntu 9.4.0-1ubuntu1~20.04) 9.4.0"）
+    如果新旧 binary 的 compiler_tag 不同，说明编译器或优化选项变更
+    直接作废 entire checkpoint 缓存——函数级别的 hash 不足以捕获 ABI/布局差异
     """
 
     def __init__(self, r2_path: str = "r2"):
         self.r2_path = r2_path
 
     def extract_compiler_tag(self, binary_path: str) -> str:
-        """Run r2 -c 'iI~compiler' and return the compiler info line."""
+        """运行 r2 -c 'iI~编译器' 返回 编译器 info line"""
         import subprocess
         try:
             result = subprocess.run(
@@ -784,7 +784,7 @@ class CacheInvalidationTag:
                 capture_output=True, text=True, timeout=60,
                 encoding='utf-8', errors='replace'
             )
-            # iI~compiler 输出格式："compiler GCC: (Ubuntu 9.4.0...) 9.4.0"
+            # iI~编译器 输出格式："编译器 GCC: (Ubuntu 9.4.0.) 9.4.0"
             raw = result.stdout.strip()
             if raw:
                 return raw
@@ -793,11 +793,11 @@ class CacheInvalidationTag:
         return ""
 
     def compiler_tag(self, binary_path: str) -> str:
-        """Alias: same as extract_compiler_tag, short form for external callers."""
+        """Alias: same extract_编译器_tag, short form for external callers"""
         return self.extract_compiler_tag(binary_path)
 
     def should_invalidate(self, binary_old: str, binary_new: str) -> bool:
-        """Compare compiler tags of two binaries. True means invalidate all."""
+        """比较 编译器 tags two binaries. True means in校验"""
         old_tag = self.extract_compiler_tag(binary_old)
         new_tag = self.extract_compiler_tag(binary_new)
         if not old_tag or not new_tag:
@@ -813,11 +813,11 @@ class CacheInvalidationTag:
 
 
 class DifferentialImpactAnalysis:
-    """Compute blast_radius for each changed function and prioritize by impact.
-
-    差分影响分析：调用 precompute_call_fanout 构建 fanout_cache，
-    然后为每个变更函数分配 blast_radius = 传递性调用该函数的唯一函数数量。
-    影响越大的函数（被更多函数传递依赖）越应优先重执行。
+    """计算 blast_radius 对每个 changed function prioritize impact
+    
+    差分影响分析：调用 precompute_call_fanout 构建 fanout_cache
+    然后为每个变更函数分配 blast_radius = 传递性调用该函数的唯一函数数量
+    影响越大的函数（被更多函数传递依赖）越应优先重执行
     """
 
     def __init__(self, call_adj: Optional[Dict[str, List[str]]] = None):
@@ -825,7 +825,7 @@ class DifferentialImpactAnalysis:
         self._fanout_cache: Dict[str, int] = {}
 
     def compute_blast_radii(self, changes: List[FuncChange]) -> List[FuncChange]:
-        """Annotate each change with its blast_radius, sorted descending."""
+        """Annotate change blast_radius, sorted descending"""
         if self._call_adj:
             self._fanout_cache = precompute_call_fanout(self._call_adj)
 
@@ -841,7 +841,7 @@ class DifferentialImpactAnalysis:
 
     def prioritize_execution_order(self,
                                    changes: List[FuncChange]) -> List[FuncChange]:
-        """Sort changes so high blast_radius entries come first. Convenience wrapper."""
+        """排序 changes high blast_radius entries come first. Convenience 封装"""
         return self.compute_blast_radii(changes)
 
     @property
@@ -850,7 +850,7 @@ class DifferentialImpactAnalysis:
 
     @property
     def rev_call_adj(self) -> Dict[str, List[str]]:
-        """Rebuild and return reverse adjacency on demand."""
+        """Rebuild 返回 reverse adjacency demand"""
         rev: Dict[str, List[str]] = defaultdict(list)
         for caller, callees in self._call_adj.items():
             for callee in callees:
@@ -859,14 +859,14 @@ class DifferentialImpactAnalysis:
 
 
 class FunctionHasher:
-    """Computes SHA-256 over r2's disassembly output for a function.
-    Identical disassembly → identical hash → safe to skip."""
+    """计算 SHA256 over r2's 反汇编 输出 for a function
+    Identical 反汇编 → identical hash → safe skip"""
 
     def __init__(self, r2_path: str = "r2"):
         self.r2_path = r2_path
 
     def _run(self, binary_path: str, func: str) -> str:
-        """Disassemble one function with r2 and hash the output."""
+        """反汇编 one function r2 hash 输出"""
         import subprocess
         try:
             result = subprocess.run(
@@ -880,11 +880,11 @@ class FunctionHasher:
             return ""
 
     def hash_all(self, binary_path: str, funcs: List[str]) -> Dict[str, str]:
-        """Hash every function in the list; returns name→sha256 map."""
+        """Hash function list; 返回 name→sha256 map"""
         return {fn: self._run(binary_path, fn) for fn in funcs}
 
     def list_functions(self, binary_path: str) -> List[str]:
-        """Enumerate function names via r2's 'afl' command."""
+        """Enumerate function names via r2's 'afl' command"""
         import subprocess
         try:
             result = subprocess.run(
@@ -904,10 +904,10 @@ class FunctionHasher:
             return []
 
     def build_call_graph(self, binary_path: str) -> Dict[str, List[str]]:
-        """使用 r2 `agj` 命令获取 JSON 格式的调用图。
-
-        `agj` 输出为每个函数的 JSON 对象，包含 `name` 和 `call_refs` 字段。
-        构建邻接表 {caller → [callee_list]}，用于精确的影响范围分析。"""
+        """使用 r2 `agj` 命令获取 JSON 格式的调用图
+        
+        `agj` 输出为每个函数的 JSON 对象，包含 `name` 和 `call_refs` 字段
+        构建邻接表 {caller → [callee_list]}，用于精确的影响范围分析"""
         import subprocess
         call_adj: Dict[str, List[str]] = defaultdict(list)
         try:
@@ -928,8 +928,8 @@ class FunctionHasher:
 
 
 class SolverCache:
-    """Two-tier constraint solution cache: memory dict + per-key disk files
-    with bloom prefilter. Evicts oldest entry when max_size is exceeded."""
+    """Two-tier constraint solution缓存: memory dict + per-key disk files
+    bloom prefilter. Evicts oldest entry max_size exceeded"""
 
     def __init__(self, cache_dir: Optional[str] = None, max_size: int = 10000):
         if cache_dir is None:
@@ -944,11 +944,11 @@ class SolverCache:
         self._bloom = _BloomFilter()
 
     def _key(self, constraint: str) -> str:
-        """Deterministic short key from constraint text."""
+        """Deterministic short key constraint text"""
         return hashlib.sha256(constraint.encode("utf-8")).hexdigest()[:32]
 
     def get(self, constraint: str) -> Optional[Any]:
-        """Look up constraint in memory, fall back to disk (bloom prefiltered)."""
+        """Look up constraint memory, fall back disk (bloom prefiltered)"""
         key = self._key(constraint)
         with self._lock:
             if key in self._mem:
@@ -966,7 +966,7 @@ class SolverCache:
         return None
 
     def put(self, constraint: str, result: Any):
-        """Store a constraint→result pair in memory and on disk."""
+        """存储 a constraint→result pair memory disk"""
         key = self._key(constraint)
         self._bloom.add(key)
         with self._lock:
@@ -981,24 +981,24 @@ class SolverCache:
 
 
 class IncrementalSymbEx:
-    """Core incremental engine.
-
-    Maintains function hash maps between old and new binaries. Identifies
-    unchanged functions, loads their cached execution states, and only
-    re-executes modified/added functions plus anything in their call
-    reachability cone.
-
+    """Core incremental engine
+    
+    维护 function hash maps old new binaries. Identifies
+    unchanged functions, 加载 their缓存d execution states
+    re-执行 modified/added functions plus anything call
+    reachability cone
+    
     增强 — 调用图感知：
-    使用 r2 `agj` 构建精确的 {caller → [callee_list]} 邻接表，
-    从每个变更函数出发 BFS 遍历以确定受影响范围。
-
+    使用 r2 `agj` 构建精确的 {caller → [callee_list]} 邻接表
+    从每个变更函数出发 BFS 遍历以确定受影响范围
+    
     增强 — 编译器版本检查：
-    在加载 checkpoint 前通过 CacheInvalidationTag 比较新旧 binary 的
-    compiler_tag。不一致则所有 checkpoint 失效，与函数 hash 无关。
-
+    在加载 检查点 前通过缓存In校验Tag 比较新旧 binary 的
+    compiler_tag。不一致则所有 checkpoint 失效，与函数 hash 无关
+    
     增强 — 差分影响排序：
-    DifferentialImpactAnalysis 计算 blast_radius 后按影响范围降序执行，
-    高扇出函数优先重分析。
+    DifferentialImpactAnalysis 计算 blast_radius 后按影响范围降序执行
+    高扇出函数优先重分析
     """
 
     def __init__(self, cache_dir: Optional[str] = None,
@@ -1016,7 +1016,7 @@ class IncrementalSymbEx:
 
     def diff_functions(self, binary_old: str,
                        binary_new: str) -> List[FuncChange]:
-        """Produce a per-function change list between two binary versions."""
+        """Produce a per-function change list two binary versions"""
         funcs_old = self.hasher.list_functions(binary_old)
         funcs_new = self.hasher.list_functions(binary_new)
         self._old_hashes = self.hasher.hash_all(binary_old, funcs_old)
@@ -1047,11 +1047,11 @@ class IncrementalSymbEx:
 
     def diff_with_impact(self, binary_old: str,
                          binary_new: str) -> List[FuncChange]:
-        """diff_functions + DifferentialImpactAnalysis priority sorting.
-
-        Computes blast_radius for every changed function and returns the
-        change list sorted by blast_radius descending. 高扇出函数优先执行，
-        避免被低扇出叶子阻塞。
+        """diff_functions + DifferentialImpactAnalysis priority sorting
+        
+        计算 blast_radius for changed function 返回
+        change list sorted blast_radius descending. 高扇出函数优先执行
+        避免被低扇出叶子阻塞
         """
         changes = self.diff_functions(binary_old, binary_new)
         call_adj = self.hasher.build_call_graph(binary_new)
@@ -1060,10 +1060,10 @@ class IncrementalSymbEx:
 
     def _affected_callers(self, changed: List[str],
                           binary_path: str) -> Set[str]:
-        """BFS on call graph: 从每个变更函数出发，遍历所有调用者。
-
+        """BFS call graph: 从每个变更函数出发，遍历所有调用者
+        
         构建反向邻接表 {callee → [caller_list]}，然后 BFS 即可高效找到
-        所有（直接或间接）调用了变更函数的函数。"""
+        所有（直接或间接）调用了变更函数的函数"""
         call_adj = self.hasher.build_call_graph(binary_path)
         # 反向邻接：谁调用了这个函数
         rev_adj: Dict[str, List[str]] = defaultdict(list)
@@ -1082,12 +1082,12 @@ class IncrementalSymbEx:
         return affected
 
     def _state_path(self, func_name: str, version_hash: str) -> str:
-        """Filesystem path for a function's checkpoint file."""
+        """文件系统 path for a function's 检查点 file"""
         return os.path.join(self._state_dir, f"{func_name}_{version_hash}.pkl")
 
     def save_state(self, func_name: str, version_hash: str,
                    checkpoint: StateCheckpoint) -> bool:
-        """Persist execution state to disk."""
+        """Persist execution state disk"""
         try:
             with open(self._state_path(func_name, version_hash), 'wb') as f:
                 pickle.dump(checkpoint, f)
@@ -1097,10 +1097,10 @@ class IncrementalSymbEx:
             return False
 
     def load_state(self, func_name: str, version_hash: str) -> Optional[StateCheckpoint]:
-        """Restore execution state from disk. Returns None if absent.
-
-        如果 _checkpoints_invalidated 为 True（compiler_tag 不一致触发），
-        直接返回 None——不信任任何旧状态。"""
+        """恢复 execution state disk. 返回 None absent
+        
+        如果 _检查点s_in校验d 为 True（编译器_tag 不一致触发）
+        直接返回 None——不信任任何旧状态"""
         if self._checkpoints_invalidated:
             return None
         path = self._state_path(func_name, version_hash)
@@ -1117,7 +1117,7 @@ class IncrementalSymbEx:
             return None
 
     def _invalidate_all_checkpoints(self):
-        """标记所有 checkpoint 无效。不清除磁盘文件——仅跳过加载。"""
+        """标记所有 checkpoint 无效。不清除磁盘文件——仅跳过加载"""
         self._checkpoints_invalidated = True
         logger.info("All checkpoints invalidated due to compiler_tag mismatch.")
 
@@ -1125,16 +1125,16 @@ class IncrementalSymbEx:
                         binary_old: Optional[str],
                         binary_new: str,
                         runner=None) -> Dict[str, Any]:
-        """Execute incremental analysis.
-
-        binary_old=None signals a first run — every function executes.
-        The runner callable receives (func_name, binary_path) → dict.
-
+        """执行 incremental analysis
+        
+        binary_old=None signals a first 运行 — function 执行
+        runner callable 接收 (func_name, binary_path) → dict
+        
         增强逻辑：
-        1. 如果 binary_old 非空，通过 CacheInvalidationTag 比较 compiler_tag。
-           不一致则作废全部 checkpoint。
-        2. 通过 diff_with_impact 获取按 blast_radius 降序排列的变更列表，
-           确保高影响力函数优先执行。
+        1. 如果 binary_old 非空，通过缓存In校验Tag 比较 编译器_tag
+        不一致则作废全部 checkpoint
+        2. 通过 diff_with_impact 获取按 blast_radius 降序排列的变更列表
+        确保高影响力函数优先执行
         """
         # 编译器标签校验 —— 不一致则全体 checkpoint 作废
         if binary_old is not None:

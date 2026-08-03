@@ -1,18 +1,18 @@
-# 数据校验 — field-level + record-level validators
-# 不依赖 jsonschema/pydantic，因为数据格式不限于 JSON
-# IntegrityChecker 跑 SQL 查 orphaned records
-# 批量校验模式：一次验证多条记录，收集所有错误后统一返回
+# 数据校验 —— field-level + record-level validators
+# 不依赖 jsonschema/pydantic，数据格式不限于 JSON
+# IntegrityChecker 以 SQL 查询 orphaned records
+# 批量校验: 单次验证多条记录，聚合所有错误后统一返回
 #
-# CrossRecordValidator: 跨记录校验 — 检查记录间的时序一致性、
-# 路径唯一性、引用完整性等。与 RecordValidator 不同，它需要
-# 访问整个记录集而非单条记录。
+# CrossRecordValidator: 跨记录校验 —— 检查记录间时序一致性、
+# 路径唯一性、引用完整性等。与 RecordValidator 不同，
+# 需要访问整个记录集而非单条记录。
 
 from typing import Callable, List, Dict, Any, Optional
 import re
 
 
 def non_empty_string(value: Any) -> Optional[str]:
-    """校验非空字符串 — 空 bytes/list 也算无效。"""
+    """校验非空字符串 —— 空 bytes/list 视同无效。"""
     if value is None:
         return "value is None"
     if isinstance(value, str):
@@ -51,9 +51,9 @@ def valid_file_path(value: Any) -> Optional[str]:
 
 
 def time_range_validator(field: str, min_ts: float = 0, max_ts: float = None) -> Callable:
-    """工厂：创建时间戳范围校验函数 —— 检查 Unix epoch 是否在合理范围内。
+    """工厂: 创建时间戳范围校验函数 —— 检查 Unix epoch 处于合理区间。
 
-    min_ts 默认 0 (1970)，max_ts 默认当前时间 + 1 天（允许微小时钟偏差）。
+    min_ts 默认 0 (1970)，max_ts 默认当前时间 + 1 天（容忍微小偏差）。
     """
     import time
     _max = max_ts if max_ts is not None else time.time() + 86400
@@ -74,7 +74,7 @@ def time_range_validator(field: str, min_ts: float = 0, max_ts: float = None) ->
 
 
 class FieldValidator:
-    """字段级校验器 — 链式组合多个 check 函数。"""
+    """字段级校验器 —— 链式组合多个 check 函数。"""
 
     def __init__(self, field_name: str, required: bool = True):
         self.field = field_name
@@ -97,7 +97,7 @@ class FieldValidator:
 
 
 class RecordValidator:
-    """记录级校验器 — 多个 FieldValidator 组合 + 跨字段校验。"""
+    """记录级校验器 —— 多 FieldValidator 组合 + 跨字段校验。"""
 
     def __init__(self):
         self._fields: List[FieldValidator] = []
@@ -124,7 +124,7 @@ class RecordValidator:
         return errors
 
     def validate_batch(self, records: List[Dict[str, Any]]) -> Dict[int, List[str]]:
-        """批量校验：返回 {index: [errors]} 的映射，只包含有错误的记录。"""
+        """批量校验: 返回 {index: [errors]} 映射，仅含出错记录。"""
         result = {}
         for i, rec in enumerate(records):
             errs = self.validate(rec)
@@ -137,7 +137,7 @@ class CrossRecordValidator:
     """跨记录校验 —— 检查整个数据集的一致性约束。
 
     与 RecordValidator 逐条校验不同，CrossRecordValidator
-    做全局级别的检查：路径唯一性、sha256 唯一性、引用完整性等。
+    做全局级别检查: 路径唯一性、sha256 唯一性、引用完整性等。
     """
 
     def __init__(self):
@@ -159,7 +159,7 @@ class CrossRecordValidator:
 # 预置跨记录校验函数
 
 def check_path_uniqueness(records: List[Dict]) -> List[str]:
-    """检查 file_path 在记录集内唯一。"""
+    """file_path 在记录集内唯一性检查。"""
     seen = {}
     dups = []
     for i, r in enumerate(records):
@@ -172,7 +172,7 @@ def check_path_uniqueness(records: List[Dict]) -> List[str]:
 
 
 def check_sha256_uniqueness(records: List[Dict]) -> List[str]:
-    """检查 sha256 在记录集内唯一。"""
+    """sha256 在记录集内唯一性检查。"""
     seen = {}
     dups = []
     for i, r in enumerate(records):
@@ -185,7 +185,7 @@ def check_sha256_uniqueness(records: List[Dict]) -> List[str]:
 
 
 def signature_validator() -> RecordValidator:
-    """签名记录的标准校验器。"""
+    """签名记录标准校验器。"""
     rv = RecordValidator()
     rv.add_field(FieldValidator("sha256", required=True).add_check(sha256_hex))
     rv.add_field(FieldValidator("file_path", required=True).add_check(valid_file_path))
@@ -194,7 +194,7 @@ def signature_validator() -> RecordValidator:
 
 
 def cross_record_validator() -> CrossRecordValidator:
-    """签名数据集的跨记录校验器。"""
+    """签名数据集跨记录校验器。"""
     crv = CrossRecordValidator()
     crv.add_check(check_path_uniqueness)
     crv.add_check(check_sha256_uniqueness)
@@ -202,7 +202,7 @@ def cross_record_validator() -> CrossRecordValidator:
 
 
 class IntegrityChecker:
-    """完整性检查 — 对 DataDB 跑 SQL 查 orphaned records。
+    """完整性检查 —— 对 DataDB 执行 SQL 查询 orphaned records。
     生产环境建议配合定期 VACUUM + PRAGMA integrity_check。"""
 
     def __init__(self, db):

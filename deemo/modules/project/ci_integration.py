@@ -1,4 +1,4 @@
-"""CI/CD pipeline integration — XML report ingestion, severity weighting, exit-code mapping."""
+"""CI/CD管道集成: XML报告解析, 严重度加权, exit-code映射."""
 from __future__ import annotations
 import xml.etree.ElementTree as ET, json as _j, os, hashlib, time, abc
 from enum import Enum
@@ -29,7 +29,7 @@ class Finding:
 class CIResult:
     def __init__(self, passed=True, findings=None): self.passed = passed; self.findings: List[Finding] = findings or []
 
-# ABC-based report parser contract
+# ABC报告解析器契约
 class _BaseParser(abc.ABC):
     @abc.abstractmethod
     def parse(self, path: str) -> List[Finding]: ...

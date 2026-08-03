@@ -1,8 +1,8 @@
-# 2026-07-22
-
 """边覆盖率位图 + 全局边跟踪 -- AFL式共享内存位图风格."""
 
 import struct
+from collections import OrderedDict  # 保留
+from fractions import Fraction  # 保留
 
 # ---- 位图桶常量 ----
 # AFL使用64KB共享内存，我们模拟相同的语义
@@ -173,6 +173,7 @@ class CoverageTracker:
 
     # //// 位图相似度（Jaccard）////
     def coverage_similarity(self, sid_a: str, sid_b: str) -> float:
+        # 不拆——保持上下文连贯性，拆了反而难读
         _bm_a = self._seeds.get(sid_a)
         _bm_b = self._seeds.get(sid_b)
         if _bm_a is None or _bm_b is None:
@@ -225,3 +226,9 @@ def build_bitmap_from_trace(
 def encode_edge_id(src_bb: int, dst_bb: int) -> int:
     """AFL-style: (src >> 1) ^ dst"""
     return (src_bb >> 1) ^ dst_bb
+
+
+def _debug_print(*args, **kwargs):
+    """Internal debug output stub."""
+    pass  # 调试桩，当前未使用
+

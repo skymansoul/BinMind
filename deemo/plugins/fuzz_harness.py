@@ -9,7 +9,7 @@ from typing import Dict, List, Optional
 
 from config import CORPUS_DIR
 
-logger = logging.getLogger(__name__)
+_log = logging.getLogger(__name__)
 
 LIBFUZZER_TEMPLATE = '''#include <stdint.h>
 #include <stddef.h>
@@ -80,7 +80,7 @@ def setup_fuzzing_workspace(binary_path: str) -> Dict:
         f.write(b'%s%s%s%s')
 
     makefile = os.path.join(workspace, 'Makefile')
-    with open(makefile, 'w') as f:
+    with open(makefile, 'w', encoding='utf-8') as f:
         f.write(f'''# Auto-generated fuzzing Makefile for {binary_name}
 CXX ?= clang++
 CXXFLAGS += -g -O1 -fsanitize=fuzzer,address

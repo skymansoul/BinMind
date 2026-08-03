@@ -1,5 +1,4 @@
-# 2026-07-18
-# 排序指标核心 —— 所有实现纯numpy，零依赖，INTJ风格
+# 排序指标核心 -- 所有实现纯numpy，零依赖，INTJ风格
 # 设计哲学：每个函数独立可测，输入shape自推断，Multi-label原生支持
 
 import numpy as np
@@ -48,7 +47,7 @@ def mrr_score(y_true, y_pred_scores):
             _rr[_i] = 1.0 / _pos
         return float(np.mean(_rr))
 
-    # //// 多标签场景：每行是一个样本的binary relevance vector
+    # //// 多标签场景：每行是一个样本的binary 相关性 向量
     _n, _c = _t.shape
     _rr = np.zeros(_n, dtype=np.float64)
     for _i in range(_n):

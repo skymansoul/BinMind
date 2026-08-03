@@ -1,13 +1,12 @@
-# 2026-08-02
 # 崩溃聚类引擎 — 基于多维特征的崩溃相似度分析与自动分组
-# 核心: 对大量崩溃样本计算 pairwise 相似度矩阵，用层次聚类 (UPGMA)
-# 或 DBSCAN 将同类崩溃归组，大幅缩减人工 triage 工作量。
+# 核心: 对大量崩溃样本计算pairwise相似度矩阵，用层次聚类(UPGMA)
+# 或DBSCAN将同类崩溃归组，大幅缩减人工triage工作量。
 #
 # 聚类特征维度:
-#   F1: 信号号 + 崩溃类型 (categorical, exact match)
-#   F2: 栈帧签名 (top-3 frames 的模糊哈希)
-#   F3: 故障地址区域 (stack/heap/global/null 五分类)
-#   F4: Sanitizer 指纹 (ASan 第一行错误描述)
+#   F1: 信号号+崩溃类型 (categorical, exact match)
+#   F2: 栈帧签名 (top-3 frames模糊哈希)
+#   F3: 故障地址区域 (stack/heap/global/null五分类)
+#   F4: Sanitizer指纹 (ASan第一行错误描述)
 #   F5: 输入结构相似度 (MinHash / SimHash)
 #   F6: 执行时间轮廓 (快/中/慢/超时)
 #
@@ -54,22 +53,23 @@ class CrashCluster:
 
 
 class CrashClusterer:
-    """崩溃聚类器 — 层次聚类 (UPGMA) + 多维特征距离。
+    """崩溃聚类器 — 层次聚类(UPGMA)+多维特征距离。
 
-    距离度量: 加权 Jaccard × Manhattan 混合。
-    不使用单一特征（那会导致去重过度或不足），而是加权组合
-    6 个特征维度的归一化距离。
+    距离度量: 加权Jaccard x Manhattan混合。
+    不使用单一特征（会导致去重过度或不足），而是加权组合
+    6个特征维度的归一化距离。
 
     权重设计: 栈帧签名权重最高 (直接反映崩溃位置), sanitizer
-    指纹次之 (精确语义), 故障地址区域辅助, 输入相似度为弱信号。"""
+    指纹次之 (精确语义), 故障地址区域辅助, 输入相似度为弱信号。
+    """
 
     # 默认特征权重
     DEFAULT_WEIGHTS = {
-        'signal_type': 0.25,       # 信号 + 崩溃类型 (exact)
-        'stack_signature': 0.35,   # top-3 frames 模糊哈希
+        'signal_type': 0.25,       # 信号+崩溃类型 (exact)
+        'stack_signature': 0.35,   # top-3 frames模糊哈希
         'fault_region': 0.15,      # 故障地址区域
-        'sanitizer_line': 0.15,    # sanitizer 第一行
-        'input_similarity': 0.05,  # 输入 MinHash
+        'sanitizer_line': 0.15,    # sanitizer第一行
+        'input_similarity': 0.05,  # 输入MinHash
         'exec_profile': 0.05,      # 执行时间
     }
 
@@ -88,7 +88,7 @@ class CrashClusterer:
     # ---- 特征提取 ----
     @staticmethod
     def _stack_signature(frames: List[str]) -> str:
-        """top-3 帧的稳定签名：函数名 + 偏移模糊哈希。"""
+        """top-3帧的稳定签名: 函数名+偏移模糊哈希。"""
         top3 = frames[:3]
         if not top3:
             return "empty"
@@ -121,19 +121,19 @@ class CrashClusterer:
 
     @staticmethod
     def _input_minhash(data: bytes, num_hashes: int = 64) -> int:
-        """输入的 MinHash 签名 (64-bit)。"""
+        """输入的MinHash签名 (64-bit)。"""
         if not data:
             return 0
         min_vals = []
         chunk_size = max(1, len(data) // num_hashes)
-        for seed in range(4):  # 4 个哈希种子
+        for seed in range(4):  # 4个哈希种子
             h = float('inf')
             for i in range(0, len(data), chunk_size):
                 chunk = data[i:i + chunk_size]
                 val = zlib.crc32(chunk + struct.pack('B', seed))
                 h = min(h, val)
             min_vals.append(h)
-        # 合并为 64-bit
+        # 合并为64-bit
         result = 0
         for mv in min_vals:
             result = ((result << 16) ^ mv) & 0xFFFFFFFFFFFFFFFF
@@ -190,7 +190,8 @@ class CrashClusterer:
     # ---- 层次聚类 ----
     def cluster_upgma(self, threshold: float = 0.35) -> List[CrashCluster]:
         """UPGMA (Unweighted Pair Group Method with Arithmetic Mean):
-        自底向上合并最相似的簇，直到所有簇间距离 > threshold。"""
+        自底向上合并最相似的簇，直到所有簇间距离 > threshold。
+        """
         n = len(self._features)
         if n == 0:
             return []
@@ -233,11 +234,11 @@ class CrashClusterer:
                 break  # 停止合并
 
             ci, cj = merge_pair
-            # 合并 cj 到 ci
+            # 合并cj到ci
             clusters[ci].members.extend(clusters[cj].members)
             clusters[ci].size = len(clusters[ci].members)
             clusters[ci].cohesion = 1.0 - min_dist
-            # UPGMA: 新的簇间距离 = 两簇成员距离的算术平均
+            # UPGMA: 新簇间距离=两簇成员距离的算术平均
             merged_members = clusters[ci].members
             for k in active:
                 if k == ci or k == cj:
@@ -318,7 +319,7 @@ import struct as _struct
 
 def quick_crash_cluster(crash_records: List[Dict[str, Any]],
                         threshold: float = 0.35) -> List[CrashCluster]:
-    """从 crash record 字典列表快速执行聚类。"""
+    """从crash record字典列表快速执行聚类。"""
     clusterer = CrashClusterer()
     for rec in crash_records:
         cf = CrashFeature(

@@ -107,7 +107,7 @@ def _decompile_ghidra(binary_path: str, func_name: str) -> Optional[Dict]:
             # read output from script
             out_file = os.path.join(tmpdir, f'{func_name}.c')
             if os.path.isfile(out_file):
-                with open(out_file) as fh:
+                with open(out_file, encoding='utf-8') as fh:
                     return {'pseudocode': fh.read(), 'source': 'ghidra'}
     except Exception:
         pass
@@ -165,9 +165,10 @@ Report vulnerabilities as JSON."""
         response = query_llm(
             system=_AI_SYSTEM_PROMPT,
             user=user_prompt,
-            model=None,  # use default
+            model=None,
             temperature=0.3,
         )
+        # logger.debug("raw LLM response for %s: %s", func_name, response[:500])
         # try to extract JSON from response
         json_match = re.search(r'\{[\s\S]*\}', response)
         if json_match:

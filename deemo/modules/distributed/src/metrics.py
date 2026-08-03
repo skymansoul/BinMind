@@ -1,9 +1,8 @@
-# 2026-07-31
 # Prometheus 格式指标 — 不依赖 prometheus_client，自研精简实现
-# 参考 OpenMetrics 规范: HELP/TYPE 行 + metric line + 后缀
-# Counter/Gauge/Histogram 覆盖 80% 场景，复杂指标走 registry 扩展
+# 遵循 OpenMetrics 规范: HELP/TYPE 行 + metric line + 后缀
+# Counter/Gauge/Histogram 覆盖常用场景，复杂指标通过 registry 扩展
 #
-# 扩展：Summary 类型 — 客户端分位数计算，适合 latency 统计
+# 扩展：Summary 类型 — 客户端分位数计算，适配 latency 统计
 
 from __future__ import annotations
 
@@ -12,7 +11,7 @@ import math
 from typing import Optional, Dict, List
 
 
-# ===== 基类 =====
+# ===== 指标基类 =====
 
 class Metric:
     __slots__ = ('name', 'help_text', 'type_str', '_labels')
@@ -34,10 +33,10 @@ class Metric:
         return "{" + ", ".join(parts) + "}"
 
 
-# ===== Counter =====
+# ===== 累加计数器 =====
 
 class Counter(Metric):
-    """只增不减的计数器"""
+    """只增不减的单调计数器"""
 
     __slots__ = ('_value', '_lock')
 
@@ -57,10 +56,10 @@ class Counter(Metric):
             return self._value
 
 
-# ===== Gauge =====
+# ===== 瞬时值仪表盘 =====
 
 class Gauge(Metric):
-    """可增可减的瞬时值"""
+    """可增可减的瞬时值度量"""
 
     __slots__ = ('_value', '_lock')
 
@@ -88,10 +87,10 @@ class Gauge(Metric):
             return self._value
 
 
-# ===== Histogram =====
+# ===== 直方图 =====
 
 class Histogram(Metric):
-    """直方图 — 预定义 buckets + _sum/_count"""
+    """预定义桶的直方图 — 输出 _bucket/_sum/_count 序列"""
 
     __slots__ = ('_buckets', '_count', '_sum', '_lock')
 
@@ -123,7 +122,7 @@ class Histogram(Metric):
         return sorted(self._buckets.keys())
 
     def quantile(self, q: float) -> float:
-        """估算分位数（基于桶的线性插值）。q in [0, 1]"""
+        """基于桶边界的线性插值估算分位数。q ∈ [0, 1]"""
         if q < 0 or q > 1:
             raise ValueError("quantile must be between 0 and 1")
         with self._lock:
@@ -138,12 +137,12 @@ class Histogram(Metric):
             return sorted(self._buckets.keys())[-1]
 
 
-# ===== Summary =====
+# ===== 客户端分位数摘要 =====
 
 class Summary(Metric):
-    """客户端分位数摘要 — 存储原始值列表，在 scrape 时计算分位数。
+    """客户端分位数摘要 — 存储原始值列表，抓取时计算分位数。
 
-    量化精度随样本数增长。内存占用 O(samples)，不适合无限增长，
+    量化精度随样本数增长。内存 O(samples)，不适合无限累积，
     建议配合 max_age 定期重置。
     """
 
@@ -166,7 +165,7 @@ class Summary(Metric):
             self._sum += value
 
     def quantiles(self) -> Dict[float, float]:
-        """计算所有预定义分位数。"""
+        """计算全部预定义分位数并返回。"""
         with self._lock:
             if not self._values:
                 return {q: 0.0 for q in self._quantiles}
@@ -187,10 +186,10 @@ class Summary(Metric):
         return self._sum
 
 
-# ===== Registry =====
+# ===== 全局注册表 =====
 
 class Registry:
-    """全局指标注册表 — 线程安全"""
+    """指标注册表 — 线程安全的全局指标容器"""
 
     def __init__(self):
         self._metrics: Dict[str, Metric] = {}
@@ -212,11 +211,11 @@ class Registry:
             return list(self._metrics.values())
 
 
-# 全局单例
+# 全局默认注册表单例
 _default_registry = Registry()
 
 
-# ===== Prometheus Text 输出 =====
+# ===== Prometheus 文本序列化 =====
 
 def _prometheus_text(registry: Registry = None) -> str:
     """生成 Prometheus exposition 格式文本。
@@ -236,12 +235,12 @@ def _prometheus_text(registry: Registry = None) -> str:
         seen.add(metric.name)
         label = metric._label_str()
 
-        # HELP / TYPE
+        # HELP / TYPE 头部
         lines.append(f"# HELP {metric.name} {metric.help_text or metric.name}")
         lines.append(f"# TYPE {metric.name} {metric.type_str}")
 
         if isinstance(metric, Histogram):
-            # 每个 bucket 一行
+            # 逐桶输出
             for boundary in sorted(metric._buckets.keys()):
                 b_label = f'le="{_format_boundary(boundary)}"'
                 if not label:
@@ -251,7 +250,7 @@ def _prometheus_text(registry: Registry = None) -> str:
                 lines.append(
                     f"{metric.name}_bucket{full} {metric._buckets[boundary]}"
                 )
-            # _sum, _count
+            # _sum, _count 后缀行
             lines.append(f"{metric.name}_sum{label} {metric._sum}")
             lines.append(f"{metric.name}_count{label} {metric._count}")
         elif isinstance(metric, Summary):

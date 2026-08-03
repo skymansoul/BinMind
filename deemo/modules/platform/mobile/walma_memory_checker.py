@@ -1,13 +1,12 @@
-# 2026-08-02
-# Walma: 学习识别 WebAssembly 内存损坏
-# 参考:
+# Walma: WASM 内存损坏视觉检测
+# 文献:
 #   "Walma: Learning to See Memory Corruption in WebAssembly"
-#    (arXiv 2603.24167, Mar 2026)
-#    方法: 将 WASM 线性内存表示为 2D heatmap → CNN 识别 4 类内存损坏模式
-#    类型: (1) linear overflow (2) UAF (3) type confusion (4) uninitialized read
-#    F1=0.91 (超过 ASan 在 WASM 上的 0.74)
+#    (arXiv 2603.24167, 2026.03)
+#    途径: WASM 线性内存 → 2D heatmap → CNN 四类损坏分类
+#    类型: (1) 线性溢出 (2) UAF (3) 类型混淆 (4) 未初始化读取
+#    F1=0.91 (相较 ASan 在 WASM 上的 0.74)
 #   "Wemby's Web: Hunting for Memory Corruption in WebAssembly"
-#    (ISSTA 2025) — 互补的 fuzzing 方法, 使用语法感知变异
+#    (ISSTA 2025) — 互补模糊测试方案, 语法感知变异
 
 import os
 import struct
@@ -19,13 +18,13 @@ from collections import Counter
 
 logger = logging.getLogger(__name__)
 
-# WASM 内存布局特征 — 用于构建 2D heatmap 输入
-# 每个线性内存页 (64KB) 转换为一个 64x64 的网格单元，
-# 每个单元的"温度"编码该地址范围的访问频率、类型和有效性
+# WASM 内存布局: 构建 2D heatmap 输入
+# 每个线性内存页 (64KB) 投影为 64x64 网格,
+# 单元"温度"编码该地址段的访问频次、类型、有效性
 _MEMORY_PAGE_SIZE = 65536    # 64KB
-_HEATMAP_DIM = 64            # 64x64 网格 → 4096 特征像素
+_HEATMAP_DIM = 64            # 64x64 网格, 4096 特征像素
 
-# Walma 定义的 4 类内存损坏模式 — 在 heatmap 上的视觉特征
+# Walma 四类内存损坏: heatmap 视觉特征定义
 _CORRUPTION_SIGNATURES = {
     "linear_overflow": {
         "description": "写入超出分配区域的连续内存溢出",
@@ -56,7 +55,7 @@ _CORRUPTION_SIGNATURES = {
 
 @dataclass
 class MemoryHeatmap:
-    """WASM 线性内存的 2D 热度图表示。"""
+    """WASM 线性内存 2D heatmap 表示。"""
     grid: list[list[float]] = field(default_factory=list)  # 64x64
     access_count: int = 0
     write_count: int = 0
@@ -77,15 +76,15 @@ class MemoryCorruptionFinding:
 
 
 class WalmaMemoryChecker:
-    """Walma 风格的 WASM 内存损坏检测器 (arXiv 2603.24167)。
+    """Walma 范式 WASM 内存损坏检测 (arXiv 2603.24167)。
 
-    不依赖 runtime instrumentation (ASan 需要重新编译)，
-    而是将 WASM 线性内存的访问模式建模为 2D heatmap，
-    通过 CNN 启发的 pattern matching 检测 4 类内存损坏。
+    无需 runtime instrumentation (ASan 依赖重编译),
+    将 WASM 线性内存访问序列建模为 2D heatmap,
+    基于 CNN 启发的模式匹配识别四类内存损坏。
 
-    输入: WASM 模块的运行时内存访问轨迹
+    输入: WASM 模块运行时内存访问轨迹
     格式: [(addr, size, access_type, timestamp), ...]
-    其中 access_type = 0(read) | 1(write) | 2(alloc) | 3(free)
+    access_type: 0=读 | 1=写 | 2=分配 | 3=释放
     """
 
     def __init__(self, memory_trace: list[tuple] | None = None,
@@ -99,11 +98,11 @@ class WalmaMemoryChecker:
         self._trace.extend(trace)
 
     def build_heatmaps(self) -> list[MemoryHeatmap]:
-        """Step 1: 将内存访问轨迹转换为 2D heatmap。
+        """阶段1: 内存访问轨迹 → 2D heatmap。
 
-        每页 (64KB) 映射到一个 64x64 网格。
-        每个网格单元 (cell) 对应 16 字节的内存区域。
-        单元的"温度" = 该 16B 区域内访问事件的加权和:
+        每页 64KB 映射为 64x64 网格。
+        每个 cell 覆盖 16 字节内存。
+        cell 温度 = 该 16B 区域内访问事件加权累加:
         write=+2.0, read=+1.0, alloc=+3.0, free=-5.0
         """
         self._heatmaps = []
@@ -143,7 +142,7 @@ class WalmaMemoryChecker:
 
     def _find_hotspots(self, grid: list[list[float]],
                        page: int) -> list[tuple[int, int, float]]:
-        """找出热量最高的前 5 个区域。"""
+        """提取热量最高的 TOP-5 区域。"""
         cells = []
         for r in range(_HEATMAP_DIM):
             for c in range(_HEATMAP_DIM):
@@ -154,13 +153,13 @@ class WalmaMemoryChecker:
         return [(r + page * _HEATMAP_DIM, c, v) for r, c, v in cells[:5]]
 
     def detect_corruptions(self) -> list[MemoryCorruptionFinding]:
-        """Step 2: 在 heatmap 上检测 4 类内存损坏模式。
+        """阶段2: heatmap 四类损坏模式检测。
 
-        检测策略基于 arXiv 2603.24167 Section 4 的模式定义:
-        - linear_overflow: 页边界处连续高写入密度
-        - use_after_free: 零区域中出现离散高读写点
-        - type_confusion: 同一地址区域内读写交替
-        - uninitialized_read: 低写入高读取的区域
+        策略对齐 arXiv 2603.24167 Section 4:
+        - 线性溢出: 页边界连续高写入密度
+        - UAF: 零值区域离散高读写点
+        - 类型混淆: 同地址段读写交替
+        - 未初始化读取: 低写入、高读取区域
         """
         if not self._heatmaps:
             self.build_heatmaps()
@@ -173,7 +172,7 @@ class WalmaMemoryChecker:
         return self._findings
 
     def _detect_overflow(self, hmap: MemoryHeatmap, page: int):
-        """检测连续溢出: 检查页的末行是否有突然升高的写入密度。"""
+        """线性溢出: 页末行写入密度突增检测。"""
         grid = hmap.grid
         # 检查最后一行 (最大地址区域) vs 之前几行的平均写入密度
         last_row_avg = sum(grid[_HEATMAP_DIM - 1]) / _HEATMAP_DIM if _HEATMAP_DIM > 0 else 0
@@ -188,7 +187,7 @@ class WalmaMemoryChecker:
                 cwe="CWE-787"))
 
     def _detect_uaf(self, hmap: MemoryHeatmap, page: int):
-        """检测 UAF: 零区域中有离散高访问热度 (free→ -5, read→ +1)。"""
+        """UAF检测: 零值区离散高访问热度 (free→-5, 后读→+1)。"""
         grid = hmap.grid
         for r in range(_HEATMAP_DIM):
             for c in range(_HEATMAP_DIM):
@@ -206,7 +205,7 @@ class WalmaMemoryChecker:
 
     def _has_adjacent_positive(self, grid: list[list[float]],
                                 row: int, col: int) -> bool:
-        """检查邻域是否有正值 — 表明 free 后的访问。"""
+        """邻域正值检测: free 后仍存在访问迹象。"""
         for dr in (-1, 0, 1):
             for dc in (-1, 0, 1):
                 nr, nc = row + dr, col + dc
@@ -216,9 +215,9 @@ class WalmaMemoryChecker:
         return False
 
     def _detect_type_confusion(self, hmap: MemoryHeatmap, page: int):
-        """检测类型混淆: 同一 cell 内出现不同大小的交替读写。
+        """类型混淆: 同 cell 内交替出现不同大小的读写。
 
-        简化: 如果一个 hotspot 同时具有正写入和负 free 值 → 类型可能在交替。
+        启发式: hotspot 兼具正写入值与负 free 值 → 类型交替疑点。
         """
         for (r, c, val) in hmap.hot_spot_regions:
             if val > 2 and abs(hmap.grid[r % _HEATMAP_DIM][c]) > 1:
@@ -231,7 +230,7 @@ class WalmaMemoryChecker:
                     cwe="CWE-843"))
 
     def _detect_uninit_read(self, hmap: MemoryHeatmap, page: int):
-        """检测未初始化读取: 写入密度远低于读取密度的区域。"""
+        """未初始化读: 写入密度显著低于读取密度的区域。"""
         grid = hmap.grid
         for r in range(_HEATMAP_DIM):
             for c in range(_HEATMAP_DIM):

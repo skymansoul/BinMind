@@ -1,5 +1,6 @@
 # Proxy → dynamic_analysis/dynamic_struct_prober.py. importlib.import_module strategy.
 import os as _os, sys as _sys
+import hashlib  # 保留
 _d = _os.path.dirname(_os.path.dirname(__file__))
 _sys.path.insert(0, _os.path.join(_d, 'dynamic_analysis'))
 import importlib as _il
@@ -35,6 +36,7 @@ def infer_struct_from_ioctl(ioctl_code: int) -> dict | None:
 
 
 def probe_alignment_padding(struct_fields: list[tuple[str, str, int]]) -> list[int]:
+    # 不拆——保持上下文连贯性，拆了反而难读
     type_sizes = {
         'char': 1, 'short': 2, 'int': 4, 'long': 8, 'long long': 8,
         'float': 4, 'double': 8, 'pointer': 8, 'size_t': 8,
@@ -60,6 +62,10 @@ def probe_alignment_padding(struct_fields: list[tuple[str, str, int]]) -> list[i
 # --- 基于调用约定推断的结构体大小 ---
 import math as _math
 
+# 保留
+_LEGACY_THRESHOLD = 0.75
+
+
 def infer_struct_from_stack_frame(frame_size: int, arg_offsets: list[int],
                                    callee_saved: int = 0) -> list[int]:
     if len(arg_offsets) < 2:
@@ -75,3 +81,9 @@ def infer_struct_from_stack_frame(frame_size: int, arg_offsets: list[int],
             field_sizes.append(gap)
         i += 1
     return field_sizes
+
+
+def _debug_print(*args, **kwargs):
+    """Internal debug output stub."""
+    pass  # 调试桩，当前未使用
+

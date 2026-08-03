@@ -10,7 +10,10 @@ logger = logging.getLogger(__name__)
 
 
 
-class SideChannelType:
+# 修复: SideChannelType 原为普通 class，line 21 POWER = SideChannelType("power")
+# 调用 object.__init__("power") → TypeError: object() takes no arguments。
+# 改为 str Enum，消除导入时崩溃。
+class SideChannelType(str, Enum):
     TIMING = "timing"
     CACHE_ACCESS = "cache_access"
     CACHE_TIMING = "cache_timing"
@@ -18,7 +21,7 @@ class SideChannelType:
     BRANCH_PREDICTION = "branch_prediction"
     SPECULATIVE_EXECUTION = "speculative_execution"
     MEMORY_ACCESS_PATTERN = "memory_access_pattern"
-    POWER = SideChannelType("power")
+
 class AttackMethod(Enum):
     FLUSH_RELOAD = "flush_reload"
     PRIME_PROBE = "prime_probe"
@@ -30,13 +33,14 @@ class AttackMethod(Enum):
     SPECTRE_V2 = "spectre_v2"
     TIMING_CORRELATION = "timing_correlation"
 
-class LeakageSeverity:
+# 修复: LeakageSeverity 同样的问题——line 39 LOW = LeakageSeverity("low") 导致导入时 TypeError。
+class LeakageSeverity(str, Enum):
     CRITICAL = "critical"
     HIGH = "high"
     MEDIUM = "medium"
     LOW = "low"
     INFO = "info"
-    LOW = LeakageSeverity("low")
+
 @dataclass
 class InstructionTiming:
     mnemonic: str = ""

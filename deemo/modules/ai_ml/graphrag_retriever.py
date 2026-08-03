@@ -1,9 +1,7 @@
-# 2026-07-26 10:10
-# graphrag_retriever.py
 # GraphRAG知识检索 — 基于知识图谱的检索增强生成 (适用于威胁情报)
 # 依据: KGV [Wu et al. arXiv 2408.08088, 2024] 的LLM+KG CTI可信度评估
-#       GraphRAG under Fire [arXiv 2501.14050, 2025] 的图谱检索安全分析
-#       Cyber Knowledge Completion [Webb et al. arXiv 2409.16176, 2024]
+# GraphRAG Under Fire [arXiv 2501.14050] 的图谱检索安全分析
+# Cyber Knowledge Completion [Webb et al. arXiv 2409.16176, 2024]
 # 核心: 构建CTI知识图谱 → 多跳关系检索 → 上下文增强LLM分析
 
 from __future__ import annotations

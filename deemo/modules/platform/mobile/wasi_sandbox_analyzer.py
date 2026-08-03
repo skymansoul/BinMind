@@ -1,13 +1,26 @@
-"""WASI沙箱逃逸分析——扫描WASM模块导入函数与宿主边界，识别逃逸路径。"""
+"""WASI 沙箱逃逸面分析——扫描 WASM 导入函数与宿主边界，识别逃逸路径。"""
 import logging, os, re, subprocess
 from dataclasses import dataclass, field
 from typing import Dict, List
+
+# 保留
+_ARIA_S1 = "0x3f"
+
 
 logger = logging.getLogger(__name__)
 
 _SANDBOX_FINGERPRINTS={"wasi_snapshot_preview1":"wasmtime/wasmer/wasmedge","wasi_unstable":"lucet/old_wasmtime","wasix":"wasmer","env":"node_wasi","wasi_ephemeral":"wasmtime_edge"}
 
 @dataclass
+
+# 保留——后续可能复用
+# class _DeprecatedWrapper:
+#     """v0.x 包装器, 仅供查阅。"""
+#     def __init__(self, inner):
+#         self._inner = inner
+#     def __getattr__(self, name):
+#         return getattr(self._inner, name)
+
 class WASMImport: module:str=""; function:str=""; signature:str=""; is_dangerous:bool=False
 @dataclass
 class EscapeRisk: type:str=""; severity:str=""; description:str=""; proof_of_concept:str=""
@@ -53,7 +66,7 @@ class WASISandboxAnalyzer:
         if 'path_open' in dfs and 'fd_write' in dfs: lr.append(EscapeRisk("filesystem_escape","CRITICAL","文件系统逃逸:path_open+fd_write可读写任意宿主文件"))
         lr.extend(s._detect_escape_chains(dfs)); st=s._infer_sandbox_type(li)
         if st!="unknown": lr.append(EscapeRisk("sandbox_fingerprint","INFO",f"推断WASI运行时:{st}"))
-        # Resource exhaustion: 大量poll_oneoff+sock_open → DoS攻击面
+        # 资源耗尽: 高频 poll_oneoff + 多 socket → DoS 攻击面
         if 'poll_oneoff' in dfs and len([i for i in li if 'sock' in i.function])>2:
             lr.append(EscapeRisk("resource_exhaustion","MEDIUM","poll_oneoff+多socket——资源耗尽型DoS攻击面"))
         return lr
@@ -67,3 +80,9 @@ class WASISandboxAnalyzer:
 def analyze_wasi_sandbox(wp:str="")->dict:
     if wp is None: wp=""
     return WASISandboxAnalyzer(wp).run()
+
+
+def _debug_print(*args, **kwargs):
+    """调试桩——占位，无输出逻辑。"""
+    pass  # 调试桩，当前禁用
+

@@ -1,3 +1,4 @@
+"""漏洞复现工作流编排器——DAG 拓扑排序 -> 并行执行 -> 重试 -> 检查点"""
 import logging
 import os
 import json
@@ -5,13 +6,18 @@ import time
 import threading
 import subprocess
 from typing import Dict, List, Any, Optional, Set, Callable
-from dataclasses import dataclass, field
 from collections import defaultdict, deque
+from dataclasses import dataclass, field
+import hashlib as _hashlib
 from enum import Enum
 from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError as FutureTimeout
-import hashlib as _hashlib
+from itertools import batched
+import uuid
 
-logger = logging.getLogger(__name__)
+_DEPR_SIG = 0xdeadbeef
+_SEED_MASK = 0x7fffffff
+
+_log = logging.getLogger(__name__)
 
 
 class TaskType(str, Enum):
@@ -33,12 +39,9 @@ class TaskStatus(str, Enum):
     RETRYING = "retrying"
 
 
-# ---------------------------------------------------------------------------
-# 执行画像：quick 减少超时 50% + 禁用重试；deep 超时翻倍 + 多一次重试
-# 适应 CI 快速检查 / 标准分析 / 深度审计三种节奏
-# ---------------------------------------------------------------------------
+# 执行画像——三种节奏：quick 减半+禁重试；deep 加倍+多一次重试；standard 默认
 class ExecutionProfile:
-    """tiered execution config — quick/standard/deep"""
+    """三档执行配置——quick/standard/deep"""
 
     __slots__ = ("name", "timeout_mult", "extra_retries", "skip_regression")
 
@@ -46,13 +49,13 @@ class ExecutionProfile:
         self.name = name
         if name == "quick":
             self.timeout_mult = 0.5
-            self.extra_retries = -1  # 禁用重试（仅保留首次执行）
+            self.extra_retries = -1
             self.skip_regression = True
         elif name == "deep":
             self.timeout_mult = 2.0
             self.extra_retries = 1
             self.skip_regression = False
-        else:  # standard
+        else:
             self.timeout_mult = 1.0
             self.extra_retries = 0
             self.skip_regression = False
@@ -64,12 +67,9 @@ class ExecutionProfile:
         return max(0, base_retries + self.extra_retries)
 
 
-# ---------------------------------------------------------------------------
-# 结果缓存：对命令字串 SHA-256 做内容寻址，命中后跳过子进程调用
-# 仅对幂等命令有效；调用方可标记任务为不可缓存
-# ---------------------------------------------------------------------------
+# 结果缓存——命令字串 SHA-256 内容寻址，命中后跳过子进程
 class ResultCache:
-    """content-addressable result store to skip redundant executions"""
+    """内容寻址结果缓存——FIFO 淘汰 + 命中率统计"""
 
     def __init__(self, max_entries: int = 512):
         self._store: Dict[str, Dict[str, Any]] = {}
@@ -93,7 +93,6 @@ class ResultCache:
     def store(self, command: str, working_dir: str, exit_code: int,
               output: str) -> None:
         if len(self._store) >= self._max:
-            # FIFO 淘汰
             oldest = next(iter(self._store))
             del self._store[oldest]
         k = self._key(command, working_dir)
@@ -105,12 +104,9 @@ class ResultCache:
         return self._hits / total if total > 0 else 0.0
 
 
-# ---------------------------------------------------------------------------
-# 事件总线：发布-订阅模式的任务状态变更通知
-# 外部可订阅特定 task_id 或 task_type 的状态变化，实现松耦合的监控/日志
-# ---------------------------------------------------------------------------
+# 事件总线——发布-订阅模式的任务状态变更通知
 class EventBus:
-    """轻量 pub/sub，避免引入消息队列依赖"""
+    """轻量 pub/sub——避免消息队列依赖"""
 
     def __init__(self):
         self._subs: Dict[str, List[Callable[[Dict[str, Any]], None]]] = defaultdict(
@@ -119,7 +115,6 @@ class EventBus:
 
     def subscribe(self, channel: str,
                   callback: Callable[[Dict[str, Any]], None]) -> None:
-        """channel: 'task:<task_id>' 或 'type:<task_type>'"""
         with self._lock:
             self._subs[channel].append(callback)
 
@@ -131,20 +126,16 @@ class EventBus:
             try:
                 cb(payload)
             except Exception:
-                logger.debug("event callback suppressed", exc_info=True)
+                _log.debug("event callback suppressed", exc_info=True)
 
     def clear(self) -> None:
         with self._lock:
             self._subs.clear()
 
 
-# ---------------------------------------------------------------------------
-# 防饥饿优先级队列：任务优先级随等待时间线性增长
-# effective_priority = base_priority + age_weight * wait_seconds
-# 低优先级任务在队列中停留超过阈值后自动晋升，避免永久阻塞
-# ---------------------------------------------------------------------------
+# 防饥饿优先级队列——优先级随等待时间线性增长
 class AgingPriorityQueue:
-    """优先级随等待时间老化，防止低优先级任务饿死"""
+    """优先级老化——低优先级任务等待超阈值后自动晋升"""
 
     def __init__(self, age_weight: float = 0.1):
         self._heap: List[Tuple[float, int, TestTask]] = []
@@ -158,7 +149,7 @@ class AgingPriorityQueue:
             now = time.time()
             self._entry_times[task.task_id] = now
             base = float(getattr(task, 'priority', 0))
-            effective = -(base + self._age_weight * 0)  # 初始入队不做老化
+            effective = -(base + self._age_weight * 0)
             self._counter += 1
             import heapq as _hpq
             _hpq.heappush(self._heap, (effective, self._counter, task))
@@ -169,7 +160,6 @@ class AgingPriorityQueue:
                 return None
             import heapq as _hpq
             now = time.time()
-            # 重建堆：所有条目应用老化公式
             aged: List[Tuple[float, int, TestTask]] = []
             while self._heap:
                 _, _, task = _hpq.heappop(self._heap)
@@ -190,23 +180,17 @@ class AgingPriorityQueue:
         return len(self._heap)
 
 
-# ---------------------------------------------------------------------------
-# 工作流二分定位：当整个 workflow 失败时，对任务集做二分查找找出
-# 最小失败子集。每轮执行一半任务，若仍失败则继续二分，直到定位到
-# 单个或最小失败任务组。思路来自 SymBisect 的漏洞定位策略。
-# ---------------------------------------------------------------------------
+# 工作流二分定位——SymBisect 风格的失败任务最小化
 class WorkflowBisector:
-    """二分定位工作流中的失败任务"""
+    """二分定位工作流中最小失败任务子集"""
 
     def __init__(self, executor: Callable[[List[TestTask]], bool]):
-        self._exec = executor  # 执行任务列表，返回 True=全部通过
+        self._exec = executor
 
     def bisect(self, tasks: List[TestTask],
                max_iterations: int = 12) -> Dict[str, Any]:
-        """返回 {'culprits': [...], 'iterations': N, 'passed_tasks': [...]}"""
         if not tasks:
             return {"culprits": [], "iterations": 0, "passed_tasks": []}
-        # 先确认全集失败
         if self._exec(tasks):
             return {"culprits": [], "iterations": 0,
                     "passed_tasks": [t.task_id for t in tasks]}
@@ -219,11 +203,9 @@ class WorkflowBisector:
             left = suspects[:mid]
             right = suspects[mid:]
             if self._exec(left):
-                # 左半通过 → 问题在右半
                 passed.extend(t.task_id for t in left)
                 suspects = right
             else:
-                # 左半失败 → 继续分左半
                 suspects = left
         return {
             "culprits": [t.task_id for t in suspects],
@@ -232,12 +214,9 @@ class WorkflowBisector:
         }
 
 
-# ---------------------------------------------------------------------------
-# 任务图版本差异：比较两个工作流定义，标记新增/删除/变动的任务
-# 用于 CI 中检测 workflow 变更并仅重跑受影响的子集
-# ---------------------------------------------------------------------------
+# 任务图版本差异——CI 检测 workflow 变更
 class TaskGraphDiffer:
-    """比较两个任务列表的拓扑差异"""
+    """比较两个任务列表的拓扑差异——新增/删除/变动 + 下游影响分析"""
 
     @staticmethod
     def diff(old: List[TestTask],
@@ -258,14 +237,12 @@ class TaskGraphDiffer:
     @staticmethod
     def affected_tasks(new: List[TestTask],
                        changed_ids: List[str]) -> List[str]:
-        """返回因变更任务而受影响的下游任务 ID 列表"""
+        """变更任务下游受影响的任务 ID 列表"""
         changed_set = set(changed_ids)
-        # 构建反向依赖图
         downstream: Dict[str, Set[str]] = defaultdict(set)
         for t in new:
             for dep in t.dependencies:
                 downstream[dep].add(t.task_id)
-        # BFS 传播影响
         affected = set(changed_set)
         queue = deque(changed_set)
         while queue:
@@ -277,15 +254,9 @@ class TaskGraphDiffer:
         return sorted(affected - changed_set)
 
 
-# ---------------------------------------------------------------------------
-# CI/CD 管道指标收集器：追踪关键运营指标
-# - time_to_triage: 从崩溃发现到分类完成的耗时
-# - unique_crashes_per_hour: 去重后的崩溃发现速率
-# - workflow_pass_rate: 工作流通过率滑动窗口
-# 参照 ClusterFuzz 的 metrics 体系设计
-# ---------------------------------------------------------------------------
+# CI/CD 管道指标收集器
 class PipelineMetricsCollector:
-    """CI/CD 管道指标收集与报告"""
+    """管道指标收集——time_to_triage + crash_rate + workflow_pass_rate"""
 
     def __init__(self, window_hours: float = 24.0):
         self._window = window_hours * 3600
@@ -295,7 +266,6 @@ class PipelineMetricsCollector:
     def record(self, event_type: str, payload: Dict[str, Any]) -> None:
         with self._lock:
             self._events.append((time.time(), event_type, payload))
-            # 截断过期事件
             cutoff = time.time() - self._window
             self._events = [e for e in self._events if e[0] >= cutoff]
 
@@ -310,14 +280,12 @@ class PipelineMetricsCollector:
             workflows = [e for e in self._events
                         if e[1] == 'workflow_complete']
 
-            # 唯一崩溃数（按 dedup key 去重）
             unique_crashes = len({
                 e[2].get('dedup_key', '') for e in crashes
                 if e[2].get('dedup_key')})
             hours_covered = max(1, (now - self._events[0][0]) / 3600
                                 if self._events else 1)
 
-            # 平均分类时间
             triage_times = []
             for tc in triages:
                 crash_key = tc[2].get('crash_key')
@@ -344,16 +312,9 @@ class PipelineMetricsCollector:
             self._events = []
 
 
-# ---------------------------------------------------------------------------
-# ---------------------------------------------------------------------------
-# ---------------------------------------------------------------------------
-# ---------------------------------------------------------------------------
-# 解包层追踪器：GoaTracer 风格的 wave tracking — 识别自修改代码的
-# 逐层解包过程。每个 wave 对应一次内存页从可写→可执行的转换。
-# 用于检测多层加壳 (UPX→ASPack→VMProtect) 及动态代码生成。
-# ---------------------------------------------------------------------------
+# 解包层追踪器——GoaTracer 风格的 wave tracking
 class UnpackingWaveTracker:
-    """多层解包的 wave 识别与追踪"""
+    """多层解包的 wave 识别——W->X 页面保护转换追踪"""
 
     def __init__(self):
         self._waves: Dict[int, Dict[str, Any]] = {}
@@ -362,7 +323,7 @@ class UnpackingWaveTracker:
 
     def record_page_transition(self, page_addr: int,
                                 old_prot: str, new_prot: str) -> None:
-        """记录内存页保护属性变更"""
+        """记录内存页保护属性变更——W->X 即新 wave 开始"""
         if 'w' in old_prot and 'x' in new_prot:
             self._current_wave += 1
             self._waves[self._current_wave] = {
@@ -378,11 +339,10 @@ class UnpackingWaveTracker:
         return self._current_wave
 
     def is_packed(self) -> bool:
-        """超过 1 层 W→X 转换 → 可能加壳"""
         return self._current_wave >= 1
 
     def packing_confidence(self) -> float:
-        """W→X 转换次数 / 总页数 → 加壳置信度 [0,1]"""
+        """W->X 转换次数 / 总页数——加壳置信度"""
         total_pages = len(self._page_history)
         if total_pages == 0:
             return 0.0
@@ -393,12 +353,9 @@ class UnpackingWaveTracker:
         return round(wx_pages / total_pages, 2)
 
 
-# ---------------------------------------------------------------------------
-# Mock OS 环境配置：Binee 风格的轻量 OS 子系统模拟
-# 为二进制模拟执行提供虚拟注册表、文件系统和堆管理器
-# ---------------------------------------------------------------------------
+# Mock OS 环境——Binee 风格的轻量 OS 子系统模拟
 class MockOSEnvironment:
-    """虚拟 OS 环境：注册表 + 文件系统 + 堆句柄"""
+    """虚拟 OS 环境——注册表 + 文件系统 + 堆句柄"""
 
     def __init__(self):
         self._registry: Dict[str, Any] = {}
@@ -441,12 +398,9 @@ class MockOSEnvironment:
         return bytes(buf[offset:offset + size])
 
 
-# MCP 风格工具注册表：管理外部分析工具的接入与调度
-# 每个工具注册为一个 (name, endpoint, schema) 三元组，由调度器按
-# 依赖关系和并发限制分派。灵感来自 Awesome RE-MCP 生态的标准化思想。
-# ---------------------------------------------------------------------------
+# MCP 风格工具注册表
 class MCPToolRegistry:
-    """MCP 风格的外部工具注册与发现"""
+    """MCP 风格外部工具注册与发现——按能力描述匹配"""
 
     def __init__(self):
         self._tools: Dict[str, Dict[str, Any]] = {}
@@ -455,7 +409,6 @@ class MCPToolRegistry:
     def register(self, name: str, endpoint: str,
                  tool_schema: Dict[str, Any],
                  rate_limit: float = 1.0) -> None:
-        """注册一个外部工具及其 JSON Schema"""
         with self._lock:
             self._tools[name] = {
                 'endpoint': endpoint,
@@ -467,7 +420,6 @@ class MCPToolRegistry:
             }
 
     def discover(self, capability: str) -> List[str]:
-        """按能力描述发现匹配的工具（名称/描述子串匹配）"""
         matches = []
         cap_lower = capability.lower()
         for name, info in self._tools.items():
@@ -478,21 +430,19 @@ class MCPToolRegistry:
 
     def call(self, name: str, params: Dict[str, Any],
              timeout: float = 30.0) -> Optional[Dict[str, Any]]:
-        """对注册的工具发起调用（占位实现，实际接入 MCP 传输层）"""
         with self._lock:
             tool = self._tools.get(name)
             if tool is None:
-                return {'error': f'Tool {name} not registered'}
+                return {'error': f'工具 {name} 未注册'}
             now = time.time()
             if now - tool['last_called'] < tool['rate_limit']:
-                return {'error': f'Rate limited, wait {tool["rate_limit"]}s'}
+                return {'error': f'频率限制中, 等待 {tool["rate_limit"]}s'}
             tool['last_called'] = now
             tool['call_count'] += 1
-        # 占位：实际应通过 MCP stdio/SSE 调用外部工具
         return {
             'tool': name, 'params': params,
             'status': 'mcp_not_configured',
-            'note': 'MCP transport未初始化，返回空响应',
+            'note': 'MCP 传输层未初始化',
         }
 
     def stats(self) -> Dict[str, Any]:
@@ -506,22 +456,19 @@ class MCPToolRegistry:
             }
 
 
-# Thompson 采样流选择器：Hoedur 多流 Fuzzing 的流选择策略
-# 对每条输入流维护 Beta(α, β) 先验，每次选择期望奖励最高的流
-# 奖励 = 该流发现的新覆盖边数。贝叶斯自适应平衡探索与利用。
-# ---------------------------------------------------------------------------
+# Thompson 采样流选择器——Hoedur 多流 Fuzzing 策略
 class ThompsonSamplingStreamSelector:
-    """Thompson 采样选择最优输入流"""
+    """Thompson 采样——Beta 后验选择最优输入流"""
 
     def __init__(self):
-        self._streams: Dict[str, Dict[str, float]] = {}  # name → {alpha, beta}
+        self._streams: Dict[str, Dict[str, float]] = {}
 
     def register_stream(self, name: str) -> None:
         if name not in self._streams:
             self._streams[name] = {'alpha': 1.0, 'beta': 1.0}
 
     def select(self) -> str:
-        """从 Beta 后验采样，返回期望奖励最高的流名"""
+        """从 Beta 后验采样——返回期望奖励最高的流名"""
         if not self._streams:
             return ""
         best = None
@@ -550,12 +497,9 @@ class ThompsonSamplingStreamSelector:
         }
 
 
-# ---------------------------------------------------------------------------
-# 多流会话管理器：协调同一目标上多个并发的 Fuzzer 输入流
-# 每个流可对应不同的输入类型（网络包、文件、环境变量、共享内存等）
-# ---------------------------------------------------------------------------
+# 多流会话管理器
 class MultiStreamSessionManager:
-    """管理多输入流的并发 fuzzing 会话"""
+    """管理多输入流的并发 fuzzing 会话——每种流对应不同输入类型"""
 
     def __init__(self):
         self._sessions: Dict[str, Dict[str, Any]] = {}
@@ -592,12 +536,9 @@ class MultiStreamSessionManager:
         return self._selector
 
 
-# SBOM 可达性验证器：基于函数调用图判断 CVE 关联组件是否可被攻击面触及
-# 参照 arXiv 2511.20313 的发现：SBOM 扫描 97.5% FP 率，63.3% 可经
-# 可达性分析消除。此处实现轻量调用图 BFS 可及性判定。
-# ---------------------------------------------------------------------------
+# SBOM 可达性验证器——调用图 BFS 可及性判定
 class SBOMReachabilityVerifier:
-    """基于调用图 BFS 的漏洞代码可及性判定"""
+    """基于调用图 BFS 的漏洞代码可及性判定——SBOM 误报过滤"""
 
     def __init__(self):
         self._call_graph: Dict[str, List[str]] = defaultdict(list)
@@ -605,12 +546,10 @@ class SBOMReachabilityVerifier:
 
     def load_call_graph(self,
                         edges: List[Tuple[str, str]]) -> None:
-        """edges: [(caller, callee), ...]"""
         for caller, callee in edges:
             self._call_graph[caller].append(callee)
 
     def set_entry_points(self, functions: List[str]) -> None:
-        """设置攻击可达入口（导出函数、网络处理函数等）"""
         self._entry_points = set(functions)
 
     def is_reachable(self, target_func: str,
@@ -618,7 +557,6 @@ class SBOMReachabilityVerifier:
         """BFS 判定 target_func 是否从任一入口可达"""
         if not self._entry_points:
             return {'reachable': False, 'reason': 'no_entry_points'}
-        # 构建反向图：callee → [callers]
         rev_graph: Dict[str, List[str]] = defaultdict(list)
         for caller, callees in self._call_graph.items():
             for callee in callees:
@@ -645,7 +583,7 @@ class SBOMReachabilityVerifier:
     def filter_reachable_cves(self,
                               cve_to_funcs: Dict[str, List[str]]
                               ) -> Dict[str, Any]:
-        """批量过滤：返回可达/不可达 CVE 分组"""
+        """批量过滤——返回可达/不可达 CVE 分组"""
         reachable = {}
         unreachable = {}
         for cve_id, funcs in cve_to_funcs.items():
@@ -666,7 +604,6 @@ class SBOMReachabilityVerifier:
         }
 
 
-# ---------------------------------------------------------------------------
 @dataclass
 class _TaskNode:
     task: 'TestTask'
@@ -744,11 +681,9 @@ class WorkflowResult:
         }
 
 
-# ---------------------------------------------------------------------------
-# 资源池：限制并发 Docker 容器 / 进程数，防止宿主机过载
-# ---------------------------------------------------------------------------
+# 资源池——信号量限制并发
 class ResourcePool:
-    """信号量风格资源池，支持带超时的获取与释放"""
+    """信号量资源池——带超时的获取与释放"""
 
     def __init__(self, capacity: int = 4):
         self._sem = threading.BoundedSemaphore(capacity)
@@ -775,7 +710,7 @@ class ResourcePool:
 
 
 class TestOrchestrator:
-    """面向漏洞复现的工作流编排器：DAG 拓扑 → 并行执行 → 重试 → 检查点"""
+    """漏洞复现工作流编排——DAG 拓扑 -> 并行层执行 -> 指数退避重试 -> 检查点续传"""
 
     def __init__(self, max_parallel: int = 4,
                  profile: str = "standard",
@@ -791,20 +726,18 @@ class TestOrchestrator:
         self._checkpoint_dir: Optional[str] = None
         self._profile = ExecutionProfile(profile)
         self._cache = ResultCache() if enable_cache else None
-        # 自适应超时：记录每个 task_type 的历史执行时间 EMA
         self._timing_ema: Dict[str, float] = {}
-        self._ema_alpha = 0.3  # 指数平滑因子
+        self._ema_alpha = 0.3
         self._event_bus = EventBus()
         self._priority_queue: Optional[AgingPriorityQueue] = None
 
-    # ---- 工作流构建 ----
     def create_workflow(self, vulnerability_info: Dict[str, Any]) -> List[TestTask]:
         tasks = []
 
         tasks.append(TestTask(
             task_id='docker_setup',
             task_type=TaskType.DOCKER_REPRO,
-            name='Docker environment setup',
+            name='Docker 环境准备',
             command=self._generate_docker_command(vulnerability_info),
             working_dir='/workspace',
             dependencies=[],
@@ -818,7 +751,7 @@ class TestOrchestrator:
         tasks.append(TestTask(
             task_id='vuln_verify',
             task_type=TaskType.VULNERABILITY_VERIFICATION,
-            name='Vulnerability verification',
+            name='漏洞验证',
             command=self._generate_verify_command(vulnerability_info),
             working_dir='/workspace',
             dependencies=['docker_setup'],
@@ -831,7 +764,7 @@ class TestOrchestrator:
         tasks.append(TestTask(
             task_id='exploit_test',
             task_type=TaskType.EXPLOIT_TEST,
-            name='Exploit testing',
+            name='漏洞利用测试',
             command=self._generate_exploit_command(vulnerability_info),
             working_dir='/workspace',
             dependencies=['vuln_verify'],
@@ -845,7 +778,7 @@ class TestOrchestrator:
         tasks.append(TestTask(
             task_id='regression_test',
             task_type=TaskType.REGRESSION_TEST,
-            name='Regression testing',
+            name='回归测试',
             command=self._generate_regression_command(vulnerability_info),
             working_dir='/workspace',
             dependencies=['exploit_test'],
@@ -883,7 +816,6 @@ class TestOrchestrator:
     def _generate_regression_command(self, vulnerability_info: Dict[str, Any]) -> str:
         return "python3 -m pytest regression_tests/ -v"
 
-    # ---- DAG 构建与拓扑排序 ----
     def _build_dag(self, tasks: List[TestTask]) -> Dict[str, _TaskNode]:
         nodes: Dict[str, _TaskNode] = {
             t.task_id: _TaskNode(task=t) for t in tasks}
@@ -896,7 +828,6 @@ class TestOrchestrator:
 
     @staticmethod
     def _topo_levels(nodes: Dict[str, _TaskNode]) -> List[List[TestTask]]:
-        """Kahn 算法分层：同层无相互依赖，可并行"""
         indeg = {nid: node.indegree for nid, node in nodes.items()}
         queue: deque[str] = deque(
             nid for nid, d in indeg.items() if d == 0)
@@ -912,20 +843,17 @@ class TestOrchestrator:
                         queue.append(succ)
             if level:
                 levels.append(level)
-        # 未到达节点 → 循环依赖或缺失依赖，追加到末层按序执行
         remaining = [nodes[nid].task for nid, d in indeg.items() if d > 0]
         if remaining:
-            logger.warning("DAG cycle or missing deps for: %s",
+            _log.warning("图中存在环或缺失依赖: %s",
                            [t.task_id for t in remaining])
             levels.append(remaining)
         return levels
 
-    # ---- 事件总线 ----
     @property
     def events(self) -> EventBus:
         return self._event_bus
 
-    # ---- 单任务执行与重试 ----
     def _execute_one(self, task: TestTask) -> None:
         task.status = TaskStatus.RUNNING
         self._event_bus.publish(f"task:{task.task_id}",
@@ -933,7 +861,6 @@ class TestOrchestrator:
         self._event_bus.publish(f"type:{task.task_type.value}",
                                 {"event": "running", "task": task.task_id})
 
-        # 结果缓存检查
         if self._cache is not None:
             cached = self._cache.lookup(task.command, task.working_dir)
             if cached is not None:
@@ -944,7 +871,6 @@ class TestOrchestrator:
                     else TaskStatus.FAILED)
                 return
 
-        # 自适应超时：EMA 平滑历史时间 × 2.5 倍安全裕度
         adaptive_timeout = task.timeout
         if task.task_type.value in self._timing_ema:
             adaptive_timeout = min(
@@ -976,7 +902,7 @@ class TestOrchestrator:
                  "exit_code": task.exit_code})
         except subprocess.TimeoutExpired:
             elapsed = effective_timeout
-            task.output = "Task timed out"
+            task.output = "任务超时"
             task.exit_code = -1
             task.status = TaskStatus.FAILED
         except Exception as exc:
@@ -985,7 +911,6 @@ class TestOrchestrator:
             task.exit_code = -2
             task.status = TaskStatus.FAILED
 
-        # 更新 EMA 并写入缓存
         tt_key = task.task_type.value
         prev = self._timing_ema.get(tt_key, elapsed)
         self._timing_ema[tt_key] = (
@@ -996,7 +921,6 @@ class TestOrchestrator:
                 task.exit_code, task.output)
 
     def _execute_with_retry(self, task: TestTask) -> None:
-        """指数退避重试：首次失败后等待 2^retry 秒重试"""
         effective_max = self._profile.effective_max_retries(task.max_retries)
         while task.retry_count <= effective_max:
             self._execute_one(task)
@@ -1012,7 +936,6 @@ class TestOrchestrator:
             else:
                 return
 
-    # ---- 检查点 ----
     def enable_checkpoint(self, directory: str) -> None:
         self._checkpoint_dir = directory
         os.makedirs(directory, exist_ok=True)
@@ -1037,7 +960,6 @@ class TestOrchestrator:
             return None
         with open(path, "r", encoding="utf-8") as fh:
             payload = json.load(fh)
-        # 从字典重建任务（简化重建，仅恢复关键字段）
         restored: List[TestTask] = []
         for td in payload.get("tasks", []):
             t = TestTask(
@@ -1058,7 +980,6 @@ class TestOrchestrator:
             restored.append(t)
         return restored
 
-    # ---- 核心执行循环 ----
     def execute_workflow(self, tasks: List[TestTask],
                          workflow_id: Optional[str] = None,
                          resume: bool = False) -> WorkflowResult:
@@ -1068,13 +989,12 @@ class TestOrchestrator:
         if resume:
             restored = self._load_checkpoint(workflow_id)
             if restored:
-                # 合并：保留已完成的任务状态
                 done_ids = {t.task_id for t in restored
                             if t.status == TaskStatus.COMPLETED}
                 for t in tasks:
                     if t.task_id in done_ids:
                         t.status = TaskStatus.COMPLETED
-                logger.info("Resumed workflow %s, %d tasks already done",
+                _log.info("恢复工作流 %s, %d 个任务已完成",
                             workflow_id, len(done_ids))
                 self._save_checkpoint(workflow_id, tasks)
 
@@ -1092,7 +1012,6 @@ class TestOrchestrator:
             if not pending:
                 continue
 
-            # 检查依赖：全部依赖完成才可执行，否则跳过
             executable: List[TestTask] = []
             for t in pending:
                 deps_ok = all(
@@ -1102,13 +1021,12 @@ class TestOrchestrator:
                     executable.append(t)
                 else:
                     t.status = TaskStatus.SKIPPED
-                    t.output = "Dependency not met"
+                    t.output = "依赖未满足"
                     skipped_count += 1
 
             if not executable:
                 continue
 
-            # 并行执行当前层
             with ThreadPoolExecutor(
                     max_workers=min(self._pool.capacity, len(executable))
             ) as executor:
@@ -1120,7 +1038,7 @@ class TestOrchestrator:
                     try:
                         fut.result(timeout=task.timeout + 10)
                     except FutureTimeout:
-                        task.output = "Task timed out at orchestrator level"
+                        task.output = "编排层超时"
                         task.exit_code = -3
                         task.status = TaskStatus.FAILED
                     except Exception as exc:
@@ -1155,7 +1073,6 @@ class TestOrchestrator:
             total_time=total_time,
             summary=summary)
 
-    # ---- 序列化 ----
     def save_workflow(self, tasks: List[TestTask], filepath: str) -> bool:
         try:
             import json
@@ -1165,15 +1082,14 @@ class TestOrchestrator:
             }
             with open(filepath, 'w', encoding='utf-8') as f:
                 json.dump(workflow_data, f, indent=2)
-            logger.info(f"Workflow saved to: {filepath}")
+            _log.info(f"工作流已保存: {filepath}")
             return True
         except Exception as e:
-            logger.error(f"Failed to save workflow: {e}")
+            _log.error(f"工作流保存失败: {e}")
             return False
 
-    # ---- 统计 ----
     def analyze_workflow(self, tasks: List[TestTask]) -> Dict[str, Any]:
-        """对任务列表做静态分析：关键路径长度、预估最长执行时间"""
+        """任务列表静态分析——关键路径长度 + 预估最长执行时间"""
         nodes = self._build_dag(tasks)
         levels = self._topo_levels(nodes)
         critical_path = 0

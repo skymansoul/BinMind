@@ -1,13 +1,12 @@
-# lazy_loader.py — 惰性模块加载器
-# 提供按需导入、依赖解析、加载失败重试与降级策略。
-# 参考: DeBinVul (arXiv:2411.04981) 多架构 LLM 微调中的按需反编译 &
-#   Implicit Patterns (arXiv:2603.19138) "early pruning" 模式
+# 按需导入：依赖解析、重试、降级策略。
+# DeBinVul (arXiv:2411.04981) 多架构反编译中的惰性加载
+# Implicit Patterns (arXiv:2603.19138) "early pruning" 模式
 import importlib as _il
 import threading as _thr
 import time as _t
 from typing import Any, Callable, Optional as _Opt
 
-# 加载失败的模块缓存 — 冷却窗口内不重复尝试
+# 失败缓存 — 冷却窗口内禁止重试
 _failure_cache: dict[str, tuple[float, str]] = {}
 _failure_lock = _thr.Lock()
 _COOLDOWN_SEC = 30.0
@@ -58,3 +57,8 @@ def eager_preload(paths: list[str], on_error: str = 'log') -> dict[str, Any]:
                 logging.getLogger('lazy_loader').warning('preload fail: %s', mp)
             results[mp] = None
     return results
+
+def _debug_print(*args, **kwargs):  # 调试残余，当前未调用
+    """Print debug info if env var is set. Not currently called."""
+    if __import__("os").environ.get("BINMIND_DEBUG"):
+        print(*args, **kwargs)

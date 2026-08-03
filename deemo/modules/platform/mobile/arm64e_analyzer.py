@@ -1,36 +1,36 @@
 #!/usr/bin/env python3
 """
-ARM64e增强安全分析——Apple Silicon PAC/BTI深度审计 + 微架构侧信道 + ARM MTE内存标签检测。
+ARM64e增强安全分析。Apple Silicon PAC/BTI深度审计、微架构侧信道、ARM MTE内存标签检测。
 
-分析维度：
-  1. PAC指令检测——全量指针认证指令识别
+维度：
+  1. PAC指令检测——指针认证指令全量识别
   2. PAC签名gadget——签名神谕与绕过路径扫描
-  3. PAC绕过路径——指针替换与重放攻击可行性评估
-  4. BTI着陆点校验——间接跳转目标BTI覆盖率与违规报告
-  5. JOP/COP gadget检测——PAC上下文下的抗JOP评估（含支配图剪枝）
-  6. 密钥多样性——IA/IB/DA/DB密钥域使用统计与隔离分析
-  7. 签名剥离检测——JIT代码页签名剥离识别
-  8. 跨库PAC绕过链——dyld共享缓存跨边界PAC认证转发
-  9. 微架构侧信道gadget——ExfilState-inspired定时器无关的cache状态泄露检测
-  10. ARM MTE指令检测——内存标签扩展使用审计 + TikTag旁路gadget扫描
+  3. PAC绕过路径——指针替换/重放攻击可行性
+  4. BTI着陆点——间接跳转目标BTI覆盖率与违规
+  5. JOP/COP gadget——PAC约束下的抗JOP评估，含支配图剪枝
+  6. 密钥多样性——IA/IB/DA/DB密钥域统计与隔离
+  7. 签名剥离——JIT代码页签名剥离识别
+  8. 跨库PAC绕过链——dyld共享缓存跨边界认证转发
+  9. 微架构侧信道——ExfilState式无定时器cache状态泄露
+  10. ARM MTE——内存标签扩展使用审计与TikTag旁路扫描
 
-技术基础:
-  - ARMv8.3-A/ARMv8.6-A指令集静态反汇编模式匹配
-  - MTE (ARMv8.5-A) 指令编码参考 ARM Architecture Reference Manual
-  - TikTag (IEEE S&P 2025): 通过推测执行泄露MTE标签的gadget模式
-  - NanoTag (IEEE S&P 2026): 字节级粒度溢出检测在Pixel 8上的特征
-  - Folded-Tag (C&S 2026): XOR-based指针掩码加固
+基础：
+  - ARMv8.3-A/ARMv8.6-A指令集反汇编模式匹配
+  - MTE（ARMv8.5-A）指令编码见ARM架构参考手册
+  - TikTag（IEEE S&P 2025）：推测执行泄露MTE标签的gadget
+  - NanoTag（IEEE S&P 2026）：Pixel 8字节级溢出检测特征
+  - Folded-Tag（C&S 2026）：XOR指针掩码加固
 
-MTE核心指令编码：
-  IRG  Xd, Xn{, Xm}     — Insert Random Tag (将随机tag插入指针)
-  ADDG Xd, Xn, #imm{, #uimm4}  — Add with Tag (带tag的地址加法)
-  SUBG Xd, Xn, #imm{, #uimm4}  — Subtract with Tag
-  STG  Xt, [Xn{, #simm}] — Store Allocation Tag (存储allocation tag到tag memory)
-  LDG  Xt, [Xn{, #simm}] — Load Allocation Tag (从tag memory加载tag)
-  STZG Xt, [Xn{, #simm}] — Store Zero and Tag (零填充+tag存储)
-  LDGV Xt, [Xn]          — Load Tag and Verify (加载tag并验证)
-  STGV Xt, [Xn]          — Store Tag and Verify (存储tag并验证)
-  CMPP Xn, Xm/XZR        — Compare Pointers (比较指针tag)
+MTE指令编码：
+  IRG  Xd, Xn{, Xm}     — 插入随机tag到指针
+  ADDG Xd, Xn, #imm{, #uimm4}  — tag感知地址加法
+  SUBG Xd, Xn, #imm{, #uimm4}  — tag感知地址减法
+  STG  Xt, [Xn{, #simm}] — 存储allocation tag到tag memory
+  LDG  Xt, [Xn{, #simm}] — 从tag memory加载tag
+  STZG Xt, [Xn{, #simm}] — 零填充并存储tag
+  LDGV Xt, [Xn]          — 加载tag并验证（不匹配则trap）
+  STGV Xt, [Xn]          — 存储tag并验证
+  CMPP Xn, Xm/XZR        — 指针tag比较
 """
 
 import logging, os, re, subprocess, json
@@ -39,7 +39,7 @@ from typing import Dict, List, Optional, Any, Tuple, Set
 from dataclasses import dataclass, field
 from enum import Enum
 
-logger = logging.getLogger(__name__)
+_logger = logging.getLogger(__name__)
 
 
 class PACKey(str, Enum): IA="IA"; IB="IB"; DA="DA"; DB="DB"; GA="GA"; UNKNOWN="UNKNOWN"
@@ -82,13 +82,13 @@ class MTEOperationType(str, Enum):
     IRG="irg"           # 插入随机tag
     ADDG="addg"         # tag感知地址加法
     SUBG="subg"         # tag感知地址减法
-    STG="stg"           # 存储allocation tag到tag memory
-    LDG="ldg"           # 从tag memory加载tag
-    STZG="stzg"         # 零填充+tag存储 (清零分配)
-    LDGV="ldgv"         # 加载tag并验证——tag不匹配时trap
+    STG="stg"           # 存储allocation tag
+    LDG="ldg"           # 加载allocation tag
+    STZG="stzg"         # 零填充并存储tag
+    LDGV="ldgv"         # 加载tag并验证
     STGV="stgv"         # 存储tag并验证
-    CMPP="cmpp"         # 比较指针tag
-    GMI="gmi"           # 插入tag但不包括随机性
+    CMPP="cmpp"         # 指针tag比对
+    GMI="gmi"           # 插入tag，不含随机分量
 
 @dataclass
 class PACInstruction:
@@ -138,7 +138,7 @@ class CrossLibraryPACChain:
     caller_lib:str; caller_func:str; callee_lib:str; callee_func:str; caller_key:PACKey; callee_key:PACKey; key_mismatch:bool; auth_forwarded:bool; ga_used:bool; risk_level:Severity
     def to_dict(self)->Dict[str,Any]: return {"clib":self.caller_lib,"cfunc":self.caller_func,"dlib":self.callee_lib,"dfunc":self.callee_func,"ckey":self.caller_key.value,"dkey":self.callee_key.value,"mismatch":self.key_mismatch,"ga":self.ga_used,"risk":self.risk_level.value}
 
-# MTE指令编码模式——基于ARM ARM的32-bit编码空间
+# MTE指令编码模式，基于ARM架构参考手册32-bit编码空间
 _MTE_PATTERNS = [
     (re.compile(rb'\x20\x0c\x9a\xd7'), MTEOperationType.IRG, "IRG——插入随机tag到指针"),
     (re.compile(rb'[\x00-\x1f]\x00\x18\x91'), MTEOperationType.ADDG, "ADDG——tag感知地址加法"),
@@ -152,8 +152,8 @@ _MTE_PATTERNS = [
     (re.compile(rb'\x20\x0c\x9b\xd7'), MTEOperationType.GMI, "GMI——插入tag(不含随机性)"),
 ]
 
-# ── TikTag (IEEE S&P 2025) 推测执行MTE标签泄露gadget模式 ──
-# LDG/LDGV后的condition branch暗示标签验证结果可被推测执行泄露
+# ── TikTag（IEEE S&P 2025）推测执行MTE标签泄露gadget ──
+# LDG/LDGV后的条件分支暗示标签验证结果可通过推测执行泄露
 _TIKTAG_PATTERNS = [
     (re.compile(rb'(?:ldg|ldgv)\s.{0,32}(?:cbz|cbnz|tbz|tbnz)',re.DOTALL),
      "LDG/LDGV+条件分支——MTE标签验证结果可被推测执行泄露", Severity.HIGH),
@@ -199,7 +199,7 @@ class Arm64eEnhancedAnalyzer:
         try:
             r=subprocess.run(["r2","-q","-c",f"{c}; q",s.binary_path],capture_output=True,text=True,timeout=t,encoding="utf-8",errors="replace")
             return r.stdout if r.returncode==0 else ""
-        except: return ""
+        except (subprocess.SubprocessError, FileNotFoundError): return ""  # bare except已收敛为SubprocessError
 
     def _load(s)->bool:
         try:
@@ -212,7 +212,7 @@ class Arm64eEnhancedAnalyzer:
                 j2=json.loads(raw2); s._imports=j2 if isinstance(j2,list) else []
             s._func_by_addr=sorted(s._funcs,key=lambda f:f.get("offset",0))
             return True
-        except Exception as e: logger.warning("Load failed: %s",e); return False
+        except Exception as e: _logger.warning("Load failed: %s",e); return False
 
     def _disasm(s,addr:int)->str:
         if addr not in s._dc: s._dc[addr]=s._r2(f"s 0x{addr:X}; pdb",30)
@@ -403,20 +403,20 @@ class Arm64eEnhancedAnalyzer:
                 gadgets.append(SideChannelGadget(m.start(),gtype,mnems[:8],regs_found,gtype in (SideChannelGadgetType.CSDB_COND_BRANCH,SideChannelGadgetType.DC_CVAU_EXCEPTION,SideChannelGadgetType.SYSREG_ACCESS),gtype==SideChannelGadgetType.DC_CVAU_EXCEPTION,tf,sev,s._func_for(m.start())))
         return gadgets
 
-    # ── ARM MTE指令检测 + TikTag旁路gadget扫描 ──
+    # ── ARM MTE指令检测与TikTag旁路gadget扫描 ──
     def _detect_mte_operations(s)->List[MTEGadget]:
         """检测ARM MTE标签操作指令，审计内存标签使用模式。
 
-        基于NanoTag (IEEE S&P 2026) 对Pixel 8上MTE实现的特性描述：
-        - IRG数量反映标签随机化的覆盖范围
-        - STG/LDG配对密度反映内存分配/释放的标签管理
-        - STZG出现意味着清零+标签删除——内存复用安全关键操作
+        依据NanoTag（IEEE S&P 2026）Pixel 8上MTE实现特征：
+        - IRG数量反映标签随机化覆盖范围
+        - STG/LDG配对密度反映内存分配释放的标签管理
+        - STZG出现标志清零并删除标签，内存复用安全关键操作
         """
         gadgets=[]; raw=s._r2("aaaa; pD 20000",120)
         if not raw: return gadgets
         for pat,optype,desc in _MTE_PATTERNS:
             for m in pat.finditer(raw):
-                # 提取寄存器信息
+                # 提取寄存器上下文
                 ctx=m.group(0).decode('utf-8',errors='replace')
                 regs=re.findall(r'x\d+',ctx)
                 tr=regs[0] if regs else "?"
@@ -427,11 +427,11 @@ class Arm64eEnhancedAnalyzer:
         return gadgets
 
     def _detect_tiktag_gadgets(s,mte_gadgets:List[MTEGadget])->List[Dict[str,Any]]:
-        """扫描TikTag推测执行MTE标签泄露的gadget模式。
+        """扫描TikTag推测执行MTE标签泄露gadget。
 
-        TikTag (IEEE S&P 2025) 展示了通过推测执行泄露4-bit MTE标签的攻击。
-        关键模式：LDG/LDGV指令后紧跟条件分支——标签验证结果（tag匹配/不匹配）
-        通过分支预测器的推测执行被泄露到架构状态。
+        TikTag（IEEE S&P 2025）展示了推测执行泄露4-bit MTE标签的攻击。
+        关键模式：LDG/LDGV后紧跟条件分支，标签验证结果经由分支预测器
+        的推测执行通道泄露至架构状态。
         """
         findings=[]; raw=s._r2("aaaa; pD 20000",120)
         if not raw: return findings
@@ -440,7 +440,7 @@ class Arm64eEnhancedAnalyzer:
                 findings.append({"type":"tiktag_gadget","severity":sev.value,
                     "description":desc,"offset":f"0x{m.start():x}",
                     "function":s._func_for(m.start())})
-        # 交叉检查：如果有IRG/STG配对但无相应的LDG验证 → 标签使用不完整
+        # 交叉检查：存在IRG/STG配对但无LDG验证时，标记标签使用不完整
         has_irg=any(g.operation==MTEOperationType.IRG for g in mte_gadgets)
         has_ldgv=any(g.operation==MTEOperationType.LDGV for g in mte_gadgets)
         if has_irg and not has_ldgv:

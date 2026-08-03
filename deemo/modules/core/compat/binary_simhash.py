@@ -1,4 +1,3 @@
-# 2026-08-02
 # SimHash 二进制相似度 — 指纹生成与大规模近似匹配
 # 参考: Charikar (2002) "Similarity Estimation Techniques from Rounding Algorithms"
 #       — SimHash 的原始 STOC 论文，提出基于超平面舍入的 LSH 方案

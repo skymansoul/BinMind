@@ -1,14 +1,13 @@
-# 2026-07-16
-# utils — 字符串分类/熵/提取/YARA生成
-# Stringy-inspired 分类器：多模式正则，返回最具体匹配
-# 熵用标量 Shannon，不做滑动窗口（交给调用方决定窗口策略）
+# utils — 字符串分类 / 熵计算 / 字符串提取 / YARA 规则骨架
+# 分类器参照 Stringy 思路：多模式正则，按具体性降序返回最精确匹配
+# 熵使用标量 Shannon 熵，窗口策略由调用方决定
 
 import math
 import re
 from collections import Counter
 from typing import List, Tuple, Optional
 
-# ---- 预编译正则：一次性编译，避免每次调用重新解析 ----
+# ---- 预编译正则：编译一次，避免重复解析 ----
 _URL_PAT = re.compile(
     r'^https?://[^\s/$.?#].[^\s]*$|^ftp://[^\s]+$|^[a-zA-Z][a-zA-Z0-9+\-.]*://[^\s]+$'
 )
@@ -36,10 +35,8 @@ _IPV6_PAT = re.compile(
 )
 
 class StringClassifier:
-    """对单条字符串做多模式分类，返回最精确的类别。
-
-    对齐 Stringy 思路：URL > IP > DOMAIN > REGISTRY > GUID > BASE64 > PASSWORD 常量,
-    按具体性降序检查，先匹配的优先返回。
+    """多模式字符串分类器，按具体性降序返回最精确类别。
+    策略：URL > IPv6 > IPv4 > DOMAIN > REGISTRY > GUID > BASE64 > PASSWORD。
     """
 
     CATEGORIES = [
@@ -53,18 +50,18 @@ class StringClassifier:
         if not _s:
             return "UNKNOWN"
 
-        # 优先 URL —— 包含协议前缀，最具体
+        # URL 优先：含协议前缀，匹配最具体
         if _URL_PAT.match(_s):
             return "URL"
 
-        # IPv6 优先于 IPv4（IPv4 可能被错误匹配）
+        # IPv6 优先级高于 IPv4，避免误匹配
         if _IPV6_PAT.match(_s):
             return "IPV6"
 
         if _IPV4_PAT.match(_s):
             return "IPV4"
 
-        # 域名：至少一个点，TLD 字母
+        # 域名：至少一个点，TLD 为字母
         if _DOMAIN_PAT.match(_s):
             return "DOMAIN"
 
@@ -74,7 +71,7 @@ class StringClassifier:
         if _GUID_PAT.match(_s):
             return "GUID"
 
-        # BASE64 特征：字符集 + 末尾等号填充
+        # BASE64：限定字符集 + 可选等号填充
         if len(_s) >= 4 and _BASE64_PAT.match(_s):
             return "BASE64"
 
@@ -85,9 +82,7 @@ class StringClassifier:
 
 
 def shannon_entropy(data: bytes) -> float:
-    """标准 Shannon 熵，输出 [0, 8] 范围。
-    不设窗口 —— 调用方决定分片策略。
-    """
+    """标准 Shannon 熵，输出范围 [0, 8]。不设滑动窗口。"""
     if not data:
         return 0.0
     _n = len(data)
@@ -99,19 +94,16 @@ def shannon_entropy(data: bytes) -> float:
     return _h
 
 
-# ===== 可打印字符范围 =====
-_ASCII_PRINTABLE = set(range(0x20, 0x7F))  # space (0x20) 到 ~ (0x7E)
+# ===== 可打印字符集 =====
+_ASCII_PRINTABLE = set(range(0x20, 0x7F))  # space (0x20) 至 ~ (0x7E)
 _ASCII_PRINTABLE_WITH_TAB_NL = set(range(0x09, 0x0B)) | set(range(0x20, 0x7F))
 _ASCII_PRINTABLE_WITH_TAB_NL.discard(0x0A)  # 保留 \n
 _ASCII_PRINTABLE_WITH_TAB_NL.add(0x0A)
 
 
 class StringExtractor:
-    """三元扫描提取字符串：ASCII、UTF-16LE、UTF-16BE。
-
-    设计权衡：不做全编码探测（如 UTF-32、EBCDIC）—— 三路扫描覆盖
-    绝大多数 Windows 二进制（PE 资源以 UTF-16LE 为主）和 Linux 二进制
-    （ASCII 为主）。每路扫描 O(n)，总 O(3n)。
+    """三路扫描字符串提取：ASCII、UTF-16LE、UTF-16BE。
+    覆盖绝大多数 Win/Linux 二进制。每路 O(n)，总 O(3n)。
     """
 
     def __init__(self, min_length: int = 4):
@@ -139,13 +131,12 @@ class StringExtractor:
         return _r
 
     def _scan_utf16(self, data: bytes, le: bool = True) -> List[Tuple[int, str, str]]:
-        """UTF-16 扫描：检查交替 null 字节模式。
-        le=True  -> UTF-16LE（低字节在前，偶数字节为 null）
-        le=False -> UTF-16BE（高字节在前，奇数字节为 null）
+        """UTF-16 扫描：检测交替 null 字节模式。
+        le=True 为 UTF-16LE，le=False 为 UTF-16BE。
         """
         _r: List[Tuple[int, str, str]] = []
         _enc = 'UTF-16LE' if le else 'UTF-16BE'
-        _null_pos = 1 if le else 0  # null 字节在奇数还是偶数位置
+        _null_pos = 1 if le else 0  # null 字节偏移：LE 为高字节(offset+1)，BE 为低字节(offset+0)
         _run_start = -1
         _run_bytes = bytearray()
         _n = len(data)
@@ -179,9 +170,8 @@ class StringExtractor:
         return _r
 
     def extract_strings(self, data: bytes) -> List[Tuple[int, str, str]]:
-        """三路扫描：ASCII -> UTF-16LE -> UTF-16BE。
-
-        Returns: [(offset, string, encoding), ...]
+        """三路扫描入口：ASCII → UTF-16LE → UTF-16BE。
+        返回 [(offset, string, encoding), ...]。
         """
         if not data:
             return []
@@ -189,12 +179,12 @@ class StringExtractor:
         _all.extend(self._scan_ascii(data))
         _all.extend(self._scan_utf16(data, le=True))
         _all.extend(self._scan_utf16(data, le=False))
-        # 按偏移量排序
+        # 按偏移升序排列
         _all.sort(key=lambda x: x[0])
         return _all
 
 
-# //// YARA 规则骨架生成 ////
+# //// YARA 规则骨架 ////
 _DANGEROUS_STRINGS = {
     "VirtualAlloc", "VirtualProtect", "WriteProcessMemory",
     "CreateRemoteThread", "NtUnmapViewOfSection", "LoadLibrary",
@@ -216,10 +206,8 @@ _YARA_TEMPLATE = """rule {rule_name} {{
 }}"""
 
 def generate_yara_skeleton(strings: list, rule_name: str = "auto_generated") -> str:
-    """从提取的字符串自动生成 YARA 扫描规则骨架。
-
-    过滤策略：仅保留疑似安全相关的字符串（危险 API、路径、URL、注册表键），
-    避免把普通库函数拉入规则导致误报泛滥。
+    """从提取字符串构造 YARA 扫描规则骨架。
+    仅保留安全相关字符串（危险 API、路径、URL、注册表键），避免普通库函数误报。
     """
     if not strings:
         return _YARA_TEMPLATE.format(rule_name=rule_name, string_defs="        $s0 = \"NONE\"")

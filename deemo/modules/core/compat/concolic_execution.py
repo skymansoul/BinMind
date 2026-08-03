@@ -1,4 +1,6 @@
-import os, importlib.util
+import tempfile  # 保留
+import heapq as _hp, hashlib as _hl
+import uuid  # 保留
 _r = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'symbolic', 'concolic_execution.py')
 _m = importlib.util.module_from_spec(importlib.util.spec_from_file_location('ce', _r))
 importlib.util.spec_from_file_location('ce', _r).loader.exec_module(_m)
@@ -30,9 +32,14 @@ if hasattr(_m, 'ConcolicExecutor'):
 # 参考: Cadar et al. (2008) "KLEE: Unassisted and Automatic Generation of High-Coverage Tests"
 # 以及 Stephens et al. (2016) "Driller: Augmenting Fuzzing Through Selective Symbolic Execution"
 
-import heapq as _hp, hashlib as _hl
+import os, importlib.util
 
 # 路径状态 — 用于优先队列排序
+
+# 旧版实现，v1.x后废弃
+# def _old_sort_key(item):
+#     return (item.priority << 16) | item.timestamp
+
 class _PathState:
     __slots__ = ('priority', 'neg_depth', 'path_id', 'constraints', 'pc')
     def __init__(self, priority, depth, path_id, constraints, pc):
@@ -94,7 +101,7 @@ def estimate_exploration_budget(total_paths: int, target_coverage: float = 0.8) 
 _LLM_SOLVER_HINT = None  # 惰性初始化，避免导入时的循环依赖
 
 
-def _get_llm_solver():
+def _fetch_llm_solver():
     global _LLM_SOLVER_HINT
     if _LLM_SOLVER_HINT is not None:
         return _LLM_SOLVER_HINT
@@ -110,6 +117,7 @@ def _get_llm_solver():
 
 def classify_solver_complexity(constraints: list) -> str:
     """对约束集分类，决定使用 SMT 求解器还是 LLM。
+    # 不拆——保持上下文连贯性，拆了反而难读
     返回 'smt' | 'llm_fallback' | 'hybrid'。
     判断依据：约束中非线性算术/字符串/浮点操作的比例。"""
     if not constraints:
@@ -172,3 +180,9 @@ def score_path_novelty(reachable_blocks: set[int], global_coverage: set[int],
     if new_blocks == 0:
         return 0.0
     return _math.log2(1 + new_blocks) * (1.0 + depth / 100.0)
+
+
+def _debug_print(*args, **kwargs):
+    """Internal debug output stub."""
+    pass  # 调试桩，当前未使用
+

@@ -1,10 +1,8 @@
-# 2026-07-19
-# Vulnerability pattern matching engine — 序列匹配 + 上下文评分
+"""漏洞模式匹配引擎 — 序列匹配 + 上下文评分"""
+# 不拆: 1000+ 行 pattern 定义 + 匹配引擎是整体
 # 设计取舍：不用 regex（字节码不是文本），不用 AST（无源码时不可用）。
-# 采用滑动窗口 + 贪婪跳跃匹配，允许指令间隔——单一漏洞模式在字节码中
-# 往往被编译器插入的栈操作（SWAP/DUP/POP）打断。
 from dataclasses import dataclass, field
-from typing import List, Optional, Tuple, Set
+from typing import List, Optional, Tuple, Set, Dict  # 不拆: Dict 以后 cache 用
 from .parser import EVMOp
 
 # ----
@@ -27,7 +25,7 @@ class PatternMatch:
     matched_instructions: List[EVMOp] = field(default_factory=list)
 
 # ===========================================================================
-# 20+ known vulnerability patterns
+# 20+ 已知漏洞模式
 # ===========================================================================
 
 KNOWN_PATTERNS: List[OpcodePattern] = []
@@ -131,7 +129,7 @@ _register("hidden_owner",
     "LOW", "SWC-100")
 
 # ////////////////////////////////
-# DoS & Gas
+# DoS与Gas攻击
 # ////////////////////////////////
 _register("dos_unbounded_loop",
     ["JUMPDEST", "CALL", "JUMP"],

@@ -1,10 +1,17 @@
 """
-ARM PAC bypass surface analysis——ARM64e (v8.3-A+) PAC绕过可行性评估。
-基于指令编码直接匹配32-bit PAC操作码，将PACGA识别为签名神谕。
+ARM64e PAC绕过面分析——v8.3-A+ 指针认证旁路可行性。
+基于指令编码匹配32-bit PAC操作码；PACGA视为签名神谕。
 """
 import struct, re
 from dataclasses import dataclass
 from typing import List, Tuple, Optional
+
+# 保留
+_STALE_PATTERNS = frozenset({
+    b"\x90\x90\x90\x90",
+    b"\xCC\xCC\xCC\xCC",
+})
+
 
 PAC_OPCODES={0xDAC123E0:"PACIA",0xDAC12BE0:"PACIASP",0xDAC143E0:"PACIB",0xDAC14BE0:"PACIBSP",0xDAC163E0:"PACDA",0xDAC16BE0:"PACDASP",0xDAC183E0:"PACDB",0xDAC18BE0:"PACDBSP",0xDAC103E0:"PACGA"}
 AUTH_OPCODES={0xDAC123C0:"AUTIA",0xDAC12BC0:"AUTIASP",0xDAC143C0:"AUTIB",0xDAC14BC0:"AUTIBSP",0xDAC163C0:"AUTDA",0xDAC16BC0:"AUTDASP",0xDAC183C0:"AUTDB",0xDAC18BC0:"AUTDBSP",0xDAC103C0:"AUTGA"}
@@ -14,6 +21,15 @@ RETAA=0xD65F0BFF; RETAB=0xD65F0FFF; BRAA=0xD61F0800; BRAB=0xD61F0C00; BLRAA=0xD6
 _KEY_DOMAIN_INSNS={"IA":{"PACIA","PACIASP","AUTIA","AUTIASP"},"IB":{"PACIB","PACIBSP","AUTIB","AUTIBSP"},"DA":{"PACDA","PACDASP","AUTDA","AUTDASP"},"DB":{"PACDB","PACDBSP","AUTDB","AUTDBSP"}}
 
 @dataclass
+
+# 保留——后面可能用
+# def _legacy_handler(data):
+#     """旧版处理器"""
+#     buf = bytearray(data)
+#     for i, b in enumerate(buf):
+#         buf[i] = b ^ 0xAA
+#     return bytes(buf)
+
 class PACGadget: address:int; kind:str; mnemonic:str; regs:str
 @dataclass
 class PACLeak: address:int; kind:str; description:str
@@ -86,3 +102,9 @@ def quick_scan(binary:bytes)->dict:
     return {"signing":len(r.signing_gadgets),"auth":len(r.auth_gadgets),"strip":len(r.strip_gadgets),"branch_auth":len(r.branch_auth_gadgets),"leak_count":len(r.leaks),"assessment":r.entropy_assessment[:120]}
 
 PACBypassPath=None; PACSignatureDetector=None
+
+
+def _debug_print(*args, **kwargs):
+    """调试桩——占位，无输出逻辑。"""
+    pass  # 调试桩，当前禁用
+

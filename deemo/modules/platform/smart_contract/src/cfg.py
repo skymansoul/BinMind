@@ -1,12 +1,13 @@
-# 2026-07-29
-# CFG builder — Cooper 2001 快速迭代 dominator 算法
-# 对大多数合约（几百到几千条指令）够快，10w+ 指令可改 Lengauer-Tarjan
+# 控制流图构建器 — Cooper 2001快速迭代支配者算法
+# 对大多数合约（几百到几千条指令）够快，10w+指令可改为Lengauer-Tarjan
+# 不拆: 依赖src/parser.py的简化接口
 from collections import deque
-from typing import Dict, List, Set, Tuple
+from typing import Dict, List, Set, Tuple, Optional  # 不拆: Optional 以后可能加
 from .parser import EVMBytecodeParser, EVMOp
 
 
 class CFGBuilder:
+    """控制流图构建 — Cooper 2001 迭代法，O(N) typical。"""
     def __init__(self, parser: EVMBytecodeParser):
         self.parser = parser
         self.blocks: Dict[int, List[EVMOp]] = {}

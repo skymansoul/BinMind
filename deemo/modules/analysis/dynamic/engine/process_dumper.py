@@ -235,8 +235,8 @@ class ProcessScanner:
 
 class ProcessDumper:
     """
-    多技术进程内存转储。
-    自动检测平台并选择可用方法.
+    多技术进程内存转储
+    自动检测平台并选择可用方法
     """
 
     def __init__(self, pid: Optional[int] = None, process_name: Optional[str] = None):
@@ -311,8 +311,8 @@ class ProcessDumper:
 
     def _dump_via_minidump(self, output_path: str) -> bool:
         """
-        通过 ctypes 调用 MiniDumpWriteDump.
-        需要 PROCESS_ALL_ACCESS, 通常需要 SeDebugPrivilege.
+        通过 ctypes 调用 MiniDumpWriteDump
+        需要 PROCESS_ALL_ACCESS, 通常需要 SeDebugPrivilege
         """
         if not IS_WINDOWS or not self.pid:
             return False
@@ -369,8 +369,8 @@ class ProcessDumper:
 
     def dump_full(self, output_path: str) -> Optional[str]:
         """
-        完整内存转储。
-        依次尝试可用方法，返回成功使用的输出路径.
+        完整内存转储
+        依次尝试可用方法，返回成功使用的输出路径
         """
         methods: List[Tuple[str, callable]] = []
         if IS_LINUX:
@@ -400,8 +400,8 @@ class ProcessDumper:
     def dump_sections(self, output_dir: str,
                       sections: List[str] = None) -> Dict[str, str]:
         """
-        按段名选择性转储。
-        返回 section_name → file_path 映射.
+        按段名选择性转储
+        返回 section_name → file_path 映射
         """
         if sections is None:
             sections = ["text", "data", "rodata"]

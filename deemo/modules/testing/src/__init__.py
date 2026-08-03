@@ -1,5 +1,4 @@
-# 2026-07-20
-# testing/src — differential testing & fuzzing framework
+# 差分测试与模糊测试框架
 
 __version__ = "0.4.0"
 
@@ -28,6 +27,15 @@ _submodules = {
     "crash_cluster": ".crash_cluster",
     "grammar_infer": ".grammar_infer",
     "regression_corpus": ".regression_corpus",
+    "diff_oracle": ".diff_oracle",
+    "adaptive_mutator": ".adaptive_mutator",
+    "input_minimizer": ".input_minimizer",
+    "coverage_index": ".coverage_index",
+    "statistical_oracle": ".statistical_oracle",
+    "cross_engine_fuse": ".cross_engine_fuse",
+    "cfg_entropy_fingerprint": ".cfg_entropy_fingerprint",
+    "subreg_taint": ".subreg_taint",
+    "drift_calibrator": ".drift_calibrator",
 }
 
 def __getattr__(name):

@@ -1,14 +1,15 @@
 import logging
 import os
 import struct
-import random
+import random as _random_module
 import time
 import hashlib
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple, Callable, Set
 from collections import defaultdict
+from itertools import count  # unused; 保留以备将来批量注入点编号
 
-__log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)  # 修复: __log → logger, 消除 NameError — 代码其余部分全部引用 logger
 
 try:
     import unicorn
@@ -50,7 +51,6 @@ class FaultResult:
 
 
 class FaultInjectionFuzzer:
-    """故障注入模糊器 — 基于 Unicorn 模拟执行指令跳过与比特翻转"""
 
     SENSITIVE_PATTERNS = [
         b"mprotect", b"system", b"execve", b"popen",

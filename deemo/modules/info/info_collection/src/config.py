@@ -1,12 +1,11 @@
-# 2026-07-15
-# config — 全局配置入口，环境变量覆盖默认值
-# 设计考量：不依赖外部 .env 解析库，直接 os.environ 读取，减少依赖链
+# config — 全局配置，环境变量覆盖默认值
+# 直接 os.environ 读取，避免引入 dotenv 等外部依赖
 
 import os
 import logging
 from dataclasses import dataclass, field
 
-# ---- 平台无关默认值 ----
+# ---- 默认值 ----
 _DEFAULT_BINARY_PATHS = ["/usr/bin", "/bin", "/usr/local/bin", "C:\\Windows\\System32"]
 _DEFAULT_ENTROPY_THRESHOLD = 7.2
 _DEFAULT_STRING_MIN_LENGTH = 4
@@ -27,7 +26,7 @@ class Config:
     output_dir: str = _DEFAULT_OUTPUT_DIR
     yara_output_dir: str = _DEFAULT_YARA_OUTPUT_DIR
 
-# ===== 环境变量映射 =====
+# 环境变量 → (Config 字段名, 类型转换函数)
 _ENV_MAP = {
     "BINMIND_INFO_BINARY_PATHS": ("binary_paths", lambda v: [p.strip() for p in v.split(os.pathsep) if p.strip()]),
     "BINMIND_INFO_ENTROPY_THRESHOLD": ("entropy_threshold", float),
@@ -40,11 +39,8 @@ _ENV_MAP = {
 }
 
 def load_config() -> Config:
-    """合并环境变量覆盖到默认值，返回最终的 Config 实例。
-
-    优先级：环境变量 > 硬编码默认值。
-    设计意图：避免重复 os.environ.get 调用分散在各子模块中 —— 集中一处，
-    方便审计哪些参数由外部控制。
+    """合并环境变量覆盖到 Config 实例。优先级：环境变量 > 默认值。
+    解析失败静默回退默认值，防止启动崩溃。
     """
     _cfg = Config()
     for _env_key, (_attr, _caster) in _ENV_MAP.items():
@@ -53,10 +49,9 @@ def load_config() -> Config:
             try:
                 setattr(_cfg, _attr, _caster(_raw))
             except (ValueError, TypeError):
-                pass  # 解析失败静默回退默认值，避免启动炸
+                pass
     return _cfg
 
-# //// 模块初始化日志配置 ////
 def _setup_logging(level: str) -> None:
     _level = getattr(logging, level.upper(), logging.INFO)
     logging.basicConfig(
@@ -64,4 +59,4 @@ def _setup_logging(level: str) -> None:
         level=_level,
     )
 
-# 模块 import 时不做自动日志配置，交给 CLI/入口显式调用
+# 不在此处自动调用日志配置，留给 CLI/入口显式初始化

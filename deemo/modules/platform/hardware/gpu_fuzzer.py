@@ -57,7 +57,7 @@ class FuzzResult:
     executions: int = 0
     duration: float = 0.0
     errors: List[str] = field(default_factory=list)
-    # 新增：覆盖位图指纹，用于种子去重与稀有性评估
+    # 覆盖位图指纹，用于种子去重与稀有性评估
     coverage_bitmap: int = 0
     novel_paths: int = 0
 
@@ -68,7 +68,7 @@ class FuzzResult:
 # 适合 GPU kernel fuzz 的高吞吐场景（单次 kernel 执行通常 <1ms）。
 
 class _SeedBucket:
-    """单个种子的元数据，用于调度决策。"""
+    """单一种子元数据，用于调度决策。"""
     __slots__ = ('seed', 'bitmap', 'hit_count', 'energy', 'last_fuzzed')
 
     def __init__(self, seed: bytes, bitmap: int):
@@ -82,8 +82,8 @@ class _SeedBucket:
 class GPUSeedScheduler:
     """基于覆盖稀有性的种子调度器。
 
-    每个种子的能量（energy）决定了下一轮变异时该种子被选中的概率。
-    罕见路径（bitmap 在全局出现频次低）获得指数级更高的能量。
+    每个种子的能量（energy）决定下一轮变异时该种子被选中的概率。
+    罕见路径（bitmap 在全局出现频次低）获得指数级更高能量。
     """
 
     def __init__(self, base_energy: int = 100):
@@ -98,7 +98,7 @@ class GPUSeedScheduler:
             self._buckets.append(_SeedBucket(seed, bitmap))
 
     def update_result(self, seed: bytes, bitmap: int, novel_paths: int) -> bool:
-        """返回 True 表示该结果值得加入种子池（发现了新路径）。"""
+        """返回 True 表示该结果值得加入种子池（发现新路径）。"""
         with self._lock:
             freq = self._global_bitmap_freq.get(bitmap, 0)
             if freq == 0 or novel_paths > 0:
@@ -136,8 +136,8 @@ class GPUSeedScheduler:
     def _recalc_energies(self) -> None:
         """根据全局 bitmap 频率重新分配能量。
 
-        稀有性 = 1 / (全局频次)，然后乘以基准能量。
-        频次为 1 的种子获得 4× 基准能量，频次 >10 的种子降至 0.5× 基准。
+        稀有性 = 1 / (全局频次)，乘以基准能量。
+        频次为 1 的种子获 4x 基准能量，频次 >10 的种子降至 0.5x 基准。
         """
         base = self._base_energy
         for b in self._buckets:
@@ -150,8 +150,8 @@ class GPUSeedScheduler:
         """移除命中频次最高的冗余种子，保留稀有路径。
 
         策略：按 bitmap 频次降序排列，删除前 N 个过频繁的种子。
-        这是 AFL 式 corpus minimization 的简化版——不做最小集覆盖，
-        因为 GPU fuzz 中 bitmap 碰撞率低，删除高频种子基本等价于去重。
+        此为 AFL 式 corpus minimization 的简化版——不做最小集覆盖，
+        因 GPU fuzz 中 bitmap 碰撞率低，删除高频种子基本等价于去重。
         """
         with self._lock:
             if len(self._buckets) <= max_seeds:
@@ -248,7 +248,7 @@ class GPUFuzzerCore:
 
     def _generate_random_mutations(self, seed: bytes, count: int) -> List[bytes]:
         results = []
-        # 高兴趣度的种子获得更多变异点
+        # 高兴趣度种子获得更多变异点
         interest = self._interest_score(seed)
         mutation_points = max(1, min(len(seed), int(len(seed) * 0.3 * interest)))
 
@@ -283,7 +283,7 @@ class GPUFuzzerCore:
     def _compute_coverage_bitmap(self, inputs: List[bytes]) -> int:
         """将一批输入的执行结果编码为 64-bit bitmap。
 
-        实际场景中这来自 GPU 覆盖率回传（如 nvbit 插桩），这里用哈希模拟。
+        实际场景中来自 GPU 覆盖率回传（如 nvbit 插桩），此处用哈希模拟。
         """
         combined = b''.join(inputs)
         h = hashlib.sha256(combined).digest()
@@ -460,7 +460,7 @@ class GPUFuzzerService:
         fuzzer = self._fuzzers[device_id]
         result = fuzzer.execute(task)
 
-        # 反馈到调度器：新路径加入种子池
+        # 反馈至调度器：新路径加入种子池
         if result.novel_paths > 0:
             self._scheduler.update_result(task.input_data, result.coverage_bitmap, result.novel_paths)
 

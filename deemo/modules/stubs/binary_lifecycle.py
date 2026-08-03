@@ -1,4 +1,4 @@
-# re-export from compat/ — 二进制生命周期管理桩
+# re-export from compat/ — 二进制生命周期追踪桩
 # 参考: Vestige (Ji et al., 2021) 二进制来源追踪 &
 #   Trend Tracker — 版本漂移的时间序列建模
 import os as _os, importlib.util as _iu

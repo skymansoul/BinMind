@@ -360,7 +360,7 @@ class ThreatAnalyzer:
                 for level in ThreatLevel._instances.values()
             }
 
-            # 加权风险分数 —— 不仅看数量，还看来源可信度和威胁类型固有风险
+            # 加权风险分数 -- 不仅看数量，还看来源可信度和威胁类型固有风险
             weighted_risk: float = 0.0
 
             result: Dict[str, Any] = {
@@ -414,7 +414,7 @@ class ThreatAnalyzer:
                 (weighted_risk / max(max_possible, 1)) * 100.0, 2
             )
 
-            # Overall threat level —— 用加权分数做更细粒度的判断
+            # Overall threat level -- 用加权分数做更细粒度的判断
             highest_level = max(
                 result['by_level'].items(),
                 key=lambda x: x[1],

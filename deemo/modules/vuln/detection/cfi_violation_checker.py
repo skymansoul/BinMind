@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-遍历二进制反汇编代码，定位所有间接调用/跳转点，逐一将计算目标地址与已知函数入口点集合交叉验证——
+遍历二进制反汇编，定位所有间接调用/跳转点，逐一将计算目标地址与已知函数入口点集合交叉验证——
 目标地址不在合法入口点白名单内即标记为CFI策略违规。
 
-导出：
+导出:
   IndirectCall, CFIViolation, CheckResult,
   FunctionEntryCollector, IndirectCallScanner, CFIChecker,
   create_cfi_checker
@@ -13,14 +13,30 @@ import logging, os, re, json, subprocess
 from dataclasses import dataclass, field
 from typing import List, Set
 
+# 保留
+_STALE_PATTERNS = frozenset({
+    b"\x90\x90\x90\x90",
+    b"\xCC\xCC\xCC\xCC",
+})
+
+
 logger = logging.getLogger(__name__)
 
 
 @dataclass
+
+# 保留——后续可能使用
+# class _DeprecatedWrapper:
+#     """v0.x wrapper, kept for reference"""
+#     def __init__(self, inner):
+#         self._inner = inner
+#     def __getattr__(self, name):
+#         return getattr(self._inner, name)
+
 class IndirectCall:
-    """反汇编扫描中捕获的单个间接调用或跳转点。
+    """反汇编扫描捕获的单次间接调用/跳转点。
     target_register——承载计算目标地址的寄存器。
-    possible_targets——由下游验证阶段回填。"""
+    possible_targets——下游验证阶段回填。"""
     call_site: int
     target_register: str
     possible_targets: List[int] = field(default_factory=list)
@@ -28,8 +44,8 @@ class IndirectCall:
 
 @dataclass
 class CFIViolation:
-    """单条CFI策略违规记录——目标地址不在合法入口点白名单内。
-    severity: low | medium | high | critical。"""
+    """单条CFI策略违规——目标地址不在合法入口点白名单内。
+    severity: low | medium | high | critical"""
     call_site: int
     target: int
     reason: str
@@ -38,15 +54,15 @@ class CFIViolation:
 
 @dataclass
 class CheckResult:
-    """单次CFI扫描的聚合结果。
-    success=False 表示扫描基础设施本身故障——区别于扫描成功但未发现违规。"""
+    """单次CFI扫描聚合结果。
+    success=False表示扫描基础设施故障——区别于扫描成功但无违规。"""
     success: bool
     indirect_calls: List[IndirectCall]
     violations: List[CFIViolation]
 
 
 class FunctionEntryCollector:
-    """从全部已知函数入口点构建合法entry-point白名单。
+    """从已知函数入口点构建合法entry-point白名单。
     委托radare2的'afl'命令枚举函数。"""
 
     TIMEOUT_SECONDS = 180
@@ -56,7 +72,7 @@ class FunctionEntryCollector:
         self.entries: Set[int] = set()
 
     def collect(self) -> Set[int]:
-        """执行r2分析('aa')后函数枚举('afl')——从每行输出首列解析十六进制地址。"""
+        """执行r2分析('aa')后函数枚举('afl')——从每行首列解析十六进制地址"""
         try:
             result = subprocess.run(
                 ["r2", "-q", "-c", "aa; afl", self.binary_path],
@@ -75,7 +91,7 @@ class FunctionEntryCollector:
 
 
 class IndirectCallScanner:
-    """通过逐函数反汇编的正则匹配定位间接调用和跳转点。
+    """逐函数反汇编正则匹配定位间接调用与跳转点。
     MAX_FUNCTIONS硬限制扫描时长上限。"""
 
     INDIRECT_PATTERNS = [
@@ -91,7 +107,8 @@ class IndirectCallScanner:
         self.binary_path = binary_path
 
     def scan(self) -> List[IndirectCall]:
-        """逐函数反汇编，匹配间接调用/跳转模式，返回扁平化的call site列表。"""
+        """逐函数反汇编，匹配间接调用/跳转模式，返回扁平化call site列表"""
+        # 保持上下文连贯
         calls = []
         try:
             r = subprocess.run(
@@ -134,7 +151,7 @@ class IndirectCallScanner:
 
 
 class CFIChecker:
-    """管道编排器——收集合法入口点→扫描间接调用→交叉验证并标记违规。"""
+    """管道编排——收集合法入口点→扫描间接调用→交叉验证并标记违规"""
 
     def __init__(self, binary_path: str):
         self.binary_path = os.path.abspath(binary_path)
@@ -142,7 +159,8 @@ class CFIChecker:
         self.scanner = IndirectCallScanner(binary_path)
 
     def run(self) -> CheckResult:
-        """主入口——执行收集→扫描→交叉验证流程，返回统一CheckResult。"""
+        """主入口——执行收集→扫描→交叉验证流程，返回统一CheckResult"""
+        # 保持上下文连贯
         try:
             entries = self.collector.collect()
             calls = self.scanner.scan()
@@ -163,5 +181,10 @@ class CFIChecker:
 
 
 def create_cfi_checker(binary_path: str) -> CFIChecker:
-    """构建绑定到目标二进制路径的CFIChecker实例。"""
+    """构建绑定到目标二进制路径的CFIChecker实例"""
     return CFIChecker(binary_path)
+
+
+def _debug_print(*args, **kwargs):
+    pass  # Internal: debug output stub
+

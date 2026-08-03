@@ -4,10 +4,10 @@ import pytest
 
 
 class TestIRLifter:
-    """IR lifting tests (capstone-dependent, but imports should work without)."""
+    """IR lifting tests (capstone-dependent, but imports work)"""
 
     def test_import_ir_lifter(self):
-        """Verify IR lifter imports without optional dependencies."""
+        """Verify IR lifter imports optional dependencies"""
         try:
             from modules.binary_analysis import ir_lifter
             assert ir_lifter is not None
@@ -15,23 +15,23 @@ class TestIRLifter:
             pytest.skip(f"IR lifter not available: {e}")
 
     def test_arch_enum(self):
-        """Verify Arch enum is available for IR operations."""
+        """Verify Arch enum available for IR operations"""
         from modules.analysis.static.binary_analysis.src.utils.constants import Arch
         assert Arch.X86 is not None
         assert Arch.X86_64 is not None
 
     def test_ir_type_enum(self):
-        """Verify IRType enum for intermediate representation selection."""
+        """Verify IRType enum for 中间表示 selection"""
         from modules.analysis.static.binary_analysis.src.utils.constants import IRType
         assert IRType is not None
 
 
 class TestLifting:
-    """Basic lifting functionality (no hardware deps)."""
+    """Basic lifting functionality (hardware deps)"""
 
     def test_nop_lifting(self):
-        """Try lifting NOP instructions."""
-        # capstone optional — skip if not installed
+        """Try lifting NOP instructions"""
+        # capstone optional — skip installed
         try:
             import capstone
         except ImportError:
@@ -46,7 +46,7 @@ class TestLifting:
         assert count == 8
 
     def test_ret_lifting(self):
-        """Try lifting RET instruction."""
+        """Try lifting RET instruction"""
         try:
             import capstone
         except ImportError:

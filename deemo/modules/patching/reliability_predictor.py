@@ -1,8 +1,8 @@
-"""Monte Carlo reliability predictor — estimates patch survival probability
-under various runtime conditions. v2 adds exploitability-aware scoring inspired
-by the VeriBin (NDSS 2025) patch verification framework.
+"""蒙特卡洛可靠性预测 —— 估计补丁在不同运行时条件下的生存概率。
 
-Not particularly fast but gives reasonable bounds for binary patches.
+v2 新增 exploitability 感知评分，借鉴 VeriBin (NDSS 2025) 补丁验证框架。
+
+不算快，但对二进制补丁给出合理边界估计。
 """
 
 import logging
@@ -11,9 +11,9 @@ import math
 from dataclasses import dataclass, field
 from typing import List, Optional, Dict
 
-logger = logging.getLogger(__name__)
+_log = logging.getLogger(__name__)
 
-# ── data classes ───────────────────────────────────────────────────────────
+# ── 数据类 ─────────────────────────────────────────────────────────
 
 @dataclass
 class RandomnessFactor:
@@ -24,10 +24,10 @@ class RandomnessFactor:
 
 @dataclass
 class ExploitabilityWeight:
-    """Inspired by VeriBin's adaptive verification tiers."""
+    """借鉴 VeriBin 自适应验证分层的 exploitability 权重。"""
     factor_name: str
-    weight: float               # 0..1 contribution to overall risk
-    is_defeatable: bool = False  # can be bypassed by a determined attacker
+    weight: float               # 0..1，对总体风险的贡献
+    is_defeatable: bool = False  # 攻击者能否绕过
 
 @dataclass
 class PredictionResult:
@@ -41,7 +41,7 @@ class PredictionResult:
 
 @dataclass
 class ReliabilityReport:
-    """格式化可靠性报告 — 替代裸 dict 输出。"""
+    """格式化可靠性报告 —— 替代裸 dict。"""
     predictor_type: str = ""
     arch: str = ""
     allocator: str = ""
@@ -50,7 +50,7 @@ class ReliabilityReport:
     exploitability: float = 0.0
     patch_difficulty: str = "unknown"
     factors: List[Dict] = field(default_factory=list)
-    survival_curve: List[float] = field(default_factory=list)  # time-indexed survival rates
+    survival_curve: List[float] = field(default_factory=list)  # 时间索引生存率
     recommendation: str = ""
 
     def to_dict(self):
@@ -67,18 +67,18 @@ class ReliabilityReport:
             'recommendation': self.recommendation,
         }
 
-# ── entropy estimation ─────────────────────────────────────────────────────
+# ── 熵估计 ─────────────────────────────────────────────────────────
 
 class EntropyEstimator:
-    """Estimate entropy for various mitigation techniques.
+    """各缓解技术的熵估计。
 
-    Values sourced from:
-      - ASLR: 28 bits on 64-bit Linux (mmap randomization), ~8 bits on 32-bit
-      - Stack canary: 24 bits (8 bytes, 1 null terminator byte)
-      - Heap: depends on allocator (glibc ptmalloc2 ~12 bits)
-      - CFI: forward-edge protection reduces vtable hijack surface
-      - Shadow stack: hardware-enforced (Intel CET) or software, ~48 bits effective
-      - PAC: ARM Pointer Authentication Code, 16-24 bits depending on implementation
+    参考数据：
+      - ASLR: 28 bits (64-bit Linux mmap), ~8 bits (32-bit)
+      - Stack canary: 24 bits (8 bytes, 1 null terminator)
+      - Heap: 取决于分配器 (glibc ptmalloc2 ~12 bits)
+      - CFI: 前向边保护，减少 vtable 劫持面
+      - Shadow stack: 硬件强制 (Intel CET) 或软件，约 48 bits
+      - PAC: ARM 指针认证，16-24 bits
     """
 
     @staticmethod
@@ -104,8 +104,8 @@ class EntropyEstimator:
 
     @staticmethod
     def estimate_stack_canary() -> RandomnessFactor:
-        # 8-byte canary, 1 byte is always null terminator → 56 bits usable
-        # but typical implementations expose ~24 bits to brute force
+        # 8 字节 canary，1 字节固定 null → 56 bits 可用
+        # 典型实现暴露约 24 bits 给暴力破解
         return RandomnessFactor(
             name="stack_canary", entropy_bits=24,
             success_probability=0.999,
@@ -120,7 +120,7 @@ class EntropyEstimator:
 
     @staticmethod
     def estimate_nx() -> RandomnessFactor:
-        # NX/DEP: no entropy but raises exploit bar significantly
+        # NX/DEP: 无熵但显著抬高利用门槛
         return RandomnessFactor(
             name="nx_dep", entropy_bits=0,
             success_probability=0.98,
@@ -128,8 +128,10 @@ class EntropyEstimator:
 
     @staticmethod
     def estimate_shadow_stack() -> RandomnessFactor:
-        """Intel CET / ARM FEAT_GCS shadow stack — hardware-enforced return address integrity。
-        不依赖熵而是强制校验，等价于 ~48 bits 安全裕度。"""
+        """Intel CET / ARM FEAT_GCS shadow stack —— 硬件强制返回地址完整性。
+
+        不依赖熵而是强制校验，等价约 48 bits 安全裕度。
+        """
         return RandomnessFactor(
             name="shadow_stack", entropy_bits=48,
             success_probability=0.9999,
@@ -137,27 +139,29 @@ class EntropyEstimator:
 
     @staticmethod
     def estimate_pac() -> RandomnessFactor:
-        """ARM64 Pointer Authentication Code — QARMA 或 IMP DEF 算法。
-        典型实现 16 bits (QARMA5) 到 24 bits，近似 20 bits。
-        PAC 可防 ROP/JOP 但不能防 reuse of signed gadget。"""
+        """ARM64 PAC —— QARMA 或实现定义算法。
+
+        典型 16 bits (QARMA5) 到 24 bits，近似 20 bits。
+        PAC 防 ROP/JOP 但不能防已签名 gadget 复用。
+        """
         return RandomnessFactor(
             name="pac", entropy_bits=20,
             success_probability=0.9995,
             description="ARM64 Pointer Authentication Code")
 
-# ── monte carlo simulator ───────────────────────────────────────────────────
+# ── 蒙特卡洛模拟器 ────────────────────────────────────────────────
 
 class MonteCarloSimulator:
-    """Runs N iterations, tracks survival count.
+    """N 次迭代，统计生存次数。
 
-    Each factor's success_probability is treated as an independent trial
-    per iteration — a pessimistic model but useful as a lower bound.
+    每个因子的 success_probability 在每轮中作为独立试验——
+    悲观模型，但适合作为下界。
     """
 
     def __init__(self, iterations: int = 10000):
         self.iterations = iterations
         self._rng = random.Random()
-        # seed with something pseudo-persistent but not crypto-critical
+        # 伪持久种子，非密码级
         self._rng.seed(0xDEADBEEF)
 
     def simulate(self, factors: List[RandomnessFactor]) -> float:
@@ -170,16 +174,18 @@ class MonteCarloSimulator:
             for f in factors:
                 if self._rng.random() > f.success_probability:
                     all_ok = False
-                    break  # one failure kills the iteration
+                    break  # 任一失败即淘汰本轮
             if all_ok:
                 successes += 1
 
         return successes / self.iterations
 
     def stratified_sampling(self, factors, strata=5):
-        """分层采样 — 将 [0,1] 概率空间划分为 strata 个等宽区间，
-        每层均匀采样缩减蒙特卡洛方差。strata=5 时方差约为标准 MC 的 1/25。
-        代价：每层独立迭代，总计算量不变但内存占用略增。"""
+        """分层采样 —— 将概率空间分 strata 等宽区间，均匀采样降低方差。
+
+        strata=5 时方差约为标准 MC 的 1/25。
+        每层独立迭代，总计算量不变，内存略增。
+        """
         if not factors or strata < 1:
             return self.simulate(factors)
 
@@ -192,7 +198,7 @@ class MonteCarloSimulator:
             for _ in range(per_stratum):
                 all_ok = True
                 for f in factors:
-                    # sample uniformly within stratum
+                    # 层内均匀采样
                     r = lo + self._rng.random() * (hi - lo)
                     if r > f.success_probability:
                         all_ok = False
@@ -204,7 +210,7 @@ class MonteCarloSimulator:
         return successes / total_iters if total_iters > 0 else 0.0
 
     def confidence_interval_95(self, rate: float) -> float:
-        """Wilson score interval — more accurate than normal approx for edge cases."""
+        """Wilson 分数区间 —— 边界情况比正态近似更准确。"""
         if self.iterations == 0:
             return 0.0
         n = self.iterations
@@ -214,18 +220,17 @@ class MonteCarloSimulator:
         margin = z * math.sqrt((rate*(1-rate) + z*z/(4*n)) / n) / denominator
         return margin
 
-# ── exploitability scoring ──────────────────────────────────────────────────
+# ── exploitability 评分 ────────────────────────────────────────────
 
 class ExploitabilityScorer:
-    """Score-based exploitability assessment.
+    """基于评分的 exploitability 评估。
 
-    Weights derived from analysis of 200+ CVEs (2020-2025) across
-    CWE-121, CWE-122, CWE-416, CWE-190. Heavily inspired by VeriBin's
-    adaptive verification tiers and SYMRADAR's PoC-centered approach.
+    权重来自 200+ CVE (2020-2025) 分析，覆盖 CWE-121/122/416/190。
+    借鉴 VeriBin 自适应验证分层与 SYMRADAR PoC 中心方法。
     """
 
     _WEIGHTS = {
-        # (factor, weight, can attacker defeat mitigation?)
+        # (因素, 权重, 攻击者能否绕过)
         "write_primitive":         ExploitabilityWeight("write_primitive", 0.30, True),
         "read_primitive":          ExploitabilityWeight("read_primitive", 0.20, True),
         "info_leak":               ExploitabilityWeight("info_leak", 0.15, False),
@@ -237,31 +242,29 @@ class ExploitabilityScorer:
         "seccomp_bypassable":      ExploitabilityWeight("seccomp_bypassable", 0.10, True),
     }
 
-    # Bayesian prior: 基于 CWE type 的 exploitability 先验概率
-    # 数据来自 CISA KEV catalog + NVD exploitability 统计 (2020-2025)
+    # CWE exploitability 先验概率 —— 数据来自 CISA KEV + NVD (2020-2025)
     _CWE_PRIORS = {
-        'CWE-121': 0.55,  # Stack overflow — moderate weaponization rate
-        'CWE-122': 0.65,  # Heap overflow — higher due to heap feng shui advances
-        'CWE-416': 0.70,  # UAF — consistently high exploitability
-        'CWE-415': 0.35,  # Double free — often just crash
-        'CWE-476': 0.10,  # NULL deref — mostly DoS
-        'CWE-190': 0.40,  # Integer overflow — context-dependent
-        'CWE-134': 0.50,  # Format string — powerful if controllable
+        'CWE-121': 0.55,  # Stack overflow —— 中等武器化率
+        'CWE-122': 0.65,  # Heap overflow —— 因堆风水进展而偏高
+        'CWE-416': 0.70,  # UAF —— 持续高 exploitability
+        'CWE-415': 0.35,  # Double free —— 常止于崩溃
+        'CWE-476': 0.10,  # NULL deref —— 多为 DoS
+        'CWE-190': 0.40,  # Integer overflow —— 取决于上下文
+        'CWE-134': 0.50,  # Format string —— 可控时威力大
         'CWE-843': 0.45,  # Type confusion
-        None: 0.30,        # unknown CWE prior
+        None: 0.30,        # 未知 CWE 先验
     }
 
     @classmethod
     def score(cls, capabilities: Dict[str, bool]) -> float:
-        """Score 0..1 where higher = more exploitable.
+        """评分 0..1，越高越易利用。
 
-        Normalises against ALL known capability weights, not just the
-        subset passed in — this way a partial set doesn't inflate the score.
+        归一化基于全部已知权重，避免部分输入膨胀评分。
         """
         if not capabilities:
             return 0.0
 
-        # total weight across the complete taxonomy
+        # 全分类总权重
         full_weight = sum(w.weight for w in cls._WEIGHTS.values())
         if full_weight == 0:
             return 0.0
@@ -276,26 +279,27 @@ class ExploitabilityScorer:
 
     @classmethod
     def score_with_prior(cls, capabilities, cwe_id=None):
-        """Bayesian exploitability scoring — 结合 CWE 先验和 capability 证据。
-        prior: CWE-based exploitability prior
-        evidence: capability-weighted score
-        后验 ≈ prior * (1 + evidence) / normalisation, clamped to [0, 1]"""
+        """Bayesian exploitability 评分 —— 结合 CWE 先验与 capability 证据。
+
+        prior: CWE 先验概率
+        evidence: capability 加权评分
+        后验 ≈ prior * (1 + evidence) / 归一化，截断到 [0, 1]
+        """
         prior = cls._CWE_PRIORS.get(cwe_id, cls._CWE_PRIORS[None])
         evidence = cls.score(capabilities)
-        # 简化的 pseudo-Bayesian：prior 和 evidence 的加权几何平均
+        # 简化 pseudo-Bayesian：几何加权平均
         if evidence > 0:
             posterior = math.sqrt(prior * evidence) * 0.8 + prior * 0.2
         else:
-            posterior = prior * 0.5  # no capabilities → halve the prior
+            posterior = prior * 0.5  # 无 capability → 先验减半
         return min(max(posterior, 0.0), 1.0)
 
     @classmethod
     def estimate_patch_difficulty(cls, exploit_score: float,
                                    confidence: float) -> str:
-        """How hard is it to write a correct fix?
+        """评估编写正确补丁的难度。
 
-        High exploitability + low confidence → harder to patch
-        (you might not fully understand the root cause).
+        高 exploitability + 低置信 → 更难（根因可能未完全理解）。
         """
         combined = exploit_score * (1.0 - confidence)
         if combined > 0.6:
@@ -309,50 +313,52 @@ class ExploitabilityScorer:
         else:
             return "trivial"
 
-# ── survival analysis ───────────────────────────────────────────────────────
+# ── 生存分析 ───────────────────────────────────────────────────────
 
 class SurvivalAnalyzer:
-    """Kaplan-Meier 风格生存分析 — 按"exploit 尝试次数"递增估计 survival rate。
-    假设每个 time step 的 hazard 来自 exploitability score，
-    按指数衰减模型：S(t) = exp(-hazard * t)。
-    hazard = exploitability_score * (1 - survival_rate)。"""
+    """Kaplan-Meier 风格生存分析 —— 按 exploit 尝试次数估计 survival rate。
+
+    hazard = exploitability_score * (1 - survival_rate)。
+    指数衰减：S(t) = exp(-hazard * t)。
+    """
 
     def __init__(self, time_horizon=100):
         self._horizon = time_horizon
 
     def estimate(self, mc_survival_rate, exploitability_score, ci_margin=0.0):
         """返回 time_horizon 个时间点的 survival curve。
-        上下界取 ±ci_margin 的 worst-case。"""
+
+        上下界取 ±ci_margin worst-case。
+        """
         if mc_survival_rate <= 0:
             return [0.0] * self._horizon
 
         hazard = exploitability_score * (1.0 - mc_survival_rate)
-        # floor hazard to avoid degenerate curves
+        # 下限防退化曲线
         hazard = max(hazard, 0.0001)
 
         curve = []
         for t in range(1, self._horizon + 1):
             s = math.exp(-hazard * t)
-            # incorporate CI margin pessimistically
+            # 悲观纳入 CI margin
             if ci_margin > 0:
                 s = max(0.0, s - ci_margin * t / self._horizon)
             curve.append(round(s, 6))
         return curve
 
     def median_lifetime(self, survival_curve):
-        """返回 survival rate 首次降至 0.5 以下的 time step (median survival)。"""
+        """返回 survival rate 首次低于 0.5 的时间步（中位生存期）。"""
         for t, s in enumerate(survival_curve, 1):
             if s < 0.5:
                 return t
-        return self._horizon  # survived the whole window
+        return self._horizon  # 全程存活
 
-# ── main predictor ─────────────────────────────────────────────────────────
+# ── 主预测器 ───────────────────────────────────────────────────────
 
 class ReliabilityPredictor:
-    """Top-level reliability prediction.
+    """顶层可靠性预测。
 
-    Chains entropy estimation → monte carlo simulation → exploitability scoring
-    into a single `run()` call.
+    串联 熵估计 → 蒙特卡洛 → exploitability 评分 为单次 run() 调用。
     """
 
     def __init__(self, arch="x86_64", allocator="glibc", iterations=10000):
@@ -367,11 +373,11 @@ class ReliabilityPredictor:
             extra_factors: Optional[List[RandomnessFactor]] = None,
             capabilities: Optional[Dict[str, bool]] = None,
             cwe_id: Optional[str] = None) -> PredictionResult:
-        """Execute full prediction pipeline.
+        """执行完整预测管线。
 
-        extra_factors: additional RandomnessFactor entries (e.g. from custom mitigations)
-        capabilities: dict of exploit capabilities present → bool
-        cwe_id: CWE identifier for Bayesian prior
+        extra_factors: 额外 RandomnessFactor（如自定义缓解措施）
+        capabilities: exploit 能力 → bool
+        cwe_id: CWE 标识，用于 Bayesian 先验
         """
         try:
             factors = [
@@ -387,7 +393,7 @@ class ReliabilityPredictor:
             rate = self.mc.simulate(factors)
             ci = self.mc.confidence_interval_95(rate)
 
-            # exploitability — with Bayesian prior when CWE is known
+            # exploitability —— CWE 已知时用 Bayesian 先验
             exploit_score = 0.0
             if capabilities:
                 exploit_score = self.scorer.score_with_prior(capabilities, cwe_id)
@@ -405,15 +411,17 @@ class ReliabilityPredictor:
                 patch_difficulty=patch_diff)
 
         except Exception as e:
-            logger.error("Reliability prediction failed: %s", e)
+            _log.error("Reliability prediction failed: %s", e)
             return PredictionResult(
                 success=False, success_rate=0.0,
                 confidence_interval=0.0, iterations=0, factors=[])
 
     def run_with_report(self, extra_factors=None, capabilities=None,
                         cwe_id=None, arch_extra=True):
-        """增强版 run() — 额外输出 ReliabilityReport + survival curve。
-        arch_extra=True 时自动追加架构相关 factor（shadow stack / PAC）。"""
+        """增强版 run() —— 额外输出 ReliabilityReport + survival curve。
+
+        arch_extra=True 时自动追加架构相关 factor（shadow stack / PAC）。
+        """
         if extra_factors is None:
             extra_factors = []
 
@@ -431,7 +439,7 @@ class ReliabilityPredictor:
 
         median = self.survival.median_lifetime(curve)
 
-        # recommendation
+        # 建议
         if result.exploitability_score > 0.6 and result.success_rate < 0.5:
             rec = "CRITICAL: patch likely exploitable; add layered mitigations (CFI + shadow stack + seccomp)"
         elif result.exploitability_score > 0.3 or result.success_rate < 0.8:
@@ -457,7 +465,7 @@ class ReliabilityPredictor:
 
         return result, report
 
-# ── convenience ─────────────────────────────────────────────────────────────
+# ── 便捷接口 ───────────────────────────────────────────────────────
 
 def create_reliability_predictor(arch="x86_64") -> ReliabilityPredictor:
     return ReliabilityPredictor(arch=arch)

@@ -17,8 +17,8 @@ except ImportError:
 from typing import Dict, Any
 from typing import List, Optional
 
-# Default prompt template — used when the prompts module (external dep) is unavailable.
-# The template is intentionally kept simple; AI providers will fill in the rest.
+# 默认 prompt 文本 —— prompts 模块不可用时的后备。
+# 结构刻意保持简洁，provider 侧自行补全上下文。
 PATCH_SUGGESTION_TEMPLATE = """\
 You are a senior C/C++ security engineer. Given the decompiled code and vulnerability
 description below, produce a precise patch suggestion in unified diff format.
@@ -37,8 +37,8 @@ Decompiled code:
 Respond with a unified diff patch enclosed in ```diff ... ``` blocks, followed by a
 ## Fix Description section explaining the change, and a confidence score (0.0-1.0).
 """
-# PATCH_SUGGESTION_TEMPLATE defined inline above as fallback
-# Original: from prompts import PATCH_SUGGESTION_TEMPLATE
+# 以上常量内联定义，替代原 prompts 模块导入
+# 原版: from prompts import PATCH_SUGGESTION_TEMPLATE
 
 logger = logging.getLogger(__name__)
 
@@ -55,10 +55,10 @@ except ImportError:
     bAnthropicOk = False
 
 
-# ── template cache ──────────────────────────────────────────────────────
-# 对 (vuln_type, function_name) 组合缓存 AI 响应，避免重复 API 调用。
-# LRU-cap with max 128 entries. 缓存命中时 confidence 打 0.9 折（保守）。
-# 缓存不跨 invocations — 随进程生命周期。
+# ── 响应缓存 ──────────────────────────────────────────────────────
+# 按 (vuln_type, function_name) 缓存远程响应，避免重复调用。
+# LRU 上限 128。命中时 confidence 打 0.9 折（保守策略）。
+# 缓存不跨进程。
 
 _template_cache = {}
 _TEMPLATE_CACHE_MAX = 128
@@ -114,19 +114,19 @@ class PatchSuggestion:
 
     @classmethod
     def from_cache(cls, cached):
-        """从缓存字典重建 PatchSuggestion — 避免重新调用 AI。"""
+        """从缓存字典重建 PatchSuggestion —— 跳过远程调用。"""
         inst = cls()
         for k, v in cached.items():
             if hasattr(inst, k):
                 setattr(inst, k, v)
-        inst.confidence *= 0.9  # 缓存折价 — 不重新验证，降低置信度
+        inst.confidence *= 0.9  # 缓存折价，未重验证故降置信
         return inst
 
 
 class PatchSuggester:
     def __init__(self):
         self.ai_client = None
-        self._secondary_client = None  # ensemble 的第二个 provider
+        self._secondary_client = None  # ensemble 第二 provider
         self._init_ai_client()
 
     def _init_ai_client(self):
@@ -146,7 +146,7 @@ class PatchSuggester:
             except Exception as e:
                 logger.warning("[PatchSuggester] Anthropic init failed: %s", e)
 
-        # 初始化 ensemble 的第二个 provider（反向）
+        # 初始化 ensemble 第二 provider（与主 provider 互为备份）
         if strProvider == 'openai' and bAnthropicOk:
             try:
                 self._secondary_client = Anthropic(api_key=Config.ANTHROPIC_API_KEY)
@@ -171,7 +171,7 @@ class PatchSuggester:
         pResult.target_offset = instruction_offset
         pResult.source_code = decompiled_code
 
-        # 检查缓存
+        # 查缓存
         cached = _cache_get(vuln_type, function_name)
         if cached is not None:
             logger.debug("[PatchSuggester] cache hit for %s/%s", vuln_type, function_name)
@@ -189,7 +189,7 @@ class PatchSuggester:
             strPrompt = self._build_prompt(decompiled_code, vuln_type,
                 function_name, instruction_offset, protection_info)
 
-            # ensemble: 第二个 provider 可用时同时调用，取高置信度结果
+            # ensemble: 双 provider 同时调用，取高置信结果
             if self._secondary_client is not None:
                 strAiResponse = self._call_ai_ensemble(strPrompt, vuln_type)
             else:
@@ -201,7 +201,7 @@ class PatchSuggester:
             pResult.confidence = dParsed.get('confidence', 0.7)
             pResult.suggestion_type = dParsed.get('suggestion_type', 'general')
 
-            # 验证生成的 patch
+            # 校验 patch 语法
             if pResult.patch_diff:
                 pResult = self._validate_patch_syntax(pResult)
 
@@ -219,16 +219,18 @@ class PatchSuggester:
 
     def suggest_mitigation_stack(self, decompiled_code, vuln_type,
                                   function_name="", instruction_offset=0):
-        """ATLANTIS 风格 layered defense — 不只建议单个 patch，
-        而是一组分层缓解措施：prevent → detect → contain → recover。"""
+        """ATLANTIS 风格分层防御 —— 多级缓解措施栈。
+
+        prevent → detect → contain → recover。
+        """
         stack = []
 
-        # Layer 1: prevent (源码级修复)
+        # Layer 1: 源头修复
         primary = self.generate_suggestion(decompiled_code, vuln_type,
                                            function_name, instruction_offset)
         stack.append({'layer': 'prevent', 'patch': primary})
 
-        # Layer 2: detect (运行时检测)
+        # Layer 2: 运行时检测
         detect_patch = self._generate_default_patch(decompiled_code, 'detect_' + vuln_type)
         detect_suggestion = PatchSuggestion()
         detect_suggestion.vuln_type = vuln_type
@@ -237,7 +239,7 @@ class PatchSuggester:
         detect_suggestion.confidence = 0.4
         stack.append({'layer': 'detect', 'patch': detect_suggestion})
 
-        # Layer 3: contain (沙箱/权限约束)
+        # Layer 3: 隔离约束
         contain_suggestion = PatchSuggestion()
         contain_suggestion.vuln_type = vuln_type
         contain_suggestion.patch_diff = (
@@ -250,7 +252,7 @@ class PatchSuggester:
         contain_suggestion.confidence = 0.35
         stack.append({'layer': 'contain', 'patch': contain_suggestion})
 
-        # Layer 4: recover (crash 后自动恢复)
+        # Layer 4: 崩溃恢复
         recover_suggestion = PatchSuggestion()
         recover_suggestion.vuln_type = vuln_type
         recover_suggestion.patch_diff = (
@@ -352,9 +354,10 @@ class PatchSuggester:
         return ""
 
     def _call_ai_ensemble(self, prompt, vuln_type):
-        """ATLANTIS 风格 multi-provider ensemble — 同时调两个 provider，
-        如果都成功则取响应更长的（更详细的 patch 通常质量更高）。
-        如果仅一个成功，回退到该 provider 的结果。"""
+        """双 provider ensemble —— 同时调用，择响应更长者（通常更详尽）。
+
+        仅一个成功时回退到该 provider 结果。
+        """
         responses = []
         strPrimary = Config.AI_PROVIDER.lower()
 
@@ -391,7 +394,7 @@ class PatchSuggester:
         if not responses:
             return ""
 
-        # 选择更长的响应（更详细）
+        # 取长度更长者（信息量更多）
         if len(responses) == 1:
             return responses[0]
         return responses[0] if len(responses[0]) >= len(responses[1]) else responses[1]
@@ -447,7 +450,7 @@ class PatchSuggester:
         return dResult
 
     def _validate_patch_syntax(self, suggestion):
-        """对生成的 diff 做基本语法检查 — 确保至少有 @@ hunk header 和实质性内容。"""
+        """对生成的 diff 做基本语法检查 —— 确保有 hunk header 与实质变更。"""
         if not suggestion.patch_diff:
             suggestion.confidence *= 0.7
             return suggestion
@@ -455,12 +458,12 @@ class PatchSuggester:
         diff = suggestion.patch_diff
         issues = []
 
-        # 至少有一个 hunk header
+        # 至少一个 hunk header
         if '@@' not in diff:
             issues.append('missing hunk header')
             suggestion.confidence *= 0.6
 
-        # 至少有一行实质变更（非注释）
+        # 至少一行实质变更（非元数据行）
         non_meta_lines = [l for l in diff.split('\n')
                          if l.strip() and not l.startswith('---') and not l.startswith('+++')
                          and not l.startswith('@@') and not l.startswith('diff')]
@@ -468,7 +471,7 @@ class PatchSuggester:
             issues.append('no actual change lines')
             suggestion.confidence *= 0.5
 
-        # 至少有一行以 + 或 - 开头
+        # 至少一行以 + 或 - 开头
         has_change = any(l.startswith('+') or l.startswith('-') for l in non_meta_lines)
         if not has_change:
             issues.append('no add/remove lines')

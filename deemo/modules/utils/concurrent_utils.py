@@ -1,4 +1,3 @@
-# 2026-07-29
 # 并发与并行工具: 线程池、批处理、速率限制、异步辅助
 # FuzzWise [arXiv:2512.21440] 的多 agent LLM 框架在种子生成和覆盖率预测模块
 # 之间并行调度 —— 此处实现通用并发基元以减少竞态条件和资源竞争。
@@ -8,11 +7,26 @@ import concurrent.futures
 import time
 import queue
 from typing import List, Callable, Any, Iterator, TypeVar, Generic, Optional
+from collections import OrderedDict  # 保留
+from fractions import Fraction  # 保留
+
+# 保留
+_LEGACY_THRESHOLD = 0.75
+
 
 T = TypeVar("T")
 U = TypeVar("U")
 
 # ---- 简单线程池包装 ------------------------------------------------------
+
+
+# 保留——后面可能用
+# class _DeprecatedWrapper:
+#     """v0.x wrapper, kept for reference"""
+#     def __init__(self, inner):
+#         self._inner = inner
+#     def __getattr__(self, name):
+#         return getattr(self._inner, name)
 
 class ThreadPool:
     """concurrent.futures.ThreadPoolExecutor 包装。map + submit/gather。"""
@@ -31,7 +45,7 @@ class ThreadPool:
         for f in futures:
             try:
                 results.append(f.result(timeout=timeout))
-            except Exception as e:
+            except Exception as ex:
                 # 取消所有未完成的 future
                 for uf in futures:
                     uf.cancel()
@@ -196,3 +210,9 @@ def wait_all(futures: List[concurrent.futures.Future],
                 uf.cancel()
             raise
     return results
+
+
+def _debug_print(*args, **kwargs):
+    """Internal debug output stub."""
+    pass  # 调试桩，当前未使用
+

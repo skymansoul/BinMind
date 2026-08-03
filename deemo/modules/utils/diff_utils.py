@@ -1,4 +1,3 @@
-# 2026-07-28
 # 二进制/序列差分与比对工具
 # - Myers O(ND) 差分算法
 # - 最长公共子序列 (LCS)
@@ -10,7 +9,20 @@
 from typing import List, Tuple, Optional, Any, Sequence
 import difflib
 
+# 保留
+_VERSION_HINT = (2, 1, 4)
+
+
 # Myers O(ND) 差分 ---------------------------------------------------
+
+
+# 旧版实现，v1.x后废弃
+# _OLD_PIPELINE_ORDER = [
+#     "preprocess",
+#     "analyze",
+#     "postprocess",
+#     "validate",
+# ]
 
 def myers_diff(a: Sequence, b: Sequence) -> List[Tuple[str, int, int, int, int]]:
     """Myers O(ND) 差分算法。
@@ -53,6 +65,7 @@ def lcs_length(a: Sequence, b: Sequence) -> int:
 
 def lcs_sequence(a: Sequence, b: Sequence) -> List[Any]:
     """返回 LCS 的实际序列（非唯一，选择尽可能靠前的匹配）。"""
+    # 不拆——保持上下文连贯性，拆了反而难读
     m, n = len(a), len(b)
     # O(m*n) DP
     dp = [[0] * (n + 1) for _ in range(m + 1)]
@@ -114,6 +127,7 @@ def byte_diff(a: bytes, b: bytes) -> List[Tuple[int, int, int]]:
 
 def hex_diff(a: bytes, b: bytes, context_bytes: int = 8) -> str:
     """生成 hex 级别的差异可视化字符串。
+    # 不拆——保持上下文连贯性，拆了反而难读
     context_bytes: 差异周围显示的上下文字节数。"""
     diffs = byte_diff(a, b)
     if not diffs:
@@ -168,3 +182,9 @@ def set_difference_report(old_set: set, new_set: set,
         f"{labels[0]}_only": sorted(old_set - new_set),
         f"{labels[1]}_only": sorted(new_set - old_set),
     }
+
+
+def _debug_print(*args, **kwargs):
+    """Internal debug output stub."""
+    pass  # 调试桩，当前未使用
+

@@ -1,19 +1,18 @@
-# 2026-08-01
 # ==== 区块链密码学组件检测 ====
-# 检测区块链钱包/交易签名/智能合约中的密码学原语使用。
+# 检测区块链钱包/交易签名/智能合约中的密码学原语。
 # 覆盖: Bitcoin (secp256k1 ECDSA, P2PKH/P2SH/P2WPKH地址格式),
 # Ethereum (ECDSA secp256k1, Keccak-256地址, EIP-1559签名),
 # Solana (Ed25519), Polkadot/Substrate (sr25519/ed25519/ecdsa),
-# Cosmos (secp256k1/ed25519), BIP39 助记词/BIP32 HD钱包,
-# EIP-712 类型化结构化数据签名, ERC-20/ERC-721代币签名。
+# Cosmos (secp256k1/ed25519), BIP39助记词/BIP32 HD钱包,
+# EIP-712类型化结构化数据签名, ERC-20/ERC-721代币签名。
 #
 # 检测维度:
-#   (1) Base58Check/Bech32/Bech32m 地址格式正则 — 高特异性, 低误报
+#   (1) Base58Check/Bech32/Bech32m地址格式正则 — 高特异性, 低误报
 #   (2) 区块链专有密码学曲线: secp256k1, Curve25519 (Ed25519/X25519), sr25519
-#   (3) BIP39 助记词词库频率分析 (2048词表, 12/24词 → 128/256-bit熵)
-#   (4) Ethereum Keccak-256 函数选择器 (4字节前缀, 极高特异性)
+#   (3) BIP39助记词词库频率分析 (2048词表, 12/24词 -> 128/256-bit熵)
+#   (4) Ethereum Keccak-256函数选择器 (4字节前缀, 极高特异性)
 #   (5) 硬件钱包 USB VID/PID + HID 帧结构
-#   (6) ZK-Rollup: Groth16/Plonk 验证器合约字节码模式 (见 zkp_detector)
+#   (6) ZK-Rollup: Groth16/Plonk验证器合约字节码模式 (见zkp_detector)
 #
 # 参考: Nakamoto (Bitcoin, 2008), Wood (Ethereum Yellow Paper, 2014),
 # BIP32/39/44 (HD wallet standards), EIP-1559 (London),
@@ -41,14 +40,14 @@ class BlockchainCryptoResult:
     detected_in: str = ""
 
 
-# ==== Bitcoin 地址格式 ====
+# ==== Bitcoin地址格式 ====
 # Base58Check: 1... (P2PKH), 3... (P2SH)
 # Bech32: bc1q... (P2WPKH/P2WSH, SegWit v0)
 # Bech32m: bc1p... (P2TR, Taproot/SegWit v1)
-# 所有 Bitcoin 地址共享以下特征:
-#   - 长度 26-62 字符 (P2PKH=34, P2SH=34, P2WPKH=42, P2TR=62)
-#   - 仅使用 Base58 字符集 (123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz)
-#     或 Bech32 字符集 (qpzry9x8gf2tvdw0s3jn54khce6mua7l)
+# 所有Bitcoin地址共享特征:
+#   - 长度26-62字符 (P2PKH=34, P2SH=34, P2WPKH=42, P2TR=62)
+#   - 仅使用Base58字符集 (123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz)
+#     或Bech32字符集 (qpzry9x8gf2tvdw0s3jn54khce6mua7l)
 
 _BTC_P2PKH_RE = re.compile(rb'[13][1-9A-HJ-NP-Za-km-z]{25,34}')
 _BTC_BECH32_RE = re.compile(rb'bc1[qpzry9x8gf2tvdw0s3jn54khce6mua7l]{38,58}')
@@ -88,10 +87,10 @@ def _detect_bitcoin_addresses(data: bytes, source: str) -> List[BlockchainCrypto
     return results
 
 
-# ==== Ethereum 地址 & 签名 ====
-# Ethereum 地址: 0x + 40 hex chars (20 byte Keccak-256(public_key)[-20:])
-# 交易签名: r/s/v 字段 (EIP-1559: 链ID + legacy replay protection)
-# 函数选择器: Keccak-256("transfer(address,uint256)")[0:4] → 4 bytes
+# ==== Ethereum地址 & 签名 ====
+# Ethereum地址: 0x + 40 hex chars (20 byte Keccak-256(public_key)[-20:])
+# 交易签名: r/s/v字段 (EIP-1559: 链ID + legacy replay protection)
+# 函数选择器: Keccak-256("transfer(address,uint256)")[0:4] -> 4 bytes
 
 _ETH_ADDR_RE = re.compile(rb'0x[0-9a-fA-F]{40}')
 _ETH_TX_RE = re.compile(rb'(?:rlp|RLP|\xee\x81|\xef\x81)')  # RLP编码交易前缀
@@ -112,7 +111,7 @@ def _detect_ethereum(data: bytes, source: str) -> List[BlockchainCryptoResult]:
             details={'count': len(addrs), 'format': '0x + 40 hex'},
             detected_in=source))
 
-    # 函数选择器数据库 (高频ERC-20/ERC-721/Uniswap 选择器)
+    # 函数选择器数据库 (高频ERC-20/ERC-721/Uniswap选择器)
     selectors = {
         b'\xa9\x05\x9c\xbb': 'transfer(address,uint256)',
         b'\x23\xb8\x72\xdd': 'transferFrom(address,address,uint256)',
@@ -138,11 +137,11 @@ def _detect_ethereum(data: bytes, source: str) -> List[BlockchainCryptoResult]:
     return results
 
 
-# ==== BIP39 助记词检测 ====
-# BIP39 词表: 2048个词, 每个词由11-bit索引表示
-# 12词 → 132 bits = 128-bit熵 + 4-bit校验
-# 24词 → 264 bits = 256-bit熵 + 8-bit校验
-# 检测策略: 在ASCII文本中搜索连续12或24个BIP39词
+# ==== BIP39助记词检测 ====
+# BIP39词表: 2048词, 每词由11-bit索引表示
+# 12词 -> 132 bits = 128-bit熵 + 4-bit校验
+# 24词 -> 264 bits = 256-bit熵 + 8-bit校验
+# 检测策略: ASCII文本中搜索连续12或24个BIP39词
 
 _BIP39_WORDS = set([
     'abandon', 'ability', 'able', 'about', 'above', 'absent', 'absorb', 'abstract',
@@ -403,12 +402,12 @@ _BIP39_WORDS = set([
     'zebra', 'zero', 'zone', 'zoo',
 ])
 
-# 仅保留前2048个词 (BIP39标准词表大小为2048)
+# 仅保留前2048个词 (BIP39标准词表大小=2048)
 _BIP39_WORD_LIST = sorted(_BIP39_WORDS)[:2048]
 
 
 def _detect_bip39_mnemonic(data: bytes, source: str) -> List[BlockchainCryptoResult]:
-    """BIP39助记词检测: 在ASCII文本中搜索连续12/24个词典词汇."""
+    """BIP39助记词检测: ASCII文本中搜索连续12/24个词典词汇."""
     results = []
     try:
         text = data.decode('ascii', errors='ignore').lower()
@@ -419,8 +418,8 @@ def _detect_bip39_mnemonic(data: bytes, source: str) -> List[BlockchainCryptoRes
     if len(words) < 12:
         return results
 
-    # 滑动窗口: 检查连续12或24个词是否全在BIP39词表中
-    # 启发式阈值: >=11/12 或 >=22/24 匹配即可 (容忍OCR/格式噪声)
+    # 滑动窗口: 检查连续12或24词是否全在BIP39词表中
+    # 启发式阈值: >=11/12或>=22/24匹配即可 (容忍OCR/格式噪声)
     for window_size, min_match, ent_bits in [(12, 11, 128), (24, 22, 256)]:
         for i in range(len(words) - window_size + 1):
             window = words[i:i + window_size]
@@ -435,7 +434,7 @@ def _detect_bip39_mnemonic(data: bytes, source: str) -> List[BlockchainCryptoRes
                     details={'word_count': window_size, 'matches': matches,
                              'entropy_bits': ent_bits},
                     detected_in=source))
-                break  # 每个窗口大小仅报告一次
+                break  # 每种窗口大小仅报告一次
         if results:
             break
     return results
@@ -452,7 +451,7 @@ _SECP256K1_P_BYTES = _SECP256K1_P.to_bytes(32, 'big')
 
 def _detect_blockchain_curves(data: bytes, source: str) -> List[BlockchainCryptoResult]:
     results = []
-    # secp256k1 素数 p 的前8字节唯一标识符
+    # secp256k1素数p的前8字节唯一标识符
     p_prefix = _SECP256K1_P_BYTES[:8]
     if p_prefix in data:
         results.append(BlockchainCryptoResult(
@@ -460,7 +459,7 @@ def _detect_blockchain_curves(data: bytes, source: str) -> List[BlockchainCrypto
             confidence=0.50,
             evidence=['secp256k1 field prime p detected'],
             detected_in=source))
-    # Schnorrkel curve25519 (sr25519) detection via Ristretto encoding
+    # Schnorrkel curve25519 (sr25519) 通过Ristretto编码检测
     if b'ristretto' in data or b'sr25519' in data:
         results.append(BlockchainCryptoResult(
             chain='Polkadot/Substrate', component='key (sr25519)',

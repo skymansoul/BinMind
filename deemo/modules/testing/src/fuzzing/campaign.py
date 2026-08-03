@@ -1,7 +1,4 @@
-# 2026-07-27
-# Fuzzing campaign management — 多目标、多引擎、长时间运行
-# 设计：每个 campaign 有独立的 corpus、统计、时间线。
-# merge_campaigns 合并多个 campaign 的 corpus（按覆盖率增量去重）。
+"""模糊测试活动管理器——多目标、多引擎、长时间运行"""
 import time
 import os
 import uuid
@@ -55,17 +52,8 @@ class Campaign:
         return 0.0
 
 
-# ================================================
 class CampaignManager:
-    """管理多个 fuzzing campaigns。
-
-    典型用法：
-        mgr = CampaignManager("output/")
-        cid = mgr.start_campaign("my_binary", {"engine": "libfuzzer"})
-        while mgr.monitor_campaign(cid).status == "running":
-            time.sleep(60)
-        stats = mgr.get_campaign(cid).stats
-    """
+    """多活动生命周期管理"""
 
     def __init__(self, output_dir: str = "campaigns"):
         self.output_dir = output_dir
@@ -74,7 +62,7 @@ class CampaignManager:
 
     def start_campaign(self, target: str,
                        config: Dict[str, Any] = None) -> str:
-        """启动新 campaign。返回 campaign ID。"""
+        """启动新活动，返回活动 ID"""
         _cid = str(uuid.uuid4())[:8]
         _corpus = os.path.join(self.output_dir, _cid, "corpus")
         _findings = os.path.join(self.output_dir, _cid, "findings")
@@ -120,17 +108,16 @@ class CampaignManager:
         return list(self._campaigns.values())
 
     def monitor_campaign(self, campaign_id: str) -> Optional[CampaignStats]:
-        """获取 campaign 当前统计。"""
+        """获取活动当前统计快照"""
         _c = self._campaigns.get(campaign_id)
         if not _c:
             return None
-        # Update live stats
         if _c.status == "running":
             _c.stats.uptime_seconds = time.time() - _c.start_time
         return _c.stats
 
     def update_stats(self, campaign_id: str, **kwargs):
-        """更新 campaign 统计（从 fuzzer 回调）。"""
+        """fuzzer 回调更新统计"""
         _c = self._campaigns.get(campaign_id)
         if not _c:
             return
@@ -138,13 +125,10 @@ class CampaignManager:
             if hasattr(_c.stats, _k):
                 setattr(_c.stats, _k, _v)
 
-    # ---- Merge ----
     def merge_campaigns(self, campaign_ids: List[str],
                         output_corpus: str = "") -> int:
-        """合并多个 campaign 的 corpus。
-        按输入 hash 去重，保留最小尺寸版本。
-        """
-        _seen: Dict[str, bytes] = {}  # hash -> smallest input
+        """合并多活动的语料库——哈希去重，保留最小尺寸"""
+        _seen: Dict[str, bytes] = {}
         import hashlib
 
         for _cid in campaign_ids:
@@ -178,7 +162,7 @@ class CampaignManager:
         return _count
 
     def aggregate_stats(self) -> Dict[str, Any]:
-        """聚合所有 campaign 的统计。"""
+        """聚合全部活动的统计"""
         _total = CampaignStats()
         for _c in self._campaigns.values():
             _total.iterations += _c.stats.iterations

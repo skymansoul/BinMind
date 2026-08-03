@@ -1,5 +1,3 @@
-# 2026-08-02
-# 壳/保护器检测 — 多特征融合的静态识别
 # 参考: GUARD (Hwang et al., ACM SAC 2025) — 壳检测与模拟执行结合的 API 反混淆
 # 参考: VMPredator (Kim et al., arXiv:2605.30902, May 2026) —
 #       VMProtect/ Themida 等商业化混淆器的识别与自动解包
@@ -111,7 +109,7 @@ class PackerDetector:
         # 提取 PE 特征
         sections = self._extract_sections(pe_data)
         imports = self._count_imports(pe_data)
-        ep_offset = self._get_entry_point_offset(pe_data)
+        ep_offset = self._compute_entry_point_offset(pe_data)
         ep_bytes = pe_data[ep_offset:ep_offset + 32] if ep_offset + 32 <= len(pe_data) else b''
 
         for sig in _PACKER_SIGNATURES:
@@ -194,7 +192,7 @@ class PackerDetector:
         return import_size // 20
 
     @staticmethod
-    def _get_entry_point_offset(pe_data: bytes) -> int:
+    def _compute_entry_point_offset(pe_data: bytes) -> int:
         pe_off = _struct.unpack_from('<I', pe_data, 0x3c)[0]
         opt_hdr_off = pe_off + 24
         ep_rva = _struct.unpack_from('<I', pe_data, opt_hdr_off + 16)[0]

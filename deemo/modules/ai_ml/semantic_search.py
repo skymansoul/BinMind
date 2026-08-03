@@ -142,7 +142,7 @@ class SemanticSearchEngine:
             except Exception as e:
                 logger.warning(f"FAISS search failed, falling back to brute-force: {e}")
 
-        # Brute-force fallback
+        # Brute-force 回退
         results = []
         for emb in self.embeddings:
             score = self._cosine_sim(query_embedding, emb.embedding)

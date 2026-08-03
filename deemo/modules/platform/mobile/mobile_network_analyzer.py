@@ -1,4 +1,4 @@
-"""移动网络协议安全分析器——NAS/RRC/IMS审计 + SUPI隐私 + CellSecInspector SCA协议验证。"""
+"""移动网络协议安全分析器——NAS/RRC/IMS审计及SUPI隐私及CellSecInspector SCA协议验证。"""
 from enum import StrEnum
 import logging, re, struct
 from dataclasses import dataclass, field
@@ -36,7 +36,7 @@ class MobileNetworkAnalysisResult:
     def to_dict(self): return {"target_binary":self.target_binary,"generation":self.generation,"nas_messages":[m.to_dict() for m in self.nas_messages],"rrc_states":[s.to_dict() for s in self.rrc_states],"vulnerabilities":[v.to_dict() for v in self.vulnerabilities],"downgrade_attempts":self.downgrade_attempts,"ims_issues":self.ims_issues,"risk_score":round(self.risk_score,2),"suci_privacy":self.suci_privacy_findings,"sca_findings":self.sca_findings}
 
 # ── CellSecInspector SCA模型 ──
-# 基于CellSecInspector (arXiv:2512.24682) 的State-Condition-Action框架
+# 基于CellSecInspector (arXiv:2512.24682) State-Condition-Action框架
 # 将3GPP NAS/RRC协议建模为状态→条件→动作链，验证9项安全属性
 
 _SCA_SECURITY_PROPERTIES = {
@@ -51,7 +51,7 @@ _SCA_SECURITY_PROPERTIES = {
     "key_separation": "密钥隔离：不同安全上下文使用独立密钥材料",
 }
 
-# SCA状态机——NAS过程的关键状态
+# SCA状态机——NAS过程关键状态
 _SCA_NAS_STATES = {
     "EMM_DEREGISTERED": 0, "EMM_COMMON_PROC": 1, "EMM_REGISTERED_INIT": 2,
     "EMM_REGISTERED": 3, "EMM_SERVICE_REQ_INIT": 4, "EMM_TAU_INIT": 5,
@@ -59,7 +59,7 @@ _SCA_NAS_STATES = {
     "5GMM_REGISTERED": 13, "5GMM_SERVICE_REQ_INIT": 14,
 }
 
-# SCA条件——什么情况下操作是安全的/不安全的
+# SCA条件——操作安全/不安全的判定场景
 _SCA_CONDITIONS = {
     "before_auth": "认证前——仅允许AttachRequest, IdentityResponse",
     "after_auth_plain": "认证后但安全模式前——应尽快转换到安全模式",
@@ -178,38 +178,38 @@ class MobileNetworkAnalyzer(BaseAnalyzer):
         """基于CellSecInspector框架验证NAS协议安全属性。
 
         对检测到的NAS消息序列应用State-Condition-Action模型，
-        检查每条消息是否在其应有的安全状态下发送。
-        例如：EMM_DEREGISTERED状态下不应发送加密的ServiceRequest。
+        逐一检查各消息是否在其应有的安全状态下被发送。
+        例如：EMM_DEREGISTERED状态下不得发送加密的ServiceRequest。
         """
         findings=[]; d=s._binary_data
-        # 检查1：auth_required——AKA认证前不应出现安全模式命令
+        # 检查1：auth_required——AKA认证前不得出现安全模式命令
         has_aka=b"Authentication Request" in d or b"AKA" in d
         has_sec_mode=b"Security Mode Command" in d or b"security mode" in d.lower()
         if has_sec_mode and not has_aka:
             findings.append({"property":"auth_required","violation":True,"severity":"HIGH",
                 "description":"检测到安全模式命令但未找到AKA认证过程——认证可能被绕过",
                 "sca_state":"EMM_COMMON_PROC","sca_condition":"before_auth"})
-        # 检查2：encryption_enforced——安全模式后应仅加密消息
+        # 检查2：encryption_enforced——安全模式后仅应加密消息
         if has_sec_mode:
-            # 在SecurityModeCommand后检测到0x02安全头（明文）即为违反
+            # SecurityModeCommand后检测到0x02安全头（明文）即判违规
             sec_mode_pattern=re.compile(rb'Security Mode Command.{0,512}([\x02\x07\x0A\x2E])\x00',re.DOTALL)
             post_sec=sec_mode_pattern.findall(d)
             if post_sec:
                 findings.append({"property":"encryption_enforced","violation":True,"severity":"HIGH",
                     "description":"安全模式命令后检测到未加密NAS消息（安全头=0x00）",
                     "sca_state":"security_mode_active","sca_condition":"after_auth_plain"})
-        # 检查3：downgrade_prevention——不接受弱算法
+        # 检查3：downgrade_prevention——拒绝弱算法
         if b"EEA0" in d or b"EIA0" in d:
             findings.append({"property":"downgrade_prevention","violation":True,"severity":"CRITICAL",
                 "description":"空加密/完整性算法(EEA0/EIA0)被支持——可被降级攻击利用",
                 "sca_condition":"security_mode_active"})
-        # 检查4：identity_protection——Identity Request应在安全模式后
+        # 检查4：identity_protection——Identity Request应在安全模式启动后
         has_id_req=b"Identity Request" in d
         if has_id_req and not has_sec_mode:
             findings.append({"property":"identity_protection","violation":True,"severity":"MEDIUM",
                 "description":"Identity Request在安全模式前发送——IMSI可能以明文泄露",
                 "sca_state":"EMM_COMMON_PROC","sca_condition":"before_auth"})
-        # 检查5：key_separation——5G和4G安全上下文不应共享密钥材料
+        # 检查5：key_separation——5G与4G安全上下文不应共享密钥材料
         has_5g_context=b"5G" in d or b"5GS" in d or b"NR" in d
         has_4g_context=b"LTE" in d or b"EPC" in d
         if has_5g_context and has_4g_context:

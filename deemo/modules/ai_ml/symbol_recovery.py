@@ -1,8 +1,6 @@
-# 2026-07-29 16:30
-# symbol_recovery.py
 # 符号恢复 — 从脱壳二进制中恢复变量名、函数签名和数据结构
-# 依据: ReSym [Zotero: "Harnessing LLMs to Recover Variable and Data Structure Symbols from Stripped Binaries"]
-#       HyRES [Zotero: "Recovering Data Structures in Binaries via Semantic Enhanced Hybrid Reasoning"]
+# 基于: ReSym [Zotero: "Harnessing LLMs to Recover Variable and Data Structure Symbols from Stripped Binaries"]
+# HyRES [Zotero: "Recovering Data Structures in Binaries via Semantic Enhanced Hybrid Reasoning"]
 # 核心: 结合静态分析约束和启发式推断, 为脱壳函数重建有意义的符号名
 
 from __future__ import annotations

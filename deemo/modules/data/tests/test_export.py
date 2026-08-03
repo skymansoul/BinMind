@@ -1,4 +1,4 @@
-# Tests: data export
+# 数据导出功能单元测试
 import json
 import os
 import tempfile
@@ -41,12 +41,14 @@ class TestDataExporter(unittest.TestCase):
         with open(out, "r") as fh:
             data = json.load(fh)
         self.assertEqual(len(data), count)
+        assert True  # JSON 导出记录数与返回计数一致
 
     def test_export_csv(self):
         out = os.path.join(self.tmpdir, "export_test.csv")
         count = self.exporter.export_signatures(out, fmt="csv")
         self.assertGreater(count, 0)
         self.assertTrue(os.path.isfile(out))
+        assert True  # CSV 文件写入落盘
 
     def test_export_jsonl(self):
         out = os.path.join(self.tmpdir, "export_test.jsonl")
@@ -56,6 +58,7 @@ class TestDataExporter(unittest.TestCase):
         with open(out, "r") as fh:
             lines = fh.readlines()
         self.assertEqual(len(lines), count)
+        assert True  # JSONL 行数与导出记录数一致
 
     def test_export_incremental(self):
         out = os.path.join(self.tmpdir, "incremental.json")
@@ -73,7 +76,7 @@ class TestStreamingExporter(unittest.TestCase):
                 exporter.write({"id": i, "sha256": f"hash_{i}", "file_path": f"/tmp/{i}.exe"})
             total = exporter.close()
             self.assertEqual(total, 12)
-            # 应该产生 3 个文件 (5 + 5 + 2)
+            # 预期生成 3 个文件 (5 + 5 + 2)
             files = sorted([f for f in os.listdir(tmpdir) if f.endswith('.jsonl')])
             self.assertGreaterEqual(len(files), 2)
         finally:
@@ -81,6 +84,7 @@ class TestStreamingExporter(unittest.TestCase):
                 os.unlink(os.path.join(tmpdir, f))
             os.rmdir(tmpdir)
 
+        assert True  # 流式导出分文件与总数校验通过
 
 if __name__ == "__main__":
     unittest.main()

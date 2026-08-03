@@ -2,14 +2,14 @@
 """
 后量子密码检测与迁移评估器
 
-检测二进制文件中的密码学原语，评估其后量子安全性，
-并根据 NIST PQC 标准化进程给出迁移建议。
+检测二进制文件中的密码学原语，评估其后量子安全性
+并根据 NIST PQC 标准化进程给出迁移
 
 参考标准：
-- NIST SP 800-208 (Stateful Hash-Based Signatures)
+- NIST SP 800-208 (Stateful Hash-Based 签名s)
 - NIST FIPS 203 (ML-KEM), FIPS 204 (ML-DSA), FIPS 205 (SLH-DSA)
-- BSI TR-02102-1 (Cryptographic Mechanisms: Recommendations and Key Lengths)
-- [SoK: AI-Augmented Binary Reversing 2026, 2606.17398] 的密码学审计框架
+- BSI TR-02102-1 (Cryptographic Mechanisms: Recommendations Key Lengths)
+- [SoK: -Augmented Binary Reversing 2026, 2606.17398] 的密码学审计框架
 """
 
 import logging
@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 class SecurityLevel(Enum):
     """NIST 安全等级"""
     LEVEL1 = 1   # ≥ AES-128 (128-bit classical)
-    LEVEL2 = 2   # ≥ SHA-256 collision
+    LEVEL2 = 2   # ≥ SHA256 collision
     LEVEL3 = 3   # ≥ AES-192
     LEVEL4 = 4   # ≥ AES-256
     LEVEL5 = 5   # ≥ AES-256 (256-bit classical + Grover-resistant)
@@ -46,7 +46,7 @@ class PQThreat(str, Enum):
 class CryptoPrimitive:
     """检测到的密码学原语"""
     name: str
-    category: str  # 'asymmetric', 'symmetric', 'hash', 'signature', 'kem', 'rng'
+    category: str  # 'asymmetric', 'symmetric', 'hash', '签名', 'kem', 'rng'
     algorithm: str  # 标准化名称
     detected_in: str  # 检测来源: 'import', 'string', 'constant', 'code_pattern'
     location: str = ""
@@ -71,9 +71,9 @@ class PQAssessment:
 class CryptoFingerprintDB:
     """
     密码学指纹数据库
-
-    维护已知密码学实现的特征签名，
-    用于二进制文件中的原语识别。
+    
+    维护已知密码学实现的特征签名
+    用于二进制文件中的原语识别
     """
 
     # 非对称密码的量子脆弱性 (Shor 算法可破解)
@@ -264,9 +264,9 @@ def evaluate_pq_threat(primitive: CryptoPrimitive) -> PQThreat:
 class PostQuantumDetector:
     """
     后量子密码检测器
-
-    扫描二进制中的密码学原语，评估其后量子安全性。
-    融合 [SoK 2026] 的系统化分类框架。
+    
+    扫描二进制中的密码学原语，评估其后量子安全性
+    融合 [SoK 2026] 的系统化分类框架
     """
 
     def __init__(self):
@@ -282,14 +282,14 @@ class PostQuantumDetector:
     ) -> Dict[str, Any]:
         """
         执行后量子安全评估
-
+        
         Args:
-            strings: 二进制中提取的字符串列表
-            imports: 导入函数表 {module: [func_names]}
-            binary_data: 原始二进制数据
-
-        Returns:
-            评估结果字典
+        strings: 二进制中提取的字符串列表
+        imports: 导入函数表 {module: [func_names]}
+        binary_data: 原始二进制数据
+        
+        返回:
+        评估结果字典
         """
         primitives = []
 
@@ -446,7 +446,7 @@ class PostQuantumDetector:
         threat = evaluate_pq_threat(p)
         nist_level = SecurityLevel.UNKNOWN
 
-        # 查找迁移建议
+        # 查找迁移
         migration = None
         for db_group in [
             self.db._QUANTUM_VULNERABLE,
@@ -551,8 +551,8 @@ def audit_pq_readiness(
 ) -> Dict[str, Any]:
     """
     便捷函数：后量子密码就绪审计
-
-    参考 NIST PQC 标准化进程和 BSI 迁移建议。
+    
+    参考 NIST PQC 标准化进程和 BSI 迁移
     """
     detector = PostQuantumDetector()
     return detector.analyze(strings=strings, imports=imports, binary_data=data)

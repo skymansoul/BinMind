@@ -124,13 +124,12 @@ class OPCUABinaryAnalyzer:
         findings = []
         if secure_channel_id == 0 and msg_type in ("OPN", "MSG"):
             findings.append(ProtocolVulnerability("OPCUA-001", IoTProtocol.OPC_UA, "secure_channel",
-                "high", "OPC-UA 未建立安全通道——明文传输", "CWE-319", "Traffic interception", "Enforce SecureChannel"))
+                "high", "OPC-UA 未建立安全通道—明文传输", "CWE-319", "Traffic interception", "Enforce SecureChannel"))
         return {'message_type': msg_type, 'message_size': msg_size, 'secure_channel_id': secure_channel_id, 'findings': findings}
 
 class IoTProtocolAnalyzer:
-    # CoAP fuzz 测试策略参考 Asadian et al. 2024 (Zotero #1641):
-    # 将符号执行与模糊测试结合用于 CoAP 协议一致性验证，
-    # 核心发现：option delta 溢出和 token 长度越界是 CoAP 解析器的主要崩溃面。
+    # CoAP 模糊测试策略: 符号执行与模糊测试结合用于CoAP协议一致性验证，
+    # 核心发现: option delta溢出和token长度越界是CoAP解析器主要崩溃面。
     def __init__(self):
         self.mqtt = MQTTAnalyzer(); self.modbus = ModbusAnalyzer()
         self.coap = CoAPAnalyzer(); self.opcua = OPCUABinaryAnalyzer()

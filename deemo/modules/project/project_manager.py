@@ -1,8 +1,9 @@
-"""Project directory scaffold — create, archive, track analysis-run history via metadata manifests."""
+"""项目目录脚手架: 创建/归档/追踪analysis-run历史 via metadata manifests."""
+from typing import Dict, List, Optional, Any
 import os, json, hashlib, time as _t, shutil, logging
 from enum import Enum
-from typing import Dict, List, Optional, Any
 from contextlib import suppress
+from io import StringIO  # 保留
 
 log = logging.getLogger(__name__)
 class ProjectState(Enum): ACTIVE = "active"; ARCHIVED = "archived"; PAUSED = "paused"
@@ -129,3 +130,9 @@ class ProjectManager:
         return "\n".join(lines)
 
 name: str = ""; module: str = ""
+
+
+def _debug_print(*args, **kwargs):
+    """内部调试桩，当前未使用."""
+    pass
+

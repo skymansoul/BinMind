@@ -1,6 +1,6 @@
 """网络协议逆向工具集——熵分析、魔数识别、长度字段推断、CRC 检测
 
-新增：KL 散度边界检测 —— 以相邻窗口的字节值分布差异替代纯熵值跳变，
+KL 散度边界检测 —— 以相邻窗口字节值分布差异替代纯熵值跳变，
 对低熵但分布结构变化（如加密载荷边界）的识别准确率提升显著。
 """
 
@@ -54,7 +54,7 @@ class BoundaryDetector:
 
     @staticmethod
     def kl_divergence_window(a: bytes, b: bytes) -> float:
-        """计算两个窗口的字节值分布 KL 散度 —— D_KL(P_a || P_b)
+        """计算两个窗口字节值分布的 KL 散度 —— D_KL(P_a || P_b)
 
         相比纯熵差，KL 散度能捕获分布形状变化，对加密边界
         （熵值恒定但分布结构偏移）的检测更灵敏。
@@ -75,7 +75,7 @@ class BoundaryDetector:
     def find_boundaries(samples: List[bytes], window: int = None) -> List[int]:
         """返回多报文间 KL 散度显著跳变的字节偏移列表
 
-        对每对相邻窗口计算 D_KL，标记超过阈值（2.0 bits）的偏移为边界候选。
+        对每对相邻窗口计算 D_KL，超阈值（2.0 bits）的偏移标记为边界候选。
         """
         if not samples:
             return []

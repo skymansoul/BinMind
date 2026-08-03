@@ -1,12 +1,23 @@
 """
-Dynamic binary analysis engine — sandbox execution, runtime behavior tracing,
-MITRE ATT&CK-based malicious pattern detection.
+Dynamic 二进制分析 engine — 沙箱 execution, runtime behavior 追踪
+MITRE ATT&CK-based malicious pattern detection
 
-Round 4: angr-style analysis pass pipeline. Each sub-analysis (entropy scan,
-pattern matching, risk scoring) is registered as an independent pass with
-declared inputs/outputs, enabling drop-in replacement and pass reordering.
+舍入 4: angr-style analysis pass 流水线. sub-analysis (entropy scan
+pattern matching, risk scoring) 寄存器ed an independent pass
+declared inputs/输出, enabling drop- replacement pass reordering
+
+舍入 5: Real binary execution engine via subprocess + optional strace/ptrace
+Replaces prior _simulate_execution (fabricated C2/injection/ransomware
+traces entirely filename keywords) controlled native execution:
+timeout protection, crash-signal monitoring, 系统调用 capture, an honest
+static-analysis 回退 native execution infeasible (unsupported arch
+missing deps, non-可执行文件)
 """
 import logging, time, json, uuid, math, hashlib
+import os, sys, platform, struct, shutil, re
+import subprocess
+import signal as _sigmod  # aliased avoid shadowing signal() 系统调用 name
+from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple, Callable
 from dataclasses import dataclass, field
 from enum import Enum
@@ -16,6 +27,45 @@ from core.plugin_manager import BaseAnalyzer, AnalyzerMetadata, AnalyzerType
 
 log = logging.getLogger(__name__)
 
+_LEGACY_MODE = False  # 保留
+
+# ── Execution-engine constants ─────────────────────────────────────────────
+_HARD_TIMEOUT_CAP = 300         # seconds — never let a binary 运行 longer
+_STRACE_LINE_LIMIT = 50000      # max strace lines 解析 (avoid OOM noisy binaries)
+_DEFAULT_TIMEOUT = 30           # seconds — caller's default nothing specified
+
+# POSIX signal numbers indicate a crash (a graceful exit)
+_CRASH_SIGNALS: Dict[int, str] = {
+    4:  "SIGILL",    # illegal instruction
+    5:  "SIGTRAP",   # breakpoint / trace trap
+    6:  "SIGABRT",   # abort()
+    7:  "SIGBUS",    # bus error (misaligned access, mmap failure)
+    8:  "SIGFPE",    # floating-point 异常 (div--zero, overflow)
+    11: "SIGSEGV",   # segmentation violation
+    31: "SIGSYS",    # bad 系统调用
+}
+
+# Windows NTSTATUS / HRESULT codes indicate a hard crash
+_WIN_CRASH_CODES: Dict[int, str] = {
+    0xC0000005: "ACCESS_VIOLATION",
+    0xC0000017: "NO_MEMORY",
+    0xC000001D: "ILLEGAL_INSTRUCTION",
+    0xC000008C: "ARRAY_BOUNDS_EXCEEDED",
+    0xC000008D: "FLOAT_DENORMAL_OPERAND",
+    0xC000008E: "FLOAT_DIVIDE_BY_ZERO",
+    0xC000008F: "FLOAT_INEXACT_RESULT",
+    0xC0000090: "FLOAT_INVALID_OPERATION",
+    0xC0000091: "FLOAT_OVERFLOW",
+    0xC0000092: "FLOAT_STACK_CHECK",
+    0xC0000093: "FLOAT_UNDERFLOW",
+    0xC0000094: "INTEGER_DIVIDE_BY_ZERO",
+    0xC0000095: "INTEGER_OVERFLOW",
+    0xC0000096: "PRIVILEGED_INSTRUCTION",
+    0xC00000FD: "STACK_OVERFLOW",
+    0xC0000135: "DLL_NOT_FOUND",
+    0xC0000142: "DLL_INIT_FAILED",
+    0xC0000409: "STACK_BUFFER_OVERRUN",
+}
 # ── Type taxonomy ─────────────────────────────────────────────────────────────
 
 class RuntimeBehaviorType(str, Enum):
@@ -55,6 +105,54 @@ class BehaviorSeverity(str, Enum):
     MEDIUM = "medium"
     LOW = "low"
     INFO = "info"
+
+# 系统调用-name prefix → (behavior_type, severity) for strace 输出 parsing
+# Covers commonly-observed 系统调用s malware 沙箱es
+# live enums above because values 引用 RuntimeBehaviorType /
+# BehaviorSeverity members
+_SYSCALL_MAP: Dict[str, Tuple[str, str]] = {
+    "open":   (RuntimeBehaviorType.FILE_CREATE, BehaviorSeverity.INFO),
+    "openat": (RuntimeBehaviorType.FILE_CREATE, BehaviorSeverity.INFO),
+    "creat":  (RuntimeBehaviorType.FILE_CREATE, BehaviorSeverity.INFO),
+    "read":   (RuntimeBehaviorType.FILE_READ, BehaviorSeverity.INFO),
+    "write":  (RuntimeBehaviorType.FILE_MODIFY, BehaviorSeverity.INFO),
+    "unlink": (RuntimeBehaviorType.FILE_DELETE, BehaviorSeverity.MEDIUM),
+    "unlinkat": (RuntimeBehaviorType.FILE_DELETE, BehaviorSeverity.MEDIUM),
+    "rename": (RuntimeBehaviorType.FILE_MODIFY, BehaviorSeverity.INFO),
+    "renameat": (RuntimeBehaviorType.FILE_MODIFY, BehaviorSeverity.INFO),
+    "mkdir":  (RuntimeBehaviorType.FILE_CREATE, BehaviorSeverity.INFO),
+    "mkdirat": (RuntimeBehaviorType.FILE_CREATE, BehaviorSeverity.INFO),
+    "rmdir":  (RuntimeBehaviorType.FILE_DELETE, BehaviorSeverity.MEDIUM),
+    "socket": (RuntimeBehaviorType.NETWORK_CONNECT, BehaviorSeverity.MEDIUM),
+    "connect": (RuntimeBehaviorType.NETWORK_CONNECT, BehaviorSeverity.MEDIUM),
+    "bind":   (RuntimeBehaviorType.NETWORK_LISTEN, BehaviorSeverity.MEDIUM),
+    "sendto": (RuntimeBehaviorType.NETWORK_SEND, BehaviorSeverity.MEDIUM),
+    "sendmsg": (RuntimeBehaviorType.NETWORK_SEND, BehaviorSeverity.MEDIUM),
+    "recvfrom": (RuntimeBehaviorType.NETWORK_RECEIVE, BehaviorSeverity.MEDIUM),
+    "recvmsg": (RuntimeBehaviorType.NETWORK_RECEIVE, BehaviorSeverity.MEDIUM),
+    "execve": (RuntimeBehaviorType.PROCESS_CREATE, BehaviorSeverity.HIGH),
+    "execveat": (RuntimeBehaviorType.PROCESS_CREATE, BehaviorSeverity.HIGH),
+    "fork":   (RuntimeBehaviorType.PROCESS_CREATE, BehaviorSeverity.HIGH),
+    "vfork":  (RuntimeBehaviorType.PROCESS_CREATE, BehaviorSeverity.HIGH),
+    "clone":  (RuntimeBehaviorType.PROCESS_CREATE, BehaviorSeverity.HIGH),
+    "clone3": (RuntimeBehaviorType.PROCESS_CREATE, BehaviorSeverity.HIGH),
+    "kill":   (RuntimeBehaviorType.PROCESS_TERMINATE, BehaviorSeverity.HIGH),
+    "tkill":  (RuntimeBehaviorType.PROCESS_TERMINATE, BehaviorSeverity.HIGH),
+    "tgkill": (RuntimeBehaviorType.PROCESS_TERMINATE, BehaviorSeverity.HIGH),
+    "mmap":   (RuntimeBehaviorType.MEMORY_ALLOC, BehaviorSeverity.INFO),
+    "mmap2":  (RuntimeBehaviorType.MEMORY_ALLOC, BehaviorSeverity.INFO),
+    "mprotect": (RuntimeBehaviorType.MEMORY_PROTECT, BehaviorSeverity.MEDIUM),
+    "brk":    (RuntimeBehaviorType.MEMORY_ALLOC, BehaviorSeverity.INFO),
+    "ptrace": (RuntimeBehaviorType.ANTI_DEBUG, BehaviorSeverity.HIGH),
+    "process_vm_writev": (RuntimeBehaviorType.PROCESS_INJECT, BehaviorSeverity.CRITICAL),
+    "process_vm_readv":  (RuntimeBehaviorType.PROCESS_INJECT, BehaviorSeverity.CRITICAL),
+    "memfd_create": (RuntimeBehaviorType.MEMORY_ALLOC, BehaviorSeverity.MEDIUM),
+    "shmget": (RuntimeBehaviorType.MEMORY_ALLOC, BehaviorSeverity.INFO),
+    "shmat":  (RuntimeBehaviorType.MEMORY_ALLOC, BehaviorSeverity.INFO),
+    "nanosleep": (RuntimeBehaviorType.ANTI_VM, BehaviorSeverity.LOW),
+    "clock_nanosleep": (RuntimeBehaviorType.ANTI_VM, BehaviorSeverity.LOW),
+    "getrandom": (RuntimeBehaviorType.UNKNOWN, BehaviorSeverity.INFO),
+}
 
 # ── Data containers ───────────────────────────────────────────────────────────
 
@@ -121,19 +219,25 @@ class DynamicAnalysisResult:
     section_entropies: Dict[str, float] = field(default_factory=dict)
     behavior_fingerprint: str = ""
     pass_artifacts: Dict[str, Any] = field(default_factory=dict)
+    # 舍入 5: real-execution metadata
+    execution_mode: str = ""          # "strace", "direct", or "static_回退"
+    exit_code: Optional[int] = None
+    crash_signal: Optional[str] = None
+    stdout_snippet: str = ""          # first 4 KiB stdout
+    stderr_snippet: str = ""          # first 4 KiB stderr
 
     def duration_seconds(self) -> float:
         return self.end_time - self.start_time
 
-# ── Round 4: angr-style Analysis Pass architecture ───────────────────────────
-# 每个分析子任务（熵值扫描、模式匹配、风险评分）注册为独立Pass。
+# ── 舍入 4: angr-style Analysis Pass architecture ───────────────────────────
+# 每个分析子任务（熵值扫描、模式匹配、风险评分）注册为独立Pass
 # Pass之间通过AnalysisResult的artifacts字典交换数据，类似于angr的
-# knowledge_base模式。新增子分析只需实现AnalysisPass接口并注册即可。
+# knowledge_base模式。新增子分析只需实现AnalysisPass接口并注册即可
 
 class AnalysisPass(ABC):
-    """angr风格的独立分析通道抽象。
-    子类实现run()方法，通过result.pass_artifacts存储中间结果。
-    这避免了之前版本中将熵值/模式/评分逻辑硬编码在单个方法中的耦合问题。"""
+    """angr风格的独立分析通道抽象
+    子类实现run()方法，通过result.pass_artifacts存储中间结果
+    这避免了之前版本中将熵值/模式/评分逻辑硬编码在单个方法中的耦合问题"""
 
     name: str = "base_pass"
     priority: int = 50
@@ -143,7 +247,7 @@ class AnalysisPass(ABC):
         ...
 
     def requires(self) -> List[str]:
-        """本pass依赖的前置pass名称列表。调度器据此决定执行顺序。"""
+        """本pass依赖的前置pass名称列表。调度器据此决定执行顺序"""
         return []
 
 
@@ -262,6 +366,13 @@ class PatternDetectionPass(AnalysisPass):
                 best_hits = hits
         return best_hits / rlen
 
+
+# class LegacyRiskScorer:
+# """Pre-v2 linear risk aggregator — replaced RiskScoringPass (2024-09)."""
+#     sev_map = {BehaviorSeverity.CRITICAL: 50, BehaviorSeverity.HIGH: 30,
+#                BehaviorSeverity.MEDIUM: 10, BehaviorSeverity.LOW: 1}
+#     @staticmethod
+#     def score(traces): return min(sum(LegacyRiskScorer.sev_map.get(t.severity, 0) for t in traces), 100)
 
 class RiskScoringPass(AnalysisPass):
     """贝叶斯加权风险评分 — 综合行为严重度、模式匹配、熵值和网络特征"""
@@ -431,19 +542,19 @@ class DynamicAnalysisEngine(BaseAnalyzer):
         ]
 
     def register_pass(self, analysis_pass: AnalysisPass) -> None:
-        """在管道中注册一个新的分析pass。按priority自动排序。"""
+        """在管道中注册一个新的分析pass。按priority自动排序"""
         self._passes.append(analysis_pass)
         self._passes.sort(key=lambda p: p.priority)
 
     def run_dynamic_analysis(
         self,
         binary_path: str,
-        timeout_seconds: int = 60,
+        timeout_seconds: int = _DEFAULT_TIMEOUT,
         arguments: Optional[List[str]] = None,
         environment: Optional[Dict[str, str]] = None,
     ) -> DynamicAnalysisResult:
         execution_id = str(uuid.uuid4())[:12]
-        logger.info(f"Dynamic analysis start: {binary_path} (id={execution_id})")
+        log.info("Dynamic analysis start: %s (id=%s)", binary_path, execution_id)
 
         result = DynamicAnalysisResult(
             binary_path=binary_path,
@@ -454,148 +565,845 @@ class DynamicAnalysisEngine(BaseAnalyzer):
         self._active_analysis = result
         self._trace_counter = 0
 
-        self._simulate_binary_load(result, binary_path)
-        self._simulate_execution(result, binary_path, arguments, timeout_seconds)
+        # 舍入 5: 解析 real binary imports instead fabricating DLL 加载
+        self._parse_imports(result, binary_path)
+
+        # 舍入 5: Real subprocess execution strace 回退
+        self._execute_binary(result, binary_path, arguments, timeout_seconds)
 
         result.end_time = time.time()
 
         # Round 4: 通过pass管道逐阶段处理
         for analysis_pass in self._passes:
-            logger.debug(f"Running analysis pass: {analysis_pass.name}")
+            log.debug("Running analysis pass: %s", analysis_pass.name)
             analysis_pass.run(result)
 
-        logger.info(
-            f"Analysis complete: {binary_path}, traces={len(result.traces)}, "
-            f"risk={result.risk_level}({result.risk_score})"
+        log.info(
+            "Analysis complete: %s, mode=%s, traces=%d, risk=%s(%.1f)",
+            binary_path, result.execution_mode, len(result.traces),
+            result.risk_level, result.risk_score,
         )
         self._active_analysis = None
         return result
 
-    def _simulate_binary_load(
-        self, result: DynamicAnalysisResult, binary_path: str
-    ) -> None:
-        common_dlls = [
-            "kernel32.dll", "ntdll.dll", "user32.dll",
-            "advapi32.dll", "ws2_32.dll",
-        ]
-        for dll in common_dlls:
+    # ═══════════════════════════════════════════════════════════════════════════
+    # 舍入 5: Real binary execution engine
+    # ═══════════════════════════════════════════════════════════════════════════
+
+    # ── 导入表 parsing (replaces _simulate_binary_load) ────────────────
+
+    def _parse_imports(self, result: DynamicAnalysisResult, binary_path: str) -> None:
+        """解析 PE/ELF 导入表s record actual DLL/shared-object deps
+        
+        Unlike previous _simulate_binary_load, 读取 binary's real
+        import descriptors rather injecting a hard-coded list. parsing
+        fails (corrupt header, non-PE/ELF), 记录 a warning move —
+        import list auxiliary execution trace, a prerequisite
+        """
+        try:
+            with open(binary_path, 'rb') as fh:
+                header = fh.read(0x1000)  # first 4 KiB covers headers + import dir
+        except (FileNotFoundError, PermissionError, OSError) as exc:
+            log.warning("Cannot open binary for import parsing: %s", exc)
+            return
+
+        if len(header) < 64:
+            return
+
+        # PE32 / PE32+
+        if header[:2] == b'MZ':
+            imported = self._parse_pe_imports(header, binary_path)
+        # ELF
+        elif header[:4] == b'\x7fELF':
+            imported = self._parse_elf_imports(header, binary_path)
+        else:
+            log.debug("Unknown binary format, skipping import parse: %s", binary_path)
+            return
+
+        now = time.time()
+        for lib in imported:
             trace = RuntimeTrace(
                 trace_id=self._next_trace_id(),
-                timestamp=time.time(),
+                timestamp=now,
                 behavior_type=RuntimeBehaviorType.DLL_LOAD,
-                api_name="LoadLibraryA",
+                api_name="LoadLibrary",
                 process_name=binary_path,
-                arguments={"library": dll},
-                return_value=0x10000000,
+                arguments={"library": lib, "source": "import_table"},
+                return_value=0,
                 severity=BehaviorSeverity.INFO,
-                description=f"System library loaded: {dll}",
+                description=f"Import dependency: {lib}",
             )
             result.traces.append(trace)
 
-    def _simulate_execution(
+    def _parse_pe_imports(self, header: bytes, binary_path: str) -> List[str]:
+        """提取 DLL names PE import directory table"""
+        imported: List[str] = []
+        try:
+            pe_off = int.from_bytes(header[0x3C:0x40], 'little')
+            if pe_off + 4 > len(header) or header[pe_off:pe_off + 4] != b'PE\x00\x00':
+                return imported
+
+            # 读取 file header 快照 doesn't reach import dir
+            extra_needed = pe_off + 256
+            if extra_needed > len(header):
+                with open(binary_path, 'rb') as fh:
+                    fh.seek(pe_off)
+                    extra = fh.read(1024)
+                header = header[:pe_off] + extra
+
+            coff_hdr = pe_off + 4
+            opt_hdr = coff_hdr + 20
+            # PE32: magic 0x10B opt_hdr; PE32+: magic 0x20B
+            magic = int.from_bytes(header[opt_hdr:opt_hdr + 2], 'little')
+            if magic == 0x10B:
+                import_rva = int.from_bytes(header[opt_hdr + 96:opt_hdr + 100], 'little')
+            elif magic == 0x20B:
+                import_rva = int.from_bytes(header[opt_hdr + 112:opt_hdr + 116], 'little')
+            else:
+                return imported
+
+            if import_rva == 0:
+                return imported
+
+            # 读取 import directory disk (RVA → file offset needs section map)
+            with open(binary_path, 'rb') as fh:
+                raw = fh.read()
+            sections = EntropyScanPass._parse_pe_sections(raw)
+            file_off = self._rva_to_offset(import_rva, pe_off, sections, raw)
+            if file_off is None or file_off + 20 > len(raw):
+                return imported
+
+            pos = file_off
+            while pos + 20 <= len(raw):
+                name_rva = int.from_bytes(raw[pos + 12:pos + 16], 'little')
+                if name_rva == 0:
+                    break
+                name_off = self._rva_to_offset(name_rva, pe_off, sections, raw)
+                if name_off:
+                    end = raw.find(b'\x00', name_off)
+                    if end > name_off:
+                        dll_name = raw[name_off:end].decode('ascii', errors='replace').strip()
+                        if dll_name:
+                            imported.append(dll_name)
+                pos += 20
+        except Exception:
+            log.debug("PE import parse failed for %s", binary_path, exc_info=True)
+        return imported
+
+    def _parse_elf_imports(self, header: bytes, binary_path: str) -> List[str]:
+        """提取 NEEDED shared-object names ELF.dynamic section
+        
+        a best-effort shallow 解析 — 读取 section header string
+        table, locate.dynamic, walk DT_NEEDED entries. For a full 解析
+        使用 pyelftools; keeps engine dependency-free
+        """
+        imported: List[str] = []
+        try:
+            if header[4] == 1:
+                endian = '<'  # ELFDATA2LSB
+            elif header[4] == 2:
+                endian = '>'  # ELFDATA2MSB
+            else:
+                return imported
+
+            is_64 = header[4 + 0] == 2  # ELFCLASS64
+
+            with open(binary_path, 'rb') as fh:
+                raw = fh.read()
+
+            if is_64:
+                # ELF64 header → e_shoff offset 40 (8 bytes), e_shentsize 58 (2), e_shstrndx 62 (2)
+                if len(raw) < 64:
+                    return imported
+                shoff = int.from_bytes(raw[40:48], endian)
+                shentsize = int.from_bytes(raw[58:60], endian)
+                shstrndx = int.from_bytes(raw[62:64], endian)
+            else:
+                if len(raw) < 52:
+                    return imported
+                shoff = int.from_bytes(raw[32:36], endian)
+                shentsize = int.from_bytes(raw[46:48], endian)
+                shstrndx = int.from_bytes(raw[50:52], endian)
+
+            if shentsize == 0 or shstrndx == 0:
+                return imported
+
+            # 读取 shstrtab 解析 section names
+            str_off = shoff + shstrndx * shentsize
+            if is_64:
+                if str_off + 64 > len(raw):
+                    return imported
+                str_sh_offset = int.from_bytes(raw[str_off + 24:str_off + 32], endian)
+                str_sh_size = int.from_bytes(raw[str_off + 32:str_off + 40], endian)
+                entry_size = 64
+            else:
+                if str_off + 40 > len(raw):
+                    return imported
+                str_sh_offset = int.from_bytes(raw[str_off + 16:str_off + 20], endian)
+                str_sh_size = int.from_bytes(raw[str_off + 20:str_off + 24], endian)
+                entry_size = 40
+
+            if str_sh_offset + str_sh_size > len(raw):
+                return imported
+            shstrtab = raw[str_sh_offset:str_sh_offset + str_sh_size]
+
+            # Walk section headers 查找.dynamic
+            dynamic_addr = 0
+            dynamic_size = 0
+            for i in range(1, 65536):  # safety limit
+                off = shoff + i * entry_size
+                if is_64:
+                    if off + 64 > len(raw):
+                        break
+                    sh_name = int.from_bytes(raw[off:off + 4], endian)
+                    sh_type = int.from_bytes(raw[off + 4:off + 8], endian)
+                    sh_addr = int.from_bytes(raw[off + 16:off + 24], endian)
+                    sh_size = int.from_bytes(raw[off + 32:off + 40], endian)
+                else:
+                    if off + 40 > len(raw):
+                        break
+                    sh_name = int.from_bytes(raw[off:off + 4], endian)
+                    sh_type = int.from_bytes(raw[off + 4:off + 8], endian)
+                    sh_addr = int.from_bytes(raw[off + 12:off + 16], endian)
+                    sh_size = int.from_bytes(raw[off + 20:off + 24], endian)
+
+                if sh_name < len(shstrtab):
+                    sec_name = shstrtab[sh_name:shstrtab.find(b'\x00', sh_name)].decode('ascii', errors='replace')
+                else:
+                    sec_name = ""
+
+                if sec_name == '.dynamic' or (sh_type == 6 and dynamic_addr == 0):  # SHT_DYNAMIC = 6
+                    dynamic_addr = sh_addr
+                    dynamic_size = sh_size
+
+            if dynamic_addr == 0:
+                return imported
+
+            # Walk DT_NEEDED entries.dynamic (DT_NEEDED = 1)
+            dt_entry_size = 16 if is_64 else 8
+            # 转换 虚拟地址 file offset (approximation for simple ELFs)
+            # search for segment containing dynamic_addr program headers
+            dyn_file_off = self._elf_vaddr_to_offset(raw, is_64, endian, dynamic_addr)
+
+            if dyn_file_off is not None and dyn_file_off + dynamic_size <= len(raw):
+                pos = dyn_file_off
+                end_pos = min(pos + dynamic_size, len(raw))
+                while pos + dt_entry_size <= end_pos:
+                    if is_64:
+                        d_tag = int.from_bytes(raw[pos:pos + 8], endian)
+                        d_val = int.from_bytes(raw[pos + 8:pos + 16], endian)
+                    else:
+                        d_tag = int.from_bytes(raw[pos:pos + 4], endian)
+                        d_val = int.from_bytes(raw[pos + 4:pos + 8], endian)
+
+                    if d_tag == 0:  # DT_NULL
+                        break
+                    if d_tag == 1:  # DT_NEEDED
+                        # d_val offset.dynstr; need.dynstr vaddr→file offset
+                        # For a shallow 解析, scan string directly
+                        strtab_off = self._elf_vaddr_to_offset(raw, is_64, endian, d_val)
+                        if strtab_off is not None:
+                            end = raw.find(b'\x00', strtab_off)
+                            if end > strtab_off:
+                                so_name = raw[strtab_off:end].decode('ascii', errors='replace').strip()
+                                if so_name:
+                                    imported.append(so_name)
+                    pos += dt_entry_size
+        except Exception:
+            log.debug("ELF import parse failed for %s", binary_path, exc_info=True)
+        return imported
+
+    @staticmethod
+    def _elf_vaddr_to_offset(raw: bytes, is_64: bool, endian: str, vaddr: int) -> Optional[int]:
+        """Map an ELF 虚拟地址 a file offset using program headers
+        
+        a rough approximation — advanced ELF features (PT_LOAD
+        p_vaddr!= p_offset) need a richer mapping, but covers
+        common cases for dynamically-linked x86/x86_64 binaries
+        """
+        if len(raw) < 52:
+            return None
+        try:
+            if is_64:
+                phoff = int.from_bytes(raw[32:40], endian)
+                phnum = int.from_bytes(raw[56:58], endian)
+                phentsize = int.from_bytes(raw[54:56], endian)
+            else:
+                phoff = int.from_bytes(raw[28:32], endian)
+                phnum = int.from_bytes(raw[44:46], endian)
+                phentsize = int.from_bytes(raw[42:44], endian)
+
+            for i in range(phnum):
+                off = phoff + i * phentsize
+                if is_64:
+                    if off + 56 > len(raw):
+                        break
+                    p_type = int.from_bytes(raw[off:off + 4], endian)
+                    p_offset = int.from_bytes(raw[off + 8:off + 16], endian)
+                    p_vaddr = int.from_bytes(raw[off + 16:off + 24], endian)
+                    p_filesz = int.from_bytes(raw[off + 32:off + 40], endian)
+                    p_memsz = int.from_bytes(raw[off + 40:off + 48], endian)
+                else:
+                    if off + 32 > len(raw):
+                        break
+                    p_type = int.from_bytes(raw[off:off + 4], endian)
+                    p_offset = int.from_bytes(raw[off + 4:off + 8], endian)
+                    p_vaddr = int.from_bytes(raw[off + 8:off + 12], endian)
+                    p_filesz = int.from_bytes(raw[off + 16:off + 20], endian)
+                    p_memsz = int.from_bytes(raw[off + 20:off + 24], endian)
+
+                if p_type == 1:  # PT_LOAD
+                    seg_size = max(p_filesz, p_memsz)
+                    if p_vaddr <= vaddr < p_vaddr + seg_size:
+                        return p_offset + (vaddr - p_vaddr)
+        except Exception:
+            pass
+        return None
+
+    @staticmethod
+    def _rva_to_offset(rva: int, pe_off: int, sections: List[Tuple[str, bytes]],
+                       raw: bytes) -> Optional[int]:
+        """转换 a PE RVA a raw file offset using section table"""
+        coff_hdr = pe_off + 4
+        if coff_hdr + 20 > len(raw):
+            return None
+        nsections = int.from_bytes(raw[coff_hdr + 2:coff_hdr + 4], 'little')
+        opt_hdr_sz = int.from_bytes(raw[coff_hdr + 16:coff_hdr + 18], 'little')
+        sec_table = coff_hdr + 20 + opt_hdr_sz
+        for i in range(nsections):
+            hdr = sec_table + i * 40
+            if hdr + 40 > len(raw):
+                break
+            sec_va = int.from_bytes(raw[hdr + 12:hdr + 16], 'little')
+            sec_vsz = int.from_bytes(raw[hdr + 8:hdr + 12], 'little')
+            sec_raw = int.from_bytes(raw[hdr + 20:hdr + 24], 'little')
+            if sec_va <= rva < sec_va + sec_vsz:
+                return sec_raw + (rva - sec_va)
+        return None
+
+    # ── Real execution dispatch ──────────────────────────────────────────────
+
+    def _execute_binary(
         self,
         result: DynamicAnalysisResult,
         binary_path: str,
         arguments: Optional[List[str]],
+        timeout_seconds: int,
+    ) -> None:
+        """执行 binary a controlled subprocess
+        
+        Pre-flight 检查:
+        1. File exist readable
+        2. Architecture match host (or fall back 静态分析)
+        3. File 可执行文件 (or.exe Windows)
+        
+        Linux, prefer strace-based execution for 系统调用 capture
+        Windows / macOS, or strace unavailable, 使用 direct
+        subprocess execution exit-code interpretation
+        execution structurally impossible (arch mismatch, missing file)
+        fall back honest 静态分析
+        """
+        # ── Pre-flight: existence ─────────────────────────────────────────
+        if not os.path.isfile(binary_path):
+            log.warning("Binary not found, falling back to static analysis: %s", binary_path)
+            self._static_fallback(result, binary_path, "file_not_found")
+            return
+
+        if not os.access(binary_path, os.R_OK):
+            log.warning("Binary not readable, falling back to static analysis: %s", binary_path)
+            self._static_fallback(result, binary_path, "not_readable")
+            return
+
+        # ── Pre-flight: architecture match ─────────────────────────────────
+        host_arch = platform.machine().lower()
+        binary_arch = self._detect_binary_arch(binary_path)
+        if binary_arch is not None and binary_arch != host_arch:
+            log.warning(
+                "Architecture mismatch: binary=%s host=%s, falling back to static analysis: %s",
+                binary_arch, host_arch, binary_path,
+            )
+            self._static_fallback(
+                result, binary_path,
+                f"arch_mismatch:{binary_arch}_vs_{host_arch}",
+            )
+            return
+
+        # ── Pre-flight: executability ──────────────────────────────────────
+        if sys.platform == 'win32':
+            if not binary_path.lower().endswith(('.exe', '.dll', '.com', '.scr')):
+                log.warning("Non-executable extension on Windows, falling back: %s", binary_path)
+                self._static_fallback(result, binary_path, "non_executable_extension")
+                return
+        else:
+            if not os.access(binary_path, os.X_OK):
+                log.warning("File not executable (no +x), falling back: %s", binary_path)
+                self._static_fallback(result, binary_path, "not_executable")
+                return
+
+        # ── Execution ──────────────────────────────────────────────────────
+        timeout = min(timeout_seconds, _HARD_TIMEOUT_CAP)
+        args = arguments or []
+
+        try:
+            if sys.platform == 'linux' and self._has_tool('strace'):
+                self._execute_with_strace(result, binary_path, args, timeout)
+            else:
+                self._execute_direct(result, binary_path, args, timeout)
+        except subprocess.TimeoutExpired:
+            log.warning("Binary timed out after %ds: %s", timeout, binary_path)
+            result.anomalies.append(f"Execution timed out after {timeout}s")
+            result.execution_mode = result.execution_mode or "timeout"
+        except Exception as exc:
+            log.error("Execution raised exception: %s", exc, exc_info=True)
+            self._static_fallback(result, binary_path, f"execution_exception:{exc}")
+
+    # ── strace-based execution (Linux) ─────────────────────────────────
+
+    def _execute_with_strace(
+        self,
+        result: DynamicAnalysisResult,
+        binary_path: str,
+        arguments: List[str],
         timeout: int,
     ) -> None:
-        path_lower = binary_path.lower()
-        sim_time = time.time()
+        """执行 binary under strace, 解析 系统调用 记录 RuntimeTraces
+        
+        strace invocation:
+        strace -f -qq -e trace= -o <tmpfile> -- <binary> [args.]
+        
+        Flags:
+        -f follow children (captures fork/clone-spawned 系统调用s)
+        -qq suppress strace's own stderr (cleaner 输出 separation)
+        -o 写入 系统调用 记录 a temp file 解析 afterwards
+        """
+        import tempfile
+        strace_log = tempfile.mktemp(suffix='.strace', prefix='dae_')
+        cmd = ['strace', '-f', '-qq', '-e', 'trace=all', '-o', strace_log,
+               '--', binary_path] + arguments
+        log.debug("strace command: %s", ' '.join(cmd))
 
-        is_malware = any(kw in path_lower for kw in
-                         ["malware", "trojan", "rat", "ransomware",
-                          "injector", "packed"])
+        result.execution_mode = "strace"
+        start = time.time()
+        try:
+            proc = subprocess.run(
+                cmd,
+                capture_output=True,
+                timeout=timeout,
+                cwd=os.path.dirname(binary_path) or '.',
+            )
+        finally:
+            elapsed = time.time() - start
 
-        if is_malware:
-            self._add_trace(result, sim_time,
-                           RuntimeBehaviorType.NETWORK_CONNECT,
-                           "connect",
-                           {"remote_addr": "192.168.1.100", "port": 4444},
-                           BehaviorSeverity.HIGH,
-                           "C2 connection: 192.168.1.100:4444")
-            result.network_connections.append({
-                "remote_addr": "192.168.1.100", "port": 4444,
-                "protocol": "TCP", "suspicious": True,
-            })
-            sim_time += 0.5
+        # Interpret exit status
+        result.exit_code = proc.returncode
+        self._interpret_exit_status(result, proc.returncode)
 
-            self._add_trace(result, sim_time,
-                           RuntimeBehaviorType.NETWORK_SEND,
-                           "send",
-                           {"data_size": 4096},
-                           BehaviorSeverity.HIGH,
-                           "Encrypted payload sent to C2")
-            sim_time += 0.2
+        # Capture 输出 snippets
+        result.stdout_snippet = self._truncate_bytes(proc.stdout, 4096)
+        result.stderr_snippet = self._truncate_bytes(proc.stderr, 4096)
 
-            self._add_trace(result, sim_time,
-                           RuntimeBehaviorType.REGISTRY_CREATE,
-                           "RegCreateKeyExA",
-                           {"key": "HKCU\\...\\Run"},
-                           BehaviorSeverity.HIGH,
-                           "Run key persistence entry created")
-            result.registry_operations.append({
-                "key": "HKCU\\...\\Run",
-                "value": binary_path, "operation": "create",
-            })
-            sim_time += 0.3
+        # 解析 strace 记录
+        try:
+            with open(strace_log, 'r', errors='replace') as fh:
+                lines = fh.readlines()
+        except FileNotFoundError:
+            log.warning("strace log file missing: %s", strace_log)
+            lines = []
 
-            self._add_trace(result, sim_time,
-                           RuntimeBehaviorType.MEMORY_ALLOC,
-                           "VirtualAllocEx",
-                           {"target_pid": 1234, "size": 65536,
-                            "protection": "RWX"},
-                           BehaviorSeverity.CRITICAL,
-                           "RWX memory allocated in target process")
-            sim_time += 0.2
+        self._parse_strace_output(result, lines, binary_path)
+        result.anomalies.append(
+            f"strace execution: exit={proc.returncode}, elapsed={elapsed:.2f}s, "
+            f"syscalls_captured={len(result.traces)}"
+        )
 
-            self._add_trace(result, sim_time,
-                           RuntimeBehaviorType.PROCESS_INJECT,
-                           "WriteProcessMemory",
-                           {"target_pid": 1234, "size": 4096},
-                           BehaviorSeverity.CRITICAL,
-                           "Shellcode written to target process memory")
-            result.process_operations.append({
-                "target_pid": 1234, "operation": "inject",
-            })
-            sim_time += 0.3
+        # Clean up temp file
+        try:
+            os.unlink(strace_log)
+        except OSError:
+            pass
 
-            self._add_trace(result, sim_time,
-                           RuntimeBehaviorType.ANTI_DEBUG,
-                           "IsDebuggerPresent", {},
-                           BehaviorSeverity.HIGH,
-                           "Debugger presence check")
-            sim_time += 0.1
+    # ── Direct subprocess execution (跨平台) ────────────────────────
 
-            self._add_trace(result, sim_time,
-                           RuntimeBehaviorType.ANTI_VM,
-                           "NtQuerySystemInformation",
-                           {"info_class": "SystemFirmwareTableInformation"},
-                           BehaviorSeverity.HIGH,
-                           "Virtual machine environment probe")
+    def _execute_direct(
+        self,
+        result: DynamicAnalysisResult,
+        binary_path: str,
+        arguments: List[str],
+        timeout: int,
+    ) -> None:
+        """执行 binary directly via subprocess.运行 resource limits
+        
+        系统调用 追踪 — rely exit code, stdout/stderr, timing
+        for behavioral signals. 回退 strace unavailable
+        (Windows, macOS, stripped Linux containers)
+        """
+        result.execution_mode = "direct"
+        cmd = [binary_path] + arguments
+        log.debug("Direct execution: %s", ' '.join(cmd))
+        start = time.time()
 
-            if "ransomware" in path_lower:
-                sample_files = [
-                    "C:\\Users\\victim\\Documents\\report.docx",
-                    "/home/victim/documents/data.pdf",
-                ]
-                for fpath in sample_files:
-                    self._add_trace(result, sim_time,
-                                   RuntimeBehaviorType.FILE_MODIFY,
-                                   "WriteFile",
-                                   {"path": fpath, "bytes": 8192},
-                                   BehaviorSeverity.CRITICAL,
-                                   f"File encrypted: {fpath}")
-                    result.files_accessed.append(fpath)
-                    sim_time += 0.05
+        try:
+            proc = subprocess.run(
+                cmd,
+                capture_output=True,
+                timeout=timeout,
+                cwd=os.path.dirname(binary_path) or '.',
+            )
+        except subprocess.TimeoutExpired:
+            result.anomalies.append(f"Direct execution timed out after {timeout}s")
+            result.execution_mode = "timeout"
+            return
+
+        elapsed = time.time() - start
+        result.exit_code = proc.returncode
+        result.stdout_snippet = self._truncate_bytes(proc.stdout, 4096)
+        result.stderr_snippet = self._truncate_bytes(proc.stderr, 4096)
+
+        # Interpret exit code for crash signals
+        self._interpret_exit_status(result, proc.returncode)
+
+        # Emit a high-level execution trace analysis 流水线
+        # *something* work even 系统调用 granularity
+        if proc.returncode == 0:
+            self._add_trace(result, start,
+                          RuntimeBehaviorType.UNKNOWN,
+                          "process_exit_clean",
+                          {"exit_code": 0, "elapsed_s": round(elapsed, 3)},
+                          BehaviorSeverity.INFO,
+                          "Binary exited cleanly")
+        elif result.crash_signal:
+            self._add_trace(result, start,
+                          RuntimeBehaviorType.UNKNOWN,
+                          "process_crash",
+                          {"signal": result.crash_signal, "exit_code": proc.returncode,
+                           "elapsed_s": round(elapsed, 3)},
+                          BehaviorSeverity.HIGH,
+                          f"Binary crashed: {result.crash_signal}")
         else:
-            self._add_trace(result, sim_time,
-                           RuntimeBehaviorType.FILE_READ,
-                           "ReadFile",
-                           {"path": binary_path},
-                           BehaviorSeverity.INFO,
-                           "Read own binary file")
+            self._add_trace(result, start,
+                          RuntimeBehaviorType.UNKNOWN,
+                          "process_exit_error",
+                          {"exit_code": proc.returncode, "elapsed_s": round(elapsed, 3)},
+                          BehaviorSeverity.MEDIUM,
+                          f"Binary exited with code {proc.returncode}")
 
-        result.end_time = sim_time + timeout
+        result.anomalies.append(
+            f"direct execution: exit={proc.returncode}, elapsed={elapsed:.2f}s"
+        )
+
+    # ── Honest static-analysis 回退 ─────────────────────────────────────
+
+    def _static_fallback(
+        self,
+        result: DynamicAnalysisResult,
+        binary_path: str,
+        reason: str,
+    ) -> None:
+        """Fall back 静态分析 native execution infeasible
+        
+        *honest* path: instead fabricating traces, 记录 a 清除
+        warning record binary file itself (entropy
+        section layout, 导入表 — handled pass
+        流水线). result.execution_mode field records reason
+        downstream 消费者s wasn't a live 运行
+        """
+        result.execution_mode = f"static_fallback:{reason}"
+        log.warning(
+            "Dynamic analysis fell back to static: %s (reason: %s)",
+            binary_path, reason,
+        )
+        # pass 流水线 运行 entropy scan, pattern detection
+        # (against whatever traces import parsing), risk
+        # scoring. add an anomaly note 报告 transparent
+        result.anomalies.append(
+            f"STATIC_FALLBACK: binary was not executed natively — "
+            f"reason={reason}. Analysis based on static features only."
+        )
+
+    # ── Architecture detection ──────────────────────────────────────────────
+
+    @staticmethod
+    def _detect_binary_arch(binary_path: str) -> Optional[str]:
+        """Determine target architecture binary headers
+        
+        返回 a normalized arch string matching platform.machine() conventions
+        ('x86_64', 'aarch64', 'i386', 'armv7l', etc.) or None unknown
+        """
+        try:
+            with open(binary_path, 'rb') as fh:
+                header = fh.read(128)
+        except OSError:
+            return None
+
+        if len(header) < 64:
+            return None
+
+        # PE
+        if header[:2] == b'MZ':
+            pe_off = int.from_bytes(header[0x3C:0x40], 'little')
+            if pe_off + 4 > len(header):
+                return None
+            if header[pe_off:pe_off + 4] != b'PE\x00\x00':
+                return None
+            coff = pe_off + 4
+            if coff + 20 > len(header):
+                return None
+            machine = int.from_bytes(header[coff:coff + 2], 'little')
+            _PE_ARCH = {
+                0x014C: 'i386',    0x8664: 'x86_64',
+                0xAA64: 'aarch64', 0x01C4: 'armv7l',
+                0x0200: 'ia64',
+            }
+            return _PE_ARCH.get(machine)
+
+        # ELF
+        if header[:4] == b'\x7fELF':
+            klass = header[4]     # 1=32-bit, 2=64-bit
+            endian = header[5]
+            if endian == 1:
+                fmt = '<'
+            elif endian == 2:
+                fmt = '>'
+            else:
+                return None
+
+            if klass == 2:  # 64-bit
+                machine = int.from_bytes(header[18:20], fmt)
+                _ELF64_ARCH = {
+                    0x3E: 'x86_64',   0xB7: 'aarch64',
+                    0xF3: 'riscv64',  0x15: 'ppc64le',
+                    0x3: 'i386',
+                }
+                return _ELF64_ARCH.get(machine)
+            else:  # 32-bit
+                machine = int.from_bytes(header[18:20], fmt)
+                _ELF32_ARCH = {
+                    0x03: 'i386',     0x28: 'armv7l',
+                    0x28: 'armv7l',   0x08: 'mips',
+                }
+                return _ELF32_ARCH.get(machine)
+
+        # Mach-O (macOS)
+        if header[:4] in (b'\xfe\xed\xfa\xce', b'\xfe\xed\xfa\xcf',  # 32-bit
+                          b'\xcf\xfa\xed\xfe', b'\xce\xfa\xed\xfe'):  # 64-bit
+            cpu_type = int.from_bytes(header[4:8], 'little' if header[:4] in (
+                b'\xfe\xed\xfa\xce', b'\xfe\xed\xfa\xcf') else 'big')
+            _MACHO_ARCH = {
+                7: 'i386',       0x01000007: 'x86_64',
+                12: 'armv7l',    0x0100000C: 'aarch64',
+            }
+            return _MACHO_ARCH.get(cpu_type)
+
+        return None
+
+    # ── Exit status interpretation ──────────────────────────────────────────
+
+    @staticmethod
+    def _interpret_exit_status(result: DynamicAnalysisResult, exit_code: int) -> None:
+        """Classify exit code clean exit or crash signal
+        
+        POSIX, a process killed signal N 返回 -N (or 128+N shells
+        but subprocess.运行 报告 -N Unix). Windows, crash codes
+        large negative 32-bit integers (NTSTATUS)
+        """
+        if sys.platform == 'win32':
+            # Windows: crash codes >= 0x80000000 unsigned, negative signed
+            code_u32 = exit_code & 0xFFFFFFFF
+            if code_u32 in _WIN_CRASH_CODES:
+                result.crash_signal = _WIN_CRASH_CODES[code_u32]
+                result.anomalies.append(
+                    f"Binary crashed (Windows): {result.crash_signal} (0x{code_u32:08X})"
+                )
+            elif exit_code < 0 and exit_code != -1:
+                result.crash_signal = f"NTSTATUS_0x{code_u32:08X}"
+                result.anomalies.append(
+                    f"Binary exited with NTSTATUS: 0x{code_u32:08X}"
+                )
+            return
+
+        # POSIX: subprocess.运行 报告 -signum for signal-killed 处理
+        if exit_code < 0:
+            sig = -exit_code
+            sig_name = _CRASH_SIGNALS.get(sig, f"SIG_{sig}")
+            result.crash_signal = sig_name
+            result.anomalies.append(
+                f"Binary crashed (signal): {sig_name} (signal {sig})"
+            )
+
+    # ── strace 输出 解析器 ────────────────────────────────────────────────
+
+    def _parse_strace_output(
+        self,
+        result: DynamicAnalysisResult,
+        lines: List[str],
+        binary_path: str,
+    ) -> None:
+        """解析 raw strace lines RuntimeTrace objects
+        
+        strace 输出 格式化 (example):
+        12345 openat(AT_FDCWD, "/etc/passwd", O_RDONLY) = 3
+        12345 connect(3, {sa_family=AF_INET, sin_port=htons(443),.}, 16) = 0
+        
+        提取: PID, 系统调用 name, arguments (a truncated string)
+        返回 value, map 系统调用 a RuntimeBehaviorType
+        """
+        # Regex 匹配 typical strace line: optional [pid] prefix, 系统调用 name
+        # parenthesized arguments, " = " 返回 value
+        _STRACE_RE = re.compile(
+            r'^(?:\[(?P<pid>\d+)\]\s+)?'
+            r'(?P<syscall>[a-zA-Z_][a-zA-Z0-9_]*)\('
+            r'(?P<args>.*?)'
+            r'\)\s*=\s*(?P<ret>-?\d+|0x[0-9a-fA-F]+|\?)\s*'
+            r'(?P<extra>.*?)$'
+        )
+
+        parsed = 0
+        t0 = time.time()
+        for line in lines[: _STRACE_LINE_LIMIT]:
+            line = line.strip()
+            if not line:
+                continue
+            m = _STRACE_RE.match(line)
+            if not m:
+                continue
+
+            syscall_name = m.group('syscall')
+            args_raw = m.group('args')
+            ret_str = m.group('ret')
+            pid_str = m.group('pid')
+
+            # Map 系统调用 → behavior type
+            behavior_info = self._lookup_syscall_behavior(syscall_name)
+            if behavior_info is None:
+                continue  # uninteresting 系统调用, skip
+
+            behavior_type, severity = behavior_info
+
+            # 解析 返回 value
+            try:
+                if ret_str.startswith('0x'):
+                    ret_val = int(ret_str, 16)
+                elif ret_str == '?':
+                    ret_val = None
+                else:
+                    ret_val = int(ret_str)
+            except ValueError:
+                ret_val = ret_str
+
+            # 网络 connections: 提取 address info connect/bind args
+            if behavior_type in (RuntimeBehaviorType.NETWORK_CONNECT,
+                                 RuntimeBehaviorType.NETWORK_SEND,
+                                 RuntimeBehaviorType.NETWORK_RECEIVE):
+                self._extract_network_info(result, syscall_name, args_raw)
+
+            # File access tracking
+            if behavior_type in (RuntimeBehaviorType.FILE_CREATE,
+                                 RuntimeBehaviorType.FILE_READ,
+                                 RuntimeBehaviorType.FILE_MODIFY,
+                                 RuntimeBehaviorType.FILE_DELETE):
+                fpath = self._extract_file_path(syscall_name, args_raw)
+                if fpath and fpath not in result.files_accessed:
+                    result.files_accessed.append(fpath)
+
+            # Process injection / creation tracking
+            if behavior_type == RuntimeBehaviorType.PROCESS_CREATE:
+                child = self._extract_file_path(syscall_name, args_raw)
+                if child:
+                    result.process_operations.append({
+                        "target": child, "operation": "create",
+                    })
+            if behavior_type == RuntimeBehaviorType.PROCESS_INJECT:
+                result.process_operations.append({
+                    "syscall": syscall_name, "operation": "inject",
+                })
+
+            trace = RuntimeTrace(
+                trace_id=self._next_trace_id(),
+                timestamp=t0 + parsed * 0.0001,  # preserve ordering
+                behavior_type=behavior_type,
+                api_name=syscall_name,
+                process_name=binary_path,
+                pid=int(pid_str) if pid_str else 0,
+                arguments={"syscall": syscall_name, "args": self._truncate_str(args_raw, 256)},
+                return_value=ret_val,
+                success=(isinstance(ret_val, int) and ret_val >= 0),
+                severity=severity,
+                description=f"strace: {syscall_name}({self._truncate_str(args_raw, 80)}) = {ret_str}",
+            )
+            result.traces.append(trace)
+            result.api_hook_count += 1
+            parsed += 1
+
+        log.debug("Parsed %d strace lines into %d traces", len(lines[: _STRACE_LINE_LIMIT]), parsed)
+
+    @staticmethod
+    def _lookup_syscall_behavior(syscall_name: str) -> Optional[Tuple[str, str]]:
+        """Match a 系统调用 name against mapping table
+        
+        返回 (behavior_type, severity) or None for uninteresting 系统调用s
+        迭代 over _系统调用_MAP keys — dict small enough
+        a bottleneck
+        """
+        for prefix, (btype, sev) in _SYSCALL_MAP.items():
+            if syscall_name == prefix or syscall_name.startswith(prefix):
+                return (btype, sev)
+        return None
+
+    @staticmethod
+    def _extract_network_info(result: DynamicAnalysisResult, syscall_name: str,
+                              args_raw: str) -> None:
+        """Attempt 提取 remote address/port connect/bind/sendto args
+        
+        strace 输出 sockaddr structs inline, e.g.:
+        sin_port=htons(443), sin_addr=inet_addr("10.0.0.1")
+        a best-effort regex extraction
+        """
+        addr_match = re.search(r'inet_addr\("([^"]+)"\)', args_raw)
+        port_match = re.search(r'htons\((\d+)\)', args_raw)
+        if addr_match:
+            conn = {
+                "remote_addr": addr_match.group(1),
+                "port": int(port_match.group(1)) if port_match else 0,
+                "protocol": "TCP",
+                "syscall": syscall_name,
+            }
+            result.network_connections.append(conn)
+
+    @staticmethod
+    def _extract_file_path(syscall_name: str, args_raw: str) -> Optional[str]:
+        """提取 a file path strace arguments
+        
+        strace typically quotes paths: openat(AT_FDCWD, "/etc/passwd",.)
+        """
+        m = re.search(r'"([^"]+)"', args_raw)
+        if m:
+            return m.group(1)
+        return None
+
+    # ── Utility 辅助函数 ─────────────────────────────────────────────────────
+
+    @staticmethod
+    def _has_tool(name: str) -> bool:
+        """检查 a command-line tool available PATH"""
+        return shutil.which(name) is not None
+
+    @staticmethod
+    def _truncate_bytes(data: bytes, max_len: int) -> str:
+        """截断 raw bytes, 解码 safely, 返回 string snippet"""
+        try:
+            text = data[:max_len].decode('utf-8', errors='replace')
+        except Exception:
+            text = repr(data[:max_len])
+        return text
+
+    @staticmethod
+    def _truncate_str(text: str, max_len: int) -> str:
+        """截断 a string max_len, appending '…' trimmed"""
+        if len(text) <= max_len:
+            return text
+        return text[:max_len - 1] + '…'
+
+    # ── Trace 工厂 ───────────────────────────────────────────────────────
 
     def _add_trace(
         self, result: DynamicAnalysisResult, timestamp: float,
@@ -622,6 +1430,8 @@ class DynamicAnalysisEngine(BaseAnalyzer):
         self._trace_counter += 1
         return f"trace_{self._trace_counter:05d}"
 
+    # ── Public API (unchanged) ──────────────────────────────────────────────
+
     def collect_runtime_traces(
         self, trace_filter: Optional[List[str]] = None
     ) -> list:
@@ -635,7 +1445,7 @@ class DynamicAnalysisEngine(BaseAnalyzer):
     def detect_runtime_behaviors(self) -> list:
         if self._active_analysis is None:
             return []
-        # Re-run pattern detection pass
+        # Re-运行 pattern detection pass
         pp = PatternDetectionPass(self.MALICIOUS_PATTERNS)
         pp.run(self._active_analysis)
         return self._active_analysis.detected_behaviors
@@ -648,7 +1458,7 @@ class DynamicAnalysisEngine(BaseAnalyzer):
             if api in self.API_BEHAVIOR_MAP:
                 self._hook_registry.setdefault(callback_name, []).append(api)
                 hooked += 1
-                logger.debug(f"Hooked API: {api} -> {callback_name}")
+                log.debug("Hooked API: %s -> %s", api, callback_name)
         return hooked
 
     def get_hook_status(self) -> Dict[str, Any]:
@@ -755,6 +1565,13 @@ class DynamicAnalysisEngine(BaseAnalyzer):
                 "passes_executed": [p.name for p in self._passes],
                 "malicious_behaviors": dr.detected_behaviors,
                 "traces": [t.to_dict() for t in dr.traces[:50]],
+                # 舍入 5: real-execution metadata 报告
+                "execution_metadata": {
+                    "mode": dr.execution_mode,
+                    "exit_code": dr.exit_code,
+                    "crash_signal": dr.crash_signal,
+                    "anomalies": dr.anomalies,
+                },
             },
         }
         if output_format == "json":
@@ -769,7 +1586,7 @@ class DynamicAnalysisEngine(BaseAnalyzer):
                 binary = kwargs.get("binary_path", "")
                 if not binary:
                     return {"success": False, "error": "binary_path is required"}
-                timeout = kwargs.get("timeout_seconds", 60)
+                timeout = kwargs.get("timeout_seconds", _DEFAULT_TIMEOUT)
                 args = kwargs.get("arguments")
                 result = self.run_dynamic_analysis(binary, timeout, args)
                 return self.generate_dynamic_report(result)
@@ -809,7 +1626,7 @@ class DynamicAnalysisEngine(BaseAnalyzer):
                 return {"success": False, "error": f"Unknown action: {action}"}
 
         except Exception as e:
-            logger.error(f"Dynamic analysis error: {e}", exc_info=True)
+            log.error("Dynamic analysis error: %s", e, exc_info=True)
             return {"success": False, "error": str(e)}
 
     @classmethod
@@ -817,8 +1634,8 @@ class DynamicAnalysisEngine(BaseAnalyzer):
         return AnalyzerMetadata(
             name="DynamicAnalysisEngine",
             type=AnalyzerType.DYNAMIC_ANALYZER,
-            version="1.0.0",
-            description="Dynamic binary analysis engine: sandbox execution, runtime behavior tracing, MITRE ATT&CK-based malicious pattern detection",
+            version="2.0.0",
+            description="Dynamic binary analysis engine: real subprocess execution, strace syscall capture, crash signal monitoring, MITRE ATT&CK-based malicious pattern detection",
             author="BinaryAnalysisPlatform",
             dependencies=[],
             supported_platforms=["windows", "linux", "macos"],

@@ -3,7 +3,7 @@
 静态数据流分析模块
 
 提供基于 angr 或 radare2 ESIL 的静态数据流分析功能：
-- Use-Def 链分析
+- 使用-Def 链分析
 - 潜在整数溢出检测
 - 格式化字符串漏洞检测
 - 未初始化内存使用检测
@@ -39,7 +39,7 @@ class TaintSource:
     """
     name: str
     address: int
-    type: str  # 'input', 'network', 'file', 'environment'
+    type: str  # 'input', '网络', 'file', 'environment'
     registers: Set[str] = field(default_factory=set)
     description: str = ""
 
@@ -87,7 +87,7 @@ class StaticDataFlowAnalyzer:
     静态数据流分析器
     
     提供多种静态分析能力：
-    1. Use-Def 链分析
+    1. 使用-Def 链分析
     2. 整数溢出检测
     3. 格式化字符串漏洞检测
     4. 未初始化内存检测
@@ -206,14 +206,14 @@ class StaticDataFlowAnalyzer:
         执行静态污点分析
         
         Args:
-            function_name: 要分析的函数名
-            
-        Returns:
-            包含污点传播信息的字典：
-            - tainted_variables: 受污染的变量列表
-            - propagation_paths: 传播路径
-            - potential_vulnerabilities: 潜在漏洞
-            - function_name: 函数名
+        function_name: 要分析的函数名
+        
+        返回:
+        包含污点传播信息的字典：
+        - tainted_variables: 受污染的变量列表
+        - propagation_paths: 传播路径
+        - potential_vulnerabilities: 潜在漏洞
+        - function_name: 函数名
         """
         logger.info(f"[Static] 开始静态污点分析: {function_name}")
         
@@ -359,7 +359,7 @@ class StaticDataFlowAnalyzer:
     
     def _analyze_use_def_chain(self, func: 'Function') -> Set[str]:
         """
-        分析 use-def 链
+        分析 使用-def 链
         """
         tainted = set()
         
@@ -520,10 +520,10 @@ class StaticDataFlowAnalyzer:
         检测未初始化内存使用
         
         Args:
-            function_name: 要分析的函数名
-            
-        Returns:
-            未初始化内存使用列表
+        function_name: 要分析的函数名
+        
+        返回:
+        未初始化内存使用列表
         """
         logger.info(f"[Static] 检测未初始化内存: {function_name}")
         
@@ -612,10 +612,10 @@ class StaticDataFlowAnalyzer:
         完整分析一个函数
         
         Args:
-            function_name: 函数名
-            
-        Returns:
-            包含所有分析结果的字典
+        function_name: 函数名
+        
+        返回:
+        包含所有分析结果的字典
         """
         logger.info(f"[Static] 完整分析函数: {function_name}")
         
@@ -652,11 +652,11 @@ class StaticDataFlowAnalyzer:
         从缓存获取分析结果（如果存在）
         
         Args:
-            function_name: 函数名
-            cache_dir: 缓存目录
-            
-        Returns:
-            缓存的分析结果，如果没有返回 None
+        function_name: 函数名
+        cache_dir: 缓存目录
+        
+        返回:
+        缓存的分析结果，如果没有返回 None
         """
         try:
             binary_hash = self._compute_binary_hash()
@@ -683,12 +683,12 @@ class StaticDataFlowAnalyzer:
         保存分析结果到缓存
         
         Args:
-            function_name: 函数名
-            result: 分析结果
-            cache_dir: 缓存目录
-            
-        Returns:
-            是否保存成功
+        function_name: 函数名
+        result: 分析结果
+        cache_dir: 缓存目录
+        
+        返回:
+        是否保存成功
         """
         try:
             if not os.path.exists(cache_dir):
@@ -733,12 +733,12 @@ def perform_static_taint_analysis(
     便捷函数：执行静态污点分析
     
     Args:
-        binary_path: 二进制文件路径
-        function_name: 目标函数名
-        use_angr: 是否使用 angr
-        
-    Returns:
-        污点分析结果
+    binary_path: 二进制文件路径
+    function_name: 目标函数名
+    use_angr: 是否使用 angr
+    
+    返回:
+    污点分析结果
     """
     analyzer = StaticDataFlowAnalyzer(binary_path, use_angr)
     return analyzer.analyze_function(function_name)

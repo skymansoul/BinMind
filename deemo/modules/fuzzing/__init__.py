@@ -1,5 +1,3 @@
-# 2026-07-15
-
 """Fuzzing module -- lazy-loads submodules on demand."""
 
 _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
@@ -20,6 +18,7 @@ _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
     "ClusterAutoscaler": ("fuzzing.fuzz_cluster_autoscaler", "ClusterAutoscaler"),
     "TaskQueue": ("fuzzing.fuzz_cluster_autoscaler", "TaskQueue"),
     "NodeRegistry": ("fuzzing.fuzz_cluster_autoscaler", "NodeRegistry"),
+    # TODO: 增量覆盖率差异阈值 0.02 是从 AFL++ 论文抄的，CGC 二进制上偏激进
     "SeedEvolution": ("fuzzing.fuzz_seed_evolution", "SeedEvolution"),
     "FuzzDictionaryGenerator": ("fuzzing.fuzz_dictionary_generator", "FuzzDictionaryGenerator"),
     "ConstantExtractor": ("fuzzing.fuzz_dictionary_generator", "ConstantExtractor"),
@@ -40,6 +39,22 @@ _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
     "FuzzerComparator": ("fuzzing.fuzz_compare", "FuzzerComparator"),
     "CoverageAnomalyDetector": ("fuzzing.fuzz_coverage_anomaly", "CoverageAnomalyDetector"),
     "DirectedFuzzer": ("fuzzing.fuzz_directed", "DirectedFuzzer"),
+    # 2026-08 扩展 -- 种子关系图/多目标Pareto归档 (跨代非支配保留)
+    "SeedRelationGraph": ("fuzzing.src.seed_relation_graph", "SeedRelationGraph"),
+    "SeedNode": ("fuzzing.src.seed_relation_graph", "SeedNode"),
+    "ParetoArchive": ("fuzzing.src.pareto_archive", "ParetoArchive"),
+    "ParetoEntry": ("fuzzing.src.pareto_archive", "ParetoEntry"),
+    # 2026-08 扩展 -- 路径聚类(MinHash LSH)/突变策略集成(指数梯度)
+    "PathCluster": ("fuzzing.src.path_trace_cluster", "PathCluster"),
+    "PathSignature": ("fuzzing.src.path_trace_cluster", "PathSignature"),
+    "MutationEnsemble": ("fuzzing.src.mutation_ensemble", "MutationEnsemble"),
+    "MutationStrategy": ("fuzzing.src.mutation_ensemble", "MutationStrategy"),
+    # 2026-08 扩展 -- 覆盖感知拼接(CASS)/执行开销预测器(ECF分位数回归)
+    "CoverageAwareSplicer": ("fuzzing.src.coverage_splicer", "CoverageAwareSplicer"),
+    "CoverageRegion": ("fuzzing.src.coverage_splicer", "CoverageRegion"),
+    "SpliceCandidate": ("fuzzing.src.coverage_splicer", "SpliceCandidate"),
+    "ExecutionCostForecaster": ("fuzzing.src.exec_cost_forecaster", "ExecutionCostForecaster"),
+    "CostEstimate": ("fuzzing.src.exec_cost_forecaster", "CostEstimate"),
 }
 
 _IMPORT_CACHE: dict[str, object] = {}

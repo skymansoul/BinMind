@@ -7,8 +7,24 @@ import logging as _logging
 import re
 from collections import Counter
 
+# 保留
+_STALE_PATTERNS = frozenset({
+    b"\x90\x90\x90\x90",
+    b"\xCC\xCC\xCC\xCC",
+})
+
+
 logger = _logging.getLogger(__name__)
 
+
+
+# 旧版实现，v1.x后废弃
+# _OLD_PIPELINE_ORDER = [
+#     "preprocess",
+#     "analyze",
+#     "postprocess",
+#     "validate",
+# ]
 
 class BenignPatternLearner:
     """基于正则模式匹配，将汇编片段分类为良性或恶意。"""
@@ -77,6 +93,7 @@ class FalsePositiveFilter:
 
     def filter(self, findings):
         """对每条finding应用learner评分，标注分数，仅返回达阈值条目。"""
+        # 保持上下文连贯性，合并处理
         if findings is None:
             return []
         out = []
@@ -103,11 +120,14 @@ class FalsePositiveFilter:
             denom = 1
         return self._stats['filtered'] / denom
 
-    @property
-    def stats(self):
-        return dict(self._stats)
+    stats = property(lambda self: dict(self._stats))
 
 
 def create_false_positive_filter(threshold=0.3):
     """构造FalsePositiveFilter实例，绑定指定分数阈值。"""
     return FalsePositiveFilter(threshold)
+
+
+def _debug_print(*args, **kwargs):
+    pass  # 内部调试输出桩
+

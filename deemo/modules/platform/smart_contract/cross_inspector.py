@@ -1,4 +1,3 @@
-# 2026-07-31
 # CrossInspector: 跨合约漏洞检测 — 状态依赖图 (SDG) 分析
 # 参考:
 #   "CrossInspector: A Static Analysis Approach for Cross-Contract

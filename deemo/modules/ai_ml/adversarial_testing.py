@@ -1,9 +1,7 @@
-# 2026-07-25 16:20
-# adversarial_testing.py
-# 对抗鲁棒性测试 — 对ML模型施加对抗扰动并测量性能退化
-# 依据: GraphRAG under Fire [arXiv 2501.14050, 2025] 的知识图谱投毒攻击面分析
-#       GragPoison的关系注入/增强/叙述生成三种攻击策略
-# 核心: 生成对抗样本 → 测量模型敏感性 → 输出鲁棒性报告
+# 对抗鲁棒性测试 : 对抗扰动→测量性能退化
+# 依据: GraphRAG Under Fire [arXiv 2501.14050]
+# GragPoison三策略: 关系注入/增强/叙述构造
+# 对抗样本→敏感性测量→鲁棒性报告
 
 from __future__ import annotations
 import math
@@ -18,13 +16,13 @@ logger = logging.getLogger(__name__)
 
 
 class AttackMethod(Enum):
-    FGSM = 'fgsm'                    # 快速梯度符号法 (对特征)
-    PGD = 'pgd'                      # 投影梯度下降
-    EDGE_FLIP = 'edge_flip'          # 图结构扰动: 随机翻转边
+    FGSM = 'fgsm'                    # 快速梯度符号法(FGSM)
+    PGD = 'pgd'                      # 投影梯度下降(PGD)(PGD)(PGD)(PGD)
+    EDGE_FLIP = 'edge_flip'          # 图结构扰动: 随机边翻转
     FEATURE_NOISE = 'feature_noise'   # 特征加噪
     GRAGPOISON_INJECT = 'gragpoison'  # GragPoison关系注入 [arXiv 2501.14050]
     LABEL_FLIP = 'label_flip'        # 标签翻转
-    NODE_INJECTION = 'node_injection' # 注入虚假节点
+    NODE_INJECTION = 'node_injection' # 虚假节点注入
 
 
 @dataclass
@@ -296,11 +294,11 @@ class AdversarialTester:
         orig_pred = predict_fn([x])[0]
         D = len(x)
 
-        # 模拟关系注入: 将虚假实体的特征混入当前节点
-        # 虚假实体特征 = 目标类别的典型特征的对抗版本
+        # 关系注入: 虚假实体特征混入节点
+        # 虚假特征=目标类对抗版本
         x_poisoned = x[:]
         for j in range(D):
-            # 注入偏移 (模拟不存在的邻域信息)
+            # 注入偏移模拟虚假邻域
             poison_signal = self.eps * (1.0 if random.random() > 0.5 else -1.0)
             x_poisoned[j] = _at_clip(x_poisoned[j] + poison_signal, 0.0, 1.0)
 
@@ -342,7 +340,7 @@ class AdversarialTester:
             avg_change = sum(s.prediction_change for s in samples) / n_tested
             max_change = max((s.prediction_change for s in samples), default=0.0)
 
-            # 鲁棒性分数: 1 - success_rate (越难攻击越鲁棒)
+            # 鲁棒性: 1-攻击成功率
             robustness = 1.0 - success_rate
 
             reports.append(RobustnessReport(

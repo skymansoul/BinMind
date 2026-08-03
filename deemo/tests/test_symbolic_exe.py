@@ -1,7 +1,4 @@
-<<<<<<< HEAD
-=======
 
->>>>>>> d81973a (精简冗余模块)
 import os
 import sys
 import unittest
@@ -35,15 +32,10 @@ class TestSymbolicExecutor(unittest.TestCase):
         mock_claripy = MagicMock()
 
         with patch.dict('sys.modules', {'angr': mock_angr, 'claripy': mock_claripy}):
-            from modules.symbolic_exe import SymbolicExecutor
+            from modules.analysis.symbolic.symbolic_exe import SymbolicExecutor
 
             executor = SymbolicExecutor('fake_binary')
-<<<<<<< HEAD
-            
-=======
 
-lass字段完整性$/d
->>>>>>> d81973a (精简冗余模块)
             self.assertTrue(mock_angr.Project.called)
 
             args, kwargs = mock_angr.Project.call_args
@@ -66,14 +58,10 @@ lass字段完整性$/d
         mock_claripy = MagicMock()
 
         with patch.dict('sys.modules', {'angr': mock_angr, 'claripy': mock_claripy}):
-            from modules.symbolic_exe import SymbolicExecutor
+            from modules.analysis.symbolic.symbolic_exe import SymbolicExecutor
 
             executor = SymbolicExecutor('fake_binary', target_arch='x86')
-<<<<<<< HEAD
-            
-=======
 
->>>>>>> d81973a (精简冗余模块)
             self.assertTrue(mock_angr.Project.called)
 
             args, kwargs = mock_angr.Project.call_args
@@ -99,7 +87,7 @@ lass字段完整性$/d
         mock_claripy = MagicMock()
 
         with patch.dict('sys.modules', {'angr': mock_angr, 'claripy': mock_claripy}):
-            from modules.symbolic_exe import SymbolicExecutor
+            from modules.analysis.symbolic.symbolic_exe import SymbolicExecutor
 
             executor = SymbolicExecutor('fake_binary')
 
@@ -108,7 +96,7 @@ lass字段完整性$/d
 
     def test_load_project_angr_not_available(self):
         with patch.dict('sys.modules', {'angr': None}):
-            from modules.symbolic_exe import SymbolicExecutor
+            from modules.analysis.symbolic.symbolic_exe import SymbolicExecutor
 
             executor = SymbolicExecutor('fake_binary')
 
@@ -121,7 +109,7 @@ lass字段完整性$/d
         mock_claripy = MagicMock()
 
         with patch.dict('sys.modules', {'angr': mock_angr, 'claripy': mock_claripy}):
-            from modules.symbolic_exe import SymbolicExecutor
+            from modules.analysis.symbolic.symbolic_exe import SymbolicExecutor
 
             executor = SymbolicExecutor('fake_binary')
 
@@ -129,9 +117,5 @@ lass字段完整性$/d
             self.assertIsNone(executor.project)
 
 
-<<<<<<< HEAD
-=======
-
->>>>>>> d81973a (精简冗余模块)
 if __name__ == '__main__':
     unittest.main()

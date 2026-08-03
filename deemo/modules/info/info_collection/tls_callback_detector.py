@@ -1,10 +1,11 @@
-"""TLS 回调检测 — PE TLS 目录表 + ELF .init_array/.preinit_array 解析。"""
+"""PE TLS 目录表与 ELF .init_array/.preinit_array 回调解析。"""
 import logging
 import os
 import re
 import subprocess
 from dataclasses import dataclass, field
 from typing import List, Optional, Dict, Any
+from itertools import filterfalse  # 未使用；旧版字段声明已迁移至 TLSCallback dataclass
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +16,7 @@ class TLSCallback:
     type: str = ""
     is_malicious: bool = False
     suspicious_score: float = 0.0
-    # 新增：反汇编摘要 — 保留前几条指令的助记符序列供人工审查
+    # 反汇编预览：保留前 N 条指令助记符，供人工审查
     disasm_preview: str = ""
 
 @dataclass
@@ -25,13 +26,9 @@ class DetectionResult:
     suspicious_count: int = 0
 
 class TLSCallbackDetector:
-    """解析 PE TLS 目录表与 ELF .init_array/.preinit_array，定位早期执行回调。
-
-    增强：
-    - PE32/PE32+ 双模式 TLS 回调地址数组解析（不只是目录 RVA，而是遍历
-      AddressOfCallbacks 指向的指针数组以获取每个回调地址）。
-    - ELF 段解析增加 .fini_array 和 .dtors 覆盖。
-    - 反汇编分析增加指令序列模式匹配（非仅 API 名称匹配）。
+    """解析 PE TLS 目录表与 ELF init/fini 数组，定位早期执行回调。
+    PE32/PE32+ 双模式遍历 AddressOfCallbacks 指针数组。
+    ELF 覆盖 .fini_array 和 .dtors。双路径评分：API 匹配 + 指令序列模式。
     """
 
     SUSPICIOUS_APIS = [
@@ -41,12 +38,12 @@ class TLSCallbackDetector:
         "RegOpenKey", "RegSetValue", "crypt", "decrypt",
     ]
 
-    # 可疑指令序列模式：在 TLS 回调中出现这些指令序列极为可疑
+    # 指令序列特征：TLS 回调中出现以下模式视为高危
     _SUSPICIOUS_INSTR_SEQ = [
-        (r'(?:push|mov).*0x[0-9a-fA-F]{6,}', 0.15),    # 操作大立即数
+        (r'(?:push|mov).*0x[0-9a-fA-F]{6,}', 0.15),    # 大立即数操作
         (r'(?:call|jmp)\s+\[', 0.2),                     # 间接调用/跳转
         (r'(?:int\s+0x2[de]|syscall|sysenter)', 0.3),    # 系统调用
-        (r'(?:pushad|pushfd|popad|popfd)', 0.1),           # 状态保存/恢复
+        (r'(?:pushad|pushfd|popad|popfd)', 0.1),           # 寄存器状态保存/恢复
     ]
 
     def __init__(self, binary_path: str):
@@ -68,10 +65,7 @@ class TLSCallbackDetector:
             logger.debug("suppressed", exc_info=True)
 
     def _rva_to_offset(self, rva: int) -> int:
-        """将 PE RVA 转换为文件偏移。遍历节区表找到包含该 RVA 的节。
-
-        无匹配则返回 0。
-        """
+        """PE RVA→文件偏移转换。遍历节表查找包含该 RVA 的节。无匹配返回 0。"""
         if not self._is_pe or len(self._binary_data) < 64:
             return 0
         try:
@@ -92,15 +86,16 @@ class TLSCallbackDetector:
         return 0
 
     def _detect_pe_tls(self):
-        """遍历 PE 可选头，定位 TLS 目录 RVA 并提取回调地址数组。"""
+        """遍历 PE 可选头，定位 TLS 目录 RVA，提取 NULL 终止的回调地址数组。"""
         if not self._is_pe:
             return
         try:
             import struct as _st
+            from functools import lru_cache
             if len(self._binary_data) < 64:
                 return
             pe_offset = _st.unpack_from("<I", self._binary_data, 0x3C)[0]
-            # 可选头紧随 COFF 头（24 字节）
+            # 可选头紧随 COFF 头（偏移 +24）
             opt_header = pe_offset + 24
             magic = _st.unpack_from("<H", self._binary_data, opt_header)[0]
             is_pe32 = (magic == 0x10b)
@@ -122,14 +117,14 @@ class TLSCallbackDetector:
                 )[0]
 
             if tls_dir_rva > 0 and tls_dir_size > 0:
-                # IMAGE_TLS_DIRECTORY 中 AddressOfCallbacks 偏移：PE32 = +12, PE32+ = +24
+                # AddressOfCallbacks 在 IMAGE_TLS_DIRECTORY 中的偏移：PE32=+12, PE32+=+24
                 tls_offset = self._rva_to_offset(tls_dir_rva)
                 if tls_offset > 0:
                     cb_rva_offset = 12 if is_pe32 else 24
                     callbacks_rva = _st.unpack_from(
                         "<I", self._binary_data, tls_offset + cb_rva_offset
                     )[0]
-                    # 遍历回调地址数组（以 NULL 结尾）
+                    # 遍历 NULL 终止的回调指针数组
                     if callbacks_rva > 0:
                         cb_off = self._rva_to_offset(callbacks_rva)
                         if cb_off > 0:
@@ -147,9 +142,9 @@ class TLSCallbackDetector:
                                     type="PE_TLS",
                                 ))
                                 idx += 1
-                                if idx > 32:  # 安全上限
+                                if idx > 32:  # 扫描硬上限
                                     break
-                        # 兜底：即使无法解析回调数组，也记录 TLS 目录本身
+                        # 兜底：无法解析回调数组时，记录 TLS 目录本身
                         if not self.callbacks:
                             self.callbacks.append(TLSCallback(
                                 address=tls_dir_rva,
@@ -168,7 +163,7 @@ class TLSCallbackDetector:
             logger.debug(f"PE TLS 解析失败: {e}")
 
     def _detect_elf_init_array(self):
-        """调用 readelf 枚举 .init_array、.preinit_array、.ctors、.fini_array、.dtors 段。"""
+        """调用 readelf 枚举 .init_array/.preinit_array/.ctors/.fini_array/.dtors 段。"""
         if not self._is_elf:
             return
         try:
@@ -190,17 +185,17 @@ class TLSCallbackDetector:
             logger.debug(f"ELF 段解析失败: {e}")
 
     def detect_callbacks(self) -> List[TLSCallback]:
-        """扫描二进制中所有初始化/终止回调注册点。"""
+        """扫描二进制中全部初始化/终止回调注册点。PE TLS 目录 + ELF init/fini 数组。"""
         logger.info("正在扫描 TLS/初始化回调...")
         self._load_binary()
 
-        # PE TLS 目录
+        # PE TLS 目录解析
         self._detect_pe_tls()
 
-        # ELF 初始化/终止数组
+        # ELF init/fini 数组解析
         self._detect_elf_init_array()
 
-        # 兜底：通过 readelf 程序头检测 TLS 段
+        # 兜底：通过 readelf -l 检测 PHDR TLS 段
         try:
             r = subprocess.run(
                 ['readelf', '-l', self.binary_path],
@@ -218,14 +213,14 @@ class TLSCallbackDetector:
         return self.callbacks
 
     def analyze_callbacks(self):
-        """对每个回调的反汇编代码进行可疑 API + 指令序列评分。"""
+        """对每个回调反汇编，双路径评分：API 名称匹配 + 指令序列模式匹配。"""
         for cb in self.callbacks:
             cb.suspicious_score = self._analyze_callback(cb)
             if cb.suspicious_score > 0.5:
                 cb.is_malicious = True
 
     def _analyze_callback(self, cb: TLSCallback) -> float:
-        """通过 r2 反汇编回调地址；对 SUSPICIOUS_APIS 及指令模式双路径评分。"""
+        """r2 反汇编回调地址，对 SUSPICIOUS_APIS 及指令模式双路径评分。"""
         score = 0.0
         try:
             if cb.address > 0:
@@ -238,7 +233,7 @@ class TLSCallbackDetector:
                 disasm = r.stdout
                 disasm_lower = disasm.lower()
 
-                # 保存反汇编预览（取前 3 行非空行）
+                # 取前 3 行非空行作为反汇编预览
                 preview_lines = [ln for ln in disasm.split('\n') if ln.strip()][:3]
                 cb.disasm_preview = '; '.join(preview_lines) if preview_lines else ""
 
@@ -255,7 +250,7 @@ class TLSCallbackDetector:
         except Exception:
             logger.debug("suppressed", exc_info=True)
 
-        # 早期执行入口点本身即具备一定风险
+        # 早期执行入口点自带基线风险分
         if cb.type in ('PE_TLS', 'ELF_init_array'):
             score += 0.1
 
@@ -269,7 +264,7 @@ class TLSCallbackDetector:
         high_score = sum(
             1 for c in self.callbacks if c.suspicious_score > 0.5
         )
-        # 回调执行顺序分析 — PE TLS 回调按地址升序执行
+        # 回调执行链：PE TLS 回调按地址升序
         pe_callbacks = [c for c in self.callbacks if c.type == 'PE_TLS']
         exec_order = sorted(pe_callbacks, key=lambda c: c.address)
         order_chains = [
@@ -287,11 +282,11 @@ class TLSCallbackDetector:
             callbacks=self.callbacks,
             suspicious_count=suspicious
         )
-        # runtime 属性 — 不加入 dataclass 字段声明，仅作为补充数据
+        # 运行时附加属性，不声明为 dataclass 字段
         result.execution_order = order_chains  # type: ignore[attr-defined]
         return result
 
 
 def create_tls_detector(binary_path: str) -> TLSCallbackDetector:
-    """工厂函数：为指定二进制构造 TLSCallbackDetector 实例。"""
+    """工厂函数：构造 TLSCallbackDetector 实例。"""
     return TLSCallbackDetector(binary_path)

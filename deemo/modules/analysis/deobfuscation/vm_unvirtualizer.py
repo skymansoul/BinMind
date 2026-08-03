@@ -23,7 +23,7 @@ class VMInstruction:
 
 @dataclass
 class VMHandler:
-    """Represents a decoded VM handler with actual instruction-level detail."""
+    """表示 a decoded VM处理器 actual instruction-level detail"""
     address: int
     opcode: int
     semantics: str = 'unknown'
@@ -98,7 +98,7 @@ def _try_import_capstone():
 
 
 def _disasm_chunk(data: bytes, base_addr: int) -> List[Tuple[int, int, str, str]]:
-    """反汇编一块代码。返回 (address, size, mnemonic, op_str) 列表。"""
+    """反汇编一块代码。返回 (address, size, mnemonic, op_str) 列表"""
     cs = _try_import_capstone()
     if cs is None:
         return []
@@ -110,7 +110,7 @@ def _disasm_chunk(data: bytes, base_addr: int) -> List[Tuple[int, int, str, str]
     return results
 
 
-# ===== Handler clustering by size =====
+# ===== 处理器 集群ing size =====
 
 def _cluster_handlers_by_size(handlers: List[VMInstruction]) -> Dict[str, any]:
     if not handlers:
@@ -128,7 +128,7 @@ def _cluster_handlers_by_size(handlers: List[VMInstruction]) -> Dict[str, any]:
     }
 
 
-# ===== Bytecode pattern detection =====
+# ===== 字节码 pattern detection =====
 
 _BYTECODE_PATTERNS = {
     "vmprotect": {"alignment": 4, "sigs": [rb"\x00{4,}", rb"\xff{2,}"]},
@@ -139,7 +139,7 @@ _BYTECODE_PATTERNS = {
 # //// VMDetector ////
 
 class VMDetector:
-    """Signature-based VM protector detector."""
+    """签名-based VM protector detector"""
 
     _VM_INDICATORS = [
         b"VMProtect", b"Themida", b"Code Virtualizer", b"VM_",
@@ -221,7 +221,7 @@ def _is_indirect_jump(mnem: str, op_str: str) -> bool:
 
 
 def _find_dispatch_loop_static(binary_data: bytes, section_start: int) -> Optional[int]:
-    """用capstone静态扫描寻找间接跳转，这是调度循环的典型特征。"""
+    """用capstone静态扫描寻找间接跳转，这是调度循环的典型特征"""
     cs = _try_import_capstone()
     if cs is None:
         return None
@@ -254,11 +254,11 @@ def _find_dispatch_loop_static(binary_data: bytes, section_start: int) -> Option
     return candidates[0] if candidates else None
 
 
-# ===== Handler extraction via capstone =====
+# ===== 处理器 extraction via capstone =====
 
 def _extract_handlers_capstone(binary_data: bytes, dispatch_addr: int,
                                 max_handlers: int = 64) -> List[VMHandler]:
-    """在dispatch地址附近提取handler。使用capstone反汇编实际指令。"""
+    """在dispatch地址附近提取handler。使用capstone反汇编实际指令"""
     cs = _try_import_capstone()
     if cs is None:
         return []
@@ -308,7 +308,7 @@ def _extract_handlers_capstone(binary_data: bytes, dispatch_addr: int,
         if not handler_insns:
             continue
 
-        # 找handler结束（遇到ret/jmp/下一个handler）
+        # 找处理器结束（遇到ret/jmp/下一个处理器）
         end_idx = len(handler_insns)
         for j, insn in enumerate(handler_insns):
             m = insn.mnemonic.lower()
@@ -362,7 +362,7 @@ def _extract_handlers_capstone(binary_data: bytes, dispatch_addr: int,
 
 
 def _classify_handler_semantics(raw_mnems: List[str]) -> str:
-    """基于handler中的实际指令序列推断语义类别。"""
+    """基于handler中的实际指令序列推断语义类别"""
     categories = {
         'arithmetic': ['add', 'sub', 'mul', 'div', 'imul', 'idiv', 'inc', 'dec', 'neg', 'adc', 'sbb'],
         'logical': ['and', 'or', 'xor', 'not'],
@@ -388,10 +388,10 @@ def _classify_handler_semantics(raw_mnems: List[str]) -> str:
     return max(scores, key=scores.get)
 
 
-# //// Pseudocode lifting ////
+# //// 伪代码 lifting ////
 
 def _lift_to_pseudocode(handlers: List[VMHandler]) -> str:
-    """将handler列表转换为可读的伪代码。"""
+    """将handler列表转换为可读的伪代码"""
     lines = ["// === VM Handler Pseudocode ===", ""]
 
     for h in handlers:
@@ -446,7 +446,7 @@ def _lift_to_pseudocode(handlers: List[VMHandler]) -> str:
 # ===== VMUnvirtualizer (main) =====
 
 class VMUnvirtualizer:
-    """VM protection deobfuscation engine with real capstone-based handler extraction."""
+    """VM protection 去混淆 engine real capstone-based 处理器 extraction"""
 
     def __init__(self, binary_path: str):
         self.binary_path = os.path.abspath(binary_path)
@@ -461,7 +461,7 @@ class VMUnvirtualizer:
 
     def extract_handlers(self, dispatch_addr: Optional[int] = None,
                          max_handlers: int = 64) -> List[VMHandler]:
-        """从二进制中提取VM handler，使用capstone反汇编真实指令。"""
+        """从二进制中提取VM handler，使用capstone反汇编真实指令"""
         if not self.data:
             return []
 
@@ -495,19 +495,19 @@ class VMUnvirtualizer:
         return _extract_handlers_capstone(self.data, dispatch_addr, max_handlers)
 
     def identify_dispatch_loop(self) -> Optional[int]:
-        """识别VM调度循环地址。"""
+        """识别VM调度循环地址"""
         if not self.data:
             return None
         return _find_dispatch_loop_static(self.data, 0x1000) or _find_dispatch_loop_static(self.data, 0)
 
     def lift_to_pseudocode(self, handlers: Optional[List[VMHandler]] = None) -> str:
-        """将handler提升为可读伪代码。"""
+        """将handler提升为可读伪代码"""
         if handlers is None:
             handlers = self.extract_handlers()
         return _lift_to_pseudocode(handlers)
 
     def run(self) -> DevirtualizationResult:
-        """执行完整的VM去虚拟化流程。"""
+        """执行完整的VM去虚拟化流程"""
         try:
             if not self.detector.detect_vm():
                 # 即使未检测到已知VM，仍进行handler提取
@@ -519,9 +519,9 @@ class VMUnvirtualizer:
             # 搜索调度循环
             dispatch = self.identify_dispatch_loop()
             if dispatch is None:
-                dispatch = 0x1000  # fallback stub
+                dispatch = 0x1000  # 回退 stub
 
-            # 提取handler
+            # 提取处理器
             handlers = self.extract_handlers(dispatch)
 
             if not handlers:
@@ -577,7 +577,7 @@ class VMUnvirtualizer:
 
 
 def _generate_fallback_handlers(dispatch_addr: int, count: int) -> List[VMHandler]:
-    """当capstone不可用或无handler被提取时生成占位handler。"""
+    """当capstone不可用或无handler被提取时生成占位handler"""
     _DEFAULT_MNEMONICS = [
         ("vadd", "arithmetic"), ("vsub", "arithmetic"), ("vmul", "arithmetic"),
         ("vdiv", "arithmetic"), ("vxor", "logical"), ("vand", "logical"),

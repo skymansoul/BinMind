@@ -1,14 +1,14 @@
-# tests for binary_analysis pipeline infrastructure
+# tests for binary_analysis 流水线 基础设施
 
 import pytest
 from modules.analysis.static.binary_analysis.pipeline_infra import TaskQueue, BatchRunner
 
 
 class TestTaskQueue:
-    """Task queue for batch processing."""
+    """Task 队列 for batch processing"""
 
     def test_enqueue_dequeue(self):
-        """Basic enqueue and dequeue operations."""
+        """Basic en队列 de队列 operations"""
         q = TaskQueue()
         q.enqueue({"id": 1, "action": "analyze"})
         q.enqueue({"id": 2, "action": "audit"})
@@ -18,12 +18,12 @@ class TestTaskQueue:
         assert q.size() == 1
 
     def test_empty_dequeue(self):
-        """Dequeue from empty queue returns None."""
+        """De队列 empty 队列 返回 None"""
         q = TaskQueue()
         assert q.dequeue() is None
 
     def test_queue_order(self):
-        """FIFO order is preserved."""
+        """FIFO order preserved"""
         q = TaskQueue()
         for i in range(10):
             q.enqueue({"seq": i})
@@ -34,25 +34,25 @@ class TestTaskQueue:
 
 
 class TestBatchRunner:
-    """Batch runner for parallel analysis."""
+    """Batch runner for 并行 analysis"""
 
     def test_runner_creation(self):
-        """BatchRunner can be created with default settings."""
+        """BatchRunner created default settings"""
         runner = BatchRunner(max_workers=2)
         assert runner.max_workers == 2
 
     def test_dispatch_tasks(self):
-        """Dispatch empty task list doesn't crash."""
+        """Dispatch empty task list doesn't crash"""
         runner = BatchRunner()
         results = runner.dispatch_tasks([])
         assert results == []
 
 
 class TestPipelineIntegration:
-    """End-to-end pipeline flow tests."""
+    """End--end 流水线 flow tests"""
 
     def test_config_loading(self):
-        """Verify config can be loaded."""
+        """Verify 配置 loaded"""
         # import config if available
         try:
             from modules.analysis.static.binary_analysis.pipeline_infra import dispatch_tasks

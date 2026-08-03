@@ -1,4 +1,3 @@
-# 2026-07-25
 """PCAP处理引擎——零拷贝mmap读取、BPF过滤、流式包解析。"""
 import logging, mmap, os, struct, socket, time
 from collections import Counter, defaultdict
@@ -14,7 +13,7 @@ PCAPNG_MAGIC = 0x0a0d0d0a
 PCAP_SWAPPED_MAGIC = 0xd4c3b2a1
 PCAP_SWAPPED_NS = 0x4d3cb2a1
 
-# //// 大文件阈值（MB）////
+# 大文件阈值（MB）
 MMAP_THRESHOLD = 500 * 1024 * 1024  # 500MB
 
 # ===== BPF过滤器映射 =====
@@ -125,10 +124,8 @@ def parse_bpf(expression: str) -> Optional[Callable]:
 # ===== PcapPacket 数据包类 =====
 @dataclass
 class PcapPacket:
-    """PCAP数据包，支持延迟解析以减少不必要的开销。
-
-    L2/L3/L4头部在首次访问时解析。原始数据修改重置解析状态。
-    """
+    # PCAP数据包，支持延迟解析以减少不必要开销。
+    # L2/L3/L4头部在首次访问时解析。原始数据修改重置解析状态。
     timestamp: float = 0.0
     caplen: int = 0
     wirelen: int = 0
@@ -312,7 +309,7 @@ class PcapReader:
             with open(filepath, "rb") as _f:
                 _header = _f.read(24)
                 self._data = _f.read()
-            # 如果文件不大，全读入内存
+            # 文件不大，全读入内存
             if self._data is None and self._file_size > 0:
                 with open(filepath, "rb") as _f:
                     self._data = _f.read()
@@ -337,7 +334,7 @@ class PcapReader:
             self._swap = True
             self._is_ns = True
         elif _magic == PCAPNG_MAGIC:
-            # PCAPNG: pcapng处理，简化——跳过section header
+            # PCAPNG: 简化处理——跳过section header
             self._swap = False
             self._is_ns = False
         else:
@@ -362,7 +359,7 @@ class PcapReader:
     def iter_packets(self) -> Iterator[PcapPacket]:
         """生成器，逐个返回PcapPacket。
 
-        对大文件使用mmap切片，小文件使用内存切片。每次读取24字节的包头部
+        对大文件使用mmap切片，小文件使用内存切片。每次读取24字节包头部
         （timestamp_sec, timestamp_us/ns, caplen, wirelen），然后读取包数据。
         """
         if self._mmap_obj is not None:
@@ -471,7 +468,7 @@ class PcapReader:
 
 # ===== 完整处理管线 =====
 def process_pcap(filepath: str, bpf_filter: Optional[str] = None) -> Dict[str, Any]:
-    """完整的PCAP处理管线：读取 → BPF过滤 → 统计。
+    """PCAP处理管线：读取 → BPF过滤 → 统计。
 
     BPF表达式支持host/port/net/proto及and/or组合。
     返回统计信息和过滤后的包列表。

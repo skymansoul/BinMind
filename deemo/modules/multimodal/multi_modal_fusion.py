@@ -1,9 +1,8 @@
-# 2026-07-30
-# 多模态融合策略 — 早期/中期/晚期/门控/张量/双线性融合
-# 参考：Zadeh et al. Tensor Fusion Network (EMNLP 2017)
-#       Arevalo et al. Gated Multimodal Units (ICLR 2017)
-#       Kim et al. Bilinear Attention Networks (NeurIPS 2018)
-#       Nagrani et al. Multimodal Bottleneck Transformer (NeurIPS 2021)
+# 多模态融合策略集：早期/晚期/门控/张量外积/低秩双线性/瓶颈注意力
+# 参考：Zadeh et al. Tensor Fusion Network. EMNLP 2017.
+#       Arevalo et al. Gated Multimodal Units. ICLR 2017.
+#       Kim et al. Bilinear Attention Networks. NeurIPS 2018.
+#       Nagrani et al. Multimodal Bottleneck Transformer. NeurIPS 2021.
 
 import math
 from typing import Dict, List, Optional, Tuple
@@ -13,22 +12,24 @@ _EPS: float = 1e-9
 
 
 # ============================================================================
-# 早期融合 — 原始特征直接拼接，最简形式
-# 优点：保留全部信息；缺点：维度爆炸，低层语义差异被忽略
+# 早期融合 — 原始特征向量沿维度轴直接拼接
+# 优点：信息零损失；缺点：维度线性膨胀，忽略各模态低层语义差异
 # ============================================================================
 
 def early_fusion(modalities: Dict[str, List[List[float]]]) -> List[List[float]]:
-    """直接拼接所有模态的特征向量（特征维度方向）。
+    """将所有模态特征沿特征维度直接拼接。
 
-    要求所有模态的样本数一致（batch size 对齐）。
-    输出维度 = Σ d_m，对大模态组合维度很高。
+    各模态必须具有相同的样本数（batch size 对齐）。
+    输出维度 = Σ d_m，多模态组合下维度膨胀显著。
     """
     _names = list(modalities.keys())
     if not _names:
         return []
     _n = len(modalities[_names[0]])
-    _total_dim = sum(len(m[_names[0]][0]) for m in [modalities])
-    # 直接拼接
+    # 2026-08-02 FIX: 原先 sum(...for m in [modalities]) 仅迭代一次，
+    # 只累加了首个模态的维度，现已修正为遍历所有模态名。
+    _total_dim = sum(len(modalities[name][0]) for name in _names if modalities.get(name))
+    # 逐模态逐样本拼接
     _fused = [[0.0] * _total_dim for _ in range(_n)]
     _col = 0
     for _name in _names:
@@ -42,15 +43,15 @@ def early_fusion(modalities: Dict[str, List[List[float]]]) -> List[List[float]]:
 
 
 # ============================================================================
-# 晚期融合 — 各模态独立编码后融合（平均/拼接/最大值）
-# 假定输入已经是各模态的高层特征
+# 晚期融合 — 各模态独立处理后融合，输入已是高层特征表示
+# 支持逐元素平均和逐元素最大值两种聚合策略
 # ============================================================================
 
 def late_fusion_avg(modalities: Dict[str, List[List[float]]]) -> List[List[float]]:
-    """对各模态特征逐元素平均融合。
+    """逐元素平均融合。
 
-    要求所有模态特征维度相同。
-    对噪声模态具有天然鲁棒性（平均值平滑异常）。
+    要求所有模态的特征维度一致。
+    对含噪模态天然鲁棒：均值运算自动平滑异常分量。
     """
     _names = list(modalities.keys())
     if not _names:
@@ -71,7 +72,7 @@ def late_fusion_avg(modalities: Dict[str, List[List[float]]]) -> List[List[float
 
 
 def late_fusion_max(modalities: Dict[str, List[List[float]]]) -> List[List[float]]:
-    """逐元素最大值融合——信号增强，适合互补模态。"""
+    """逐元素最大值融合——适合互补模态场景，强调每个维度的最强信号。"""
     _names = list(modalities.keys())
     if not _names:
         return []
@@ -88,23 +89,22 @@ def late_fusion_max(modalities: Dict[str, List[List[float]]]) -> List[List[float
 
 
 # ============================================================================
-# 门控多模态单元 (GMU) — 学习每模态的门控权重
+# 门控多模态单元 (GMU) — 每个模态学习标量门控权值
 # 参考：Arevalo et al. Gated Multimodal Units. ICLR 2017 workshop.
-# 核心：gate = σ(W_g · [h_1; ...; h_m])，输出 = Σ gate_i · h_i
+# 门控向量 = σ(W_g · [h_1; ...; h_m])，输出 = Σ gate_i · h_i
 # ============================================================================
 
 class GatedMultimodalUnit:
-    """门控多模态融合：每个模态学习一个标量门控权重。
+    """门控多模态融合：通过可学习门控决定各模态贡献比例。
 
-    门控向量通过全连接层 + sigmoid 激活生成，
-    各模态特征按其对应门控值加权求和。
-    适合模态质量不均匀的场景（如噪声图像+清晰文本）。
+    门控权重经全连接层 + sigmoid 生成，随后归一化。
+    各模态特征按对应门控值加权求和，适合模态质量不均匀的输入场景。
     """
 
     def __init__(self, total_dim: int, n_modalities: int):
         self.total_dim = total_dim
         self.n_modalities = n_modalities
-        # 门控权重矩阵：total_dim × n_modalities
+        # 门控投影矩阵：total_dim × n_modalities，正弦初始化
         self._Wg: List[List[float]] = [
             [(math.sin((i * 1.73 + j * 0.91)) - 0.5) * 0.2
              for j in range(n_modalities)]
@@ -116,15 +116,15 @@ class GatedMultimodalUnit:
 
     def forward(self, modality_features: List[List[float]],
                 modality_dim: int) -> Tuple[List[List[float]], List[List[float]]]:
-        """前向：计算门控 → 加权融合。
+        """前向传播：门控计算 → 加权融合。
 
-        返回：(融合特征 [N, d], 门控权重 [N, n_modalities])
-        门控权重可审计——观察每步哪些模态被信任。
+        返回：(融合特征 [N, d], 门控权重矩阵 [N, n_modalities])
+        门控权重支持审计，用于观察各步哪些模态被赋予更高信任。
         """
         _N = len(modality_features[0])
         _M = len(modality_features)
 
-        # 拼接 → (N, total_dim)
+        # 拼接所有模态 → (N, total_dim)
         _concat = [[0.0] * self.total_dim for _ in range(_N)]
         _col = 0
         _mod_starts: List[int] = []
@@ -137,7 +137,7 @@ class GatedMultimodalUnit:
                     _concat[_i][_col + _j] = _feat[_i][_j]
             _col += _fd
 
-        # 门控计算
+        # 门控计算：concat × W_g → sigmoid → 归一化
         _gates = [[0.0] * _M for _ in range(_N)]
         for _i in range(_N):
             _gate_logits = [0.0] * _M
@@ -149,12 +149,12 @@ class GatedMultimodalUnit:
             for _m in range(_M):
                 _gates[_i][_m] = self._sigmoid(_gate_logits[_m])
                 _gate_sum += _gates[_i][_m]
-            # 归一化门控权重
+            # 归一化确保各样本门控和为 1
             if _gate_sum > _EPS:
                 for _m in range(_M):
                     _gates[_i][_m] /= _gate_sum
 
-        # 加权融合
+        # 按门控加权融合
         _fused = [[0.0] * modality_dim for _ in range(_N)]
         for _m in range(_M):
             _feat = modality_features[_m]
@@ -167,14 +167,14 @@ class GatedMultimodalUnit:
 
 
 # ============================================================================
-# 张量融合 — 外积捕获多模态间的乘法交互
+# 张量外积融合 — 多模态间的高阶乘法交互
 # 参考：Zadeh et al. Tensor Fusion Network. EMNLP 2017.
-# 显式建模任意阶的多模态交互 (singleton, pairwise, triplet, ...)
+# 显式建模单模态、二阶成对、三阶三元组…任意阶交互
 # ============================================================================
 
 def tensor_fusion_outer(modality_features: List[List[List[float]]]
                         ) -> List[List[float]]:
-    """张量外积融合。维度指数增长——仅适用于小维度+少模态。"""
+    """张量外积融合。维度按模态数指数增长——仅适用小维度、少模态配置。"""
     if not modality_features:
         return []
 
@@ -208,17 +208,17 @@ def tensor_fusion_outer(modality_features: List[List[List[float]]]
 
 
 # ============================================================================
-# 双线性池化 — 低秩双线性交互，比完整外积更参数高效
+# 低秩双线性融合 — 用两个低秩投影矩阵近似完整双线性形
 # 参考：Kim et al. Bilinear Attention Networks. NeurIPS 2018.
-# 使用两个低秩投影矩阵替代完整双线性形式: W ≈ U·V^T
+# 分解形式：W ≈ U·V^T，参数低于完整外积
 # ============================================================================
 
 class LowRankBilinearFusion:
-    """低秩双线性融合：对两个模态应用低秩双线性交互。
+    """低秩双线性融合：在两个模态间施加低秩双线性交互。
 
     h = P^T · (U^T·x ⊙ V^T·y) + b
-    其中 U、V 是降维投影矩阵，⊙ 是逐元素乘。
-    rank_factor 控制低秩近似的阶数——越低参数越少但有损。
+    U、V 为降维投影矩阵，⊙ 为逐元素 Hadamard 乘积。
+    rank_factor 控制近似的秩：值越低参数越少但信息损失越大。
     """
 
     def __init__(self, dim_a: int, dim_b: int, output_dim: int,
@@ -228,7 +228,7 @@ class LowRankBilinearFusion:
         self.output_dim = output_dim
         self.rank = rank_factor
 
-        # 投影矩阵
+        # 低秩投影矩阵（正弦初始化）
         self._U: List[List[float]] = [
             [(math.sin((i * 1.73 + j * 0.67)) - 0.5) * math.sqrt(2.0 / dim_a)
              for j in range(rank_factor)] for i in range(dim_a)]
@@ -241,12 +241,12 @@ class LowRankBilinearFusion:
 
     def forward(self, x_a: List[List[float]], x_b: List[List[float]]
                 ) -> List[List[float]]:
-        """前向双线性融合。"""
+        """前向双线性融合：投影 → Hadamard 交互 → 输出投影。"""
         _N = len(x_a)
         _out: List[List[float]] = [[0.0] * self.output_dim for _ in range(_N)]
 
         for _n in range(_N):
-            # U^T · x_a
+            # U^T · x_a：模态 A 降维投影
             _a_proj = [0.0] * self.rank
             for _r in range(self.rank):
                 _acc = 0.0
@@ -254,7 +254,7 @@ class LowRankBilinearFusion:
                     _acc += x_a[_n][_i] * self._U[_i][_r]
                 _a_proj[_r] = _acc
 
-            # V^T · x_b
+            # V^T · x_b：模态 B 降维投影
             _b_proj = [0.0] * self.rank
             for _r in range(self.rank):
                 _acc = 0.0
@@ -262,10 +262,10 @@ class LowRankBilinearFusion:
                     _acc += x_b[_n][_j] * self._V[_j][_r]
                 _b_proj[_r] = _acc
 
-            # Hadamard product: a_proj ⊙ b_proj
+            # Hadamard 乘积：a_proj ⊙ b_proj
             _hadamard = [_a_proj[_r] * _b_proj[_r] for _r in range(self.rank)]
 
-            # P^T · hadamard
+            # P^T · hadamard：输出投影
             for _o in range(self.output_dim):
                 _val = 0.0
                 for _r in range(self.rank):
@@ -276,23 +276,23 @@ class LowRankBilinearFusion:
 
 
 # ============================================================================
-# 多模态Transformer融合 — 使用交叉注意力迭代融合 (MBT风格)
+# 瓶颈注意力融合 (MBT) — 少量瓶颈令牌在模态间传递信息
 # 参考：Nagrani et al. Attention Bottlenecks for Multimodal Fusion. NeurIPS 2021.
-# 核心思想：用少量瓶颈token在各模态间传递信息，避免 O(M²) 注意力
+# 用固定数量可学习瓶颈令牌汇聚各模态信息，避免 O(M²) 全对注意力
 # ============================================================================
 
 class BottleneckFusionTransformer:
-    """瓶颈注意力融合：固定数量的可学习瓶颈令牌在各模态间汇聚信息。
+    """瓶颈注意力融合：固定数量可学习瓶颈令牌在各模态间迭代汇聚。
 
-    流程：模态A→瓶颈←模态B，瓶颈 token 在各模态间迭代更新。
-    num_bottleneck_tokens 通常远小于序列长度（如4-16个），
-    使计算复杂度从 O(N²·M²) 降至 O(N·B·M)。
+    流程：模态A → 瓶颈 ← 模态B，瓶颈令牌在各模态间顺序更新。
+    num_bottleneck_tokens 远小于序列长度（典型 4-16 个），
+    使复杂度从 O(N²·M²) 压缩至 O(N·B·M)。
     """
 
     def __init__(self, dim: int = 64, num_bottleneck_tokens: int = 8):
         self.dim = dim
         self.num_btokens = num_bottleneck_tokens
-        # 可学习瓶颈令牌：正弦初始化
+        # 可学习瓶颈令牌：正弦初始化，空间均匀分布
         self._bottleneck_tokens: List[List[float]] = [
             [math.sin((b * 2.37 + d * 0.73)) * 0.1
              for d in range(dim)]
@@ -301,10 +301,10 @@ class BottleneckFusionTransformer:
 
     def forward(self, modality_features: Dict[str, List[List[float]]]
                 ) -> List[List[float]]:
-        """瓶颈注意力融合：瓶颈令牌顺序关注各模态特征。
+        """瓶颈注意力融合：瓶颈令牌依次关注各模态特征。
 
-        每个模态：瓶颈token作为Q，模块特征作为K/V → 更新瓶颈token。
-        所有模态处理后，瓶颈token聚合 → 最终融合表示。
+        每个模态：瓶颈作为 Q，模态特征作为 K/V → 更新瓶颈表示。
+        遍历所有模态后，瓶颈聚合为最终融合特征。
         """
         _bottleneck = [_row[:] for _row in self._bottleneck_tokens]
         _d = self.dim
@@ -318,7 +318,7 @@ class BottleneckFusionTransformer:
             _limit = min(_fd, _d)
 
             # 瓶颈 → 模态：Q=bottleneck, K/V=modality_feat
-            # 简化注意力：softmax(Q·K^T/√d)·V
+            # 缩放点积注意力：softmax(Q·K^T/√d)·V
             _scale = 1.0 / math.sqrt(max(_limit, 1))
             _updated_bt = [[0.0] * _d for _ in range(_B)]
 
@@ -329,13 +329,13 @@ class BottleneckFusionTransformer:
                              for _j in range(_limit))
                     _attn_scores[_n] = _dot * _scale
 
-                # softmax
+                # 标准 softmax 归一化
                 _mx = max(_attn_scores)
                 _exps = [math.exp(_s - _mx) for _s in _attn_scores]
                 _sum_exp = sum(_exps) + _EPS
                 _attn_w = [_e / _sum_exp for _e in _exps]
 
-                # 加权聚合
+                # 注意力加权聚合
                 for _j in range(_limit):
                     _acc = 0.0
                     for _n in range(_N):
@@ -343,12 +343,12 @@ class BottleneckFusionTransformer:
                             _acc += _attn_w[_n] * _feat[_n][_j]
                     _updated_bt[_b][_j] = _acc
 
-            # 残差更新瓶颈
+            # 残差连接更新瓶颈令牌
             for _b in range(_B):
                 for _j in range(_d):
                     _bottleneck[_b][_j] = 0.5 * _bottleneck[_b][_j] + 0.5 * _updated_bt[_b][_j]
 
-        # 瓶颈聚合 → 最终表示 (B, d) → (d,)
+        # 瓶颈聚合 → 单向量输出 (B, d) → (d,)
         _fused = [0.0] * _d
         for _b in range(_B):
             for _j in range(_d):
@@ -358,19 +358,19 @@ class BottleneckFusionTransformer:
 
 
 # ============================================================================
-# 动态融合 — 根据输入自适应选择融合策略
-# 参考：Hu et al. Dynamic Fusion with Intra- and Inter-modality Attention (2022)
-# 对简单输入使用均值融合，对复杂输入使用门控/双线性融合
+# 自适应融合策略选择 — 基于模态间相似度自动路由
+# 参考：Hu et al. Dynamic Fusion with Intra- and Inter-modality Attention. 2022.
+# 简单输入→均值融合，中等差异→门控融合，显著差异→双线性/最大值融合
 # ============================================================================
 
 def adaptive_fusion(modalities: Dict[str, List[List[float]]],
                     method: str = 'auto') -> List[List[float]]:
-    """自适应融合策略选择。
+    """基于模态间余弦相似度自动选择融合策略。
 
-    auto模式：基于模态间的特征差异自动选择融合方式。
-    差异小（cos_sim > 0.7）→ 晚期均值融合（各模态一致，无需复杂交互）
-    差异中 → 门控融合
-    差异大（cos_sim < 0.3）→ 双线性融合（需捕获复杂跨模态交互）
+    auto 路由逻辑：
+    相似度 > 0.7 → 晚期均值（模态高度一致，简单融合即够）
+    0.3 < 相似度 ≤ 0.7 → 门控融合（中等差异，需自适应加权）
+    相似度 ≤ 0.3 → 最大值融合（差异大，需捕获复杂跨模态关系）
     """
     _names = list(modalities.keys())
     if len(_names) < 2:
@@ -385,7 +385,7 @@ def adaptive_fusion(modalities: Dict[str, List[List[float]]],
             return late_fusion_max(modalities)
         return late_fusion_avg(modalities)
 
-    # auto: 计算模态间平均余弦相似度
+    # auto：计算所有模态对的平均余弦相似度
     _cos_sims: List[float] = []
     for _i in range(len(_names)):
         for _j in range(_i + 1, len(_names)):
@@ -408,7 +408,7 @@ def adaptive_fusion(modalities: Dict[str, List[List[float]]],
     if _avg_sim > 0.7:
         return late_fusion_avg(modalities)
     elif _avg_sim > 0.3:
-        # 门控融合
+        # 中等差异：门控融合
         _feat_list = [modalities[n] for n in _names]
         _d = min(len(f[0]) for f in _feat_list if f)
         _total_d = sum(len(f[0]) for f in _feat_list if f)
@@ -420,17 +420,17 @@ def adaptive_fusion(modalities: Dict[str, List[List[float]]],
 
 
 # ============================================================================
-# 模态重要性评估 — 基于消融的模态贡献度评分
+# 模态消融评估 — 逐模态移除以量化各模态的边际贡献
 # ============================================================================
 
 def modality_ablation_scores(modalities: Dict[str, List[List[float]]],
                               labels: List[int],
                               eval_fn) -> Dict[str, float]:
-    """逐模态消融：评估每个模态对下游任务的边际贡献。
+    """逐模态消融：度量每个模态对下游指标的单体贡献。
 
-    每次移除一个模态，计算性能下降幅度。
-    贡献度 = (full_fusion_score - ablated_score) / full_fusion_score。
-    正分 = 该模态有正向贡献；负分 = 该模态可能含噪或冗余。
+    每次移除一个模态，计算性能衰减比。
+    贡献值 = (full_fusion_score - ablated_score) / full_fusion_score。
+    正值 = 正向贡献；负值 = 含噪或冗余信号。
     """
     _full = eval_fn(modalities, labels)
     _scores: Dict[str, float] = {}
@@ -451,3 +451,6 @@ __all__ = [
     "BottleneckFusionTransformer",
     "modality_ablation_scores",
 ]
+
+def _debug_print(*a,**kw):
+    if __import__("os").environ.get("BINMIND_DEBUG"):print(*a,**kw)

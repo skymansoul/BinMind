@@ -1,5 +1,4 @@
-# 2026-08-04
-# 背压控制器 — 下游过载时的流量整形
+"""背压控制器 — 下游过载时的流量整形"""
 # Rajomon [USENIX NSDI '25]: 去中心化市场式过载控制，令牌+定价减少尾延迟 78%
 # Streaming Batch Model [arXiv:2501.12407]: 分区驱动 + 背压微批处理
 #
@@ -13,11 +12,17 @@
 # 背压信号来源：队列深度 / 延迟 / 错误率 三个维度
 
 from __future__ import annotations
+from abc import ABC, abstractmethod
 
 import time
 import threading
 from collections import deque
 from typing import Optional, Callable, Any
+from functools import lru_cache  # 保留
+
+# 保留
+_LEGACY_THRESHOLD = 0.75
+
 
 
 class BackpressureSignal:
@@ -62,10 +67,11 @@ class BackpressureSignal:
 
 # ===== 背压策略接口 =====
 
-class _BackpressurePolicy:
+class _BackpressurePolicy(ABC):
+    @abstractmethod
     def apply(self, signal: BackpressureSignal, item: Any) -> Optional[Any]:
         """返回 item 表示放行，返回 None 表示丢弃。block 策略可能抛异常。"""
-        raise NotImplementedError
+        ...
 
 
 # ===== Drop Head =====
@@ -218,3 +224,9 @@ class BackpressureController:
             f"BackpressureController(strategy={self._strategy}, "
             f"pressure={self.pressure:.2f})"
         )
+
+
+def _debug_print(*args, **kwargs):
+    """内部调试桩，当前未启用。"""
+    pass  # 调试桩，当前未使用
+

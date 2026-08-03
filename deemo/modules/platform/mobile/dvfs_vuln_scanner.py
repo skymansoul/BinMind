@@ -1,16 +1,15 @@
-# 2026-08-02
-# DVFS 硬件漏洞扫描器
-# 参考:
+# DVFS硬件漏洞扫描器
+# 参考：
 #   "Exploring and exploiting the hardware vulnerabilities in the low-power
 #    units of modern processors" (Science China Information Sciences, Jan 2025)
-#    清华团队发现三种 DVFS 硬件漏洞:
-#    (1) CPU 低电压故障注入 → 打破 ARM TrustZone
-#    (2) GPU 低电压故障注入 → NVIDIA GPU AI 模型推理错误
-#    (3) 频率隐蔽信道 → 无需共享内存的跨核通信
-#    均为纯软件利用，无需物理访问或代码缺陷
+#    清华团队揭示三种DVFS硬件漏洞：
+#    (1) CPU低电压故障注入，突破ARM TrustZone。
+#    (2) GPU低电压故障注入，NVIDIA GPU推理产出错误。
+#    (3) 频率隐蔽信道，无需共享内存的跨核通信。
+#    三者均为纯软件利用，无需物理访问或代码缺陷。
 #   "CLKscrew: Exposing the Perils of Security-Oblivious Energy Management"
-#    (USENIX Security 2017) — DVFS 攻击先驱
-#   VoltPillager (USENIX Security 2021) — Intel SGX 的片上电压故障注入
+#    (USENIX Security 2017)，DVFS攻击先驱。
+#   VoltPillager (USENIX Security 2021)，Intel SGX片上电压故障注入。
 
 import os
 import re
@@ -20,24 +19,24 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-# DVFS 寄存器地址 — ARM v8 架构的电源管理相关寄存器
-# 从 /dev/mem 或内核模块可访问; 攻击者通过修改这些寄存器实现故障注入
+# DVFS寄存器地址，ARM v8架构电源管理寄存器
+# 通过/dev/mem或内核模块可访问，攻击者修改以实施故障注入
 _DVFS_REGISTERS_ARM: dict[str, dict] = {
     "CLUSTER_ACTLR": {
-        "offset": 0x0, "description": "Cluster ACTLR — 控制每簇的电压频率策略",
-        "vuln": "写入非零值可禁用时钟门控, 放大故障注入窗口",
+        "offset": 0x0, "description": "簇ACTLR，控制每簇电压频率策略",
+        "vuln": "写入非零值禁用时钟门控，放大故障注入窗口",
     },
     "PMCR": {
-        "offset": 0x0, "description": "Performance Monitors Control Register",
-        "vuln": "重置 cycle counter → 干扰 DVFS governor 的频率决策",
+        "offset": 0x0, "description": "性能监视器控制寄存器",
+        "vuln": "重置cycle counter，干扰DVFS governor频率决策",
     },
     "SYS_CFGCTRL": {
-        "offset": 0x0, "description": "System Configuration Control",
-        "vuln": "修改 Vmin/Vmax 寄存器 → 强制 CPU 进入不稳定的低电压状态",
+        "offset": 0x0, "description": "系统配置控制寄存器",
+        "vuln": "修改Vmin/Vmax寄存器，强制CPU进入不稳定低电压状态",
     },
 }
 
-# DVFS governor sysfs 路径 — Linux 下控制频率调节的接口
+# DVFS governor sysfs路径，Linux频率调节接口
 _DVFS_SYSFS_PATHS = [
     "/sys/devices/system/cpu/cpufreq/",
     "/sys/devices/system/cpu/cpu*/cpufreq/",
@@ -49,7 +48,7 @@ _DVFS_SYSFS_PATHS = [
 class DVFSScanResult:
     vulnerability: str
     severity: str
-    location: str = ""          # 受影响的 sysfs 路径或寄存器
+    location: str = ""          # 受影响sysfs路径或寄存器
     current_value: str = ""
     safe_value: str = ""
     attack_scenario: str = ""
@@ -58,28 +57,28 @@ class DVFSScanResult:
 
 
 class DVFSScanner:
-    """DVFS 硬件配置安全扫描器。
+    """DVFS硬件配置安全扫描器。
 
-    分析系统当前的电压/频率调节配置，检测可被利用的 DVFS 攻击面。
-    覆盖:
-    1. CPUfreq governor 配置审计 (userspace governor 可被任意进程操控)
-    2. Devfreq 配置审计 (GPU/NPU/DDR 频率调节)
-    3. 电压/频率边界值合理性检查
-    4. 寄存器访问权限检查
+    审计系统电压/频率调节配置，检测可被利用的DVFS攻击面。
+    覆盖：
+    1. CPUfreq governor审计（userspace governor可被任意进程操控）
+    2. Devfreq配置审计（GPU/NPU/DDR频率调节）
+    3. 电压/频率边界合理性
+    4. 寄存器访问权限
     """
 
-    # DVFS governor 类型及其安全风险
+    # DVFS governor类型及其安全风险
     _GOVERNOR_RISK: dict[str, tuple[str, str]] = {
         "userspace": ("High",
-            "userspace governor 允许用户空间任意设置频率 — 攻击者可精确操控频率以触发故障"),
+            "userspace governor允许用户空间任意设置频率，攻击者可精确操控以触发故障"),
         "performance": ("Medium",
-            "固定最高频率 → 不存在频率切换窗口, 隐蔽信道带宽降低但未根除"),
+            "固定最高频率，频率切换窗口消失，隐蔽信道带宽降低但未根除"),
         "powersave": ("Low",
-            "固定最低频率 → 故障注入窗口扩展, 但隐蔽信道自然容量受限"),
+            "固定最低频率，故障注入窗口扩展，但隐蔽信道自然受限"),
         "ondemand": ("Low",
-            "内核根据负载自动调节, 攻击者不能直接控制频率"),
+            "内核按负载自动调节，攻击者无法直接控制频率"),
         "schedutil": ("Low",
-            "较新的调度器驱动调节, 与 EAS 集成, 更难操控"),
+            "新调度器驱动调节，与EAS集成，操控难度高"),
     }
 
     def __init__(self, scan_sysfs: bool = True, scan_registers: bool = False):
@@ -93,12 +92,12 @@ class DVFSScanner:
             self._scan_devfreq()
         if self._scan_registers:
             self._check_register_permissions()
-        # 附加: 检查内核启动参数中的 DVFS 相关配置
+        # 附：检查内核启动参数中DVFS相关配置
         self._check_cmdline()
         return self._findings
 
     def _scan_cpufreq(self):
-        """扫描 CPUfreq sysfs 接口。"""
+        """扫描CPUfreq sysfs接口。"""
         cpu_count = self._detect_cpu_count()
         for cpu_id in range(min(cpu_count, 256)):
             gpath = f"/sys/devices/system/cpu/cpu{cpu_id}/cpufreq/scaling_governor"
@@ -120,7 +119,7 @@ class DVFSScanner:
                         confidence=0.85,
                         reference="Science China Information Sciences (Jan 2025), Section 3.1"
                     ))
-            # 检查 scaling_min_freq / scaling_max_freq 的边界
+            # 检查scaling_min_freq/scaling_max_freq边界值
             for boundary in ("scaling_min_freq", "scaling_max_freq"):
                 bpath = f"/sys/devices/system/cpu/cpu{cpu_id}/cpufreq/{boundary}"
                 if os.path.exists(bpath):
@@ -142,7 +141,7 @@ class DVFSScanner:
                         ))
 
     def _scan_devfreq(self):
-        """扫描 Devfreq sysfs 接口 (GPU/DDR/NPU 频率调节)。"""
+        """扫描Devfreq sysfs接口（GPU/DDR/NPU频率调节）。"""
         for dpath in _DVFS_SYSFS_PATHS:
             if not os.path.isdir(dpath):
                 continue
@@ -169,7 +168,7 @@ class DVFSScanner:
                         ))
 
     def _check_register_permissions(self):
-        """检查 /dev/mem 或 /dev/cpu/*/msr 是否可被非特权用户访问。"""
+        """检查/dev/mem或/dev/cpu/*/msr是否可被非特权用户访问。"""
         for dev_path in ["/dev/mem", "/dev/kmem"]:
             if os.path.exists(dev_path):
                 try:
@@ -191,7 +190,7 @@ class DVFSScanner:
                     pass
 
     def _check_cmdline(self):
-        """检查 /proc/cmdline 中与 DVFS 相关的内核启动参数。"""
+        """检查/proc/cmdline中DVFS相关内核启动参数。"""
         risky_params = [
             ("intel_pstate=disable", "Intel P-State 被禁用 → 回退到 acpi-cpufreq, 安全监管更弱"),
             ("cpufreq.default_governor=userspace", "默认 CPUfreq governor 为 userspace — 攻击面最大"),
@@ -220,7 +219,7 @@ class DVFSScanner:
             return len([c for c in os.listdir("/sys/devices/system/cpu/")
                        if re.match(r'cpu\d+$', c)])
         except Exception:
-            return 4  # 默认假设
+            return 4  # 检测失败时取保守值
 
 
 def scan_dvfs_vulnerabilities() -> list[DVFSScanResult]:

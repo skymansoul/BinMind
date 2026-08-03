@@ -1,14 +1,4 @@
-# 2026-08-02
-# 自动化崩溃 Triage 报告生成器
-# 将结构化的崩溃信息（CrashInfo / SanitizerFinding / ExecutionResult）
-# 转化为人类可读的安全审计报告（Markdown / JSON / HTML）。
-# 报告按照 ClusterFuzz 的四阶段分类（minimize→symbolize→dedup→root cause）
-# 排列，补以可利用性评估与缓解建议。
-#
-# 参考文献:
-#   ClusterFuzz (Google, 2019-) — crash triage pipeline design
-#   crashwalk (zyantific, 2017-) — automated crash bucketing & reporting
-#   GDB Exploitable (2013-) — signal-based exploitability classification
+"""崩溃 Triage 报告生成器——结构化崩溃信息 -> Markdown/JSON/HTML 安全审计报告"""
 import os
 import time
 import json
@@ -21,11 +11,11 @@ from datetime import datetime
 
 @dataclass
 class TriageEntry:
-    """单条 triage 记录：一次崩溃的完整分析上下文。"""
+    """单条 triage 记录——一次崩溃的完整分析上下文"""
     crash_id: str
     signal_num: int
     signal_name: str
-    crash_type: str                    # HEAP_BUFFER_OVERFLOW, USE_AFTER_FREE, ...
+    crash_type: str
     exploitability_score: float       # [0, 1]
     exploitability_verdict: str       # high / medium / low
     minimized_size: int = 0
@@ -43,16 +33,7 @@ class TriageEntry:
 
 
 class TriageReporter:
-    """崩溃 Triage 报告生成器。接收 TriageEntry 列表，输出结构化报告。
-
-    报告模块:
-      1. Executive Summary — 一线概述（总数/严重性分布/推荐动作）
-      2. Crash Inventory — 按去重组排列的全量崩溃列表
-      3. Exploitability Assessment — 可利用性评分分布
-      4. Root Cause Clustering — 根因聚合
-      5. Mitigation Gap Analysis — 缺失的缓解措施
-      6. Actionable Recommendations — 可操作建议
-    """
+    """崩溃 Triage 报告生成器——六段式报告结构"""
 
     def __init__(self):
         self._entries: List[TriageEntry] = []
@@ -67,11 +48,10 @@ class TriageReporter:
     def set_metadata(self, **kwargs) -> None:
         self._report_metadata.update(kwargs)
 
-    # ---- 报告生成 ----
     def generate_markdown(self) -> str:
-        """生成 Markdown 格式的完整 triage 报告。"""
+        """Markdown 格式完整 triage 报告"""
         if not self._entries:
-            return "# Crash Triage Report\n\n(No crashes to report)\n"
+            return "# 崩溃 Triage 报告\n\n(无崩溃记录)\n"
 
         sections = []
         sections.append(self._md_header())
@@ -83,7 +63,7 @@ class TriageReporter:
         return '\n\n'.join(sections)
 
     def generate_json(self) -> str:
-        """生成 JSON 格式的结构化报告。"""
+        """JSON 格式结构化报告"""
         report = {
             'metadata': self._report_metadata,
             'generated_at': datetime.now().isoformat(),
@@ -95,13 +75,13 @@ class TriageReporter:
         return json.dumps(report, indent=2, ensure_ascii=False)
 
     def generate_html(self) -> str:
-        """生成自包含 HTML 报告（带内联 CSS，无需外部资源）。"""
+        """自包含 HTML 报告——内联 CSS 无需外部资源"""
         summary = self._compute_summary()
         html = f'''<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>Crash Triage Report — {summary['total_crashes']} crashes</title>
+<title>崩溃 Triage 报告 — {summary['total_crashes']} 次崩溃</title>
 <style>
 body {{ font-family: system-ui, sans-serif; max-width: 960px; margin: 0 auto;
        padding: 20px; background: #0d1117; color: #c9d1d9; }}
@@ -120,23 +100,23 @@ th {{ background: #161b22; }}
 .badge-medium {{ background: #211740; color: #d2a8ff; }}
 .badge-low {{ background: #04260f; color: #7ee787; }}
 </style></head><body>
-<h1>Crash Triage Report</h1>
-<p>Generated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")} |
-{summary['total_crashes']} crashes, {summary['unique_groups']} unique groups</p>
+<h1>崩溃 Triage 报告</h1>
+<p>生成时间: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")} |
+{summary['total_crashes']} 次崩溃, {summary['unique_groups']} 个去重组</p>
 
-<h2>Executive Summary</h2>
+<h2>执行摘要</h2>
 <table>
-<tr><th>Metric</th><th>Value</th></tr>
-<tr><td>Total crashes</td><td>{summary['total_crashes']}</td></tr>
-<tr><td>Unique dedup groups</td><td>{summary['unique_groups']}</td></tr>
-<tr><td>Exploitable (high)</td><td class="sev-critical">{summary['exploitable_high']}</td></tr>
-<tr><td>Exploitable (medium)</td><td class="sev-high">{summary['exploitable_medium']}</td></tr>
-<tr><td>Non-exploitable</td><td>{summary['non_exploitable']}</td></tr>
+<tr><th>指标</th><th>值</th></tr>
+<tr><td>崩溃总数</td><td>{summary['total_crashes']}</td></tr>
+<tr><td>唯一去重组</td><td>{summary['unique_groups']}</td></tr>
+<tr><td>高可利用性</td><td class="sev-critical">{summary['exploitable_high']}</td></tr>
+<tr><td>中等可利用性</td><td class="sev-high">{summary['exploitable_medium']}</td></tr>
+<tr><td>不可利用</td><td>{summary['non_exploitable']}</td></tr>
 </table>
 
-<h2>Crash Inventory</h2>
+<h2>崩溃清单</h2>
 <table>
-<tr><th>Crash ID</th><th>Type</th><th>Signal</th><th>Exploitability</th></tr>
+<tr><th>崩溃 ID</th><th>类型</th><th>信号</th><th>可利用性</th></tr>
 '''
         for e in self._entries:
             sev_class = f'sev-{e.exploitability_verdict}'
@@ -153,45 +133,44 @@ th {{ background: #161b22; }}
         html += '</table>\n</body>\n</html>'
         return html
 
-    # ---- 各报告模块 ----
     def _md_header(self) -> str:
         return (
-            f"# Crash Triage Report\n\n"
-            f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+            f"# 崩溃 Triage 报告\n\n"
+            f"**生成时间:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
             f"---"
         )
 
     def _md_executive_summary(self) -> str:
         s = self._compute_summary()
         return (
-            "## 1. Executive Summary\n\n"
-            f"| Metric | Value |\n|--------|-------|\n"
-            f"| Total crashes | {s['total_crashes']} |\n"
-            f"| Unique dedup groups | {s['unique_groups']} |\n"
-            f"| Exploitable (high confidence) | {s['exploitable_high']} |\n"
-            f"| Exploitable (medium confidence) | {s['exploitable_medium']} |\n"
-            f"| Likely non-exploitable | {s['non_exploitable']} |\n"
+            "## 1. 执行摘要\n\n"
+            f"| 指标 | 值 |\n|--------|-------|\n"
+            f"| 崩溃总数 | {s['total_crashes']} |\n"
+            f"| 唯一去重组 | {s['unique_groups']} |\n"
+            f"| 高置信度可利用 | {s['exploitable_high']} |\n"
+            f"| 中置信度可利用 | {s['exploitable_medium']} |\n"
+            f"| 可能不可利用 | {s['non_exploitable']} |\n"
         )
 
     def _md_crash_inventory(self) -> str:
-        lines = ["## 2. Crash Inventory", "", "| ID | Type | Signal | Score | Verdict |",
+        lines = ["## 2. 崩溃清单", "", "| ID | 类型 | 信号 | 评分 | 判定 |",
                  "|----|------|--------|-------|---------|"]
         for e in self._entries[:50]:
             lines.append(
                 f"| {e.crash_id} | {e.crash_type} | {e.signal_name} "
                 f"| {e.exploitability_score:.2f} | **{e.exploitability_verdict.upper()}** |")
         if len(self._entries) > 50:
-            lines.append(f"| ... | ({len(self._entries) - 50} more entries) | | | |")
+            lines.append(f"| ... | ({len(self._entries) - 50} 条更多记录) | | | |")
         return '\n'.join(lines)
 
     def _md_exploitability(self) -> str:
         dist = self._exploit_distribution()
-        lines = ["## 3. Exploitability Assessment", ""]
+        lines = ["## 3. 可利用性评估", ""]
         for cat, cnt in sorted(dist.items()):
             pct = cnt / max(1, len(self._entries)) * 100
             lines.append(f"- **{cat.upper()}**: {cnt} ({pct:.0f}%)")
         lines.append("")
-        lines.append("### Top Exploitable Crashes")
+        lines.append("### 高可利用性崩溃")
         exploitable = sorted(
             [e for e in self._entries if e.exploitability_score >= 0.5],
             key=lambda e: -e.exploitability_score)[:5]
@@ -200,45 +179,44 @@ th {{ background: #161b22; }}
                 f"{i}. `{e.crash_id}` — {e.crash_type} "
                 f"(score={e.exploitability_score:.2f})")
             if e.root_cause_hint:
-                lines.append(f"   - Root cause: {e.root_cause_hint}")
+                lines.append(f"   - 根因: {e.root_cause_hint}")
             if e.stack_frames:
-                lines.append(f"   - Top frame: `{e.stack_frames[0]}`")
+                lines.append(f"   - 栈顶帧: `{e.stack_frames[0]}`")
         return '\n'.join(lines)
 
     def _md_root_cause(self) -> str:
         clusters = self._cluster_by_root_cause()
-        lines = ["## 4. Root Cause Clustering", ""]
+        lines = ["## 4. 根因聚类", ""]
         for hint, entries in sorted(
                 clusters.items(), key=lambda kv: -len(kv[1])):
             lines.append(
-                f"- **{hint}**: {len(entries)} crash(es)")
+                f"- **{hint}**: {len(entries)} 次崩溃")
         return '\n'.join(lines) if len(clusters) > 0 else (
-            "## 4. Root Cause Clustering\n\n(Insufficient data for clustering)")
+            "## 4. 根因聚类\n\n(数据不足，无法聚类)")
 
     def _md_recommendations(self) -> str:
-        lines = ["## 5. Actionable Recommendations", ""]
+        lines = ["## 5. 可执行建议", ""]
         high_conf = [e for e in self._entries
                      if e.exploitability_score >= 0.7]
         if high_conf:
             lines.append(
-                f"### Immediate Action ({len(high_conf)} high-confidence crashes)")
+                f"### 立即行动 ({len(high_conf)} 个高置信度崩溃)")
             lines.append("1. 隔离受影响二进制，阻断外部输入通道")
             lines.append("2. 对每个高危崩溃生成 PoC 并验证")
             lines.append("3. 回查相关 CVE，评估是否为已知漏洞的变种")
             lines.append("")
-        lines.append("### Short-term (1-7 days)")
-        lines.append("1. 对中等置信度的崩溃执行进一步 triage（补全符号化、裁减最小化）")
-        lines.append("2. 交叉验证：将崩溃输入对同组件的不同版本执行差分测试")
-        lines.append("3. 为所有 unique crash 创建 bug 跟踪条目")
+        lines.append("### 短期 (1-7 天)")
+        lines.append("1. 对中等置信度崩溃执行进一步 triage（完善符号化、最小化裁减）")
+        lines.append("2. 交叉验证：对同组件的不同版本执行差分测试")
+        lines.append("3. 为全部 unique crash 创建 bug 跟踪条目")
         lines.append("")
-        lines.append("### Long-term (1-4 weeks)")
+        lines.append("### 长期 (1-4 周)")
         lines.append("1. 将崩溃语料纳入回归测试套件")
         lines.append("2. 更新 fuzzing 字典以覆盖触发崩溃的输入模式")
         lines.append("3. 评估编译时加固选项（CFI、Shadow Stack、PAC）")
 
         return '\n'.join(lines)
 
-    # ---- 内部聚合 ----
     def _compute_summary(self) -> Dict[str, Any]:
         unique_groups = len({e.dedup_group for e in self._entries
                              if e.dedup_group})
@@ -291,8 +269,7 @@ th {{ background: #161b22; }}
 
     def write_report(self, output_dir: str,
                      base_name: str = "crash_triage") -> Dict[str, str]:
-        """同时写出 Markdown + JSON + HTML 三种格式。
-        返回 {format: filepath} 字典。"""
+        """同时输出 Markdown + JSON + HTML 三种格式"""
         os.makedirs(output_dir, exist_ok=True)
         outputs = {}
 
@@ -314,13 +291,9 @@ th {{ background: #161b22; }}
         return outputs
 
 
-# ---------------------------------------------------------------------------
-# 便捷构建: 从 crash 对象列表快速生成报告
-# ---------------------------------------------------------------------------
 def triage_from_crash_infos(crashes: List[Any],
                             binary_path: str = "") -> TriageReporter:
-    """从 crash 对象列表（需具有 signal / crash_type / stack_trace 等属性）
-    构建 TriageReporter。兼容 CrashInfo 和 ExecutionResult 两种常见类型。"""
+    """从 crash 对象列表快速构建 TriageReporter——兼容 CrashInfo 与 ExecutionResult"""
     reporter = TriageReporter()
     reporter.set_metadata(binary=binary_path, source='auto_triage')
 

@@ -8,15 +8,14 @@ import yaml
 
 _log = logging.getLogger(__name__)
 
-# compat refs for older code that imports these
+# 旧代码导入兼容
 RiskLevel = None
 ScanScope = None
 BinaryRisk = None
 ClusterScanResult = None
 
-# ---- capability blocklist ----
-# these are the "container escape starter pack" — any one of them in
-# a compromised pod dramatically expands the attack surface
+# ---- capability 黑名单 ----
+# 任一在受侵Pod中即大幅扩大攻击面——"容器逃逸入门包"
 _DANGEROUS_CAPS = frozenset({
     "SYS_ADMIN", "SYS_PTRACE", "NET_ADMIN", "SYS_MODULE",
     "SYS_RAWIO", "DAC_OVERRIDE", "DAC_READ_SEARCH",
@@ -24,17 +23,16 @@ _DANGEROUS_CAPS = frozenset({
     "SYS_BOOT", "SYS_TIME", "PERFMON",
 })
 
-# ---- RBAC dangerous combinatorics ----
-# each tuple is (verbs, resources, apiGroups) — if all three match a
-# rule, it's effectively a privilege escalation path, even without
-# the literal "cluster-admin" ClusterRole name
+# ---- RBAC 危险组合 ----
+# 每元组为 (verbs, resources, apiGroups) —— 三项均匹配即
+# 构成提权路径，即使无字面"cluster-admin" ClusterRole名
 _RBAC_ESCALATION_PATHS = [
     ({"*"}, {"*"}, {"*"}),
     ({"create", "update", "patch", "delete", "deletecollection"}, {"*"}, {"*"}),
     ({"*"}, {"secrets", "serviceaccounts"}, {"*"}),
     ({"escalate", "bind"}, {"roles", "clusterroles"}, {"rbac.authorization.k8s.io"}),
     ({"create"}, {"pods", "deployments", "daemonsets"}, {"*"}),
-    # webhook control = MITM the API server
+    # webhook控制 = MITM API server
     ({"create"}, {"validatingwebhookconfigurations", "mutatingwebhookconfigurations"},
      {"admissionregistration.k8s.io"}),
 ]
@@ -72,13 +70,11 @@ class ContainerInfo:
 
 
 class K8sClusterScanner:
-    """K8s YAML manifest scanner — pod security + RBAC + NetworkPolicy gaps.
+    """K8s YAML manifest 扫描 —— pod安全 + RBAC + NetworkPolicy缺口。
 
-    Design note: the scanner does two passes over the doc list. First pass
-    collects global context (NetworkPolicy coverage, existing RBAC bindings).
-    Second pass does per-resource scanning. This is slightly slower (2x docs
-    iteration) but avoids complex inter-document dependency tracking that
-    would require a full-blown resource graph.
+    设计说明: 扫描器对文档列表执行两遍遍历。第一遍收集全局上下文
+    (NetworkPolicy覆盖、现有RBAC绑定)。第二遍执行逐资源扫描。
+    比单遍多一次迭代但避免了复杂的跨文档依赖追踪。
     """
 
     def __init__(self, strict: bool = False):
@@ -86,7 +82,7 @@ class K8sClusterScanner:
         self._findings: List[Finding] = []
 
     def scan(self, cluster_spec: Any) -> List[Finding]:
-        """accept file path (str), pre-parsed dict, or list of dicts"""
+        """接受文件路径(str)、预解析dict或dict列表"""
         self._findings = []
 
         if isinstance(cluster_spec, str):
@@ -99,7 +95,7 @@ class K8sClusterScanner:
         else:
             raise TypeError(f"Expected str/dict/list, got {type(cluster_spec)}")
 
-        # pass 1: collect network policies
+        # 第1遍: 收集网络策略
         policies_found: list[str] = []
         for doc in docs:
             if doc is None:
@@ -109,14 +105,14 @@ class K8sClusterScanner:
                 ns = doc.get("metadata", {}).get("namespace", "default")
                 policies_found.append(ns)
 
-        # pass 2: per-resource scanning
+        # 第2遍: 逐资源扫描
         for doc in docs:
             if doc is None:
                 continue
             self._scan_document(doc)
             self._scan_rbac(doc)
 
-        # aggregate: namespaces without NetworkPolicy
+        # 汇总: 无NetworkPolicy的命名空间
         scanned_namespaces: set[str] = set()
         for doc in docs:
             if doc is None:
@@ -137,7 +133,7 @@ class K8sClusterScanner:
 
         return self._findings
 
-    # -- document dispatch --
+    # -- 文档分发 --
 
     def _scan_document(self, doc: Dict[str, Any]) -> None:
         kind = (doc.get("kind") or "").lower()
@@ -161,12 +157,11 @@ class K8sClusterScanner:
             self._scan_pod(tmpl, res_name)
 
     def _scan_rbac(self, doc: Dict[str, Any]) -> None:
-        """RBAC analysis: detect privilege escalation paths.
+        """RBAC分析: 检测权限提升路径。
 
-        The logic: for each rule in a Role/ClusterRole, check whether
-        (verbs, resources, apiGroups) matches any of the known-dangerous
-        combinatorics. Also flags cluster-admin bound to ServiceAccount
-        (the classic "escape pod" pattern).
+        逻辑: 对Role/ClusterRole中的每条规则，检查(verbs, resources, apiGroups)
+        是否匹配任一已知危险组合。同时标记绑定到ServiceAccount的cluster-admin
+        （经典"逃逸Pod"模式）。
         """
         kind = (doc.get("kind") or "").lower()
         meta = doc.get("metadata", {})
@@ -193,7 +188,7 @@ class K8sClusterScanner:
                             f"resources={sorted(resources)[:4]}, "
                             f"apiGroups={sorted(api_groups)[:4]}",
                         )
-                        break  # one match is enough, don't spam
+                        break  # 一个匹配即足够，避免重复
 
         if kind in ("clusterrolebinding", "rolebinding"):
             subjects = doc.get("subjects", []) or []
@@ -209,17 +204,17 @@ class K8sClusterScanner:
                         f"SAs: {names} — grants full cluster control",
                     )
 
-    # -- pod & container scanning --
+    # -- pod 与容器扫描 --
 
     def _scan_pod(self, pod_spec: Dict[str, Any], owner: str) -> None:
         pod = pod_spec.get("spec", pod_spec)
 
-        # host namespace sharing
+        # host namespace 共享
         for flag in ("hostNetwork", "hostPID", "hostIPC"):
             if pod.get(flag):
                 self._add("HIGH", f"Pod shares {flag} with host", owner)
 
-        # hostPath volumes
+        # hostPath 卷
         for vol in pod.get("volumes", []) or []:
             hp = vol.get("hostPath", {})
             if hp:
@@ -230,7 +225,7 @@ class K8sClusterScanner:
                     f"volume={vol.get('name')} path={hp.get('path')}",
                 )
 
-        # auto-mount service account token
+        # 自动挂载 service account token
         sa_name = pod.get("serviceAccountName", "")
         auto_mount = pod.get("automountServiceAccountToken")
         if auto_mount is not False and sa_name:
@@ -241,7 +236,7 @@ class K8sClusterScanner:
                 f"SA={sa_name} — set automountServiceAccountToken: false",
             )
 
-        # scan each container
+        # 扫描每个容器
         for c in pod.get("containers", []) or []:
             self._scan_container(c, owner)
 
@@ -250,11 +245,11 @@ class K8sClusterScanner:
         label = f"{owner}/{cname}"
         sec = c.get("securityContext", {}) or {}
 
-        # privileged mode — near-root access
+        # 特权模式 —— near-root access
         if sec.get("privileged"):
             self._add("CRITICAL", "Privileged container", label)
 
-        # allowPrivilegeEscalation: not explicitly false = default true
+        # allowPrivilegeEscalation: 未显式 false = 默认 true
         if sec.get("allowPrivilegeEscalation") is not False:
             self._add(
                 "HIGH",
@@ -262,11 +257,11 @@ class K8sClusterScanner:
                 label,
             )
 
-        # running as root
+        # 以 root 运行
         if sec.get("runAsNonRoot") is not True:
             self._add("MEDIUM", "Container may run as root", label)
 
-        # writable root filesystem
+        # 可写根文件系统
         if sec.get("readOnlyRootFilesystem") is not True:
             self._add("LOW", "Root filesystem is writable", label)
 
@@ -286,7 +281,7 @@ class K8sClusterScanner:
                 label,
                 f"image={image_str}",
             )
-        # latest tag without Always pull = non-reproducible build risk
+        # latest 标签未使用 Always pull = 不可复现的构建风险
         if image_str.endswith(":latest") and policy != "Always":
             self._add(
                 "LOW",
@@ -295,7 +290,7 @@ class K8sClusterScanner:
                 f"image={image_str}",
             )
 
-        # resource limits
+        # 资源限制
         limits = c.get("resources", {}).get("limits", {}) or {}
         requests = c.get("resources", {}).get("requests", {}) or {}
         if not limits or not requests:
@@ -309,5 +304,5 @@ class K8sClusterScanner:
     def _add(self, severity: str, title: str, resource: str, detail: str = "") -> None:
         self._findings.append(Finding(severity, title, resource, detail))
 
-    # legacy alias — old code calls scan_cluster()
+    # 遗留别名 —— 旧代码调用 scan_cluster()
     scan_cluster = scan

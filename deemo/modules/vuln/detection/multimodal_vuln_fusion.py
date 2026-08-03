@@ -1,7 +1,7 @@
 # 多模态漏洞评分融合器——将静态分析、LLM判断、历史CVE匹配、二进制特征
 # 等异构信号加权聚合为单一可利用性评分。
-# 参考AMMF (Cybersecurity 2025) 的注意力增强多特征融合和Cascaded Vulnerability
-# Attacks (arXiv:2601.20158) 的HGAT节点-边联合建模。
+# 参考AMMF (Cybersecurity 2025) 注意力增强多特征融合和Cascaded Vulnerability
+# Attacks (arXiv:2601.20158) HGAT节点-边联合建模。
 #
 # 融合的模态维度:
 #   - static_score: 传统静态分析危险函数评分 (0-100)
@@ -13,15 +13,15 @@
 #   - cvss_normalized: CVSS评分归一化 (0-1)
 #   - sandbox_verification: 沙箱验证结果 (0/1 或 0-1置信度)
 #
-# 2026-07-28 —— 初版，仅加权平均
-# 2026-07-31 —— 新增证据置信度衰减和模糊积分替代方法
+# —— 初版仅加权平均
+# —— 新增证据置信度衰减与模糊积分替代方法
 
 import math, logging
 from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass, field
 from collections import OrderedDict
 
-logger = logging.getLogger(__name__)
+_log = logging.getLogger(__name__)
 
 
 @dataclass
@@ -29,14 +29,14 @@ class ModalEvidence:
     """单模态证据——带置信度元数据的评分条目。"""
     source: str                         # 来源标识: static/llm/cve/graph/exploit/dynamic
     score: float                       # 0-1归一化评分
-    confidence: float                   # 该来源的置信度 (0-1)
-    weight: float = 0.0                # 在融合中的权重
+    confidence: float                   # 该来源置信度 (0-1)
+    weight: float = 0.0                # 融合权重
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class FusionResult:
-    """多模态融合的输出——含各维度分解和最终评分。"""
+    """多模态融合输出——含各维度分解与最终评分。"""
     final_score: float                  # 0-1 综合严重度
     severity_label: str                 # CRITICAL/HIGH/MEDIUM/LOW
     confidence: float                   # 融合置信度
@@ -50,7 +50,7 @@ class FusionResult:
 class MultiModalVulnFuser:
     """多模态漏洞评分融合器——异构信号加权聚合为单一可利用性评分。"""
 
-    # 领域先验权重——静态分析最可靠（可解释），LLM次之（语义理解但有幻觉）
+    # 领域先验权重——静态分析最可靠(可解释)，LLM次之(语义理解但有幻觉)
     _DEFAULT_WEIGHTS = {
         'static': 0.30,
         'cve':    0.25,
@@ -71,7 +71,7 @@ class MultiModalVulnFuser:
         """融合多条证据为单一评分。
 
         参数:
-            evidences: 各模态的证据列表
+            evidences: 各模态证据列表
 
         返回FusionResult。
         """
@@ -112,7 +112,7 @@ class MultiModalVulnFuser:
 
         final_score = weighted_sum / total_weight
 
-        # 检测证据冲突——同一来源的评分偏差>0.4视为冲突
+        # 检测证据冲突——同来源评分偏差>0.4视为冲突
         source_scores: Dict[str, List[float]] = {}
         for ev in evidences:
             source_scores.setdefault(ev.source, []).append(ev.score)
@@ -124,7 +124,7 @@ class MultiModalVulnFuser:
                         f"{src}证据不一致: 范围={rng:.2f} ({min(scores):.2f}-{max(scores):.2f})")
 
         severity = self._score_to_label(final_score)
-        # 融合置信度 = 证据数量越多元越可信
+        # 融合置信度——证据来源越多元越可信
         unique_sources = len({ev.source for ev in evidences})
         diversity_bonus = min(1.0, unique_sources / len(self._DEFAULT_WEIGHTS))
         avg_confidence = sum(ev.confidence for ev in evidences) / len(evidences)
@@ -144,7 +144,7 @@ class MultiModalVulnFuser:
         """Sugeno模糊积分融合——适用于互补性强的多模态证据。
 
         按评分升序排列，对每个证据h(x_i)计算min(h(x_i), g(A_i))，
-        取最大值作为积分结果。g为模糊测度（这里简化为归一化权重累积和）。
+        取最大值作为积分结果。g为模糊测度(简化为归一化权重累积和)。
         """
         sorted_evs = sorted(evidences, key=lambda e: e.score)
         n = len(sorted_evs)
@@ -226,7 +226,7 @@ def fuse_vulnerability_scores(
         dynamic_conf: float = 0.9,
         method: str = "weighted_average"
 ) -> FusionResult:
-    """一站式融合函数——传入各模态评分即可获得FusionResult。
+    """一站式融合函数——传入各模态评分获取FusionResult。
 
     参数:
         static_score: 静态分析分数 (0-1)
@@ -258,11 +258,11 @@ def fuse_vulnerability_scores(
 
 
 # ---- 证据可信度衰减 ----
-# 多来源证据若一致性低，则整体置信度应衰减。
-# 这是Cascaded Vulnerability Attacks论文中HGAT聚合前的可信度校验步骤。
+# 多来源证据若一致性低，整体置信度应衰减。
+# Cascaded Vulnerability Attacks论文中HGAT聚合前的可信度校验步骤。
 
 def compute_evidence_discord(evidences: List[ModalEvidence]) -> float:
-    """计算证据间的不一致度——用评分方差规范化到[0,1]。
+    """计算证据间不一致度——评分方差规范化为[0,1]。
 
     0=完全一致，1=完全矛盾。
     """
@@ -272,4 +272,5 @@ def compute_evidence_discord(evidences: List[ModalEvidence]) -> float:
     mu = sum(scores) / len(scores)
     # MAD (Mean Absolute Deviation) 规范化
     mad = sum(abs(s - mu) for s in scores) / len(scores)
-    return min(1.0, mad * 2.5)  # 2.5倍缩放——满分0.4 MAD视为完全不一致
+    # 2.5倍缩放——满分0.4 MAD视为完全不一致
+    return min(1.0, mad * 2.5)

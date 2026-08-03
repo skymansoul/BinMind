@@ -1,12 +1,11 @@
-# 2026-07-15
-"""Core cryptographic constants — S‑boxes, IVs, weak keys, opcode signatures.
+"""核心密码学常量 — S盒/IV/弱密钥/操作码特征.
 
-All S‑boxes are `bytes` for direct subscript/table‑lookup without decoding.
-Multi‑word IVs are tuples of ints; endianness matches the algorithm spec.
+所有S盒为`bytes`类型, 直接下标查表无需解码。
+多字IV为int元组, 端序匹配算法规范。
 """
 
 # ===== AES (FIPS 197) =====
-# 仿射變換: b'_i = b_i ^ b_{(i+4)%8} ^ b_{(i+5)%8} ^ b_{(i+6)%8} ^ b_{(i+7)%8} ^ c_i
+# 仿射变换: b'_i = b_i ^ b_{(i+4)%8} ^ b_{(i+5)%8} ^ b_{(i+6)%8} ^ b_{(i+7)%8} ^ c_i
 AES_SBOX: bytes = bytes([
     0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
     0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0,
@@ -46,7 +45,7 @@ AES_INV_SBOX: bytes = bytes([
 ])
 
 # ===== SHA-2 IV (FIPS 180-4) =====
-# 前8個質數平方根的小數部分前32 bits, big-endian
+# 前8个质数平方根的小数部分前32 bits, big-endian
 SHA256_IV: tuple = (
     0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
     0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19,
@@ -82,10 +81,10 @@ SM4_SBOX: bytes = bytes([
     0x18, 0xf0, 0x7d, 0xec, 0x3a, 0xdc, 0x4d, 0x20, 0x79, 0xee, 0x5f, 0x3e, 0xd7, 0xcb, 0x39, 0x48,
 ])
 
-# ===== AES RCON (round constants, 10 bytes for AES-128) =====
+# ===== AES RCON (轮常量, AES-128用10字节) =====
 AES_RCON: tuple = (0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1B, 0x36)
 
-# ===== GOST S-box alias =====
+# ===== GOST S-box别名 =====
 GOST_SBOX: bytes = bytes([
     0x0a, 0x09, 0x0d, 0x06, 0x0e, 0x0b, 0x04, 0x05, 0x0f, 0x01, 0x03, 0x0c, 0x07, 0x00, 0x08, 0x02,
     0x08, 0x0c, 0x0a, 0x03, 0x07, 0x0d, 0x01, 0x0e, 0x02, 0x0f, 0x00, 0x09, 0x04, 0x05, 0x06, 0x0b,
@@ -97,11 +96,11 @@ GOST_SBOX: bytes = bytes([
     0x0b, 0x08, 0x01, 0x0f, 0x0a, 0x0d, 0x03, 0x05, 0x0c, 0x04, 0x09, 0x00, 0x07, 0x02, 0x0e, 0x06,
 ])
 
-# ===== 後量子參數 =====
+# ===== 后量子参数 =====
 KYBER_Q: int = 3329
 DILITHIUM_Q: int = 8380417
 
-# ===== 流密碼 / 哈希常量 =====
+# ===== 流密码/哈希常量 =====
 CHACHA20_CONSTANTS: bytes = b'expand 32-byte k'
 
 BLAKE2_IV: tuple = (
@@ -116,8 +115,8 @@ BLAKE3_IV: tuple = (
     0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19,
 )
 
-# ===== DES 弱密鑰 (NIST SP 800-67 Rev.2) =====
-# 每輪子密鑰完全相同 → 加密兩次 = 還原明文
+# ===== DES弱密钥 (NIST SP 800-67 Rev.2) =====
+# 每轮子密钥完全相同 -> 加密两次 = 还原明文
 DES_WEAK_KEYS: list = [
     b'\x01\x01\x01\x01\x01\x01\x01\x01',
     b'\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe',
@@ -129,7 +128,7 @@ DES_WEAK_KEYS: list = [
     b'\xe0\x01\xe0\x01\xf1\x01\xf1\x01',
 ]
 
-# ===== CRC-32 查表 (poly=0xEDB88320, reflected) =====
+# ===== CRC-32查表 (poly=0xEDB88320, reflected) =====
 CRC32_POLY_TABLE: tuple = (
     0x00000000, 0x77073096, 0xee0e612c, 0x990951ba,
     0x076dc419, 0x706af48f, 0xe963a535, 0x9e6495a3,
@@ -197,11 +196,12 @@ CRC32_POLY_TABLE: tuple = (
     0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d,
 )
 
-# ===== ARIA S-boxes (KS X 1213:2004, 同 AES 結構但 S2 為 x^247) =====
-ARIA_S1: bytes = AES_SBOX  # 同 AES S‑box
+# ===== ARIA S-boxes (KS X 1213:2004, AES结构但S2为x^247) =====
+# S1与AES S-box相同
+ARIA_S1: bytes = AES_SBOX
 
-# GF(2^8)冪函數 x→x^247, 模 x^8+x^4+x^3+x+1
-# S2(x) = A·(x^247)⁻¹ ⊕ b  其中 A 是仿射矩陣
+# GF(2^8)幂函数 x->x^247, 模 x^8+x^4+x^3+x+1
+# S2(x) = A·(x^247)^(-1) xor b, A为仿射矩阵
 ARIA_S2: bytes = bytes([
     0xe2, 0x4e, 0x54, 0xfc, 0x94, 0xc2, 0x4a, 0xcc, 0x62, 0x0d, 0x6a, 0x46, 0x3c, 0x4d, 0x8b, 0xd1,
     0x5e, 0xfa, 0x64, 0xcb, 0xb4, 0x97, 0xbe, 0x2b, 0xbc, 0x77, 0x2e, 0x03, 0xd3, 0x19, 0x59, 0xc1,
@@ -222,7 +222,7 @@ ARIA_S2: bytes = bytes([
 ])
 
 # ===== Camellia (RFC 3713) =====
-# 由 AES S‑box 經線性變換導出: S(x) = h(g(x)), g: GF(2^8) 同構, h: 線性層
+# AES S-box经线性变换导出: S(x) = h(g(x)), g: GF(2^8)同构, h: 线性层
 CAMELLIA_SBOX: bytes = bytes([
     0x70, 0x82, 0x2c, 0xec, 0xb3, 0x27, 0xc0, 0xe5, 0xe4, 0x85, 0x57, 0x35, 0xea, 0x0c, 0xae, 0x41,
     0x23, 0xef, 0x6b, 0x93, 0x45, 0x19, 0xa5, 0x21, 0xed, 0x0e, 0x4f, 0x4e, 0x1d, 0x65, 0x92, 0xbd,
@@ -282,8 +282,8 @@ SEED_SBOX1: bytes = bytes([
     0xc0, 0x85, 0x29, 0x49, 0xae, 0x3f, 0xff, 0x06, 0x40, 0xca, 0xde, 0x7b, 0x90, 0x3b, 0x96, 0xfc,
 ])
 
-# ===== SEED KC 輪密鑰常量 (RFC 4269 §4.2) =====
-# 黃金比例 φ 的倍數, 16 × 32bit, little-endian
+# ===== SEED KC轮密钥常量 (RFC 4269 §4.2) =====
+# 黄金比例phi的倍数, 16 x 32bit, little-endian
 SEED_KC: tuple = (
     0x9E3779B9, 0x3C6EF373, 0x78DDE6E6, 0xF1BBCDCC,
     0xE3779B99, 0xC6EF3733, 0x8DDE6E67, 0x1BBCDCCF,
@@ -291,10 +291,11 @@ SEED_KC: tuple = (
     0x779B99E3, 0xEF3733C6, 0xDE6E678D, 0xBCDCCF1B,
 )
 
-# ===== x86 指令特徵 — 用於靜態掃描二進制中是否存在硬件加速路徑 =====
-# AES‑NI 使用 0F 38 / 0F 3A 三字節操作碼前綴
-AESNI_OPCODES: bytes = b'\x0f\x38\xdb'    # AESIMC (最獨特的AESNI指令)
-# 備選: 同時搜索多條特徵以降低誤報
+# ===== x86指令特征 — 用于二进制静态扫描硬件加速路径 =====
+# AES-NI使用0F 38 / 0F 3A三字节操作码前缀
+# AESIMC为最独特的AESNI指令
+AESNI_OPCODES: bytes = b'\x0f\x38\xdb'
+# 多特征搜索以降低误报
 AESNI_OPCODES_SET: tuple = (
     b'\x0f\x38\xdb',   # AESIMC
     b'\x0f\x38\xdc',   # AESENC
@@ -304,7 +305,7 @@ AESNI_OPCODES_SET: tuple = (
     b'\x0f\x3a\xdf',   # AESKEYGENASSIST
 )
 
-# SHA‑NI: Intel Goldmont 起支持, 0F 38 前綴 + C8-CE 範圍
+# SHA-NI: Intel Goldmont起支持, 0F 38前缀 + C8-CE范围
 SHANI_OPCODES: bytes = b'\x0f\x38\xc8'    # SHA1NEXTE (系列起始)
 SHANI_OPCODES_SET: tuple = (
     b'\x0f\x38\xc8',   # SHA1NEXTE
@@ -315,16 +316,16 @@ SHANI_OPCODES_SET: tuple = (
     b'\x0f\x38\xcd',   # SHA256MSG2
 )
 
-# PCLMULQDQ: carry‑less multiply, GF(2^128) 專用
+# PCLMULQDQ: carry-less乘法, GF(2^128)专用
 PCLMUL_OPCODES: bytes = b'\x66\x0f\x3a\x44'
 
 # ===== SM3 (GB/T 32905-2016) =====
-# IV 從 π 的小數部分導出, 8 × 32bit
+# IV从pi的小数部分导出, 8 x 32bit
 SM3_IV: tuple = (0x7380166F, 0x4914B2B9, 0x172442D7, 0xDA8A0600,
                   0xA96F30BC, 0x163138AA, 0xE38DEE4D, 0xB0FB0E4E)
 
 # ===== Keccak-f[1600] (FIPS 202) =====
-# 24 × 64bit 輪常量, LFSR 序列 x^i mod (x^8+x^6+x^5+x^4+1)
+# 24 x 64bit轮常量, LFSR序列 x^i mod (x^8+x^6+x^5+x^4+1)
 KECCAK_ROUND_CONSTANTS: tuple = (
     0x0000000000000001, 0x0000000000008082, 0x800000000000808A,
     0x8000000080008000, 0x000000000000808B, 0x0000000080000001,

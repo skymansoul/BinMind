@@ -1,5 +1,4 @@
-# 2026-07-28 — 漏洞检测插件系统
-# 抽象基类 + 发现机制 + 注册管理，支持自定义检测器扩展
+# 漏洞检测插件系统——抽象基类+发现机制+注册管理，支持自定义检测器扩展
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
@@ -22,18 +21,14 @@ class PluginMeta:
 class PluginBase(ABC):
     """漏洞检测插件基类。
 
-    子类实现:
-        analyze(binary_path, **kwargs) -> List[Dict]
-        返回漏洞发现列表。
+    子类实现analyze(binary_path, **kwargs) → List[Dict]返回漏洞发现列表。
     """
 
     def __init__(self, meta: Optional[PluginMeta] = None):
         self.meta = meta or PluginMeta(name=self.__class__.__name__)
         self._enabled = True
 
-    @property
-    def name(self) -> str:
-        return self.meta.name
+    name = property(lambda self: self.meta.name)
 
     @property
     def version(self) -> str:

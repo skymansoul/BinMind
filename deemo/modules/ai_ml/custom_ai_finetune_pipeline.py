@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
-# Custom AI fine-tuning pipeline — dataset curation, augmentation, and training orchestration
-# for binary analysis models (function similarity, vulnerability detection, naming).
-# 2026-07-19: added class-balanced sampling and curriculum-learning schedule.
-# 2026-07-25: added contrastive-pair generation (CLAP-inspired), entropy-based difficulty
-#             estimation, and class-balanced batch iterator with reservoir tracking.
+# Custom 智能 fine-tuning pipeline — dataset curation, augmentation, and 训练 orchestration
+# for binary analysis models (function similarity, vulnerability 检测, naming).
+# added class-balanced 采样 and curriculum-learning schedule.
+# added contrastive-pair 构造 (CLAP-inspired), entropy-based difficulty
+# estimation, and class-balanced 批次 iterator with reservoir tracking.
 
 import os
 import json
-import time
 import math
 import logging
-import hashlib
 import random
 import threading
 from collections import defaultdict
@@ -19,14 +17,7 @@ from typing import Dict, Any, List, Optional, Tuple, Callable
 
 __dbg = logging.getLogger(__name__)
 
-
-class TaskType:
-    BINARY_SIMILARITY = "binary_similarity"
-    VULNERABILITY_DETECTION = "vulnerability_detection"
-    FUNCTION_NAMING = "function_naming"
-    FUNCTION_SUMMARY = "function_summary"
-    PATH_PRIORITIZATION = "path_prioritization"
-    DECOMPILATION_QUALITY = "decompilation_quality"
+from .src.training.pipeline_config import TaskType, FineTuneCheckpoint
 
 
 class DatasetSplit:
@@ -236,12 +227,12 @@ class FineTuneDataset:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Enhancement 1: Contrastive Pair Sampler (CLAP-inspired cross-modal pre-training)
+# 增强1: 对比对采样器 (CLAP式跨模态预训练)
 # 核心假设：同一函数的多种表示（汇编特征、CFG嵌入、反编译文本）应映射到邻近语义空间；
 # 不同函数应被推远。正/负对采样是实现对比损失（NT-Xent / InfoNCE）的前置步骤。
 # 参考：Huang et al., "CLAP: Learning Audio Concepts From Natural Language Supervision"
-#       Ban et al., "BLens: Contrastive Learning for Binary Function Representation",
-#       USENIX Security 2025.
+# Ban et al., "BLens: Contrastive Learning for Binary Function Representation",
+# USENIX Security 2025.
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class ContrastivePairSampler:
@@ -433,13 +424,13 @@ class ContrastivePairSampler:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Enhancement 2: Entropy-based Difficulty Estimation
+# 增强2: 熵基准难度估计
 # 原始实现以特征向量长度作为难度代理 — 过于粗糙：
-#   (a) 稀疏的长向量比密集的短向量更易学习；
-#   (b) 信息熵决定可分离性，低熵样本（高度冗余）应先学。
+# (a) 稀疏的长向量比密集的短向量更易学习；
+# (b) 信息熵决定可分离性，低熵样本（高度冗余）应先学。
 # 改用：特征方差 + 稀疏度 + 香农熵三指标归一化加权。
 # 参考：Bengio et al., "Curriculum Learning", ICML 2009
-#       Hacohen & Weinshall, "On The Power of Curriculum Learning", NeurIPS 2019
+# Hacohen & Weinshall, "On The Power of Curriculum Learning", NeurIPS 2019
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class EntropyDifficultyEstimator:
@@ -547,7 +538,7 @@ class CurriculumScheduler:
         self.m_stages = n_stages
         self.m_current_stage = 0
         self.m_difficulty_fn = None
-        self.m_entropy_estimator = EntropyDifficultyEstimator()  # Enhancement 2 集成
+        self.m_entropy_estimator = EntropyDifficultyEstimator()  # 增强2: 集成
         self.m_stage_statistics = []  # 每阶段的难度分布记录
 
     def set_difficulty_fn_cs(self, fn):
@@ -619,11 +610,11 @@ class CurriculumScheduler:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Enhancement 3: Class-Balanced Batch Iterator with Reservoir Tracking
+# 增强3: 类别均衡批次迭代器 含蓄水池追踪
 # 问题：随机批次在长尾分布下严重偏向头部类，导致尾部类过拟合/欠拟合交替。
 # 方案：按标签分桶 → 轮询采样 → 维护每个桶的已用指针跨epoch连续。
 # 参考：Kang et al., "Decoupling Representation and Classifier", ICLR 2020
-#       Cui et al., "Class-Balanced Loss Based on Effective Number of Samples", CVPR 2019
+# Cui et al., "Class-Balanced Loss Based on Effective Number of Samples", CVPR 2019
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class ClassBalancedBatchIterator:
@@ -739,7 +730,7 @@ class ClassBalancedBatchIterator:
 
         self.m_samples_used_total += len(batch_indices)
 
-        # 所有桶至少翻转一次 → epoch++
+        # 所有桶至少翻转一次 → 轮次++
         if any_depleted:
             self.m_epochs_completed += 1
             __dbg.debug(f"Epoch {self.m_epochs_completed} completed "
@@ -764,32 +755,6 @@ class ClassBalancedBatchIterator:
         }
 
 
-class FineTuneCheckpoint:
-    """Model checkpoint with hash-based dedup."""
-
-    __slots__ = ('m_path', 'm_hash', 'm_metrics', 'm_timestamp')
-
-    def __init__(self, path, metrics=None):
-        self.m_path = path
-        self.m_hash = self._compute_hash(path)
-        self.m_metrics = metrics if metrics else {}
-        self.m_timestamp = time.time()
-
-    def _compute_hash(self, path):
-        if path is None or not os.path.exists(path):
-            return ''
-        try:
-            hasher = hashlib.sha256()
-            with open(path, 'rb') as f:
-                chunk = f.read(8192)
-                while chunk:
-                    hasher.update(chunk)
-                    chunk = f.read(8192)
-            return hasher.hexdigest()
-        except Exception:
-            return ''
-
-
 class FineTunePipeline:
     """End-to-end fine-tuning pipeline orchestrator.
 
@@ -812,8 +777,8 @@ class FineTunePipeline:
         self.m_curriculum = CurriculumScheduler()
         self.m_checkpoints = []
         self.m_config = config if config else {}
-        self.m_contrastive_sampler = ContrastivePairSampler()   # Enhancement 1 集成
-        self.m_batch_iterator = ClassBalancedBatchIterator()     # Enhancement 3 集成
+        self.m_contrastive_sampler = ContrastivePairSampler()   # 增强1: 集成
+        self.m_batch_iterator = ClassBalancedBatchIterator()     # 增强3: 集成
 
     def load_from_dir_fp(self, directory, label_fn=None):
         """Load samples from a directory of JSON / binary files.
@@ -900,13 +865,13 @@ class FineTunePipeline:
             self.m_dataset.m_splits.m_train if self.m_dataset.m_splits else [])
         if len(curriculum_samples) == 0:
             return []
-        # Sample batch
+        # Sample 批次
         if len(curriculum_samples) <= batch_size:
             return curriculum_samples
         return random.sample(curriculum_samples, batch_size)
 
     # ══════════════════════════════════════════════════════════════════
-    # Enhancement 1 methods: Contrastive pair generation
+    # 增强1: methods: 对比对构造
     # ══════════════════════════════════════════════════════════════════
 
     def build_contrastive_pairs_fp(self, modality_keys=None):
@@ -976,7 +941,7 @@ class FineTunePipeline:
         return {'anchors': anchors, 'positives': positives, 'negatives': negatives}
 
     # ══════════════════════════════════════════════════════════════════
-    # Enhancement 3 methods: Class-balanced batch iteration
+    # 增强3: methods: 类别均衡批次迭代
     # ══════════════════════════════════════════════════════════════════
 
     def init_balanced_batches_fp(self, sample_source=None):
@@ -1028,3 +993,8 @@ def create_finetune_pipeline(task_type=None):
 
 def create_dataset(task_type=None, augment=True):
     return FineTuneDataset(task_type=task_type, augment=augment)
+
+def _debug_print(*args, **kwargs):  # 调试残余--未删除
+    """Print debug info if env var is set. Not currently called."""
+    if __import__("os").environ.get("BINMIND_DEBUG"):
+        print(*args, **kwargs)

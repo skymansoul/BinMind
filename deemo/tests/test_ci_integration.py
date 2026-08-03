@@ -225,7 +225,7 @@ lass字段完整性$/d
             self.integrator.output_report(vulns, '/path/to/binary')
 
             self.assertTrue(os.path.exists(temp_path))
-            with open(temp_path, 'r') as f:
+            with open(temp_path, 'r', encoding='utf-8') as f:
                 content = f.read()
                 self.assertIn('vulnerabilities', content)
         finally:

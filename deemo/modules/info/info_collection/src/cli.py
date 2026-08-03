@@ -1,7 +1,5 @@
-# 2026-07-27
-# cli — 命令行接口，6 个子命令
-# argparse 构建，支持单文件和批量处理模式
-# 每个子命令映射到一个模块入口函数
+# cli — 6 子命令 CLI，argparse 构建
+# 单文件与批量处理双模式，每个子命令映射一个模块入口
 
 import argparse
 import json
@@ -11,7 +9,7 @@ import time
 import textwrap
 from typing import List, Dict
 
-# 延迟导入模块（CLI 入口时再加载，避免 import 时的副作用）
+# 子模块按需导入，避免 CLI 启动时加载全部模块
 def _get_config():
     from . import config
     return config.load_config()
@@ -61,7 +59,7 @@ def _get_pii():
     return pii
 
 
-# ===== 格式化输出 =====
+# ===== 格式化 =====
 def _format_json(obj, indent: int = 2) -> str:
     class _Encoder(json.JSONEncoder):
         def default(self, o):
@@ -97,10 +95,10 @@ def _format_text(findings_dict: dict) -> str:
     return "\n".join(_lines)
 
 
-# //// 子命令处理函数 ////
+# //// 子命令 ////
 
 def cmd_info(args):
-    """二进制基本信息提取。"""
+    """提取二进制基本信息并输出到控制台或文件。"""
     _bi = _get_binary_info()
     _info = _bi.get_binary_info(args.file)
     if args.output:
@@ -111,7 +109,7 @@ def cmd_info(args):
         print(_format_json(_info))
 
 def cmd_scan(args):
-    """完整扫描：信息收集 + 发现提取 + 注入检测 + 持久化 + 横向移动 + 欺骗检测。"""
+    """综合扫描：信息收集 + 发现 + 注入 + 持久化 + 横向 + 欺骗 + 泄露。"""
     _bi = _get_binary_info()
     _utils = _get_utils()
     _findings_mod = _get_findings()
@@ -123,13 +121,11 @@ def cmd_scan(args):
 
     _info = _bi.get_binary_info(args.file)
 
-    # 提取字符串
     with open(args.file, 'rb') as _fh:
         _raw_data = _fh.read()
     _extractor = _utils.StringExtractor(min_length=4)
     _strings = _extractor.extract_strings(_raw_data)
 
-    # 各模块扫描
     _danger = _findings_mod.extract_findings(_info, _strings, _info.get("imports", {}))
     _injection = _inj.detect_all(_info.get("imports", {}), _strings, _info.get("sections", []))
     _lateral = _lat.detect_all(_info.get("imports", {}), _strings)
@@ -159,7 +155,7 @@ def cmd_scan(args):
 
 
 def cmd_anonymize(args):
-    """代码匿名化。"""
+    """源代码匿名化：标识符、字符串、数值替换。"""
     _anonymizer = _get_anonymizer()
     with open(args.file, 'r', encoding='utf-8', errors='replace') as _fh:
         _code = _fh.read()
@@ -192,7 +188,7 @@ def cmd_anonymize(args):
             print(f"\n... ({len(_anonymized) - 2000} more chars)")
 
 def cmd_leaks(args):
-    """信息泄露扫描。"""
+    """信息泄露扫描：格式化字符串 + OOB 读。"""
     _leak = _get_leak_analyzer()
     _bi = _get_binary_info()
     _utils = _get_utils()
@@ -213,14 +209,13 @@ def cmd_leaks(args):
         print(_render)
 
 def cmd_pii(args):
-    """PII 扫描。"""
+    """PII 扫描，输出中自动遮蔽敏感值前中段。"""
     _pii = _get_pii()
     _types = None
     if args.types and args.types.lower() != 'all':
         _types = [t.strip().upper() for t in args.types.split(',')]
     _findings = _pii.scan_file(args.file, target_types=_types)
 
-    # 屏蔽部分敏感内容
     for _f in _findings:
         if len(_f.value) > 8:
             _f.value = _f.value[:4] + "****" + _f.value[-4:]
@@ -244,7 +239,7 @@ def cmd_pii(args):
 
 
 def cmd_batch(args):
-    """批量处理目录下的文件。"""
+    """目录批量扫描，多线程并行处理。"""
     import concurrent.futures
 
     _dir = args.dir
@@ -312,7 +307,6 @@ def cmd_batch(args):
         print(_render)
 
 
-# //// 主入口 ////
 def main(args: List[str] = None) -> int:
     _parser = argparse.ArgumentParser(
         prog="binmind-info",
@@ -331,18 +325,15 @@ def main(args: List[str] = None) -> int:
 
     _sub = _parser.add_subparsers(dest="command", help="subcommand")
 
-    # info
     _p_info = _sub.add_parser("info", help="Extract binary file information")
     _p_info.add_argument("--file", "-f", required=True)
     _p_info.add_argument("--output", "-o", default=None)
 
-    # scan
     _p_scan = _sub.add_parser("scan", help="Full security scan")
     _p_scan.add_argument("--file", "-f", required=True)
     _p_scan.add_argument("--output", "-o", default=None)
     _p_scan.add_argument("--format", choices=["json", "text"], default="json")
 
-    # anonymize
     _p_anon = _sub.add_parser("anonymize", help="Anonymize source code")
     _p_anon.add_argument("--file", "-f", required=True)
     _p_anon.add_argument("--language", "-l", default="auto",
@@ -351,13 +342,11 @@ def main(args: List[str] = None) -> int:
     _p_anon.add_argument("--output", "-o", default=None)
     _p_anon.add_argument("--format", choices=["json", "text"], default="text")
 
-    # leaks
     _p_leaks = _sub.add_parser("leaks", help="Information leak scan")
     _p_leaks.add_argument("--file", "-f", required=True)
     _p_leaks.add_argument("--output", "-o", default=None)
     _p_leaks.add_argument("--format", choices=["json", "text"], default="json")
 
-    # pii
     _p_pii = _sub.add_parser("pii", help="PII scan")
     _p_pii.add_argument("--file", "-f", required=True)
     _p_pii.add_argument("--types", default=None,
@@ -365,7 +354,6 @@ def main(args: List[str] = None) -> int:
     _p_pii.add_argument("--output", "-o", default=None)
     _p_pii.add_argument("--format", choices=["json", "text"], default="json")
 
-    # batch
     _p_batch = _sub.add_parser("batch", help="Batch processing")
     _p_batch.add_argument("--dir", "-d", required=True)
     _p_batch.add_argument("--workers", "-w", type=int, default=4)

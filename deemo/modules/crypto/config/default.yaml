@@ -1,0 +1,112 @@
+# 2026-08-02 — BinMind crypto module default configuration
+# INTJ note: every threshold here was chosen with a specific false-positive/false-negative
+# tradeoff in mind. Don't tweak without understanding the ROC curves behind each value.
+# Priority: env var > this file > builtin defaults (in src/config.py)
+
+# ---- Cryptographic algorithm detection ----
+detection:
+  aes:
+    min_confidence: 0.6
+    # Fuzzy matching: Hamming distance tolerance for S-box comparison.
+    # 0 = exact match only; 8 = lenient (tolerates up to 8 byte diffs in 256-byte S-box).
+    # Set >0 to catch obfuscated/variant S-boxes that are 97%+ identical.
+    fuzzy_hamming_tolerance: 4
+  sha:
+    check_endian: true
+
+# ---- Crypto misuse scanning ----
+misuse:
+  ecb_repeated_block_threshold: 3
+  min_string_len: 4
+  severity_threshold: "MEDIUM"
+  rsa_min_exponent: 17
+  gcm_nonce_reuse_threshold: 3
+
+# ---- Steganography detection ----
+steganography:
+  entropy_threshold: 0.8
+  min_hidden_size: 256
+  window_size: 4096
+  high_entropy_min_size: 4096
+  lsb_chi_sq_threshold: 0.95
+  lsb_min_sample: 1024
+
+# ---- Hardware-accelerated hashing ----
+hashing:
+  default_algorithm: "xxhash64"
+  chunk_size: 65536
+  cache_enabled: true
+  parallel_workers: 4
+
+# ---- Post-quantum cryptography detection ----
+pqc:
+  string_confidence: 0.7
+  constant_confidence: 0.5
+  ntt_confidence: 0.85
+  size_confidence: 0.6
+
+# ---- Traffic analysis & decryption ----
+traffic:
+  max_cipher_suites: 20
+  key_min_length: 16
+  ja4_enabled: true
+  quic_scan: true
+
+# ---- I/O and retry ----
+io:
+  read_retries: 3
+  retry_delay_ms: 200
+  max_file_size_mb: 512
+  mmap_threshold_mb: 128
+
+# ---- Key entropy analysis ----
+entropy:
+  key_entropy_min: 7.5
+  key_chi_sq_max: 350
+  key_pi_error_max: 0.05
+  markov_predictability_max: 0.02
+
+# ---- JWT analysis ----
+jwt:
+  hmac_max_secrets: 128
+  scan_nested_tokens: true
+  utf16_scan: true
+
+# ---- Certificate analysis ----
+cert:
+  rsa_min_strength: 2048
+  extract_ocsp_urls: true
+  ec_min_strength: 256
+  der_max_size: 16384
+
+# ---- Secret/key auditing ----
+secrets:
+  min_entropy: 0.4
+  min_confidence: 0.5
+  max_preview_length: 40
+
+# ---- KDF parameter auditing (OWASP 2026 recommendations) ----
+kdf:
+  pbkdf2_min_iterations: 600000
+  bcrypt_min_cost: 12
+  scrypt_min_n: 131072
+  argon2_min_memory_mb: 46
+
+# ---- Randomness testing ----
+rng:
+  nist_alpha: 0.01
+  max_sample_bytes: 65536
+  numpy_threshold: 8192
+
+# ---- RSA weakness detection ----
+rsa:
+  wiener_max_bitlength: 2048
+  fermat_max_bitlength: 256
+  fermat_iterations: 1000000
+
+# ---- Logging ----
+logging:
+  level: "INFO"
+  format: "%(asctime)s [%(levelname)-5s] %(name)s | %(message)s"
+  datefmt: "%H:%M:%S"
+  file: null  # null = stdout only; set to "logs/crypto.log" for file output

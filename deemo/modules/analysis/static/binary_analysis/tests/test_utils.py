@@ -1,4 +1,4 @@
-# tests for binary_analysis utility functions
+# tests for binary_analysis 工具函数
 
 import pytest
 import os
@@ -8,10 +8,10 @@ from modules.analysis.static.binary_analysis.src.utils.errors import AnalysisErr
 
 
 class TestAtomicWrite:
-    """Atomic file writing for safe persistence."""
+    """Atomic file writing for safe 持久化"""
 
     def test_basic_write(self):
-        """Write a file atomically."""
+        """写入 a file atomically"""
         with tempfile.TemporaryDirectory() as tmpdir:
             path = os.path.join(tmpdir, "test.txt")
             atomic_write(path, b"hello world")
@@ -20,7 +20,7 @@ class TestAtomicWrite:
                 assert f.read() == b"hello world"
 
     def test_overwrite(self):
-        """Atomic overwrite of existing file."""
+        """Atomic overwrite existing file"""
         with tempfile.TemporaryDirectory() as tmpdir:
             path = os.path.join(tmpdir, "test.txt")
             atomic_write(path, b"version 1")
@@ -29,7 +29,7 @@ class TestAtomicWrite:
                 assert f.read() == b"version 2"
 
     def test_large_write(self):
-        """Atomic write with larger binary data."""
+        """Atomic 写入 larger binary data"""
         with tempfile.TemporaryDirectory() as tmpdir:
             path = os.path.join(tmpdir, "large.bin")
             data = b'\x00' * 1024 * 1024  # 1MB
@@ -38,10 +38,10 @@ class TestAtomicWrite:
 
 
 class TestRetry:
-    """Retry decorator for transient failures."""
+    """重试 decorator for transient failures"""
 
     def test_retry_success(self):
-        """Function succeeds on first try."""
+        """Function succeeds first try"""
         call_count = [0]
 
         @retry(max_attempts=3)
@@ -54,7 +54,7 @@ class TestRetry:
         assert call_count[0] == 1
 
     def test_retry_eventual_success(self):
-        """Function succeeds on second try."""
+        """Function succeeds second try"""
         call_count = [0]
 
         @retry(max_attempts=3, delay=0)
@@ -69,7 +69,7 @@ class TestRetry:
         assert call_count[0] == 2
 
     def test_retry_exhausted(self):
-        """Function exhausts all retries."""
+        """Function exhausts 重试"""
         @retry(max_attempts=2, delay=0)
         def always_fail():
             raise RuntimeError("permanent error")
@@ -79,19 +79,19 @@ class TestRetry:
 
 
 class TestDig:
-    """Nested dict access helper."""
+    """Nested dict access 辅助"""
 
     def test_simple_access(self):
-        """Access nested dict value."""
+        """Access nested dict value"""
         data = {"a": {"b": {"c": 42}}}
         assert dig(data, "a", "b", "c") == 42
 
     def test_missing_key(self):
-        """Missing key returns default."""
+        """Missing key 返回 default"""
         data = {"a": {}}
         assert dig(data, "a", "b", "c", default=None) is None
 
     def test_empty_keys(self):
-        """Empty key list returns the data itself."""
+        """Empty key list 返回 data itself"""
         data = {"x": 1}
         assert dig(data) == data

@@ -109,7 +109,7 @@ class CryptoAuditor:
         _b64_re = re.compile(r'^[A-Za-z0-9+/]{24,}={0,2}$')
         for _s in strings:
             if _b64_re.match(_s) and len(_s) >= 24:
-                # check entropy: base64 random keys have entropy ~5-6 bits/char
+                # 检查 entropy: base64 random keys entropy ~5-6 bits/char
                 _ent = self._string_entropy(_s)
                 if _ent > 4.5:
                     _r.append({
@@ -149,7 +149,7 @@ class CryptoAuditor:
                 })
                 break
 
-        # Weak hash in non-crypto context
+        # Weak hash non-crypto context
         for _pat in self._weak_hash:
             if re.search(_pat, _strs_all, re.I):
                 _findings.append({
@@ -194,7 +194,7 @@ class CryptoAuditor:
                 'severity': 'CRITICAL',
             })
 
-        # Also check strings for PEM markers
+        # 检查 strings for PEM markers
         for _s in strings:
             if 'BEGIN' in _s and 'PRIVATE KEY' in _s:
                 already_found = any(
@@ -213,7 +213,7 @@ class CryptoAuditor:
 
     def detect_custom_crypto(self, strings: List[str], imports: dict) -> List[Dict]:
         """
-        自制加密启发式: 检测到XOR/移位/轮函数模式但没有标准crypto库imports时,
+        自制加密启发式: 检测到XOR/移位/轮函数模式但没有标准crypto库imports时
         可能是自定义加密 (cryptographic gatekeeping failure)
         """
         _findings = []
@@ -229,7 +229,7 @@ class CryptoAuditor:
             for _imp, pats in _item for _item in self._crypto_libs
         ) if False else False
 
-        # check import names
+        # 检查 import names
         for _lib, _pats in self._crypto_libs.items():
             for _pat in _pats:
                 if any(_pat.lower() in _i for _i in _imp_flat):

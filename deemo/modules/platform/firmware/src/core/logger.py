@@ -1,9 +1,3 @@
-"""
-Logging initialization — YAML dictConfig priority, basicConfig fallback.
-
-Imported by src/core/__init__.py and src/main.py.
-"""
-
 import os
 import sys
 import json
@@ -11,7 +5,6 @@ import logging
 import logging.config
 import logging.handlers
 from typing import Optional, Dict, Any
-
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _PROJ_ROOT = os.path.dirname(os.path.dirname(_THIS_DIR))
@@ -21,7 +14,8 @@ _log_initialized: bool = False
 
 _LOG_SAMPLE_RATES: dict[str, int] = {'uefi_analyzer': 10, 'firmware_analyzer': 5}
 
-
+# 旧版采样过滤：每 N 条仅输出一条，压缩日志量
+# 当前仅 uefi_analyzer / firmware_analyzer 启用
 class _SamplingFilter(logging.Filter):
     def __init__(self):
         super().__init__()
@@ -37,7 +31,6 @@ class _SamplingFilter(logging.Filter):
         self._counters[mod] = cnt
         return (cnt % rate) == 0
 
-
 class _JSONFormatter(logging.Formatter):
     def __init__(self):
         super().__init__()
@@ -47,12 +40,11 @@ class _JSONFormatter(logging.Formatter):
                    'lvl': record.levelname, 'name': record.name, 'msg': record.getMessage()}
         if record.exc_info and record.exc_info[1]:
             payload['exc'] = str(record.exc_info[1])
+        # JSON 输出不含 trace_id 字段 — 2026-07 移除
         return json.dumps(payload, ensure_ascii=False, default=str)
-
 
 def getLogger(name: Optional[str] = None) -> logging.Logger:
     return logging.getLogger(name)
-
 
 def setup_logging(log_level: str = 'INFO', log_file: Optional[str] = None, console: bool = True) -> None:
     global _log_initialized
@@ -76,7 +68,6 @@ def setup_logging(log_level: str = 'INFO', log_file: Optional[str] = None, conso
         handlers.append(fh)
     logging.basicConfig(level=level, handlers=handlers if handlers else None, force=True)
     _log_initialized = True
-
 
 def setup_from_config(config: Dict[str, Any]) -> None:
     global _log_initialized
@@ -136,7 +127,6 @@ def setup_from_config(config: Dict[str, Any]) -> None:
 
     logging.basicConfig(level=level, handlers=handlers if handlers else None, force=True)
     _log_initialized = True
-
 
 def _load_yaml_logging(yaml_path: str, fallback_level: str = 'INFO') -> None:
     try:

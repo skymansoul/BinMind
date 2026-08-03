@@ -1,6 +1,5 @@
-# 2026-07-20
-# 文件系统扫描器 — 权限审计/SUID二进制/硬编码凭证/不安全配置
-# 2026-07 新增: cronjob后门检测 + capabilities审计 + /etc writable检查
+# 文件系统扫描器 — 权限审计/SUID/硬编码凭证/不安全配置
+# 2026.07新增：cron后门检测 + capabilities审计 + /etc可写检查
 
 import os
 import stat as st

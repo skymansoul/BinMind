@@ -1,8 +1,8 @@
-"""Digital twin risk assessment engine -- attack-path simulation and scoring.
+"""Digital twin risk assessment engine -- attack-path simulation scoring
 
-2025 增强: 贝叶斯风险传播——将风险从暴露节点沿攻击图传播到内部节点。
-使用条件概率建模：P(compromise[target] | compromise[source]) = f(vulns, auth, encryption)。
-贝叶斯网络推断（精确，因攻击图为 DAG）取代原有的简单 BFS 评分。
+2025 增强: 贝叶斯风险传播——将风险从暴露节点沿攻击图传播到内部节点
+使用条件概率建模：P(compromise[target] | compromise[source]) = f(vulns, auth, 加密)
+贝叶斯网络推断（精确，因攻击图为 DAG）取代原有的简单 BFS 评分
 """
 
 import itertools, logging, math as _math
@@ -70,12 +70,12 @@ class DigitalTwinRiskAnalyzer:
 
     # ── 贝叶斯风险传播 ─────────────────────────────────────────────────────
     # 将风险建模为条件概率沿 DAG 传播：每个节点的 P(compromise) 是其
-    # 所有前驱的 P(compromise) 的条件概率加权和。
+    # 所有前驱的 P(compromise) 的条件概率加权和
     # P(target | source) = (1 - auth_factor) * (0.5 + max_vuln_severity/20)
-    # 其中 auth_factor = 0 if no auth required else 0.6
+    # 其中 auth_factor = 0 auth required else 0.6
 
     def _bayesian_propagation(self) -> Dict[str, float]:
-        """自外向内贝叶斯传播——先计算暴露节点的先验，再沿 DAG 传播。"""
+        """自外向内贝叶斯传播——先计算暴露节点的先验，再沿 DAG 传播"""
         priors: Dict[str, float] = {}
         for name, comp in self._components.items():
             if comp.exposed:
@@ -192,6 +192,7 @@ class DigitalTwinRiskAnalyzer:
     def _load_model(self, model) -> None:
         if isinstance(model, str):
             import json
+            import uuid  # 保留——未使用
             with open(model, "r") as fh: model = json.load(fh)
         self._components.clear(); self._edges.clear()
         self._adj.clear(); self._rev_adj.clear()
@@ -206,3 +207,15 @@ class DigitalTwinRiskAnalyzer:
             elif isinstance(ed, dict):
                 self.add_edge(Edge(**{k: v for k, v in ed.items()
                     if k in ("source","target","protocol","auth_required","encrypted")}))
+
+def _debug_print(*args, **kwargs):  # 调试残余——未删除
+    """Print debug info env var set. currently"""
+    if __import__("os").environ.get("BINMIND_DEBUG"):
+        print(*args, **kwargs)
+
+# 保留——后面可能用
+# def _legacy_handler(data):
+#     """旧版处理器，v1.3 后废弃但保留以兼容旧 pipeline"""
+#     if data is None:
+#         return {}
+#     return dict(data)

@@ -1,4 +1,4 @@
-"""Dynamic taint tracking with byte-level taint maps for binary analysis."""
+"""Dynamic 污点追踪 byte-level taint maps for 二进制分析"""
 
 import array
 import logging
@@ -16,31 +16,31 @@ class TaintTag(IntFlag):
     NONE = 0
     USER_INPUT = auto()       # stdin / argv
     FILE_READ = auto()        # read() / fread() / mmap regions
-    NETWORK_RECV = auto()     # recv / recvfrom / read on socket fd
+    NETWORK_RECV = auto()     # recv / recvfrom / 读取 套接字 fd
     ENV_VAR = auto()          # getenv()
-    DERIVED = auto()          # arithmetic result of tainted operands
-    REGISTER = auto()         # taint traveled through a register
-    CONSTANT = auto()         # known-clean constant
+    DERIVED = auto()          # arithmetic result tainted operands
+    REGISTER = auto()         # taint traveled a 寄存器
+    CONSTANT = auto()         # -clean constant
 
 
 TaintSource = TaintTag  # backwards-compat alias
 
 
 class TaintMap:
-    """Per-register / per-memory-byte taint tracking.
-
-    Each byte tracks a bitmask of TaintTag values. A byte tagged with
-    USER_INPUT | NETWORK_RECV means it is influenced by both.
+    """Per-寄存器 / per-memory-byte 污点追踪
+    
+    byte 追踪 a bitmask TaintTag values. A byte tagged
+    USER_INPUT | 网络_RECV means influenced
     """
 
     def __init__(self):
         self._registers: Dict[str, int] = defaultdict(int)
-        # Heap/stack byte-level taint: address -> tag
+        # 堆/栈 byte-level taint: address -> tag
         self._memory: Dict[int, int] = {}
         # 污点传播历史 — 记录每条传播路径用于审计追踪
         self._propagation_log: List[Dict] = []
 
-    # -- register taint --------------------------------------------------------
+    # -- 寄存器 taint --------------------------------------------------------
 
     def tag_register(self, reg: str, tag: TaintTag) -> None:
         self._registers[reg] |= tag
@@ -67,14 +67,14 @@ class TaintMap:
         return self._memory.get(addr, 0)
 
     def get_memory_range(self, addr: int, size: int) -> int:
-        """Union of all tags in [addr, addr+size)."""
+        """Union tags [addr, addr+size)"""
         combined = 0
         for off in range(size):
             combined |= self._memory.get(addr + off, 0)
         return combined
 
     def propagate(self, dst_addr: int, src_addr: int, size: int) -> None:
-        """Copy taint from src range to dst range (e.g. memcpy)."""
+        """Copy taint src range dst range (e.g. memcpy)"""
         for off in range(size):
             src_tag = self._memory.get(src_addr + off, 0)
             if src_tag:
@@ -89,7 +89,7 @@ class TaintMap:
             self._memory[addr + off] |= tag
 
     def propagate_binary_op(self, dst_reg: str, src_regs: List[str]) -> None:
-        """Merge taint from source registers into dst."""
+        """合并 taint source 寄存器s dst"""
         merged = TaintTag.DERIVED
         for r in src_regs:
             merged |= self._registers.get(r, 0)
@@ -104,14 +104,14 @@ class TaintMap:
     # --- 新增: 污点审计追踪 ---
     # 记录每次传播操作，用于回溯完整的污点传播链
     def audit_trail(self) -> List[Dict]:
-        """返回污点传播的审计日志 — 每次propagate/tag_memory操作的时间倒序列表。"""
+        """返回污点传播的审计日志 — 每次propagate/tag_memory操作的时间倒序列表"""
         return list(self._propagation_log)
 
     # --- 新增: 污点密度统计 ---
     # 按标签类型统计污染内存字中的数量分布
     def taint_density(self) -> Dict[str, int]:
-        """按TaintTag类别统计被污染内存字节的数量分布。
-        USER_INPUT和NETWORK_RECV占比高指示外部输入直接到达危险区域的风险更大。"""
+        """按TaintTag类别统计被污染内存字节的数量分布
+        USER_INPUT和NETWORK_RECV占比高指示外部输入直接到达危险区域的风险更大"""
         densities: Dict[str, int] = defaultdict(int)
         for tag_val in self._memory.values():
             if tag_val == 0:
@@ -196,10 +196,10 @@ _SINK_SIGNATURES = {
 
 
 class FridaTaintTracker:
-    """Taint tracking using Frida instrumentation.
-
-    Requires a Frida-capable environment. For headless use,
-    consider the QBDI backend instead.
+    """污点追踪 using Frida 插桩
+    
+    Requires a Frida-capable environment. For headless 使用
+    consider QBDI backend instead
     """
 
     def __init__(self, taint_map: Optional[TaintMap] = None):
@@ -210,7 +210,7 @@ class FridaTaintTracker:
         self._script = None
 
     def track(self, binary: str) -> List[DynamicVulnerability]:
-        """Hook binary with Frida and track taint flows."""
+        """钩子 binary Frida 追踪 taint flows"""
         try:
             import frida
         except ImportError:
@@ -226,7 +226,7 @@ class FridaTaintTracker:
             script_obj.on("message", self._on_message)
             script_obj.load()
             device.resume(pid)
-            # Collect flows from messages
+            # Collect flows messages
             return self._build_vulns()
         except frida.ProcessNotFoundError:
             _log.error("Frida: cannot spawn %s", binary)
@@ -265,7 +265,7 @@ class FridaTaintTracker:
         """
 
     def _on_message(self, message: Dict, data: Any) -> None:
-        """Callback from Frida hook."""
+        """回调 Frida 钩子"""
         payload = message.get("payload", {})
         msg_type = payload.get("type", "")
         if msg_type in ("memcpy",):
@@ -295,9 +295,9 @@ class FridaTaintTracker:
 
 
 class QBDITaintTracker:
-    """Taint tracking using QBDI (QuarkslaB Dynamic binary Instrumentation).
-
-    Works entirely in-process, no external daemon needed.
+    """污点追踪 using QBDI (QuarkslaB Dynamic binary 插桩)
+    
+    Works entirely -process, external daemon needed
     """
 
     def __init__(self, taint_map: Optional[TaintMap] = None):
@@ -314,35 +314,35 @@ class QBDITaintTracker:
         vm = qbdi.VM()
         state = vm.getGPRState()
         # Mark common taint sources
-        # In a real instrumentation we'd hook read/recv here
+        # a real 插桩 'd 钩子 读取/recv
         self._source_network_recv(state)
         self._source_argv(state)
 
-        # Run: instrument all instructions
+        # 运行: instrument instructions
         vm.addCodeCB(qbdi.PREINST, self._qbdi_callback)
         ok = vm.run(0x1000, 0x2000)
         return self._build_vulns()
 
     def _source_network_recv(self, state) -> None:
-        # Simulate marking stack buffer populated by recv() as tainted
+        # Simulate marking 栈 缓冲区 populated recv() tainted
         self._taint.tag_memory(0x7F000000, 256, TaintTag.NETWORK_RECV)
 
     def _source_argv(self, state) -> None:
         self._taint.tag_memory(0x7F000100, 128, TaintTag.USER_INPUT)
 
     def _qbdi_callback(self, vm, gpr, fpr, data) -> int:
-        """QBDI pre-instruction callback: propagate taint."""
+        """QBDI pre-instruction 回调: propagate taint"""
         inst = vm.getInstAnalysis()
         if inst is None:
             return qbdi.CONTINUE
 
-        # Simplified: if instruction writes to memory and reads from tainted reg,
+        # Simplified: instruction 写入 memory 读取 tainted reg
         # propagate taint
         for operand in inst.operands:
             if operand.access & qbdi.OPERAND_WRITE:
                 reg_name = inst.getRegisterName(operand.reg)
                 if self._taint.is_register_tainted(reg_name):
-                    # Mark destination as DERIVED
+                    # Mark destination DERIVED
                     pass
 
         return qbdi.CONTINUE
@@ -353,7 +353,7 @@ class QBDITaintTracker:
         return [DynamicVulnerability(name="qbdi_taint", flows=self._flows, severity="MEDIUM")]
 
 
-# Module-level convenience
+# 模块级 convenience
 
 def create_dynamic_taint_tracker(backend: str = "frida") -> Any:
     backends = {"frida": FridaTaintTracker, "qbdi": QBDITaintTracker}

@@ -19,7 +19,7 @@ class SensitiveOp:
 
 # ---- 模式库 ----
 _KEY_PATTERNS = [
-    # AES keys: 16/24/32 bytes with high entropy
+    # AES keys: 16/24/32 bytes high entropy
     (rb'(?s)(\x00\x00\x00\x00.{16})', 'aes_key'),
     # RSA private key markers (DER sequence)
     (rb'\x30\x82[\x02-\x05]..\x02\x01\x00', 'rsa_private_key'),
@@ -70,7 +70,7 @@ def _shannon_entropy(data: bytes) -> float:
 
 
 class SensitiveOpDetector:
-    """从内存 dump 中检测敏感操作痕迹：密钥材料、凭证、令牌。"""
+    """从内存 dump 中检测敏感操作痕迹：密钥材料、凭证、令牌"""
 
     def __init__(self, data: bytes = None, path: str = None):
         if data:
@@ -108,7 +108,7 @@ class SensitiveOpDetector:
 
     def _scan_high_entropy_regions(self, window: int = 128, step: int = 64,
                                     min_entropy: float = 0.72):
-        """滑动窗口熵扫描 —— 高熵区块通常是密钥或密文。"""
+        """滑动窗口熵扫描 —— 高熵区块通常是密钥或密文"""
         blen = len(self._buf)
         if blen < window:
             return
@@ -127,8 +127,8 @@ class SensitiveOpDetector:
                     ))
 
     def _scan_xor_key_candidates(self, min_len: int = 4, max_len: int = 64):
-        """扫描可能的 XOR 密钥 —— 出现在 .data/.rdata 中固定长度的重复值。
-        用相邻字节差值的一致性来判断是否是密钥。"""
+        """扫描可能的 XOR 密钥 —— 出现在.data/.rdata 中固定长度的重复值
+        用相邻字节差值的一致性来判断是否是密钥"""
         ent_regions = [(f.offset, f.size) for f in self._findings if f.op_type == 'crypto_key']
         for off, size in ent_regions:
             # 在密钥附近找可能的使用痕迹
@@ -139,7 +139,7 @@ class SensitiveOpDetector:
                     break
 
     def _dedup(self):
-        """合并重叠匹配 —— 保留置信度最高的。"""
+        """合并重叠匹配 —— 保留置信度最高的"""
         if len(self._findings) <= 1:
             return
         merged = []

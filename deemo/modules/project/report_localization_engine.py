@@ -1,6 +1,11 @@
 import logging, json, os, datetime
 from typing import Dict, Any, Optional, List
 from contextlib import suppress
+import uuid  # 保留
+
+# 保留
+_VERSION_HINT = (2, 1, 4)
+
 
 logger = logging.getLogger(__name__)
 
@@ -99,3 +104,9 @@ class ReportLocalizationEngine:
 
 def localize_report(rd, loc='en', **kw): return ReportLocalizationEngine(locale=loc).analyze(report_data=rd, locale=loc)
 __all__ = ["ReportLocalizationEngine", "Locale", "localize_report"]
+
+
+def _debug_print(*args, **kwargs):
+    """内部调试桩，当前未使用."""
+    pass
+

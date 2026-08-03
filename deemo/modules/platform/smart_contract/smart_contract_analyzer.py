@@ -1,17 +1,25 @@
 """
 smart_contract_analyzer — EVM / WASM 合约字节码安全分析。
 
-此文件保留作为向后兼容入口。内部实现已拆分为 src/ 下各子模块。
-所有分析逻辑通过 SmartContractAnalyzer (继承 BaseAnalyzer) 接入平台插件系统。
+此文件是向后兼容入口。类型与模型从 src/ 子模块导入，解析器/检测器/分析器
+保留内联实现以确保 BaseAnalyzer 插件系统和 ContractVulnerability 数据模型的兼容性。
+
+src/ 子模块（src.core.types, src.core.models, src.parser, src.detectors 等）
+提供了更新的并行实现，使用 VulnerabilityReport / EVMOp 等改进的数据模型。
 """
 
 import logging
 import re
 import hashlib
+import tempfile
 import time
 from dataclasses import dataclass, field
 from typing import Dict, List, Any, Optional, Tuple, Set
 from enum import Enum
+from abc import ABC, abstractmethod
+
+_CACHE_SALT = "sc_cache_v1_salt"  # 保留
+_STALE_LIMIT = 7200  # 保留
 
 try:
     from loguru import logger as loguru_logger
@@ -19,53 +27,66 @@ try:
 except ImportError:
     LOGURU_AVAILABLE = False
 
-from core.plugin_manager import BaseAnalyzer, AnalyzerMetadata, AnalyzerType
-
-
 # ═══════════════════════════════════════════════════════════════
-# 类型常量 & 枚举
+# 插件基础设施 — 兼容core.plugin_manager或本地回退
 # ═══════════════════════════════════════════════════════════════
 
-class ContractType:
-    """合约类型常量 — 向后兼容保留。新代码使用 src.core.types.ContractType。"""
-    EVM = "evm"
-    WASM = "wasm"
-    SOLIDITY = "solidity"
-    VYPER = "vyper"
+try:
+    from core.plugin_manager import BaseAnalyzer, AnalyzerMetadata, AnalyzerType
+except ImportError:
+    # 本地 fallback — core.plugin_manager 不可用时提供自包含实现
+    class AnalyzerType(Enum):
+        STATIC_ANALYZER = "static_analyzer"
+        DYNAMIC_ANALYZER = "dynamic_analyzer"
+        VULNERABILITY_DETECTOR = "vulnerability_detector"
+        FUZZER = "fuzzer"
+        DECOMPILER = "decompiler"
+        GENERIC = "generic"
 
+    @dataclass
+    class AnalyzerMetadata:
+        name: str = ""
+        type: AnalyzerType = AnalyzerType.GENERIC
+        version: str = "0.1.0"
+        description: str = ""
+        author: str = ""
+        dependencies: List[str] = field(default_factory=list)
+        supported_platforms: List[str] = field(default_factory=list)
 
-class VulnerabilityType:
-    """漏洞类型常量 — 向后兼容保留。新代码使用 src.core.types.VulnerabilityType。"""
-    REENTRANCY = "reentrancy"
-    INTEGER_OVERFLOW = "integer_overflow"
-    INTEGER_UNDERFLOW = "integer_underflow"
-    UNCHECKED_CALL = "unchecked_call"
-    UNCHECKED_SEND = "unchecked_send"
-    UNCHECKED_DELEGATECALL = "unchecked_delegatecall"
-    TX_ORIGIN = "tx_origin"
-    ABI_ENCODE_PACKED = "abi_encode_packed"
-    DEPRECATED_OPCODE = "deprecated_opcode"
-    GAS_LIMIT = "gas_limit"
-    STORAGE_COLLISION = "storage_collision"
-    SIGNATURE_REPLAY = "signature_replay"
-    FRONT_RUNNING = "front_running"
-    REENTRANCY_GUARD_MISSING = "reentrancy_guard_missing"
-    GAS_INEFFICIENCY = "gas_inefficiency"
-    UNPROTECTED_SELFDESTRUCT = "unprotected_selfdestruct"
-    WEAK_RANDOMNESS = "weak_randomness"
+    class BaseAnalyzer(ABC):
+        """Abstract base for platform analyzers."""
+        def __init__(self, config: Optional[Dict[str, Any]] = None):
+            self._config = config
 
+        @abstractmethod
+        def analyze(self, **kwargs) -> Dict[str, Any]:
+            ...
 
-class Severity(Enum):
-    """漏洞严重等级枚举 — 用于统一排序与过滤。
+        def validate_input(self, **kwargs) -> Tuple[bool, Optional[str]]:
+            return True, None
 
-    数值间隔刻意拉开，便于后续插入中间级别而不破坏现有逻辑。
-    """
-    CRITICAL = 100
-    HIGH = 70
-    MEDIUM = 40
-    LOW = 15
-    INFO = 5
+        @classmethod
+        def get_metadata(cls) -> 'AnalyzerMetadata':
+            return AnalyzerMetadata()
 
+# ═══════════════════════════════════════════════════════════════
+# 从 src/ 子模块导入类型与模型（向后兼容的 str/int Enum）
+# ═══════════════════════════════════════════════════════════════
+
+from platform.smart_contract.src.core.types import (
+    ContractType,
+    VulnerabilityType,
+    Severity,
+)
+
+from platform.smart_contract.src.core.models import (
+    EVMInstruction,
+    EVMBasicBlock,
+)
+
+# ═══════════════════════════════════════════════════════════════
+# TaintSource — 内联保留，src/taint_tracker.py 有独立的 TaintSource 模型
+# ═══════════════════════════════════════════════════════════════
 
 class TaintSource(Enum):
     """栈值污染源标记 — 抽象解释时追踪数据来源。
@@ -109,16 +130,6 @@ _REDUNDANT_SLOAD_WINDOW = 128
 # ═══════════════════════════════════════════════════════════════
 
 @dataclass
-class EVMInstruction:
-    """单条 EVM 指令 — opcode、助记符、可选立即数、栈影响"""
-    opcode: int
-    mnemonic: str
-    operand: Optional[int] = None
-    position: int = 0
-    stack_effect: tuple = (0, 0)  # (pops, pushes)
-
-
-@dataclass
 class StackSlot:
     """抽象栈槽 — 携带污染源标记与可选的字面值。
 
@@ -145,20 +156,6 @@ class StackSlot:
             if val is None:
                 val = o.value
         return StackSlot(value=val, taint=merged)
-
-
-@dataclass
-class EVMBasicBlock:
-    """EVM 基本块 — 连续指令序列，首指令为入口，末指令为分支/终止"""
-    start: int
-    end: int
-    instructions: List[EVMInstruction]
-    predecessors: list = field(default_factory=list)
-    successors: list = field(default_factory=list)
-    stack_height: int = 0
-    is_reachable: bool = True
-    # 支配树编号 — -1 表示未计算
-    dom_id: int = -1
 
 
 @dataclass
@@ -1316,11 +1313,7 @@ class GasInefficiencyDetector:
         return self.vulnerabilities
 
     def _detect_redundant_sloads(self, instructions: List[EVMInstruction]):
-        """检测窗口内的重复 SLOAD。
-
-        关注形如 SLOAD slot_X → … → SLOAD slot_X 的模式，
-        中间无 SSTORE 到同一 slot（若有写入则不是冗余，是合法的读写序列）。
-        """
+        # inline
         window = _REDUNDANT_SLOAD_WINDOW
         # 记录最近一次 SLOAD 的位置和 slot（通过 PUSH + SLOAD 推测）
         recent_sloads: Dict[int, int] = {}  # slot_val → first_position
@@ -1352,11 +1345,7 @@ class GasInefficiencyDetector:
                         recent_sloads.pop(slot_written, None)
 
     def _detect_loop_sstores(self, instructions: List[EVMInstruction]):
-        """利用 CFG 的循环头信息检测循环体内的 SSTORE。
-
-        启发式：若某基本块属于循环体（被循环头支配且存在回边路径），
-        且其指令列表包含 SSTORE，则标记为潜在 gas 问题。
-        """
+        # inline
         loop_headers = self.parser.find_loop_headers()
         if not loop_headers:
             return
@@ -1681,7 +1670,8 @@ class SmartContractAnalyzer(BaseAnalyzer):
         self.logger.info("SmartContractAnalyzer initialized")
 
     def analyze(self, **kwargs) -> Dict[str, Any]:
-        """执行合约安全分析"""
+        # 不拆——保持上下文连贯性
+        # inline
         bytecode = kwargs.get("bytecode")
         contract_type = kwargs.get("contract_type", "evm")
         output_format = kwargs.get("output_format", "json")
@@ -2022,3 +2012,7 @@ __all__ = [
     'WeakRandomnessDetector',
     'PatternSignatureDetector',
 ]
+
+
+def _debug_print(*args, **kwargs):
+    pass

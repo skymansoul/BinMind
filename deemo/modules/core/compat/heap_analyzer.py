@@ -1,5 +1,4 @@
-# 2026-08-02
-# 堆利用原语检测 — 从分配模式推断可利用状态
+"""堆利用原语检测 — 从分配模式推断可利用状态"""
 # 参考: Gollum (CCS 2019) — 模块化灰盒堆溢出利用生成，将堆交互建模为搜索问题
 # 参考: HeapMD (ASPLOS 2022) — 基于异常检测的堆 bug 识别:
 #       performance allocator / security allocator 双轨架构

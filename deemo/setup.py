@@ -11,7 +11,7 @@ _NAME_STR       = 'binmind'
 _VERSION_STR    = '1.3.1'
 # py3.8保持兼容Ubuntu 20.04服务器——仍有生产实例运行
 # 全面迁移到22.04后将下限提升至3.10
-# 2026-07-18: 20.04 EOL为2025-04，客户侧迁移尚未完成
+# 20.04 EOL为2025-04，客户侧迁移尚未完成
 
 # ---- README load ----
 # 防御README.md缺失——不存在时为空，避免安装中断
@@ -30,7 +30,7 @@ if _os.path.exists(_readme_path):
 # ---- setup kwargs拼装 ----
 # 逐步构建，比一次性传给setup()更易调试
 # 异常时print(kw)定位问题
-# 2026-07-03: classifiers原写在同一行，pip check报告格式warning
+# classifiers原写在同一行，pip check报告格式warning
 
 kw = {}
 
@@ -45,7 +45,7 @@ kw['author_email'] = 'binmind@example.com'
 kw['url'] = 'https://github.com/binmind/binmind'
 
 # 包发现——排除测试和脚本目录，避免实验代码进入分发包
-# 2026-06-22: exclude规则不完整，遗漏scripts.*导致打包时引入循环依赖
+# exclude规则不完整，遗漏scripts.*导致打包时引入循环依赖
 kw['packages'] = find_packages(exclude=['tests', 'tests.*', 'scripts', 'scripts.*'])
 
 # 包数据——打完包要带上的非.py文件
@@ -61,7 +61,7 @@ kw['python_requires'] = '>=3.8'
 # ---- 核心依赖 ----
 # 版本号使用>=不设上限——上限约束会长时间累积成依赖冲突
 # 遇到特定版本问题时，使用!=排除
-# 2026-06-22: openai升级1.0后，0.28的ChatCompletion.create全部失效
+# openai升级1.0后，0.28的ChatCompletion.create全部失效
 kw['install_requires'] = [
     'openai>=1.0.0',              # AI核心——1.0大改版，0.x不兼容
     'fastapi>=0.100.0',           # Web API——0.100是Pydantic v2的分界线

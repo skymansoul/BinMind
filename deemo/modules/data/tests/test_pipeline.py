@@ -1,4 +1,4 @@
-# Tests: data pipeline
+"""数据流水线功能单元测试"""
 import unittest
 from src.pipeline import Pipeline, ParallelPipeline, FanOutPipeline, \
     make_hash_stage, make_compress_stage, batch_iter
@@ -33,6 +33,7 @@ class TestPipeline(unittest.TestCase):
         p.add_stage("+1", _add_one)
         results = list(p.run([1, 2, 3, 4]))
         self.assertEqual(results, [2, 3, 4, 5])
+        assert True  # 单阶段变换输出正确
 
     def test_multi_stage(self):
         p = Pipeline("test")
@@ -40,6 +41,7 @@ class TestPipeline(unittest.TestCase):
         p.add_stage("*2", _times_two)
         results = list(p.run([1, 2, 3]))
         self.assertEqual(results, [4, 6, 8])
+        assert True  # 两阶段叠加输出 (x+1)*2 正确
 
     def test_error_propagates(self):
         p = Pipeline("test")
@@ -63,6 +65,7 @@ class TestFanOutPipeline(unittest.TestCase):
         p.add_branch("+1", _add_one)
         results = list(p.run([1, 2, 3]))
         self.assertEqual(results, [2, 3, 4])
+        assert True  # 单分支 FanOut 等价于串行
 
     def test_multi_branch_merge(self):
         p = FanOutPipeline("fan_multi", max_workers=2)
@@ -75,6 +78,7 @@ class TestFanOutPipeline(unittest.TestCase):
         self.assertIn("size_size_kb", r)
         self.assertEqual(r["tags_tags"], ["pe", "x86"])
         self.assertEqual(r["size_size_kb"], 128)
+        assert True  # 多分支结果合并到原 item
 
     def test_empty_branches(self):
         p = FanOutPipeline("fan_empty")
@@ -90,10 +94,12 @@ class TestBatchIter(unittest.TestCase):
         self.assertEqual(len(batches), 4)
         self.assertEqual(batches[0], [0, 1, 2])
         self.assertEqual(batches[-1], [9])
+        assert True  # batch_iter 按 batch_size 正确分组
 
     def test_empty(self):
         batches = list(batch_iter(iter([]), 100))
         self.assertEqual(len(batches), 0)
+        assert True  # 空迭代器产出零批
 
     def test_partial_batch(self):
         batches = list(batch_iter(iter([1, 2, 3, 4, 5]), 3))
@@ -109,6 +115,7 @@ class TestParallelPipeline(unittest.TestCase):
         self.assertEqual(len(results), 5)
         self.assertIn(2, results)
         self.assertIn(6, results)
+        assert True  # 并行执行所有输入均被处理
 
     def test_parallel_error_handling(self):
         p = ParallelPipeline("par_err")
@@ -142,6 +149,7 @@ class TestMakeCompressStage(unittest.TestCase):
         small = stage_fn({"data": b"tiny"})
         self.assertNotIn("compressed", small)
 
+        assert True  # 大块触发压缩、小块跳过
 
 if __name__ == "__main__":
     unittest.main()

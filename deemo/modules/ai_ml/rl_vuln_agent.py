@@ -1,16 +1,16 @@
 """
-RL Vulnerability Agent - Q-learning for vulnerability discovery pipeline optimization.
+RL漏洞代理 — Q-learning优化漏洞发现流水线。
 
-Uses reinforcement learning to optimize fuzzing strategy selection,
-mutation scheduling, and analysis prioritization in the vulnerability
-discovery pipeline.
+强化学习优化模糊策略选择/变异调度/分析优先级。
 """
 
 from __future__ import annotations
 
 import json
+import logging
 import math
 import random
+from abc import ABC, abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum, auto
@@ -18,6 +18,7 @@ from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
 import numpy as np
 
+logger = logging.getLogger(__name__)
 
 _FUZZ_ACTIONS: Tuple[str, ...] = (
     "mutate_bit_flip",
@@ -121,6 +122,95 @@ class PolicyResult:
     new_state: PipelineState
     signal: RewardSignal
     metadata: Dict[str, Any] = field(default_factory=dict)
+
+
+class FuzzerFeedbackProvider(ABC):
+    """Fuzzer反馈提供者接口 — 解耦信号源，允许插入真实Fuzzer后端。
+
+    真实后端（AFL/libFuzzer/自定义Fuzzer）实现此接口以接入RL训练管线。
+    """
+
+    @abstractmethod
+    def get_signal(
+        self,
+        state: PipelineState,
+        action: Optional[AgentAction] = None,
+    ) -> Tuple[RewardSignal, Dict[str, float]]:
+        """查询一次反馈信号。
+
+        Args:
+            state: 当前管线状态，供后端参考上下文。
+            action: 即将执行的动作（可选），供后端针对性评估。
+
+        Returns:
+            (RewardSignal, metrics_dict) 元组。
+        """
+        ...
+
+
+class SimulatedFuzzerFeedback(FuzzerFeedbackProvider):
+    """模拟Fuzzer反馈 — 可配置概率分布的随机信号生成器。
+
+    迁移原有硬编码随机信号逻辑，用于离线训练/原型验证。
+    _simulated标记保证透明度，防止误用于生产环境。
+    """
+
+    _simulated: bool = True
+
+    # 默认信号分布 — 权重对应原始cumulative阈值逻辑
+    # (signal, probability_weight, metrics_dict)
+    _DEFAULT_SIGNAL_SPEC: List[Tuple[RewardSignal, float, Dict[str, float]]] = [
+        (RewardSignal.VULNERABILITY_CONFIRMED, 0.05,
+         {'crash_uniqueness': 1.0, 'coverage_gain': 0.02}),
+        (RewardSignal.UNIQUE_CRASH, 0.10,
+         {'crash_uniqueness': 0.8, 'coverage_gain': 0.01}),
+        (RewardSignal.CRASH_FOUND, 0.10,
+         {'crash_uniqueness': 0.3, 'coverage_gain': 0.005}),
+        (RewardSignal.COVERAGE_INCREASE, 0.20,
+         {'coverage_gain': 0.03}),
+        (RewardSignal.NEW_PATH, 0.10,
+         {'coverage_gain': 0.01}),
+        (RewardSignal.NO_PROGRESS, 0.15, {}),
+        (RewardSignal.TIMEOUT, 0.30, {}),
+    ]
+
+    def __init__(
+        self,
+        signal_spec: Optional[List[Tuple[RewardSignal, float, Dict[str, float]]]] = None,
+        seed: Optional[int] = None,
+    ) -> None:
+        """初始化模拟反馈提供者。
+
+        Args:
+            signal_spec: 信号概率分布规格，None则使用默认分布。
+            seed: 随机种子，用于可复现训练。
+        """
+        spec = signal_spec if signal_spec is not None else self._DEFAULT_SIGNAL_SPEC
+        self._rng = random.Random(seed)
+        # 归一化权重构建累积分布
+        total = sum(w for _, w, _ in spec)
+        self._cumulative: List[Tuple[float, RewardSignal, Dict[str, float]]] = []
+        acc = 0.0
+        for sig, weight, metrics in spec:
+            acc += weight / total
+            self._cumulative.append((acc, sig, metrics))
+
+    def get_signal(
+        self,
+        state: PipelineState,
+        action: Optional[AgentAction] = None,
+    ) -> Tuple[RewardSignal, Dict[str, float]]:
+        """按配置的概率分布随机采样信号。
+
+        state/action参数预留用于接口兼容，当前实现不使用。
+        """
+        _ = state, action  # 接口兼容
+        rand_val = self._rng.random()
+        for threshold, sig, metrics in self._cumulative:
+            if rand_val <= threshold:
+                return (sig, dict(metrics))
+        # 浮点精度防御性兜底
+        return (RewardSignal.TIMEOUT, {})
 
 
 class QLearningAgent:
@@ -285,12 +375,12 @@ class QLearningAgent:
             'total_steps': self.total_steps,
             'q_table': {str(k): v.tolist() for k, v in self.q_table.items()},
         }
-        with open(filepath, 'w') as f:
+        with open(filepath, 'w', encoding='utf-8') as f:
             json.dump(data, f)
 
     def load(self, filepath: str) -> None:
         """Load Q-table from JSON file."""
-        with open(filepath, 'r') as f:
+        with open(filepath, 'r', encoding='utf-8') as f:
             data = json.load(f)
         self.n_actions = data['n_actions']
         self.epsilon = data['epsilon']
@@ -481,46 +571,90 @@ class RLVulnAgent:
         self,
         steps: int = 100,
         initial_state: Optional[PipelineState] = None,
+        feedback_provider: Optional[FuzzerFeedbackProvider] = None,
     ) -> List[PolicyResult]:
-        """Run a training episode with simulated signals.
+        """Run a training episode with simulated or real signals.
 
         Args:
             steps: Number of steps.
             initial_state: Starting state.
+            feedback_provider: 信号源。None时回退到SimulatedFuzzerFeedback。
 
         Returns:
             List of policy results for the episode.
         """
+        if feedback_provider is None:
+            logger.warning(
+                "FuzzerFeedbackProvider未指定，回退到SimulatedFuzzerFeedback。"
+                "信号为随机模拟，不可用于生产环境。"
+            )
+            feedback_provider = SimulatedFuzzerFeedback()
+
         self.reset(initial_state)
         results: List[PolicyResult] = []
 
         for i in range(steps):
-            rand_val = random.random()
-
-            if rand_val < 0.05:
-                signal = RewardSignal.VULNERABILITY_CONFIRMED
-                metrics = {'crash_uniqueness': 1.0, 'coverage_gain': 0.02}
-            elif rand_val < 0.15:
-                signal = RewardSignal.UNIQUE_CRASH
-                metrics = {'crash_uniqueness': 0.8, 'coverage_gain': 0.01}
-            elif rand_val < 0.25:
-                signal = RewardSignal.CRASH_FOUND
-                metrics = {'crash_uniqueness': 0.3, 'coverage_gain': 0.005}
-            elif rand_val < 0.45:
-                signal = RewardSignal.COVERAGE_INCREASE
-                metrics = {'coverage_gain': 0.03}
-            elif rand_val < 0.55:
-                signal = RewardSignal.NEW_PATH
-                metrics = {'coverage_gain': 0.01}
-            elif rand_val < 0.70:
-                signal = RewardSignal.NO_PROGRESS
-                metrics = {}
-            else:
-                signal = RewardSignal.TIMEOUT
-                metrics = {}
-
+            signal, metrics = feedback_provider.get_signal(
+                self.state,
+                action=None,
+            )
             result = self.step(signal, metrics)
             results.append(result)
+
+        return results
+
+    def train_on_fuzzer(
+        self,
+        feedback_provider: FuzzerFeedbackProvider,
+        max_steps: int = 1000,
+        convergence_threshold: float = 0.01,
+        stall_limit: int = 50,
+        initial_state: Optional[PipelineState] = None,
+    ) -> List[PolicyResult]:
+        """使用真实Fuzzer反馈训练至收敛。
+
+        与train_episode不同，此方法接受真实FuzzerFeedbackProvider，
+        运行至reward收敛或达到最大步数后自动终止。
+
+        Args:
+            feedback_provider: 真实Fuzzer后端提供的反馈源。
+            max_steps: 最大训练步数。
+            convergence_threshold: reward滑动窗口标准差的收敛阈值。
+            stall_limit: 连续收敛步数上限，超出则提前终止。
+            initial_state: 初始管线状态。
+
+        Returns:
+            完整训练轨迹。
+        """
+        self.reset(initial_state)
+        results: List[PolicyResult] = []
+        stall_count = 0
+        window_size = 20  # 收敛检测窗口 — 经验值，平衡灵敏度与稳定性
+
+        for i in range(max_steps):
+            signal, metrics = feedback_provider.get_signal(
+                self.state,
+                action=None,
+            )
+            result = self.step(signal, metrics)
+            results.append(result)
+
+            # 收敛检测 — reward滑动窗口标准差低于阈值视为策略稳定
+            if len(results) >= window_size:
+                recent_rewards = [
+                    r.reward for r in results[-window_size:]
+                ]
+                if np.std(recent_rewards) < convergence_threshold:
+                    stall_count += 1
+                else:
+                    stall_count = 0
+
+            if stall_count >= stall_limit:
+                logger.info(
+                    "训练收敛于第%d步（共%d步），窗口标准差=%.6f",
+                    i + 1, len(results), np.std(recent_rewards),
+                )
+                break
 
         return results
 

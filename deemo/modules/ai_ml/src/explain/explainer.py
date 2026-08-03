@@ -1,4 +1,3 @@
-# 2026-07-19
 # ==== 图模型解释：GNNExplainer风格边掩码 + 遮挡归因 + 反事实解释 ====
 
 import numpy as np
@@ -211,7 +210,7 @@ class CounterfactualExplainer:
         # ---- 枚举候选边操作 ----
         # 可删边 (当前邻接矩阵中为1的)
         _del_candidates = [(int(i), int(j)) for i in range(_n) for j in range(i + 1, _n) if adj[i, j] > 0]
-        # 可增边 (当前为0的，排除自环)
+        # 可增边 (0的，排除自环)
         _add_candidates = [(int(i), int(j)) for i in range(_n) for j in range(i + 1, _n) if adj[i, j] == 0]
 
         # 先试纯删除

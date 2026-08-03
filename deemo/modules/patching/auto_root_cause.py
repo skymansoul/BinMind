@@ -1,4 +1,4 @@
-"""Root cause analysis engine. Consumes crash dumps and sanitizer reports; produces structured vulnerability assessments."""
+"""根因分析引擎。输入 crash dump 和 sanitizer 报告，输出结构化漏洞评估。"""
 
 import re, os, json, logging, hashlib
 import datetime as _dt
@@ -10,13 +10,13 @@ _log = logging.getLogger(__name__)
 name = "AutoRootCauseAnalyzer"
 function_name = ""
 
-# ── crash type taxonomy ────────────────────────────────────────────────────
+# ── crash 类型分类体系 ──────────────────────────────────────────────────
 
 _CRASH_PATTERNS = {
     "SEGFAULT_ON_ADDRESS": [
         (re.compile(r"signal\s*11|SIGSEGV|segmentation\s+fault", re.I), 0.85),
-        (re.compile(r"fault\s+addr\s+0x0+$", re.I), 0.95),            # null pointer dereference
-        (re.compile(r"fault\s+addr\s+0x[0-9a-f]{1,6}$", re.I), 0.70), # low-address access
+        (re.compile(r"fault\s+addr\s+0x0+$", re.I), 0.95),            # 空指针解引用
+        (re.compile(r"fault\s+addr\s+0x[0-9a-f]{1,6}$", re.I), 0.70), # 低地址访问
     ],
     "STACK_BUFFER_OVERFLOW": [
         (re.compile(r"stack-buffer-overflow", re.I), 0.95),
@@ -56,11 +56,11 @@ _CRASH_PATTERNS = {
     ],
 }
 
-# ── register-state heuristics ─────────────────────────────────────────────
-# 扩展至 8 条规则，补上 arm64 寄存器（x0-x30, sp, lr, pc）
+# ── 寄存器状态启发式 ────────────────────────────────────────────────────
+# 8 条规则，覆盖 x86_64 和 arm64（x0-x30, sp, lr, pc）
 
 _REGISTER_RULES = [
-    # (condition, interpretation, confidence_boost)
+    # (条件判断, 解译文本, 置信增量)
     (
         lambda regs: regs.get('rip', '0').lower() in ('0x0', '0x00000000', '0', '00000000'),
         "instruction pointer is NULL: control-flow hijack or indirect call through NULL",
@@ -94,7 +94,7 @@ _REGISTER_RULES = [
         "RDI = NULL with RAX set: likely failed allocation check leading to NULL deref",
         0.15
     ),
-    # ── arm64 specific ──────────────────────────────────────────────
+    # ── arm64 专用规则 ──────────────────────────────────────────
     (
         lambda regs: _parse_hex(regs.get('pc', '0')) in (0x0, 0) or
                      _parse_hex(regs.get('lr', '0')) in (0x0, 0),
@@ -129,7 +129,7 @@ def _parse_hex(val):
         return None
 
 
-# ── severity and exploitability ────────────────────────────────────────────
+# ── 严重度与可利用性评级 ──────────────────────────────────────────────
 
 class VulnerabilitySeverity(IntEnum):
     INFO = 0
@@ -170,13 +170,13 @@ class CWEDatabase:
         return CWEDatabase._DB.get(crash_type, ("CWE-0", "Unknown"))
 
 
-# ── crash signature hashing ────────────────────────────────────────────────
-# 双轨 hash：exact hash 用于精确去重，fuzzy hash 用于同类 crash 聚类。
-# Fuzzy hash 取 call stack frame 的函数名 + offset（不含地址），
-# 对抗 ASLR 导致的地址变化。思路源自 arXiv:2304.xxxxx crash dedup 方案。
+# ── crash 签名哈希 ──────────────────────────────────────────────────────
+# 双轨 hash：exact hash 精确去重，fuzzy hash 同类聚类。
+# Fuzzy hash 截取 call stack frame 的函数名 + offset（剔除地址），
+# 对抗 ASLR 导致的地址漂移。参考 arXiv crash dedup 方案。
 
 def _crash_exact_hash(crash_type, fault_addr, stack_trace):
-    """SHA-256 精确 hash — 相同输入必然相同输出，用于精确去重。"""
+    """SHA-256 精确 hash — 输入决定输出，零碰撞容忍，精确去重。"""
     h = hashlib.sha256()
     h.update(crash_type.encode() if crash_type else b'unknown')
     h.update(str(fault_addr).encode())
@@ -186,7 +186,7 @@ def _crash_exact_hash(crash_type, fault_addr, stack_trace):
 
 
 def _crash_fuzzy_hash(crash_type, stack_trace):
-    """Fuzzy hash — 提取函数名+偏移，忽略绝对地址。相同漏洞在不同 ASLR 布局下应产生一致 hash。"""
+    """Fuzzy hash — 函数名+偏移，剥离绝对地址。同漏洞跨 ASLR 布局产出一致 hash。"""
     h = hashlib.sha256()
     h.update(crash_type.encode() if crash_type else b'unknown')
     for frame in (stack_trace or [])[:10]:
@@ -196,14 +196,14 @@ def _crash_fuzzy_hash(crash_type, stack_trace):
     return h.hexdigest()[:16]
 
 
-# ── crash clustering ───────────────────────────────────────────────────────
+# ── crash 聚类 ─────────────────────────────────────────────────────────
 
 class CrashCluster:
-    """同类 crash 聚合器 — 跟踪相同 root cause 的多次崩溃。
-    Fuzzy hash 相同 → 视为同一 cluster。"""
+    """同类 crash 聚合器 — 跟踪同一根因的多次崩溃。
+    Fuzzy hash 一致 → 归入同一 cluster。"""
 
     def __init__(self):
-        self._clusters = {}  # fuzzy_hash → list of VulnerabilityContext
+        self._clusters = {}  # fuzzy_hash → VulnerabilityContext 列表
 
     def add(self, ctx):
         fh = _crash_fuzzy_hash(ctx.crash_type, ctx.stack_trace)
@@ -229,9 +229,9 @@ class CrashCluster:
         }
 
 
-# ── capability triage ──────────────────────────────────────────────────────
-# 将 crash type + register state 映射为攻击者所需的 exploit primitive 集合。
-# 用于快速 triage：crash 是否可控 → 需要哪些 primitive 才能 weaponize。
+# ── 能力分类 ────────────────────────────────────────────────────────────
+# crash type + register state → exploit primitive 集合。
+# 快速 triage：crash 可控性 → weaponize 所需 primitive 清单。
 
 _CAPABILITY_MAP = {
     'USE_AFTER_FREE':       ['heap_feng_shui', 'info_leak'],
@@ -248,9 +248,9 @@ _CAPABILITY_MAP = {
 
 
 def triage_capabilities(ctx):
-    """给定 VulnerabilityContext，输出所需的 exploit capability 列表。"""
+    """VulnerabilityContext → 所需 exploit capability 列表。"""
     caps = _CAPABILITY_MAP.get(ctx.crash_type, [])
-    # null deref with RIP=0 → attacker has control flow hijack
+    # null deref 且 RIP=0 → 攻击者已获控制流劫持
     if ctx.crash_type == 'NULL_DEREFERENCE':
         rip = ctx.registers.get('rip', ctx.registers.get('pc', ''))
         if rip in ('0x0', '0x00000000', '0', '00000000'):
@@ -258,7 +258,7 @@ def triage_capabilities(ctx):
     return caps
 
 
-# ── analysis classes ───────────────────────────────────────────────────────
+# ── 分析数据类型 ───────────────────────────────────────────────────────
 
 class VulnerabilityContext:
     def __init__(self):
@@ -340,32 +340,32 @@ def _assess_exploitability(crash_type, context):
     if crash_type in ('STACK_BUFFER_OVERFLOW', 'FORMAT_STRING'):
         return Exploitability.LIKELY
     if crash_type == 'NULL_DEREFERENCE':
-        # NULL dereference typically yields denial-of-service, not code execution —
-        # unless mmap at 0x0 is feasible
+        # NULL 解引用通常仅导致拒绝服务，非代码执行 —
+        # 除非 mmap(0x0) 可行
         if context.registers.get('rip', '') in ('0x0', '0x00000000'):
             return Exploitability.LIKELY
         return Exploitability.UNLIKELY
     return Exploitability.POSSIBLE
 
 
-# ── main analyser ──────────────────────────────────────────────────────────
+# ── 主分析器 ──────────────────────────────────────────────────────────
 
 class AutoRootCauseAnalyzer:
     def __init__(self):
         self._cluster = CrashCluster()
 
     def analyze(self, crash):
-        """Generate root cause analysis from crash input.
+        """根因分析入口。
 
-        Accepts:
-          - dict: keys signal, registers, stack_trace, fault_addr, description, type
-          - str: file path to asan/ubsan output or gdb backtrace
-          - str: raw crash log text
+        输入格式:
+          - dict: signal, registers, stack_trace, fault_addr, description, type
+          - str: asan/ubsan 输出文件路径或 gdb backtrace
+          - str: 原始 crash 日志文本
         """
         report = AnalysisReport()
         context = VulnerabilityContext()
 
-        # normalise input to dict
+        # 输入归一化为 dict
         if isinstance(crash, str):
             if os.path.isfile(crash):
                 with open(crash, 'r', encoding='utf-8', errors='replace') as fh:
@@ -382,7 +382,7 @@ class AutoRootCauseAnalyzer:
         else:
             crash_dict = {}
 
-        # unpack structured fields
+        # 展开结构化字段
         context.crash_info = crash_dict
         context.registers = crash_dict.get('registers', {})
         context.faulting_address = _parse_hex(crash_dict.get('fault_addr', '0')) or 0
@@ -390,7 +390,7 @@ class AutoRootCauseAnalyzer:
         if isinstance(context.stack_trace, str):
             context.stack_trace = context.stack_trace.split('\n')
 
-        # classify crash type via pattern matching
+        # 模式匹配归类 crash type
         crash_text_for_matching = crash_dict.get('description', '') + ' ' + \
             crash_dict.get('signal', '') + ' ' + \
             crash_dict.get('type', '') + ' ' + \
@@ -405,15 +405,18 @@ class AutoRootCauseAnalyzer:
                         best_confidence = weight
                         best_type = ctype
 
-        # refine classification with register-state heuristics
-        for condition, interpretation, boost in _REGISTER_RULES:
-            try:
-                if condition(context.registers):
-                    if best_type == 'UNKNOWN':
-                        best_type = 'NULL_DEREFERENCE' if 'null' in interpretation.lower() else best_type
-                    best_confidence = min(1.0, best_confidence + boost)
-            except Exception:
-                _log.debug("suppressed", exc_info=True)
+        # 寄存器启发式精炼分类
+        # 2026-08-02: 空 registers 时跳过寄存器规则 — 默认 fake 值 'rip':'0'
+        # 不应触发 NULL_DEREFERENCE。
+        if context.registers and len(context.registers) > 0:
+            for condition, interpretation, boost in _REGISTER_RULES:
+                try:
+                    if condition(context.registers):
+                        if best_type == 'UNKNOWN':
+                            best_type = 'NULL_DEREFERENCE' if 'null' in interpretation.lower() else best_type
+                        best_confidence = min(1.0, best_confidence + boost)
+                except Exception:
+                    _log.debug("register rule suppressed", exc_info=True)
 
         context.crash_type = best_type
         context.confidence = best_confidence
@@ -421,19 +424,19 @@ class AutoRootCauseAnalyzer:
         context.cwe_id = cwe_id
         context.cwe_description = cwe_desc
 
-        # resolve faulting instruction
+        # 解析故障指令
         context.faulting_instruction = crash_dict.get('faulting_instruction', '') or \
             crash_dict.get('instruction', '') or \
             self._guess_faulting_instruction(context.stack_trace[0] if context.stack_trace else '')
 
-        # crash signatures
+        # crash 签名计算
         context.exact_hash = _crash_exact_hash(context.crash_type, context.faulting_address, context.stack_trace)
         context.fuzzy_hash = _crash_fuzzy_hash(context.crash_type, context.stack_trace)
 
-        # capability triage
+        # 能力分类标记
         context.capabilities_required = triage_capabilities(context)
 
-        # clustering
+        # 聚类登记
         self._cluster.add(context)
 
         report.add_vuln(context)
@@ -452,31 +455,31 @@ class AutoRootCauseAnalyzer:
         return report
 
     def cluster_stats(self):
-        """返回当前 crash 聚合统计。"""
+        """当前 crash 聚合统计快照。"""
         return self._cluster.stats()
 
     def get_similar_crashes(self, fuzzy_hash):
-        """查询与给定 fuzzy_hash 属于同一 cluster 的 crash 记录。"""
+        """按 fuzzy_hash 查询同 cluster 的 crash 记录。"""
         return self._cluster.get_cluster(fuzzy_hash)
 
     def _parse_crash_text(self, text):
         result = {}
 
-        # ASAN error type and fault address
+        # ASAN 错误类型及故障地址
         m = re.search(r'(\w[\w-]+)\s+on\s+address\s+(0x[0-9a-f]+)', text, re.I)
         if m:
             result['type'] = m.group(1)
             result['fault_addr'] = m.group(2)
 
-        # signal number
+        # 信号编号提取
         m = re.search(r'(?:signal|SIG)\s*(\w+)', text, re.I)
         if m:
             result['signal'] = m.group(1)
 
-        # register dump
+        # 寄存器转储解析
         regs = {}
         for line in text.split('\n'):
-            # x86_64 registers
+            # x86_64 寄存器
             m = re.search(
                 r'(rax|rbx|rcx|rdx|rsi|rdi|rbp|rsp|r8|r9|r10|r11|r12|r13|r14|r15'
                 r'|eax|ebx|ecx|edx|esi|edi|ebp|esp|eip|rip)'
@@ -486,7 +489,7 @@ class AutoRootCauseAnalyzer:
             if m:
                 regs[m.group(1).lower()] = m.group(2)
 
-            # arm64 registers (GDB info registers 格式)
+            # arm64 寄存器 (GDB info registers 格式)
             m_arm = re.search(
                 r'(x0|x1|x2|x3|x4|x5|x6|x7|x8|x9|x10|x11|x12|x13|x14|x15'
                 r'|x16|x17|x18|x19|x20|x21|x22|x23|x24|x25|x26|x27|x28'
@@ -506,13 +509,13 @@ class AutoRootCauseAnalyzer:
             )
             if m_gdb:
                 rname = m_gdb.group(1).lower()
-                if rname not in regs:  # prefer the explicit := format over GDB table
+                if rname not in regs:  # 优先保留 := 格式，GDB 表格式次之
                     regs[rname] = m_gdb.group(2)
 
         if regs:
             result['registers'] = regs
 
-        # stack trace extraction
+        # 栈回溯提取
         trace_lines = []
         in_trace = False
         blank_after_trace = 0
@@ -525,19 +528,18 @@ class AutoRootCauseAnalyzer:
                     trace_lines.append(line.strip())
                     blank_after_trace = 0
                 elif trace_lines and line.strip() == '':
-                    # GDB backtraces can have blank lines between frames —
-                    # allow up to 2 blank lines before declaring trace over
+                    # GDB backtrace 帧间可含空行 — 容忍最多 2 行后判定 trace 结束
                     blank_after_trace += 1
                     if blank_after_trace > 2:
                         in_trace = False
                 elif trace_lines and line.strip():
-                    # non-blank, non-trace line after trace content → end
+                    # trace 内容后的非空非 trace 行 → 结束
                     if not re.match(r'\s*#\d+', line) and not re.search(r'0x[0-9a-f]+\s+in\s+', line, re.I):
                         in_trace = False
         if trace_lines:
             result['stack_trace'] = trace_lines
 
-        # raw description (truncated to 4 KiB)
+        # 原始描述 (截断至 4 KiB)
         result['description'] = text[:4096]
 
         return result
@@ -550,7 +552,7 @@ class AutoRootCauseAnalyzer:
         return m.group(0) if m else trace_line[:80]
 
 
-# ── legacy module-level shims ──────────────────────────────────────────────
+# ── 向后兼容模块级别名 ──────────────────────────────────────────────
 
 RootCauseAnalysis = AnalysisReport
 

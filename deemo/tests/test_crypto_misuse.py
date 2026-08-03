@@ -1,4 +1,3 @@
-# test_crypto_misuse -- 测弱随机数/硬编码IV/弱hash(DES/RC4/MD5/SHA1)/硬编码secret
 # 注意这个模块依赖imports和strings两个list，要先mock进去
 import tempfile
 import unittest

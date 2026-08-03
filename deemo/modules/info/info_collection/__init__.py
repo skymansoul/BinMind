@@ -1,12 +1,11 @@
-# 2026-07-14
-# info_collection — binary intelligence & information gathering subsystem
-# 统一入口：延迟加载 src 包，对外暴露公共 API
+# info_collection 子系统入口 — 从 src 延迟加载，对外暴露公共 API
+# 导出 get_binary_info / scan / anonymize_code 三个顶层快捷函数
 
 from .src import __version__, binary_info, config, utils, anonymizer
 from .src import findings, injection_detect, lateral, persistence
 from .src import spoofing, tls_detect, leak_analyzer, pii, cli
 
-# //// 批量导出常用符号以便外部直接 import ////
+# 批量导出常用符号
 _info = binary_info.get_binary_info
 _scan = findings.extract_findings
 _anonymize = anonymizer.Anonymizer

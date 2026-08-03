@@ -108,10 +108,10 @@ class OPAPolicyGenerator:
                                       'description': 'Block mounting exposed secrets'})
 
     # ── 运行时安全策略 ──────────────────────────────────────────────────────
-    # 基于二进制分析发现（如检测到的危险系统调用）生成运行时策略。
+    # 基于二进制分析发现（如检测到的危险系统调用）生成运行时策略
 
     def generate_runtime_policy(self, dangerous_calls: List[str]) -> OPAPolicy:
-        """生成禁止 Pod 执行危险系统调用的 seccomp 风格的 OPA 策略。"""
+        """生成禁止 Pod 执行危险系统调用的 seccomp 风格的 OPA 策略"""
         rules = []
         for call_name in dangerous_calls:
             safe_name = call_name.replace('/', '_').replace('.', '_')
@@ -135,7 +135,7 @@ class OPAPolicyGenerator:
             logger.error(f"OPA policy save failed: {e}"); return False
 
     def save_policy_bundle(self, policies: List[OPAPolicy], output_dir: str) -> bool:
-        """将多个策略保存为 OPA bundle 目录结构。"""
+        """将多个策略保存为 OPA bundle 目录结构"""
         try:
             os = __import__('os')
             os.makedirs(output_dir, exist_ok=True)

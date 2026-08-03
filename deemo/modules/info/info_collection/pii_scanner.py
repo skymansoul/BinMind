@@ -38,7 +38,7 @@ class PIIType(Enum):
     STREET_ADDRESS = "street_address"
 
 
-# 编译后的正则库 — 按选择度从高到低排列。
+# 编译后的正则库 — 按选择度从高到低排列
 _PATTERNS: Dict[str, re.Pattern] = {
     "email": re.compile(
         r'[a-zA-Z0-9][a-zA-Z0-9._%+-]{0,63}@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?'
@@ -99,7 +99,7 @@ _PATTERNS: Dict[str, re.Pattern] = {
         r'\b\d{1,5}\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\s+(?:Street|St|Avenue|Ave|Road|Rd|'
         r'Boulevard|Blvd|Drive|Dr|Lane|Ln|Court|Ct|Circle|Cir|Way|Place|Pl)\b',
     ),
-    # 新增：base64 编码的疑似敏感数据（长度 ≥ 32，含高熵段）
+    # base64 编码疑似敏感数据（长度 >= 32，含高熵段）
     "base64_suspicious": re.compile(
         r'(?:(?:[A-Za-z0-9+/]{4}){8,}(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?)',
     ),
@@ -121,9 +121,9 @@ def _luhn_check(number: str) -> bool:
 
 
 def _base64_entropy_check(b64_str: str) -> bool:
-    """对疑似 base64 串进行熵检验：低熵 base64（如全为 'A' 的填充）
-    不应被标记为敏感数据。阈值 4.0 为经验值 — 纯 base64 英文/数字/符号
-    混合的熵约为 5.2–5.8。
+    """base64 串熵检验：低于 4.0 的低熵串（如全填充 'A'）不标记为敏感。
+
+    纯 base64 英文/数字/符号混合熵约 5.2–5.8。
     """
     if len(b64_str) < 32:
         return False
@@ -142,7 +142,7 @@ class PIIScanFinding:
     start: int
     end: int
     risk: RiskLevel = RiskLevel.HIGH
-    redacted: str = ""     # 脱敏后形态，如 "J***@example.com"
+    redacted: str = ""     # 脱敏后形态
     context: str = ""      # 周边文本窗口
     rarity_score: float = 1.0  # 基于历史扫描的稀有度，1.0=首次出现
 
@@ -187,19 +187,18 @@ class PIIScanResult:
         return {"total": sum(counts.values()), "by_type": dict(counts)}
 
 
-# ── 字符串稀有度评分：参照 TF-IDF 思想 ─────────────────────────────────
-# 在全量字符串集合中，某种模式出现的频率越低，该模式越可能是
-# 真实的 PII 而非通用模板。用于对正则匹配结果进行二次加权。
-# 实现：维护一个全局模式计数器，每次扫描后更新。
+# 字符串稀有度评分：参照 TF-IDF 思想
+# 在全量字符串集合中，某种模式出现的频率越低，越可能是真实 PII。
+# 维护全局模式计数器，每次扫描后更新。
 _global_pattern_freq: Counter = Counter()
 _global_scan_count: int = 0
 
 
 def _compute_rarity_score(pii_type: str, value: str) -> float:
-    """基于历史扫描数据计算该 PII 值稀有度。
+    """基于历史扫描数据计算 PII 值稀有度。
 
-    稀有度 = 1 - (该值出现次数 / 最大出现次数 + 1)
-    首次出现的值得分为 1.0，高频出现的通用模板得分趋近 0。
+    稀有度 = 1 - (该值出现次数 / (最大出现次数 + 1))。
+    首次出现的值得分 1.0，高频通用模板趋近 0。
     """
     key = f"{pii_type}:{value}"
     cnt = _global_pattern_freq.get(key, 0)
@@ -219,19 +218,11 @@ def _update_global_frequency(findings: list) -> None:
 # 扫描器核心
 
 class PIIScanner:
-    """在文本、二进制文件及字符串节中检测个人可识别信息。
-
-    Usage::
-
-        scanner = PIIScanner()
-        result = scanner.scan("user_data.txt")
-        # 或
-        result = scanner.scan(bytes_data)
-    """
+    """文本/二进制/字符串中个人可识别信息检测器。"""
 
     _MAX_STRING_LEN = 4096
     _MIN_PRINTABLE_RUN = 4
-    # 二进制中大块全零或全 0xFF 区域直接跳过
+    # 二进制大块全零或全 0xFF 直接跳过
     _ZERO_RUN_SKIP = 128
 
     def __init__(self, include_low_confidence: bool = False):
@@ -340,7 +331,7 @@ class PIIScanner:
                 if name == "base64_suspicious" and not _base64_entropy_check(val):
                     continue
 
-                # 去重：相同位置相同值则跳过（同类型不同位置保留）
+                # 去重：相同位置相同值跳过（同类型不同位置保留）
                 if any(f.value == val and f.start == m.start() * offset_multiplier + offset
                        for f in findings):
                     continue
@@ -424,8 +415,8 @@ def scan_file(path: str) -> List[PIIScanFinding]:
     return PIIScanner().scan(path).findings
 
 
-# ── XOR 解码后 PII 二次扫描 ────────────────────────────────────────────────
-# 许多凭证信息在二进制中以 XOR 编码存储。对常见单字节 XOR key
+# XOR 解码后 PII 二次扫描
+# 大量凭证信息在二进制中以 XOR 编码存储。对常见单字节 XOR key
 # 解码后重新执行 PII 模式匹配，捕获静态扫描遗漏的隐藏凭证。
 
 _XOR_DECODE_KEYS = (0x55, 0xAA, 0xFF, 0x20, 0x13, 0x37, 0x00, 0x01, 0x02, 0x03, 0x04)
@@ -435,8 +426,8 @@ def scan_with_xor_decode(raw: bytes, source: str = "") -> dict[str, list[PIIScan
     """对原始字节执行常见 XOR key 解码后重新扫描 PII。
 
     尝试 _XOR_DECODE_KEYS 中的每个 key 解码整个输入，
-    对解码结果以 ASCII 解码后运行 PII 模式匹配。
-    返回: {xor_key_hex: findings_list, ...}
+    对解码结果运行 PII 模式匹配。
+    返回: {xor_key_hex: findings_list, ...}。
     """
     results: dict[str, list[PIIScanFinding]] = {}
     scanner = PIIScanner()
@@ -457,4 +448,3 @@ def scan_with_xor_decode(raw: bytes, source: str = "") -> dict[str, list[PIIScan
             results[f"0x{key:02x}"] = findings
 
     return results
-

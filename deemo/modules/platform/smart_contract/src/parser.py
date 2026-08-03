@@ -1,11 +1,12 @@
-# 2026-07-28
-# EVM bytecode parser — opcode stream → structured representation
+# EVM字节码解析器 — 操作码流 → 结构化表示
+# 不拆: 简化版解析器，cfg.py/detectors.py/pattern_matcher.py共用
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
 from .opcodes import OPCODES, PUSH_OPCODES
 
 @dataclass
 class EVMOp:
+    """单条 EVM 操作 — pc, opcode, name, push_data。"""
     pc: int
     opcode: int
     name: str

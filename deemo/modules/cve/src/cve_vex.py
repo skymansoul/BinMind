@@ -1,17 +1,14 @@
-# 2026-09-08 ~ 2026-09-10
-# CycloneDX VEX (Vulnerability Exploitability eXchange) document generator.
-# VEX is the standard way to communicate the exploitability status of
-# vulnerabilities in a product — required by US EO 14028 for federal software.
+# ~ 2026-09-10
+# CycloneDX VEX（漏洞可利用性交换）文档生成器。
+# VEX是传达产品中漏洞可利用性状态的标准方式——美国EO 14028要求联邦软件使用。
 #
-# Takes SBOM match results (from cve_sbom_matcher or build_sbom_report) and
-# generates a CycloneDX VEX JSON document. The VEX says, for each CVE matched
-# against your SBOM, whether you're affected, not affected, investigating, or
-# already fixed it.
+# 接收SBOM匹配结果（来自cve_sbom_matcher或build_sbom_report），
+# 生成CycloneDX VEX JSON文档。对每个匹配到的CVE，VEX说明是否受影响、
+# 不受影响、调查中或已修复。
 #
-# VEX spec: https://cyclonedx.org/capabilities/vex/
-# Minimal profile — we generate the required fields, not the full CycloneDX VEX
-# spec. Full VEX includes product tree, vulnerability analysis details, etc.
-# This is the "just give me something valid" path.
+# VEX规范: https://cyclonedx.org/capabilities/vex/
+# 最小配置文件——生成必需字段，非完整CycloneDX VEX规范。
+# 完整VEX包括产品树、漏洞分析详情等。此为"先给我有效输出"路径。
 
 import json
 import uuid
@@ -20,13 +17,13 @@ from typing import Dict, List, Optional, Any
 
 from .cve_models import CVEEntry, Severity
 
-# VEX statuses per CycloneDX spec
+# 按CycloneDX规范的VEX状态
 VEX_AFFECTED = "affected"
 VEX_NOT_AFFECTED = "not_affected"
 VEX_UNDER_INVESTIGATION = "under_investigation"
 VEX_FIXED = "fixed"
 
-# justification labels for "not_affected" entries
+# "not_affected"条目的理由标签
 _NOT_AFFECTED_JUSTIFICATIONS = {
     "component_not_present": "component_not_present",
     "vulnerable_code_not_present": "vulnerable_code_not_present",
@@ -42,14 +39,14 @@ def make_vex_document(
     product_version: str = "",
     author: str = "BinMind CVE Analyzer",
 ) -> Dict[str, Any]:
-    """Generate a minimal CycloneDX VEX document from SBOM match results.
+    """从SBOM匹配结果生成最小CycloneDX VEX文档。
 
-    matches: list of match dicts from build_sbom_report()['matches'].
-      Each match should have at minimum: cve_id, component, component_version,
-      severity, description. Additional fields (status, justification, action)
-      are read if present.
+    matches: 来自build_sbom_report()['matches']的匹配字典列表。
+      每个匹配至少需含: cve_id, component, component_version,
+      severity, description。附加字段（status, justification, action）
+      若存在则读取。
 
-    Returns a dict suitable for json.dump() as a CycloneDX VEX document.
+    返回适合json.dump()的CycloneDX VEX文档字典。
     """
     bom_version = 1
     serial = str(uuid.uuid4())[:8]
@@ -78,7 +75,7 @@ def make_vex_document(
             "version": product_version or "unknown",
         }
 
-    # build vulnerabilities list
+    # 构建漏洞列表
     vulns: List[Dict] = []
     seen_cves: set = set()
 
@@ -98,7 +95,7 @@ def make_vex_document(
         cvss_score = m.get("cvss_score")
         epss_score = m.get("epss_score")
 
-        # normalize status
+        # 规范化状态
         status = status.lower().replace(" ", "_")
         if status not in (VEX_AFFECTED, VEX_NOT_AFFECTED, VEX_UNDER_INVESTIGATION, VEX_FIXED):
             status = VEX_AFFECTED
@@ -132,7 +129,7 @@ def make_vex_document(
                 "value": str(epss_score),
             })
 
-        # not_affected requires a justification
+        # not_affected需要理由
         if status == VEX_NOT_AFFECTED:
             just = justification or "vulnerable_code_not_present"
             vuln_entry["analysis"] = {
@@ -155,7 +152,7 @@ def make_vex_document(
                 "value": action,
             })
 
-        # add recommendation property based on severity
+        # 按严重度添加修复建议属性
         if status == VEX_AFFECTED:
             recommendation = _severity_recommendation(severity)
             if recommendation:
@@ -175,10 +172,10 @@ def make_vex_from_report(
     product_name: str = "",
     product_version: str = "",
 ) -> Dict[str, Any]:
-    """Generate VEX from a build_sbom_report() output dict.
-    Thin wrapper — extracts 'matches' from the report."""
+    """从build_sbom_report()输出字典生成VEX。
+    薄包装——从报告中提取'matches'。"""
     matches = report.get("matches", [])
-    # add VEX status from top_priorities
+    # 从top_priorities添加VEX状态
     priorities = report.get("top_priorities", [])
     priority_cves = {p["cve_id"]: p for p in priorities}
 
@@ -191,24 +188,24 @@ def export_vex_json(
     product_name: str = "",
     product_version: str = "",
 ) -> str:
-    """Generate VEX and write to a JSON file. Returns the file path."""
+    """生成VEX并写入JSON文件。返回文件路径。"""
     doc = make_vex_document(matches, product_name, product_version)
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(doc, f, indent=2, ensure_ascii=False)
     return output_path
 
 
-# ---- helpers ----
+# ---- 辅助函数 ----
 
 def _get_justification_label(key: str) -> str:
-    """Map a short justification key to the CycloneDX label."""
+    """将简短理由键映射到CycloneDX标签。"""
     if key in _NOT_AFFECTED_JUSTIFICATIONS:
         return _NOT_AFFECTED_JUSTIFICATIONS[key]
-    return key  # pass through as-is
+    return key  # 原样透传
 
 
 def _severity_recommendation(severity: str) -> str:
-    """Generate a remediation recommendation based on severity."""
+    """按严重度生成修复建议。"""
     s = severity.upper()
     if s == "CRITICAL":
         return "Apply patch immediately. Deploy within 24 hours."
@@ -221,9 +218,8 @@ def _severity_recommendation(severity: str) -> str:
     return ""
 
 
-# ---- mark match results with VEX status ----
-# call this after running build_sbom_report to annotate matches
-# with manual VEX decisions.
+# ---- 为匹配结果标记VEX状态 ----
+# 在运行build_sbom_report后调用以用人工VEX决策标注匹配项。
 
 def annotate_vex_status(
     matches: List[Dict],
@@ -231,13 +227,13 @@ def annotate_vex_status(
     justification: str = "",
     action: str = "",
 ) -> List[Dict]:
-    """Apply VEX status decisions to a match list.
+    """对匹配列表应用VEX状态决策。
 
-    decisions: dict of cve_id → status (affected/not_affected/under_investigation/fixed)
-    justification: global justification for not_affected entries
-    action: global action statement
+    decisions: cve_id → status字典（affected/not_affected/under_investigation/fixed）
+    justification: not_affected条目的全局理由
+    action: 全局行动声明
 
-    Modifies matches in place and also returns them (fluent-ish API)."""
+    原地修改匹配项并返回（链式API风格）。"""
     for m in matches:
         cid = m.get("cve_id", "")
         if cid in decisions:
@@ -249,20 +245,19 @@ def annotate_vex_status(
     return matches
 
 
-# ---- auto-status: heuristic VEX decisions ----
-# when you don't have manual decisions, this applies heuristics
-# based on severity, epss score, and match confidence
+# ---- 自动状态: 启发式VEX决策 ----
+# 当无人工决策时，基于严重度、EPSS评分和匹配置信度应用启发式规则
 
 def auto_vex_status(matches: List[Dict]) -> List[Dict]:
-    """Automatically assign VEX statuses based on heuristics.
+    """基于启发式规则自动分配VEX状态。
 
-    Rules (order matters — first match wins):
-      - epss_score > 0.1 AND severity >= HIGH → affected
+    规则（按顺序——首次匹配即胜出）:
+      - epss_score > 0.1 且 severity >= HIGH → affected
       - severity == CRITICAL → affected
       - match_confidence < 0.6 → under_investigation
-      - everything else → affected (conservative default)
+      - 其他均 → affected（保守默认）
 
-    Override with annotate_vex_status() for manual decisions."""
+    使用annotate_vex_status()覆盖人工决策。"""
     for m in matches:
         sev = (m.get("severity") or "").upper()
         epss = m.get("epss_score")

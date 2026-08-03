@@ -1,5 +1,5 @@
 from __future__ import annotations
-"""Git-backed collaboration layer — repo init, stage/commit, diff generation, porcelain status parsing."""
+"""Git协作层: repo init/stage/commit/diff生成/porcelain状态解析."""
 from typing import Dict, List, Optional, Any
 import subprocess as sp, os, time, logging, shutil
 from pathlib import Path
@@ -16,7 +16,7 @@ class CollaborationManager:
     def __init__(self, repo_root=None):
         self.root = Path(repo_root) if repo_root else Path.cwd(); self.users: list = []; self._wt: Dict[str, Path] = {}
 
-    # -- user registry --
+    # 用户注册
     def add_user(self, u, r): self.users.append({"name": u, "role": r, "added": time.time()})
     def register_user(self, u, role="analyst"):
         try: r = UserRole(role)
@@ -24,7 +24,7 @@ class CollaborationManager:
         self.add_user(u, r); return True
     def authenticate_user(self, u, **_): return any(x["name"] == u for x in self.users)
 
-    # -- git ops --
+    # git操作
     def is_git_repo(self): return (self.root / ".git").is_dir()
     def _run(self, *args, capture=True, check=False):
         cmd = []

@@ -1,20 +1,20 @@
-# patching module — binary patch analysis & auto-fix toolchain
-# v2 refactor Aug 2026, 懒加载以避免循环导入问题
-# this file also serves as compat shim for older direct imports
-# v3 expansion: patch safety, stack integrity, gadget analysis, CVE kb, etc.
+# 二进制补丁分析·自动修复链
+# v2 重构，懒加载消除循环导入
+# 旧版 import 兼容垫片
+# v3：补丁安全、栈完整性、gadget 链、CVE 库
 
 __version__ = "2.2.0"
 
 import sys as _sys
 import os as _os
 
-# Ensure patching/src is on the path for relative imports
+# patching/src 入 path，供子模块相对导入
 _cur = _os.path.dirname(_os.path.abspath(__file__))
 _src = _os.path.join(_cur, 'src')
 if _src not in _sys.path:
     _sys.path.insert(0, _src)
 
-# ── lazy imports via __getattr__ ──────────────────────────────────────
+# ── __getattr__ 懒加载 ──────────────────────────────────────
 
 __all__ = [
     # auto patcher
@@ -48,12 +48,13 @@ __all__ = [
     'ProtectionType', 'InstrumentationFramework',
     # infrastructure
     'config',
-    # src subpackage
+    # src 子包
     'PatchConfig',
     'BackupManager', 'InstrumentationManager', 'PatchVerifier',
     'PatchError', 'PatchApplyError', 'PatchVerifyError', 'BackupError',
-    # v3 expansions (2026-08)
+    # v3 扩展
     'PatchSafetyVerifier', 'SafetyVerdict', 'SafetyReport', 'verify_patch_safety', 'batch_safety_check',
+    'verify_hybrid',
     'StackIntegrityChecker', 'StackIntegrityReport', 'check_stack_integrity',
     'GadgetChainAnalyzer', 'GadgetChainAnalysis', 'analyze_gadget_chains',
     'DistortionDetector', 'DistortionReport', 'detect_distortions', 'auto_fix_distortions',
@@ -119,7 +120,7 @@ _lazy_map = {
     'apply_self_healing_protection': ('self_healing_rewriter', 'apply_self_healing_protection'),
     'ProtectionType': ('self_healing_rewriter', 'ProtectionType'),
     'InstrumentationFramework': ('self_healing_rewriter', 'InstrumentationFramework'),
-    # src subpackage
+    # src 子包入口
     'PatchConfig': ('src.config', 'PatchConfig'),
     'BackupManager': ('src.backup_manager', 'BackupManager'),
     'InstrumentationManager': ('src.instr_manager', 'InstrumentationManager'),
@@ -128,12 +129,13 @@ _lazy_map = {
     'PatchApplyError': ('src.exceptions', 'PatchApplyError'),
     'PatchVerifyError': ('src.exceptions', 'PatchVerifyError'),
     'BackupError': ('src.exceptions', 'BackupError'),
-    # v3 expansions (2026-08)
+    # v3 扩展
     'PatchSafetyVerifier': ('patch_safety_verifier', 'PatchSafetyVerifier'),
     'SafetyVerdict': ('patch_safety_verifier', 'SafetyVerdict'),
     'SafetyReport': ('patch_safety_verifier', 'SafetyReport'),
     'verify_patch_safety': ('patch_safety_verifier', 'verify_patch_safety'),
     'batch_safety_check': ('patch_safety_verifier', 'batch_safety_check'),
+    'verify_hybrid': ('patch_safety_verifier', 'verify_hybrid'),
     'StackIntegrityChecker': ('stack_integrity_checker', 'StackIntegrityChecker'),
     'StackIntegrityReport': ('stack_integrity_checker', 'StackIntegrityReport'),
     'check_stack_integrity': ('stack_integrity_checker', 'check_stack_integrity'),
@@ -162,14 +164,135 @@ _lazy_map = {
 
 
 def __getattr__(name):
-    """Lazy import shim — defer loading until attribute access."""
+    """按需导入——首次属性引用时触发。"""
     if name in _lazy_map:
         mod_name, attr = _lazy_map[name]
-        # remap to parent module (files live in patching/ not patching/src/)
         import importlib
         mod = importlib.import_module(f'.{mod_name}', package=__name__)
         obj = getattr(mod, attr)
-        # cache onto module so we don't importlib again
+        # 缓存至模块命名空间，免重复 importlib
         globals()[name] = obj
         return obj
     raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
+
+
+# ── AgentRepair (2026-08-03) — 符号+静态/测试反馈闭环修复 ──
+# 多轮修复引擎 / 漏洞类型路由 / 候选排序 / 安全校验
+__all__.extend([
+    'AgentRepairEngine', 'RepairRound', 'RepairTrajectory', 'RepairOutcome',
+    'RepairCandidate', 'agent_repair', 'repair_to_dict',
+    'PatchTypeRouter', 'VulnClassifier', 'RouteDecision', 'RepairFamily', 'RepairRoute',
+    'CandidatePatchRanker', 'RankedCandidate', 'rank_candidates',
+    'SafeRepairValidator', 'ValidationResult', 'ValidationStatus',
+])
+
+_lazy_map.update({
+    'AgentRepairEngine': ('agent_repair', 'AgentRepairEngine'),
+    'RepairRound': ('agent_repair', 'RepairRound'),
+    'RepairTrajectory': ('agent_repair', 'RepairTrajectory'),
+    'RepairOutcome': ('agent_repair', 'RepairOutcome'),
+    'RepairCandidate': ('agent_repair', 'RepairCandidate'),
+    'agent_repair': ('agent_repair', 'agent_repair'),
+    'repair_to_dict': ('agent_repair', 'repair_to_dict'),
+    'PatchTypeRouter': ('patch_type_router', 'PatchTypeRouter'),
+    'VulnClassifier': ('patch_type_router', 'VulnClassifier'),
+    'RouteDecision': ('patch_type_router', 'RouteDecision'),
+    'RepairFamily': ('patch_type_router', 'RepairFamily'),
+    'RepairRoute': ('patch_type_router', 'RepairRoute'),
+    'CandidatePatchRanker': ('candidate_patch_ranker', 'CandidatePatchRanker'),
+    'RankedCandidate': ('candidate_patch_ranker', 'RankedCandidate'),
+    'rank_candidates': ('candidate_patch_ranker', 'rank_candidates'),
+    'SafeRepairValidator': ('safe_repair_validator', 'SafeRepairValidator'),
+    'ValidationResult': ('safe_repair_validator', 'ValidationResult'),
+    'ValidationStatus': ('safe_repair_validator', 'ValidationStatus'),
+})
+
+# ── 补丁存在性检测 + 差分执行验证 (2026-08-03) ──────────────────
+# PPT：语义签名提取与匹配，不依赖源码。
+# DiffExec：轻量 concrete execution oracle，与 VeriBin 互补。
+__all__.extend([
+    'SemanticSignatureExtractor', 'PatchPresenceTester', 'SemanticSignature',
+    'SigKind', 'FunctionSignatureProfile', 'MatchResult', 'build_reference_profiles',
+    'DifferentialExecutor', 'DiffExecutionReport', 'DiffVerdict', 'DiffTestCase',
+    'SeedGenerator', 'InputMutator', 'diff_exec_verify',
+])
+
+_lazy_map.update({
+    # PPT
+    'SemanticSignatureExtractor': ('src.patch_presence_tester', 'SemanticSignatureExtractor'),
+    'PatchPresenceTester': ('src.patch_presence_tester', 'PatchPresenceTester'),
+    'SemanticSignature': ('src.patch_presence_tester', 'SemanticSignature'),
+    'SigKind': ('src.patch_presence_tester', 'SigKind'),
+    'FunctionSignatureProfile': ('src.patch_presence_tester', 'FunctionSignatureProfile'),
+    'MatchResult': ('src.patch_presence_tester', 'MatchResult'),
+    'build_reference_profiles': ('src.patch_presence_tester', 'build_reference_profiles'),
+    # DiffExec
+    'DifferentialExecutor': ('src.differential_executor', 'DifferentialExecutor'),
+    'DiffExecutionReport': ('src.differential_executor', 'DiffExecutionReport'),
+    'DiffVerdict': ('src.differential_executor', 'DiffVerdict'),
+    'DiffTestCase': ('src.differential_executor', 'DiffTestCase'),
+    'SeedGenerator': ('src.differential_executor', 'SeedGenerator'),
+    'InputMutator': ('src.differential_executor', 'InputMutator'),
+    'diff_exec_verify': ('src.differential_executor', 'diff_exec_verify'),
+})
+
+# ── Concolic 执行 + IR 等值缓存 (2026-08-14) ──────────────────
+# Concolic：符号+具体混合测试合成，精确定位补丁新路径。
+# IR Cache：语义指纹归一化 + LFU-DA 淘汰，免重复重编译。
+__all__.extend([
+    'SymExpr', 'ExprKind', 'SymbolicState', 'Constraint', 'ConstraintKind',
+    'PathCondition', 'ConcolicTestGenerator', 'ConcolicTestCase',
+    'IREquivalenceCache', 'SemanticFingerprint', 'EquivCacheEntry',
+    'normalize_function', 'compute_fingerprint', 'create_equiv_cache', 'LFUDACache',
+])
+
+_lazy_map.update({
+    # Concolic
+    'SymExpr': ('src.symbolic_state', 'SymExpr'),
+    'ExprKind': ('src.symbolic_state', 'ExprKind'),
+    'SymbolicState': ('src.symbolic_state', 'SymbolicState'),
+    'Constraint': ('src.symbolic_state', 'Constraint'),
+    'ConstraintKind': ('src.symbolic_state', 'ConstraintKind'),
+    'PathCondition': ('src.symbolic_state', 'PathCondition'),
+    'ConcolicTestGenerator': ('src.concolic_test_gen', 'ConcolicTestGenerator'),
+    'ConcolicTestCase': ('src.concolic_test_gen', 'ConcolicTestCase'),
+    # IR Cache
+    'IREquivalenceCache': ('src.ir_equiv_cache', 'IREquivalenceCache'),
+    'SemanticFingerprint': ('src.ir_equiv_cache', 'SemanticFingerprint'),
+    'EquivCacheEntry': ('src.ir_equiv_cache', 'EquivCacheEntry'),
+    'normalize_function': ('src.ir_equiv_cache', 'normalize_function'),
+    'compute_fingerprint': ('src.ir_equiv_cache', 'compute_fingerprint'),
+    'create_equiv_cache': ('src.ir_equiv_cache', 'create_equiv_cache'),
+    'LFUDACache': ('src.ir_equiv_cache', 'LFUDACache'),
+})
+
+# ── 多补丁交互图 + 时间衰减可靠性 (2026-09-05) ──────────────────
+# InteractionGraph：补丁冲突/依赖检测 + 安全应用拓扑序。
+# TemporalReliability：可靠性时间衰减建模 + 环境漂移告警。
+__all__.extend([
+    'PatchInteractionGraph', 'PatchNode', 'InteractionEdge', 'EdgeType',
+    'InteractionReport', 'patch_node_from_spec', 'analyze_patch_set',
+    'TemporalReliabilityModel', 'TemporalReliabilityReport',
+    'EnvironmentFingerprint', 'EnvironmentDriftDetector', 'RefreshUrgency',
+    'capture_environment', 'predict_patch_longevity', 'estimate_decay_constant',
+])
+
+_lazy_map.update({
+    # Patch Interaction Graph
+    'PatchInteractionGraph': ('src.patch_interaction_graph', 'PatchInteractionGraph'),
+    'PatchNode': ('src.patch_interaction_graph', 'PatchNode'),
+    'InteractionEdge': ('src.patch_interaction_graph', 'InteractionEdge'),
+    'EdgeType': ('src.patch_interaction_graph', 'EdgeType'),
+    'InteractionReport': ('src.patch_interaction_graph', 'InteractionReport'),
+    'patch_node_from_spec': ('src.patch_interaction_graph', 'patch_node_from_spec'),
+    'analyze_patch_set': ('src.patch_interaction_graph', 'analyze_patch_set'),
+    # Temporal Reliability
+    'TemporalReliabilityModel': ('src.temporal_reliability', 'TemporalReliabilityModel'),
+    'TemporalReliabilityReport': ('src.temporal_reliability', 'TemporalReliabilityReport'),
+    'EnvironmentFingerprint': ('src.temporal_reliability', 'EnvironmentFingerprint'),
+    'EnvironmentDriftDetector': ('src.temporal_reliability', 'EnvironmentDriftDetector'),
+    'RefreshUrgency': ('src.temporal_reliability', 'RefreshUrgency'),
+    'capture_environment': ('src.temporal_reliability', 'capture_environment'),
+    'predict_patch_longevity': ('src.temporal_reliability', 'predict_patch_longevity'),
+    'estimate_decay_constant': ('src.temporal_reliability', 'estimate_decay_constant'),
+})

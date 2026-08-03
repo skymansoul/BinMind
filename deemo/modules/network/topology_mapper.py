@@ -1,8 +1,6 @@
-# 2026-07-27
-"""网络拓扑映射器 —— LLDP/CDP解析、被动OS指纹识别、网络层次推断。
+"""网络拓扑映射 —— LLDP/CDP帧解析、被动OS指纹识别、网络层次推断。
 
-通过解析链路层发现协议(LLDP/CDP)和被动TCP/IP栈指纹识别，
-构建网络拓扑图和设备角色图谱。
+通过解析链路层发现协议（LLDP/CDP）和被动TCP/IP栈指纹识别，构建网络拓扑图和设备角色图谱。
 
 参考：
 - IEEE 802.1AB (LLDP)
@@ -13,14 +11,15 @@ import struct, logging, math, json
 from collections import defaultdict, Counter
 from dataclasses import dataclass, field
 from typing import List, Dict, Tuple, Optional, Any, Set
+from functools import lru_cache
 
 _log = logging.getLogger(__name__)
 
-# LLDP EtherType
+# LLDP EtherType 常量
 _LLDP_ETHERTYPE = 0x88CC
-_CDP_ETHERTYPE = 0x2000  # Cisco Discovery Protocol (uses LLC/SNAP)
+_CDP_ETHERTYPE = 0x2000  # Cisco Discovery Protocol (LLC/SNAP封装)
 
-# LLDP TLV 类型 (IEEE 802.1AB)
+# LLDP TLV 类型码 (IEEE 802.1AB)
 _LLDP_TLV_CHASSIS_ID = 1; _LLDP_TLV_PORT_ID = 2
 _LLDP_TLV_TTL = 3; _LLDP_TLV_PORT_DESC = 4
 _LLDP_TLV_SYS_NAME = 5; _LLDP_TLV_SYS_DESC = 6
@@ -34,7 +33,7 @@ _LLDP_TLV_NAMES = {
     7: "SYS_CAP", 8: "MGMT_ADDR", 127: "ORG_SPECIFIC",
 }
 
-# 系统能力位掩码
+# 系统能力位掩码 (IEEE 802.1AB §8.5.1)
 _CAP_OTHER = 0x01; _CAP_REPEATER = 0x02; _CAP_BRIDGE = 0x04
 _CAP_WLAN_AP = 0x08; _CAP_ROUTER = 0x10; _CAP_TELEPHONE = 0x20
 _CAP_DOCSIS = 0x40; _CAP_STATION = 0x80
@@ -44,7 +43,7 @@ _CAP_NAMES = {
     0x40: "DOCSIS", 0x80: "Station",
 }
 
-# TCP/IP 栈指纹特征 —— p0f风格签名（简化版）
+# TCP/IP 栈指纹特征库 (p0f风格签名简化版)
 # 格式: (初始TTL, 窗口大小范围, TCP选项顺序, 推测OS)
 _OS_FINGERPRINTS: List[Tuple[int, Tuple[int, int], str, str]] = [
     (64, (5800, 65535), "mss,sok,ts,nop,ws", "Linux 4.x/5.x"),
@@ -62,13 +61,13 @@ _OS_FINGERPRINTS: List[Tuple[int, Tuple[int, int], str, str]] = [
 
 @dataclass
 class LldpNeighbor:
-    """LLDP 邻居信息 —— 一条LLDP消息的核心字段"""
+    """LLDP 邻居信息——单条LLDP消息的核心TLV字段"""
     local_port: str = ""
     chassis_id: str = ""
     port_id: str = ""
     sys_name: str = ""
     sys_desc: str = ""
-    ttl: int = 120        # 存活时间（秒）
+    ttl: int = 120
     capabilities: int = 0
     mgmt_ip: str = ""
     raw_tlvs: List[Tuple[int, bytes]] = field(default_factory=list)
@@ -87,36 +86,34 @@ class OsFingerprint:
 
 @dataclass
 class NetworkDevice:
-    """拓扑中的网络设备节点"""
-    identifier: str = ""     # chassis_id 或 MAC 或 IP
+    """拓扑中的网络设备节点结构体"""
+    identifier: str = ""
     device_type: str = ""    # switch / router / ap / server / unknown
     hostname: str = ""
     mgmt_ip: str = ""
-    neighbors: List[str] = field(default_factory=list)  # 相邻设备ID列表
+    neighbors: List[str] = field(default_factory=list)
     os_guess: str = ""
     ports: List[str] = field(default_factory=list)
 
 
 class LldpParser:
-    """LLDP 帧解析器 —— 从以太网帧提取TLV字段。
+    """LLDP 帧解析器——从以太网帧提取TLV字段。
 
-    LLDP (IEEE 802.1AB) 是厂商中立的二层发现协议。TLV结构：7bit类型+9bit长度+值。
+    LLDP (IEEE 802.1AB) 是厂商中立的二层发现协议。TLV编码：7bit类型+9bit长度+值。
     """
 
     @staticmethod
     def parse(raw_frame: bytes) -> Optional[LldpNeighbor]:
-        """解析以太网帧中的LLDP负载（以太头之后的部分）"""
+        """解析以太网帧中的LLDP负载部分（跳过14字节以太头）"""
         if len(raw_frame) < 14 + 2:  # 以太头 + 最小TLV
             return None
 
         eth_type = struct.unpack(">H", raw_frame[12:14])[0]
         start = 14
         if eth_type != _LLDP_ETHERTYPE:
-            # 检查是否为CDP（使用SNAP封装）
-            if eth_type <= 1500:  # 长度字段而非类型
+            if eth_type <= 1500:  # 802.3 长度字段 → 非LLDP
                 if len(raw_frame) < 22:
                     return None
-                # 简化：跳过SNAP检查
                 return None
             return None
 
@@ -152,8 +149,7 @@ class LldpParser:
             elif tlv_type == _LLDP_TLV_SYS_CAP and len(tlv_value) >= 4:
                 neighbor.capabilities = struct.unpack(">H", tlv_value[:2])[0]
             elif tlv_type == _LLDP_TLV_MGMT_ADDR and len(tlv_value) >= 9:
-                # mgmt addr: len(1) + subtype(1) + addr(4/16) + if_subtype(1) + if_num(4) + oid_len(1)
-                addr_len = tlv_value[0] - 1  # subtract subtype
+                addr_len = tlv_value[0] - 1  # 减去subtype字节
                 if addr_len == 4:  # IPv4
                     neighbor.mgmt_ip = ".".join(str(b) for b in tlv_value[2:6])
                 elif addr_len == 16:  # IPv6
@@ -169,7 +165,7 @@ class LldpParser:
 
     @staticmethod
     def _decode_subtype(subtype: int, data: bytes) -> str:
-        """根据IEEE 802.1AB子类型解码标识符"""
+        """按IEEE 802.1AB子类型字段解码标识符值"""
         if subtype == 4:  # MAC address
             return ":".join(f"{b:02x}" for b in data[:6])
         elif subtype == 5:  # Network address (IPv4)
@@ -182,29 +178,28 @@ class LldpParser:
 
 
 class PassiveOsFingerprinter:
-    """被动OS指纹识别 —— 基于SYN包TCP/IP栈特征。
+    """被动OS指纹识别——基于SYN包TCP/IP栈特征推断操作系统。
 
-    核心假设（Zalewski 2012, p0f v3）：相同OS的TCP/IP栈参数一致。
+    核心假设（Zalewski 2012, p0f v3）：同一OS的TCP/IP栈参数一致。
     提取特征：初始TTL、TCP窗口大小、TCP选项顺序。
 
-    精度：~70-85% 对现代OS（TLS/QUIC加密后首包仍是明文TCP SYN）。
+    精度：~70-85%对现代OS有效（TLS/QUIC加密后首包仍为明文TCP SYN）。
     """
 
     @staticmethod
     def fingerprint(ip: str, tcp_syn_data: bytes,
                     ttl: int) -> Optional[OsFingerprint]:
-        """从TCP SYN包提取指纹并与已知签名库匹配"""
+        """从TCP SYN包提取特征并与已知签名库匹配"""
         if len(tcp_syn_data) < 20:
             return None
 
-        # 提取TCP窗口大小
         win = struct.unpack(">H", tcp_syn_data[14:16])[0]
 
-        # 提取TCP选项
+        # 提取TCP选项字段
         hdr_len = (tcp_syn_data[12] >> 4) * 4
         opts = tcp_syn_data[20:hdr_len] if hdr_len > 20 else b""
 
-        # 解码TCP选项为字符串表示
+        # 解码TCP选项序列为字符串表示
         option_names = []
         pos = 0
         while pos < len(opts):
@@ -242,7 +237,7 @@ class PassiveOsFingerprinter:
 
         opts_str = ",".join(option_names) if option_names else "none"
 
-        # 匹配已知OS签名
+        # 与已知OS签名库匹配
         best_match = ("Unknown", 0.0)
         for fp_ttl, (win_lo, win_hi), fp_opts, os_name in _OS_FINGERPRINTS:
             conf = 0.0
@@ -265,29 +260,29 @@ class PassiveOsFingerprinter:
 
     @staticmethod
     def _opts_similar(a: str, b: str) -> bool:
-        """两个选项串是否相似（忽略NOP差异）"""
+        """比较两组TCP选项串——忽略NOP填充差异后的等价判定"""
         a_clean = a.replace("nop,", "").replace(",nop", "")
         b_clean = b.replace("nop,", "").replace(",nop", "")
         return a_clean == b_clean
 
 
 class TopologyMapper:
-    """网络拓扑映射引擎 —— 解析LLDP/CDP + OS指纹 + 邻接推断。
+    """网络拓扑映射引擎——LLDP/CDP解析 + OS指纹识别 + 邻接关系推断。
 
-    构建网络设备节点列表和设备间链路关系。输出可作为网络可视化工具
-    （如Gephi、Cytoscape）的节点-边CSV导入。
+    构建网络设备节点列表和设备间链路关系，输出可作为Gephi、Cytoscape等
+    可视化工具的节点-边CSV导入。
     """
 
     def __init__(self):
         self._lldp = LldpParser()
         self._os_fp = PassiveOsFingerprinter()
-        self._devices: Dict[str, NetworkDevice] = {}   # identifier → NetworkDevice
-        self._neighbors: List[Tuple[str, str, str]] = []  # (src, dst, link_type)
+        self._devices: Dict[str, NetworkDevice] = {}
+        self._neighbors: List[Tuple[str, str, str]] = []
         self._os_fingerprints: Dict[str, OsFingerprint] = {}
 
     def feed_lldp(self, raw_frame: bytes, local_intf: str = "",
                   timestamp: float = 0.0) -> Optional[LldpNeighbor]:
-        """输入以太网帧"""
+        """输入含LLDP的以太网帧进行解析和拓扑更新"""
         nb = self._lldp.parse(raw_frame)
         if nb is None:
             return None
@@ -320,19 +315,18 @@ class TopologyMapper:
 
     def feed_tcp_syn(self, ip: str, tcp_data: bytes,
                      ttl: int, timestamp: float = 0.0) -> Optional[OsFingerprint]:
-        """输入TCP SYN包进行OS指纹识别"""
+        """输入TCP SYN包进行OS指纹识别并更新设备节点"""
         fp = self._os_fp.fingerprint(ip, tcp_data, ttl)
         if fp and fp.confidence > 0.5:
             fp.first_seen = timestamp
             self._os_fingerprints[ip] = fp
-            # 更新设备节点的OS猜测
             if ip in self._devices:
                 self._devices[ip].os_guess = fp.guessed_os
         return fp
 
     @staticmethod
     def _infer_device_type(nb: LldpNeighbor) -> str:
-        """从LLDP能力和描述推断设备类型"""
+        """从LLDP能力位和系统描述推断网络设备角色类型"""
         caps = nb.capabilities
         desc = nb.sys_desc.upper() if nb.sys_desc else ""
 
@@ -356,7 +350,7 @@ class TopologyMapper:
         return "unknown"
 
     def export_graph(self, fmt: str = "nodes_edges") -> Dict[str, Any]:
-        """导出拓扑图为节点/边结构（适用Gephi/nx导入）"""
+        """导出拓扑图——节点/边结构，可直接导入Gephi或networkx"""
         nodes = []
         for dev_id, dev in self._devices.items():
             fp = self._os_fingerprints.get(dev_id)
@@ -397,7 +391,7 @@ class TopologyMapper:
         }
 
     def _infer_subnet_hierarchy(self) -> Dict[str, Any]:
-        """从设备类型推断网络层次结构"""
+        """从设备类型分布推断网络层次结构——核心→汇聚→接入"""
         roles = Counter(d.device_type for d in self._devices.values())
         return {
             "core_routers": roles.get("router", 0),

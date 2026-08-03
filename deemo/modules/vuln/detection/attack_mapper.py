@@ -1,6 +1,6 @@
-# 2026-07-22 — MITRE ATT&CK 技术映射
+# MITRE ATT&CK技术映射表
 # CWE→Technique表 + 多标签分类（主技术+辅助技术）
-# CAPEC桥接覆盖主要CWE Top 25
+# 经CAPEC桥接覆盖主要CWE Top 25
 
 from typing import Dict, List, Tuple, Optional
 from dataclasses import dataclass, field
@@ -16,8 +16,7 @@ class TechniqueMapping:
     is_primary: bool = True
 
 
-# ==== CWE → ATT&CK 技术映射表 ====
-# 基于MITRE CWE-ATT&CK交叉引用和CAPEC桥接
+# CWE→ATT&CK技术映射——基于MITRE CWE-ATT&CK交叉引用与CAPEC桥接
 CWE_ATTACK_MAP: Dict[str, List[Tuple[str, str, str, float]]] = {
     "CWE-787": [
         ("T1203", "Exploitation for Client Execution", "Execution", 0.80),
@@ -128,10 +127,10 @@ def _normalize_cwe(raw: str) -> str:
 
 
 def map_vulnerability(cve_entry: Dict) -> List[TechniqueMapping]:
-    """将单个CVE映射到MITRE ATT&CK技术。
+    """CVE到MITRE ATT&CK技术映射。
 
-    输入dict应含cve_id, cwe_ids (可选), description (可选，用于启发式补充)。
-    返回TechniqueMapping列表，多标签分类：主技术+辅助技术。
+    输入dict应含cve_id、cwe_ids（可选）、description（可选，启发式补充）。
+    返回TechniqueMapping列表，多标签分类——主技术+辅助技术。
     """
     cve_id = cve_entry.get("cve_id", "")
     raw_cwes = cve_entry.get("cwe_ids", [])
@@ -148,7 +147,7 @@ def map_vulnerability(cve_entry: Dict) -> List[TechniqueMapping]:
                     technique_id=tid, technique_name=tname,
                     tactic=tactic, confidence=conf, is_primary=is_primary)
 
-    # ---- 无CWE时从描述文本启发式推断 ----
+    # 无CWE时从描述文本启发式推断
     if not mappings and desc:
         heuristic_rules = [
             ("overflow|buffer|stack|heap|segfault", "T1203", "Exploitation for Client Execution", "Execution", 0.55),

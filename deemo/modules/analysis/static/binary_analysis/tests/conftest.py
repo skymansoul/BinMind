@@ -1,5 +1,5 @@
 # shared fixtures for binary_analysis tests
-# minimal ELF32 and PE32 stubs for testing without real binaries
+# minimal ELF32 PE32 stubs for testing real binaries
 
 import os
 import struct
@@ -8,7 +8,7 @@ import pytest
 
 
 def _make_elf32_stub():
-    """Build a minimal 32-bit ELF: ELF header + 1 null PHDR + 1 code section."""
+    """构建 a minimal 32-bit ELF: ELF header + 1 null PHDR + 1 code section"""
     # ELF header (52 bytes for 32-bit)
     e_ident = b'\x7fELF\x01\x01\x01\x00' + b'\x00' * 8  # EI_DATA=1 (LE), EI_VERSION=1
     e_type = struct.pack('<H', 2)  # ET_EXEC
@@ -44,18 +44,18 @@ def _make_elf32_stub():
 
 
 def _make_pe32_stub():
-    """Build a minimal 32-bit PE file."""
+    """构建 a minimal 32-bit PE文件"""
     # MZ header
     mz = b'MZ' + b'\x00' * 58 + struct.pack('<I', 0x80)  # e_lfanew = 128
 
-    # PE signature + COFF header + Optional header (minimal)
+    # PE 签名 + COFF header + Optional header (minimal)
     pe_sig = b'PE\x00\x00'
     coff = struct.pack('<HHIIIHH', 0x014c, 1, 0, 0, 0, 0, 0)  # i386, 1 section
 
     # minimal optional header
-    opt = struct.pack('<HH', 0x010b, 0) + b'\x00' * 92  # PE32 magic + padding
+    opt = struct.pack('<HH', 0x010b, 0) + b'\x00' * 92  # PE32 magic + 填充
 
-    # one section header (40 bytes): .text
+    # one section header (40 bytes):.text
     sect = b'.text\x00\x00\x00'
     sect += struct.pack('<IIIIIIIIHHI', 4, 0x1000, 4, 0x200, 0, 0, 0, 0, 0, 0)
 
@@ -65,19 +65,19 @@ def _make_pe32_stub():
 
 @pytest.fixture
 def elf32_stub():
-    """Minimal x86 ELF binary for testing."""
+    """Minimal x86 ELF binary for testing"""
     return _make_elf32_stub()
 
 
 @pytest.fixture
 def pe32_stub():
-    """Minimal x86 PE binary for testing."""
+    """Minimal x86 PE binary for testing"""
     return _make_pe32_stub()
 
 
 @pytest.fixture
 def temp_binary_dir():
-    """Temporary directory with test binaries."""
+    """Temporary directory test binaries"""
     with tempfile.TemporaryDirectory() as tmpdir:
         elf_path = os.path.join(tmpdir, "test.elf")
         pe_path = os.path.join(tmpdir, "test.exe")

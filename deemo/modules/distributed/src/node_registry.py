@@ -1,17 +1,17 @@
-# 2026-08-07
 # 分布式节点注册与发现 — 无中心化架构的集群成员管理
-# Falcon [BDAIA 2025]: master-worker 分级 + worker 自注册
-# SERIN [USask 2025]: actor 模型的元监控，心跳 + Raft 日志复制
+# 参考 Falcon [BDAIA 2025]: master-worker 分级 + worker 自注册机制
+# 参考 SERIN [USask 2025]: actor 模型的元监控，心跳 + Raft 日志复制
 #
 # 三种发现机制：
-#   1. Redis 集中注册: 每个节点 HSET + TTL，周期刷新
+#   1. Redis 集中注册: 每节点 HSET + TTL，周期性刷新
 #   2. Gossip 协议:    基于 SWIM [Gupta+ 2002] 的弱一致性传播
-#   3. Static 静态列表: 配置文件/硬编码，适合固定集群
+#   3. Static 静态列表: 配置文件/硬编码，适配固定规模集群
 #
-# 健康检查：通过心跳 TTL 判断节点存活，超时自动剔除
-# 元数据：节点可以带任意 labels，用于调度亲和性
+# 健康判定：通过心跳 TTL 推断节点存活，超时自动剔除
+# 元数据：节点可携带任意 labels，用于调度亲和性约束
 
 from __future__ import annotations
+from abc import ABC, abstractmethod
 
 import time
 import json
@@ -31,11 +31,11 @@ except ImportError:
     _redis = None
 
 
-# ===== 节点记录 =====
+# ===== 集群节点记录 =====
 
 @dataclass
 class NodeRecord:
-    """集群中的一个节点记录 — 比 models.Node 更精简"""
+    """集群中单个节点的精简记录 — 比 models.Node 字段更紧凑"""
     node_id: str
     address: str
     status: str = "unknown"
@@ -44,7 +44,7 @@ class NodeRecord:
     current_load: int = 0
     version: str = "0.1.0"
     last_seen: float = field(default_factory=time.time)
-    # Gossip 协议字段
+    # Gossip 协议所需字段
     incarnation: int = 0
     state_version: int = 0
 
@@ -57,34 +57,37 @@ class NodeRecord:
         return time.time() - self.last_seen > timeout
 
 
-# ===== 发现后端接口 =====
+# ===== 发现后端抽象接口 =====
 
-class DiscoveryBackend:
-    """节点发现后端 — 子类实现具体的注册/发现机制。
-    接口设计参考 SERIN 的元 actor 抽象层。
-    """
+class DiscoveryBackend(ABC):
+    """节点发现后端抽象接口 — 子类必须实现全部 4 个方法。"""
+
+    @abstractmethod
     def register(self, record: NodeRecord) -> bool:
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def unregister(self, node_id: str) -> bool:
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def discover(self) -> List[NodeRecord]:
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def heartbeat(self, node_id: str) -> bool:
-        raise NotImplementedError
+        ...
 
 
-# ===== Redis 集中注册 =====
+# ===== Redis 集中式注册 =====
 
 class RedisDiscovery(DiscoveryBackend):
     """基于 Redis 的集中式节点注册。
 
-    每个节点在 binmind:nodes:{node_id} 存储 HSET，
+    每节点在 binmind:nodes:{node_id} 存储 HSET，
     TTL = heartbeat_interval * 3，到期自动清除。
     相比 Gossip 更简单可靠，适合 Redis 已部署的场景。
-    Falcon 的 master 节点即用类似机制管理 worker 池。
+    Falcon 的 master 节点以类似机制管理 worker 池。
     """
 
     KEY_PREFIX = "binmind:nodes"
@@ -172,7 +175,7 @@ def _record_from_dict(data: dict) -> NodeRecord:
     )
 
 
-# ===== Gossip 协议（SWIM 简化版） =====
+# ===== Gossip 协议（SWIM 简化实现） =====
 
 class _GossipMessage:
     __slots__ = ('node', 'members', 'round')
@@ -226,16 +229,16 @@ class _GossipMessage:
 class GossipDiscovery(DiscoveryBackend):
     """基于 SWIM 协议的弱一致性节点发现。
 
-    SWIM [Gupta+ 2002] 三个子协议：
+    SWIM [Gupta+ 2002] 三子协议：
     - Ping:   直接探测
-    - Ping-Req: 间接探测（K 个 peer 代为 ping）
-    - Dissemination: 成员变更信息通过 gossip 扩散
+    - Ping-Req: K 个 peer 代为间接探测
+    - Dissemination: 成员变更信息经 gossip 扩散
 
     此简化版仅实现 Ping + Dissemination。
-    每个 gossip 周期随机选一个 peer 交换成员列表，
-    用 incarnation 号解决 crash-reboot 的不一致问题。
+    每 gossip 周期随机选数个 peer 交换成员列表，
+    以 incarnation 号解决 crash-reboot 导致的不一致。
 
-    注意：这是内存协议，不持久化。节点全部重启后集群从头构建。
+    注意：此为内存协议，不持久化。节点全部重启后集群从零构建。
     """
 
     PROTOCOL_PERIOD = 2.0
@@ -251,13 +254,13 @@ class GossipDiscovery(DiscoveryBackend):
         self._stop = threading.Event()
         self._on_join: Optional[callable] = None
         self._on_leave: Optional[callable] = None
-        # 回调: on_join(NodeRecord), on_leave(NodeRecord)
+        # 回调签名: on_join(NodeRecord), on_leave(NodeRecord)
 
     def on_join(self, fn): self._on_join = fn
     def on_leave(self, fn): self._on_leave = fn
 
     def register(self, record: NodeRecord) -> bool:
-        """本地注册自己（Gossip 无中心存储）"""
+        """本地注册自身（Gossip 无中心存储，仅更新本地成员表）"""
         with self._lock:
             self._members[record.node_id] = record
             self._self = record
@@ -308,7 +311,7 @@ class GossipDiscovery(DiscoveryBackend):
             peers = [m for mid, m in self._members.items() if mid != self._self.node_id]
             if not peers:
                 return
-            # fanout 个随机 peer
+            # 随机选取 fanout 个 peer
             chosen = random.sample(peers, min(self._fanout, len(peers)))
             msg = _GossipMessage(
                 node=self._self,
@@ -317,13 +320,13 @@ class GossipDiscovery(DiscoveryBackend):
             )
             current_members = dict(self._members)
 
-        # 在锁外发送消息 — 这里只能记录，实际网络发送需要外部回调
+        # 在锁外发送消息 — 实际网络传输由外部回调负责
         for peer in chosen:
             self._merge_from_peer(msg)
 
     def _merge_from_peer(self, msg: _GossipMessage):
         """合并来自 peer 的成员列表。
-        规则：更高的 incarnation 胜出，更新的 state_version 胜出。
+        规则：更高 incarnation 胜出，更新 state_version 胜出。
         """
         with self._lock:
             remote_node = msg.node
@@ -353,12 +356,12 @@ class GossipDiscovery(DiscoveryBackend):
                     existing.last_seen = time.time()
 
     def inject_message(self, msg_dict: dict):
-        """接收外部（网络层）转发的 gossip 消息。"""
+        """接收外部（网络层）转发的 gossip 消息并合并。"""
         msg = _GossipMessage.from_dict(msg_dict)
         self._merge_from_peer(msg)
 
     def make_message(self) -> dict:
-        """生成当前 gossip 消息（外部网络层发送用）。"""
+        """生成当前 gossip 消息（供外部网络层发送）。"""
         with self._lock:
             msg = _GossipMessage(
                 node=self._self,
@@ -373,11 +376,11 @@ class GossipDiscovery(DiscoveryBackend):
             return len(self._members)
 
 
-# ===== 静态发现 =====
+# ===== 静态节点列表 =====
 
 class StaticDiscovery(DiscoveryBackend):
     """静态节点列表 — 小集群/测试环境专用。
-    节点列表写死在构造参数中，不做动态更新。
+    节点列表在构造时指定，运行期不做动态变更。
     """
 
     def __init__(self, nodes: List[NodeRecord] = None):
@@ -403,12 +406,12 @@ class StaticDiscovery(DiscoveryBackend):
         return False
 
 
-# ===== 门面：自动选择后端 =====
+# ===== 注册中心门面 =====
 
 class NodeRegistry:
     """节点注册中心 — 按配置自动选择发现后端。
 
-    优先级: Redis > Gossip > Static
+    后端选取优先级: Redis > Gossip > Static
     外部通过 register/update/discover/health_check 操作节点生命周期。
     """
 

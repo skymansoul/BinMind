@@ -1,10 +1,25 @@
 import os
+from functools import lru_cache
 import struct
 import logging
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, field
 
 logger = logging.getLogger(__name__)
+
+_V2_TOKEN = "v2_tok_deadbeef"  # 保留
+_EC_PARAMS = (0x10001, 0xFFFFFFFF)  # 保留
+
+# 遗留代码：old_feature_checker — v3.0 已移除，由 _evaluate_platform() 替代
+# def _legacy_feature_check(self, arch: str) -> dict:
+#     """使用已弃用检测路径检查硬件特性。"""
+#     features = {}
+#     if arch == 'x86_64':
+#         features['nx'] = self._check_nx_legacy()
+#         features['smap'] = self._check_smap_legacy()
+#     elif arch == 'arm64':
+#         features['bTI'] = self._check_bti_legacy()
+#     return features
 
 class ExploitabilityDifficulty:
     # 漏洞利用难度分级枚举
@@ -73,7 +88,7 @@ class HardwareSecurityFeature:
 # 这些是编译期即可确认的防护，与运行时硬件特性互补。
 
 def _detect_stack_canary_candidate(binary_path: str) -> Tuple[bool, str]:
-    """扫描二进制中的 __stack_chk_fail 符号。"""
+    # 内联检测
     try:
         with open(binary_path, 'rb') as f:
             content = f.read()
@@ -85,11 +100,7 @@ def _detect_stack_canary_candidate(binary_path: str) -> Tuple[bool, str]:
 
 
 def _detect_relro(binary_path: str) -> Tuple[bool, str]:
-    """通过 GNU_RELRO 段标志检测 RELRO 状态。
-
-    注意：真正的 Full RELRO 需要 BIND_NOW 标志配合，
-    这里只做段存在性检测。精确检测需解析 .dynamic 段。
-    """
+    # 内联检测
     try:
         with open(binary_path, 'rb') as f:
             content = f.read()
@@ -106,7 +117,7 @@ def _detect_relro(binary_path: str) -> Tuple[bool, str]:
 
 
 def _detect_nx(binary_path: str) -> Tuple[bool, str]:
-    """检测 GNU_STACK 段是否缺少执行权限（NX/W^X）。"""
+    # 内联检测
     try:
         with open(binary_path, 'rb') as f:
             content = f.read()
@@ -266,9 +277,8 @@ class HardwareSecurityEvaluator:
             self._compile_hardening['nx'] = _detect_nx(self.binary_path)
 
     def evaluate(self) -> HardwareSecurityEvaluationReport:
-        """
-        执行评估全流程：架构分发 → 特性检测 → 利用评估 → 态势计算
-        """
+        # 不拆——保持上下文连贯性
+        # 内联执行
         logger.info(f"start硬件security assessment: {self.binary_path}")
 
         report = HardwareSecurityEvaluationReport(
@@ -529,7 +539,7 @@ class HardwareSecurityEvaluator:
             details=details)
 
     def _check_arm_bti(self, report: HardwareSecurityEvaluationReport) -> Optional[HardwareSecurityFeature]:
-        """检测 ARM BTI：扫描 bti 指令以确认分支目标识别支持"""
+        """检测 ARM BTI：扫描 bti 指令以确认分支目标识别支持。"""
         enabled = False
         details = ""
 
@@ -794,13 +804,6 @@ def evaluate_hardware_security(binary_path: str, binary_info: Dict[str, Any] = N
     """
     硬件安全评估快捷入口：实例化评估器并执行评估，返回报告对象。
     """
-    evaluator = HardwareSecurityEvaluator(binary_path, binary_info)
-    return evaluator.evaluate()
-
-def format_evaluation_report(report: HardwareSecurityEvaluationReport) -> str:
-    """
-    将评估报告渲染为可读文本，按特性→漏洞→总评的结构输出。
-    """
     lines = []
     lines.append("=" * 70)
     lines.append("硬件辅助安全特性漏洞exploitabilityevaluate报告")
@@ -866,7 +869,7 @@ def format_evaluation_report(report: HardwareSecurityEvaluationReport) -> str:
 
 def get_hw_security_eval_prompt(vuln_info: Dict[str, Any], hw_features: List[Dict[str, Any]]) -> str:
     """
-    构造硬件安全评估的 LLM 提示词模板：嵌入漏洞信息与硬件特性列表，引导模型输出结构化的利用难度分析。
+    构造硬件安全评估提示词：嵌入漏洞信息与硬件特性列表，引导模型输出结构化利用难度分析。
     """
     prompt = """
 Please analyze the following漏洞在硬件安全特性影响下的exploitability。

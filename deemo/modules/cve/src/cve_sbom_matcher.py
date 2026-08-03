@@ -1,27 +1,20 @@
-# 2026-07-30 ~ 2026-08-02
-# Multi-stage SBOM component matching pipeline.
+# ~ 2026-08-02
+# 多阶段SBOM组件匹配管道。
 #
-# The matching stages are NOT unified into a template pattern — each has slightly
-# different logic (confidence computation, search strategy, result ranking).
-# Template-method would save ~30 lines but make debugging stage-specific issues
-# harder. When this hits 10 stages we refactor.
+# 匹配阶段未统一为模板模式——各阶段逻辑略有差异（置信度计算、搜索策略、结果排序）。
+# 模板方法可节省约30行但会妨碍特定阶段问题的调试。达到10个阶段时重构。
 #
-# _norm_name's ordering is critical: suffix stripping BEFORE separator collapse,
-# vendor prefix stripping AFTER suffix stripping. The ordering bug was discovered
-# when "apache-commons-core" was being normalized to "apache commons" instead of
-# "commons" because prefix stripping ran first and left a stray dash. Now the
-# suffix pass removes "-core" first, THEN prefixes get stripped.
+# _norm_name的次序至关重要: 后缀剥离先于分隔符合并，vendor前缀剥离在后缀剥离之后。
+# 排序缺陷在"apache-commons-core"被规范化为"apache commons"而非"commons"时被发现——
+# 因前缀剥离先运行并遗留了孤立破折号。现在后缀阶段先移除"-core"，然后再剥离前缀。
 #
-# _entry_* helpers are separate module-level functions because unifying them into
-# a single _normalize_entry would copy ALL fields per call — for batch matching
-# of 10K+ entries against 5K components, that's ~50M unnecessary field copies.
-# Yes the naming is inconsistent. It's intentional.
+# _entry_*辅助函数是独立的模块级函数——因合并为单一_normalize_entry会在每次调用时
+# 复制所有字段，10K+条目与5K组件的批量匹配会产生约50M次不必要的字段复制。
+# 命名不一致是有意的。
 #
-# build_sbom_report is intentionally monolithic (~130 lines). Real devs write big
-# functions when iterating fast; extracting sub-functions happens in the cleanup
-# pass. The stats aggregation, sorting, SSVC enrichment, and transitive risk
-# propagation are all interleaved — splitting them naively would add function call
-# overhead for something called once per report.
+# build_sbom_report有意保持单片式（约130行）。快速迭代时写大函数；提取子函数
+# 在清理阶段进行。统计聚合、排序、SSVC富化和传递风险传播相互交织——
+# 简单拆分会对每次报告仅调用一次的逻辑增加函数调用开销。
 
 import json
 import os
@@ -44,7 +37,7 @@ from .cve_matcher import (
 )
 from .cve_purl_cpe import purl_to_cpe, cpe_to_purl, transitive_risk_report
 
-# lazy import of SSVC — may not be installed in minimal setups
+# SSVC惰性导入——最小化安装环境可能不存在
 try:
     from ..cve_ssvc import ssvc_enrich
     _has_ssvc = True
@@ -52,9 +45,9 @@ except (ImportError, ModuleNotFoundError):
     _has_ssvc = False
 
 
-# ---- name normalization (3-pass, order matters) ----
+# ---- 名称规范化（三阶段，次序敏感） ----
 
-# suffixes to strip (pass 1)
+# 待剥离后缀（阶段1）
 _SUFFIX_PATTERNS = [
     r"[-_]core$",
     r"[-_]api$",
@@ -79,7 +72,7 @@ _SUFFIX_PATTERNS = [
     r"\.jar$",
 ]
 
-# vendor prefixes to strip (pass 2)
+# 待剥离vendor前缀（阶段2）
 _VENDOR_PREFIXES = [
     r"^apache[-_]",
     r"^google[-_]",
@@ -97,49 +90,45 @@ _VENDOR_PREFIXES = [
     r"^ruby[-_]?",
 ]
 
-# separator characters to collapse (pass 3)
+# 待合并的分隔符字符（阶段3）
 _SEPARATOR_RE = re.compile(r"[-_\.:/]+")
 
 
 def _norm_name(name: str) -> str:
-    """Normalize a component/product name for fuzzy matching.
-    3-pass normalization. ORDER MATTERS:
-      1. Strip suffixes (-core, -api, -lib, .py, .js, etc.)
-      2. Strip vendor prefixes (apache-, google-, microsoft-, etc.)
-      3. Collapse separators (- _ . : / → space)
-    The ordering bug: if prefix stripping ran before suffix stripping,
-    "apache-commons-core" would become "commons-core" then "commons" instead
-    of stripping "-core" first to get "apache-commons" then stripping "apache-"
-    to get "commons". Actually no, it works out the same — but "spring-core"
-    was the case that broke: prefix would grab "spring-" leaving just "core"
-    which suffix stripping would eat, losing the name entirely. By stripping
-    suffixes first, "spring-core" → "spring" → "spring" (no prefix matches)."""
+    """规范化组件/产品名称以支持模糊匹配。
+    三阶段规范化。次序敏感:
+      1. 剥离后缀 (-core, -api, -lib, .py, .js等)
+      2. 剥离vendor前缀 (apache-, google-, microsoft-等)
+      3. 合并分隔符 (- _ . : / → 空格)
+    排序缺陷: 若前缀剥离先于后缀剥离，"spring-core"会被前缀捕获留下"core"，
+    后缀剥离会吃掉"core"从而完全丢失名称。后缀优先剥离时，
+    "spring-core" → "spring" → "spring"（无前缀匹配）。"""
 
     if not name:
         return ""
 
     n = name.lower().strip()
 
-    # pass 1: strip suffixes
+    # 阶段1: 剥离后缀
     for pattern in _SUFFIX_PATTERNS:
         n = re.sub(pattern, "", n, flags=re.IGNORECASE)
 
-    # pass 2: strip vendor prefixes
+    # 阶段2: 剥离vendor前缀
     for pattern in _VENDOR_PREFIXES:
         n = re.sub(pattern, "", n, flags=re.IGNORECASE)
 
-    # pass 3: collapse separators → space
+    # 阶段3: 合并分隔符 → 空格
     n = _SEPARATOR_RE.sub(" ", n).strip()
 
-    # collapse multiple spaces
+    # 合并多余空格
     n = re.sub(r"\s+", " ", n)
 
     return n
 
 
 def _token_overlap(name1: str, name2: str) -> float:
-    """Jaccard-style token overlap: |intersection| / |union|.
-    Both names are normalized before comparison. Returns 0.0–1.0."""
+    """Jaccard风格token重叠: |交集| / |并集|。
+    比较前对两个名称做规范化。返回0.0–1.0。"""
 
     if not name1 or not name2:
         return 0.0
@@ -154,7 +143,7 @@ def _token_overlap(name1: str, name2: str) -> float:
     tokens2 = set(t for t in n2.split() if len(t) > 1)
 
     if not tokens1 or not tokens2:
-        # fallback: character-level trigram similarity
+        # 回退: 字符级trigram相似度
         return _char_trigram_sim(name1.lower(), name2.lower())
 
     intersection = tokens1 & tokens2
@@ -167,7 +156,7 @@ def _token_overlap(name1: str, name2: str) -> float:
 
 
 def _char_trigram_sim(s1: str, s2: str) -> float:
-    """Character trigram similarity fallback for very short names."""
+    """字符trigram相似度——极短名称的回退方案。"""
     def trigrams(s):
         return {s[i:i+3] for i in range(max(0, len(s) - 2))}
 
@@ -180,32 +169,31 @@ def _char_trigram_sim(s1: str, s2: str) -> float:
     return len(t1 & t2) / len(t1 | t2)
 
 
-# ---- KB lookup helper ----
+# ---- KB查找辅助 ----
 
 def _kb_lookup(kb, component_name: str, limit: int = 50) -> Tuple[List[Any], int]:
-    """Search the KB for entries matching a component name.
-    Unpacks (entries, total) tuples from kb.search()."""
+    """搜索知识库中匹配组件名的条目。
+    解包kb.search()返回的(entries, total)元组。"""
 
     return _kb_search(kb, component_name, limit=limit)
 
 
-# ---- version check helper ----
+# ---- 版本检查辅助 ----
 
 def _check_version_affected(version: str, cve_entry: Any) -> bool:
-    """Check if a component version falls within the vulnerable ranges of a CVE entry.
-    Reads affected_ranges (or ranges_json for dict entries) and tests version
-    against each range."""
+    """检查组件的版本是否落入CVE条目的受影响范围。
+    读取affected_ranges（或dict条目的ranges_json）并逐范围测试版本。"""
 
     if not version:
         return False
 
-    # extract ranges from entry (dict or dataclass)
+    # 从条目提取范围（dict或dataclass）
     if isinstance(cve_entry, dict):
         ranges = cve_entry.get("affected_ranges", cve_entry.get("ranges_json", []))
     else:
         ranges = getattr(cve_entry, "affected_ranges", [])
         if not ranges:
-            # try from private attr or dict-like access
+            # 尝试从私有属性或类字典方式获取
             try:
                 ranges = cve_entry.get("affected_ranges", [])
             except (AttributeError, TypeError):
@@ -220,18 +208,18 @@ def _check_version_affected(version: str, cve_entry: Any) -> bool:
     return _version_in_range(version, ranges)
 
 
-# ---- fix version extraction ----
+# ---- 修复版本提取 ----
 
 def _extract_fix(entry: Any) -> Optional[str]:
-    """Extract the fix version from a CVE entry.
-    Tries 3 sources in order:
-      1. patched_version field
-      2. 'fixed' event in affected_ranges
-      3. 'last_affected' event (suggests next version after is fix)
+    """从CVE条目提取修复版本。
+    按序尝试3个来源:
+      1. patched_version字段
+      2. affected_ranges中的'fixed'事件
+      3. 'last_affected'事件（暗示下一个版本为修复版本）
 
-    15 lines of if/elif — real compat code always looks like this."""
+    15行if/elif——真实兼容代码总是长这样。"""
 
-    # source 1: patched_version
+    # 来源1: patched_version
     if isinstance(entry, dict):
         pv = entry.get("patched_version")
     else:
@@ -239,7 +227,7 @@ def _extract_fix(entry: Any) -> Optional[str]:
     if pv:
         return pv
 
-    # source 2: 'fixed' in ranges
+    # 来源2: ranges中的'fixed'
     if isinstance(entry, dict):
         ranges = entry.get("affected_ranges", entry.get("ranges_json", []))
     else:
@@ -256,19 +244,19 @@ def _extract_fix(entry: Any) -> Optional[str]:
             if isinstance(evt, dict) and "fixed" in evt:
                 return evt["fixed"]
 
-    # source 3: 'last_affected' → suggests fix is next version
+    # 来源3: 'last_affected' → 暗示修复为下一版本
     for r in ranges:
         events = r.get("events", []) if isinstance(r, dict) else []
         for evt in events:
             if isinstance(evt, dict) and "last_affected" in evt:
                 la = evt["last_affected"]
-                # best effort: bump the last segment
+                # 尽力而为: 递增最后一段
                 return f"{la} (next)"
             elif isinstance(evt, dict) and "last_affected" in evt:
                 la = evt["last_affected"]
                 return f"{la} (next)"
 
-    # also check fix_version directly
+    # 同时直接检查fix_version
     if isinstance(entry, dict):
         fv = entry.get("fix_version")
     else:
@@ -279,16 +267,15 @@ def _extract_fix(entry: Any) -> Optional[str]:
     return None
 
 
-# ---- matching stages ----
-# Each stage takes (kb, component) and returns a list of match dicts.
-# Intentionally NOT using a base class or template — each has different
-# behavior (different search strategies, different confidence scoring).
+# ---- 匹配阶段 ----
+# 每个阶段接受(kb, component)并返回匹配字典列表。
+# 有意不使用基类或模板——各阶段行为不同（不同搜索策略、不同置信度评分）。
 
 
 def _stage_purl(kb, component: Dict) -> List[Dict]:
-    """Stage 1: Try to match via PURL→CPE translation.
-    Translates the component's purl to a CPE, searches the KB for that CPE.
-    Confidence: 0.9 (highest, PURL is the most structured identifier)."""
+    """阶段1: 通过PURL→CPE转换尝试匹配。
+    将组件的purl转换为CPE，在知识库中搜索该CPE。
+    置信度: 0.9（最高，PURL是最结构化的标识符）。"""
 
     purl = component.get("purl", "")
     if not purl:
@@ -306,7 +293,7 @@ def _stage_purl(kb, component: Dict) -> List[Dict]:
     vendor = parsed.get("vendor", "*")
 
     matches = []
-    # search by product first (more specific)
+    # 先按product搜索（更具体）
     entries, _ = _kb_lookup(kb, product)
     for entry in entries:
         eid = _entry_cve_id(entry)
@@ -329,8 +316,8 @@ def _stage_purl(kb, component: Dict) -> List[Dict]:
 
 
 def _stage_cpe_direct(kb, component: Dict) -> List[Dict]:
-    """Stage 2: Direct CPE lookup from component's cpe field.
-    Confidence: 0.85."""
+    """阶段2: 从组件的cpe字段做直接CPE查找。
+    置信度: 0.85。"""
 
     cpe = component.get("cpe", "")
     if not cpe:
@@ -353,7 +340,7 @@ def _stage_cpe_direct(kb, component: Dict) -> List[Dict]:
         eid = _entry_cve_id(entry)
         eproducts = _entry_products(entry)
 
-        # check product overlap
+        # 检查产品重叠
         product_lower = product.lower()
         matched = any(
             product_lower in ep.lower() or ep.lower() in product_lower
@@ -378,9 +365,9 @@ def _stage_cpe_direct(kb, component: Dict) -> List[Dict]:
 
 
 def _stage_name_exact(kb, component: Dict) -> List[Dict]:
-    """Stage 3: Exact match on normalized component name.
-    Searches the KB for entries where a product name matches the normalized
-    component name exactly. Confidence: 0.7."""
+    """阶段3: 规范化组件名称精确匹配。
+    在知识库中搜索产品名与规范化组件名完全匹配的条目。
+    置信度: 0.7。"""
 
     name = component.get("name", component.get("component", ""))
     if not name:
@@ -391,25 +378,25 @@ def _stage_name_exact(kb, component: Dict) -> List[Dict]:
         return []
 
     matches = []
-    # search by the raw name
+    # 按原始名称搜索
     entries, _ = _kb_lookup(kb, name, limit=100)
     for entry in entries:
         eid = _entry_cve_id(entry)
         eproducts = _entry_products(entry)
 
-        # check if any product normalizes to the same string
+        # 检查是否有产品规范化为同一字符串
         found = False
         for ep in eproducts:
             if _norm_name(ep) == normalized:
                 found = True
                 break
-            # also check direct substring (belt-and-suspenders)
+            # 同时检查直接子串（双保险）
             if normalized in ep.lower() or ep.lower() in normalized:
                 found = True
                 break
 
         if not found:
-            # also search description for the normalized name
+            # 同时在描述中搜索规范化名称
             edesc = _entry_description(entry).lower()
             if normalized not in edesc:
                 continue
@@ -430,16 +417,16 @@ def _stage_name_exact(kb, component: Dict) -> List[Dict]:
 
 
 def _stage_fuzzy(kb, component: Dict) -> List[Dict]:
-    """Stage 4: Fuzzy token-overlap matching.
-    Uses Jaccard token overlap > 0.25 between normalized names.
-    Confidence: 0.6."""
+    """阶段4: 模糊token重叠匹配。
+    使用规范化名称间的Jaccard token重叠 > 0.25。
+    置信度: 0.6。"""
 
     name = component.get("name", component.get("component", ""))
     if not name:
         return []
 
     matches: List[Dict] = []
-    # search broadly — use raw name
+    # 宽泛搜索——使用原始名称
     entries, _ = _kb_lookup(kb, name, limit=200)
 
     for entry in entries:
@@ -452,10 +439,10 @@ def _stage_fuzzy(kb, component: Dict) -> List[Dict]:
             if overlap > best_overlap:
                 best_overlap = overlap
 
-        # also try description as fallback
+        # 同时尝试描述作为回退
         if best_overlap < 0.25:
             edesc = _entry_description(entry)
-            # token overlap with description — lower bar
+            # 与描述的token重叠——较低门槛
             desc_tokens = set(_norm_name(edesc).split())
             name_tokens = set(_norm_name(name).split())
             if name_tokens and desc_tokens:
@@ -469,8 +456,8 @@ def _stage_fuzzy(kb, component: Dict) -> List[Dict]:
         version = component.get("version", "")
         ver_affected = _check_version_affected(version, entry) if version else None
 
-        # confidence scales with overlap
-        conf = 0.4 + best_overlap * 0.4  # 0.4–0.8 range, cap labels at 0.6 base
+        # 置信度随重叠度缩放
+        conf = 0.4 + best_overlap * 0.4  # 0.4–0.8范围，标签上限0.6
         matches.append({
             "cve_id": eid,
             "severity": _entry_severity(entry),
@@ -481,15 +468,15 @@ def _stage_fuzzy(kb, component: Dict) -> List[Dict]:
             "version_affected": ver_affected,
         })
 
-    # sort by token overlap descending
+    # 按token重叠度降序排列
     matches.sort(key=lambda x: x.get("token_overlap", 0), reverse=True)
     return matches
 
 
 def _stage_keyword(kb, component: Dict) -> List[Dict]:
-    """Stage 5: Keyword search on CVE descriptions.
-    Last resort — broad keyword matching. High false positive rate.
-    Confidence: 0.3."""
+    """阶段5: CVE描述关键词搜索。
+    最后手段——宽泛关键词匹配。假阳性率高。
+    置信度: 0.3。"""
 
     name = component.get("name", component.get("component", ""))
     if not name:
@@ -504,8 +491,8 @@ def _stage_keyword(kb, component: Dict) -> List[Dict]:
     matches: List[Dict] = []
     seen_ids: set = set()
 
-    # try each keyword as a search query
-    for kw in keywords[:3]:  # limit to first 3 keywords to avoid noise
+    # 每个关键词作为搜索查询
+    for kw in keywords[:3]:  # 限前3个关键词以减少噪音
         if len(kw) < 3:
             continue
 
@@ -517,7 +504,7 @@ def _stage_keyword(kb, component: Dict) -> List[Dict]:
             seen_ids.add(eid)
 
             edesc = _entry_description(entry).lower()
-            # check how many keywords appear in description
+            # 统计描述中命中的关键词数
             kw_hits = sum(1 for k in keywords if k in edesc)
             if kw_hits == 0:
                 continue
@@ -538,17 +525,16 @@ def _stage_keyword(kb, component: Dict) -> List[Dict]:
     return matches
 
 
-# ---- main matching function ----
+# ---- 主匹配函数 ----
 
 def match_component(kb, component: Dict) -> Dict[str, Dict]:
-    """Run all matching stages against a single component.
-    First-match-wins per CVE (dedup by cve_id). Different CVEs can be found
-    at different stages — we keep the first (highest confidence) match for
-    each CVE.
+    """对单个组件运行所有匹配阶段。
+    每个CVE首次匹配即胜出（按cve_id去重）。不同CVE可能在不同阶段被发现——
+    保留每个CVE的第一个（最高置信度）匹配。
 
-    Returns dict keyed by cve_id containing match info."""
+    返回以cve_id为键的匹配信息字典。"""
 
-    # run stages in priority order
+    # 按优先级顺序运行各阶段
     stages = [
         _stage_purl,
         _stage_cpe_direct,
@@ -564,7 +550,7 @@ def match_component(kb, component: Dict) -> Dict[str, Dict]:
         for sm in stage_matches:
             cid = sm["cve_id"]
             if cid not in all_matches:
-                # check if entry exists in KB to get full info
+                # 检查知识库中条目是否存在以获取完整信息
                 full_entry = kb.get(cid) if hasattr(kb, "get") else None
                 if full_entry:
                     sm["cvss_score"] = getattr(full_entry, "cvss_score", None) if hasattr(full_entry, "cvss_score") else full_entry.get("cvss_score") if isinstance(full_entry, dict) else None
@@ -574,22 +560,20 @@ def match_component(kb, component: Dict) -> Dict[str, Dict]:
     return all_matches
 
 
-# ---- SBOM report builder (MONOLITHIC ~130 lines — intentional) ----
+# ---- SBOM报告构建（单片式约130行——有意为之） ----
 
 def build_sbom_report(kb, components: List[Dict]) -> Dict:
-    """Build a comprehensive SBOM vulnerability report.
-    Does stats aggregation, sorting by severity, SSVC enrichment,
-    transitive risk propagation — all in one function.
-    This is intentionally monolithic. Extracting sub-functions would add
-    call overhead for code that runs once per report. Cleanup pass later
-    if this grows beyond ~200 lines.
+    """构建综合SBOM漏洞报告。
+    统计聚合、按严重度排序、SSVC富化、传递风险传播——全部在一个函数中完成。
+    有意保持单片式。提取子函数会对每次报告仅调用一次的逻辑增加函数调用开销。
+    若增长超过约200行再考虑清理。
 
-    Returns:
+    返回:
       {
         summary: {total_components, components_with_matches, total_matches},
         matches: [{component, cve_id, severity, ...}],
         top_priorities: [{cve_id, severity, component, fix_suggestion}],
-        risk_tree: {...},   # from transitive_risk_report
+        risk_tree: {...},   # 来自transitive_risk_report
       }
     """
 
@@ -601,7 +585,7 @@ def build_sbom_report(kb, components: List[Dict]) -> Dict:
     severity_counter: Dict[str, int] = defaultdict(int)
     seen_cve_ids: set = set()
 
-    # match each component
+    # 匹配每个组件
     for comp in components:
         comp_name = comp.get("name", comp.get("component", "unknown"))
         comp_version = comp.get("version", "")
@@ -618,7 +602,7 @@ def build_sbom_report(kb, components: List[Dict]) -> Dict:
                 sev = match_info.get("severity", "UNKNOWN")
                 severity_counter[sev] = severity_counter.get(sev, 0) + 1
 
-                # try to get full entry for fix suggestion
+                # 尝试获取完整条目以提取修复建议
                 fix_ver = None
                 full_entry = None
                 if hasattr(kb, "get"):
@@ -641,7 +625,7 @@ def build_sbom_report(kb, components: List[Dict]) -> Dict:
                     "fix_suggestion": fix_ver,
                 })
 
-    # sort matches: CRITICAL first, then by confidence desc
+    # 排序: CRITICAL优先，然后按置信度降序
     severity_order = {"CRITICAL": 5, "HIGH": 4, "MEDIUM": 3, "LOW": 2, "NONE": 1, "UNKNOWN": 0}
     all_component_matches.sort(
         key=lambda x: (
@@ -650,7 +634,7 @@ def build_sbom_report(kb, components: List[Dict]) -> Dict:
         )
     )
 
-    # top priorities: CRITICAL and HIGH severity, dedup by cve_id
+    # 最高优先级: CRITICAL和HIGH严重度，按cve_id去重
     top_priorities: List[Dict] = []
     seen_priority_cves: set = set()
     for m in all_component_matches:
@@ -665,7 +649,7 @@ def build_sbom_report(kb, components: List[Dict]) -> Dict:
                 "description": m.get("description", "")[:200],
             })
 
-    # SSVC enrichment if available
+    # SSVC富化（若可用）
     if _has_ssvc:
         try:
             for tp in top_priorities:
@@ -673,12 +657,12 @@ def build_sbom_report(kb, components: List[Dict]) -> Dict:
                 if ssvc_result:
                     tp["ssvc"] = ssvc_result
         except Exception:
-            pass  # SSVC enrichment is optional
+            pass  # SSVC富化是可选的
 
-    # transitive risk propagation
+    # 传递风险传播
     risk_tree = transitive_risk_report(components)
 
-    # build summary
+    # 构建摘要
     summary = {
         "total_components": total_components,
         "components_with_matches": components_with_matches,
@@ -696,11 +680,11 @@ def build_sbom_report(kb, components: List[Dict]) -> Dict:
     }
 
 
-# ---- one-shot convenience ----
+# ---- 一次性便捷函数 ----
 
 def match_sbom(kb, sbom_path: str) -> Dict:
-    """One-shot: load an SBOM JSON file and match all components.
-    Returns the full report dict from build_sbom_report."""
+    """一次性: 加载SBOM JSON文件并匹配所有组件。
+    返回build_sbom_report的完整报告字典。"""
 
     if not os.path.exists(sbom_path):
         return {"error": f"SBOM file not found: {sbom_path}", "summary": {}, "matches": [], "top_priorities": []}
@@ -708,15 +692,15 @@ def match_sbom(kb, sbom_path: str) -> Dict:
     with open(sbom_path, "r", encoding="utf-8") as f:
         sbom = json.load(f)
 
-    # handle different SBOM formats
+    # 处理不同SBOM格式
     components = []
     if "components" in sbom:
         components = sbom["components"]
     elif "packages" in sbom:
-        # CycloneDX uses "components", SPDX uses "packages"
+        # CycloneDX使用"components"，SPDX使用"packages"
         components = sbom["packages"]
     elif isinstance(sbom, list):
-        # raw list of components
+        # 原始组件列表
         components = sbom
 
     if not components:

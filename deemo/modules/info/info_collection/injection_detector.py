@@ -1,4 +1,4 @@
-"""注入技术检测 — API 字符串引用 + 邻接上下文加权 + PE 节区感知 + YARA 模板生成。"""
+"""注入技术检测 — API 字符串引用 + 邻接上下文加权 + PE 节区感知 + YARA 规则生成。"""
 import os as _os
 import struct as _st
 from datetime import datetime
@@ -30,7 +30,7 @@ _INJ_PATS = (
 # 在 PE 可执行节区内命中可获得额外风险加成
 _EXEC_SECTION_NAMES = {b'.text', b'CODE', b'.code', b'INIT'}
 
-# ── 反分析技术签名 ─────────────────────────────────────────────────────
+# 反分析技术签名
 # 参照 wshobson/anti-reversing-techniques (35K★) 的反调试/反VM 分类体系。
 # 三类检测：调试器检测、VM/Sandbox 检测、时序检测。
 _ANTI_ANALYSIS_PATS: tuple[tuple[str, str, float], ...] = (
@@ -60,7 +60,7 @@ _ANTI_ANALYSIS_PATS: tuple[tuple[str, str, float], ...] = (
 
 
 def _parse_pe_section_bounds(raw: bytes) -> list[tuple[int, int, bytes]]:
-    """解析 PE 节区表，返回 (va_start, va_end_bytes, name) 列表。"""
+    """PE 节区表解析：返回 (va_start, va_end_bytes, name) 列表。"""
     if len(raw) < 64 or raw[:2] != b'MZ':
         return []
     try:
@@ -88,11 +88,11 @@ def _section_for_rva(sections, rva: int) -> bytes | None:
 
 
 def _generate_yara_rule_template(points: list[dict], binary_name: str) -> str:
-    """从检测到的注入点生成 YARA 规则模板。
+    """从检测到的注入点生成 YARA 规则。
 
-    参照 yarGen 的规则结构：meta 区含生成时间、置信度，strings 区
-    以检测到的注入 API 为锚点，condition 区使用 any of them。
-    规则标注为 template 而非 production — 需人工审核后部署。
+    参照 yarGen 的规则结构：meta 含生成时间/置信度，strings 以检测到的
+    注入 API 为锚点，condition 使用 any of them。
+    标注为 template — 需人工审核后部署。
     """
     if not points:
         return ""
@@ -101,7 +101,7 @@ def _generate_yara_rule_template(points: list[dict], binary_name: str) -> str:
 
     lines = [
         "/*",
-        " * Auto-generated YARA rule template — 需人工审核后部署",
+        " * YARA rule template — 需人工审核后部署",
         f" * 生成时间: {datetime.now().isoformat()}",
         f" * 源文件: {binary_name}",
         f" * 检测到的注入技术: {len(points)} 种",
@@ -143,8 +143,7 @@ def detect_injection(f_path=None, f_outdir=None):
     增强点：
     - 邻接上下文评分：同一 API 出现密度高则置信度递增
     - PE 节区感知：位于可执行节的命中获得额外风险加成
-    - YARA 规则模板自动生成（输出到 f_outdir）
-    - 返回 {'success': bool, 'injection_points': list, 'report_path': str|None}
+    - YARA 规则自动生成（输出到 f_outdir）
     """
     if f_path is None:
         return {'success': False, 'error': 'path is None'}
@@ -174,7 +173,7 @@ def detect_injection(f_path=None, f_outdir=None):
                 hit_positions.append((pos, ptype, base_weight))
             pi += 1
 
-        # ── 反分析模式扫描 ───────────────────────────────────────────
+        # 反分析模式扫描
         anti_positions: list[tuple[int, str, float]] = []
         ai = 0
         an = len(_ANTI_ANALYSIS_PATS)
@@ -220,7 +219,7 @@ def detect_injection(f_path=None, f_outdir=None):
             rec['adjacency_bonus'] = max(rec['adjacency_bonus'], entry.get('adjacency_bonus', 0))
 
         for t, rec in type_aggr.items():
-            # 综合评分 = 基础权重 × 命中次数因子 + 邻接加成
+            # 综合评分 = 基础权重 x 命中次数因子 + 邻接加成
             density_factor = min(rec['hit_count'] / 3.0, 1.0)
             composite = rec['max_weight'] * (0.6 + 0.4 * density_factor) + rec['adjacency_bonus']
             if composite >= 0.85:
@@ -234,7 +233,7 @@ def detect_injection(f_path=None, f_outdir=None):
             rec['confidence'] = round(composite, 2)
             points.append(rec)
 
-        # YARA rule generation
+        # YARA 规则生成
         yara_rule = None
         binary_name = _os.path.basename(f_path) if f_path else "unknown"
         if points:
@@ -302,9 +301,8 @@ def _merge_adjacent_hits(
 ) -> list[dict]:
     """合并邻接命中：同一窗口内多个注入 API 命中 → 邻接加成。
 
-    窗口定义为字节偏移范围 [pos, pos + window)，同一窗口内每多一个
-    不同类型的注入 API，该窗口内所有命中获得 +0.05 邻接加成。
-    若命中位于 PE 可执行节区则额外 +0.1。
+    窗口定义 [pos, pos + window)，同一窗口内每多一个不同类注入 API，
+    该窗口内所有命中 +0.05 加成。可执行节区命中额外 +0.1。
     """
     if not positions:
         return []

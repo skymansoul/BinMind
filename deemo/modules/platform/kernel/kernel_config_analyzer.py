@@ -1,6 +1,5 @@
-# 2026-07-18
-# Linux kernel .config parser & KSPP hardening baseline auditor
-# 参考 Kernel Self Protection Project (KSPP) 推荐配置进行安全审计
+# Linux 内核 .config 解析器 & KSPP 安全加固基线审计
+# 基于 Kernel Self Protection Project (KSPP) 推荐配置进行安全审计
 
 import os
 import re
@@ -8,7 +7,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple, Union
 from enum import Enum
 
-# ===== 严重级别 =====
+# ===== 严重等级 =====
 class Severity(Enum):
     CRITICAL = 5
     HIGH = 4
@@ -16,18 +15,18 @@ class Severity(Enum):
     LOW = 2
     INFO = 1
 
-# 检查项分类 — 独立于严重级别，用于按功能域统计分数
-# 分类设计遵循 KSPP 推荐的层次化审计模型
+# 检查项分类——与严重等级解耦，用于按功能域计算得分
+# 分类体系遵循 KSPP 推荐的层次化审计模型
 HARDENING_CATEGORY_MAP = {
     "mem": "内存安全", "cfi": "CFI/控制流", "spec": "推测执行缓解",
     "aslr": "ASLR", "surface": "攻击面缩减", "lsm": "LSM/安全模块",
-    "kern": "内核自保护", "copy": "Usercopy 加固", "misc": "Misc/架构",
+    "kern": "内核自保护", "copy": "Usercopy 加固", "misc": "杂项/架构",
     "container": "容器/运行时", "cbl": "CBL-Mariner/KernelCTF",
 }
 
 # ===== KSPP 基准检查清单 =====
-# 每项: (key, expected, weight, severity, description, category)
-# category 为 HARDENING_CATEGORY_MAP 的键
+# 每项结构: (key, expected, weight, severity, description, category)
+# category 取 HARDENING_CATEGORY_MAP 的键
 
 KSPP_BASELINE: List[Tuple[str, str, str, int, Severity, str, str]] = [
     # ---- 内存安全 ----
@@ -97,35 +96,35 @@ KSPP_BASELINE: List[Tuple[str, str, str, int, Severity, str, str]] = [
     ("PGTABLE_LEVELS",            ">=4",  3, Severity.MEDIUM, "页表层级检查", "misc"),
 
     # ---- 容器/运行时特化 (KernelCTF / CBL-Mariner 配置基准) ----
-    ("BPF_JIT",                   "y",  4, Severity.HIGH,     "BPF JIT — 容器运行时基础设施", "container"),
-    ("BPF_JIT_ALWAYS_ON",         "y",  3, Severity.MEDIUM,   "JIT始终可用 — 避免解释器回退的攻击面", "container"),
-    ("CGROUP_BPF",                "y",  3, Severity.MEDIUM,   "cgroup BPF — 容器安全策略挂载点", "container"),
-    ("USER_NS",                   "n",  4, Severity.HIGH,     "用户命名空间 — 主要容器逃逸向量", "container"),
-    ("X86_MSR",                   "n",  3, Severity.MEDIUM,   "MSR访问限制 — 防内核地址泄漏", "container"),
-    ("KALLSYMS",                  "n",  3, Severity.MEDIUM,   "kallsyms — 非调试场景不应导出", "container"),
-    ("KALLSYMS_ALL",              "n",  4, Severity.HIGH,     "/proc/kallsyms 全量导出 — KASLR 无效化", "container"),
+    ("BPF_JIT",                   "y",  4, Severity.HIGH,     "BPF JIT——容器运行时基础设施", "container"),
+    ("BPF_JIT_ALWAYS_ON",         "y",  3, Severity.MEDIUM,   "JIT始终可用——避免解释器回退的攻击面", "container"),
+    ("CGROUP_BPF",                "y",  3, Severity.MEDIUM,   "cgroup BPF——容器安全策略挂载点", "container"),
+    ("USER_NS",                   "n",  4, Severity.HIGH,     "用户命名空间——主要容器逃逸向量", "container"),
+    ("X86_MSR",                   "n",  3, Severity.MEDIUM,   "MSR访问限制——防内核地址泄漏", "container"),
+    ("KALLSYMS",                  "n",  3, Severity.MEDIUM,   "kallsyms——非调试场景不应导出", "container"),
+    ("KALLSYMS_ALL",              "n",  4, Severity.HIGH,     "/proc/kallsyms 全量导出——KASLR 无效化", "container"),
 
     # ---- CBL-Mariner / KernelCTF 特定 ----
     ("PAX_REFCOUNT",              "y",  4, Severity.HIGH,     "引用计数溢出保护 (grsec/PaX)", "cbl"),
-    ("BUG_ON_DATA_CORRUPTION",    "y",  4, Severity.HIGH,     "数据损坏立刻panic — 防静默利用", "cbl"),
-    ("SLAB_MERGE_DEFAULT",        "n",  3, Severity.MEDIUM,   "跨缓存合并 — 增加heap exploit难度", "cbl"),
-    ("RANDOM_TRUST_CPU",          "n",  4, Severity.HIGH,     "不信任CPU RNG — 防微码后门", "cbl"),
+    ("BUG_ON_DATA_CORRUPTION",    "y",  4, Severity.HIGH,     "数据损坏立刻panic——防静默利用", "cbl"),
+    ("SLAB_MERGE_DEFAULT",        "n",  3, Severity.MEDIUM,   "跨缓存合并——增加heap exploit难度", "cbl"),
+    ("RANDOM_TRUST_CPU",          "n",  4, Severity.HIGH,     "不信任CPU RNG——防微码后门", "cbl"),
     ("RANDOM_TRUST_BOOTLOADER",   "n",  3, Severity.MEDIUM,   "不信任bootloader RNG种子", "cbl"),
     # ---- IOMMU/DMA 保护 (2026 PCIe MITM 攻击面) ----
-    ("IOMMU_SUPPORT",             "y",  5, Severity.CRITICAL, "IOMMU 基础支持 — DMA 攻击的第一道防线", "misc"),
-    ("INTEL_IOMMU",               "y",  5, Severity.CRITICAL, "Intel VT-d — 外设 DMA 隔离", "misc"),
-    ("INTEL_IOMMU_DEFAULT_ON",    "y",  5, Severity.CRITICAL, "IOMMU 默认启用 — 关闭 boot-time DMA 窗口", "misc"),
-    ("AMD_IOMMU",                 "y",  5, Severity.CRITICAL, "AMD-Vi — 外设 DMA 隔离", "misc"),
-    ("IOMMU_DMA",                 "y",  4, Severity.HIGH,     "IOMMU DMA 映射 API — 驱动层 DMA 保护", "misc"),
-    ("IOMMU_STRICT",              "y",  3, Severity.MEDIUM,   "严格 IOMMU 模式 — 禁止 lazy unmapping", "misc"),
-    ("PCI_PRI",                   "n",  4, Severity.HIGH,     "PCIe PRI/ATS — IOMMU 绕过向量 (Thunderclap)", "misc"),
-    ("PCI_PASID",                 "n",  4, Severity.HIGH,     "PCIe PASID — 扩大 DMA 攻击面", "misc"),
-    ("THUNDERBOLT",               "n",  3, Severity.MEDIUM,   "Thunderbolt — 物理 DMA 攻击向量", "misc"),
-    ("HOTPLUG_PCI",               "n",  2, Severity.LOW,      "PCI 热插拔 — 运行时外设注入风险", "misc"),
+    ("IOMMU_SUPPORT",             "y",  5, Severity.CRITICAL, "IOMMU 基础支持——DMA 攻击的首道防线", "misc"),
+    ("INTEL_IOMMU",               "y",  5, Severity.CRITICAL, "Intel VT-d——外设 DMA 隔离", "misc"),
+    ("INTEL_IOMMU_DEFAULT_ON",    "y",  5, Severity.CRITICAL, "IOMMU 默认启用——关闭启动期 DMA 窗口", "misc"),
+    ("AMD_IOMMU",                 "y",  5, Severity.CRITICAL, "AMD-Vi——外设 DMA 隔离", "misc"),
+    ("IOMMU_DMA",                 "y",  4, Severity.HIGH,     "IOMMU DMA 映射 API——驱动层 DMA 保护", "misc"),
+    ("IOMMU_STRICT",              "y",  3, Severity.MEDIUM,   "严格 IOMMU 模式——禁止惰性取消映射", "misc"),
+    ("PCI_PRI",                   "n",  4, Severity.HIGH,     "PCIe PRI/ATS——IOMMU 绕过向量 (Thunderclap)", "misc"),
+    ("PCI_PASID",                 "n",  4, Severity.HIGH,     "PCIe PASID——扩大 DMA 攻击面", "misc"),
+    ("THUNDERBOLT",               "n",  3, Severity.MEDIUM,   "Thunderbolt——物理 DMA 攻击向量", "misc"),
+    ("HOTPLUG_PCI",               "n",  2, Severity.LOW,      "PCI 热插拔——运行时外设注入风险", "misc"),
 ]
 
-# ─── CVE→配置映射 ───
-# 每个 KSPP 配置项防御的已知 CVE（仅列出内核提权级别的高价值条目）
+# ─── CVE 到配置的映射 ───
+# 各 KSPP 配置项所防御的已知 CVE（仅列内核提权级别的高价值条目）
 
 _CONFIG_CVE_MAP: Dict[str, list[str]] = {
     "INIT_ON_ALLOC_DEFAULT_ON": ["CVE-2022-27666", "CVE-2021-3492"],
@@ -154,10 +153,10 @@ def get_cve_coverage(config: Dict[str, str]) -> Dict[str, list[str]]:
     return _covered
 
 
-# ===== 结果数据类 =====
+# ===== 审计结果数据类 =====
 @dataclass
 class AuditResult:
-    """KSPP审计结果。"""
+    """KSPP 审计结果汇总。"""
     score: float = 0.0
     total_checks: int = 0
     passed: int = 0
@@ -168,7 +167,7 @@ class AuditResult:
     not_found: List[str] = field(default_factory=list)
 
     def to_dict(self) -> dict:
-        """导出为 SIEM/合规系统可消费的结构化报告。"""
+        """导出为 SIEM/合规系统可直接使用的结构化报告。"""
         return {
             "score": self.score, "total_checks": self.total_checks,
             "passed": self.passed, "failed": self.failed,
@@ -184,9 +183,9 @@ class AuditResult:
 # ===== 配置解析 =====
 def parse_config(filepath: str) -> Dict[str, str]:
     """
-    解析Linux kernel .config文件。
+    解析 Linux 内核 .config 文件。
     处理 "CONFIG_KEY=value" 和 "# CONFIG_KEY is not set" 两种格式。
-    返回去掉CONFIG_前缀的纯key->value字典。
+    返回去除了 CONFIG_ 前缀的纯 key->value 字典。
     """
     _cfg: Dict[str, str] = {}
     if not os.path.isfile(filepath):
@@ -211,7 +210,7 @@ def parse_config(filepath: str) -> Dict[str, str]:
 
 
 def _evaluate_check(key: str, expected: str, actual_value: Optional[str]) -> Tuple[bool, str]:
-    """评估单条检查是否通过。支持 y/n, 值比较 >=N。"""
+    """评估单条检查是否通过。支持 y/n、数值比较 >=N。"""
     if actual_value is None:
         return False, "未设置"
     _v = actual_value.lower()
@@ -236,9 +235,9 @@ def _evaluate_check(key: str, expected: str, actual_value: Optional[str]) -> Tup
 
 # ===== 审计入口 =====
 def audit(config_path_or_dict: Union[str, Dict[str, str]]) -> AuditResult:
-    """执行KSPP基准审计，返回AuditResult。
+    """执行 KSPP 基准审计，返回 AuditResult。
 
-    修正：category 字段与 severity 分离，使用 HARDENING_CATEGORY_MAP
+    注：category 字段与 severity 分离，使用 HARDENING_CATEGORY_MAP
     将短键映射为中文分类名称。
     """
     if isinstance(config_path_or_dict, str):
@@ -298,14 +297,14 @@ def audit(config_path_or_dict: Union[str, Dict[str, str]]) -> AuditResult:
 
 
 # ─── 运行时内核加固验证 ───
-# .config 仅反映编译时选项；运行时 sysctl 可能修改了行为。
-# 此项检查验证运行时配置是否与编译时一致，并检测常见的"覆盖型"配置错误。
+# .config 仅反映编译时选项；运行时 sysctl 可能已修改行为。
+# 此项检查验证运行时配置是否与编译时一致，检测常见的"覆盖型"配置偏差。
 
 def audit_runtime(sysctl_values: Optional[Dict[str, str]] = None) -> List[Dict]:
     """验证运行时内核参数是否符合安全基线。
 
     sysctl_values: 字典 key=sysctl 路径, value=当前值。
-    若未提供，返回空列表（调用方可自行从 /proc/sys 采集）。
+    若未提供则返回空列表（调用方可自行从 /proc/sys 采集）。
     """
     findings = []
     if not sysctl_values:
@@ -313,23 +312,23 @@ def audit_runtime(sysctl_values: Optional[Dict[str, str]] = None) -> List[Dict]:
 
     _runtime_checks = [
         ("kernel.kptr_restrict",        ">=2", "high",
-         "内核指针泄漏限制 — 0 时 /proc/kallsyms 对非特权用户可见"),
+         "内核指针泄漏限制——0 时 /proc/kallsyms 对非特权用户可见"),
         ("kernel.dmesg_restrict",       "1",   "medium",
-         "dmesg 访问限制 — 防止内核日志泄漏地址"),
+         "dmesg 访问限制——防止内核日志泄漏地址"),
         ("kernel.perf_event_paranoid",  ">=3", "high",
-         "perf_event 限制 — 低值允许非特权性能事件采样"),
+         "perf_event 限制——低值允许非特权性能事件采样"),
         ("kernel.yama.ptrace_scope",    ">=2", "medium",
-         "ptrace 限制 — 防进程注入"),
+         "ptrace 限制——防进程注入"),
         ("kernel.unprivileged_bpf_disabled", "1", "critical",
-         "非特权 BPF 禁用 — 主要容器逃逸向量"),
+         "非特权 BPF 禁用——主要容器逃逸向量"),
         ("kernel.unprivileged_userns_clone", "0", "critical",
-         "非特权用户命名空间克隆 — 主要容器逃逸向量"),
+         "非特权用户命名空间克隆——主要容器逃逸向量"),
         ("net.core.bpf_jit_enable",     "1",   "high",
          "BPF JIT 应硬启用（避免解释器回退的攻击面）"),
         ("net.core.bpf_jit_harden",     "2",   "medium",
-         "BPF JIT 加固 — 2=禁用常量折叠 防 JIT spray"),
+         "BPF JIT 加固——2=禁用常量折叠 防 JIT spray"),
         ("kernel.modules_disabled",     "1",   "high",
-         "模块加载禁用 — 完全消除 LKM rootkit 攻击面"),
+         "模块加载禁用——完全消除 LKM rootkit 攻击面"),
     ]
 
     for _path, _expected, _severity, _desc in _runtime_checks:
@@ -345,21 +344,21 @@ def audit_runtime(sysctl_values: Optional[Dict[str, str]] = None) -> List[Dict]:
     return findings
 
 
-# ===== 修复建议生成 =====
+# ===== 修复建议产出 =====
 # ─── 编译器加固标志审计 ───
-# .config 选项是必要条件但非充分条件——编译器标志决定了运行时行为。
-# 例如 CONFIG_FORTIFY_SOURCE=y 仅在 CFLAGS 包含 -D_FORTIFY_SOURCE=2 时生效。
+# .config 选项是必要条件而非充分条件——编译器标志决定运行时行为。
+# 例如 CONFIG_FORTIFY_SOURCE=y 仅在 CFLAGS 包含 -D_FORTIFY_SOURCE=2 时实际生效。
 
 _COMPILER_HARDENING_FLAGS = [
     ("-D_FORTIFY_SOURCE=2", "critical", "编译期缓冲区溢出检测（需配合 CONFIG_FORTIFY_SOURCE=y）"),
-    ("-fstack-protector-strong", "critical", "强栈 canary — 比 -fstack-protector 覆盖更多函数"),
-    ("-fcf-protection=full", "high", "Intel CET (IBT + Shadow Stack) — 控制流完整性"),
-    ("-fzero-call-used-regs=all", "high", "函数返回前清零寄存器 — 防 ROP 数据泄漏"),
-    ("-mretpoline", "high", "retpoline — Spectre v2 缓解"),
+    ("-fstack-protector-strong", "critical", "强栈 canary——比 -fstack-protector 覆盖更多函数"),
+    ("-fcf-protection=full", "high", "Intel CET (IBT + Shadow Stack)——控制流完整性"),
+    ("-fzero-call-used-regs=all", "high", "函数返回前清零寄存器——防 ROP 数据泄漏"),
+    ("-mretpoline", "high", "retpoline——Spectre v2 缓解"),
     ("-Werror=implicit-function-declaration", "medium", "隐式函数声明为错误"),
     ("-Werror=implicit-int", "medium", "隐式 int 为错误"),
-    ("-Wl,-z,relro", "high", "Full RELRO — GOT 不可写"),
-    ("-Wl,-z,now", "high", "BIND_NOW — 立即解析所有 PLT 条目"),
+    ("-Wl,-z,relro", "high", "Full RELRO——GOT 不可写"),
+    ("-Wl,-z,now", "high", "BIND_NOW——立即解析所有 PLT 条目"),
     ("-fno-delete-null-pointer-checks", "medium", "保留 NULL 指针检查"),
     ("-fno-strict-overflow", "medium", "禁用严格溢出优化"),
     ("-fno-strict-aliasing", "low", "禁用严格别名优化（Linux 内核必需）"),
@@ -388,7 +387,7 @@ def audit_compiler_flags(cflags: str) -> List[Dict]:
 
 
 def generate_remediation_plan(audit_result: AuditResult) -> str:
-    """根据审计结果生成KSPP加固建议。"""
+    """根据审计结果产出 KSPP 加固建议清单。"""
     _lines: List[str] = []
     _lines.append("=" * 60)
     _lines.append("KSPP Hardening Remediation Plan")
@@ -433,11 +432,11 @@ def generate_remediation_plan(audit_result: AuditResult) -> str:
     return "\n".join(_lines)
 
 
-# ─── 配置差异分析 ───
+# ─── 配置差异比对 ───
 
 def diff_configs(old: Union[str, Dict[str, str]],
                  new: Union[str, Dict[str, str]]) -> Dict:
-    """比较两个内核配置的安全态势差异。"""
+    """比较两份内核配置的安全态势差异。"""
     _old_cfg = parse_config(old) if isinstance(old, str) else old
     _new_cfg = parse_config(new) if isinstance(new, str) else new
     _kspp_keys = {e[0] for e in KSPP_BASELINE}

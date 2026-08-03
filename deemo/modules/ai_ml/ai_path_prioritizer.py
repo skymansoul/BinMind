@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-# AI-driven execution-path prioritization — scores code paths by exploitability potential
-# using heuristic features: memory operations, user-controlled data flow, and reachability.
-# 2026-07-05: added taint-source proximity scoring and loop-depth penalty multiplier.
-# 2026-07-12: sigmoid距离衰减取代线性模型、操作邻接乘数捕获耦合风险、Jaccard多样性惩罚避免fuzzer周期浪费。
+# 智能驱动执行路径优先级排序 — 按可利用性评分代码路径
+# (内存操作/用户控制数据流/可达性).
+# 污点源接近度评分+循环深度惩罚乘数.
+# sigmoid距离衰减/操作邻接乘数/Jaccard多样性惩罚.
 
 import logging as _logging
 import re as _re
@@ -213,9 +213,9 @@ def _jaccard_similarity(set_a, set_b):
 
 
 class PathPrioritizer:
-    """AI-driven execution-path prioritization engine.
+    """智能驱动执行路径优先级排序引擎。
 
-    Uses lightweight heuristics (no ML model needed) to rank paths:
+    轻量启发式(无需ML模型)排序路径:
     1. Per-node risk scoring via pattern matching on decompiled code.
     2. Taint-source proximity (user-controlled data reaching risky ops).
     3. Path length normalization to avoid bias toward long paths.
@@ -296,7 +296,7 @@ class PathPrioritizer:
             built.append(ep)
             pi += 1
 
-        # 多样性重排序：贪心选取——每次取剩余中（原始分 * 多样性折扣）最高的
+        # 多样性重排序：贪心选取--每次取剩余中（原始分 * 多样性折扣）最高的
         ranked = self._diversity_rerank(built)
         return ranked
 

@@ -1,5 +1,3 @@
-# 2026-07-23 14:00
-# data_quality.py
 # 数据质量评估器 — 检测和修复ML训练数据中的常见质量问题
 # 核心: 缺失值/异常值/类别不平衡/标签噪声/特征冗余检测
 # 设计: 不对现有pipeline做假设, 作为独立的质量审计层使用
@@ -23,7 +21,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class QualityIssue:
     """数据质量问题"""
-    kind: str                    # missing_value, outlier, class_imbalance, label_noise, feature_redundancy, duplicate
+    kind: str                    # missing_value, 离群点, class_imbalance, label_noise, feature_redundancy, duplicate
     severity: str                # low, medium, high, critical
     description: str
     affected_indices: List[int] = field(default_factory=list)

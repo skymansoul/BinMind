@@ -5,13 +5,13 @@ from collections import Counter
 
 
 class VulnSignatureScanner:
-    """15+ built-in vulnerability signatures with CVE/CWE references, multi-method detection"""
+    """15+ built- 漏洞 签名s CVE/CWE 引用s, multi-method detection"""
 
     # ---- 初始化: 15+ CVE级漏洞签名库 ----
 
     def __init__(self):
         self._signatures = [
-            # Buffer overflow patterns
+            # 缓冲区溢出 patterns
             {
                 'id': 'VULN-001',
                 'title': 'Stack Buffer Overflow (strcpy/gets/sprintf)',
@@ -46,7 +46,7 @@ class VulnSignatureScanner:
                          '_wsystem', '_popen'],
                 'method': 'api_sequence',
             },
-            # Insecure deserialization
+            # Insecure 反序列化
             {
                 'id': 'VULN-004',
                 'title': 'Insecure Deserialization',
@@ -58,7 +58,7 @@ class VulnSignatureScanner:
                          'JavaDeserialize', 'SoapFormatter'],
                 'method': 'api_sequence',
             },
-            # TOCTOU / race condition
+            # TOCTOU / 竞态条件
             {
                 'id': 'VULN-005',
                 'title': 'TOCTOU Race Condition (access/open)',
@@ -69,7 +69,7 @@ class VulnSignatureScanner:
                               ('stat', 'open'), ('GetFileAttributes', 'CreateFile')],
                 'method': 'api_pairs',
             },
-            # Integer overflow
+            # 整数溢出
             {
                 'id': 'VULN-006',
                 'title': 'Integer Overflow (malloc with unchecked multiplication)',
@@ -83,7 +83,7 @@ class VulnSignatureScanner:
                 ],
                 'method': 'api_sequence',
             },
-            # NULL pointer dereference
+            # 空指针解引用
             {
                 'id': 'VULN-007',
                 'title': 'Potential NULL Pointer Dereference',
@@ -91,7 +91,7 @@ class VulnSignatureScanner:
                 'cvss_base': 5.9,
                 'apis': ['malloc', 'calloc', 'fopen', 'CreateFile', 'new', 'GlobalAlloc'],
                 'patterns': [
-                    r'(\w+)\s*=\s*malloc\s*\(.*\)\s*;[^;]*\1->',  # malloc then deref without check
+                    r'(\w+)\s*=\s*malloc\s*\(.*\)\s*;[^;]*\1->',  # malloc deref 检查
                 ],
                 'method': 'pattern',
             },
@@ -107,7 +107,7 @@ class VulnSignatureScanner:
                             'Directory.GetFiles', 'Directory.GetDirectories'],
                 'method': 'import_string_combo',
             },
-            # Use of unsafe functions
+            # 使用 unsafe functions
             {
                 'id': 'VULN-009',
                 'title': 'Use of Banned/Deprecated API',
@@ -191,7 +191,7 @@ class VulnSignatureScanner:
                          'Reflection.Assembly', 'Activator.CreateInstance'],
                 'method': 'api_sequence',
             },
-            # Memory leak
+            # 内存泄漏
             {
                 'id': 'VULN-016',
                 'title': 'Potential Memory Leak',
@@ -272,7 +272,7 @@ class VulnSignatureScanner:
                         'detection_method': 'api_pairs',
                     })
 
-            # check api_pairs from re patterns
+            # 检查 api_pairs re patterns
             if _sig.get('patterns'):
                 _imp_str = ' '.join(_imp_flat)
                 for _pat in _sig['patterns']:
@@ -316,7 +316,7 @@ class VulnSignatureScanner:
                     'detection_method': 'string_pattern',
                 })
 
-            # Regex patterns in strings
+            # Regex patterns strings
             if _sig.get('patterns'):
                 for _pat in _sig['patterns']:
                     if re.search(_pat, _strs_text, re.I):
@@ -396,7 +396,7 @@ class VulnSignatureScanner:
 
         _all_findings = _f1 + _f2 + _f3 + _f4
 
-        # 去重：同一signature_id取最高confidence
+        # 去重：同一签名_id取最高confidence
         _dedup = {}
         for _f in _all_findings:
             _sid = _f['signature_id']
@@ -405,7 +405,7 @@ class VulnSignatureScanner:
 
         _results = sorted(_dedup.values(), key=lambda x: x['confidence'], reverse=True)
 
-        # Opcode pattern check
+        # Opcode pattern 检查
         _opcode_flags_list = list(opcode_flags)  # reserved for future opcode scanning
 
         # 综合风险评分

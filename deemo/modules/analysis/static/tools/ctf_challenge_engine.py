@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class ChallengeCategory:
-    """Taxonomy of CTF challenge disciplines recognized by the engine."""
+    """Taxonomy CTF challenge disciplines recognized engine"""
 
     PWN = "pwn"
     REVERSE = "reverse"
@@ -25,7 +25,7 @@ class ChallengeCategory:
 
 
 class DifficultyLevel:
-    """Ordered difficulty bands from introductory to extreme."""
+    """Ordered difficulty bands introductory extreme"""
 
     BEGINNER = "beginner"
     EASY = "easy"
@@ -85,11 +85,11 @@ class WriteupResult:
 
 class CTFChallengeEngine(BaseAnalyzer):
     """
-    Workflow automation engine for CTF competition tasks.
-
-    Provides classification, auto-solving, challenge generation, and
-    writeup synthesis driven by AI-assisted pattern matching. Covers
-    pwn, reverse, crypto, web, and secondary challenge categories.
+    Workflow automation engine for CTF competition tasks
+    
+    提供 分类, auto-solving, challenge generation
+    writeup synthesis driven 智能辅助 pattern matching. Covers
+    pwn, reverse, crypto, web, secondary challenge categories
     """
 
     CATEGORY_SIGNATURES: Dict[str, List[str]] = {

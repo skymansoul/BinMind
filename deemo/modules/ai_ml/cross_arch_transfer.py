@@ -1,8 +1,6 @@
-# 2026-07-22 11:40
-# cross_arch_transfer.py
 # 跨架构迁移学习 — 将一种指令集上训练的模型适配到另一种架构
 # 依据: GBsim [Entropy 2025] 的GCN-BERT跨架构二进制相似度方法
-#       ProTST [arXiv 2412.11177, 2024] 的渐进式师生跨任务知识迁移
+# ProTST [arXiv 2412.11177, 2024] 的渐进式师生跨任务知识迁移
 # 核心: 通过共享语义空间对齐不同架构的嵌入, 使用对比域适配
 
 from __future__ import annotations
@@ -222,7 +220,7 @@ class CrossArchAligner:
 
         for ep in range(epochs):
             total_loss = 0.0
-            # 随机mini-batch SGD
+            # 随机mini-批次 SGD
             indices = list(range(n))
             random.shuffle(indices)
             bs = min(32, n)

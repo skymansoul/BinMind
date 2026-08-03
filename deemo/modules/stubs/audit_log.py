@@ -1,7 +1,7 @@
-# audit_log.py — 导入审计日志
-# 记录 stubs/ 下所有桩模块的加载/代理/补丁事件序列。
+# audit_log.py — 桩模块加载审计
+# 记录 stubs/ 下所有桩模块的加载、代理、补丁事件序列。
 # 参考: Concept Drift detection (arXiv:2407.13918) GIN + domain adaptation
-#   — 追踪 API 漂移以提前预警，类比恶意软件特征随时间变化。
+#   — 追踪 API 漂移提前预警，类比恶意软件特征时变特性。
 import logging as _logging, time as _t
 from collections import OrderedDict as _Od
 

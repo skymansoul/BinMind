@@ -1,5 +1,5 @@
-# Data module runtime configuration — reads YAML + env overrides
-# 仿 cve/src/config.py 的模式写的，参数不完全一样
+# data 模块运行时配置：读取 YAML + 环境变量覆写
+# 参考 cve/src/config.py 模式实现，参数集合不完全一致
 
 import os
 import json
@@ -9,7 +9,7 @@ from typing import Optional, Dict, Any, List
 
 
 def _env_or(key: str, default=None):
-    """Read env var, fallback to default."""
+    """读取环境变量，缺失时返回默认值。"""
     val = os.environ.get(key)
     return val if val is not None else default
 
@@ -56,11 +56,10 @@ class PipelineConfig:
 
 @dataclass
 class DedupConfig:
-    algorithm: str = "sha256"      # default: exact hash only (fuzzy index NYI)
+    algorithm: str = "sha256"      # 默认仅精确哈希去重 (模糊索引待实现)
     simhash_bits: int = 128
-    # simhash_threshold and minhash_threshold are reserved for when the
-    # fingerprint index table is implemented.  Currently only exact hash
-    # dedup (sha256) is functional.
+    # simhash_threshold 和 minhash_threshold 为指纹索引表预留。
+    # 当前仅 sha256 精确哈希去重可用。
     chunk_size: int = 4096
     minhash_perms: int = 128
 
@@ -127,7 +126,7 @@ class ExportConfig:
 
 @dataclass
 class DataConfig:
-    """整个 data 模块的配置聚合。"""
+    """data 模块顶层配置聚合。"""
     db: DBConfig = field(default_factory=DBConfig)
     pipeline: PipelineConfig = field(default_factory=PipelineConfig)
     dedup: DedupConfig = field(default_factory=DedupConfig)
@@ -141,9 +140,9 @@ class DataConfig:
 
     @classmethod
     def from_file(cls, path: Optional[str] = None) -> "DataConfig":
-        """从 YAML 文件加载配置，再用环境变量覆盖。
+        """从 YAML 文件加载配置，随后以环境变量覆写。
 
-        Path 为 None 时找默认路径：当前目录下的 config/default.yaml。
+        path 为 None 时查找默认路径：当前目录下的 config/default.yaml。
         """
         if path is None:
             base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -161,10 +160,10 @@ class DataConfig:
 
     @classmethod
     def from_profile(cls, profile_name: str) -> "DataConfig":
-        """从命名 profile 加载配置 —— 在 config/ 目录下找 <profile>.yaml。
+        """从命名 profile 加载配置 — 在 config/ 下查找 <profile>.yaml。
 
-        Profile 之间共享 defaults，仅覆盖差异字段。
-        适合 quick-prod / quick-dev / ci 等场景切换。
+        profile 间共享默认值，仅覆盖差异字段。
+        适用于 quick-prod / quick-dev / ci 等场景快速切换。
         """
         base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         profile_path = os.path.join(base, "config", f"{profile_name}.yaml")
@@ -264,7 +263,7 @@ class DataConfig:
         )
 
     def validate(self) -> List[str]:
-        """验证配置合法性，返回问题列表。空列表表示配置有效。"""
+        """校验配置合法性，返回问题列表。空列表表示配置有效。"""
         issues = []
         if self.db.page_size not in (512, 1024, 2048, 4096, 8192, 16384, 32768, 65536):
             issues.append(f"db.page_size={self.db.page_size} 不是 SQLite 支持的页大小")
@@ -285,22 +284,22 @@ class DataConfig:
         return issues
 
     def dump(self) -> str:
-        """将解析后的最终配置以 JSON 形式输出，方便调试。"""
+        """将解析后的最终配置以 JSON 格式输出，便于调试。"""
         cfg_dict = asdict(self)
         cfg_dict.pop("source_file", None)
         return json.dumps(cfg_dict, indent=2, default=str)
 
     def to_dict(self) -> Dict:
-        """返回配置的字典表示（用于序列化或传递给其他模块）。"""
+        """返回配置的字典表示，用于序列化或跨模块传递。"""
         d = asdict(self)
         d.pop("source_file", None)
         return d
 
     def diff(self, other: "DataConfig") -> List[str]:
-        """比较两份配置的差异 —— 返回人类可读的差异列表。
+        """逐字段比较两份配置的差异，返回可读差异列表。
 
-        用于排查环境间配置漂移 (dev vs prod)、CI 中验证配置一致性。
-        逐字段递归比较，输出形如 "db.cache_size_mb: 64 → 128"。
+        用于排查环境间配置漂移 (dev vs prod) 或 CI 中验证一致性。
+        递归遍历字段，输出形如 "db.cache_size_mb: 64 → 128"。
         """
         diffs = []
         a = self.to_dict()
@@ -320,11 +319,11 @@ class DataConfig:
         return diffs
 
     def freeze(self):
-        """冻结配置 —— 设置 __frozen=True 后禁止任何属性修改。
+        """冻结配置 — __frozen=True 后禁止任何属性写入。
 
-        在多线程环境或插件系统中，冻结可防止初始化完成后意外修改
-        导致的竞态条件。DataConfig 和各子配置 (DBConfig 等) 都是
-        frozen 的 dataclass，freeze 后会触发 __setattr__ 检查。
+        多线程环境或插件系统中，冻结可防止初始化完成后非预期修改
+        导致的竞态条件。DataConfig 及各子配置均为 frozen dataclass，
+        freeze 后触发 __setattr__ 拦截。
         """
         object.__setattr__(self, '__frozen', True)
         for field_name in self.__dataclass_fields__:
@@ -339,7 +338,7 @@ class DataConfig:
 
 
 def lc_cfg_default():
-    """Lifecycle 配置的默认值，避免 dataclass factory 的可变默认值问题。"""
+    """Lifecycle 配置默认值工厂，规避 dataclass factory 可变默认值陷阱。"""
     return LifecycleConfig(stages=[
         LifecycleStageCfg(name="raw", ttl_days=90, compress_after_days=7),
         LifecycleStageCfg(name="analysis", ttl_days=180, compress_after_days=30),
@@ -365,6 +364,6 @@ def get_config_by_profile(profile: str) -> DataConfig:
 
 
 def reset_config():
-    """重置全局配置 —— 测试和配置热加载时使用。"""
+    """重置全局配置 — 用于测试及配置热加载场景。"""
     global _GLOBAL_CONFIG
     _GLOBAL_CONFIG = None

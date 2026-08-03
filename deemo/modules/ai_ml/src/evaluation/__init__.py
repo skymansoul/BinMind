@@ -1,6 +1,3 @@
-# 2026-07-18
-# evaluation 子包入口 —— 指标 + 报告，评估流水线统一出口
-
 from .metrics import (
     mrr_score,
     recall_at_k,

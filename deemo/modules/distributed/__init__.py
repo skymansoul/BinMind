@@ -1,10 +1,9 @@
-# 2026-08-01
-# distributed/ — 分布式任务调度系统的对外接口
-# lazy import via __getattr__: 不引用不导入，减小冷启动开销
+# distributed/ 分布式任务调度对外接口
+# 基于 __getattr__ 懒加载：不引用不导入，降低冷启动开销
 # 同时暴露 src/ 和 Worker 的扁平命名空间
 #
 # 热路径符号（Worker/Task/Node）预加载，避免 __getattr__ 首次访问延迟
-# 其余按需加载，模块级别的 __getattr__ 仅在属性未命中时触发（PEP 562）
+# 其余按需加载，模块级别 __getattr__ 仅在属性未命中时触发（PEP 562）
 
 import importlib
 
@@ -36,7 +35,7 @@ __all__ = [
     "RedisPool",
     # metrics
     "Counter", "Gauge", "Histogram", "Summary", "Registry",
-    # —— 2026-08 广度拓展 ——
+    # 2026-08 广度拓展
     # load_balancer
     "LoadBalancer", "ConsistentHashRing", "SelectorNode",
     # elastic_pool
@@ -57,6 +56,13 @@ __all__ = [
     "WatermarkMonitor", "MultiQueueWatermark", "FlowController",
     # node_registry
     "NodeRegistry", "NodeRecord", "RedisDiscovery", "GossipDiscovery", "StaticDiscovery",
+    # 2026-08 故障恢复与自适应容错
+    "FaultPropagationGraph", "FaultSignal", "RootCauseCandidate",
+    "fault_signals_from_breakers",
+    "RescheduleOracle", "reschedule_after_fault",
+    "SpeculativeExecutor", "CriticalPathTracker", "SpeculationRecord",
+    "AdaptiveCheckpointController", "CheckpointRecord", "FailureRecord",
+    "JointBudgetController",
 ]
 
 _MODULE_MAP: dict[str, str] = {
@@ -106,6 +112,20 @@ _MODULE_MAP: dict[str, str] = {
     "NodeRegistry": ".src.node_registry", "NodeRecord": ".src.node_registry",
     "RedisDiscovery": ".src.node_registry", "GossipDiscovery": ".src.node_registry",
     "StaticDiscovery": ".src.node_registry",
+    # 2026-08 故障恢复与自适应容错
+    "FaultPropagationGraph": ".src.fault_propagation",
+    "FaultSignal": ".src.fault_propagation",
+    "RootCauseCandidate": ".src.fault_propagation",
+    "fault_signals_from_breakers": ".src.fault_propagation",
+    "RescheduleOracle": ".src.reschedule_oracle",
+    "reschedule_after_fault": ".src.reschedule_oracle",
+    "SpeculativeExecutor": ".src.speculative_exec",
+    "CriticalPathTracker": ".src.speculative_exec",
+    "SpeculationRecord": ".src.speculative_exec",
+    "AdaptiveCheckpointController": ".src.adaptive_checkpoint",
+    "CheckpointRecord": ".src.adaptive_checkpoint",
+    "FailureRecord": ".src.adaptive_checkpoint",
+    "JointBudgetController": ".src.adaptive_checkpoint",
 }
 
 _CACHE: dict[str, object] = {}
@@ -128,4 +148,31 @@ def __getattr__(name: str):
                 mod_path, package=__package__
             )
         return getattr(_CACHE[mod_path], name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    raise AttributeError("module {} has no attribute {}".format(__name__, name))
+
+
+# ===== GRL-Sched 拓展 (2026-08-03) =====
+# 追加注册 — 保持既有映射不变，仅扩展懒加载表与符号导出
+# GRL-Sched: 图强化学习任务调度 + 动态图划分
+# 论文: GraphEdge — arXiv:2504.15905
+__all__ += [
+    "TaskDependencyGraph", "TaskNode", "DependencyEdge",
+    "GraphPartitioner", "Partition",
+    "GNNEncoder", "GRLScheduler", "SimulatedAnnealingScheduler",
+    "MakespanSimulator", "LinearQPolicy",
+    "DependencyAwareScheduler", "heft_rank", "heft_order", "grl_schedule",
+]
+_MODULE_MAP.update({
+    "TaskDependencyGraph": ".src.grl_graph", "TaskNode": ".src.grl_graph",
+    "DependencyEdge": ".src.grl_graph",
+    "GraphPartitioner": ".src.grl_partition", "Partition": ".src.grl_partition",
+    "GNNEncoder": ".src.grl_scheduler", "GRLScheduler": ".src.grl_scheduler",
+    "SimulatedAnnealingScheduler": ".src.grl_scheduler",
+    "MakespanSimulator": ".src.grl_scheduler", "LinearQPolicy": ".src.grl_scheduler",
+    "DependencyAwareScheduler": ".src.grl_scheduler",
+    "heft_rank": ".src.grl_scheduler", "heft_order": ".src.grl_scheduler",
+    "grl_schedule": ".src.grl_scheduler",
+})
+
+# ===== 故障自愈拓展 — 因果传播 + 增量调度 + 投机 + 自适应检查点 =====
+# 各符号注册在上方 _MODULE_MAP 与 __all__ 中已完成

@@ -42,7 +42,7 @@ class Severity:
 
 @dataclass
 class LeakPoint:
-    """已确认或潜在的信息泄露点。"""
+    """已确认或潜在的信息泄露点数据结构。"""
     leak_id: str = ""
     leak_type: str = LeakType.FORMAT_STRING
     location: str = ""
@@ -56,7 +56,7 @@ class LeakPoint:
     description: str = ""
     exploit_snippet: str = ""
     raw_data: Dict[str, Any] = field(default_factory=dict)
-    # 新增：证据链 — 原始输入 → 传递给危险函数的路径
+    # 证据链：原始输入 → 传递给危险函数的路径
     evidence_chain: List[str] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -118,10 +118,10 @@ class LeakCapabilityMatrix:
 
 
 class InfoLeakAnalyzer:
-    """检测反编译二进制代码中的信息泄露漏洞。
+    """反编译代码中的信息泄露漏洞检测。
 
-    核心关注点：格式化字符串漏洞与内存读取越界。
-    增强：引入数据流追踪（污点源→sink），对用户可控输入传递到
+    核心关注：格式化字符串漏洞与内存读取越界。
+    增强：数据流追踪（污点源→sink），对用户可控输入传递到
     printf 族函数的路径进行评分，降低纯静态模式匹配的误报率。
     """
 
@@ -177,14 +177,13 @@ class InfoLeakAnalyzer:
         self._tainted_vars: Dict[str, set] = {}
 
     def _collect_tainted_vars(self, pseudocode: str) -> set:
-        """从伪代码中提取所有污点源赋值的变量名。
+        """从伪代码中提取污点源赋值的变量名。
 
-        策略：在赋值语句中匹配 `var = recv(...)` 或 `var = fgets(...)`
-        等模式。不做过程间分析 — 仅限于当前函数内第一层赋值。
-        复杂度：O(n) 单次正则扫描，n 为伪代码行数。
+        策略：在赋值语句中匹配 var = recv(...) 等模式。
+        不做过程间分析 — 仅限当前函数内第一层赋值。
+        复杂度：O(n) 单次正则扫描。
         """
         tainted = set()
-        # 模式: ident = source_func(...)
         assign_pat = re.compile(r'(\w+)\s*=\s*(?:' + '|'.join(
             ['recv', 'read', 'fgets', 'scanf', 'gets', 'getenv',
              'atoi', 'strtol', 'memcpy', 'strcpy', 'argv']) + r')\s*\(')
@@ -195,8 +194,7 @@ class InfoLeakAnalyzer:
     def _trace_taint_to_printf(self, pseudocode: str, varname: str) -> list:
         """从污点变量追踪到 printf 族调用的路径片段。
 
-        返回证据链列表，每项为一个 "使用点" 字符串。
-        简化版：在伪代码中定位变量名出现位置，若其后续行存在 printf
+        在伪代码中定位变量名出现位置，若其后续行存在 printf
         调用且参数列表中包含该变量，则记录该路径。
         """
         chain = []
@@ -215,7 +213,7 @@ class InfoLeakAnalyzer:
                 decomp_data: Optional[Dict[str, Any]] = None,
                 crash_data: Optional[Dict[str, Any]] = None,
                 symbols: Optional[Dict[str, int]] = None) -> LeakCapabilityMatrix:
-        """执行完整信息泄露分析流水线。"""
+        """完整信息泄露分析流水线入口。"""
         logger.info(f"启动信息泄露分析: {self.binary_name}")
 
         if binary_info:
@@ -485,15 +483,13 @@ class InfoLeakAnalyzer:
         return sorted_leaks[0] if sorted_leaks else None
 
     def _compute_exploit_chain_depth(self, matrix: LeakCapabilityMatrix) -> int:
-        """计算可利用链深度：从信息泄露到代码执行的阶段数。
+        """可利用链深度：从信息泄露到代码执行的阶段数。
 
         阶段定义：
         1 — 仅泄露非关键数据（偏移量、随机字节等）
         2 — 泄露地址空间信息（栈/堆/基址）
         3 — 泄露基址 + 关键防护（canary/libc）
         4 — 基址 + canary + libc 三者齐备（ASLR+DEP+StackGuard 全部可绕过）
-
-        返回深度值，用于调整利用策略的激进程度。
         """
         depth = 1
         addr_leaks = (matrix.can_leak_stack_address, matrix.can_leak_heap_address,
@@ -557,7 +553,7 @@ class InfoLeakAnalyzer:
         logger.info(f"已生成利用策略 (链深度={chain_depth}):\n{matrix.exploit_strategy}")
 
     def detect_format_string_in_binary(self, binary_path: str) -> List[Dict[str, Any]]:
-        """扫描二进制中的格式化字符串漏洞模式。需要反编译数据才能输出有意义结果。"""
+        """扫描二进制中的格式化字符串漏洞模式。需反编译数据。"""
         logger.info(f"扫描二进制中的格式化字符串漏洞: {binary_path}")
         return []  # 无伪代码时返回空 — 有意义的结果需要伪代码上下文
 
@@ -566,7 +562,7 @@ def analyze_info_leak(binary_path: str,
                       binary_info: Optional[Dict[str, Any]] = None,
                       decomp_data: Optional[Dict[str, Any]] = None,
                       crash_data: Optional[Dict[str, Any]] = None) -> LeakCapabilityMatrix:
-    """便捷函数：对指定二进制执行完整信息泄露分析。"""
+    """便捷入口：对指定二进制执行完整信息泄露分析。"""
     analyzer = InfoLeakAnalyzer(binary_path=binary_path)
     return analyzer.analyze(binary_info=binary_info, decomp_data=decomp_data,
                             crash_data=crash_data)

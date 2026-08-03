@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-# ISA plugin framework. CPU backends, peripheral registry.
-# Execution engine: Unicorn. Plugins discovered via register(registry).
+# ISA plugin framework. CPU backends, peripheral registry
+# Execution engine: Unicorn. Plugins discovered via 寄存器(registry)
 #
 # 2025 升级: 增加 SPI/I2C/Timer 外设仿真器——
-# 嵌入式固件分析中，这些外设的 MMIO 访问是常见的交互点。
-# 仿真这些外设使得在不连接真实硬件的情况下进行固件 fuzzing 成为可能。
+# 嵌入式固件分析中，这些外设的 MMIO 访问是常见的交互点
+# 仿真这些外设使得在不连接真实硬件的情况下进行固件 fuzzing 成为可能
 import logging, os, json, importlib, importlib.util, threading
 
 logger = logging.getLogger(__name__)
@@ -115,10 +115,10 @@ class UART16550Emulator(CustomPeripheral):
 
 
 # ── SPI 外设仿真器 ─────────────────────────────────────────────────────────
-# 用于 fuzzing 固件中与 SPI Flash/SD 卡交互的代码路径。
+# 用于 fuzzing 固件中与 SPI Flash/SD 卡交互的代码路径
 class SPIFlashEmulator(CustomPeripheral):
-    """SPI Flash 仿真器——模拟 Winbond W25Q 系列闪存的命令集。
-    实现 READ (0x03)、FAST_READ (0x0B)、READ_JEDEC_ID (0x9F) 等核心命令。
+    """SPI Flash 仿真器——模拟 Winbond W25Q 系列闪存的命令集
+    实现 读取 (0x03)、FAST_READ (0x0B)、READ_JEDEC_ID (0x9F) 等核心命令
     """
     _JEDEC_ID = b'\xEF\x40\x18'  # Winbond W25Q128 制造商ID
 
@@ -138,7 +138,7 @@ class SPIFlashEmulator(CustomPeripheral):
 
     def read(self, off, size):
         if off == 0x04:  # 状态寄存器
-            return 0x02  # WEL bit set, not busy
+            return 0x02  # WEL bit set, busy
         if off == 0x08:  # 数据寄存器
             val = 0
             if self.__addr < len(self.__flash_data):
@@ -157,8 +157,8 @@ class SPIFlashEmulator(CustomPeripheral):
 
 # ── SysTick 定时器仿真器 ───────────────────────────────────────────────────
 class SysTickEmulator(CustomPeripheral):
-    """ARM Cortex-M SysTick 定时器仿真器——固件中普遍用于 RTOS 节拍。
-    每次 tick 递减当前值，归零时触发中断并重载。
+    """ARM Cortex-M SysTick 定时器仿真器——固件中普遍用于 RTOS 节拍
+    每次 tick 递减当前值，归零时触发中断并重载
     """
     def __init__(self, base=0xE000E010, size=0x10):
         self.__base = base; self.__sz = size

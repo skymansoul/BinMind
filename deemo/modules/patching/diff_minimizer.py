@@ -1,15 +1,14 @@
-# 2026-07-25
-"""Patch diff minimizer — Dilipa [NDSS 2026] inspired diff reduction.
+"""补丁 diff 最小化 — Dilipa [NDSS 2026] 启发的 diff 精简。
 
-Dilipa 提出通过 AST-based IR 将源代码编辑映射回二进制 micropatch 的机制。
-本模块实现其外围功能：对 patch diff 输出做最小化处理和语义分组，
-消除冗余变更并提取安全关键变更。
+Dilipa 提出基于 AST IR 将源码编辑映射回二进制 micropatch。
+本模块实现其外围：对 unified diff 做多阶段最小化与语义分组，
+消除冗余变更，提取安全关键变更。
 
 核心操作:
   - 空行/空白变更移除
   - 连续变更合并 (hunk coalescing)
   - 语义分组 (将同一安全检查的多行变更归组)
-  - 关键变更提取 (滤出仅影响安全属性的变更)
+  - 关键变更提取 (仅保留影响安全属性的变更)
 """
 
 import re, os, logging, difflib
@@ -24,16 +23,16 @@ class ChangeKind:
     ADDED = "added"
     REMOVED = "removed"
     MODIFIED = "modified"
-    WHITESPACE = "whitespace"    # 仅空白变更 — 可忽略
-    COMMENT = "comment"          # 仅注释变更 — 可忽略
-    SECURITY = "security"        # 安全关键变更
-    REFACTOR = "refactor"        # 重构变更 — 非安全
+    WHITESPACE = "whitespace"    # 仅空白 — 可丢弃
+    COMMENT = "comment"          # 仅注释 — 可丢弃
+    SECURITY = "security"        # 安全关键
+    REFACTOR = "refactor"        # 重构 — 非安全
 
 
 @dataclass
 class DiffHunk:
-    """单个 diff hunk — 连续的变更行组。"""
-    header: str = ""             # @@ -a,b +c,d @@ context
+    """单个 diff hunk — 连续变更行块。"""
+    header: str = ""             # @@ -a,b +c,d @@ 上下文
     original_start: int = 0
     original_count: int = 0
     patch_start: int = 0
@@ -48,7 +47,7 @@ class DiffHunk:
 
 @dataclass
 class MinimizedDiff:
-    """最小化后的 diff 结果。"""
+    """最小化 diff 结果。"""
     original_diff_size: int = 0
     minimized_diff_size: int = 0
     reduction_ratio: float = 0.0
@@ -56,7 +55,7 @@ class MinimizedDiff:
     kept_hunks: int = 0
     hunks: List[DiffHunk] = field(default_factory=list)
     security_only_diff: str = ""
-    # Dilipa 风格: 从 diff 中提取的安全检查片段
+    # Dilipa 风格: 提取的安全检查代码片段
     security_snippets: List[str] = field(default_factory=list)
 
     def to_dict(self) -> Dict:
@@ -96,11 +95,11 @@ _SECURITY_LINE_PATTERNS = [
 class DiffMinimizer:
     """Dilipa 风格 diff 最小化器。
 
-    对 unified diff 输出进行多阶段最小化：
-    Stage 1: noise removal (whitespace/comments-only changes)
-    Stage 2: hunk coalescing (merge adjacent small hunks)
-    Stage 3: semantic grouping (classify each hunk)
-    Stage 4: security-only extraction (Dilipa core)
+    对 unified diff 执行四阶段处理：
+    Stage 1: 噪声移除 (仅空白/注释的变更行)
+    Stage 2: hunk 合并 (相邻小 hunk 聚拢)
+    Stage 3: 语义标记 (分类每个 hunk)
+    Stage 4: 安全子集提取 (Dilipa 核心)
     """
 
     def __init__(self, keep_security_only: bool = False):
@@ -109,7 +108,7 @@ class DiffMinimizer:
                                    for p, w in _SECURITY_LINE_PATTERNS]
 
     # ============================================================
-    # minimize: 主入口
+    # 主入口
     # ============================================================
     def minimize(self, diff_text: str) -> MinimizedDiff:
         """最小化 unified diff 文本。"""
@@ -125,24 +124,24 @@ class DiffMinimizer:
             _result.kept_hunks = 0
             return _result
 
-        # Stage 2: 移除噪声 hunks (仅空白/注释变更)
+        # Stage 2: 噪声过滤
         _filtered = self._remove_noise_hunks(_hunks)
 
-        # Stage 3: 合并相邻 hunks
+        # Stage 3: 相邻合并
         _merged = self._coalesce_hunks(_filtered)
 
-        # Stage 4: 语义标记
+        # Stage 4: 语义分类
         for _h in _merged:
             self._classify_hunk(_h)
 
-        # 如果设置了仅保留安全变更
+        # 可选：仅保留安全变更
         if self._keep_security_only:
             _merged = [_h for _h in _merged if _h.is_security_related]
 
         _result.hunks = _merged
         _result.kept_hunks = len(_merged)
 
-        # 重建最小化后的 diff
+        # 重建最小化 diff
         _min_diff = self._rebuild_diff(_merged)
         _result.minimized_diff_size = len(_min_diff)
 
@@ -153,7 +152,7 @@ class DiffMinimizer:
         # 提取安全检查片段
         _result.security_snippets = self._extract_security_snippets(_merged)
 
-        # 安全相关的 diff 子集
+        # 安全相关子集
         _sec_hunks = [_h for _h in _merged if _h.is_security_related]
         _result.security_only_diff = self._rebuild_diff(_sec_hunks)
 
@@ -162,7 +161,7 @@ class DiffMinimizer:
     # ── diff 解析 ─────────────────────────────────────────────────────
 
     def _parse_diff(self, diff_text: str) -> List[DiffHunk]:
-        """解析 unified diff 为 hunk 列表。"""
+        """解析 unified diff 文本为 hunk 列表。"""
         _hunks = []
         _current = None
         _lines = diff_text.split('\n')
@@ -170,7 +169,7 @@ class DiffMinimizer:
         _i = 0
         while _i < len(_lines):
             _line = _lines[_i]
-            # 检测 hunk header: @@ -a,b +c,d @@
+            # 识别 hunk header: @@ -a,b +c,d @@
             _m = re.match(r'^@@\s+-(\d+),?(\d*)\s+\+(\d+),?(\d*)\s+@@(.*)', _line)
             if _m:
                 if _current is not None:
@@ -199,10 +198,10 @@ class DiffMinimizer:
     # ── 噪声移除 ──────────────────────────────────────────────────────
 
     def _remove_noise_hunks(self, hunks: List[DiffHunk]) -> List[DiffHunk]:
-        """过滤仅包含空白/注释变更的 hunks。"""
+        """滤除仅含空白或注释变更的 hunks。"""
         _filtered = []
         for _h in hunks:
-            # 检查变更是否仅限空白
+            # 检查变更行内容
             _added_content = [l for l in _h.added_lines if l.strip()]
             _removed_content = [l for l in _h.removed_lines if l.strip()]
 
@@ -225,7 +224,7 @@ class DiffMinimizer:
 
     def _coalesce_hunks(self, hunks: List[DiffHunk],
                         max_gap: int = 10) -> List[DiffHunk]:
-        """合并间距小于 max_gap 行的相邻 hunks。"""
+        """合并间隔小于 max_gap 行的相邻 hunks。"""
         if len(hunks) <= 1:
             return hunks
 
@@ -236,7 +235,7 @@ class DiffMinimizer:
             _nxt = hunks[_i]
             _gap = _nxt.original_start - (_cur.original_start + _cur.original_count)
             if _gap < max_gap and _gap >= 0:
-                # 合并
+                # 执行合并
                 _cur.added_lines.extend(_nxt.added_lines)
                 _cur.removed_lines.extend(_nxt.removed_lines)
                 _cur.original_count += _gap + _nxt.original_count
@@ -252,10 +251,10 @@ class DiffMinimizer:
     # ── 语义分类 ──────────────────────────────────────────────────────
 
     def _classify_hunk(self, hunk: DiffHunk):
-        """根据变更内容标记 hunk 的语义类别。"""
+        """按变更内容为 hunk 打语义标签。"""
         _all_added = '\n'.join(hunk.added_lines)
 
-        # 安全检查检测
+        # 安全检查模式匹配
         _max_security_score = 0.0
         for _pat, _weight in self._security_patterns:
             if _pat.search(_all_added):
@@ -292,21 +291,21 @@ class DiffMinimizer:
     # ── 安全片段提取 ─────────────────────────────────────────────────
 
     def _extract_security_snippets(self, hunks: List[DiffHunk]) -> List[str]:
-        """从安全关键 hunks 中提取独立的检查代码片段。Dilipa 风格的
-        lifted-C snippet 提取。"""
+        """从安全关键 hunks 中摘取独立检查代码片段。
+        Dilipa 风格的 lifted-C snippet 提取。"""
         _snippets = []
         for _h in hunks:
             if not _h.is_security_related:
                 continue
             for _l in _h.added_lines:
                 _stripped = _l.strip()
-                # 提取完整的 if 语句或函数调用
+                # 提取完整 if 语句或函数调用行
                 if _stripped and len(_stripped) > 5:
                     _snippets.append(_stripped)
         return _snippets
 
 
-# ── 便捷函数 ──────────────────────────────────────────────────────────
+# ── 便捷入口 ──────────────────────────────────────────────────────────
 
 def minimize_patch_diff(diff_text: str,
                         security_only: bool = False) -> Dict:

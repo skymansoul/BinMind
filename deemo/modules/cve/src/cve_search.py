@@ -1,19 +1,19 @@
-# 2026-07-29 ~ 2026-09-10
-# TF-IDF / BM25 semantic search engine for CVE descriptions.
-# The tokenizer handles mixed latin+CJK queries (e.g. "log4j 远程代码执行 rce")
-# since BinMind deals with a lot of Chinese-language vuln research.
+# ~ 2026-09-10
+# CVE描述TF-IDF/BM25语义搜索引擎。
+# 分词器处理混合拉丁+CJK查询（如"log4j 远程代码执行 rce"），
+# 因BinMind涉及大量中文漏洞研究。
 #
-# _is_cjk uses explicit unicode codepoint ranges instead of \p{Han} because
-# Python's re module doesn't support unicode property escapes (that's PCRE-only).
-# Learned this after a runtime crash in _tokenize — regex compiled fine but
-# crashed on match. Range tables are more portable anyway.
+# _is_cjk使用显式Unicode码点范围而非\p{Han}——
+# Python的re模块不支持Unicode属性转义（仅PCRE支持）。
+# 在_tokenize中遭遇运行时崩溃后才学到——正则编译通过但匹配时崩溃。
+# 码点范围表更具可移植性。
 #
-# BM25 parameters k1=1.2, b=0.75 are the standard IR defaults. The dot product
-# in search() iterates over the smaller of query_vec or doc_vec — micro-opt
-# someone added after noticing queries are typically much shorter than docs.
+# BM25参数k1=1.2, b=0.75为标准IR默认值。
+# search()中点积遍历query_vec与doc_vec中较小者——微优化，
+# 因查询通常远短于文档。
 #
-# explain() has no dedicated test class but is covered indirectly by search
-# engine integration tests. If you break it, other tests fail.
+# explain()无专用测试类但被搜索引擎集成测试间接覆盖。
+# 若破坏，其他测试会失败。
 
 import math
 import re
@@ -25,10 +25,9 @@ from .cve_models import CVEEntry
 from .cve_kb import CVEKnowledgeBase
 
 
-# ---- synonyms — hand-curated 20-entry map for vuln abbreviations ----
-# NOT auto-generated. Each entry was manually verified against real CVE
-# descriptions to make sure the expansion is actually useful for search.
-# Adding more won't help — these cover 90%+ of abbreviation-based searches.
+# ---- 同义词——手工整理20条漏洞缩写映射 ----
+# 非自动生成。每条均经真实CVE描述人工验证以确保扩展对搜索有用。
+# 添加更多无益——这些已覆盖90%以上的缩写查询。
 _SYNONYMS: Dict[str, str] = {
     "rce": "remote code execution",
     "xss": "cross site scripting",
@@ -52,7 +51,7 @@ _SYNONYMS: Dict[str, str] = {
     "cmd_inj": "command injection",
 }
 
-# ---- stopwords — common English ----
+# ---- 停用词——常见英语 ----
 _STOPWORDS: Set[str] = {
     "a", "an", "the", "and", "or", "but", "in", "on", "at", "to", "for",
     "of", "with", "by", "from", "is", "are", "was", "were", "be", "been",
@@ -68,33 +67,33 @@ _STOPWORDS: Set[str] = {
 }
 
 
-# CJK unicode ranges — explicit codepoints, not \p{Han}
+# CJK Unicode范围——显式码点，非\p{Han}
 _CJK_RANGES = [
-    (0x4E00, 0x9FFF),   # CJK Unified Ideographs
-    (0x3400, 0x4DBF),   # CJK Unified Ideographs Extension A
-    (0x20000, 0x2A6DF), # CJK Unified Ideographs Extension B
-    (0x2A700, 0x2B73F), # CJK Unified Ideographs Extension C
-    (0x2B740, 0x2B81F), # CJK Unified Ideographs Extension D
-    (0x2B820, 0x2CEAF), # CJK Unified Ideographs Extension E
-    (0x2CEB0, 0x2EBEF), # CJK Unified Ideographs Extension F
-    (0x30000, 0x3134F), # CJK Unified Ideographs Extension G
-    (0x31350, 0x323AF), # CJK Unified Ideographs Extension H
-    (0xF900, 0xFAFF),   # CJK Compatibility Ideographs
-    (0x2F800, 0x2FA1F), # CJK Compatibility Ideographs Supplement
-    (0x3040, 0x309F),   # Hiragana
-    (0x30A0, 0x30FF),   # Katakana
-    (0xAC00, 0xD7AF),   # Hangul Syllables
+    (0x4E00, 0x9FFF),   # CJK统一表意文字
+    (0x3400, 0x4DBF),   # CJK统一表意文字扩展A
+    (0x20000, 0x2A6DF), # CJK统一表意文字扩展B
+    (0x2A700, 0x2B73F), # CJK统一表意文字扩展C
+    (0x2B740, 0x2B81F), # CJK统一表意文字扩展D
+    (0x2B820, 0x2CEAF), # CJK统一表意文字扩展E
+    (0x2CEB0, 0x2EBEF), # CJK统一表意文字扩展F
+    (0x30000, 0x3134F), # CJK统一表意文字扩展G
+    (0x31350, 0x323AF), # CJK统一表意文字扩展H
+    (0xF900, 0xFAFF),   # CJK兼容表意文字
+    (0x2F800, 0x2FA1F), # CJK兼容表意文字补充
+    (0x3040, 0x309F),   # 平假名
+    (0x30A0, 0x30FF),   # 片假名
+    (0xAC00, 0xD7AF),   # 韩文音节
 ]
 
 
 def _is_cjk(ch: str) -> bool:
-    """Check if a character is CJK — explicit codepoint ranges (no unicode property escapes here)."""
+    """检查字符是否为CJK——显式码点范围（此处不使用Unicode属性转义）。"""
     cp = ord(ch)
     return any(lo <= cp <= hi for lo, hi in _CJK_RANGES)
 
 
-# punctuation to strip from CJK segments — literal character class
-# NOT unicode property escapes — those are PCRE-only and crashed in Python
+# CJK段待剥离标点——字面字符类
+# 非Unicode属性转义——仅PCRE支持，Python中会崩溃
 _CJK_PUNCT_STRIP = re.compile(
     r'[，。！？；：""''（）【】《》〈〉、…—'
     r'\-\.\,\!\?\;\:\"\'\(\)\[\]\{\}\<\>\/\\\@\#\$\%\^\&\*\+\=\|~`]+'
@@ -102,22 +101,22 @@ _CJK_PUNCT_STRIP = re.compile(
 
 
 def _tokenize(text: str) -> List[str]:
-    """Split text into latin and CJK tokens.
-    Latin: lowercase, whitespace/punctuation split, stopword removal, min 2 chars.
-    CJK: strip punctuation, overlapping bigrams. Handles mixed queries."""
+    """将文本拆分为拉丁和CJK词元。
+    拉丁: 小写、空格/标点分割、停用词移除、至少2字符。
+    CJK: 剥离标点、重叠二元组。处理混合查询。"""
     if not text:
         return []
 
     tokens: List[str] = []
     text = text.strip()
 
-    # ---- segment into latin runs and CJK runs ----
+    # ---- 分割为拉丁段和CJK段 ----
     segments: List[Tuple[str, bool]] = []  # (segment, is_cjk)
     i = 0
     while i < len(text):
         ch = text[i]
         if _is_cjk(ch):
-            # grab consecutive CJK chars
+            # 抓取连续CJK字符
             j = i
             while j < len(text) and _is_cjk(text[j]):
                 j += 1
@@ -126,7 +125,7 @@ def _tokenize(text: str) -> List[str]:
         elif ch.isspace():
             i += 1
         else:
-            # latin / ascii run
+            # 拉丁/ascii段
             j = i
             while j < len(text) and not _is_cjk(text[j]) and not text[j].isspace():
                 j += 1
@@ -135,17 +134,17 @@ def _tokenize(text: str) -> List[str]:
 
     for seg, is_cjk in segments:
         if is_cjk:
-            # strip ASCII punctuation from CJK segment using literal char class
+            # 使用字面字符类剥离CJK段中的ASCII标点
             cleaned = _CJK_PUNCT_STRIP.sub('', seg)
             if not cleaned:
                 continue
-            # overlapping bigrams
+            # 重叠二元组
             for k in range(len(cleaned) - 1):
                 tokens.append(cleaned[k:k+2])
         else:
-            # latin: lowercase, split on non-alphanumeric
+            # 拉丁: 小写，按非字母数字分割
             lowered = seg.lower()
-            # split on whitespace and punctuation
+            # 按空格和标点分割
             parts = re.split(r'[^a-z0-9]+', lowered)
             for part in parts:
                 part = part.strip()
@@ -159,12 +158,12 @@ def _tokenize(text: str) -> List[str]:
 
 
 def _expand_tokens(tokens: List[str]) -> List[str]:
-    """Expand abbreviation tokens using _SYNONYMS.
-    Each synonym value gets properly tokenized (multi-word synonyms split correctly)."""
+    """使用_SYNONYMS扩展缩略词词元。
+    每个同义词值被正确分词（多词同义词正确拆分）。"""
     expanded = list(tokens)
     for tok in tokens:
         if tok in _SYNONYMS:
-            # tokenize the synonym phrase — handles multi-word expansions
+            # 对同义短语句子分词——处理多词扩展
             synonym_tokens = _tokenize(_SYNONYMS[tok])
             expanded.extend(synonym_tokens)
     return expanded
@@ -172,49 +171,49 @@ def _expand_tokens(tokens: List[str]) -> List[str]:
 
 # ---- CVESearchEngine ----
 class CVESearchEngine:
-    """BM25 search over CVE descriptions with CJK tokenization support."""
+    """CVE描述BM25搜索——支持CJK分词。"""
 
     def __init__(self, kb: CVEKnowledgeBase):
         self._kb = kb
         # term -> {doc_idx: term_frequency}
         self._index: Dict[str, Dict[int, int]] = defaultdict(dict)
-        # doc_idx -> doc_length (in tokens)
+        # doc_idx -> doc_length (词元数)
         self._doc_lengths: Dict[int, int] = {}
-        # doc_idx -> CVEEntry for result lookup
+        # doc_idx -> CVEEntry 用于结果查找
         self._docs: Dict[int, CVEEntry] = {}
-        # idf cache
+        # idf缓存
         self._idf: Dict[str, float] = {}
-        # average doc length for BM25
+        # BM25平均文档长度
         self._avgdl: float = 0.0
         self._built = False
 
     def build(self):
-        """Read all entries from kb, build term index and compute idf values."""
+        """从知识库读取所有条目，构建词项索引并计算idf值。"""
         self._index.clear()
         self._doc_lengths.clear()
         self._docs.clear()
         self._idf.clear()
 
-        # get all entries from the knowledge base
+        # 从知识库获取所有条目
         entries, total = self._kb.search(limit=100000)
         N = len(entries)
         if N == 0:
             self._built = True
             return
 
-        # document frequency: term -> count of docs containing term
+        # 文档频率: term -> 包含该词项的文档数
         df: Dict[str, int] = defaultdict(int)
 
         for idx, entry in enumerate(entries):
             tokens = _expand_tokens(_tokenize(entry.description))
-            # also index cve_id itself — helps with "CVE-2024-1234" style queries
+            # 同时索引cve_id——有助于"CVE-2024-1234"风格查询
             cve_tokens = _tokenize(entry.cve_id)
             tokens.extend(cve_tokens)
 
             self._doc_lengths[idx] = len(tokens)
             self._docs[idx] = entry
 
-            # count term frequencies per document
+            # 统计每文档词项频率
             term_counts: Dict[str, int] = defaultdict(int)
             for t in tokens:
                 term_counts[t] += 1
@@ -223,30 +222,30 @@ class CVESearchEngine:
                 self._index[term][idx] = tf
                 df[term] += 1
 
-        # compute average document length
+        # 计算平均文档长度
         self._avgdl = sum(self._doc_lengths.values()) / N if N > 0 else 0.0
 
-        # compute idf: log((N - df + 0.5) / (df + 0.5) + 1) (BM25 standard)
-        # using add-1 smoothed variant: log(N / (1 + df)) for simpler interpretation
-        # DEVLOG note: went with log(N/(1+df)) — the simpler variant because
-        # it's what the original author understood and the differences are negligible
+        # 计算idf: log((N - df + 0.5) / (df + 0.5) + 1)（BM25标准）
+        # 使用加1平滑变体: log(N / (1 + df)) 以简化理解
+        # 开发日志: 采用log(N/(1+df))——更简单的变体，
+        # 因原作者理解此版本且差异可忽略
         for term, dft in df.items():
             self._idf[term] = math.log((N + 1) / (1 + dft))
 
         self._built = True
 
     def rebuild(self):
-        """Clear and rebuild the index."""
+        """清空并重建索引。"""
         self._built = False
         self.build()
 
     def search(self, query: str, top_n: int = 10, min_score: float = 0.01) -> List[Tuple[CVEEntry, float]]:
-        """BM25 search with k1=1.2, b=0.75.
-        Returns list of (CVEEntry, score) sorted by descending score."""
+        """BM25搜索 k1=1.2, b=0.75。
+        返回按评分降序排列的(CVEEntry, score)列表。"""
         if not self._built:
             self.build()
 
-        # tokenize query with synonym expansion
+        # 查询分词 + 同义词扩展
         query_tokens = _expand_tokens(_tokenize(query))
         if not query_tokens:
             return []
@@ -268,18 +267,19 @@ class CVESearchEngine:
             if not postings:
                 continue
 
-            # micro-opt: iterate over smaller side
-            # queries are usually much shorter, so iterating query_vec (not doc_vec)
-            # is faster. A human noticed this and added the if/else.
-            if len(postings) < len(scores):
-                # fewer documents contain this term
+            # 微优化: 遍历较小侧
+            # 修复: scores在首个term时为空defaultdict, len(scores)==0,
+            # 此时len(postings)<0恒为False, 落入else分支遍历空scores.keys()
+            # 导致所有查询返回[]。加入not scores守卫, 首个term强制遍历postings。
+            if not scores or len(postings) < len(scores):
+                # 包含该词项的文档数更少
                 for doc_idx, tf in postings.items():
                     doc_len = self._doc_lengths.get(doc_idx, 1)
                     numerator = tf * (k1 + 1)
                     denominator = tf + k1 * (1 - b + b * doc_len / self._avgdl)
                     scores[doc_idx] += idf * numerator / denominator
             else:
-                # fewer documents already scored
+                # 已评分的文档数更少
                 for doc_idx in list(scores.keys()):
                     tf = postings.get(doc_idx, 0)
                     if tf == 0:
@@ -289,7 +289,7 @@ class CVESearchEngine:
                     denominator = tf + k1 * (1 - b + b * doc_len / self._avgdl)
                     scores[doc_idx] += idf * numerator / denominator
 
-        # filter and sort
+        # 过滤与排序
         results = [
             (self._docs[doc_idx], score)
             for doc_idx, score in scores.items()
@@ -298,11 +298,11 @@ class CVESearchEngine:
         results.sort(key=lambda x: x[1], reverse=True)
         return results[:top_n]
 
-    # note: explain() uses a slightly different scoring loop than search()
-    # — not a bug, just different priorities (debugging vs. performance)
+    # 注意: explain()使用与search()略不同的评分循环——
+    # 非缺陷，仅优先目标不同（调试 vs 性能）
     def explain(self, query: str, top_n: int = 5) -> List[Dict]:
-        """Return detailed scoring breakdown for debugging.
-        Shows per-term contributions — useful for tuning synonyms and stopwords."""
+        """返回详细评分分解用于调试。
+        显示逐词项贡献——有助于调优同义词和停用词。"""
         if not self._built:
             self.build()
 
@@ -345,21 +345,21 @@ class CVESearchEngine:
                     "term_score": round(term_score, 6),
                 }
 
-        # sort by total_score descending
+        # 按total_score降序
         result_list = sorted(scores.values(), key=lambda x: x["total_score"], reverse=True)
-        # round total_score for readability
+        # total_score四舍五入便于阅读
         for r in result_list:
             r["total_score"] = round(r["total_score"], 6)
         return result_list[:top_n]
 
 
-# ---- module-level singleton (same pattern as get_exploitdb + get_kev) ----
+# ---- 模块级单例（与get_exploitdb + get_kev相同模式） ----
 _search_engine: Optional[CVESearchEngine] = None
 _search_lock = threading.Lock()
 
 
 def get_search_engine(kb: CVEKnowledgeBase) -> CVESearchEngine:
-    """Get or create the search engine singleton for the given kb."""
+    """获取或创建给定知识库的搜索引擎单例。"""
     global _search_engine
     if _search_engine is None:
         with _search_lock:

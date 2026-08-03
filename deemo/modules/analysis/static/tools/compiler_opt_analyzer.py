@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Fingerprint compiler toolchain and optimization level from binary artifacts.
+"""Fingerprint 编译器 toolchain 优化 level binary artifacts
 
-2025 升级: Remill/Anvill 启发的 IR 质量评估 (Trail of Bits ecosystem)。
-将二进制提升到 LLVM IR 后，IR 的可优化程度反向指示原始代码的质量。
-高 O0/IROpt 转换率→原始二进制是 Debug 构建；低比率→高度优化的 Release。
+2025 升级: Remill/Anvill 启发的 IR 质量评估 (Trail Bits ecosystem)
+将二进制提升到 LLVM IR 后，IR 的可优化程度反向指示原始代码的质量
+高 O0/IROpt 转换率→原始二进制是 Debug 构建；低比率→高度优化的 Release
 """
 
 import re, struct, os
@@ -13,7 +13,7 @@ from enum import IntEnum
 module = "compiler_opt_analyzer"
 name = "CompilerOptAnalyzer"
 
-# ── Compiler fingerprint database ──────────────────────────────────────────
+# ── 编译器 fingerprint 数据库 ──────────────────────────────────────────
 _GCC_PROLOGUE = re.compile(
     rb'\x55\x48\x89\xe5' rb'|' rb'\xf3\x0f\x1e\xfa')
 _GCC_STRING = re.compile(rb'GCC:\s*\(.*?\)\s*[\d.]+', re.DOTALL)
@@ -43,9 +43,9 @@ _CLANG_LTO_SIG = re.compile(rb'\xde\xc0\x17\x0b')
 _RUSTC_SIGNATURE = re.compile(rb'rustc\s+\d+\.\d+|rust_panic|_ZN3std')
 
 # ── Remill/Anvill 启发的 liftability 指标 ──────────────────────────────────
-# 参考: Trail of Bits lifting-bits ecosystem (Remill + Anvill + Rellic)
-# "可提升性"衡量二进制代码能被准确翻译为 LLVM IR 的程度。
-# 某些编译器模式（如跳板、间接跳转表、自修改代码）使提升困难。
+# 参考: Trail Bits lifting-bits ecosystem (Remill + Anvill + Rellic)
+# "可提升性"衡量二进制代码能被准确翻译为 LLVM IR 的程度
+# 某些编译器模式（如跳板、间接跳转表、自修改代码）使提升困难
 
 
 class CompilerType:
@@ -78,7 +78,7 @@ _LIFT_BARRIERS = {
 
 
 class CompilerOptAnalyzer:
-    """Compiler fingerprinting from raw binary data."""
+    """编译器 fingerprinting raw binary data"""
 
     def __init__(self):
         self._binary_data = b''; self._section_names = []
@@ -152,8 +152,8 @@ class CompilerOptAnalyzer:
         return OptimizationLevel.Os if o2_hits == 0 and o0_hits == 0 else OptimizationLevel.UNKNOWN
 
     def _assess_liftability(self) -> Dict[str, Any]:
-        """评估二进制可被提升到 LLVM IR 的程度——Remill/Anvill 启发。
-        返回各障碍的计数值及综合评分。0.0=极难提升，1.0=容易提升。
+        """评估二进制可被提升到 LLVM IR 的程度——Remill/Anvill 启发
+        返回各障碍的计数值及综合评分。0.0=极难提升，1.0=容易提升
         """
         barriers = {}
         total_score = 1.0

@@ -1,4 +1,4 @@
-"""RISC-V Vector/Crypto扩展分析——向量指令+加密扩展+向量循环+strip-mining检测。"""
+"""RISC-V V/K 扩展分析——向量指令/加密扩展/向量循环/strip-mining 识别。"""
 import os, re, logging, subprocess
 from dataclasses import dataclass, field
 from typing import Dict, List
@@ -74,7 +74,7 @@ class RISCVExtAnalyzer:
         if sm4c>0: issues.append(f"检测到{sm4c}次SM4密钥扩展操作")
         has_sc=any(i.extension=='Zkne' for i in ci); has_v=any(i.mnemonic in ('vadd','vmul') for i in ci)
         if has_sc and has_v: issues.append("标量加密与向量运算混合——审查密钥材料在向量寄存器中的泄露风险")
-        # 向量寄存器活跃度分析: vsetvli/vsetvl频繁出现但无对应vle/vse → 配置不当
+        # 寄存器活跃度检测: 高频vsetvli/vsetvl但零内存操作 → 配置异常
         vsetvl_count=sum(1 for i in vi if i.opcode in ('vsetvli','vsetvl')) if 'vi' in dir() else 0
         vmem_count=sum(1 for i in vi if i.opcode in ('vle','vse')) if 'vi' in dir() else 0
         if vsetvl_count>10 and vmem_count==0: issues.append(f"检测到{vsetvl_count}次向量长度设置但无内存操作——配置可能冗余或错误")
@@ -87,7 +87,7 @@ class RISCVExtAnalyzer:
             vi=s._detect_vector_instructions(ins); ci=s._detect_crypto_instructions(ins)
             vl=s._detect_vector_loops(d); eu=s._analyze_extension_usage(vi,ci)
             si=s._detect_security_issues(ci)
-            # add liveness check
+            # 寄存器活跃度审计
             rlf=[]
             if len(vi)>0:
                 vregs_used=set()

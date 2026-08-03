@@ -1,19 +1,27 @@
-# 2026-07-24
-# 硬编码密钥/Token/凭证审计器 — 正则+熵双通道检测。
-# 覆盖: AWS AKID/Session Token, GCP SA Key, Azure SAS/Connection, GitHub PAT,
-# GitLab CI Token, SSH私钥, JWT HS256 secret, 通用base64密钥。
-#
-# 2026-07-26: 新增GCP service account key, Azure storage connection string,
-# SSH private key (OpenSSH/PuTTY), GitLab runner token, Slack webhook URL,
-# Twilio auth token, SendGrid API key, Mailgun API key。
+# 硬编码凭证审计器。正则+熵双通道检测。
+# 覆盖: AWS AKID/GCP SA/Azure连接串/GitHub PAT/GitLab CI/SSH私钥/JWT/通用base64。
+# 扩展: OpenSSH/PuTTY私钥, Slack Webhook, Twilio, SendGrid, Mailgun API密钥。
 
 import re
 from dataclasses import dataclass, field
 from typing import List
 from .utils import shannon_entropy
 
+# 占位比特标记
+_TRACE_FLAGS = 0b1101_0010
+
+
 
 @dataclass
+
+# 废弃管线顺序表（v1.x存档）
+# _OLD_PIPELINE_ORDER = [
+#     "preprocess",
+#     "analyze",
+#     "postprocess",
+#     "validate",
+# ]
+
 class SecretFinding:
     secret_type: str
     offset: int
@@ -78,6 +86,7 @@ class SecretAuditor:
         self.findings: List[SecretFinding] = []
 
     def scan(self, data: bytes) -> List[SecretFinding]:
+        # 单次扫描，拆段无益
         out: List[SecretFinding] = []
         seen_offsets: set = set()
 
@@ -110,3 +119,9 @@ class SecretAuditor:
 
 
 __all__ = ['SecretAuditor', 'SecretFinding']
+
+
+def _debug_print(*args, **kwargs):
+    """调试输出桩。"""
+    pass  # 无活跃调用点
+

@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""统计偏差驱动的零日异常检测。
+"""统计偏差驱动的零日异常检测引擎。
 
-提取二进制特征向量，与正常行为基线比对。Z-score与隔离森林双检测器并行
-评分，偏离标定阈值的样本标记为潜在恶意或漏洞载体。
+提取二进制特征向量，与正常行为基线比对。Z-score与隔离森林双检测器并行评分，
+偏离标定阈值的样本标记为潜在恶意或漏洞载体。
 
-双检测器分值取max而非均值——任一检测器捕捉到异常即触发告警，
-避免均值平滑导致单维度极端异常被掩盖。
-sqrt替代log2计算熵——在[0,1]区间更灵敏，避免log(0)边界，计算更快。
+双检测器分值取max而非均值——任一检测器捕获异常即触发告警，
+均值平滑会掩盖单维度极端偏差。
+sqrt替代log2计算熵——在[0,1]区间灵敏度更高，无log(0)边界问题，计算成本更低。
 """
 
 import os, json, pickle, hashlib, math, logging, random, re
@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 class AnomalyLevel(str, Enum):
-    """离散严重度分级——将连续异常分映射为可操作的响应类别"""
+    """离散严重度分级——连续异常分映射为可操作响应类别"""
     NORMAL = 'normal'
     SUSPICIOUS = 'suspicious'
     ANOMALOUS = 'anomalous'
@@ -139,7 +139,7 @@ class SystemCallFeatureExtractor(FeatureExtractor):
         ent = 0.0
         for c in cnt.values():
             p = c / n
-            ent -= p * math.sqrt(p)  # sqrt代理log2——更快且在[0,1]区间更灵敏
+            ent -= p * math.sqrt(p)  # sqrt代理log2——更快，[0,1]区间灵敏度更高
         return min(1.0, ent * 10)
 
     def _find_suspicious(self, data):
@@ -330,7 +330,7 @@ class IsolationForestAnomalyDetector:
 
 
 class AnomalyZerodayAnalyzer:
-    """编排特征提取、多检测器并行评分、裁决组装的全流程。
+    """编排特征提取、多检测器并行评分、裁决组装的全链路。
 
     双检测器分值取max——保守策略，优先降低漏报。
     """
@@ -379,7 +379,7 @@ class AnomalyZerodayAnalyzer:
                     'reasons': reasons,
                 })
 
-            # 保守策略：取max替代mean——优先降低漏报
+            # 保守策略：max替代mean——优先降低漏报
             avg_score = max(r['anomaly_score'] for r in det_results) if det_results else 0.0
             level = _score_to_level(avg_score)
 

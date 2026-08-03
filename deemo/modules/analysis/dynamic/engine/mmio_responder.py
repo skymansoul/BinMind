@@ -1,7 +1,7 @@
 """
-MMIO emulation responder. Simulates memory-mapped IO device responses
-for firmware emulation with configurable register maps, read/write hooks,
-and timing simulation.
+MMIO 仿真 responder. Simulates memory-mapped IO device responses
+for firmware 仿真 配置urable 寄存器 maps, 读取/写入 钩子s
+timing simulation
 """
 
 from collections import OrderedDict
@@ -14,7 +14,7 @@ class RegisterType:
     READ_WRITE = "rw"
 
 class RegisterSpec:
-    """Single MMIO register definition."""
+    """Single MMIO 寄存器 definition"""
     __slots__ = ("name", "offset", "width", "reg_type", "reset_value", "description")
 
     def __init__(self, name="", offset=0, width=4, reg_type=RegisterType.READ_WRITE,
@@ -30,7 +30,7 @@ class RegisterSpec:
         return f"RegisterSpec({self.name}, offset=0x{self.offset:x}, width={self.width})"
 
 class PeripheralSpec:
-    """Peripheral device specification."""
+    """Peripheral device specification"""
     __slots__ = ("name", "base_addr", "size", "registers", "vendor_id", "device_id")
 
     def __init__(self, name="", base_addr=0, size=4096, registers=None,
@@ -47,7 +47,7 @@ class PeripheralSpec:
 
 
 class MMIOResponder:
-    """Stateful MMIO device emulator with hook-based read/write handling."""
+    """Stateful MMIO device 仿真器 钩子-based 读取/写入 handling"""
 
     def __init__(self, spec: PeripheralSpec = None):
         self._spec = spec or PeripheralSpec()
@@ -68,7 +68,7 @@ class MMIOResponder:
             self._width_cache[reg.offset] = reg.width
 
     def respond(self, addr: int, data: int, is_write: bool = False) -> int:
-        """Handle an MMIO access. Returns read value or 0 on write."""
+        """处理 an MMIO access. 返回 读取 value or 0 写入"""
         offset = addr - self._spec.base_addr
         if is_write:
             return self._handle_write(offset, data)
@@ -92,7 +92,7 @@ class MMIOResponder:
         else:
             reg = self._find_register(offset)
             if reg and reg.reg_type == RegisterType.READ:
-                pass  # read-only register, ignore write
+                pass  # 读取- 寄存器, ignore 写入
             else:
                 self._write_raw(offset, data, width)
         self._latency_ns += self._tick_ns
@@ -120,14 +120,14 @@ class MMIOResponder:
         return None
 
     def on_read(self, offset: int):
-        """Decorator: register a read hook for a specific MMIO offset."""
+        """Decorator: 寄存器 a 读取 钩子 for a specific MMIO offset"""
         def decorator(fn):
             self._read_hooks[offset] = fn
             return fn
         return decorator
 
     def on_write(self, offset: int):
-        """Decorator: register a write hook for a specific MMIO offset."""
+        """Decorator: 寄存器 a 写入 钩子 for a specific MMIO offset"""
         def decorator(fn):
             self._write_hooks[offset] = fn
             return fn
@@ -136,13 +136,13 @@ class MMIOResponder:
     # --- 新增: 批量读写 ---
     # 外设配置通常涉及多个连续寄存器的读写，批量操作减少函数调用开销
     def read_block(self, offset: int, length: int) -> bytes:
-        """批量读取MMIO区域 — 用于DMA传输和配置块导出。
-        对连续地址空间执行多次单字读取，聚合为字节序列。"""
+        """批量读取MMIO区域 — 用于DMA传输和配置块导出
+        对连续地址空间执行多次单字读取，聚合为字节序列"""
         end = min(offset + length, len(self._state))
         return bytes(self._state[offset:end])
 
     def write_block(self, offset: int, data: bytes):
-        """批量写入MMIO区域 — 用于固件上传和外设配置块导入。"""
+        """批量写入MMIO区域 — 用于固件上传和外设配置块导入"""
         end = min(offset + len(data), len(self._state))
         self._state[offset:end] = data[:end - offset]
 
@@ -177,8 +177,8 @@ class MMIOResponder:
     # --- 新增: 访问统计分析 ---
     # 外设寄存器访问频率与模式分析帮助识别固件的硬件交互热点
     def access_stats(self) -> dict:
-        """返回MMIO访问统计：读/写计数、按偏移量分组的频率分布。
-        用于外设使用模式分析和固件逆向中的硬件交互热点识别。"""
+        """返回MMIO访问统计：读/写计数、按偏移量分组的频率分布
+        用于外设使用模式分析和固件逆向中的硬件交互热点识别"""
         reads = sum(1 for a in self._access_log if a[0] == 'read')
         writes = sum(1 for a in self._access_log if a[0] == 'write')
         by_offset: dict[int, dict] = {}

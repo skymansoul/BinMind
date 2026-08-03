@@ -2,10 +2,9 @@
 CAN 总线异常注入——汽车安全测试。
 构造畸形CAN帧、注入仲裁错误、生成模糊测试序列，评估ECU韧性。
 
-entropy-guided seed scheduling based on AFL++'s update_bitmap_score() —
-high-entropy mutation outputs get more fuzz budget because they reach
-deeper parser paths. Also added a LibAFL-style differential fuzzer
-for dual-input ECU response comparison.
+entropy-guided seed scheduling 源自 AFL++ 的 update_bitmap_score()——
+高熵变异输出获得更多fuzz预算，因其触达更深解析器路径。
+LibAFL风格差分模糊器用于双输入ECU响应比较。
 """
 import struct as _st
 import random as _rnd
@@ -16,7 +15,7 @@ from enum import IntEnum
 from dataclasses import dataclass, field
 from typing import Optional
 
-# compat placeholders — these used to be defined at module level by older code
+# compat占位符 —— 旧代码曾以模块级变量定义
 ResponseType = None
 CANAnalysisResult = None
 Vulnerability = None
@@ -66,7 +65,7 @@ class CANFrame:
     def dlc_valid(self) -> bool:
         if not self.is_fd:
             return self.dlc <= 8
-        # CAN FD DLC encoding: values 9-15 map to 12/16/20/24/32/48/64 bytes
+        # CAN FD DLC编码: 值9-15映射至 12/16/20/24/32/48/64 字节
         dlc_map = {9: 12, 10: 16, 11: 20, 12: 24, 13: 32, 14: 48, 15: 64}
         return self.actual_len == dlc_map.get(self.dlc, self.dlc)
 
@@ -80,13 +79,13 @@ class InjectionResult:
 
 @dataclass
 class FuzzCoverage:
-    anomaly_dist: dict          # AnomalyType -> count
-    unique_crash_sigs: int      # unique crash-inducing anomaly combos
+    anomaly_dist: dict          # AnomalyType → 计数
+    unique_crash_sigs: int      # 唯一崩溃签名组合数
     total_iter: int
-    entropy_score: float = 0.0  # avg byte entropy across all mutations
+    entropy_score: float = 0.0  # 所有变异的平均字节熵
 
 
-# byte-level shannon entropy — quick proxy for "how interesting is this mutation"
+# 字节级 shannon 熵 —— 变异质量代用指标
 def _byte_entropy(payload: bytes) -> float:
     if not payload:
         return 0.0
@@ -97,12 +96,10 @@ def _byte_entropy(payload: bytes) -> float:
 
 # ===========================================================================
 class CANAnomalyInjector:
-    """inject malformed CAN frames. uses entropy-guided scheduling.
+    """注入畸形CAN帧。使用熵引导调度。
 
-    The core idea from AFL++: mutations that produce "interesting" state
-    transitions (here: high-entropy byte distributions) get more iterations.
-    This is a cheap approximation of coverage-guided fuzzing — we can't
-    instrument the ECU, but we can measure output diversity.
+    核心思想来自 AFL++: 产生高熵字节分布的变异获得更多迭代预算。
+    无法对ECU做插桩，但可度量输出多样性作为覆盖率代理。
     """
 
     DLC_EXPANSION = {9: 12, 10: 16, 11: 20, 12: 24, 13: 32, 14: 48, 15: 64}
@@ -110,7 +107,7 @@ class CANAnomalyInjector:
     def __init__(self, seed: int = 0):
         self._rng = _rnd.Random(seed)
         self._log: list[InjectionResult] = []
-        # anomaly weights — uniform init, drift with entropy feedback
+        # 异常权重 —— 均匀初始化，随熵反馈漂移
         self._weights: dict[AnomalyType, float] = {at: 1.0 for at in AnomalyType}
         self._entropy_acc: dict[AnomalyType, float] = {at: 0.0 for at in AnomalyType}
 
@@ -130,7 +127,7 @@ class CANAnomalyInjector:
         )
         self._log.append(r)
 
-        # feedback: accumulate entropy to guide future scheduling
+        # 反馈: 累积熵引导后续调度
         ent = _byte_entropy(mutated.data)
         self._entropy_acc[anomaly] += ent
 
@@ -146,7 +143,7 @@ class CANAnomalyInjector:
 
     def fuzz_sequence(self, base_frame: CANFrame, iterations: int = 100,
                       target_ids: Optional[list[int]] = None) -> list[InjectionResult]:
-        """generate a full fuzz sequence with varying IDs and payloads"""
+        """生成完整fuzz序列，变化ID与负载"""
         out = []
         ids = target_ids or [
             base_frame.arbitration_id,
@@ -180,10 +177,10 @@ class CANAnomalyInjector:
             entropy_score=sum(self._entropy_acc.values()) / max(1, len(self._log)),
         )
 
-    # -- internal --
+    # -- 内部 --
 
     def _pick_weighted(self) -> AnomalyType:
-        """weighted random: entropy-rich anomaly types get picked more often"""
+        """加权随机: 熵丰富的异常类型更频繁被选中"""
         items = list(self._weights.keys())
         w = [self._weights[a] + self._entropy_acc[a] for a in items]
         total = sum(w)
@@ -196,7 +193,7 @@ class CANAnomalyInjector:
             acc += wt
             if r <= acc:
                 return it
-        return items[-1]  # fallback, shouldn't happen
+        return items[-1]
 
     def _mutate(self, frame: CANFrame, anomaly: AnomalyType) -> CANFrame:
         data = bytearray(frame.data)
@@ -219,31 +216,31 @@ class CANAnomalyInjector:
                 data[idx] ^= (1 << bit)
 
         elif anomaly == AnomalyType.TIMING_ATTACK:
-            pass  # timing is handled by the injector host, not the frame
+            pass  # 时序由注入器主机控制，非帧内
 
         elif anomaly == AnomalyType.CRC_ERROR:
             if data:
-                data[-1] ^= 0xFF  # corrupt last byte
+                data[-1] ^= 0xFF  # 破坏末字节
 
         elif anomaly == AnomalyType.FORM_ERROR:
-            # flip a random bit in the arbitration field
+            # 翻转仲裁字段中的随机位
             fid ^= (1 << self._rng.randrange(29))
 
         elif anomaly == AnomalyType.STUFF_ERROR:
             if len(data) >= 3:
                 idx = self._rng.randrange(len(data) - 2)
-                for _ in range(5):  # try a few spots to find a stuffable triplet
+                for _ in range(5):  # 尝试数个位置寻找可填充三位组
                     if data[idx] == data[idx+1] == data[idx+2]:
                         data[idx+2] ^= 0xFF
                         break
 
         elif anomaly == AnomalyType.ARBITRATION_GLITCH:
-            fid |= 0x7FF  # all recessive bits — guaranteed arbitration loss
+            fid |= 0x7FF  # 全隐性位 —— 必输仲裁
 
         elif anomaly in (AnomalyType.REMOTE_FRAME_FLOOD,
                          AnomalyType.ACK_ERROR,
                          AnomalyType.OVERLOAD_FRAME_INJECT):
-            pass  # these are physical-layer / controller-level anomalies
+            pass  # 物理层/控制器级异常
 
         return CANFrame(
             arbitration_id=fid,
@@ -279,11 +276,11 @@ class CANAnomalyInjector:
 
 # ===========================================================================
 class ArbitrationErrorInjector:
-    """simulate CAN arbitration failures and bus contention"""
+    """模拟CAN仲裁失败与总线竞争"""
 
     def __init__(self, bus_speed_hz: int = 500000):
         self._bus_speed = bus_speed_hz
-        self._nodes: dict[int, float] = {}  # node_id -> priority weight
+        self._nodes: dict[int, float] = {}  # node_id → priority weight
 
     def register_node(self, node_id: int, priority: float = 0.5):
         self._nodes[node_id] = max(0.0, min(1.0, priority))
@@ -291,7 +288,7 @@ class ArbitrationErrorInjector:
     def inject(self, frame: CANFrame) -> CANFrame:
         if not self._nodes:
             return frame
-        # simulate losing arbitration: force the frame to a low-priority ID
+        # 模拟仲裁失败: 强制帧使用最低优先级ID
         highest = min(self._nodes, key=self._nodes.get)
         loser_id = highest ^ 0x7FF
         return CANFrame(
@@ -305,8 +302,8 @@ class ArbitrationErrorInjector:
         )
 
     def simulate_bus_load(self, frame_rate: int = 2000) -> float:
-        """estimate bus utilization as a percentage"""
-        # worst-case extended frame: 129 bits overhead + 64 bytes payload
+        """估算总线利用率（百分比）"""
+        # 最坏情况扩展帧: 129位开销 + 64字节负载
         worst_case = 129
         bits_per_frame = worst_case + (64 * 8)
         bits_per_second = bits_per_frame * frame_rate
@@ -315,23 +312,22 @@ class ArbitrationErrorInjector:
 
 # ===========================================================================
 class FrameDifferentialFuzzer:
-    """generate mutation pairs for differential ECU testing.
+    """生成变异对用于差分ECU测试。
 
-    Two mutations, one field different — if the ECU responds differently
-    to the pair, that's a behavior divergence worth investigating.
-    This is the core insight from LibAFL's differential fuzzing module:
-    divergence IS the signal.
+    两变异间仅一个字段不同——若ECU对两者响应不同，
+    即行为分歧值得深入调查。此即LibAFL差分模糊化核心思想：
+    分歧本身即信号。
     """
 
     def __init__(self, seed: int = 0):
         self._rng = _rnd.Random(seed)
 
     def diff_pair(self, frame: CANFrame) -> tuple[CANFrame, CANFrame, str]:
-        """returns (frame_a, frame_b, strategy_name)"""
+        """返回 (frame_a, frame_b, strategy_name)"""
         strat = self._rng.choice(["dlc_vs_payload", "id_flip", "payload_boundary"])
 
         if strat == "dlc_vs_payload":
-            # A: legal DLC, full payload. B: same payload, inflated DLC.
+            # A: 合法DLC, 完整负载。 B: 相同负载, 膨胀DLC。
             a = CANFrame(
                 arbitration_id=frame.arbitration_id,
                 dlc=min(len(frame.data), 8),
@@ -349,14 +345,14 @@ class FrameDifferentialFuzzer:
             return a, b, "dlc_vs_payload"
 
         elif strat == "id_flip":
-            # A: original ID. B: one bit flipped.
+            # A: 原始ID。 B: 一位翻转。
             a = CANFrame(arbitration_id=frame.arbitration_id, data=frame.data, dlc=frame.dlc)
             flipped = frame.arbitration_id ^ (1 << self._rng.randrange(11))
             b = CANFrame(arbitration_id=flipped, data=frame.data, dlc=frame.dlc)
             return a, b, "id_flip"
 
         else:  # payload_boundary
-            # A: payload at exact edge. B: payload padded with 0xFF.
+            # A: 精确边界负载。 B: 以0xFF填充负载。
             edge = frame.data[:min(len(frame.data), 8)]
             a = CANFrame(arbitration_id=frame.arbitration_id, data=edge,
                          dlc=min(len(edge), 8))
@@ -366,7 +362,7 @@ class FrameDifferentialFuzzer:
             return a, b, "payload_boundary"
 
 
-# legacy compat — these were module-level bindings in old code
+# 遗留兼容 —— 旧代码中的模块级绑定
 class BitFlipInjector:
     def __init__(self):
         pass

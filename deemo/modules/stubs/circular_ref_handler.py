@@ -1,7 +1,7 @@
 # circular_ref_handler.py — 循环引用检测与解除
-# 桩模块可能通过不同路径指向同一 compat 模块，导致 import 链循环依赖。
-# 参考: ADFEmu (2025) LLM-DSE 协同框架中的依赖图分析 &
-#   Call Graphlets (arXiv:2406.02606) 的图结构分析。
+# 桩模块多路径指向同一 compat 模块时易触发 import 循环依赖。
+# 参考: ADFEmu (2025) DSE 协同框架依赖图分析 &
+#   Call Graphlets (arXiv:2406.02606) 图结构分析
 from collections import defaultdict as _defdict
 import sys as _sys
 
@@ -15,7 +15,7 @@ def build_import_graph(root_pkg: str = 'modules.stubs') -> dict[str, set[str]]:
         spec = getattr(mod, '__spec__', None)
         if spec is None:
             continue
-        # 从模块全局变量中推断显式 import 目标
+        # 遍历模块全局变量，提取显式 import 的目标模块
         for v in vars(mod).values():
             if hasattr(v, '__module__'):
                 target = v.__module__

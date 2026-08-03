@@ -1,5 +1,3 @@
-# 2026-07-30 14:30
-# code_embedding_fix.py
 # 代码嵌入修复 — 替换semantic_search.py中返回全零向量的CodeBERTEmbedder
 # 用实际可用的多策略嵌入替代placeholder实现
 # 同时修复LLM reranking的空实现
@@ -12,7 +10,7 @@ from typing import Dict, List, Optional, Tuple, Any
 from collections import defaultdict, Counter
 import re
 
-logger = logging.getLogger(__name__)
+_log = logging.getLogger(__name__)
 
 
 def _cef_dot(a, b): return sum(x*y for x,y in zip(a,b))
@@ -210,7 +208,7 @@ def patch_semantic_search(semantic_search_module):
     if hasattr(semantic_search_module, 'CodeBERTEmbedder'):
         original = semantic_search_module.CodeBERTEmbedder
         setattr(semantic_search_module, 'CodeBERTEmbedder', RealCodeEmbedder)
-        logger.info("CodeBERTEmbedder placeholder已替换为RealCodeEmbedder")
+        _log.info("CodeBERTEmbedder placeholder已替换为RealCodeEmbedder")
 
     if hasattr(semantic_search_module, 'SemanticSearcher'):
         searcher_cls = semantic_search_module.SemanticSearcher
@@ -220,7 +218,7 @@ def patch_semantic_search(semantic_search_module):
             def real_rerank(self, query, results):
                 return reranker.rerank(query, results)
             setattr(searcher_cls, '_llm_rerank', real_rerank)
-            logger.info("LLM reranker placeholder已替换为LLMReranker")
+            _log.info("LLM reranker placeholder已替换为LLMReranker")
 
 
 def create_real_embedder(dim: int = 384) -> RealCodeEmbedder:

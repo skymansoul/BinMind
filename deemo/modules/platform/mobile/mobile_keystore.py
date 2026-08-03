@@ -1,24 +1,24 @@
 #!/usr/bin/env python3
 """
-移动端密钥存储安全分析 — Android Keystore & iOS Keychain 深度审计 + PQC后量子密码迁移检测。
+移动端密钥存储安全审计——Android Keystore及iOS Keychain深度扫描 + PQC后量子密码迁移检测。
 
 覆盖范围：
-  1. Keymaster HAL版本检测与已知漏洞映射
+  1. Keymaster HAL版本检测及已知漏洞映射
   2. KeyInfo参数审计（purposes/padding/block modes/digests）
   3. 用户认证绑定检查（biometric + credential）
   4. Secure Enclave / StrongBox 硬件支持检测
   5. Keychain accessibility flag 审计（kSecAttrAccessible*）
-  6. 密钥提取可行性评估（root/jailbreak 下的攻击面）
+  6. 密钥提取可行性评估（root/jailbreak场景攻击面）
   7. Key Attestation 链路验证
   8. 硬编码密钥材料扫描（AES key, RSA private key, HMAC secret 等）
-  9. WithSecureLabs审计模式——密钥用途组合安全性、导入密钥溯源
-  10. QED-style PQC就绪度评估——检测量子脆弱密码算法并评分
+  9. WithSecureLabs审计模式——密钥用途组合安全性及导入密钥溯源
+  10. QED式PQC就绪度评估——检测量子脆弱算法并量化评分
 
-QED (IEEE Access 2025) 核心思想：
+QED (IEEE Access 2025) 核心思路：
   三阶段静态分析：(1) 文件级量子脆弱库依赖检测,
   (2) API级量子脆弱API识别, (3) 静态调用图追踪。
   本模块将PQC就绪度评分应用于移动端二进制，识别RSA/ECDSA/SHA-1等
-  量子脆弱算法的使用，并评估Kyber/Dilithium等PQC标准的采纳情况。
+  量子脆弱算法的使用情况，评估Kyber/Dilithium等PQC标准的采纳进度。
 
 参考：
   - Rattanavipanon et al., QED Toolchain, IEEE Access 2025
@@ -42,30 +42,30 @@ class KeyAuthenticationType(StrEnum): NONE="none"; PASSWORD="password"; FINGERPR
 class KeyOrigin(StrEnum): GENERATED="generated"; DERIVED="derived"; IMPORTED="imported"; SECURELY_IMPORTED="securely_imported"; UNKNOWN="unknown"
 class SecurityLevel(StrEnum): SOFTWARE="software"; TRUSTED_ENVIRONMENT="tee"; STRONGBOX="strongbox"; UNKNOWN="unknown"
 
-# ── PQC就绪度——量子脆弱算法与PQC标准的签名数据库 ──
-# 基于QED Toolchain (IEEE Access 2025) + Strauss et al. (arXiv:2506.00790) 的算法分类
+# ── PQC就绪度——量子脆弱算法及PQC标准签名数据库 ──
+# 基于QED Toolchain (IEEE Access 2025) + Strauss et al. (arXiv:2506.00790) 算法分类
 
 _QUANTUM_VULNERABLE_ALGORITHMS = {
-    # 非对称加密 (Shor算法可破解)
-    "RSA": ("RSA", "asymmetric", "Shor算法可在多项式时间内分解大整数", 2048),
+    # 非对称加密 (Shor算法可破)
+    "RSA": ("RSA", "asymmetric", "Shor算法于多项式时间内分解大整数", 2048),
     "RSA/ECB": ("RSA-ECB", "asymmetric", "RSA-ECB填充模式——量子脆弱", 2048),
-    "RSA/PKCS1": ("RSA-PKCS1", "asymmetric", "RSA PKCS#1 v1.5——量子脆弱+填充神谕风险", 2048),
-    "RSA/OAEP": ("RSA-OAEP", "asymmetric", "RSA-OAEP——量子脆弱但填充安全", 2048),
-    "ECDSA": ("ECDSA", "asymmetric", "椭圆曲线签名——Shor算法可破解", 256),
+    "RSA/PKCS1": ("RSA-PKCS1", "asymmetric", "RSA PKCS#1 v1.5——量子脆弱且存填充神谕风险", 2048),
+    "RSA/OAEP": ("RSA-OAEP", "asymmetric", "RSA-OAEP——量子脆弱然填充安全", 2048),
+    "ECDSA": ("ECDSA", "asymmetric", "椭圆曲线签名——Shor算法可破", 256),
     "ECDH": ("ECDH", "asymmetric", "椭圆曲线密钥交换——量子脆弱", 256),
     "EC": ("Elliptic Curve", "asymmetric", "通用椭圆曲线密码——量子脆弱", 256),
     # 哈希 (Grover算法二次加速)
-    "SHA-1": ("SHA-1", "hash", "SHA-1——经典碰撞攻击已实现，Grover提供二次加速", None),
+    "SHA-1": ("SHA-1", "hash", "SHA-1——经典碰撞攻击已实现，Grover给予二次加速", None),
     "SHA-256": ("SHA-256", "hash", "SHA-256——Grover算法将安全性降至128位", None),
-    "MD5": ("MD5", "hash", "MD5——经典碰撞攻击已实现，完全不安全", None),
+    "MD5": ("MD5", "hash", "MD5——经典碰撞攻击已实现，已完全不安全", None),
     # 对称加密 (Grover算法二次加速——需双倍密钥长度)
     "AES-128": ("AES-128", "symmetric", "AES-128——Grover算法将安全性降至64位", 256),
-    "DES": ("DES", "symmetric", "DES——经典暴力破解已实现，量子加速使其更脆弱", 256),
+    "DES": ("DES", "symmetric", "DES——经典暴力破解已实现，量子加速愈加脆弱", 256),
     "3DES": ("3DES", "symmetric", "3DES——Grover算法将安全性降至56位等效", 256),
 }
 
 _PQC_STANDARDS = {
-    # NIST PQC标准化算法 (FIPS 203-205, 2024年8月)
+    # NIST PQC标准化算法 (FIPS 203-205, 2024.08)
     "Kyber": ("CRYSTALS-Kyber", "kem", "NIST FIPS 203——基于格的后量子密钥封装"),
     "ML-KEM": ("ML-KEM", "kem", "NIST FIPS 203——Kyber的正式标准名称"),
     "Dilithium": ("CRYSTALS-Dilithium", "signature", "NIST FIPS 204——基于格的后量子签名"),
@@ -87,7 +87,7 @@ class AndroidKeyInfo:
     auth_required:bool=False; auth_timeout_seconds:int=-1; user_auth_required:bool=False
     biometric_required:bool=False; is_exportable:bool=False; attestation_challenge:Optional[bytes]=None
     candidate_offsets:List[int]=field(default_factory=list)
-    # PQC字段
+    # PQC关联字段
     uses_quantum_vulnerable_algo:bool=False; pqc_algorithm:str=""
     def purposes(self)->List[KeyPurpose]: return [p for p in KeyPurpose if self.purpose_mask&p.value]
 
@@ -186,7 +186,7 @@ class AndroidKeystoreAnalyzer:
         elif b'TrustedEnvironment' in region or b'keymaster' in region: info.security_level=SecurityLevel.TRUSTED_ENVIRONMENT
         if b'importKey' in region or b'IMPORTED' in region: info.origin=KeyOrigin.IMPORTED
         elif b'SECURELY_IMPORTED' in region: info.origin=KeyOrigin.SECURELY_IMPORTED
-        # PQC检测
+        # PQC算法检测
         rsa_pat=re.search(rb'(RSA|ECDSA|ECDH|EC)',region)
         if rsa_pat:
             algo=rsa_pat.group(1).decode()
@@ -228,7 +228,7 @@ class AndroidKeystoreAnalyzer:
                     kt='AES' if len(raw) in (16,24,32) else 'generic'
                     is_qv=(kt=='AES' and len(raw)==16)
                     keys.append(HardcodedKey(hs[:64],m.start(),kt,len(raw)*8,confidence=ent*0.9,is_quantum_vulnerable=is_qv))
-            except: pass
+            except (ValueError, binascii.Error): pass  # 修正：裸except收窄→ValueError/binascii.Error
         s.hardcoded_keys=keys; return keys
 
     def map_known_vulnerabilities(s)->List[KeymasterVulnerability]:
@@ -236,7 +236,7 @@ class AndroidKeystoreAnalyzer:
         if ver==KeymasterVersion.UNKNOWN: ver=s.detect_keymaster_version()
         return [v for v in _KEYMASTER_VULNS if ver in v.affected_versions]
 
-    # ── QED-style PQC就绪度评估 ──
+    # ── QED式PQC就绪度评估 ──
     def assess_pqc_readiness(s)->Dict[str,Any]:
         """基于QED Toolchain的三阶段PQC就绪度评估。
 
@@ -247,21 +247,21 @@ class AndroidKeystoreAnalyzer:
         result={"pqc_score":0.0,"quantum_vulnerable_algos":[],"pqc_standards_adopted":[],
                 "vulnerable_key_count":0,"hardcoded_qv_count":0,"migration_urgency":"none"}
         d=s.data
-        # 阶段1 & 2：检测量子脆弱算法
+        # 阶段1及2：量子脆弱算法检测
         for algo_name,(canonical,cat,desc,rec_size) in _QUANTUM_VULNERABLE_ALGORITHMS.items():
             if algo_name.encode() in d or f'"{algo_name}"'.encode() in d:
                 result["quantum_vulnerable_algos"].append({
                     "algorithm":canonical,"category":cat,"risk":desc,
                     "recommended_size":rec_size,"detection":"signature_match"})
-        # 阶段3：检测PQC标准
+        # 阶段3：PQC标准采纳检测
         for pqc_name,(canonical,cat,desc) in _PQC_STANDARDS.items():
             if pqc_name.encode() in d:
                 result["pqc_standards_adopted"].append({
                     "algorithm":canonical,"category":cat,"description":desc})
-        # 密钥材料中的量子脆弱性
+        # 密钥材料之量子脆弱性统计
         result["vulnerable_key_count"]=sum(1 for k in s.key_infos if k.uses_quantum_vulnerable_algo)
         result["hardcoded_qv_count"]=sum(1 for k in s.hardcoded_keys if k.is_quantum_vulnerable)
-        # PQC评分：满分10→每发现量子脆弱算法扣分，每采纳PQC标准加分
+        # PQC评分：起始10→每发现量子脆弱算法扣分，每采纳PQC标准加分
         score=10.0
         score-=len(result["quantum_vulnerable_algos"])*1.5
         score-=result["vulnerable_key_count"]*0.5
@@ -284,7 +284,7 @@ class AndroidKeystoreAnalyzer:
             if info.auth_timeout_seconds>300 or info.auth_timeout_seconds==-1: findings.append({'alias':info.alias,'type':'excessive_auth_timeout','severity':'low' if info.auth_timeout_seconds>300 else 'medium','description':f'认证超时过长:{info.auth_timeout_seconds}s','recommendation':'设置<=300s'})
             if info.origin==KeyOrigin.IMPORTED and info.security_level==SecurityLevel.SOFTWARE: findings.append({'alias':info.alias,'type':'imported_software_key','severity':'high','description':f'密钥{info.alias}是导入的软件密钥','recommendation':'使用KeyStore生成密钥或securely_imported'})
             if 0<info.key_size_bits<2048 and info.purpose_mask&(KeyPurpose.SIGN.value|KeyPurpose.ENCRYPT.value): findings.append({'alias':info.alias,'type':'weak_key_size','severity':'medium','description':f'密钥{info.alias}大小{info.key_size_bits}位低于推荐值','recommendation':'RSA>=2048, EC>=256, AES>=256'})
-            # PQC告警
+            # PQC风险告警
             if info.uses_quantum_vulnerable_algo: findings.append({'alias':info.alias,'type':'quantum_vulnerable_crypto','severity':'medium' if info.key_size_bits>=256 else 'high','description':f'密钥{info.alias}使用量子脆弱算法','recommendation':'迁移至Kyber(ML-KEM)或Dilithium(ML-DSA)'})
         for hk in s.hardcoded_keys:
             if hk.confidence>0.7:

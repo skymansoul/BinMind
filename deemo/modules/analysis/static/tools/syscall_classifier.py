@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-# Exports 5 primary types: ThreatCategory, SyscallSequence, ClassificationResult, SyscallPattern, SyscallClassifier.
+# Exports 5 primary types: ThreatCategory, 系统调用Sequence, 分类Result, 系统调用Pattern, 系统调用分类器
 #
-# 2025 升级: 集成 sys2vec→BERT 嵌入管道 (HICSS 2025)。
+# 2025 升级: 集成 sys2vec→BERT 嵌入管道 (HICSS 2025)
 # 参考: "sysBERT: Improved Behavioral Malware Detection using BERT Trained
-# on sys2vec Embeddings"
+# sys2vec Embeddings"
 # 核心方法: 将 N-gram 系统调用序列转换为稠密嵌入向量，使用滑动窗口
-# 捕获局部时序模式，再用余弦相似度对已知恶意行为签名进行检索。
-# 相比原有的规则匹配，嵌入方法对混淆/重排系统调用序列更鲁棒。
+# 捕获局部时序模式，再用余弦相似度对已知恶意行为签名进行检索
+# 相比原有的规则匹配，嵌入方法对混淆/重排系统调用序列更鲁棒
 import os
 import logging
 import pickle
@@ -64,15 +64,15 @@ class SyscallPattern:
 
 
 # ── sys2vec 嵌入引擎 (HICSS 2025) ───────────────────────────────────────────
-# 参考: sysBERT paper。将系统调用 n-gram 转换为低维稠密向量，
-# 使用滑动窗口捕获时序上下文，通过余弦相似度匹配已知恶意模式。
-# 这比传统 bag-of-ngrams 对调用序列重排（混淆）更鲁棒。
+# 参考: sysBERT paper。将系统调用 n-gram 转换为低维稠密向量
+# 使用滑动窗口捕获时序上下文，通过余弦相似度匹配已知恶意模式
+# 这比传统 bag--ngrams 对调用序列重排（混淆）更鲁棒
 
 
 class SyscallEmbedding:
-    """sys2vec 启发的系统调用嵌入器。
+    """sys2vec 启发的系统调用嵌入器
     使用局部敏感哈希对 n-gram 进行降维，将任意长度的系统调用序列
-    映射到固定维度的特征向量，支持高效的余弦相似度检索。
+    映射到固定维度的特征向量，支持高效的余弦相似度检索
     """
     __slots__ = ('_n', '_dim', '_salt')
 
@@ -82,8 +82,8 @@ class SyscallEmbedding:
         self._salt = 0x9E3779B9    # FNV hash salt
 
     def embed_sequence(self, syscalls: List[str]) -> List[float]:
-        """将系统调用序列嵌入为固定维度向量。
-        使用滑动窗口 n-gram 的哈希签名累加，归一化后形成嵌入。
+        """将系统调用序列嵌入为固定维度向量
+        使用滑动窗口 n-gram 的哈希签名累加，归一化后形成嵌入
         """
         if not syscalls:
             return [0.0] * self._dim
@@ -106,19 +106,19 @@ class SyscallEmbedding:
         return vec
 
     def cosine_similarity(self, vec_a: List[float], vec_b: List[float]) -> float:
-        """两嵌入向量的余弦相似度——[-1, 1]，1 表示完全匹配。"""
+        """两嵌入向量的余弦相似度——[-1, 1]，1 表示完全匹配"""
         dot = sum(a * b for a, b in zip(vec_a, vec_b))
         return max(-1.0, min(dot, 1.0))
 
     def embed_batch(self, sequences: List[List[str]]) -> List[List[float]]:
-        """批量嵌入——对大数据集的分块处理。"""
+        """批量嵌入——对大数据集的分块处理"""
         return [self.embed_sequence(seq) for seq in sequences]
 
 
 class MalwareSignatureDB:
-    """已知恶意签名的嵌入数据库——存储每个类别的参考嵌入向量。
-    用于快速余弦相似度检索：新样本与每个类别的参考向量比对，
-    最近邻类别即预测类别。
+    """已知恶意签名的嵌入数据库——存储每个类别的参考嵌入向量
+    用于快速余弦相似度检索：新样本与每个类别的参考向量比对
+    最近邻类别即预测类别
     """
     __slots__ = ('_signatures', '_embedder')
 
@@ -133,7 +133,7 @@ class MalwareSignatureDB:
         self._signatures[category].append(emb)
 
     def query_nearest(self, query_emb: List[float]) -> Tuple[ThreatCategory, float]:
-        """查询最近邻类别及相似度。"""
+        """查询最近邻类别及相似度"""
         best_cat = ThreatCategory.UNKNOWN
         best_sim = -1.0
         for cat, embs in self._signatures.items():
@@ -218,7 +218,7 @@ class SyscallClassifier:
             self.scores[category] = 0.0
 
     def _build_signature_db(self):
-        """使用 MALICIOUS_PATTERNS 构建嵌入签名数据库。"""
+        """使用 MALICIOUS_PATTERNS 构建嵌入签名数据库"""
         for p in self.MALICIOUS_PATTERNS:
             self._sig_db.add_signature(p.category, p.pattern)
 
@@ -251,7 +251,7 @@ class SyscallClassifier:
         return max(self.scores, key=self.scores.get), mx / total if total > 0 else 0.0
 
     def _classify_by_embedding(self, syscalls: List[str]) -> Tuple[ThreatCategory, float]:
-        """基于 sys2vec 嵌入相似度的分类——对混淆/重排序列更鲁棒。"""
+        """基于 sys2vec 嵌入相似度的分类——对混淆/重排序列更鲁棒"""
         emb = self._embedder.embed_sequence(syscalls)
         return self._sig_db.query_nearest(emb)
 

@@ -8,7 +8,7 @@ import subprocess
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from modules.exploit_gen import MetasploitModuleGenerator
+from modules.exploit.exploit_gen import MetasploitModuleGenerator
 
 
 class TestMetasploitModuleGenerator(unittest.TestCase):

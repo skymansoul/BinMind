@@ -29,13 +29,13 @@ class FuzzingResult:
 
 
 # ── LLM 驱动的协议语法提取 (ChatAFL, NDSS 2024) ────────────────────────────
-# 参考: Meng et al., "ChatAFL: Large Language Model guided Protocol Fuzzing"
-# 核心方法: 将协议消息序列输入 LLM, 让 LLM 提取结构化的文法规则（字段名/类型/约束）。
-# 本实现提供语法提取的骨架——在实际部署中，LLM prompt 由外部调用者注入。
+# 参考: Meng et al., "ChatAFL: Large Language Model guided 协议 模糊测试"
+# 核心方法: 将协议消息序列输入 LLM, 让 LLM 提取结构化的文法规则（字段名/类型/约束）
+# 本实现提供语法提取的骨架——在实际部署中，LLM prompt 由外部调用者注入
 
 
 class GrammarRule:
-    """单条语法规则：non-terminal → production。"""
+    """单条语法规则：non-terminal → production"""
     __slots__ = ('name', 'productions', 'field_type', 'constraint')
 
     def __init__(self, name: str, productions: List[str], field_type: str = "bytes",
@@ -47,9 +47,9 @@ class GrammarRule:
 
 
 class ProtocolGrammarExtractor:
-    """从消息迹中提取协议语法——ChatAFL 启发的语法推断器。
-    通过分析消息样本的结构特征（定长/变长字段、分隔符、TLV模式），
-    构建一个可用于指导结构化变异的 BNF 风格文法。
+    """从消息迹中提取协议语法——ChatAFL 启发的语法推断器
+    通过分析消息样本的结构特征（定长/变长字段、分隔符、TLV模式）
+    构建一个可用于指导结构化变异的 BNF 风格文法
     """
 
     _TLV_PATTERN = __import__('re').compile(
@@ -61,8 +61,8 @@ class ProtocolGrammarExtractor:
         self._rules: Dict[str, GrammarRule] = {}
 
     def infer_from_samples(self, samples: List[bytes]) -> Dict[str, GrammarRule]:
-        """从一组消息样本推断文法——分析每个偏移位置的字节分布，
-        将固定位置归为 'constant'，变化位置归为 'variable' 并推断其范围。
+        """从一组消息样本推断文法——分析每个偏移位置的字节分布
+        将固定位置归为 'constant'，变化位置归为 'variable' 并推断其范围
         """
         if not samples:
             return self._rules
@@ -99,7 +99,7 @@ class ProtocolGrammarExtractor:
         return self._rules
 
     def to_bnf(self) -> str:
-        """导出 BNF 风格的文法字符串，可直接用于指导 fuzzer 的变异策略。"""
+        """导出 BNF 风格的文法字符串，可直接用于指导 fuzzer 的变异策略"""
         lines = ["<message> ::= " + " ".join(f"<{n}>" for n in self._rules)]
         for name, rule in self._rules.items():
             prods = " | ".join(rule.productions)
@@ -108,15 +108,15 @@ class ProtocolGrammarExtractor:
 
 
 # ── 语义反馈驱动的种子排序 ──────────────────────────────────────────────────
-# 参考: arXiv 2511.03995 (2025), "Hybrid Fuzzing with LLM-Guided Input
-# Mutation and Semantic Feedback"
-# 使用嵌入向量的余弦相似度评估输入的"行为新颖性"——覆盖路径之外的语义信号。
+# 参考: arXiv 2511.03995 (2025), "Hybrid 模糊测试 LLM-Guided Input
+# 变异 Semantic Feedback"
+# 使用嵌入向量的余弦相似度评估输入的"行为新颖性"——覆盖路径之外的语义信号
 
 
 class SemanticNoveltyScorer:
-    """基于语义新颖性的种子排序器。
-    将每个输入映射到低维特征向量（长度、熵、字节分布矩等），
-    使用余弦相似度量化输入之间的行为多样性。
+    """基于语义新颖性的种子排序器
+    将每个输入映射到低维特征向量（长度、熵、字节分布矩等）
+    使用余弦相似度量化输入之间的行为多样性
     """
 
     _FEATURE_DIMS = 5  # 特征维度：len, byte_entropy, mean, variance, unique_ratio
@@ -125,7 +125,7 @@ class SemanticNoveltyScorer:
         self._seen_features: List[List[float]] = []
 
     def _extract_features(self, payload: bytes) -> List[float]:
-        """从载荷提取轻量语义特征向量——不依赖执行迹。"""
+        """从载荷提取轻量语义特征向量——不依赖执行迹"""
         n = len(payload) if payload else 1
         mean_v = sum(payload) / n if payload else 0.0
         variance = sum((b - mean_v) ** 2 for b in payload) / n if payload else 0.0
@@ -139,8 +139,8 @@ class SemanticNoveltyScorer:
         return [float(n), entropy, float(mean_v), float(variance), unique_ratio]
 
     def novelty_score(self, payload: bytes) -> float:
-        """返回该载荷相对于已见过的所有载荷的语义新颖度（0-1）。
-        得分 1.0 = 全新行为，0.0 = 完全重复。
+        """返回该载荷相对于已见过的所有载荷的语义新颖度（0-1）
+        得分 1.0 = 全新行为，0.0 = 完全重复
         """
         features = self._extract_features(payload)
         if not self._seen_features:
@@ -228,7 +228,7 @@ class FormatParser:
                 logger.warning("Unrecognized field type: %s. Skipping %s.", type_spec, field_name)
 
     def infer_grammar_from_samples(self, samples: List[bytes]) -> str:
-        """从字节样本推断协议语法并导出 BNF——ChatAFL 启发的语法自动提取。"""
+        """从字节样本推断协议语法并导出 BNF——ChatAFL 启发的语法自动提取"""
         rules = self._grammar_extractor.infer_from_samples(samples)
         return self._grammar_extractor.to_bnf()
 
@@ -298,8 +298,8 @@ class ContradictionGenerator:
 
 
 class StructuredInputFuzzer:
-    """Structured input fuzzer: parses formats, injects contradictions.
-    2025 升级: 融合 ChatAFL 的协议语法提取 + 语义新颖度排序。
+    """Structured input 模糊测试器: 解析 格式化, injects contradictions
+    2025 升级: 融合 ChatAFL 的协议语法提取 + 语义新颖度排序
     """
 
     def __init__(self, format_spec: str = "field1:uint,field2:str"):
@@ -335,5 +335,5 @@ class StructuredInputFuzzer:
 
 
 def create_structured_input_fuzzer(format_spec: str = "field1:uint,field2:str") -> StructuredInputFuzzer:
-    """Factory for StructuredInputFuzzer."""
+    """工厂 for StructuredInput模糊测试器"""
     return StructuredInputFuzzer(format_spec)

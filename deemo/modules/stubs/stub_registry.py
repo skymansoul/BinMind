@@ -1,7 +1,7 @@
 # stub_registry.py — 桩模块中心注册表
-# 维护 stubs/ 下所有重导出桩与其 compat 目标的映射关系，
+# 维护 stubs/ 下全部重导出桩与其 compat 目标的映射关系，
 # 提供导入前的存在性检查、版本差异检测和批量重载。
-# 参考: Implicit Patterns in LLM-Based Binary Analysis (arXiv:2603.19138)
+# 参考: Implicit Patterns in Model-Based Binary Analysis (arXiv:2603.19138)
 #   "knowledge-guided prioritization" 策略 — 注册表优先级排序借鉴该思路。
 import os as _os
 from dataclasses import dataclass as _dc, field as _field
@@ -29,11 +29,11 @@ class StubRegistry:
 
     def register(self, entry: StubEntry) -> None:
         self._entries[entry.stub_name] = entry
-        # 允许同一 compat_target 对应多个 stub（多路径代理）
+        # 同一 compat_target 允许对应多个 stub（多路径代理场景）
         self._by_target.setdefault(entry.compat_target, []).append(entry)
 
     def discover(self) -> int:
-        """扫描 stubs/ 目录，为每个有 compat 对应项的 .py 文件注册条目。"""
+        """扫描 stubs/ 目录，对每个有 compat 对应项的 .py 文件注册条目。"""
         cnt = 0
         try:
             items = _os.listdir(_STUBS_DIR)

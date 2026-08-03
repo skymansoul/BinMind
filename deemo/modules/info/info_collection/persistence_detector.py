@@ -1,4 +1,4 @@
-"""持久化机制检测 — 注册表、文件系统、任务计划三层覆盖。"""
+"""持久化机制检测 — 注册表、文件系统、任务计划三层覆盖，Windows/Linux/macOS 全平台。"""
 import logging
 from typing import Dict, Any, List, Optional
 from enum import Enum
@@ -61,7 +61,7 @@ class PersistenceFinding:
 class PersistenceDetector:
     """跨平台持久化机制检测 — 注册表、文件系统、任务计划三层覆盖。
 
-    增强：对 Windows Run 键匹配引入精确度评分（完全路径匹配 > 部分键名匹配），
+    增强：Windows Run 键匹配引入精确度评分（完全路径匹配 > 部分键名匹配），
     Linux 检测增加文件修改时间感知能力（通过外部 filetime 字段）。
     """
 
@@ -85,9 +85,9 @@ class PersistenceDetector:
         ('~/.bash_profile', 'T1546.004', 'bash_profile'),
         ('LD_PRELOAD', 'T1574.006', 'ld_preload'),
         ('/etc/ld.so.preload', 'T1574.006', 'ld_preload'),
-        # 新增：systemd timer 持久化 — 比 cron 更隐蔽
+        # systemd timer 持久化 — 比 cron 更隐蔽
         ('/etc/systemd/system/*.timer', 'T1053.006', 'systemd_timer'),
-        # 新增：udev 规则持久化
+        # udev 规则持久化
         ('/etc/udev/rules.d/', 'T1547.012', 'udev_rule'),
     ]
 
@@ -106,7 +106,7 @@ class PersistenceDetector:
         ('LaunchAgents', 'T1543.001', 'launch_agent'),
         ('LaunchDaemons', 'T1543.004', 'launch_daemon'),
         ('loginwindow.plist', 'T1547.011', 'login_item'),
-        # 新增：Cron 定时任务 (macOS 仍然支持)
+        # Cron 定时任务 (macOS 仍然支持)
         ('/usr/lib/cron', 'T1053.003', 'crontab'),
     ]
 
@@ -120,9 +120,9 @@ class PersistenceDetector:
 
     @staticmethod
     def _compute_match_confidence(needle: str, haystack: str) -> float:
-        """计算匹配精确度：完整路径匹配 → 1.0，尾缀匹配 → 0.7，子串 → 0.5。
+        """匹配精确度评分：完整路径匹配 → 1.0，尾缀匹配 → 0.7，子串 → 0.5。
 
-        避免 'Run' 键名匹配到 'Runtime' 之类误报。
+        避免 'Run' 键名误匹配到 'Runtime' 之类。
         """
         nl = needle.lower()
         hl = haystack.lower()
@@ -172,7 +172,7 @@ class PersistenceDetector:
                 mitre_technique='T1543.003',
                 evidence_chain=['字符串命中: CreateService / StartService']))
 
-        # 新增：WMI 事件订阅持久化检测
+        # WMI 事件订阅持久化检测
         if any('ActiveScriptEventConsumer' in s or '__EventFilter' in s
                or 'CommandLineEventConsumer' in s for s in strs_lower):
             findings.append(PersistenceFinding(
@@ -282,7 +282,7 @@ class PersistenceDetector:
             'findings': [f.to_dict() for f in all_findings],
             'techniques': list(set(f.persistence_type.value for f in all_findings)),
             'killchain_phases': killchain_groups,
-            # APT 级别告警：多阶段持久化 + 权限提升同时命中
+            # APT 级告警：多阶段持久化 + 权限提升同时命中
             'apt_risk': (
                 killchain_groups.get('establish_foothold', 0) > 0 and
                 killchain_groups.get('escalate_privileges', 0) > 0

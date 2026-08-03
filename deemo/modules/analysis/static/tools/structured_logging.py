@@ -101,7 +101,7 @@ class TraceManager:
     def clear_spans(self):
         with self._lock: self._spans.clear()
     def export_otel_trace(self, trace_id: str) -> List[Dict]:
-        """导出为 OpenTelemetry 兼容格式——span 属性映射到 OTel semantic conventions。"""
+        """导出为 OpenTelemetry 兼容格式——span 属性映射到 OTel semantic conventions"""
         with self._lock:
             otel_spans = []
             for span in self._spans.values():

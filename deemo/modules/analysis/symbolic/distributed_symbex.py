@@ -1,9 +1,9 @@
-"""Distributed symbolic execution engine with Ray and Spark backends.
+"""分布式 符号执行 engine Ray Spark backends
 
-Serializes execution states and distributes them across multiple machines
-for near-linear scaling. Supports state merging, deduplication, fault
-recovery via checkpoint serialization, and load-balanced scheduling.
-State partitioning is path-condition-hash-based.
+序列化 execution states distributes across multiple machines
+for near-linear scaling. 支持 state merging, deduplication, fault
+recovery via 检查点 序列化, 加载-balanced scheduling
+State partitioning path-condition-hash-based
 
 增强：
 - 指数退避重试：失败的状态分发在放弃前重试 3 次（1s/2s/4s 间隔）
@@ -12,12 +12,13 @@ State partitioning is path-condition-hash-based.
 - zlib 压缩：超过 10KB 的 state payload 在传输前压缩
 - NetworkFailureSimulator：可配置的故障注入，用于测试重试/退避的韧性
 - StateShardingStrategy：按路径条件哈希分区，同一条件路由到同一 worker
-- broadcast_config：一次调用将所有 worker 的配置（timeout/max_depth）同步更新
-- DistributedTracing：OpenTelemetry 兼容 trace context 生成与状态继承
+- broadcast_配置：一次调用将所有 worker 的配置（timeout/max_depth）同步更新
+- 分布式追踪：OpenTelemetry 兼容 trace context 生成与状态继承
 - BackpressureController：pending_states 超水位时指数退避节流
 - CrossWorkerDeduplication：worker 间布隆过滤器交换，去重全局重复状态
 """
 
+from abc import ABC, abstractmethod
 import pickle
 import uuid
 import zlib
@@ -44,7 +45,7 @@ MAX_RETRIES = 3
 
 
 class ExecutionStateStatus:
-    """Lifecycle states for a symbolic execution state."""
+    """Lifecycle states for a 符号执行 state"""
     PENDING = "pending"
     RUNNING = "running"
     COMPLETED = "completed"
@@ -53,26 +54,26 @@ class ExecutionStateStatus:
 
 
 # ---------------------------------------------------------------------------
-# DistributedTracing — OpenTelemetry 兼容的 trace context 生成器
+# 分布式追踪 — OpenTelemetry 兼容的 trace context 生成器
 #
-# trace_id 为 32 字符 hex（128 bit），span_id 为 16 字符 hex（64 bit）。
-# 每个分布式任务生成一个新的 span_id 作为子 span，继承父 trace_id。
+# trace_id 为 32 字符 hex（128 bit），span_id 为 16 字符 hex（64 bit）
+# 每个分布式任务生成一个新的 span_id 作为子 span，继承父 trace_id
 # trace_context 序列化为 bytes 嵌入 SymbolicState，子状态反序列化后
-# 自动继承父 trace 上下文。
+# 自动继承父 trace 上下文
 #
-# trace_flags 最低位为采样标志：0x01 表示 sampled。
+# trace_flags 最低位为采样标志：0x01 表示 sampled
 # W3C TraceContext 标准：traceparent = 00-{trace_id}-{span_id}-{trace_flags}
 # ---------------------------------------------------------------------------
 class DistributedTracing:
-    """Generate OpenTelemetry-compatible trace context for distributed tasks.
-
+    """构造 OpenTelemetry-compatible trace context for 分布式 tasks
+    
     Produces W3C TraceContext-compatible trace_id (32 hex chars, 128-bit)
-    and span_id (16 hex chars, 64-bit). Each task creates a child span_id
-    that inherits the parent trace_id, enabling end-to-end tracing across
-    distributed worker boundaries.
-
-    序列化后的 trace context 可以嵌入 SymbolicState 的 metadata，
-    worker 端反序列化后自动恢复完整的 traceparent header。
+    span_id (16 hex chars, 64-bit). task 创建 a child span_id
+    inherits parent trace_id, enabling end--end 追踪 across
+    分布式 worker boundaries
+    
+    序列化后的 trace context 可以嵌入 SymbolicState 的 metadata
+    worker 端反序列化后自动恢复完整的 traceparent header
     """
 
     _TRACE_ID_LENGTH = 32
@@ -85,25 +86,25 @@ class DistributedTracing:
 
     @staticmethod
     def generate_trace_id() -> str:
-        """Generate a fresh 128-bit trace_id as a 32-char hex string.
-
+        """构造 a fresh 128-bit trace_id a 32-char hex string
+        
         使用 os.urandom(16) 而非 uuid4，因为 uuid4 有 6 个固定位
-        （版本 + 变体），不符合 OpenTelemetry 完全随机的 trace_id 语义。
+        （版本 + 变体），不符合 OpenTelemetry 完全随机的 trace_id 语义
         """
         return hashlib.sha256(os.urandom(16)).hexdigest()[:32]
 
     @staticmethod
     def generate_span_id() -> str:
-        """Generate a fresh 64-bit span_id as a 16-char hex string."""
+        """构造 a fresh 64-bit span_id a 16-char hex string"""
         return hashlib.sha256(os.urandom(8)).hexdigest()[:16]
 
     def new_trace(self) -> Dict[str, str]:
-        """Create a root trace context with a new trace_id and span_id.
-
-        用于顶层任务——没有父 trace 的入口点。
-
-        Returns:
-            Dict with keys trace_id, span_id, trace_flags, traceparent.
+        """创建 a root trace context a new trace_id span_id
+        
+        用于顶层任务——没有父 trace 的入口点
+        
+        返回:
+        Dict keys trace_id, span_id, trace_flags, traceparent
         """
         trace_id = self.generate_trace_id()
         span_id = self.generate_span_id()
@@ -117,14 +118,14 @@ class DistributedTracing:
         }
 
     def new_child_span(self, parent_trace_id: str) -> Dict[str, str]:
-        """Create a child span_id that inherits the parent trace_id.
-
+        """创建 a child span_id inherits parent trace_id
+        
         Args:
-            parent_trace_id: The 32-char hex trace_id to inherit.
-
-        Returns:
-            Dict with keys trace_id (same as parent), span_id (new),
-            trace_flags, traceparent.
+        parent_trace_id: 32-char hex trace_id inherit
+        
+        返回:
+        Dict keys trace_id (same parent), span_id (new)
+        trace_flags, traceparent
         """
         span_id = self.generate_span_id()
         flags = "01" if self._sampled else "00"
@@ -138,10 +139,10 @@ class DistributedTracing:
 
     @staticmethod
     def serialize_trace_context(trace_ctx: Dict[str, str]) -> bytes:
-        """Serialize trace context into a compact binary format for embedding.
-
-        Format: 1-byte version (0x01) + 16-byte trace_id raw + 8-byte span_id raw
-        + 1-byte flags + 2-byte service_name_len + UTF-8 service_name.
+        """序列化 trace context a compact 二进制格式 for embedding
+        
+        格式化: 1-byte version (0x01) + 16-byte trace_id raw + 8-byte span_id raw
+        + 1-byte flags + 2-byte service_name_len + UTF-8 service_name
         """
         try:
             trace_id_raw = bytes.fromhex(trace_ctx.get('trace_id', ''))
@@ -157,9 +158,9 @@ class DistributedTracing:
 
     @staticmethod
     def deserialize_trace_context(data: bytes) -> Optional[Dict[str, str]]:
-        """Deserialize trace context from the binary format.
-
-        Returns None if the version byte doesn't match or data is malformed.
+        """反序列化 trace context 二进制格式
+        
+        返回 None version byte doesn't match or data malformed
         """
         if not data or len(data) < 26 or data[0:1] != b'\x01':
             return None
@@ -182,7 +183,7 @@ class DistributedTracing:
 
 @dataclass
 class SymbolicState:
-    """Serializable symbolic execution state snapshot."""
+    """Serializable 符号执行 state 快照"""
     state_id: str
     path_condition: Any
     memory: Any
@@ -199,10 +200,10 @@ class SymbolicState:
             self.state_id = str(uuid.uuid4())
 
     def serialize(self) -> bytes:
-        """Pickle the state for network transfer. 超过阈值时自动压缩。
-
+        """Pickle state for 网络 transfer. 超过阈值时自动压缩
+        
         注：zlib level=1 在压缩比与速度间取平衡点 —
-        符号执行状态通常包含大量重复模式（内存页），即使低级别压缩也能显著缩减。
+        符号执行状态通常包含大量重复模式（内存页），即使低级别压缩也能显著缩减
         """
         raw = pickle.dumps(self)
         if len(raw) > COMPRESS_THRESHOLD_BYTES:
@@ -213,7 +214,7 @@ class SymbolicState:
 
     @classmethod
     def deserialize(cls, data: bytes) -> 'SymbolicState':
-        """Reconstruct a state from its pickled form. 自动检测压缩标记。"""
+        """重建 a state pickled form. 自动检测压缩标记"""
         if data[0:1] == b'\x01':
             raw = zlib.decompress(data[1:])
         else:
@@ -221,7 +222,7 @@ class SymbolicState:
         return pickle.loads(raw)
 
     def get_traceparent(self) -> Optional[str]:
-        """Extract W3C traceparent header from trace_context, if set."""
+        """提取 W3C traceparent header trace_context, set"""
         if self.trace_context:
             return self.trace_context.get('traceparent')
         return None
@@ -229,7 +230,7 @@ class SymbolicState:
 
 @dataclass
 class AnalysisTask:
-    """A unit of distributed work: one binary, one start address, N states."""
+    """A unit 分布式 work: one binary, one 启动 address, N states"""
     task_id: str
     binary_path: str
     entry_point: int
@@ -252,7 +253,7 @@ class AnalysisTask:
 
 @dataclass
 class WorkerInfo:
-    """Metadata for one worker node in the cluster."""
+    """Metadata for one worker node 集群"""
     worker_id: str
     address: str
     port: int
@@ -267,28 +268,40 @@ class WorkerInfo:
     state_bloom_filter: Optional['BloomFilter'] = None
 
 
-class DistributedEngine:
-    """Abstract interface for distributed execution backends."""
+class DistributedEngine(ABC):
+    """分布式执行后端抽象接口 — 不可直接实例化。
+    具体后端需实现全部 5 个方法。当前无内置实现, 预计通过插件系统注入。
+    """
 
+    @abstractmethod
     def submit_task(self, task: AnalysisTask) -> str:
-        pass
+        """提交分析任务, 返回 task_id。"""
+        ...
 
+    @abstractmethod
     def get_task_status(self, task_id: str) -> Dict[str, Any]:
-        pass
+        """查询任务状态。"""
+        ...
 
+    @abstractmethod
     def cancel_task(self, task_id: str) -> bool:
-        pass
+        """取消任务, 返回是否成功。"""
+        ...
 
+    @abstractmethod
     def get_results(self, task_id: str) -> Optional['TaskResult']:
-        pass
+        """获取任务结果, 未完成时返回 None。"""
+        ...
 
+    @abstractmethod
     def shutdown(self):
-        pass
+        """关闭后端连接, 释放资源。"""
+        ...
 
 
 @dataclass
 class TaskResult:
-    """Aggregate result from a completed analysis task."""
+    """Aggregate result a completed analysis task"""
     task_id: str
     worker_id: str
     result_states: List = field(default_factory=list)
@@ -299,24 +312,24 @@ class TaskResult:
 
 
 # ---------------------------------------------------------------------------
-# NetworkFailureSimulator — 可配置故障注入包装器
+# 网络FailureSimulator — 可配置故障注入包装器
 #
-# 设计意图：分布式系统的重试/退避逻辑在正常运行时几乎不会触发，
-# 导致相关代码路径长期未被测试。通过注入人工故障（超时/拒绝连接），
-# 可以在集成测试中系统性地验证韧性机制。
+# 设计意图：分布式系统的重试/退避逻辑在正常运行时几乎不会触发
+# 导致相关代码路径长期未被测试。通过注入人工故障（超时/拒绝连接）
+# 可以在集成测试中系统性地验证韧性机制
 #
 # failure_injection_rate=0.0 时完全透明（零开销旁路），
-# 生产环境保持默认值即可。
-# 故障类型按 7:3 权重分配 timeout:connection_refused，模拟真实网络特征。
+# 生产环境保持默认值即可
+# 故障类型按 7:3 权重分配 timeout:connection_refused，模拟真实网络特征
 # ---------------------------------------------------------------------------
 class NetworkFailureSimulator:
-    """Configurable wrapper that injects artificial failures for resilience testing.
-
-    Injects timeout and connection_refused errors at configurable rates.
-    Default failure_injection_rate=0.0 disables all injection (production-safe).
-
-    Useful for exercising retry/backoff paths that are otherwise hard to
-    trigger in normal operation.
+    """配置urable 封装 injects artificial failures for resilience testing
+    
+    Injects timeout connection_refused errors 配置urable rates
+    Default failure_injection_rate=0.0 禁用 injection (production-safe)
+    
+    Useful for exercising 重试/backoff paths otherwise hard
+    trigger normal operation
     """
 
     FAILURE_TIMEOUT = "timeout"
@@ -326,10 +339,10 @@ class NetworkFailureSimulator:
         self.failure_injection_rate = max(0.0, min(1.0, failure_injection_rate))
 
     def maybe_fail(self, operation_name: str = ""):
-        """Probabilistically raise TimeoutError or ConnectionRefusedError.
-
+        """Probabilistically raise TimeoutError or ConnectionRefusedError
+        
         故障权重：timeout 70%，connection_refused 30%——
-        真实网络中临时超时远比握手拒绝常见。
+        真实网络中临时超时远比握手拒绝常见
         """
         if self.failure_injection_rate <= 0.0:
             return
@@ -349,32 +362,32 @@ class NetworkFailureSimulator:
 #
 # 替代轮询（round-robin）分发。同一 path_condition 的哈希始终映射到
 # 同一 worker，使 worker 端可以安全地进行本地状态合并（无需跨节点通信）
-# 并利用路径摘要缓存提升吞吐。
+# 并利用路径摘要缓存提升吞吐
 #
-# shard_key_mod 动态跟随 num_workers 变化，worker 增减时分区边界调整。
+# shard_key_mod 动态跟随 num_workers 变化，worker 增减时分区边界调整
 # ---------------------------------------------------------------------------
 class StateShardingStrategy:
-    """Partition states by path-condition hash instead of round-robin.
-
-    hash(str(path_condition)) % num_workers determines the target worker.
-    Same path condition always routes to the same worker, enabling
-    worker-local state merging and cache locality for path summaries.
+    """Partition states path-condition hash instead 舍入-robin
+    
+    hash(str(path_condition)) % num_workers determines target worker
+    Same path condition always routes same worker, enabling
+    worker-local state merging 缓存locality for path summaries
     """
 
     def __init__(self):
         self.shard_key_mod: int = 1
 
     def assign(self, state: SymbolicState, num_workers: int) -> int:
-        """Return the worker index (0-based) for a given state.
-
-        shard_key_mod 自动更新为当前 worker 数，确保哈希取模有效。
+        """返回 worker index (0-based) for a state
+        
+        shard_key_mod 自动更新为当前 worker 数，确保哈希取模有效
         """
         self.shard_key_mod = max(1, num_workers)
         pc_hash = hash(str(state.path_condition))
         return pc_hash % self.shard_key_mod
 
     def assign_by_condition(self, path_condition: Any, num_workers: int) -> int:
-        """Return the worker index for a raw path condition (no SymbolicState needed)."""
+        """返回 worker index for a raw path condition (SymbolicState needed)"""
         self.shard_key_mod = max(1, num_workers)
         return hash(str(path_condition)) % self.shard_key_mod
 
@@ -385,17 +398,17 @@ class StateShardingStrategy:
 # 当 pending_states 队列长度超过 high_watermark 时启用节流模式：
 # 每次尝试提交新任务前等待 backoff 秒，首次 1s，每次连续超额
 # 将 backoff 翻倍至 max_backoff_sec。当队列降至 low_watermark 以下
-# 时恢复正常流速，backoff 重置为 0。
+# 时恢复正常流速，backoff 重置为 0
 #
-# 这防止上游生产者无限堆积导致 worker 端 OOM 或调度器过载。
+# 这防止上游生产者无限堆积导致 worker 端 OOM 或调度器过载
 # ---------------------------------------------------------------------------
 class BackpressureController:
-    """Throttle task submission when the pending_states queue exceeds
-    configurable thresholds, using exponential backoff.
-
-    When queue depth > high_watermark, each submit attempt sleeps for
-    current_backoff seconds (starting at 1s, capped at max_backoff_sec).
-    When queue depth drops below low_watermark, backoff resets to 0.
+    """Throttle task submission pending_states 队列 exceeds
+    配置urable thresholds, using exponential backoff
+    
+    队列 depth > high_watermark, submit attempt sleeps for
+    current_backoff seconds (starting 1s, capped max_backoff_sec)
+    队列 depth drops below low_watermark, backoff 重置 0
     """
 
     def __init__(self, high_watermark: int = 1000, low_watermark: int = 200,
@@ -416,22 +429,22 @@ class BackpressureController:
         return self._consecutive_over
 
     def should_throttle(self, queue_depth: int) -> bool:
-        """Return True if the queue is above high_watermark.
-
-        在调用方决定是否提交新任务前调用此方法检查队列深度。
+        """返回 True 队列 above high_watermark
+        
+        在调用方决定是否提交新任务前调用此方法检查队列深度
         """
         return queue_depth >= self.high_watermark
 
     def wait_if_needed(self, queue_depth: int):
-        """Sleep for current_backoff seconds if queue is over high_watermark.
-
-        Call this before each task submission. If queue is above
-        high_watermark, sleeps for current_backoff and increases it
-        exponentially (up to max_backoff_sec). If queue is below
-        low_watermark, resets backoff to zero.
-
+        """Sleep for current_backoff seconds 队列 over high_watermark
+        
+        Call task submission. 队列 above
+        high_watermark, sleeps for current_backoff increases
+        exponentially (up max_backoff_sec). 队列 below
+        low_watermark, 重置 backoff zero
+        
         Args:
-            queue_depth: Current number of pending states in the queue.
+        队列_depth: Current number pending states 队列
         """
         with self._lock:
             if queue_depth >= self.high_watermark:
@@ -460,16 +473,16 @@ class BackpressureController:
 # ---------------------------------------------------------------------------
 # BloomFilter — 轻量级布隆过滤器，用于 CrossWorkerDeduplication
 #
-# 使用两个独立的非加密哈希函数（FNV-1a + Murmur3 简化版），
-# 以双哈希技术生成 k 个哈希位置，避免需要 k 个独立哈希函数。
-# bit_array 用 bytearray 实现，O(1) 位操作。
+# 使用两个独立的非加密哈希函数（FNV-1a + Murmur3 简化版）
+# 以双哈希技术生成 k 个哈希位置，避免需要 k 个独立哈希函数
+# bit_array 用 bytearray 实现，O(1) 位操作
 # ---------------------------------------------------------------------------
 class BloomFilter:
-    """Lightweight Bloom filter for distributed state deduplication.
-
-    Uses double-hashing (FNV-1a + simplified Murmur3) to simulate k hash
-    positions without requiring k independent hash functions. The bit array
-    is a compact bytearray for minimal network transfer.
+    """Lightweight Bloom 过滤 for 分布式 state deduplication
+    
+    使用 double-哈希 (FNV-1a + simplified Murmur3) simulate k hash
+    positions requiring k independent hash functions. bit array
+    a compact bytearray for minimal 网络 transfer
     """
 
     def __init__(self, size_bits: int = 65536, hash_count: int = 4):
@@ -492,7 +505,7 @@ class BloomFilter:
 
     @staticmethod
     def _fnv1a(data: bytes) -> int:
-        """FNV-1a 64-bit hash."""
+        """FNV-1a 64-bit hash"""
         h = 0xcbf29ce484222325
         for b in data:
             h ^= b
@@ -501,7 +514,7 @@ class BloomFilter:
 
     @staticmethod
     def _murmur3_simple(data: bytes, seed: int = 0) -> int:
-        """Simplified Murmur3-inspired hash for double-hashing."""
+        """Simplified Murmur3-inspired hash for double-哈希"""
         h = seed
         for b in data:
             h ^= b
@@ -510,7 +523,7 @@ class BloomFilter:
         return h
 
     def _bit_positions(self, item: bytes) -> List[int]:
-        """Double-hashing: generate k bit positions from two base hashes."""
+        """Double-哈希: 构造 k bit positions two base 哈希"""
         h1 = self._fnv1a(item)
         h2 = self._murmur3_simple(item, seed=0x9747b28c)
         positions = []
@@ -520,7 +533,7 @@ class BloomFilter:
         return positions
 
     def add(self, item: bytes):
-        """Insert an item (as bytes) into the filter."""
+        """插入 an item (bytes) 过滤"""
         for pos in self._bit_positions(item):
             byte_idx = pos // 8
             bit_idx = pos % 8
@@ -528,7 +541,7 @@ class BloomFilter:
         self._count += 1
 
     def might_contain(self, item: bytes) -> bool:
-        """Return True if the item *might* be in the filter (no false negatives)."""
+        """返回 True item ** 过滤 (false negatives)"""
         for pos in self._bit_positions(item):
             byte_idx = pos // 8
             bit_idx = pos % 8
@@ -537,17 +550,17 @@ class BloomFilter:
         return True
 
     def to_bytes(self) -> bytes:
-        """Serialize the bit array and metadata for network transfer.
-
-        Format: 4-byte size_bits (big-endian) + 1-byte hash_count
-        + bit_array bytes.
+        """序列化 bit array metadata for 网络 transfer
+        
+        格式化: 4-byte size_bits (大端) + 1-byte hash_count
+        + bit_array bytes
         """
         header = struct.pack('>IB', self._size_bits, self._hash_count)
         return header + bytes(self._bit_array)
 
     @classmethod
     def from_bytes(cls, data: bytes) -> 'BloomFilter':
-        """Deserialize from the format produced by to_bytes()."""
+        """反序列化 格式化 produced to_bytes()"""
         if len(data) < 5:
             return cls()
         size_bits = struct.unpack('>I', data[:4])[0]
@@ -561,9 +574,9 @@ class BloomFilter:
         return bf
 
     def merge(self, other: 'BloomFilter') -> int:
-        """Bitwise OR another filter into this one. Returns count of new bits set.
-
-        用于合并远程 worker 发来的布隆过滤器。
+        """Bitwise OR 过滤 one. 返回 count new bits set
+        
+        用于合并远程 worker 发来的布隆过滤器
         """
         if other._size_bits != self._size_bits:
             return 0
@@ -582,25 +595,25 @@ class BloomFilter:
 # 每个 worker 维护一个本地 BloomFilter，记录已处理状态的 path_condition
 # 哈希。exchanger 线程周期性收集所有在线 worker 的过滤器，做位或合并后
 # 广播回各 worker。worker 在开始处理新 state 前检查 merged 过滤器：
-# 如果 might_contain 返回 True 且本地未见，标记为全局重复跳过。
+# 如果 might_contain 返回 True 且本地未见，标记为全局重复跳过
 #
 # 设计权衡：布隆过滤器有 false positive 概率（默认 ~0.1%），意味着
 # 可能误判未见过的新状态为重复——但每个 worker 的本地 exact set
-# 作为第二层检查可以消除大部分误判。不跨 worker 传输完整状态，
-# 只交换 compact 的位数组。
+# 作为第二层检查可以消除大部分误判。不跨 worker 传输完整状态
+# 只交换 compact 的位数组
 # ---------------------------------------------------------------------------
 class CrossWorkerDeduplication:
-    """Periodically exchange state hash Bloom filters between workers to
-    detect and eliminate globally duplicate states without full state transfer.
-
-    Each worker maintains a local BloomFilter of path_condition hashes for
+    """Periodically exchange state hash Bloom 过滤 workers
+    检测 eliminate globally duplicate states full state transfer
+    
+    worker 维护 a local BloomFilter path_condition 哈希 for
     processed states. A background exchanger thread periodically collects
-    filters from all active workers, merges them (bitwise OR), and broadcasts
-    the merged result back. Workers consult the merged filter to skip states
-    already processed elsewhere.
-
-    exchange_interval_sec defaults to 30s — frequent enough to catch duplicates
-    quickly, rare enough to avoid saturating the control channel.
+    过滤 active workers, 合并 (bitwise OR), broadcasts
+    merged result back. Workers consult merged 过滤 skip states
+    processed elsewhere
+    
+    exchange_interval_sec defaults 30s — frequent enough catch duplicates
+    quickly, rare enough avoid saturating control channel
     """
 
     def __init__(self, exchange_interval_sec: float = 30.0,
@@ -631,10 +644,10 @@ class CrossWorkerDeduplication:
         return self._last_exchange_time
 
     def register_state(self, state: SymbolicState):
-        """Record a state's path_condition hash in the local filter and exact set.
-
-        Each worker calls this after completing a state, before the next
-        exchange cycle includes it.
+        """Record a state's path_condition hash local 过滤 exact set
+        
+        worker calls completing a state, next
+        exchange cycle 包含
         """
         with self._lock:
             pc_hash = str(hash(str(state.path_condition))).encode('utf-8')
@@ -642,14 +655,14 @@ class CrossWorkerDeduplication:
             self._local_exact.add(state.state_id)
 
     def is_likely_duplicate(self, state: SymbolicState) -> bool:
-        """Check if a state might already have been processed by any worker.
-
-        Uses Bloom filter as a fast pre-check, then falls back to the
-        local exact set for confirmation. Filter misses (definite
-        non-membership) are the common case for genuinely new states.
-
-        Returns:
-            True if the state is likely already processed (globally).
+        """检查 a state processed worker
+        
+        使用 Bloom 过滤 a fast pre-检查, falls back
+        local exact set for confirmation. 过滤 misses (definite
+        non-membership) common case for genuinely new states
+        
+        返回:
+        True state likely processed (globally)
         """
         with self._lock:
             if state.state_id in self._local_exact:
@@ -659,14 +672,14 @@ class CrossWorkerDeduplication:
 
     def collect_filters(self, workers: Dict[str, WorkerInfo]
                         ) -> Dict[str, bytes]:
-        """Collect Bloom filter serializations from all active workers.
-
+        """Collect Bloom 过滤 序列化s active workers
+        
         Args:
-            workers: Dict of worker_id -> WorkerInfo, each may have a
-                state_bloom_filter set by the engine.
-
-        Returns:
-            Dict mapping worker_id to serialized BloomFilter bytes.
+        workers: Dict worker_id -> WorkerInfo, a
+        state_bloom_filter set engine
+        
+        返回:
+        Dict mapping worker_id serialized BloomFilter bytes
         """
         filters: Dict[str, bytes] = {}
         for wid, w in workers.items():
@@ -677,14 +690,14 @@ class CrossWorkerDeduplication:
         return filters
 
     def exchange(self, workers: Dict[str, WorkerInfo]):
-        """Perform one exchange cycle: collect, merge, broadcast.
-
-        Should be called periodically by the engine's exchange loop.
-        After this call, each worker's state_bloom_filter in the
-        `workers` dict is updated to the merged filter.
-
+        """Perform one exchange cycle: collect, 合并, broadcast
+        
+        periodically engine's exchange loop
+        call, worker's state_bloom_filter
+        `workers` dict updated merged 过滤
+        
         Args:
-            workers: Dict of worker_id -> WorkerInfo.
+        workers: Dict worker_id -> WorkerInfo
         """
         with self._lock:
             # 构建合并过滤器：先加入本地，再逐 worker OR
@@ -712,13 +725,13 @@ class CrossWorkerDeduplication:
                          "merged filter entries ~%d", len(workers), merged.count)
 
     def start_exchange_loop(self, workers: Dict[str, WorkerInfo]):
-        """Start a background thread that periodically calls exchange().
-
-        The thread runs until stop_exchange_loop() is called.
-
+        """启动 a background thread periodically calls exchange()
+        
+        thread 运行 until stop_exchange_loop()
+        
         Args:
-            workers: Dict of worker_id -> WorkerInfo (must be the same dict
-                that the engine uses, so updates are visible).
+        workers: Dict worker_id -> WorkerInfo (same dict
+        engine 使用, 更新 visible)
         """
         if self._running:
             return
@@ -736,18 +749,18 @@ class CrossWorkerDeduplication:
         self._exchange_thread.start()
 
     def stop_exchange_loop(self):
-        """Stop the background exchange thread."""
+        """停止 background exchange thread"""
         self._running = False
 
 
 class RayExecutor:
-    """Ray-based distributed executor. Requires a running Ray cluster."""
+    """Ray-based 分布式 executor. Requires a running Ray 集群"""
 
     def __init__(self):
         self._ray_initialized = False
 
     def init_ray(self, address: Optional[str] = None):
-        """Connect to a Ray cluster, or start a local one."""
+        """Connect a Ray 集群, or 启动 a local one"""
         try:
             import ray
             if address:
@@ -762,15 +775,15 @@ class RayExecutor:
             logger.error(f"Ray initialization failed: {e}")
 
     def is_initialized(self) -> bool:
-        """True if Ray is connected."""
+        """True Ray connected"""
         return self._ray_initialized
 
     @staticmethod
     def execute_symbolic_state(state: SymbolicState, binary_path: str,
                                  entry_point: int, timeout: int
                                  ) -> Tuple[List[SymbolicState], List[Dict[str, Any]]]:
-        """Execute one symbolic state on a remote worker. Returns child states
-        and any bugs discovered."""
+        """执行 one symbolic state a remote worker. 返回 child states
+        bugs discovered"""
         results = []
         bugs = []
 
@@ -783,14 +796,14 @@ class RayExecutor:
 
 
 class SparkExecutor:
-    """Spark-based distributed executor. Requires a running Spark context."""
+    """Spark-based 分布式 executor. Requires a running Spark context"""
 
     def __init__(self):
         self._spark_initialized = False
         self._spark_context = None
 
     def init_spark(self, app_name: str = "SymbolicExecution"):
-        """Create a local SparkContext."""
+        """创建 a local SparkContext"""
         try:
             from pyspark import SparkContext
             self._spark_context = SparkContext(appName=app_name)
@@ -802,31 +815,31 @@ class SparkExecutor:
             logger.error(f"Spark initialization failed: {e}")
 
     def is_initialized(self) -> bool:
-        """True if Spark is connected."""
+        """True Spark connected"""
         return self._spark_initialized
 
     def parallelize_states(self, states: List[SymbolicState]) -> Any:
-        """Distribute states into a Spark RDD."""
+        """Distribute states a Spark RDD"""
         if self._spark_context:
             return self._spark_context.parallelize(states)
         return None
 
 
 class DistributedSymbolicExecutionEngine:
-    """Core scheduler for distributed symbolic execution.
-
+    """Core scheduler for 分布式 符号执行
+    
     Responsibilities:
-    1. Serialize execution states and distribute to worker machines
-    2. Use Ray or Spark for parallel state exploration
-    3. Fault recovery via state checkpoint serialization
-    4. Load-balanced scheduling across workers
-    5. State merging and result aggregation after collection
-    6. Configurable failure injection for resilience testing
+    1. 序列化 execution states distribute worker machines
+    2. 使用 Ray or Spark for 并行 state exploration
+    3. Fault recovery via state 检查点 序列化
+    4. 加载-balanced scheduling across workers
+    5. State merging result aggregation collection
+    6. 配置urable failure injection for resilience testing
     7. Path-condition-hash-based state sharding
-    8. Broadcast config updates to all workers
-    9. Distributed tracing with OpenTelemetry-compatible trace context
-    10. Backpressure control to prevent queue overflow
-    11. Cross-worker Bloom filter exchange for global deduplication
+    8. Broadcast 配置 更新 workers
+    9. 分布式 追踪 OpenTelemetry-compatible trace context
+    10. Backpressure control prevent 队列 overflow
+    11. Cross-worker Bloom 过滤 exchange for global deduplication
     """
 
     DEFAULT_BACKEND = "ray"
@@ -858,37 +871,37 @@ class DistributedSymbolicExecutionEngine:
 
     @property
     def failure_simulator(self) -> NetworkFailureSimulator:
-        """Expose the failure injector for external rate tuning."""
+        """Expose failure injector for external rate tuning"""
         return self._failure_simulator
 
     @property
     def sharding_strategy(self) -> StateShardingStrategy:
-        """Expose the sharding strategy for external inspection."""
+        """Expose sharding strategy for external inspection"""
         return self._sharding_strategy
 
     @property
     def tracing(self) -> DistributedTracing:
-        """Expose the trace context generator."""
+        """Expose trace context generator"""
         return self._tracing
 
     @property
     def backpressure(self) -> BackpressureController:
-        """Expose the backpressure controller for external tuning."""
+        """Expose backpressure controller for external tuning"""
         return self._backpressure
 
     @property
     def cross_worker_dedup(self) -> CrossWorkerDeduplication:
-        """Expose the cross-worker deduplication exchanger."""
+        """Expose cross-worker deduplication exchanger"""
         return self._cross_worker_dedup
 
     @property
     def pending_state_count(self) -> int:
-        """Current number of pending states in the queue."""
+        """Current number pending states 队列"""
         return len(self._pending_states)
 
     def initialize(self, address: Optional[str] = None):
-        """Connect to the chosen backend. Also starts heartbeat monitor and
-        cross-worker deduplication exchange loop."""
+        """Connect chosen backend. 启动 heartbeat 监控
+        cross-worker deduplication exchange loop"""
         if self._backend == "ray":
             self._executor.init_ray(address)
         elif self._backend == "spark":
@@ -922,10 +935,10 @@ class DistributedSymbolicExecutionEngine:
         self._heartbeat_monitor_thread.start()
 
     def _retry_with_backoff(self, fn, *args, max_retries=MAX_RETRIES, **kwargs):
-        """指数退避重试：1s → 2s → 4s → 放弃。
-
+        """指数退避重试：1s → 2s → 4s → 放弃
+        
         设计意图 — 分布式环境中的瞬态故障（网络抖动、worker 重启）通常
-        在 1-2 秒内自愈，指数间隔避免在短时间内对故障端点施压。"""
+        在 1-2 秒内自愈，指数间隔避免在短时间内对故障端点施压"""
         for attempt in range(max_retries):
             try:
                 return fn(*args, **kwargs), None
@@ -939,11 +952,11 @@ class DistributedSymbolicExecutionEngine:
         return None, RuntimeError("max retries exceeded")
 
     def submit_task(self, task: AnalysisTask) -> str:
-        """Register a task and distribute its states if the backend is ready.
-
-        Automatically assigns a trace context if the task doesn't already
-        have one. Enforces backpressure: if the pending queue is above
-        high_watermark, throttles submission with exponential backoff.
+        """寄存器 a task distribute states backend ready
+        
+        Automatically assigns a trace context task doesn't
+        one. Enforces backpressure: pending 队列 above
+        high_watermark, throttles submission exponential backoff
         """
         # 分布式追踪：如果任务没有 trace context，创建新的 root trace
         if task.trace_context is None:
@@ -966,10 +979,10 @@ class DistributedSymbolicExecutionEngine:
         return task.task_id
 
     def _filter_duplicate_states(self, states: List[SymbolicState]) -> List[SymbolicState]:
-        """Pre-filter states using cross-worker Bloom filter before dispatch.
-
+        """Pre-过滤 states using cross-worker Bloom 过滤 dispatch
+        
         布隆过滤器作为第一层快速筛除，本地的 StateMerger.deduplicate
-        作为精确的第二层。这避免了将已知重复状态序列化传输到 worker。
+        作为精确的第二层。这避免了将已知重复状态序列化传输到 worker
         """
         filtered = []
         for state in states:
@@ -981,8 +994,8 @@ class DistributedSymbolicExecutionEngine:
         return filtered
 
     def _distribute_states(self, task: AnalysisTask):
-        """Route state distribution to the active backend. Pre-filters
-        duplicate states via cross-worker deduplication."""
+        """Route state distribution active backend. Pre-过滤
+        duplicate states via cross-worker deduplication"""
         # 跨 worker 去重预筛
         if task.states:
             task.states = self._filter_duplicate_states(task.states)
@@ -999,10 +1012,10 @@ class DistributedSymbolicExecutionEngine:
             self._distribute_with_spark(task)
 
     def _distribute_with_ray(self, task: AnalysisTask):
-        """Serialize states, submit as Ray remote tasks, collect results.
-
-        Trace context is propagated to each remote execution via serialization
-        in the SymbolicState. Child states inherit the parent trace_id.
+        """序列化 states, submit Ray remote tasks, collect results
+        
+        Trace context propagated remote execution via 序列化
+        SymbolicState. Child states inherit parent trace_id
         """
         try:
             import ray
@@ -1053,7 +1066,7 @@ class DistributedSymbolicExecutionEngine:
             logger.error(f"Ray distribution failed: {e}")
 
     def _distribute_with_spark(self, task: AnalysisTask):
-        """Parallelize states into an RDD, map, and collect."""
+        """并行ize states an RDD, map, collect"""
         try:
             rdd = self._executor.parallelize_states(task.states)
 
@@ -1083,7 +1096,7 @@ class DistributedSymbolicExecutionEngine:
             logger.error(f"Spark distribution failed: {e}")
 
     def get_task_status(self, task_id: str) -> Dict[str, Any]:
-        """Return completion progress for a task."""
+        """返回 completion progress for a task"""
         task = self._tasks.get(task_id)
         if not task:
             return {"error": "Task not found"}
@@ -1098,7 +1111,7 @@ class DistributedSymbolicExecutionEngine:
         }
 
     def _get_task_status_str(self, task: AnalysisTask) -> str:
-        """Derive a status string from completed vs. total states."""
+        """Derive a status string completed vs. total states"""
         if task.completed_states == 0:
             return "pending"
         elif task.completed_states < task.total_states:
@@ -1107,7 +1120,7 @@ class DistributedSymbolicExecutionEngine:
             return "completed"
 
     def cancel_task(self, task_id: str) -> bool:
-        """Remove a task and its results from the registry."""
+        """Remove a task results registry"""
         if task_id in self._tasks:
             del self._tasks[task_id]
             if task_id in self._results:
@@ -1116,12 +1129,12 @@ class DistributedSymbolicExecutionEngine:
         return False
 
     def get_results(self, task_id: str) -> Optional[TaskResult]:
-        """Return the result for a completed task, or None."""
+        """返回 result for a completed task, or None"""
         return self._results.get(task_id)
 
     def add_worker(self, worker_id: str, address: str, port: int):
-        """Register a worker in the cluster view. Initializes its Bloom filter
-        for cross-worker deduplication."""
+        """寄存器 a worker 集群 view. 初始化 Bloom 过滤
+        for cross-worker deduplication"""
         wf = BloomFilter(size_bits=self._cross_worker_dedup._bloom_size_bits,
                          hash_count=self._cross_worker_dedup._bloom_hash_count)
         self._workers[worker_id] = WorkerInfo(
@@ -1138,18 +1151,18 @@ class DistributedSymbolicExecutionEngine:
         )
 
     def remove_worker(self, worker_id: str):
-        """Remove a worker from the cluster view."""
+        """Remove a worker 集群 view"""
         if worker_id in self._workers:
             del self._workers[worker_id]
         # 清理该 worker 的配置缓存
         self._worker_configs.pop(worker_id, None)
 
     def get_worker_status(self, worker_id: str) -> Optional[WorkerInfo]:
-        """Return metadata for a specific worker."""
+        """返回 metadata for a specific worker"""
         return self._workers.get(worker_id)
 
     def get_cluster_status(self) -> Dict[str, Any]:
-        """Return aggregate cluster health metrics."""
+        """返回 aggregate 集群 health metrics"""
         total_workers = len(self._workers)
         active_workers = sum(
             1 for w in self._workers.values()
@@ -1172,22 +1185,22 @@ class DistributedSymbolicExecutionEngine:
     # ------------------------------------------------------------------
     # broadcast_config — 一次调用向所有在线 worker 推送配置更新
     #
-    # 典型用法：运行时调整 timeout 或 max_depth，无需逐个通知 worker。
+    # 典型用法：运行时调整 timeout 或 max_depth，无需逐个通知 worker
     # cfg_version 随每次广播单调递增，worker 可通过版本号检测
-    # 自己是否持有最新配置。
+    # 自己是否持有最新配置
     # ------------------------------------------------------------------
     def broadcast_config(self, config: Dict[str, Any]) -> Dict[str, bool]:
-        """Push config updates (timeout, max_depth, etc.) to all workers in one call.
-
-        Each worker's last-known config is cached in _worker_configs.
-        cfg_version is incremented on each broadcast to help detect
-        workers running stale configurations.
-
+        """Push 配置 更新 (timeout, max_depth, etc.) workers one call
+        
+        worker's last- 配置 is缓存d _worker_配置s
+        cfg_version incremented broadcast help 检测
+        workers running stale 配置s
+        
         Args:
-            config: Dict of config key-value pairs to push (e.g. {'timeout': 600, 'max_depth': 200}).
-
-        Returns:
-            Dict mapping worker_id -> success (True if worker acknowledged).
+        配置: Dict 配置 key-value pairs push (e.g. {'timeout': 600, 'max_depth': 200})
+        
+        返回:
+        Dict mapping worker_id -> success (True worker acknowledged)
         """
         self.cfg_version += 1
         config_with_version = dict(config)
@@ -1213,7 +1226,7 @@ class DistributedSymbolicExecutionEngine:
         return ack
 
     def save_state(self, file_path: str):
-        """Serialize the entire engine state to a pickle checkpoint."""
+        """序列化 entire engine state a pickle 检查点"""
         state = {
             "tasks": {k: vars(v) for k, v in self._tasks.items()},
             "results": {k: vars(v) for k, v in self._results.items()},
@@ -1232,7 +1245,7 @@ class DistributedSymbolicExecutionEngine:
         logger.info(f"Engine state saved to: {file_path}")
 
     def load_state(self, file_path: str):
-        """Restore engine state from a pickle checkpoint."""
+        """恢复 engine state a pickle 检查点"""
         try:
             with open(file_path, 'rb') as f:
                 state = pickle.load(f)
@@ -1251,7 +1264,7 @@ class DistributedSymbolicExecutionEngine:
             logger.error(f"Failed to load engine state: {e}")
 
     def shutdown(self):
-        """Tear down the backend connection, heartbeat monitor, and dedup exchanger."""
+        """Tear down backend connection, heartbeat 监控, dedup exchanger"""
         self._heartbeat_running = False
         self._cross_worker_dedup.stop_exchange_loop()
         if self._backend == "ray" and self._executor.is_initialized():
@@ -1264,11 +1277,11 @@ class DistributedSymbolicExecutionEngine:
 
 
 class StateMerger:
-    """Deduplication and merging of symbolic states."""
+    """Deduplication merging symbolic states"""
 
     @staticmethod
     def merge_states(states: List[SymbolicState]) -> List[SymbolicState]:
-        """Merge states with identical path-condition hashes."""
+        """合并 states identical path-condition 哈希"""
         merged = []
         seen_conditions = set()
 
@@ -1282,7 +1295,7 @@ class StateMerger:
 
     @staticmethod
     def deduplicate(states: List[SymbolicState]) -> List[SymbolicState]:
-        """Remove duplicate states by state_id."""
+        """Remove duplicate states state_id"""
         unique = {}
         for state in states:
             unique[state.state_id] = state
@@ -1291,7 +1304,7 @@ class StateMerger:
 
 def create_distributed_engine(backend: str = "ray"
                                 ) -> DistributedSymbolicExecutionEngine:
-    """Instantiate a DistributedSymbolicExecutionEngine for the given backend."""
+    """Instantiate a 分布式SymbolicExecutionEngine for backend"""
     return DistributedSymbolicExecutionEngine(backend)
 
 
@@ -1299,7 +1312,7 @@ def distribute_symbolic_execution(binary_path: str, entry_point: int,
                                     initial_states: List[SymbolicState],
                                     backend: str = "ray",
                                     timeout: int = 300) -> TaskResult:
-    """One-shot: create engine, submit task, busy-wait until complete, return result."""
+    """One-shot: 创建 engine, submit task, busy-wait until complete, 返回 result"""
     engine = create_distributed_engine(backend)
     engine.initialize()
 

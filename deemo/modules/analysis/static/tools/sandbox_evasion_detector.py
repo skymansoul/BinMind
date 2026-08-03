@@ -17,7 +17,7 @@ class SandboxEvasionDetector:
             'vbox', 'vmware', 'virtualbox', 'vmx', 'qemu', 'xen',
             'virtio', 'hyper-v', 'hyperv', 'kvm',
             'VBOX', 'VMWARE', 'VIRTUAL', 'QEMU',
-            # Sandbox indicators
+            # 沙箱 indicators
             'sandbox', 'sandboxie', 'sbiedll', 'cuckoo',
             'malwr', 'any.run', 'joe sandbox', 'vxstream',
             'analysis', 'sample', 'mallab',
@@ -25,7 +25,7 @@ class SandboxEvasionDetector:
             'ida', 'idaq', 'x64_dbg', 'x32_dbg', 'x64dbg', 'ollydbg',
             'immunity', 'windbg', 'debugger', 'debug',
             'dbghelp', 'ntsd', 'cdb',
-            # Common sandbox artifacts
+            # Common 沙箱 artifacts
             'c:\\cuckoo', 'c:\\analysis', 'c:\\agent',
             'sandboxpipe', 'sandboxagent',
         ]
@@ -73,13 +73,13 @@ class SandboxEvasionDetector:
         self._evasion_opcodes = [
             # SIDT (Red Pill) - 0F 01 0?
             (b'\x0f\x01', 'SIDT red pill (VM detection)'),
-            # SGDT - 0F 01 0? (Store Global/Interrupt Descriptor Table)
+            # SGDT - 0F 01 0? (存储 Global/中断 Descriptor Table)
             (b'\x0f\x01\x08', 'SGDT (IDT base check)'),
             # SLDT - 0F 00 0?
             (b'\x0f\x00', 'SLDT/SMSW (VM check)'),
-            # CPUID with leaf 0x40000000 (hypervisor)
+            # CPUID leaf 0x40000000 (虚拟机监控器)
             (b'\xb8\x00\x00\x00\x40', 'CPUID hypervisor leaf'),
-            # IN from VMware port (0x5658)
+            # VMware port (0x5658)
             (b'\xed', 'IN instruction (port I/O, possible VMware backdoor 0x5658)'),
             # RDTSC timing
             (b'\x0f\x31', 'RDTSC (timing check)'),
@@ -252,8 +252,8 @@ class SandboxEvasionDetector:
     def analyze(self, data: bytes, strings: List[str] = None,
                 imports: Dict[str, List[str]] = None) -> Dict:
         """
-        5-pass composite evasiveness analysis.
-        Returns score 0-100 with per-pass details.
+        5-pass composite evasiveness analysis
+        返回 score 0-100 per-pass details
         """
         if strings is None:
             strings = self._extract_strings(data)

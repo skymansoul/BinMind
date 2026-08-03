@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # Multi-view GNN for binary function similarity -- CFG/DFG/mnemonic views,
-# GNN encoder, contrastive loss, and integration with BaseAnalyzer.
-# 2026-07-29: added ContrastiveLoss; MultiViewGNNEmbedderAnalyzer.
-# 2026-07-30: attention-based view fusion; GraphAugmenter; EdgeDrop regularization.
+# GNN 编码器, contrastive loss, and integration with BaseAnalyzer.
+# added ContrastiveLoss; MultiViewGNNEmbedderAnalyzer.
+# 注意力-based view fusion; GraphAugmenter; EdgeDrop regularization.
 
 import logging as _logging
 import math as _math
@@ -99,7 +99,7 @@ class EmbeddingResult:
     view_embeddings: Dict[str, List[float]] = field(default_factory=dict)
     embedding_dim: int = 128
     compute_time_ms: float = 0.0
-    # 2026-07-30: attention scores 存储每个视图的重要性权重
+    # 2026-07-30: 注意力 scores 存储每个视图的重要性权重
     view_attention_scores: Dict[str, float] = field(default_factory=dict)
 
 
@@ -274,7 +274,7 @@ class GNNEncoder:
 
 
 # ---------------------------------------------------------------------------
-# Multi-View GNN (with attention-based view fusion)
+# Multi-View GNN (with 注意力-based view fusion)
 # ---------------------------------------------------------------------------
 
 class MultiViewGNN:
@@ -292,10 +292,10 @@ class MultiViewGNN:
         self.m_call_encoder = GNNEncoder(input_dim, hidden_dim, output_dim)
         self.m_mnemonic_encoder = GNNEncoder(input_dim, hidden_dim, output_dim // 2)
         self.m_output_dim = output_dim
-        self.m_fusion_weights = [0.3, 0.25, 0.2, 0.25]  # 保留作为 fallback
+        self.m_fusion_weights = [0.3, 0.25, 0.2, 0.25]  # 保留作为 回退
         self.m_training = False
 
-        # 2026-07-30: 可学习的注意力投影向量 (query/key 维度 = output_dim)
+        # 2026-07-30: 可学习的注意力投影向量 (查询/key 维度 = output_dim)
         import random as _r
         _r.seed(42)
         self.m_attn_query: List[float] = []
@@ -508,7 +508,7 @@ class ContrastiveLoss:
 
 
 # ---------------------------------------------------------------------------
-# 2026-07-30: 图数据增强器 -- 边扰动与节点特征噪声，用于对比学习自监督预训练
+# 图数据增强器 -- 边扰动与节点特征噪声，用于对比学习自监督预训练
 # GraphAugmenter: edge perturbation + node feature dropout
 # 参考: You et al., "GraphCL: Graph Contrastive Learning with Augmentations", NeurIPS 2020
 # ---------------------------------------------------------------------------
@@ -753,7 +753,7 @@ class MultiViewGNNEmbedderAnalyzer:
 
 # ---------------------------------------------------------------------------
 # Graph builder utility
-# 2026-07-30: 增强版 -- 计算图结构全局特征 (圈复杂度、平均度、边密度)
+# 增强版 -- 计算图结构全局特征 (圈复杂度、平均度、边密度)
 # ---------------------------------------------------------------------------
 
 def build_function_graph_from_blocks(function_name: str, function_address: int,
@@ -823,7 +823,7 @@ def build_function_graph_from_blocks(function_name: str, function_address: int,
         graph.cyclomatic_complexity = max(1, total_edges - n + 2)
         # 平均度数
         graph.avg_degree = (2.0 * total_edges) / n
-        # 边密度: E / (N * (N-1)) for directed graph
+        # 边密度: E / (N * (N-1)) for directed 图
         max_possible = n * (n - 1) if n > 1 else 1
         graph.edge_density = total_edges / max_possible
     else:

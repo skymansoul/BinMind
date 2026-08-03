@@ -1,26 +1,25 @@
-# 2026-07-31
-# ==== Format-Preserving Encryption (FPE) 检测 ====
-# FPE 加密后密文与明文具有相同格式 (长度和字符集), 常用于:
-#   - 令牌化 (tokenization): 信用卡号、社会保险号的格式保留
-#   - 数据库列级加密: 不改变 schema 限制
-#   - 合规性要求: PCI-DSS (支付卡行业数据安全标准) 推荐使用FPE保护PAN
+# ==== 格式保留加密(FPE)检测 ====
+# FPE加密后密文与明文具有相同格式(长度和字符集), 常用于:
+#   - 令牌化(tokenization): 信用卡号、社会保险号格式保留
+#   - 数据库列级加密: 不改变schema限制
+#   - 合规要求: PCI-DSS推荐FPE保护PAN
 #
 # 覆盖标准: NIST SP 800-38G Rev.1 (2024), ANSI X9.124-4.
-# 算法: FF1 (Feistel-based, 10 rounds), FF3-1 (修正版, 8 rounds).
-# 2024年 NIST 修订了 SP 800-38G: FF3→FF3-1 修复了原始 FF3 的伪造攻击 (Durak-Vaudenay, CRYPTO 2017).
+# 算法: FF1 (Feistel架构, 10轮), FF3-1 (修正版, 8轮).
+# 2024年NIST修订SP 800-38G: FF3→FF3-1修复了原始FF3的伪造攻击(Durak-Vaudenay, CRYPTO 2017).
 #
 # 检测策略:
-#   (1) FF1 参数指纹: radix ∈ [2, 2^16], min_len ≥ 2, max_len ≤ 2^32
-#   (2) FF3-1 参数指纹: radix ∈ [2, 2^16], min_len ≥ 2, max_len ≤ 2^32
-#       较小 tweak (7 bytes instead of 8) 和 8-round Feistel 结构
-#   (3) 库字符串: libfpe (NIST ref), Botan::FPE, Crypto++ FPE, Voltage FPE (Micro Focus/HPE),
+#   (1) FF1参数指纹: radix ∈ [2, 2^16], min_len ≥ 2, max_len ≤ 2^32
+#   (2) FF3-1参数指纹: radix ∈ [2, 2^16], min_len ≥ 2, max_len ≤ 2^32
+#       较小tweak(7 bytes而非8)和8轮Feistel结构
+#   (3) 库字符串: libfpe (NIST参考), Botan::FPE, Crypto++ FPE, Voltage FPE,
 #       Prime Factors EncryptRIGHT, comforte SecurDPS, Thales CipherTrust
-#   (4) FPE 特有的 AES 子密钥派生 (CBC-MAC 变体 + 整数除法和取模运算组合)
+#   (4) FPE特有的AES子密钥派生(CBC-MAC变体 + 整数除法和取模运算组合)
 #
 # 参考: Bellare-Rogaway-Spies (FFX mode, 2010), Dworkin (NIST SP 800-38G Rev.1, 2024),
-#  Durak-Vaudenay (FF3 attack at CRYPTO 2017), Hoang-Miller-Trieu (FF3-1 fix, 2019).
-# 2026-08-01: 新增 BPS (Brier-Peyrin-Stern, 2010) 格式保留模式检测,
-# Thales/Vormetric 令牌化产品指纹, comforte/HPE SecureData 字符串。
+# Durak-Vaudenay (FF3 attack at CRYPTO 2017), Hoang-Miller-Trieu (FF3-1 fix, 2019).
+# 新增BPS (Brier-Peyrin-Stern, 2010)格式保留模式检测,
+# Thales/Vormetric令牌化产品指纹, comforte/HPE SecureData字符串。
 
 import struct
 import logging
@@ -40,10 +39,10 @@ class FPEResult:
     detected_in: str = ""
 
 
-# ==== FPE 字符串检测库 ====
+# ==== FPE字符串检测库 ====
 
 _FPE_STRING_DB: List[tuple] = [
-    # NIST 参考实现
+    # NIST参考实现
     (b'libfpe', 'FF1/FF3-1', 'libfpe (NIST reference)', 0.88),
     (b'ff1_encrypt', 'FF1', 'FF1 encrypt function', 0.85),
     (b'ff3_encrypt', 'FF3-1', 'FF3/FF3-1 encrypt function', 0.85),
@@ -59,7 +58,7 @@ _FPE_STRING_DB: List[tuple] = [
     (b'fpe_fe1', 'FF1', 'Botan FE1', 0.82),
     # Crypto++
     (b'CryptoPP::FPE', 'FF1/FF3-1', 'Crypto++ FPE', 0.82),
-    # Commercial products
+    # 商业产品
     (b'Voltage SecureData', 'FF1/FF3-1', 'Voltage (Micro Focus/HPE) FPE', 0.90),
     (b'VoltageFPE', 'FF1/FF3-1', 'Voltage FPE API', 0.88),
     (b'FormatPreservingEncryption', 'FF1/FF3-1', 'FPE generic', 0.82),
@@ -72,28 +71,28 @@ _FPE_STRING_DB: List[tuple] = [
     # BPS (Brier-Peyrin-Stern, 2010) — 早期FPE模式, 后被FFX替代
     (b'bps_fpe', 'BPS', 'Brier-Peyrin-Stern FPE', 0.78),
     (b'BPS_FPE', 'BPS', 'BPS', 0.78),
-    # Tokenization-specific
+    # 令牌化专用
     (b'tokenization', 'tokenization', 'general tokenization', 0.50),
     (b'vaultless_token', 'tokenization', 'vaultless tokenization', 0.65),
 ]
 
 
-# ==== FF1/FF3-1 参数特征检测 ====
-# FF1 使用 10 轮 Feistel 网络, 每轮: PRF (AES-CBC-MAC) → 整数 mod radix^m.
-# 参数: radix ∈ [2..65536], input_len 在 [2..4096] (更大的max_len需要radix足够大)
-# FF3-1: 8 轮, tweak = 56 bits (7 bytes), radix ∈ [2..65536], 输入长度在 [2..4096]
-# FF1的tweak可以为0 (no tweak), 但FF3-1需要至少7bytes tweak
+# ==== FF1/FF3-1参数特征检测 ====
+# FF1使用10轮Feistel网络, 每轮: PRF(AES-CBC-MAC) → 整数mod radix^m.
+# 参数: radix ∈ [2..65536], input_len ∈ [2..4096](更大的max_len需要radix足够大)
+# FF3-1: 8轮, tweak = 56 bits(7 bytes), radix ∈ [2..65536], 输入长度∈[2..4096]
+# FF1的tweak可为0(无tweak), FF3-1需至少7bytes tweak
 
 def _detect_fpe_params(data: bytes, source: str) -> List[FPEResult]:
-    """检测FF1/FF3-1使用的典型radix值 (10, 26, 36, 62, 256) 和轮数 (8=FF3-1, 10=FF1)."""
+    # 检测FF1/FF3-1使用的典型radix值(10, 26, 36, 62, 256)和轮数(8=FF3-1, 10=FF1)
     results = []
-    # 常见 radix 值在二进制中作为立即数出现
+    # 常见radix值在二进制中以立即数出现
     # 字母数字字符集最常用:
-    #   radix=10  → 纯数字 (PAN/SSN)
-    #   radix=26  → 纯字母
-    #   radix=36  → 字母数字 (0-9A-Z)
-    #   radix=62  → 字母数字+大小写
-    #   radix=256 → 二进制 (等同于普通加密)
+    #   radix=10 → 纯数字(PAN/SSN)
+    #   radix=26 → 纯字母
+    #   radix=36 → 字母数字(0-9A-Z)
+    #   radix=62 → 字母数字+大小写
+    #   radix=256 → 二进制(等同于普通加密)
 
     typical_radices = [10, 26, 36, 62]
     found_radices = []
@@ -101,7 +100,7 @@ def _detect_fpe_params(data: bytes, source: str) -> List[FPEResult]:
         if struct.pack('<I', r) in data or struct.pack('<H', r) in data:
             found_radices.append(r)
 
-    # FF1 轮数 = 10, FF3-1 轮数 = 8
+    # FF1轮数=10, FF3-1轮数=8
     ff1_rounds = struct.pack('<I', 10) in data
     ff3_rounds = struct.pack('<I', 8) in data
 
@@ -118,16 +117,16 @@ def _detect_fpe_params(data: bytes, source: str) -> List[FPEResult]:
     return results
 
 
-# ==== AES-CBC-MAC in FPE context ====
-# FF1 的 PRF 使用 AES-CBC-MAC 变体: 从派生密钥生成 IV (零向量) 并对明文+轮号做 CBC。
-# 如果检测到:
-#   - AES key schedule (S-box/Rcon) 与整数除法和基数转换组合出现
-#   - 在 FPE 字符串附近存在 AES-128/256 key schedule → 强证据
+# ==== FPE上下文中的AES-CBC-MAC ====
+# FF1的PRF使用AES-CBC-MAC变体: 从派生密钥通过零向量IV对明文+轮号做CBC。
+# 检测到:
+#   - AES密钥编排(S-box/Rcon)与整数除法和基数转换组合出现
+#   - FPE字符串附近存在AES-128/256密钥编排→强证据
 
 def _detect_fpe_crypto_context(data: bytes, source: str) -> List[FPEResult]:
-    """检测FPE密码学上下文 — AES 密钥表 + FPE特有数学运算 (基数转换, 大整数模)."""
+    """检测FPE密码学上下文 — AES密钥表+FPE特有数学运算(基数转换, 大整数模)。"""
     results = []
-    # 检查 AES S-box + FPE 关键字同时出现
+    # 检查AES S-box + FPE关键字同时出现
     from .constants import AES_SBOX
     aes_pref = bytes(AES_SBOX[:16])
 
@@ -146,7 +145,7 @@ def _detect_fpe_crypto_context(data: bytes, source: str) -> List[FPEResult]:
 
 
 class FPEDetector:
-    """FPE 格式保留加密指纹检测器."""
+    """FPE格式保留加密指纹检测器。"""
 
     def __init__(self):
         pass
@@ -196,3 +195,6 @@ def detect_fpe_bytes(data: bytes, source: str = "memory") -> List[FPEResult]:
     return FPEDetector().scan_bytes(data, source)
 
 __all__ = ['FPEDetector', 'FPEResult', 'detect_fpe', 'detect_fpe_bytes']
+
+def _debug_print(*a,**kw):
+    if __import__("os").environ.get("BINMIND_DEBUG"):print(*a,**kw)

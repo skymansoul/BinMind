@@ -1,8 +1,6 @@
-# 2026-07-19
-# ==== 最小化X.509证书解析器 ====
-# 不依赖pyasn1/OpenSSL, 自己撸一套够用的DER解析。只覆盖TLS/代码签名中最常见的OID。
-# 自签名检测用于发现嵌入式根证书; 弱密钥/弱哈希检测覆盖PCI-DSS和NIST SP 800-131A要求。
-# SAN解析支持DNS/URI/IP, 覆盖CAB Forum基线要求。
+# 不依赖pyasn1/OpenSSL，自实现DER解析。覆盖TLS/代码签名中常见OID。
+# 自签名检测用于发现嵌入式根证书；弱密钥/弱哈希检测覆盖PCI-DSS和NIST SP 800-131A。
+# SAN解析支持DNS/URI/IP，覆盖CAB Forum基线要求。
 
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
@@ -36,7 +34,7 @@ class CertInfo:
 
 # ---- ASN.1 DER 基础解析 ----
 def _read_tag(data: bytes, offset: int) -> Tuple[int, int, int, int]:
-    """返回 (tag, length, value_offset, next_offset)"""
+    """解析DER TLV: 返回 (tag, length, value_offset, next_offset)"""
     _tag = data[offset]
     _len = data[offset + 1]
     if _len < 0x80:
@@ -123,7 +121,7 @@ def _read_dn(data: bytes, offset: int, length: int) -> str:
 
 
 def _read_oid_from_seq(data: bytes, offset: int, length: int) -> str:
-    # 在SEQUENCE内找OID
+    # SEQUENCE内定位OID
     _pos = offset
     _end = offset + length
     while _pos < _end:
@@ -139,10 +137,10 @@ def _read_string_value(data: bytes, tag: int, offset: int, length: int) -> str:
     if tag in (0x0C, 0x13, 0x16, 0x1E):  # UTF8String, Printable, IA5, BMP
         try:
             return _raw.decode('utf-8')
-        except:
+        except UnicodeDecodeError:  # 修复: bare except → UnicodeDecodeError
             try:
                 return _raw.decode('latin-1')
-            except:
+            except UnicodeDecodeError:  # 修复: bare except → UnicodeDecodeError
                 return _raw.hex()
     if tag == 0x02:  # INTEGER
         _v = 0
@@ -236,13 +234,13 @@ def _parse_tbscert(data: bytes, offset: int, length: int) -> dict:
         _pki_vo = _vo
         _oid = _read_oid_from_seq(data, _pki_vo, _tlen)
         _res['pubkey_alg'] = _oid_to_name(_oid)
-        # 找BIT STRING (tag 0x03), 长度算key size
+        # BIT STRING (tag 0x03), 长度→key size
         _pki_end = _vo + _tlen
         _tmp = _pki_vo
         while _tmp < _pki_end:
             _ttag, _ttlen, _tvo, _tnext = _read_tag(data, _tmp)
             if _ttag == 0x03:  # BIT STRING
-                _key_bytes = data[_tvo + 1:_tvo + _ttlen]  # skip unused bits byte
+                _key_bytes = data[_tvo + 1:_tvo + _ttlen]  # 跳过unused bits字节
                 _res['key_size'] = len(_key_bytes) * 8
                 break
             _tmp = _tnext
@@ -258,7 +256,7 @@ def _parse_tbscert(data: bytes, offset: int, length: int) -> dict:
                 # 内部: OID + [critical boolean] + OCTET STRING value
                 _ext_vo = _evo
                 _oid = _read_oid_from_seq(data, _ext_vo, _elen)
-                # skip OID tag+length+value
+                # 跳过OID tag+length+value
                 _oid_tag, _oid_len, _oid_vo, _oid_next = _read_tag(data, _ext_vo)
                 _rest = _oid_next
 
@@ -333,7 +331,7 @@ def find_pem_certificates(data: bytes) -> List[bytes]:
         try:
             _der = base64.b64decode(_m.group(1))
             _out.append(_der)
-        except:
+        except (ValueError, binascii.Error):  # 修复: bare except → base64 decode error
             pass
     return _out
 
@@ -347,7 +345,7 @@ def find_certificates(data: bytes) -> List[CertInfo]:
         if _cert:
             _certs.append(_cert)
 
-    # 如果没有PEM, 尝试直接搜DER (以30 82开头的SEQUENCE)
+    # 无PEM时尝试直接搜DER (30 82开头的SEQUENCE)
     if not _pems:
         _pos = 0
         _dl = len(data)
@@ -355,7 +353,7 @@ def find_certificates(data: bytes) -> List[CertInfo]:
             _pos = data.find(b'\x30\x82', _pos)
             if _pos == -1:
                 break
-            # 尝试解析长度
+            # 解析长度
             if _pos + 4 <= _dl:
                 _l1 = data[_pos + 2]
                 _l2 = data[_pos + 3]
@@ -415,7 +413,7 @@ def check_weakness(cert: CertInfo) -> List[Tuple[CertWeaknessSeverity, str]]:
                         _w.append((CertWeaknessSeverity.CRITICAL, '证书已过期 ({})'.format(_s)))
                     elif _label == 'valid_from' and _dt > now:
                         _w.append((CertWeaknessSeverity.WARNING, '证书尚未生效 ({})'.format(_s)))
-        except:
+        except ValueError:  # 修复: bare except → ValueError (datetime解析)
             pass
 
     # SAN
@@ -432,12 +430,12 @@ def check_weakness(cert: CertInfo) -> List[Tuple[CertWeaknessSeverity, str]]:
 
 # ---- SCT (Signed Certificate Timestamp) 检测 (2026-07-28) ----
 # CT (Certificate Transparency) 要求CA将证书提交到公开日志。
-# SCT嵌入在证书的 X.509v3 扩展中 (OID 1.3.6.1.4.1.11129.2.4.2),
-# 或通过 TLS 扩展/OCSP stapling 提供。每个 SCT 包含:
+# SCT嵌入在X.509v3扩展中 (OID 1.3.6.1.4.1.11129.2.4.2),
+# 或通过TLS扩展/OCSP stapling提供。每个SCT包含:
 #   - 日志ID (32字节 SHA-256)
 #   - 时间戳 (8字节 Unix millis)
 #   - 签名 (64/71字节 ECDSA P-256/P-384)
-# 最小 SCT 大小 ≈ 44 bytes (log_id + timestamp + signature).
+# 最小SCT约44 bytes (log_id + timestamp + signature).
 
 _SCT_OID_BYTES = bytes.fromhex('060A2B06010401D679020402')  # DER: 06 0A 2B 06 01 04 01 D6 79 02 04 02
 
@@ -446,8 +444,8 @@ def count_scts(cert_der: bytes) -> int:
     """统计证书DER中的SCT条目数 (基于目标OID出现次数)."""
     if not cert_der:
         return 0
-    # SCT OID 出现一次即一个SCT列表扩展; 列表内每个SCT由OCTET STRING包裹
-    # 简化: 计数 OID 出现次数
+    # SCT OID出现一次即一个SCT列表扩展；列表内每个SCT由OCTET STRING包裹
+    # 简化: 计数OID出现次数
     cnt = 0
     pos = 0
     while True:
@@ -460,10 +458,10 @@ def count_scts(cert_der: bytes) -> int:
 
 
 def extract_sct_timestamps(cert_der: bytes) -> list:
-    """
-    从SCT列表中提取时间戳 (Unix millis, 8字节big-endian)。
-    每个 SCT 的 timestamp 在 signature 前面, 距 log_id 偏移32字节。
-    返回 Unix 秒级时间戳列表。
+    """从SCT列表中提取时间戳 (Unix millis, 8字节big-endian)。
+
+    每个SCT的timestamp位于signature之前，距log_id偏移32字节。
+    返回Unix秒级时间戳列表。
     """
     stamps = []
     if not cert_der or _SCT_OID_BYTES not in cert_der:

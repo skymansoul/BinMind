@@ -24,7 +24,7 @@ class Gadget:
     bytes_sequence: bytes = b""
 
 
-# //// 常见gadget字节签名 (fallback模式) ////
+# //// 常见构件字节签名 (回退模式) ////
 # 基于编译产物中高频出现的ROP gadget片段
 _PATTERN_POP_RDI = bytes([0x5F])              # pop rdi
 _PATTERN_POP_RSI = bytes([0x5E])              # pop rsi
@@ -33,7 +33,7 @@ _PATTERN_POP_RAX = bytes([0x58])              # pop rax
 _PATTERN_POP_RCX = bytes([0x59])              # pop rcx
 _PATTERN_POP_RBX = bytes([0x5B])              # pop rbx
 _PATTERN_RET = bytes([0xC3])                  # ret
-_PATTERN_SYSCALL = bytes([0x0F, 0x05])        # syscall
+_PATTERN_SYSCALL = bytes([0x0F, 0x05])        # 系统调用
 _PATTERN_INT80 = bytes([0xCD, 0x80])          # int 0x80
 _PATTERN_XCHG_EAX_ESP = bytes([0x94, 0xC3])   # xchg eax, esp; ret
 _PATTERN_XCHG_RAX_RSP = bytes([0x48, 0x94, 0xC3])  # xchg rax, rsp; ret
@@ -69,7 +69,7 @@ class ROPSynthesizer:
             'jmp_reg': ['jmp '],
         }
 
-    # ===== gadget搜索 =====
+    # ===== 构件搜索 =====
 
     def find_gadgets(self, data: bytes, base_addr: int = 0) -> List[Gadget]:
         """从二进制数据中扫描所有RET-terminated gadget"""
@@ -143,7 +143,7 @@ class ROPSynthesizer:
 
         # 从每个RET向前匹配已知gadget模式
         _pop_regs = [
-            (0x58, 0x5F, 'rax'),  # pop rax...pop rdi (0x58-0x5f)
+            (0x58, 0x5F, 'rax'),  # pop rax.pop rdi (0x58-0x5f)
         ]
         _pop_names = ['rax', 'rcx', 'rdx', 'rbx', 'rsp', 'rbp', 'rsi', 'rdi']
 
@@ -207,7 +207,7 @@ class ROPSynthesizer:
                             bytes_sequence=_g_bytes
                         ))
 
-            # syscall; ret
+            # 系统调用; ret
             _sc_pos = _window.find(_PATTERN_SYSCALL)
             while _sc_pos != -1:
                 if _sc_pos + 3 <= len(_window) and _window[_sc_pos + 2] == 0xC3:
@@ -239,7 +239,7 @@ class ROPSynthesizer:
 
         return _gadgets
 
-    # ===== gadget分类 =====
+    # ===== 构件分类 =====
     def classify_gadget_from_text(self, instructions: List[str]) -> str:
         """基于指令文本做语义分类 — 多重标签取优先级最高的"""
         _text = ' '.join(instructions).lower()
@@ -266,7 +266,7 @@ class ROPSynthesizer:
     # //// execve链合成 ////
     def synthesize_execve_chain(self, gadgets: List[Gadget]) -> Optional[List[Gadget]]:
         """组装 execve("/bin/sh", NULL, NULL) ROP链
-        需要: pop rdi; ret, pop rsi; ret, pop rdx; ret, pop rax; ret, syscall; ret
+        需要: pop rdi; ret, pop rsi; ret, pop rdx; ret, pop rax; ret, 系统调用; ret
         设计理由: 贪心先匹配完整组合(多pop)，不够再单pop拼接
         """
         _pop_rdi = self._find_pop_gadget(gadgets, 'rdi')
@@ -303,8 +303,8 @@ class ROPSynthesizer:
     # //// mprotect链合成 ////
     def synthesize_mprotect_chain(self, gadgets: List[Gadget],
                                   shellcode_addr: int, shellcode_len: int) -> Optional[List[Gadget]]:
-        """组装 mprotect(addr, len, 7) + jmp to shellcode 链
-        mprotect syscall: rax=10, rdi=addr, rsi=len, rdx=PROT_RWX(7)
+        """组装 mprotect(addr, len, 7) + jmp 壳代码 链
+        mprotect 系统调用: rax=10, rdi=addr, rsi=len, rdx=PROT_RWX(7)
         """
         _pop_rdi = self._find_pop_gadget(gadgets, 'rdi')
         _pop_rsi = self._find_pop_gadget(gadgets, 'rsi')
@@ -362,7 +362,7 @@ class ROPSynthesizer:
         return None
 
     def _find_syscall_gadget(self, gadgets: List[Gadget]) -> Optional[Gadget]:
-        """查找 syscall; ret gadget"""
+        """查找 系统调用; ret 构件"""
         for _g in gadgets:
             _text = ' '.join(_g.instructions).lower()
             if 'syscall' in _text or 'int 0x80' in _text:

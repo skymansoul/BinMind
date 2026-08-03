@@ -1,4 +1,3 @@
-# 2026-07-26
 # GPU Rowhammer 攻击检测器
 # 参考:
 #   "OpenGL GPU-Based Rowhammer Attack" (arXiv 2509.19959, 2025)
@@ -14,7 +13,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 from collections import Counter
 
-logger = logging.getLogger(__name__)
+_logger = logging.getLogger(__name__)
 
 # GPU Rowhammer 检测策略: 不实际触发 Rowhammer (那需要 GPU 访问权限)，
 # 而是对 GPU kernel 代码做静态分析，检测可能构成 Rowhammer 漏洞的模式:

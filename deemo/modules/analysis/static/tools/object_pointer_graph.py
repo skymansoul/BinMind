@@ -1,24 +1,24 @@
 """
-Memory object pointer graph reconstruction.
+Memory object 指针 graph reconstruction
 
 Capabilities:
-    1. Scan core dumps or memory snapshots for candidate object references
-    2. Reconstruct C++ object relationships and vtable targets
-    3. Surface UAF and type confusion indicators
-    4. Emit object interaction graph
+1. Scan core 转存 or memory 快照s for candidate object 引用s
+2. 重建 C++ object relationships vtable targets
+3. Surface UAF 类型混淆 indicators
+4. Emit object interaction graph
 
 Core methods:
-    - Heuristic pointer scan (alignment + addressable range validation)
-    - Vtable signature matching (consecutive function pointers + vtable inheritance)
-    - Reference graph construction
-    - Risk scoring: dangling pointers / type mismatches
+- Heuristic 指针 scan (对齐 + addressable range 校验)
+- Vtable 签名 matching (consecutive function 指针s + vtable inheritance)
+- 引用 graph construction
+- Risk scoring: dangling 指针s / type mismatches
 
-2025 升级: Transformer-based memory forensics (MDPI Computers, Dec 2025)。
+2025 升级: Transformer-based memory forensics (MDPI Computers, Dec 2025)
 参考: "Transformer-Based Memory Reverse Engineering for Malware
 Behavior Reconstruction"
 核心方法: 将原始内存字节视为"语言 token"，使用地址感知位置编码
 建立跨内存区域的长距离依赖关系。本模块实现简化版注意力机制——
-不使用完整 Transformer，而是用滑动窗口自注意力对内存区域评分。
+不使用完整 Transformer，而是用滑动窗口自注意力对内存区域评分
 """
 
 import logging
@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 
 class ObjectKind:
-    """Object type classification for memory scan results."""
+    """Object type 分类 for memory scan results"""
     UNKNOWN = "unknown"
     CP_OBJECT = "c++_object"
     CP_VTABLE = "c++_vtable"
@@ -46,7 +46,7 @@ class ObjectKind:
     KERNEL_OBJECT = "kernel_object"
 
 class CandidateObject:
-    """Candidate object identified during memory scan."""
+    """Candidate object identified memory scan"""
     __slots__ = ('address', 'size', 'kind', 'vtable_ptr', 'inferred_type', 'refs', 'is_dangling', 'metadata')
 
     def __init__(self, address, size, kind, vtable_ptr=None, inferred_type="",
@@ -61,7 +61,7 @@ class CandidateObject:
         self.metadata = metadata if metadata is not None else dict()
 
 class ObjectReference:
-    """Inter-object pointer reference edge in the graph."""
+    """Inter-object 指针 引用 edge graph"""
     __slots__ = ('src', 'dst', 'field', 'kind')
 
     def __init__(self, src=0, dst=0, field="", kind="ptr"):
@@ -71,7 +71,7 @@ class ObjectReference:
         self.kind = kind
 
 class ObjectPointerGraph:
-    """Directed graph capturing object-to-object pointer relationships."""
+    """Directed graph capturing object--object 指针 relationships"""
     __slots__ = ('objects', 'references', 'dangling', 'type_confusions', 'metadata', 'attention_scores',)
 
     def __init__(self, objects=None, references=None, dangling=None,
@@ -105,17 +105,17 @@ class ObjectPointerGraph:
 
 
 # ── Transformer启发的内存注意力 (MDPI Computers, 2025) ─────────────────────
-# 将QWORD视为token，对每个地址计算其与周围内存的注意力权重。
-# 高注意力区域往往对应活跃的数据结构——对象边界、vtable指针等。
+# 将QWORD视为token，对每个地址计算其与周围内存的注意力权重
+# 高注意力区域往往对应活跃的数据结构——对象边界、vtable指针等
 # 这与Transformer Memory RE论文的核心思想一致：字节级注意力热图
-# 揭示内存中分散结构的关联（注入存根、PE头、解密例程等）。
+# 揭示内存中分散结构的关联（注入存根、PE头、解密例程等）
 
 
 class MemoryAttentionScorer:
-    """基于滑动窗口自注意力的内存区域评分器。
-    对每个 QWORD 计算其相对于窗口内其他 QWORD 的归一化注意力权重。
-    高权重位置 → 被多指针引用的活跃对象。
-    不使用完整 transformer 编码器以保持线性复杂度 O(n·w)。
+    """基于滑动窗口自注意力的内存区域评分器
+    对每个 QWORD 计算其相对于窗口内其他 QWORD 的归一化注意力权重
+    高权重位置 → 被多指针引用的活跃对象
+    不使用完整 transformer 编码器以保持线性复杂度 O(n·w)
     """
 
     _TEMPERATURE = 8.0  # softmax 温度参数——越高越平滑
@@ -124,7 +124,7 @@ class MemoryAttentionScorer:
         self._window = window_size  # QWORD 窗口大小
 
     def score_region(self, data: bytes, base_addr: int, ptr_size: int = 8) -> Dict[int, float]:
-        """逐QWORD计算注意力评分——每个位置对其窗口内邻居的相关性加权和。"""
+        """逐QWORD计算注意力评分——每个位置对其窗口内邻居的相关性加权和"""
         scores: Dict[int, float] = {}
         n_qwords = (len(data) - ptr_size) // ptr_size
         if n_qwords < 2:
@@ -159,7 +159,7 @@ class MemoryAttentionScorer:
 
 
 class PointerScanHeuristics:
-    """Heuristic tests for pointer validity: address range and alignment checks."""
+    """Heuristic tests for 指针 validity: address range 对齐 检查"""
 
     DEFAULT_RANGES = [
         (0x0000000000400000, 0x00007FFFFFFFFFFF),
@@ -200,9 +200,9 @@ class PointerScanHeuristics:
 
 class ObjectPointerReconstructor:
     """
-    Reconstructs object-pointer graphs from raw memory dumps.
-    Scans for vtables, identifies C++ objects, builds reference edges,
-    and flags dangling pointers and type confusions.
+    重建 object-指针 graphs raw memory 转存
+    Scans for vtables, identifies C++ objects, 构建 引用 edges
+    flags dangling 指针s 类型混淆s
     """
 
     def __init__(self, *, ptr_size: int = 8, little_endian: bool = True,
@@ -320,7 +320,7 @@ class ObjectPointerReconstructor:
         return size
 
     def load_dump(self, path: str) -> Tuple[bytes, int]:
-        """Read raw memory snapshot from binary file (no container format)."""
+        """读取 raw memory 快照 binary file (container 格式化)"""
         with open(path, 'rb') as f:
             data = f.read()
         return data, 0
@@ -328,7 +328,7 @@ class ObjectPointerReconstructor:
 
 def reconstruct_from_dump(dump_path: str,
                           base_addr: int = 0x400000) -> Dict[str, Any]:
-    """One-shot entry: load dump and run full memory scan pipeline."""
+    """One-shot entry: 加载 转存 运行 full memory scan 流水线"""
     recon = ObjectPointerReconstructor()
     data, _ = recon.load_dump(dump_path)
     graph = recon.scan_memory(data, base_addr=base_addr)
@@ -336,7 +336,7 @@ def reconstruct_from_dump(dump_path: str,
 
 
 def find_uaf_evidence(graph: ObjectPointerGraph) -> List[Dict[str, Any]]:
-    """Extract UAF indicators from the pointer graph: dangling refs and type confusions."""
+    """提取 UAF indicators 指针 graph: dangling refs 类型混淆s"""
     evidence = []
     for addr in graph.dangling:
         obj = graph.objects.get(addr)

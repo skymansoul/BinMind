@@ -52,9 +52,9 @@ class UEFIVulnerability:
 
 
 class UEFIRuntimeSecurityAnalyzer:
-    """UEFI runtime services security analyzer: maps API calls to known vulnerability patterns.
+    """UEFI运行时服务安全分析器：API调用与已知漏洞模式匹配。
 
-    2026-07 新增: SPI 写保护验证 + Capsule 认证校验 + 扩展 CVE 数据库。
+    2026.07新增：SPI写保护验证 + Capsule认证校验 + 扩展CVE数据库。
     """
 
     KNOWN_VULNS = [

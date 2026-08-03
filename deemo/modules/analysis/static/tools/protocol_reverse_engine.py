@@ -9,7 +9,7 @@ import re
 @dataclass
 class Message:
     index: int
-    direction: str  # 'send' or 'recv'
+    direction: str  # '发送' or 'recv'
     data: bytes
     timestamp: float = 0.0
     parsed_fields: List = field(default_factory=list)
@@ -20,7 +20,7 @@ class Field:
     name: str = ""
     offset: int = 0
     size: int = 0
-    field_type: str = "unknown"  # magic, length, checksum, data, type, unknown
+    field_type: str = "unknown"  # magic, length, 校验和, data, type, unknown
     value = None
 
 
@@ -28,7 +28,7 @@ class Field:
 class StateMachine:
     states: List[str] = field(default_factory=list)
     transitions: List[dict] = field(default_factory=list)
-    # each transition: {'from': str, 'to': str, 'trigger_idx': int}
+    # transition: {'': str, '': str, 'trigger_idx': int}
 
 
 class ProtocolReverseEngine:
@@ -110,7 +110,7 @@ class ProtocolReverseEngine:
 
         return _r
 
-    # //// checksum暴力识别: CRC32, CRC16 variants, XOR, ADD, Fletcher, Adler ////
+    # //// 校验和暴力识别: CRC32, CRC16 variants, XOR, ADD, Fletcher, Adler ////
 
     def identify_checksum(self, traces=None) -> List[dict]:
         if traces is None:
@@ -364,7 +364,7 @@ class ProtocolReverseEngine:
 
         return _fields
 
-    # ===== 全流程pipeline =====
+    # ===== 全流程流水线 =====
 
     def analyze(self, messages=None) -> dict:
         if messages is not None:
@@ -390,7 +390,7 @@ class ProtocolReverseEngine:
             'state_machine': _sm,
         }
 
-    # ---- checksum算法实现 ----
+    # ---- 校验和算法实现 ----
 
     def _crc32(self, data: bytes) -> int:
         _table = self._crc32_table()

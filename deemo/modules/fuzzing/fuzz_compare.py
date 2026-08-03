@@ -1,5 +1,3 @@
-# 2026-08-03
-
 """模糊测试器对比与统计评估框架。
 
 参考:
@@ -28,7 +26,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Set, Tuple
 
-logger = logging.getLogger(__name__)
+_logger = logging.getLogger(__name__)
 
 
 @dataclass

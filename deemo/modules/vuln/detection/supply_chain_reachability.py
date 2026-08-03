@@ -1,5 +1,5 @@
-# 2026-07-26 — 供应链漏洞可达性分析
-# 三层分析：导入表直接引用 → objdump调用图BFS → 字符串引用
+# 供应链漏洞可达性分析。
+# 三层递进：导入表直接引用 → objdump调用图BFS → 二进制字符串匹配。
 # 置信度递减: L1=100%, L2=85%, L3=50%
 
 from dataclasses import dataclass, field
@@ -12,22 +12,22 @@ from collections import deque
 
 @dataclass
 class ReachabilityResult:
-    """单个CVE-组件对的可达性分析结论"""
+    """CVE-组件对可达性分析结论。"""
     component: str
     cve_id: str
     reachable: bool
-    confidence: float  # 0.0-1.0
+    confidence: float  # 置信度区间0.0-1.0
     path: List[str] = field(default_factory=list)
     evidence: str = ""
 
 
-# ==== CallGraphBuilder: 解析objdump输出，构建调用图 ====
+# ==== CallGraphBuilder: objdump解析与调用图构建 ====
 
 class CallGraphBuilder:
     """从objdump反汇编提取call/bl指令，构建有向调用图。
 
     parse_objdump: 按函数边界切分，每条call指令提取目标符号。
-    bfs_reachable: BFS检查start_func能否调到target_func。
+    bfs_reachable: BFS判断start_func到target_func的可达路径。
     """
 
     _FUNC_START = re.compile(r'^([0-9a-fA-F]+)\s+<([^>]+)>:')
@@ -112,7 +112,7 @@ class CallGraphBuilder:
 # ==== 三层可达性检测辅助函数 ====
 
 def _find_imports(disasm: str, component_symbols: List[str]) -> Dict[str, bool]:
-    """L1: 在反汇编中直接搜索call/jmp/bl引用目标符号。"""
+    """L1检测。反汇编中搜索call/jmp/bl对目标符号的直接引用。"""
     results = {}
     for sym in component_symbols:
         pat = re.compile(rf'(call|jmp|bl|blx)\s+.*<?{re.escape(sym)}>?', re.IGNORECASE)
@@ -125,7 +125,7 @@ def _find_imports(disasm: str, component_symbols: List[str]) -> Dict[str, bool]:
 
 def _find_string_refs(strings_text: str, component_names: List[str],
                       version_strs: List[str]) -> Dict[str, List[str]]:
-    """L3: 在strings输出中搜索组件名和版本号。"""
+    """L3检测。strings输出中检索组件名及版本号。"""
     results: Dict[str, List[str]] = {}
     txt_lower = strings_text.lower()
     for name in component_names:
@@ -138,7 +138,7 @@ def _find_string_refs(strings_text: str, component_names: List[str],
     return results
 
 
-# ==== 主分析函数 ====
+# ==== 主分析入口 ====
 
 def analyze_reachability(binary_path: str, sbom_components: List[Dict],
                          disasm: str = "", strings_text: str = "",
@@ -147,13 +147,13 @@ def analyze_reachability(binary_path: str, sbom_components: List[Dict],
     """三层供应链漏洞可达性分析。
 
     参数:
-        binary_path: 目标二进制文件路径
+        binary_path: 目标二进制路径
         sbom_components: SBOM组件列表
         disasm: 预取反汇编文本（可选）
         strings_text: 预取strings输出（可选）
         entry_points: 入口函数列表（可选，默认main/start）
 
-    返回按置信度降序排列的ReachabilityResult列表。
+    返回: 按置信度降序排列的ReachabilityResult列表。
     """
     if not disasm:
         cg = CallGraphBuilder()

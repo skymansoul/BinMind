@@ -1,25 +1,24 @@
-# 2026-08-01
 # ==== CBOM 生成器 (Cryptography Bill of Materials) ====
-# 根据 OWASP CBOM (CycloneDX 1.6+ 密码学扩展) 规范生成结构化密码资产清单。
-# CBOM 是 SBOM 的密码学扩展, 记录软件中使用的所有密码学组件的类型/参数/合规状态。
+# 基于OWASP CBOM (CycloneDX 1.6+密码学扩展)规范构建结构化密码资产清单。
+# CBOM是SBOM的密码学扩展, 记录软件中所有密码学组件的类型/参数/合规状态。
 #
-# 此模块聚合所有检测器的输出, 生成标准 CBOM JSON:
-#   - 检测到的加密算法 (含 NIST/FIPS 合规标记)
+# 此模块聚合所有检测器输出, 构建标准CBOM JSON:
+#   - 检测到的加密算法 (含NIST/FIPS合规标记)
 #   - 密钥材质发现 (类型/大小/存储/保护机制)
 #   - 证书资产 (X.509, SCT, 有效期)
-#   - 随机数生成器 (PRNG/TRNG) 及其熵源
-#   - 密码协议 (TLS/SSH/QUIC/WireGuard/MLS/Signal) 及密码套件
-#   - PQC 迁移就绪状态评估
+#   - 随机数生成器 (PRNG/TRNG)及熵源
+#   - 密码协议 (TLS/SSH/QUIC/WireGuard/MLS/Signal)及密码套件
+#   - PQC迁移就绪状态评估
 #   - 密码学库及依赖版本
 #
 # 参考: OWASP CBOM specification (CycloneDX v1.6+), NIST IR 8472 (CBOM usage),
-# Executive Order 14028 §4 (SBOM requirement for federal software),
+# Executive Order 14028 §4 (联邦软件SBOM要求),
 # CycloneDX Cryptography Taxonomy,
-# QED-Lite (Kim et al., 2026, IACR ePrint 2026/660) PQC risk classification database.
+# QED-Lite (Kim et al., 2026, IACR ePrint 2026/660) PQC风险分类数据库。
 #
-# 2026-08-01: 新增 PQC 量子威胁评分 (基于 QED-Lite 分类数据库),
-# NIST SP 800-57 Part 1 Rev.5 密钥强度映射, EUCRA (EU Cyber Resilience Act) 合规标记,
-# CRA Annex I 关键要求映射, FDA 医疗器械 SBOM 密码学特殊字段。
+# 新增: PQC量子威胁评分 (基于QED-Lite分类数据库),
+# NIST SP 800-57 Part 1 Rev.5密钥强度映射, EUCRA (EU Cyber Resilience Act)合规标记,
+# CRA Annex I关键要求映射, FDA医疗器械SBOM密码学特殊字段。
 
 import json
 import hashlib
@@ -32,7 +31,7 @@ _log = logging.getLogger(__name__)
 
 
 # ==== NIST SP 800-57 Part 1 Rev.5 安全强度映射 ====
-# 映射算法→bits of security, 用于判断给定密钥长度是否达到特定的安全强度
+# 算法->bits of security, 判断给定密钥长度是否达到特定安全强度
 _NIST_SECURITY_STRENGTH = {
     # 对称密钥
     'AES-128': 128, 'AES-192': 192, 'AES-256': 256,
@@ -55,8 +54,8 @@ _NIST_SECURITY_STRENGTH = {
     'Falcon-512': 128, 'Falcon-1024': 256,
 }
 
-# ==== QED-Lite PQC 风险分类数据库 (Kim et al., 2026) ====
-# 将密码库版本映射到其 PQC 支持状态
+# ==== QED-Lite PQC风险分类数据库 (Kim et al., 2026) ====
+# 密码库版本->PQC支持状态映射
 _PQC_LIBRARY_RISK = {
     'OpenSSL': {
         'pqc_first_version': '3.5.0',
@@ -117,7 +116,7 @@ _PQC_LIBRARY_RISK = {
 
 @dataclass
 class CBOMCryptoAsset:
-    """单个密码学资产的 CBOM 条目."""
+    """单个密码学资产的CBOM条目."""
     asset_type: str                 # algorithm / key / certificate / protocol / rng / library
     name: str
     algorithm: str = ""
@@ -130,7 +129,7 @@ class CBOMCryptoAsset:
 
 @dataclass
 class CBOMDocument:
-    """完整的 CBOM 文档."""
+    """完整CBOM文档."""
     bom_format: str = "CycloneDX"
     spec_version: str = "1.6"
     serial_number: str = ""
@@ -249,12 +248,12 @@ class CBOMGenerator:
         self._assets.append(asset)
 
     def compute_quantum_readiness(self) -> float:
-        """计算量子就绪评分 (0-10).
+        """量子就绪评分 (0-10).
 
-        QED-Lite 启发式评分:
-          - 10 = 所有密码学资产为 quantum-safe
-          - 7-9 = 混合 classical+PQC 资产
-          - 4-6 = 主要经典密码学, 少量 PQC 资产
+        QED-Lite启发式评分:
+          - 10 = 所有密码学资产为quantum-safe
+          - 7-9 = 混合classical+PQC资产
+          - 4-6 = 主要经典密码学, 少量PQC资产
           - 0-3 = 全部经典密码学, 含大量已知量子脆弱资产
         """
         if not self._assets:
@@ -315,7 +314,7 @@ class CBOMGenerator:
 
 def generate_cbom(component_name: str = "", component_version: str = "",
                    **kwargs) -> CBOMDocument:
-    """生成空的 CBOM 文档 (调用方自行填充加密资产)."""
+    """构建空CBOM文档 (调用方自行填充加密资产)."""
     gen = CBOMGenerator()
     return gen.generate(component_name, component_version)
 

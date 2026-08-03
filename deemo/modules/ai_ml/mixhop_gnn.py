@@ -1,8 +1,6 @@
-# 2026-07-21 14:22
-# mixhop_gnn.py
 # MixHop图卷积 — 混合多跳邻域聚合
-# 依据: MixHop [Abu-El-Haija et al. ICML 2019] 的高阶邻域混合
-#       DESCG [Automated Software Engineering 2025] 使用MixHop进行二进制数据编码方案分类
+# 参考: MixHop (Abu-El-Haija et al. ICML, 2019) 的高阶邻域混合
+# DESCG [Automated Software Engineering 2025] 使用MixHop进行二进制数据编码方案分类
 # 核心: 对k=1,2,...跳邻域分别卷积后拼接, 捕获多尺度图拓扑
 
 from __future__ import annotations
@@ -352,3 +350,9 @@ def create_mixhop_encoder(in_dim: int = 12, hop_powers: List[int] = None,
 
 def create_descg_classifier() -> DESCGEncodingClassifier:
     return DESCGEncodingClassifier()
+
+
+def _debug_print(*args, **kwargs):  # 调试残余--未删除
+    """Print debug info if env var is set. Not currently called."""
+    if __import__("os").environ.get("BINMIND_DEBUG"):
+        print(*args, **kwargs)

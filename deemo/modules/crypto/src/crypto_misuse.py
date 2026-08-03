@@ -1,9 +1,8 @@
-"""Static detection of cryptographic API misuse patterns in binary artifacts.
+"""二进制工件中密码学API误用模式的静态检测。
 
-2026-07: Added RSA small-exponent detection (e=3, e=5, e=17), constant-time
-memcmp absence heuristics, PKCS#7 padding oracle indicators, GCM nonce reuse
-detection via 12-byte counter patterns, GEAR hash string prefilter for large
-binary acceleration (~4x throughput on binaries >50MB).
+2026-07: 新增RSA小指数检测(e=3, e=5, e=17)、常量时间memcmp缺失启发式、
+PKCS#7填充提示器、GCM nonce重用的12字节计数器模式检测、
+大二进制加速的GEAR哈希字符串预过滤(~4x吞吐量, >50MB文件)。
 """
 
 import re
@@ -14,21 +13,21 @@ from collections import namedtuple
 from typing import Optional, List, Dict, Tuple
 
 from .utils import safeReadBytes
-# from .config import getConfig  # Duplicate import — harmless but unnecessary
+# from .config import getConfig  # 重复导入——无害但多余
 
 logger = logging.getLogger(__name__)
 
 name = "CryptoMisuseDetector"
 module = "crypto_misuse"
 
-# ── Constant database ──
+# ── 常量库 ──
 
 _WEAK_IVS = [
-    b'\x00' * 16,                  # all-zero IV
-    b'\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f\x10',  # sequential increment
-    bytes(range(16)),              # monotonic 0..15
-    b'1234567890123456',           # common placeholder string
-    b'abcdefghijklmnop',           # alphabetic sequence
+    b'\x00' * 16,                  # 全零IV
+    b'\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f\x10',  # 顺序递增
+    bytes(range(16)),              # 单调0..15
+    b'1234567890123456',           # 常见占位符
+    b'abcdefghijklmnop',           # 字母序列
 ]
 
 _WEAK_KEYS_DES = [
@@ -56,10 +55,10 @@ _COMMON_SALTS = [
 ]
 
 ECB_BLOCK_PATTERN = re.compile(
-    rb'(.{16})\1{2,}'  # ≥3 repetitions of a 16-byte block → probable ECB mode artifact
+    rb'(.{16})\1{2,}'  # ≥3次重复的16字节块→ECB模式特征
 )
 
-# Cryptographic API string signatures grouped by vulnerability category
+# 按漏洞类别分组的密码学API字符串签名
 ECB_APIS = [
     'EVP_aes_128_ecb', 'EVP_aes_256_ecb',
     'AES_ecb_encrypt', 'AES_set_encrypt_key',
@@ -78,21 +77,20 @@ PREDICTABLE_RNG_APIS = [
     'drand48', 'lrand48',
 ]
 
-# ── New constant databases (2026-07) ──
+# ── 新增常量库 (2026-07) ──
 
-# RSA small public exponents — indicate potential vulnerability to
-# Coppersmith / Hastad broadcast / Bleichenbacher attacks when e ≤ 17
+# RSA小公钥指数 — 当e ≤ 17时存在Coppersmith/Hastad广播/Bleichenbacher攻击风险
 _RSA_SMALL_EXPONENTS = [
-    (3,   0x03, "e=3: vulnerable to Hastad broadcast (CVE-2017-17842), Coppersmith short-pad"),
-    (5,   0x05, "e=5: small exponent, verify RSA-OAEP padding is enforced"),
-    (17,  0x11, "e=17: unconventional small exponent, audit purpose"),
-    (257, 0x0101, "e=257 (Fermat-4): acceptable but uncommon; verify padding"),
-    (65537, 0x010001, "e=65537 (Fermat-4): industry standard — not flagged"),
+    (3,   0x03, "e=3: Hastad广播攻击(CVE-2017-17842)、Coppersmith短填充攻击"),
+    (5,   0x05, "e=5: 小指数, 需验证RSA-OAEP填充是否强制"),
+    (17,  0x11, "e=17: 非常规小指数, 用于审计目的"),
+    (257, 0x0101, "e=257 (Fermat-4): 可接受但不常见; 验证填充"),
+    (65537, 0x010001, "e=65537 (Fermat-4): 行业标准 — 不标记"),
 ]
 
-# Non-constant-time comparison patterns
-# When CRYPTO_memcmp / timingsafe_bcmp / sodium_memcmp is absent and
-# memcmp/strcmp/== appear near key material, constant-time violation is likely.
+# 非常量时间比较模式
+# 当CRYPTO_memcmp/timingsafe_bcmp/sodium_memcmp缺失,
+# 且memcmp/strcmp/==出现在密钥材料附近时, 常量时间违规可能性高。
 _CONSTANT_TIME_APIS = [
     'CRYPTO_memcmp', 'timingsafe_bcmp', 'timingsafe_memcmp',
     'sodium_memcmp', 'consttime_memequal', 'curve25519_verify',
@@ -101,22 +99,20 @@ _GENERIC_MEMCMP_APIS = [
     'memcmp', 'strcmp', 'strncmp', 'bcmp', 'wmemcmp',
 ]
 
-# GCM nonce patterns: 12-byte sequences that look like deterministic counters
-# (IV || counter) where counter starts at 1 and increments monotonically.
-# Repeated 12-byte nonces across distinct AEAD operations → catastrophic reuse.
+# GCM nonce模式: 表现为确定性计数器的12字节序列 (IV || counter)
+# 计数器从1开始单调递增。跨不同AEAD操作的重复12字节nonce → 灾难性重用。
 _GCM_NONCE_REUSE_INDICATORS = re.compile(
-    rb'(\x00{4})\x00{4}\x00{2}\x00\x01'  # typical: fixed 4B salt + 8B counter = 1
-    rb'|(\x00{12})'                        # worst case: all-zero nonce with each key
-    rb'|([\x00-\x0f]{4})([\x00-\x0f]{8})'  # low-entropy nonce
+    rb'(\x00{4})\x00{4}\x00{2}\x00\x01'  # 典型: 固定4B盐 + 8B计数器=1
+    rb'|(\x00{12})'                        # 最坏: 每密钥全零nonce
+    rb'|([\x00-\x0f]{4})([\x00-\x0f]{8})'  # 低熵nonce
 )
 
-# CBC fixed-IV patterns across multiple encryptions — detect the same 16-byte prefix
-# appearing multiple times in ciphertext, indicating IV reuse
-_CBC_IV_REUSE_THRESHOLD = 5  # same IV-block seen ≥5 times → flag
+# CBC固定IV模式 — 同一16字节前缀多次出现在密文中, 表明IV重用
+_CBC_IV_REUSE_THRESHOLD = 5  # 同一IV块出现≥5次 → 标记
 
-# PKCS#7 padding oracle indicator strings
-# Error messages like "padding error", "bad padding", "invalid padding"
-# are strong signals of a padding oracle vulnerability
+# PKCS#7填充提示器标识字符串
+# "padding error"、"bad padding"、"invalid padding"等错误消息
+# 是填充提示器漏洞的强信号
 _PADDING_ORACLE_STRINGS = [
     'bad padding', 'padding error', 'invalid padding',
     'bad decrypt', 'decryption failed', 'corrupted pad block',
@@ -127,7 +123,7 @@ _PADDING_ORACLE_STRINGS = [
     'error:0606506D:digital envelope routines:EVP_DecryptFinal_ex:wrong final block',
 ]
 
-# ── Misuse record type ──
+# ── 误用记录类型 ──
 
 Misuse = namedtuple('Misuse', ['type', 'api', 'address', 'detail', 'severity'])
 
@@ -135,7 +131,7 @@ SEVERITY = {'CRITICAL': 4, 'HIGH': 3, 'MEDIUM': 2, 'LOW': 1, 'INFO': 0}
 
 
 class CryptoMisuse:
-    """Collects misuse findings with severity-ranked filtering."""
+    """收集误用发现, 按严重性排序过滤。"""
 
     def __init__(self):
         self.issues: List[Misuse] = []
@@ -154,14 +150,12 @@ class CryptoMisuse:
         return [i for i in self.issues if SEVERITY.get(i.severity.upper(), 0) >= threshold]
 
 
-# ── GEAR hash prefilter for accelerated string extraction ──
-# GEAR is a rolling hash used by content-defined chunking systems
-# (restic, borg, Veeam). Here it serves as a prefilter: strings that
-# don't hash-match any target prefix are skipped before the expensive
-# Python-level string extraction.
+# ── GEAR哈希预过滤器, 用于加速字符串提取 ──
+# GEAR是内容定义分块系统(restic, borg, Veeam)使用的滚动哈希。
+# 此处作为预过滤器: 未命中任何目标前缀哈希的字符串在Python层提取前被跳过。
 
 def _gear_hash(data: bytes, window: int = 8) -> int:
-    """Compute a 32-bit GEAR rolling hash of the first `window` bytes."""
+    """计算前window字节的32位GEAR滚动哈希。"""
     h = 0
     for b in data[:window]:
         h = (h << 1) + _GEAR_TABLE[b]
@@ -169,14 +163,14 @@ def _gear_hash(data: bytes, window: int = 8) -> int:
     return h
 
 
-# Static GEAR hash lookup table — one byte → one 32-bit hash increment
+# 静态GEAR哈希查找表 — 每字节→一个32位哈希增量
 _GEAR_TABLE = [0] * 256
 for _i in range(256):
-    _GEAR_TABLE[_i] = (_i * 0x9E3779B1) & 0xFFFFFFFF  # golden-ratio hash
+    _GEAR_TABLE[_i] = (_i * 0x9E3779B1) & 0xFFFFFFFF  # 黄金比例哈希
 
 
 def _build_string_bloom(strings: List[str]) -> int:
-    """Build a 64-bit Bloom filter from a list of API substrings."""
+    """从API子串列表构建64位布隆过滤器。"""
     bf = 0
     for s in strings:
         for shift in (0, 13, 27, 41):
@@ -186,7 +180,7 @@ def _build_string_bloom(strings: List[str]) -> int:
 
 
 def _bloom_test(bf: int, candidate: str) -> bool:
-    """Test whether `candidate` might be in the Bloom filter."""
+    """测试candidate是否可能存在于布隆过滤器中。"""
     for shift in (0, 13, 27, 41):
         h = hash(candidate) >> shift
         if not (bf & (1 << (h & 63))):
@@ -194,7 +188,7 @@ def _bloom_test(bf: int, candidate: str) -> bool:
     return True
 
 
-# Precomputed Bloom filters for each API category
+# 各API类别的预计算布隆过滤器
 _BLOOM_ECB = _build_string_bloom([a.split('_')[0] for a in ECB_APIS] + ['aes', 'ecb', 'Encrypt'])
 _BLOOM_HASH = _build_string_bloom([a.split('_')[0] for a in WEAK_HASH_APIS] + ['md5', 'sha1', 'Init', 'Update', 'Final'])
 _BLOOM_RNG = _build_string_bloom(PREDICTABLE_RNG_APIS + ['rand', 'srand', 'random', 'drand'])
@@ -202,17 +196,17 @@ _BLOOM_CONST = _build_string_bloom(_CONSTANT_TIME_APIS + _GENERIC_MEMCMP_APIS)
 _BLOOM_PADDING = _build_string_bloom(_PADDING_ORACLE_STRINGS + ['padding', 'decrypt', 'pad'])
 
 
-# ── Core scanner ──
+# ── 核心扫描器 ──
 
 class CryptoMisuseDetector:
-    """Scan binary for cryptographic best-practice violations across eleven detection categories."""
+    """扫描二进制, 检测十一类密码学最佳实践违规。"""
 
     def __init__(self):
         self._data: bytes = b''
         self._strings: list = []
 
     def scan(self, binary):
-        """Primary entry point: accepts a file path or raw bytes. Returns a CryptoMisuse collection."""
+        """主入口: 接受文件路径或原始字节。返回CryptoMisuse集合。"""
         result = CryptoMisuse()
 
         if isinstance(binary, str):
@@ -229,7 +223,7 @@ class CryptoMisuseDetector:
 
         self._extract_strings()
 
-        # Execute all detection passes in sequence
+        # 按序执行全部检测遍历
         self._check_ecb_apis(result)
         self._check_weak_hashes(result)
         self._check_static_ivs(result)
@@ -238,7 +232,7 @@ class CryptoMisuseDetector:
         self._check_weak_rng(result)
         self._check_ecb_ciphertext_patterns(result)
 
-        # New passes (2026-07)
+        # 新增检测 (2026-07)
         self._check_rsa_small_exponent(result)
         self._check_constant_time_absence(result)
         self._check_padding_oracle_strings(result)
@@ -247,7 +241,7 @@ class CryptoMisuseDetector:
 
         return result
 
-    # ── Individual detection passes ──
+    # ── 各检测遍历 ──
 
     def _extract_strings(self, min_len: int = 4) -> None:
         pat = rb'[\x20-\x7e]{%d,}' % min_len
@@ -269,7 +263,7 @@ class CryptoMisuseDetector:
                 continue
             for api in WEAK_HASH_APIS:
                 if api in s:
-                    # SHA-1 downgraded one tier relative to MD5: it is broken but less trivially
+                    # SHA-1相比MD5降一级: 虽已破解但不够轻微
                     sev = 'MEDIUM' if 'sha1' in api.lower() else 'HIGH'
                     result.add(Misuse('WEAK_HASH', api, hex(offset),
                                       f'weak hash function {api}', sev))
@@ -304,29 +298,29 @@ class CryptoMisuseDetector:
                                       f'predictable RNG ({api})', 'MEDIUM'))
 
     def _check_ecb_ciphertext_patterns(self, result: CryptoMisuse) -> None:
-        """Heuristic: repeated 16-byte blocks in data segments indicate ECB-mode ciphertext."""
+        """启发式: 数据段中重复的16字节块表明ECB模式密文。"""
         hits = len(ECB_BLOCK_PATTERN.findall(self._data))
         if hits > 3:
             result.add(Misuse('ECB_ARTIFACT', 'N/A', hex(0),
                               f'{hits} repeated 16-byte blocks (ECB indicator)', 'LOW'))
 
-    # ── New detection passes (2026-07) ──
+    # ── 新增检测遍历 (2026-07) ──
 
     def _check_rsa_small_exponent(self, result: CryptoMisuse) -> None:
         """
-        Detect RSA public exponents ≤ 17 in binary data.
-        Look for ASN.1-encoded RSA public keys: SEQUENCE | SEQUENCE | OID (rsaEncryption) | NULL | BIT STRING.
-        The exponent appears as a small INTEGER near the key structure.
-        Strategy: scan for the rsaEncryption OID (1.2.840.113549.1.1.1), then probe nearby INTEGER tags.
+        检测二进制数据中RSA公钥指数≤17的情况。
+        搜索ASN.1编码的RSA公钥: SEQUENCE | SEQUENCE | OID (rsaEncryption) | NULL | BIT STRING。
+        指数以靠近密钥结构的小整数值出现。
+        策略: 扫描rsaEncryption OID (1.2.840.113549.1.1.1), 然后探测附近的INTEGER标签。
         """
         rsa_oid = bytes.fromhex('2A864886F70D010101')  # 1.2.840.113549.1.1.1 DER
         for m in re.finditer(re.escape(rsa_oid), self._data):
-            # Search backwards from OID for the exponent INTEGER (0x02 tag)
+            # 从OID向后搜索指数INTEGER (0x02标签)
             window = self._data[max(0, m.start() - 64):m.start()]
             for exp_val, exp_bytes, desc in _RSA_SMALL_EXPONENTS:
                 if exp_val > 17:
-                    continue  # only flag dangerously small exponents
-                # DER INTEGER tag 0x02 followed by length=1,3 and the value
+                    continue  # 仅标记危险的小指数
+                # DER INTEGER标签0x02后跟长度1或3及值
                 needle = bytes([0x02, 0x01, exp_bytes]) if exp_bytes < 0x80 else bytes([0x02, 0x03, 0x00, exp_bytes >> 8, exp_bytes & 0xFF])
                 if len(needle) <= 3 and needle in window:
                     result.add(Misuse('RSA_SMALL_E', f'e={exp_val}', hex(m.start()),
@@ -335,11 +329,9 @@ class CryptoMisuseDetector:
 
     def _check_constant_time_absence(self, result: CryptoMisuse) -> None:
         """
-        Detect when general-purpose memcmp/strcmp is present but constant-time
-        alternatives (CRYPTO_memcmp, etc.) are absent. This is a coarse signal:
-        the mere presence of memcmp does not guarantee misuse, but the absence
-        of constant-time variants in a binary that performs cryptographic
-        operations is a meaningful negative indicator.
+        检测通用memcmp/strcmp存在但常量时间替代方案(CRYPTO_memcmp等)缺失的情况。
+        粗糙信号: memcmp的存在不能保证误用, 但在执行密码学操作的二进制中
+        缺失常量时间变体是有意义的负面指标。
         """
         has_const_time = False
         has_generic_memcmp = False
@@ -359,7 +351,7 @@ class CryptoMisuseDetector:
                     break
 
         if has_generic_memcmp and not has_const_time:
-            # Flag at most 3 sites to avoid flooding
+            # 至多标记3处, 避免淹没
             for off, api in generic_sites[:3]:
                 result.add(Misuse('NON_CONSTANT_TIME_CMP', api, hex(off),
                                   f'generic memcmp ({api}) at {hex(off)}; no constant-time alternative detected '
@@ -368,11 +360,10 @@ class CryptoMisuseDetector:
 
     def _check_padding_oracle_strings(self, result: CryptoMisuse) -> None:
         """
-        Error strings like 'bad padding' or 'padding check failed' embedded in
-        binary indicate a live padding oracle. These strings are typically
-        compiled into exception messages; their presence strongly suggests
-        that padding validation errors are reported to the caller verbatim
-        (i.e., the oracle leaks through the error channel).
+        嵌入二进制中的"bad padding"或"padding check failed"错误字符串
+        表明存在活跃的填充提示器。这些字符串通常编译到异常消息中;
+        其存在强烈暗示填充验证错误被原样报告给调用方
+        (即提示器通过错误通道泄露)。
         """
         for offset, s in self._strings:
             if not _bloom_test(_BLOOM_PADDING, s):
@@ -387,58 +378,57 @@ class CryptoMisuseDetector:
 
     def _check_gcm_nonce_patterns(self, result: CryptoMisuse) -> None:
         """
-        Detect repeated 12-byte patterns at 16-byte offsets that match GCM
-        block structure (CTR mode with auth tag). A 12-byte nonce repeated
-        with the same key is a catastrophic GCM nonce reuse — it completely
-        breaks authentication and enables forgery.
+        检测16字节偏移处匹配GCM块结构(CTR模式+认证标签)的重复12字节模式。
+        同一密钥下重复12字节nonce是灾难性的GCM nonce重用—
+        完全破坏认证并允许伪造。
         """
         if len(self._data) < 28:
             return
-        # Scan for repeated 12-byte patterns — use 16-byte stride (GCM block size)
+        # 扫描重复的12字节模式—使用16字节步长(GCM块大小)
         stride = 16
-        n_elements = 12  # GCM nonce length in bytes
+        n_elements = 12  # GCM nonce字节长度
         seen_nonces: Dict[bytes, int] = {}
         for off in range(0, len(self._data) - n_elements - stride, stride):
             nonce = self._data[off:off + n_elements]
-            # Skip all-zero and all-0xFF (may be padding/sparse allocation)
+            # 跳过全零和全0xFF (可能为填充/稀疏分配)
             if nonce == b'\x00' * 12 or nonce == b'\xff' * 12:
                 continue
             seen_nonces[nonce] = seen_nonces.get(nonce, 0) + 1
 
         for nonce, count in seen_nonces.items():
-            if count >= 3:  # ≥3 occurrences at 16-byte stride → probable GCM block repeat
+            if count >= 3:  # 16字节步长下≥3次出现 → 可能的GCM块重复
                 result.add(Misuse('GCM_NONCE_REUSE', 'N/A', hex(0),
                                   f'possible GCM nonce reuse: {count} occurrences of '
                                   f'{nonce[:8].hex()}... at 16-byte stride',
                                   'CRITICAL'))
-                break  # report once per binary — one nonce reuse is enough
+                break  # 每二进制报告一次 — 一次nonce重用已足够
 
     def _check_gcm_short_tag(self, result: CryptoMisuse) -> None:
         """
-        AES-GCM认证标签截断至 <96 bits 时, 伪造概率从 2^-128 升至可暴力搜索范围。
-        NIST SP 800-38D §5.2.1.2: tag长度应为 128/120/112/104/96 或 64/32。
-        检测策略: 搜索 GCM 标签长度常量 — 值 <12 出现在 GCM context 附近 → 可能截断。
+        AES-GCM认证标签截断至 <96 bits时, 伪造概率从2^-128升至可暴力搜索范围。
+        NIST SP 800-38D §5.2.1.2: tag长度应为128/120/112/104/96或64/32。
+        检测策略: 搜索GCM标签长度常量 — 值<12出现在GCM context附近→可能截断。
         """
-        # GCM tag length 常量 — 搜索附近含 EVP_CTRL_GCM_SET_TAG / GCM_TAG_LEN 的上下文
+        # GCM标签长度常量 — 搜索附近含EVP_CTRL_GCM_SET_TAG / GCM_TAG_LEN的上下文
         for offset, s in self._strings:
             if 'GCM' not in s and 'gcm' not in s:
                 continue
-            # 在字符串附近搜索小立即数 (tag_len=4,8 的编码)
+            # 在字符串附近搜索小立即数 (tag_len=4,8的编码)
             ctx_start = max(0, offset - 32)
             ctx_end = min(len(self._data), offset + len(s) + 32)
             ctx = self._data[ctx_start:ctx_end]
-            # tag_len 通常作为小整数出现在 GCM 设置代码附近
-            for tag_len in (4, 8):  # 4B=32bit, 8B=64bit — 均不够安全
+            # tag_len通常以GCM设置代码附近的小整数形式出现
+            for tag_len in (4, 8):  # 4B=32bit, 8B=64bit — 安全性均不足
                 if struct.pack('<I', tag_len) in ctx or bytes([tag_len]) in ctx:
                     result.add(Misuse(
                         'GCM_SHORT_TAG', 'AES-GCM', hex(offset),
                         f'GCM auth tag possibly truncated to {tag_len * 8} bits '
                         f'(near "{s[:60]}"); forgery probability ≥ 2^{-tag_len * 8}',
                         'HIGH'))
-                    return  # report once per binary
+                    return  # 每二进制报告一次
 
 
-# ── Convenience functions ──
+# ── 便捷函数 ──
 
 def scan_for_weak_random(binary) -> list:
     detector = CryptoMisuseDetector()
@@ -451,7 +441,7 @@ def detect_crypto_misuse(binary) -> CryptoMisuse:
     return detector.scan(binary)
 
 
-# Duplicate of detect_crypto_misuse — residual from an unresolved merge conflict. Candidate for removal.
+# detect_crypto_misuse的重复 — 未解决的合并冲突残留。可考虑移除。
 def scan_binary(binary):
     detector = CryptoMisuseDetector()
     return detector.scan(binary)

@@ -1,5 +1,5 @@
 # 零日异常检测器——比较新旧二进制版本的函数与字符串变化，标记安全相关增删。
-# 分值由异常计数与置信度加权聚合，critical的confidence_bonus=0.2，high=0.1。
+# 分值由异常计数与置信度加权聚合：critical confidence_bonus=0.2，high=0.1。
 
 import logging
 from typing import Dict, List, Any, Optional

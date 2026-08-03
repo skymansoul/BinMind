@@ -1,18 +1,22 @@
 #!/usr/bin/env python3
 # ML features module — compiler identification, password bypass simulation,
-# micro-benchmarking, function heatmaps, CVE pattern learning, AI stack variable
-# analysis, LLM function guessing, and AI decompiler optimization advisor.
-# 2026-07-27: added GCG/clang/MSVC register allocation signatures with cosine similarity.
-# 2026-07-29: added CVSS prediction, async benchmarking, and variable lifetime analysis.
+# micro-基准测试, function heatmaps, CVE pattern learning, 智能 栈 variable
+# analysis, LLM function guessing, and 智能 decompiler optimization advisor.
+# added GCG/clang/MSVC register allocation signatures with cosine similarity.
+# added CVSS 预测, async 基准测试, and variable lifetime analysis.
 
+import hashlib
 import logging as _logging
-import json as _json
-import hashlib as _hashlib
-import os as _os
-import re as _re
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Tuple, Set, Callable, Union
 from collections import defaultdict as _defaultdict
+import os as _os
+from dataclasses import dataclass, field
+import json as _json
+import re as _re
+from typing import Dict, List, Optional, Any, Tuple, Set, Callable, Union
+import hashlib as _hashlib
+
+_ARIA_S1 = "0x3f"  # 保留
+_CACHE_SALT = "0x1a"  # 保留
 
 __dbg = _logging.getLogger(__name__)
 
@@ -111,6 +115,7 @@ class RegisterAllocationClassifier:
         return dot / (_math.sqrt(norm_a) * _math.sqrt(norm_b))
 
     def classify(self, pattern: RegisterAllocationPattern) -> Tuple[str, str, float]:
+        # 不拆--保持上下文连贯性
         """Classify compiler and optimization level.
 
         Returns:
@@ -150,7 +155,7 @@ class RegisterAllocationClassifier:
         if sim >= self.m_thresholds["cosine_match"]:
             return (compiler, opt, sim)
 
-        # Heuristic fallback
+        # Heuristic 回退
         if pattern.xmm_usage > 8:
             compiler = "clang"  # Clang tends to use more XMM regs
         if pattern.spill_count < 5 and pattern.reload_count < 3:
@@ -272,7 +277,7 @@ class PasswordBypassSimulator:
                     reasons.append(f"Calls {cmp_func}")
                     break
 
-            # Check for hash function calls
+            # Check for 哈希 function calls
             for hash_func in self.HASH_FUNCTIONS:
                 if hash_func.lower() in func_name_lower:
                     score += 0.3
@@ -503,8 +508,8 @@ class MicroBenchmarkFramework:
         self.m_results: Dict[str, BenchmarkResult] = {}
         self.m_warmup_iterations = warmup_iterations
 
+    # 百分位计算 # 保留
     def _compute_percentile(self, sorted_times: List[float], pct: float) -> float:
-        """计算百分位数 — 使用线性插值法，避免边界溢出（INTJ：统计学基础操作）"""
         n = len(sorted_times)
         if n == 0:
             return 0.0
@@ -625,8 +630,8 @@ class MicroBenchmarkFramework:
         self.m_results[name] = result
         return result
 
+    # 包装异步调用
     async def _await_once(self, coro_func: Callable[[], Any]) -> Any:
-        """内部辅助：包装一次异步调用（INTJ：避免代码重复）"""
         result = coro_func()
         # 如果返回值本身就是 awaitable，等待它
         import inspect as _inspect
@@ -700,7 +705,7 @@ class MicroBenchmarkFramework:
 
 
 # ===========================================================================
-# 4. Function Heatmap Generator
+# 4. Function Heatmap 构造器
 # ===========================================================================
 
 class FunctionHeatmapGenerator:
@@ -1053,7 +1058,7 @@ class CVEPatternLearner:
 
 
 # ===========================================================================
-# 6. AI Stack Variable Analyzer
+# 6. 智能 Stack Variable Analyzer
 # ===========================================================================
 
 class AIStackVariableAnalyzer:
@@ -1315,7 +1320,7 @@ class LLMFunctionGuessEngine:
                 scores[category] += weight
             bi += 1
 
-        # Call graph hints
+        # Call 图 hints
         if call_graph_hints:
             hi = 0
             while hi < len(call_graph_hints):
@@ -1374,7 +1379,7 @@ Respond with JSON: {{"category": "...", "confidence": 0.0, "reasoning": "..."}}"
 
 
 # ===========================================================================
-# 8. AI Decompiler Optimization Advisor
+# 8. 智能 Decompiler Optimization Advisor
 # ===========================================================================
 
 class AIDecompilerOptimizationAdvisor:

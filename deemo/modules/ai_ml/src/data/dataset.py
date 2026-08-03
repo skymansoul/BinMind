@@ -1,4 +1,3 @@
-# 2026-07-14
 # dataset.py -- 二进制函数数据集与三元组挖掘
 # BinaryFuncDataset: 单样本(特征, 标签)加载
 # TripletMiningDataset: FaceNet半困难三元组挖掘
@@ -219,7 +218,7 @@ class TripletMiningDataset(_TorchDataset):
             _neg_candidates.extend(_indices)
 
         if not _neg_candidates:
-            return (_hardest_pos, _hardest_pos)  # fallback
+            return (_hardest_pos, _hardest_pos)  # 回退
 
         # 搜索半困难负样本
         _semi_hard_neg = None

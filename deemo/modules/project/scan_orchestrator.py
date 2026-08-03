@@ -1,4 +1,4 @@
-# 2026-07-19 — 多工具扫描流水线: DAG 拓扑 + 层并行 + SHA-256/Jaccard 双重去重
+# 多工具扫描流水线: DAG拓扑+层并行+SHA-256/Jaccard双重去重
 import logging, time, hashlib, json
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Callable, Any, Set
@@ -8,9 +8,28 @@ from collections import defaultdict, deque
 log = logging.getLogger(__name__)
 SEV = {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4, "none": 5}
 
-@dataclass class ScanTask: name: str; scanner_func: Callable; depends_on: List[str] = field(default_factory=list); timeout: int = 300; config: Dict = field(default_factory=dict); priority: int = 0
-@dataclass class ScanResult: task_name: str; findings: List[Dict]; duration_ms: float; success: bool; error: Optional[str] = None
-@dataclass class ScanPipeline: name: str; tasks: List[ScanTask]; results: Dict[str, ScanResult] = field(default_factory=dict)
+@dataclass
+class ScanTask:
+    name: str
+    scanner_func: Callable
+    depends_on: List[str] = field(default_factory=list)
+    timeout: int = 300
+    config: Dict = field(default_factory=dict)
+    priority: int = 0
+
+@dataclass
+class ScanResult:
+    task_name: str
+    findings: List[Dict]
+    duration_ms: float
+    success: bool
+    error: Optional[str] = None
+
+@dataclass
+class ScanPipeline:
+    name: str
+    tasks: List[ScanTask]
+    results: Dict[str, ScanResult] = field(default_factory=dict)
 
 class ScanOrchestrator:
     def __init__(self, mw=4): self._pool = ThreadPoolExecutor(max_workers=mw); self._tasks: Dict[str, ScanTask] = {}; self._store: Dict[str, Dict[str, ScanResult]] = {}
@@ -90,7 +109,13 @@ class ScanOrchestrator:
         for n, t in tasks.items():
             for d in t.depends_on: adj[d].append(n); indeg[n] += 1
         q = deque([n for n, d in indeg.items() if d == 0]); order = []
-        while q: n = q.popleft(); order.append(n); [q.append(m) for m in adj[n] if (indeg[m] := indeg[m] - 1) == 0]
+        while q:
+            n = q.popleft()
+            order.append(n)
+            for m in adj[n]:
+                indeg[m] -= 1
+                if indeg[m] == 0:
+                    q.append(m)
         return order if len(order) == len(tasks) else []
 
     def _detect_cycles(self, adj):

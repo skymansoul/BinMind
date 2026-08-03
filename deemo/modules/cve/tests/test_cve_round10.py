@@ -1,5 +1,5 @@
-# round 10 tests — osv, watchlist, exploit strategy
-# ~21 tests covering new features added early oct 2026
+# Round 10 测试——OSV、监视列表、利用策略
+# ~21项测试，覆盖2026年10月上旬新增特性
 
 import pytest
 import json

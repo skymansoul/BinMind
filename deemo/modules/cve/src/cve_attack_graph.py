@@ -1,16 +1,13 @@
-# 2026-09-18 ~ 2026-09-21
-# CVE Attack Graph Generator — builds exploit chain DAGs from CVE match data.
-# Inspired by Aksu et al. 2018 "Automated Generation of Attack Graphs Using NVD"
-# but the approach here is simpler: we use CWE pre/post-condition pairs and
-# product overlap to derive potential exploit chains, plus CVSS exploitability
-# metrics to weight edge probabilities.
+# ~ 2026-09-21
+# CVE攻击图生成器——基于CVE匹配数据构建利用链DAG。
+# 思路源于Aksu et al. 2018 "Automated Generation of Attack Graphs Using NVD"，
+# 但实现更简约：用CWE前置/后置条件对加产品重叠推导潜在利用链，
+# 以CVSS可利用性指标加权边概率。
 #
-# The output is a directed graph: nodes are CVEs, edges mean "exploiting A
-# makes exploiting B easier or possible." Edge weights are 0-1 probabilities
-# derived from the CWE relationship strength and EPSS scores.
+# 输出为有向图：节点为CVE，边表示"利用A使利用B更容易或成为可能"。
+# 边权重为0-1概率，由CWE关系强度与EPSS评分推导。
 #
-# Graph export formats: JSON (default, for programmatic use) and GraphML
-# (for visualization in Gephi/Cytoscape).
+# 图导出格式：JSON（程序化使用）和GraphML（Gephi/Cytoscape可视化）。
 
 import json
 from collections import defaultdict
@@ -18,27 +15,27 @@ from typing import Dict, List, Optional, Set, Tuple, Any
 
 from .cve_models import CVEEntry, Severity
 
-# ---- CWE pre→post condition chains ----
-# Format: (source_cwe, target_cwe, relationship, confidence)
-# confidence: 0.0–1.0, how reliably source enables target
-# Hand-curated from CWE research literature + real-world exploit chains.
-# NOT exhaustive — covers the most common chaining patterns seen in APT reports.
+# ---- CWE前置→后置条件链 ----
+# 格式: (source_cwe, target_cwe, relationship, confidence)
+# confidence: 0.0–1.0，源使能目标的可信度
+# 人工整理自CWE研究文献及真实利用链案例。
+# 非全覆盖——涵盖APT报告中最常见的链接模式。
 
 _CWE_CHAINS: List[Tuple[str, str, str, float]] = [
-    # info disclosure → targeted attacks
+    # 信息泄露 → 定向攻击
     ("CWE-200", "CWE-79",  "info_disclosure_enables_targeting", 0.4),
     ("CWE-200", "CWE-89",  "info_disclosure_enables_targeting", 0.3),
     ("CWE-200", "CWE-78",  "info_disclosure_enables_targeting", 0.3),
 
-    # XSS → CSRF (XSS can read CSRF tokens)
+    # XSS → CSRF（XSS可读取CSRF令牌）
     ("CWE-79",  "CWE-352", "xss_bypasses_csrf", 0.7),
 
-    # SSRF → RCE/Injection
+    # SSRF → RCE/注入
     ("CWE-918", "CWE-78",  "ssrf_to_rce", 0.6),
     ("CWE-918", "CWE-94",  "ssrf_to_code_injection", 0.5),
     ("CWE-918", "CWE-89",  "ssrf_to_sqli", 0.3),
 
-    # auth bypass → everything
+    # 认证绕过 → 一切
     ("CWE-287", "CWE-79",  "auth_bypass_enables", 0.5),
     ("CWE-287", "CWE-89",  "auth_bypass_enables", 0.6),
     ("CWE-287", "CWE-78",  "auth_bypass_enables", 0.6),
@@ -46,51 +43,51 @@ _CWE_CHAINS: List[Tuple[str, str, str, float]] = [
     ("CWE-287", "CWE-22",  "auth_bypass_enables", 0.7),
     ("CWE-287", "CWE-434", "auth_bypass_enables", 0.6),
 
-    # missing auth → similar to auth bypass
+    # 缺失认证 → 类似认证绕过
     ("CWE-306", "CWE-79",  "missing_auth_enables", 0.5),
     ("CWE-306", "CWE-89",  "missing_auth_enables", 0.6),
     ("CWE-306", "CWE-78",  "missing_auth_enables", 0.6),
 
-    # privilege escalation → high impact
+    # 权限提升 → 高影响
     ("CWE-269", "CWE-78",  "privesc_to_rce", 0.7),
     ("CWE-269", "CWE-94",  "privesc_to_code_injection", 0.6),
     ("CWE-269", "CWE-787", "privesc_to_memory_corruption", 0.5),
 
-    # path traversal → info disclosure / RCE
+    # 路径遍历 → 信息泄露 / RCE
     ("CWE-22",  "CWE-200", "traversal_to_disclosure", 0.8),
     ("CWE-22",  "CWE-94",  "traversal_to_code_exec", 0.4),
 
-    # deserialization → RCE
+    # 反序列化 → RCE
     ("CWE-502", "CWE-94",  "deserialize_to_rce", 0.8),
     ("CWE-502", "CWE-78",  "deserialize_to_rce", 0.6),
 
-    # SQL injection → auth bypass / data exposure
+    # SQL注入 → 认证绕过 / 数据暴露
     ("CWE-89",  "CWE-287", "sqli_to_auth_bypass", 0.7),
     ("CWE-89",  "CWE-200", "sqli_to_disclosure", 0.8),
 
-    # file upload → RCE / XSS
+    # 文件上传 → RCE / XSS
     ("CWE-434", "CWE-94",  "upload_to_rce", 0.7),
     ("CWE-434", "CWE-79",  "upload_to_xss", 0.5),
 
-    # buffer overflow → code execution
+    # 缓冲区溢出 → 代码执行
     ("CWE-119", "CWE-94",  "buffer_overflow_to_rce", 0.8),
     ("CWE-787", "CWE-94",  "oob_write_to_rce", 0.7),
     ("CWE-125", "CWE-200", "oob_read_to_disclosure", 0.6),
 
-    # UAF → code execution
+    # UAF → 代码执行
     ("CWE-416", "CWE-94",  "uaf_to_rce", 0.7),
 ]
 
 
 def _cwe_chain_lookup(source_cwe: str, target_cwe: str) -> Optional[Tuple[str, float]]:
-    """Look up a CWE chain relationship. Returns (relation_type, confidence) or None."""
+    """查找CWE链关系。返回 (relation_type, confidence) 或 None。"""
     for s, t, rel, conf in _CWE_CHAINS:
         if s == source_cwe and t == target_cwe:
             return (rel, conf)
     return None
 
 
-# ---- main graph builder ----
+# ---- 主图构建器 ----
 
 def build_attack_graph(
     cve_matches: List[Dict],
@@ -98,26 +95,26 @@ def build_attack_graph(
     include_epss: bool = True,
     min_edge_confidence: float = 0.3,
 ) -> Dict[str, Any]:
-    """Build an attack graph from a list of CVE match dicts.
+    """从CVE匹配字典列表构建攻击图。
 
-    Each match dict should have at minimum: cve_id, severity, cwes (list).
-    Optionally: cvss_score, epss_score, products, description.
+    每个匹配字典至少需含: cve_id, severity, cwes (列表)。
+    可选: cvss_score, epss_score, products, description。
 
-    kb: optional CVEKnowledgeBase for enriched lookups (CWEs, EPSS).
-    include_epss: weight edges by EPSS scores if available.
-    min_edge_confidence: filter out low-confidence edges.
+    kb: 可选CVEKnowledgeBase用于富化查询（CWE、EPSS）。
+    include_epss: 用EPSS评分加权边（若可用）。
+    min_edge_confidence: 滤除低置信度边。
 
-    Returns graph dict:
+    返回图字典:
       {nodes: [...], edges: [...], metadata: {node_count, edge_count, ...}}
     """
-    # index matches by CVE ID
+    # 按CVE ID索引匹配项
     cve_index: Dict[str, Dict] = {}
     for m in cve_matches:
         cid = m.get("cve_id", "")
         if cid:
             cve_index[cid] = m
 
-    # build nodes
+    # 构建节点
     nodes: List[Dict] = []
     node_ids: Set[str] = set()
     for cid, m in cve_index.items():
@@ -126,7 +123,7 @@ def build_attack_graph(
         if isinstance(cwes, str):
             cwes = [cwes]
 
-        # enrich from KB if available
+        # 从知识库富化（若可用）
         if kb and hasattr(kb, 'get'):
             full = kb.get(cid)
             if full is not None:
@@ -148,7 +145,7 @@ def build_attack_graph(
         nodes.append(node)
         node_ids.add(cid)
 
-    # build edges: for each pair of CVEs, check if there's a CWE chain
+    # 构建边：检查每对CVE是否存在CWE链
     edges: List[Dict] = []
     cve_list = list(cve_index.keys())
 
@@ -169,7 +166,7 @@ def build_attack_graph(
             if isinstance(cwes_b, str):
                 cwes_b = [cwes_b]
 
-            # check CWE chain for every source→target pair
+            # 检查每对源→目标CWE
             for cwe_src in cwes_a:
                 for cwe_tgt in cwes_b:
                     chain = _cwe_chain_lookup(cwe_src, cwe_tgt)
@@ -177,15 +174,15 @@ def build_attack_graph(
                         continue
                     rel_type, base_conf = chain
 
-                    # adjust confidence with EPSS if enabled
+                    # 用EPSS调整置信度（若启用）
                     edge_conf = base_conf
                     epss_a = m_a.get("epss_score")
                     epss_b = m_b.get("epss_score")
                     if include_epss and epss_a is not None and epss_b is not None:
-                        # higher EPSS on target → more likely chain is exploitable
+                        # 目标EPSS越高 → 链的可利用性越高
                         edge_conf = base_conf * (0.5 + 0.5 * max(epss_a, epss_b))
 
-                    # boost if same product affected (same attack surface)
+                    # 同产品加成（共享攻击面）
                     prods_a = set(m_a.get("products", m_a.get("product", [])))
                     prods_b = set(m_b.get("products", m_b.get("product", [])))
                     if isinstance(prods_a, str):
@@ -204,12 +201,12 @@ def build_attack_graph(
                             "source_cwe": cwe_src,
                             "target_cwe": cwe_tgt,
                         })
-                        break  # one edge per (A,B) pair
+                        break  # 每对(A,B)一条边
                 else:
                     continue
-                break  # outer break too
+                break  # 外层同样跳出
 
-    # also add product-overlap edges (same product, different CWEs → potential chain)
+    # 产品重叠边（同产品、不同CWE → 潜在链）
     for i in range(len(cve_list)):
         for j in range(i + 1, len(cve_list)):
             cid_a = cve_list[i]
@@ -222,7 +219,7 @@ def build_attack_graph(
                 prods_b = {prods_b}
 
             if prods_a and prods_b and prods_a & prods_b:
-                # check if edge already exists
+                # 检查是否已存在边
                 already = any(
                     (e["source"] == cid_a and e["target"] == cid_b) or
                     (e["source"] == cid_b and e["target"] == cid_a)
@@ -237,18 +234,18 @@ def build_attack_graph(
                         "shared_products": list(prods_a & prods_b),
                     })
 
-    # compute graph metrics
+    # 计算图指标
     in_degree: Dict[str, int] = defaultdict(int)
     out_degree: Dict[str, int] = defaultdict(int)
     for e in edges:
         out_degree[e["source"]] += 1
         in_degree[e["target"]] += 1
 
-    # find root nodes (no incoming edges) and leaf nodes (no outgoing)
+    # 根节点（无入边）与叶节点（无出边）
     roots = [cid for cid in node_ids if in_degree.get(cid, 0) == 0]
     leaves = [cid for cid in node_ids if out_degree.get(cid, 0) == 0]
 
-    # rank nodes by PageRank-ish centrality (simplified: in_degree + out_degree)
+    # PageRank风格中心性（简化：入度+出度）
     centrality = {
         cid: in_degree.get(cid, 0) + out_degree.get(cid, 0)
         for cid in node_ids
@@ -268,11 +265,11 @@ def build_attack_graph(
     }
 
 
-# ---- export ----
+# ---- 导出 ----
 
 def export_graph_json(graph: Dict, output_path: Optional[str] = None) -> str:
-    """Export attack graph as JSON. If output_path given, writes to file.
-    Always returns the JSON string."""
+    """攻击图导出为JSON。给定output_path则写入文件。
+    始终返回JSON字符串。"""
     json_str = json.dumps(graph, indent=2, default=str, ensure_ascii=False)
     if output_path:
         with open(output_path, "w", encoding="utf-8") as f:
@@ -281,7 +278,7 @@ def export_graph_json(graph: Dict, output_path: Optional[str] = None) -> str:
 
 
 def export_graph_graphml(graph: Dict, output_path: str) -> str:
-    """Export attack graph as GraphML XML for Gephi/Cytoscape."""
+    """攻击图导出为GraphML XML（Gephi/Cytoscape用）。"""
     lines = [
         '<?xml version="1.0" encoding="UTF-8"?>',
         '<graphml xmlns="http://graphml.graphdrawing.org/xmlns">',
@@ -320,7 +317,7 @@ def export_graph_graphml(graph: Dict, output_path: str) -> str:
     return output_path
 
 
-# ---- path analysis ----
+# ---- 路径分析 ----
 
 def find_attack_paths(
     graph: Dict,
@@ -328,9 +325,9 @@ def find_attack_paths(
     target_cve: str,
     max_depth: int = 5,
 ) -> List[List[str]]:
-    """Find all simple paths from source_cve to target_cve in the attack graph.
-    Uses DFS with max_depth to avoid path explosion."""
-    # build adjacency list
+    """在攻击图中查找从source_cve到target_cve的所有简单路径。
+    使用DFS加max_depth限制以避免路径爆炸。"""
+    # 构建邻接表
     adj: Dict[str, List[str]] = defaultdict(list)
     for edge in graph["edges"]:
         adj[edge["source"]].append(edge["target"])
@@ -358,21 +355,21 @@ def find_attack_paths(
 
 
 def highest_risk_paths(graph: Dict, top_n: int = 5) -> List[Dict]:
-    """Find the highest-risk attack paths in the graph.
-    Risk = sum of (confidence * severity_weight) along the path.
-    Returns top_n paths sorted by risk descending."""
+    """查找图中风险最高的攻击路径。
+    风险 = 沿路径的 confidence × severity_weight 之和。
+    返回按风险降序排列的top_n条路径。"""
     severity_weight = {
         "CRITICAL": 10, "HIGH": 7, "MEDIUM": 4, "LOW": 2, "NONE": 0, "UNKNOWN": 1,
     }
 
-    # build node lookup
+    # 构建节点查找表
     nodes_by_id = {n["id"]: n for n in graph["nodes"]}
 
     scored_paths: List[Dict] = []
     roots = graph["metadata"].get("root_nodes", [])
     leaves = graph["metadata"].get("leaf_nodes", [])
 
-    for root in roots[:5]:  # limit root exploration
+    for root in roots[:5]:  # 根节点探索上限
         for leaf in leaves[:5]:
             paths = find_attack_paths(graph, root, leaf, max_depth=4)
             for path in paths:
@@ -392,10 +389,10 @@ def highest_risk_paths(graph: Dict, top_n: int = 5) -> List[Dict]:
     return scored_paths[:top_n]
 
 
-# ---- helpers ----
+# ---- 辅助函数 ----
 
 def _product_overlap(prods_a: Set[str], prods_b: Set[str]) -> bool:
-    """Check if product names overlap by substring (fuzzy match)."""
+    """按子串模糊匹配检查产品名重叠。"""
     for a in prods_a:
         al = a.lower()
         for b in prods_b:
@@ -406,5 +403,5 @@ def _product_overlap(prods_a: Set[str], prods_b: Set[str]) -> bool:
 
 
 def _xml_escape(s: str) -> str:
-    """Escape special chars for XML/GraphML output."""
+    """XML/GraphML特殊字符转义。"""
     return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")

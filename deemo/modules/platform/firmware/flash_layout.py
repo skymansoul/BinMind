@@ -1,5 +1,4 @@
-# 2026-07-24
-# Flash分区布局解析器 — mtdparts/GPT/MBR + UBI volume table + QSPI NOR
+# Flash分区布局解析器 — mtdparts/GPT/MBR + UBI卷表 + QSPI NOR
 
 import re
 import struct

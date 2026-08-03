@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Virtual Machine Introspection (VMI) memory analysis module.
-Leverages LibVMI or QEMU Guest Agent to transparently inspect running process
-memory at the hypervisor level. Round 2: Windows kernel offset profiles + process tree reconstruction."""
+"""虚拟机内省 (VMI) memory analysis module
+Leverages LibVMI or QEMU Guest Agent transparently inspect running process
+memory 虚拟机监控器 level. 舍入 2: Windows kernel offset profiles + process tree reconstruction"""
 import os, sys, json, logging, tempfile, hashlib, struct, math
 from dataclasses import dataclass, field
 from typing import List, Dict, Optional, Any
@@ -206,15 +206,15 @@ class VMIAnalyzer:
 
     # --- Round 2: 进程树重建 + 内核驱动交叉视图检测 ---
     def build_process_tree(self) -> Dict[int, List[int]]:
-        """根据parent_pid重建进程树邻接表 {ppid: [child_pids]}。"""
+        """根据parent_pid重建进程树邻接表 {ppid: [child_pids]}"""
         tree: Dict[int, List[int]] = {}
         for p in self.processes:
             tree.setdefault(p.parent_pid or 0, []).append(p.pid)
         return tree
 
     def detect_hidden_processes(self) -> List[Dict[str, Any]]:
-        """通过交叉视图检测隐藏进程：比较进程树中引用的子PID与进程列表中的PID。
-        PID在进程树中出现但不在进程列表中 → 可能是被DKOM隐藏的进程。"""
+        """通过交叉视图检测隐藏进程：比较进程树中引用的子PID与进程列表中的PID
+        PID在进程树中出现但不在进程列表中 → 可能是被DKOM隐藏的进程"""
         tree = self.build_process_tree()
         known_pids = {p.pid for p in self.processes}
         child_pids = set()

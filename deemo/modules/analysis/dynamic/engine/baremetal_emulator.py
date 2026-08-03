@@ -1,6 +1,6 @@
-"""Bare-metal firmware emulator using Unicorn Engine.
-Qiling-style rootfs abstraction for OS-less firmware: filesystem mappers,
-syscall dispatch tables, and peripheral register maps loaded from JSON profiles."""
+"""Bare-metal firmware 仿真器 using Unicorn引擎
+Qiling-style rootfs abstraction for OS-less firmware: 文件系统 mappers
+系统调用 dispatch tables, peripheral 寄存器 maps loaded JSON profiles"""
 import logging, os, struct, time, json
 _log = logging.getLogger(__name__)
 UNICORN_AVAILABLE = False
@@ -33,14 +33,14 @@ class FirmwareAnalysisResult:
     def __init__(self,firmware_path=""): self.firmware_path=firmware_path; self.architecture=None; self.findings=[]; self.traces=[]; self.vulnerabilities=[]
 
 class BareMetalEmulator:
-    """Bare-metal firmware emulation engine backed by Unicorn.
-    实现MMIO读写分发、NVIC中断向量表解析、外设hook注册，以及执行追踪。
-    不依赖操作系统抽象层 — 直接操作物理地址空间的加载与执行。
-
-    Round 2: Qiling-style rootfs abstraction — JSON profiles describe memory
-    layouts, peripheral register maps, and interrupt vector tables. This decouples
-    hardware configuration from the emulator core, enabling drop-in support for
-    new MCU families without code changes.
+    """Bare-metal firmware 仿真 engine backed Unicorn
+    实现MMIO读写分发、NVIC中断向量表解析、外设hook注册，以及执行追踪
+    不依赖操作系统抽象层 — 直接操作物理地址空间的加载与执行
+    
+    舍入 2: Qiling-style rootfs abstraction — JSON profiles describe memory
+    layouts, peripheral 寄存器 maps, 中断 vector tables. decouples
+    hardware 配置 仿真器 core, enabling drop- 支持 for
+    new MCU families code changes
     """
 
     # 配置文件搜索路径 — 按顺序查找固件平台描述文件
@@ -68,8 +68,8 @@ class BareMetalEmulator:
         self._load_static()
 
     def set_rootfs(self, rootfs_dir: str):
-        """指定Qiling风格的rootfs目录。固件内的open/read等syscall将映射到此目录。
-        例如 open("config.bin") 会实际读取 {rootfs}/config.bin。"""
+        """指定Qiling风格的rootfs目录。固件内的open/read等syscall将映射到此目录
+        例如 打开("配置.bin") 会实际读取 {rootfs}/配置.bin"""
         self._rootfs_path = rootfs_dir
         if os.path.isdir(rootfs_dir):
             for dirpath, _, filenames in os.walk(rootfs_dir):
@@ -84,8 +84,8 @@ class BareMetalEmulator:
             _log.info(f"rootfs loaded: {len(self._fs_map)} files from {rootfs_dir}")
 
     def register_syscall(self, num: int, handler: callable):
-        """注册POSIX风格的syscall处理器。
-        handler签名: fn(emu, *args) -> int (返回值，-1表示ENOSYS)"""
+        """注册POSIX风格的syscall处理器
+        处理器签名: fn(emu, *args) -> int (返回值，-1表示ENOSYS)"""
         self._syscall_table[num] = handler
 
     def _dispatch_syscall(self, num: int, args: list) -> int:
@@ -96,9 +96,9 @@ class BareMetalEmulator:
         return h(self, *args)
 
     def load_hw_profile(self, profile_path: str) -> bool:
-        """加载JSON格式的硬件平台描述文件。
-        包含memory_regions, peripherals, vector_table, syscalls 四个节。
-        Qiling框架使用Python脚本配置，这里用JSON实现等价功能。"""
+        """加载JSON格式的硬件平台描述文件
+        包含memory_regions, peripherals, vector_table, 系统调用s 四个节
+        Qiling框架使用Python脚本配置，这里用JSON实现等价功能"""
         if not os.path.isfile(profile_path):
             for d in self._PROFILE_SEARCH:
                 alt = os.path.join(d, os.path.basename(profile_path))
@@ -132,7 +132,7 @@ class BareMetalEmulator:
 
     def run(self):
         """执行固件仿真主循环。加载二进制到Unicorn内存空间、配置MMIO区域、
-        设置栈指针和入口点，然后启动仿真循环直到遇到断点或异常。"""
+        设置栈指针和入口点，然后启动仿真循环直到遇到断点或异常"""
         if not self.UNICORN_AVAILABLE:
             _log.warning("Unicorn absent; cannot run bare-metal emulation")
             self.stats["emulated"] = False
@@ -229,9 +229,9 @@ class BareMetalEmulator:
         return result
 
     def _parse_vector_table(self, fw_data: bytes):
-        """ARM Cortex-M中断向量表解析。
-        从固件起始处读取初始SP、复位向量、NMI/HardFault等系统异常向量，
-        以及外部IRQ向量（偏移0x40开始）。"""
+        """ARM Cortex-M中断向量表解析
+        从固件起始处读取初始SP、复位向量、NMI/HardFault等系统异常向量
+        以及外部IRQ向量（偏移0x40开始）"""
         if len(fw_data) < 0x100:
             return
         vectors = {
@@ -268,11 +268,11 @@ class BareMetalEmulator:
             pass
         return True
 
-    # --- Round 2: 快照/恢复 — 参考Qiling的ql.save()/ql.restore()机制 ---
+    # --- 舍入 2: 快照/恢复 — 参考Qiling的ql.保存()/ql.恢复()机制 ---
     # 配合fuzzing循环使用：崩溃后回滚到初始状态，而非重新创建Unicorn实例
     def snapshot(self) -> dict:
-        """保存当前仿真状态到可序列化的快照。
-        包含所有寄存器值、内存区域内容、MMIO状态和trace日志。"""
+        """保存当前仿真状态到可序列化的快照
+        包含所有寄存器值、内存区域内容、MMIO状态和trace日志"""
         if not self._uc:
             return {}
         snap = {
@@ -299,8 +299,8 @@ class BareMetalEmulator:
         return snap
 
     def restore(self, snap: dict):
-        """从快照恢复仿真状态。
-        Qiling的restore通过上下文序列化实现；这里直接写回寄存器和内存。"""
+        """从快照恢复仿真状态
+        Qiling的restore通过上下文序列化实现；这里直接写回寄存器和内存"""
         if not self._uc or not snap:
             return False
         try:
@@ -317,11 +317,11 @@ class BareMetalEmulator:
             return False
 
     # --- Round 2: 执行路径去重 — LibIHT论文中LBR数据的CFG重建思路 ---
-    # 硬件分支记录捕获每个taken/not-taken分支；我们通过追踪PC序列去重，
+    # 硬件分支记录捕获每个taken/-taken分支；我们通过追踪PC序列去重
     # 只保留首次观察到的基本块转移边，构建最小化CFG
     def deduplicate_trace(self) -> list:
-        """对执行追踪去重，仅保留首次观察到的(src_pc, dst_pc)转移。
-        这模拟LBR (Last Branch Record) 的行为 — 硬件只记录分支边，不记录顺序执行的指令。"""
+        """对执行追踪去重，仅保留首次观察到的(src_pc, dst_pc)转移
+        这模拟LBR (Last Branch Record) 的行为 — 硬件只记录分支边，不记录顺序执行的指令"""
         seen_edges = set()
         deduped = []
         prev = None

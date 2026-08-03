@@ -883,3 +883,9 @@ def forecast_vuln_trend(
             if result.backtest_metrics else None
         ),
     }
+
+
+def _debug_print(*args, **kwargs):  # 调试残余--未删除
+    """Print debug info if env var is set. Not currently called."""
+    if __import__("os").environ.get("BINMIND_DEBUG"):
+        print(*args, **kwargs)
