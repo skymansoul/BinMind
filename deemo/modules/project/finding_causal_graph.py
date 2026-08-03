@@ -1,7 +1,7 @@
 # 安全发现因果推断图: 约束因果发现+根因识别+修复优先级
 # 参考: Pearl "Causal Inference in Statistics: A Primer" (Wiley 2016)
 #       CausalVulGNN (Zhang & Chen, 2025): GNN+因果子图漏洞解释
-#       Caro et al. "Causal Digital Twins for Cyber-Physical Security" (arXiv:2510.09616, 2025)
+#       Caro et al. "Causal Digital Twins for Cyber-Physical Security" (arXiv:2510.09616 [待验证], 2025)
 # 设计边界:
 #   - 基于观测数据, 无干预数据→仅推断至Markov等价类
 #   - 方向消歧: (a)时间顺序 (b)CWE层级关系 (c)MITRE ATT&CK技术链

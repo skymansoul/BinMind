@@ -2,7 +2,7 @@
 #
 # 目标：分布式系统中单节点故障会级联触发下游熔断器和背压，
 # 仅凭告警无法区分根因与受害节点。本模块构建轻量因果传播图，
-# 以干预主义因果推断 (IDI, arXiv:2505.00930) 的思想进行根因评分。
+# 以干预主义因果推断 (IDI, arXiv:2505.00930 [待验证]) 的思想进行根因评分。
 #
 # IDI 加性噪声模型假设:
 #   故障沿因果边（任务依赖边）传播。若父节点正常而子节点异常，
@@ -25,7 +25,7 @@ from typing import Optional, List, Dict, Set, Tuple
 from .grl_graph import TaskDependencyGraph
 
 # 故障沿依赖边每跳衰减系数（经验值，可经 RL 调优）
-# 参考 DynaCausal (arXiv:2510.22613) 以 GAT 学习传播权重；此处固定值以保持零外部依赖
+# 参考 DynaCausal (arXiv:2510.22613 [待验证]) 以 GAT 学习传播权重；此处固定值以保持零外部依赖
 _PROPAGATION_DECAY = 0.65
 
 

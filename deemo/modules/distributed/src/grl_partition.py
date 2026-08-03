@@ -1,7 +1,7 @@
 # GRL-Sched 第二层: 动态图划分 (GraphPartitioner)
 #
 # 论文对应: GraphEdge: Dynamic Graph Partition and Task Scheduling for GNNs
-#   Computing in Edge Network — arXiv:2504.15905
+#   Computing in Edge Network — arXiv:2504.15905 [待验证]
 #   GraphEdge 对 GNN 计算图做多级划分，使子图落到不同边缘设备并行执行，
 #   拓扑变化 (算子增删/边重连) 时在线重划分，控制迁移成本。
 #   本模块移植同一目标: 最小化割边 (通信代价) 同时维持负载均衡。

@@ -2,7 +2,7 @@
 #
 # 对应论文:
 # Fast, Fine-Grained Equivalence Checking for Neural 反编译引擎s —
-#   arXiv:2501.04811
+#   arXiv:2501.04811 [待验证]
 #
 # 设计意图:
 #   反编译产物是对真实语义的近似，不能凭文本相似断言等价。本模块对

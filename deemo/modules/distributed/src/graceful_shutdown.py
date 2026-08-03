@@ -1,6 +1,6 @@
 # 优雅关闭 — 五阶段状态机 (RUNNING → DRAINING → FLUSHING → TERMINATING → STOPPED)
-# 引用 Hiku [arXiv:2502.15534]: pull-based 调度中 worker 优雅退出减少冷启动
-# 引用 Resilient Microservices 综述 [arXiv:2512.16959]: 优雅关闭是恢复模式的基础构件
+# 引用 Hiku [arXiv:2502.15534 [待验证]]: pull-based 调度中 worker 优雅退出减少冷启动
+# 引用 Resilient Microservices 综述 [arXiv:2512.16959 [待验证]]: 优雅关闭是恢复模式的基础构件
 #
 # 各阶段职责：
 #   RUNNING      正常接收并执行

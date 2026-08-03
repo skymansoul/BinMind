@@ -1,6 +1,6 @@
 # 多阶段执行管线 — fan-out → process → fan-in 的通用执行模型
-# Streaming Batch Model [arXiv:2501.12407]: 混合批流管线，分区 → 并行处理 → 汇聚
-# WOW [arXiv:2503.13072]: 工作流感知调度，联合优化数据移动 + 任务调度
+# Streaming Batch Model [arXiv:2501.12407 [待验证]]: 混合批流管线，分区 → 并行处理 → 汇聚
+# WOW [arXiv:2503.13072 [待验证]]: 工作流感知调度，联合优化数据移动 + 任务调度
 #
 # 模式支持：
 #   - sequential: stage0 → stage1 → ... 串行

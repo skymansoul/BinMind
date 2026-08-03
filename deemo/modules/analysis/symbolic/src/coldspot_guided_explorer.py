@@ -19,7 +19,7 @@
 #
 # 参考文献：
 # PALM: "Path-Aware 符号执行 LLMs", Wu et al., 2025
-#     (arXiv:2506.19287) -- 提出路径覆盖热力图可视化，但利用 LLM 生成
+#     (arXiv:2506.19287 [待验证]) -- 提出路径覆盖热力图可视化，但利用 LLM 生成
 # 测试用例，不涉及约束集编辑距离计算
 #   Concrete Constraint Guided SE: Sun et al., ICSE 2024 --
 # 用数据依赖分析引导覆盖具体分支条件，但聚焦于具体值而非约束结构

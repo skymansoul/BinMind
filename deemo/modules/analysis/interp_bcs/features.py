@@ -2,7 +2,7 @@
 #
 # 对应论文:
 # Beyond Embeddings: Interpretable 特征提取 for Binary Code
-#   Similarity — arXiv:2509.23449
+#   Similarity — arXiv:2509.23449 [待验证]
 #
 # 设计意图:
 # 端到端嵌入(embedding)是黑盒——它能给出相似度分数，却无法回答"为何相似"

@@ -1,7 +1,7 @@
 # GRL-Sched 第三层: 调度器 (GNN 编码 + 强化学习调度 + 启发式降级)
 #
 # 论文对应: GraphEdge: Dynamic Graph Partition and Task Scheduling for GNNs
-#   Computing in Edge Network — arXiv:2504.15905
+#   Computing in Edge Network — arXiv:2504.15905 [待验证]
 #   GraphEdge 以 GNN 编码任务图、以 RL 求解最优调度，奖励 = 任务完成时间。
 #   本模块提供等价能力但零强依赖:
 #     - GNNEncoder      自实现 k 层消息传递/注意力聚合 (无 torch)

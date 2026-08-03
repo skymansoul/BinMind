@@ -16,7 +16,7 @@
 #   这等价于 "Prediction with Expert Advice" 框架下的无悔学习。
 #
 # 与前沿工作的关系:
-#   - ML-Driven Adaptive CKPT (arXiv:2503.12228): 使用 MLP 预测 P(fault_t)
+#   - ML-Driven Adaptive CKPT (arXiv:2503.12228 [待验证]): 使用 MLP 预测 P(fault_t)
 #     来调整 λ_t。本模块的不同在于: (a) 不需要训练数据，(b) EWA 有理论遗憾界，
 #     (c) 计算量极小 (O(K) per decision)。
 #   - MoC-System (ASPLOS '25): 部分检查点 (PEC) 仅保存专家子集。

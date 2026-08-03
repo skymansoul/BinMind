@@ -4,7 +4,7 @@
 # 核心参考文献:
 #   [Mahbub et al. 2025] Relational Vulnerability-Vendor Network with RGCN
 #     -- 异构关系图在可利用性预测上超越 EPSS
-#   [Hashimoto & Shimizu 2025, arXiv:2506.01220] Vulnerability Management Chaining
+#   [Hashimoto & Shimizu 2025, arXiv:2506.01220 [待验证]] Vulnerability Management Chaining
 #     -- KEV+EPSS+CVSS 链式决策, 效率提升 14-18x
 #   [Şimşek et al. 2024, arXiv:2604.22176] FixV2W: CVE-CWE Mapping Correction
 #     -- 知识图谱嵌入修正 CVE-CWE 映射错误

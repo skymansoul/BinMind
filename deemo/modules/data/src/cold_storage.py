@@ -1,7 +1,7 @@
 """多级冷存储调度 — 按数据温度自主迁移 + 分层压缩"""
 # 参考 "Taming Server Memory TCO with Multiple Software-Defined Compressed Tiers"
 # [Kumar et al., arXiv:2404.13886] 的多级压缩内存模型，适配到磁盘存储场景。
-# AVS [arXiv:2511.19453] 的两级存储 (SSD hot → HDD archive) 提供分层灵感。
+# AVS [arXiv:2511.19453 [待验证]] 的两级存储 (SSD hot → HDD archive) 提供分层灵感。
 #
 # 温度定义:
 #   hot   — 最后访问 < 7 天，SSD 存储，不压缩

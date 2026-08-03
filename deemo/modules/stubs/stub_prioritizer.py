@@ -4,7 +4,7 @@
 # 设计意图：资源受限时（无 API 的规则降级、人工 review 预算），
 # 用量化优先级信号替代拍脑袋，聚焦高影响缺口。
 # 支撑论文:
-#   Agentic Program Repair from Test Failures at Scale (arXiv:2507.18755)
+#   Agentic Program Repair from Test Failures at Scale (arXiv:2507.18755 [待验证])
 #     排序本质是"先修高杠杆缺陷"：测试失败频率映射为调用频率信号。
 #   Implicit Patterns in Model-Based Binary Analysis (arXiv:2603.19138)
 #     "knowledge-guided prioritization" — 本引擎即该策略在桩模块层的落地。

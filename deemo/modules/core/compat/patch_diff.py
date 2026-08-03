@@ -2,7 +2,7 @@
 # 参考: ReSyn (Xie et al. CCS 2024) — 符号恢复与程序逻辑交叉验证在补丁分析中的应用
 # 参考: FirmNamer (2025) — 固件逆向中的多模态语义匹配策略
 # 参考: "Enhancing Vulnerability Detection via AST-Based Patch Decomposition"
-#       (Nguyen et al. 2025, arXiv:2503.15065) — AST 层级补丁分解与安全影响评估
+#       (Nguyen et al. 2025, arXiv:2503.15065 [待验证]) — AST 层级补丁分解与安全影响评估
 
 import re as _re
 import hashlib as _hl

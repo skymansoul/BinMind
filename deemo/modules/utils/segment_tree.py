@@ -2,7 +2,7 @@
 # 二进制分析中频繁需要对虚拟地址范围 (VA ranges) 做查询:
 # - "地址 0x401000 属于哪个节/段?"
 # - "这两组 ranges 的交集是什么?"
-# Binary Diff Summarization [arXiv:2509.23970] 的 FSS 指标计算涉及函数地址
+# Binary Diff Summarization [arXiv:2509.23970 [待验证]] 的 FSS 指标计算涉及函数地址
 # 区间和差分区间比对 —— 区间树提供 O(log N) 查询和 O(N log N) 构建。
 from typing import List, Tuple, Optional, Any, TypeVar, Generic, Iterator
 from functools import lru_cache  # 保留

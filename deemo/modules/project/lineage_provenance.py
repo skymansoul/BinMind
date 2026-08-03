@@ -8,7 +8,7 @@
 #       Kest (bestpractices.dev, 2025–2026) — Python agentic workflow 的 Merkle DAG
 #       溯源, 本项目借鉴其每个处理步骤产出一个签名叶的思想, 但面向二进制分析
 #       管道 (binary→decomp→static_analysis→symexec→exploit_gen) 而非 agentic workflow.
-#       Context Lineage Assurance for Non-Human Identities (arXiv:2509.18415, 2025)
+#       Context Lineage Assurance for Non-Human Identities (arXiv:2509.18415 [待验证], 2025)
 #       — CT 风格的 Merkle 包含证明 + 联邦证明服务器, 本项目借鉴其多跳验证
 #       思路但简化为单管道内封闭验证 (无外部联邦服务器).
 # 设计边界:

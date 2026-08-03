@@ -1,5 +1,5 @@
 # compat/ 子模块代理 — IDS 规则构造，exec() 加载以保留上游运行时上下文。
-# 参考: FuzzBox (arXiv:2509.05643) 嵌入式模糊测试输出到 IDS 规则的映射;
+# 参考: FuzzBox (arXiv:2509.05643 [待验证]) 嵌入式模糊测试输出到 IDS 规则的映射;
 # FirmRec (ACM CCS 2024) 漏洞签名到检测规则的转换。
 import os as _os
 

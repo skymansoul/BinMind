@@ -99,7 +99,7 @@ def resolve_eprocess_fields(raw_memory: bytes, eprocess_base: int) -> dict:
 
 
 # --- 地址空间冲突解决 (HALF-inspired) ---
-# 参考: HALF (arXiv:2512.22043) — 内核辅助 process hollowing 的地址空间透明分析
+# 参考: HALF (arXiv:2512.22043 [待验证]) — 内核辅助 process hollowing 的地址空间透明分析
 # 在用户态分析中，目标进程的地址空间可能与分析工具冲突
 # 此函数检测潜在冲突区域并建议重定位策略
 def detect_address_space_conflicts(target_maps: list[tuple[int, int]],

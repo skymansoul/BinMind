@@ -1,6 +1,6 @@
 # 数据分区 — 一致性哈希 + 虚拟节点 + 动态再均衡
-# 引用 Streaming Batch Model [arXiv:2501.12407]: partition 是独立执行单元
-# 引用 SmartPQ [arXiv:2406.06900]: NUMA-aware 并发优先级队列，核心依赖数据局部性
+# 引用 Streaming Batch Model [arXiv:2501.12407 [待验证]]: partition 是独立执行单元
+# 引用 SmartPQ [arXiv:2406.06900 [待验证]]: NUMA-aware 并发优先级队列，核心依赖数据局部性
 # 引用 Falcon [BDAIA 2025]: worker 按 tier 分组，利用数据亲和性路由
 #
 # 三种分区策略：
@@ -12,6 +12,7 @@
 # 再均衡粒度：虚拟节点级别，单次迁移量 = 总数据 / 虚拟节点数
 
 from __future__ import annotations
+from abc import ABC, abstractmethod
 from abc import ABC, abstractmethod
 
 import bisect

@@ -1,6 +1,6 @@
 # 结构化日志配置: 彩色终端输出、JSON 行日志、自动轮转
 # VulBinLLM [2025] 的 CoT 记忆管理依赖日志追踪长上下文窗口的事件序列；
-# Binary Diff Summarization [arXiv:2509.23970] 的 FSS (Function Sensitivity Score)
+# Binary Diff Summarization [arXiv:2509.23970 [待验证]] 的 FSS (Function Sensitivity Score)
 # 计算流程也需要可追溯的结构化日志记录。
 import logging
 import sys

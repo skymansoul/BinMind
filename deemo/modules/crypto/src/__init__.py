@@ -415,7 +415,7 @@ def __getattr__(name: str):
 # 追加导出注册: 使 crypto.src.DepLLMCryptoAnalyzer / build_dependency_context 等
 # 可经上方 __getattr__ 懒加载获取 (与 crypto_misuse 等既有模块同机制)。
 # 实现见 depllm/ 子包: dependency_graph(CRYPTBARA 依赖上下文) / heuristic(降级) /
-# llm_validator(arXiv:2407.16576) / verdict_cache(arXiv:2509.10814) /
+# llm_validator(arXiv:2407.16576) / verdict_cache(arXiv:2509.10814 [待验证]) /
 # symbol_table(跨编译单元常量折叠传播) / pipeline(编排)。
 _DEPLLM_EXPORTS = {
     'DepLLMCryptoAnalyzer':      ('depllm.pipeline', 'DepLLMCryptoAnalyzer'),

@@ -1,6 +1,6 @@
 # 合规自动映射引擎: SBERT语义匹配 / RAG证据检索 / 跨标准对齐
 # 参考: Saha & Shukla "PROPARAG: Automated Cybersecurity Policy Compliance Assessment" (arXiv:2605.07515, 2025)
-#       Chung et al. "GraphCompliance: Aligning Policy and Context Graphs for LLM-Based Regulatory Compliance" (arXiv:2510.26309)
+#       Chung et al. "GraphCompliance: Aligning Policy and Context Graphs for LLM-Based Regulatory Compliance" (arXiv:2510.26309 [待验证])
 #       Sun et al. "A Compliance Checking Framework Based on RAG" (COLING 2025)
 #       Bianchi et al. "Automated Compliance Mapping in Cloud Security with Domain-Adapted Sentence Transformers" (arXiv:2607.06364)
 #       Baldwin & Ghanavati "Knowledge Graph Representations for LLM-Based Policy Compliance Reasoning" (arXiv:2604.27713)

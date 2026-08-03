@@ -1,5 +1,5 @@
 # 二进制语义差异引擎: 函数嵌入跨版本比较/Jaccard+MinHash两阶段聚类/patch可达性分析
-# 参考: Khorrami et al. "Binary Diff Summarization using LLMs" (arXiv:2509.23970, 2025)
+# 参考: Khorrami et al. "Binary Diff Summarization using LLMs" (arXiv:2509.23970 [待验证], 2025)
 #       Haara "Enhancing Function Matching in Binary Code with ML Models" (Lund Univ. 2025)
 #       Meng & Liu "SimFuzz: Conflict-Aware Parallel Fuzzing via Incremental Path Similarity" (ISSRE 2025)
 #       Ahmad & Luo "Unsupervised Binary Code Translation with Application to Code Similarity Detection"

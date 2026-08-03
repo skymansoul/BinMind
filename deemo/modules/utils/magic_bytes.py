@@ -1,6 +1,6 @@
 """文件格式魔数字节数据库与检测"""
 # 覆盖常见可执行格式 (PE/ELF/Mach-O)、压缩格式、固件镜像、文档格式、多媒体。
-# ReCopilot [arXiv:2505.16366] 调用图分析的前置步骤需要识别二进制格式（PE vs ELF
+# ReCopilot [arXiv:2505.16366 [待验证]] 调用图分析的前置步骤需要识别二进制格式（PE vs ELF
 # 影响导入表解析路径）—— 此处提供无外部依赖的轻量格式检测。
 from typing import Optional, List, Tuple
 import os

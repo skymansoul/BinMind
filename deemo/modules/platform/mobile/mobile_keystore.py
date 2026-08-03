@@ -43,7 +43,7 @@ class KeyOrigin(StrEnum): GENERATED="generated"; DERIVED="derived"; IMPORTED="im
 class SecurityLevel(StrEnum): SOFTWARE="software"; TRUSTED_ENVIRONMENT="tee"; STRONGBOX="strongbox"; UNKNOWN="unknown"
 
 # ── PQC就绪度——量子脆弱算法及PQC标准签名数据库 ──
-# 基于QED Toolchain (IEEE Access 2025) + Strauss et al. (arXiv:2506.00790) 算法分类
+# 基于QED Toolchain (IEEE Access 2025) + Strauss et al. (arXiv:2506.00790 [待验证]) 算法分类
 
 _QUANTUM_VULNERABLE_ALGORITHMS = {
     # 非对称加密 (Shor算法可破)

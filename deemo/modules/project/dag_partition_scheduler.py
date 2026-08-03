@@ -1,6 +1,6 @@
 # 异构资源感知的 DAG 图分区 + 调度 (GraphEdge DAG-DRL 扩展)
 # 参考: GraphEdge "Dynamic Graph Partition and Task Scheduling for GNNs
-#       Computing in Edge Network" (arXiv:2504.15905)
+#       Computing in Edge Network" (arXiv:2504.15905 [待验证])
 # 对应关系:
 #   - 异构 worker 模型 (速度因子 + 多维容量)         -> §2 边缘节点异构资源
 #   - 关键路径优先 + 最小增量装载的图分区             -> §3 图分区策略

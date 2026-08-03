@@ -1,5 +1,5 @@
 # 字节模式扫描器: Boyer-Moore-Horspool, Aho-Corasick, 通配符匹配, 正则字节搜索
-# ReCopilot [arXiv:2505.16366] 表明精确模式匹配在变量数据流分析中
+# ReCopilot [arXiv:2505.16366 [待验证]] 表明精确模式匹配在变量数据流分析中
 # 是基础操作 —— 本模块提供构建此类分析的扫描原语。
 import re
 from typing import List, Tuple, Optional, Dict, Set

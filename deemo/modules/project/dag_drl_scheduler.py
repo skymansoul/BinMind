@@ -1,6 +1,6 @@
 # DAG-DRL: 图编码 + 强化学习的 DAG 任务调度与在线动态重排
 # 参考: GraphEdge "Dynamic Graph Partition and Task Scheduling for GNNs
-#       Computing in Edge Network" (arXiv:2504.15905)
+#       Computing in Edge Network" (arXiv:2504.15905 [待验证])
 # 对应关系:
 #   - DAG 任务模型 (依赖 / 资源占用 / 预估时延)   -> §3 任务图建模
 #   - 纯 Python 消息传递图编码 (无 torch)          -> §4.1 图编码器

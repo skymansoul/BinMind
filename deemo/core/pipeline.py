@@ -498,7 +498,7 @@ def run_pipeline_enhanced(binary_path: str, **kwargs) -> Dict[str, Any]:
 
     # --- (n) 冷点引导探索器 (ColdSpotGuidedExplorer) ---
     # PathHeatmap cold spot -> constraint edit distance -> redirection
-    # ref: PALM arXiv:2506.19287; Sun et al. ICSE 2024
+    # ref: Sun et al. ICSE 2024 — 路径覆盖热力图与约束编辑距离
     try:
         from analysis.symbolic.src.coldspot_guided_explorer import (
             ColdSpotGuidedExplorer,
@@ -702,8 +702,8 @@ def run_pipeline_enhanced(binary_path: str, **kwargs) -> Dict[str, Any]:
         logger.debug('optional plugin not available')
 
     # --- (s) CFG 熵指纹 (cfg_entropy_fingerprint) ---
-    # ref: Spielman (2007); arXiv:2510.10321 (2025)
-    # ref: Spielman (2007); arXiv:2510.10321 (2025)
+    # ref: Spielman (2007) — 谱图理论与拉普拉斯特征值分解
+    # ref: Spielman (2007) — 谱图理论与拉普拉斯特征值分解
     try:
         from modules.core.compat.cfg_entropy_fingerprint import (
             cfg_entropy_fingerprint, fingerprint_similarity,

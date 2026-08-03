@@ -3,7 +3,7 @@
 # - 最长公共子序列 (LCS)
 # - 序列相似度比率
 # - hex-level 差分可视化
-# Binary Diff Summarization [arXiv:2509.23970] 提出 Function Sensitivity Score (FSS)
+# Binary Diff Summarization [arXiv:2509.23970 [待验证]] 提出 Function Sensitivity Score (FSS)
 # —— 差分摘要中函数敏感度评分 —— 此处实现差分的底层基础组件。
 # Myers 算法参考 [Myers 1986: An O(ND) Difference Algorithm]。
 from typing import List, Tuple, Optional, Any, Sequence

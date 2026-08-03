@@ -1,12 +1,13 @@
 # Worker 池弹性扩缩容 — 基于队列积压指标自动调节实例数
-# 引用 Hiku [arXiv:2502.15534]: pull-based 调度中 worker 空闲时主动拉取，冷启动降低 13%
-# 引用 Arrow [arXiv:2505.11916]: 自适应调整实例数量应对流量尖峰
-# 引用 Block [arXiv:2508.03611]: 基于预测的 auto-provisioning，P99 延迟降低 20.1%
+# 引用 Hiku [arXiv:2502.15534 [待验证]]: pull-based 调度中 worker 空闲时主动拉取，冷启动降低 13%
+# 引用 Arrow [arXiv:2505.11916 [待验证]]: 自适应调整实例数量应对流量尖峰
+# 引用 Block [arXiv:2508.03611 [待验证]]: 基于预测的 auto-provisioning，P99 延迟降低 20.1%
 #
 # 策略组合：阈值扩缩 + 线性预测 + 冷却保护
 # 通过回调控制 worker 生命周期（进程/FaaS/Pod），不耦合具体运行时
 
 from __future__ import annotations
+from abc import ABC, abstractmethod
 from abc import ABC, abstractmethod
 
 import time

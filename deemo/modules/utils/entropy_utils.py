@@ -1,6 +1,6 @@
 # 熵值计算与数据随机性评估工具
 # 包含: Shannon 熵、Renyi 熵、条件熵、Chi-square 随机性检验、字节频率分析
-# Beyond Embeddings [arXiv:2509.23449] 指出可解释特征（熵分布、字节直方图）
+# Beyond Embeddings [arXiv:2509.23449 [待验证]] 指出可解释特征（熵分布、字节直方图）
 # 在跨架构二进制相似性任务中可与训练型嵌入方法竞争。
 # 熵分析是区分代码段和数据段的经典方法，参考 [Lyda & Hamrock 2007]。
 import math

@@ -154,7 +154,7 @@ def __getattr__(name: str):
 # ===== GRL-Sched 拓展 (2026-08-03) =====
 # 追加注册 — 保持既有映射不变，仅扩展懒加载表与符号导出
 # GRL-Sched: 图强化学习任务调度 + 动态图划分
-# 论文: GraphEdge — arXiv:2504.15905
+# 论文: GraphEdge — arXiv:2504.15905 [待验证]
 __all__ += [
     "TaskDependencyGraph", "TaskNode", "DependencyEdge",
     "GraphPartitioner", "Partition",

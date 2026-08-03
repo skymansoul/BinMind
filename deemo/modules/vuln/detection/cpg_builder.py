@@ -1,7 +1,7 @@
 # 代码属性图（Code Property Graph）构造器 —— 从源码/反编译伪代码提取
 # AST / 控制流(CFG) / 数据流(DFG) / 调用图(CallGraph) 并统一为一张属性图。
 #
-# 对应论文: LLMxCPG (arXiv:2507.16585) 将 CPG 作为 LLM 漏洞检测的结构上下文,
+# 对应论文: LLMxCPG (arXiv:2507.16585 [待验证]) 将 CPG 作为 LLM 漏洞检测的结构上下文,
 # CodeSAGE (J. Inf. Secur. Appl. 2025) 以 CPG 作为多特征融合的图输入。
 # 本模块不依赖 tree-sitter / libclang —— 对反编译伪代码(IDA/Ghidra 风格 C)与
 # Python 源码采用轻量启发式解析, 精度足以支撑下游的路径序列化与结构特征打分。

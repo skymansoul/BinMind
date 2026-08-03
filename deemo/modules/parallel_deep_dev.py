@@ -907,7 +907,7 @@ def build_sub_prompt(module_name: str) -> str:
 - 禁止情绪化表达与无关事实陈述。
 - 示例格式：
   ```python
-  # 设计依据: R1-Fuzz (arXiv:2509.20384) GRPO 奖励建模，
+  # 设计依据: R1-Fuzz (arXiv:2509.20384 [待验证]) GRPO 奖励建模，
   # 以覆盖率增益为唯一奖励源，避免稀疏奖励导致的训练发散。
   # 边界: 当状态维度超过 100 时降级为上下文老虎机，防止组合爆炸。
   def _grpo_mutation_reward(state_vector, coverage_gain):

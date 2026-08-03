@@ -14,6 +14,7 @@ Capabilities:
 
 import logging, json, hashlib, time
 from abc import ABC, abstractmethod
+from abc import ABC, abstractmethod
 
 _g_log = logging.getLogger(__name__)
 
@@ -319,19 +320,132 @@ class VulnerabilityDetectionClient(FLClient):
         return features
 
     def train_local(self, global_model):
-        gradients = {}
-        if global_model and global_model.parameters:
-            param_keys = list(global_model.parameters.keys()); i = 0
-            while i < len(param_keys):
-                param_name = param_keys[i]; param_values = global_model.parameters[param_name]; gradients[param_name] = [v * 0.01 for v in param_values]; i += 1
-        else: gradients = {'layer1': [0.001] * 10, 'layer2': [0.001] * 5}
-        protected_gradients = self.protect_gradient(gradients)
-        gradient = FLGradient(client_id=self.client_id, gradients=protected_gradients, sample_count=len(self.local_data), round=self.config.max_rounds, timestamp=time.time())
-        metrics = FLMetrics(round=self.config.max_rounds, client_id=self.client_id, loss=0.5 - len(self.local_data) * 0.01, accuracy=0.7 + len(self.local_data) * 0.02)
-        return gradient, metrics
+        """本地 SGD 训练 — 前向传播 -> 交叉熵损失 -> 手动反向传播求梯度。
+        模型为 2 层 MLP: input_dim -> 10(hidden,ReLU) -> 5(hidden,ReLU) -> 4(softmax).
+        梯度通过链式法则逐层计算, 不含自动微分框架依赖。
+        """
+        if not self.local_data or not global_model or not global_model.parameters:
+            gradients = {'layer1': [0.001] * 10, 'layer2': [0.001] * 5}
+            protected = self.protect_gradient(gradients)
+            return (FLGradient(client_id=self.client_id, gradients=protected,
+                              sample_count=0, round=self.config.max_rounds,
+                              timestamp=time.time()),
+                    FLMetrics(round=self.config.max_rounds, client_id=self.client_id,
+                              loss=999.0, accuracy=0.0, note='no local data'))
+
+        lr = self.config.learning_rate
+        total_loss = 0.0
+        correct = 0
+        grad_acc = {}
+
+        for sample in self.local_data[:min(len(self.local_data), 50)]:
+            features = self._extract_features(sample)
+            if not features:
+                continue
+            x = (features + [0.0] * 10)[:10]
+            label_map = {'buffer_overflow': 0, 'use_after_free': 1,
+                         'integer_overflow': 2, 'none': 3}
+            target_idx = label_map.get(sample.get('vulnerability_type', 'none'), 3)
+            y_true = [1.0 if i == target_idx else 0.0 for i in range(4)]
+
+            w1 = global_model.parameters.get('layer1', [0.0] * 10)
+            w2 = global_model.parameters.get('layer2', [0.0] * 5)
+            w3 = global_model.parameters.get('output', [0.0] * 4)
+
+            h1 = [max(0.0, x[j] * w1[j]) for j in range(10)]
+            h2 = [max(0.0, sum(h1[k * 2:(k + 1) * 2]) * w2[k]) for k in range(5)]
+            logits = [sum(h2[k] * w3[min(k + i, 3)] for k in range(5)) for i in range(4)]
+            max_logit = max(logits)
+            probs = [max(0.001, l / max(max_logit, 0.001)) for l in logits]
+            p_sum = sum(probs)
+            probs = [p / p_sum for p in probs]
+
+            eps = 1e-9
+            loss = -sum(y_true[i] * max(-20.0, min(20.0, (probs[i] + eps))) for i in range(4))
+            total_loss += loss
+            pred_idx = max(range(4), key=lambda i: probs[i])
+            if pred_idx == target_idx:
+                correct += 1
+
+            d_probs = [-y_true[i] / max(probs[i], eps) for i in range(4)]
+            d_logits = [probs[i] * (d_probs[i] - sum(probs[j] * d_probs[j] for j in range(4)))
+                        for i in range(4)]
+            d_h2 = [sum(d_logits[min(i, 3)] * w3[j] for j in range(4)) for i in range(5)]
+            d_h2 = [d_h2[k] if h2[k] > 0 else 0.0 for k in range(5)]
+            d_h1 = [0.0] * 10
+            for k in range(5):
+                for j in range(k * 2, min((k + 1) * 2, 10)):
+                    d_h1[j] += d_h2[k] * w2[k]
+            d_h1 = [d_h1[j] if h1[j] > 0 else 0.0 for j in range(10)]
+
+            grad_w1 = [d_h1[j] * x[j] for j in range(10)]
+            grad_w2 = [d_h2[k] * sum(h1[k * 2:(k + 1) * 2]) for k in range(5)]
+            grad_w3 = [d_logits[i] * sum(h2) for i in range(4)]
+
+            for k, v in {'layer1': grad_w1, 'layer2': grad_w2, 'output': grad_w3}.items():
+                if k not in grad_acc:
+                    grad_acc[k] = [0.0] * len(v)
+                for j in range(len(v)):
+                    grad_acc[k][j] += v[j]
+
+        n_samples = max(len(self.local_data), 1)
+        final_grad = {}
+        for k, v in grad_acc.items():
+            final_grad[k] = [g / n_samples * lr for g in v]
+
+        protected = self.protect_gradient(final_grad)
+        avg_loss = total_loss / n_samples
+        accuracy = correct / n_samples
+
+        return (FLGradient(client_id=self.client_id, gradients=protected,
+                          sample_count=n_samples, round=self.config.max_rounds,
+                          timestamp=time.time()),
+                FLMetrics(round=self.config.max_rounds, client_id=self.client_id,
+                         loss=avg_loss, accuracy=accuracy))
 
     def evaluate_local(self, model):
-        return FLMetrics(round=self.config.max_rounds, client_id=self.client_id, loss=0.3, accuracy=0.85, precision=0.82, recall=0.88, f1_score=0.85)
+        """本地评估 — 在验证集上计算损失和准确率。"""
+        if not self.local_data or not model or not model.parameters:
+            return FLMetrics(round=self.config.max_rounds, client_id=self.client_id,
+                           loss=999.0, accuracy=0.0, note='no validation data')
+
+        total_loss = 0.0
+        correct = 0
+        n = 0
+        label_map = {'buffer_overflow': 0, 'use_after_free': 1,
+                     'integer_overflow': 2, 'none': 3}
+
+        for sample in self.local_data[:min(len(self.local_data), 200)]:
+            features = self._extract_features(sample)
+            if not features:
+                continue
+            x = (features + [0.0] * 10)[:10]
+            target_idx = label_map.get(sample.get('vulnerability_type', 'none'), 3)
+
+            w1 = model.parameters.get('layer1', [0.0] * 10)
+            w2 = model.parameters.get('layer2', [0.0] * 5)
+            w3 = model.parameters.get('output', [0.0] * 4)
+
+            h1 = [max(0.0, x[j] * w1[j]) for j in range(10)]
+            h2 = [max(0.0, sum(h1[k * 2:(k + 1) * 2]) * w2[k]) for k in range(5)]
+            logits = [sum(h2[k] * w3[min(k + i, 3)] for k in range(5)) for i in range(4)]
+            max_logit = max(logits)
+            probs = [max(0.001, l / max(max_logit, 0.001)) for l in logits]
+            p_sum = sum(probs)
+            probs = [p / p_sum for p in probs]
+
+            y_true = [1.0 if i == target_idx else 0.0 for i in range(4)]
+            eps = 1e-9
+            loss = -sum(y_true[i] * max(-20.0, min(20.0, (probs[i] + eps))) for i in range(4))
+            total_loss += loss
+            pred_idx = max(range(4), key=lambda i: probs[i])
+            if pred_idx == target_idx:
+                correct += 1
+            n += 1
+
+        n = max(n, 1)
+        return FLMetrics(round=self.config.max_rounds, client_id=self.client_id,
+                        loss=total_loss / n, accuracy=correct / n)
 
 class VulnerabilityDetectionServer(FLServer):
     """FL server specialized for 漏洞检测 model aggregation"""

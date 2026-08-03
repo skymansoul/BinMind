@@ -1,5 +1,5 @@
 # 严格状态机 — 为 Task 生命周期提供显式转移表
-# Resilient Microservices 综述 [arXiv:2512.16959]: 显式状态跟踪是恢复策略的前提
+# Resilient Microservices 综述 [arXiv:2512.16959 [待验证]]: 显式状态跟踪是恢复策略的前提
 # 参考 AWS Step Functions 的状态转移思想：每步转移前验证合法性
 #
 # 设计了可插拔 Guard/Action 机制：

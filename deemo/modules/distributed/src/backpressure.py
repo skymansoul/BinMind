@@ -1,6 +1,6 @@
 """背压控制器 — 下游过载时的流量整形"""
 # Rajomon [USENIX NSDI '25]: 去中心化市场式过载控制，令牌+定价减少尾延迟 78%
-# Streaming Batch Model [arXiv:2501.12407]: 分区驱动 + 背压微批处理
+# Streaming Batch Model [arXiv:2501.12407 [待验证]]: 分区驱动 + 背压微批处理
 #
 # 五种背压策略：
 #   - drop_head:  丢弃队列头部（旧任务），适合实时场景
@@ -12,6 +12,7 @@
 # 背压信号来源：队列深度 / 延迟 / 错误率 三个维度
 
 from __future__ import annotations
+from abc import ABC, abstractmethod
 from abc import ABC, abstractmethod
 
 import time

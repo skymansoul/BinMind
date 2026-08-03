@@ -1,7 +1,7 @@
 # re-export from compat/ — 攻击面量化桩
 # importlib 代理 + 方法补丁策略，与 binary_format_fuzzer 同构
 # 基于 Manadhata & Wing (2010) 的 I/O 自动化攻击面评分模型，
-# 并参考 FuzzBox (arXiv:2509.05643) 覆盖率引导方法扩展风险维度
+# 并参考 FuzzBox (arXiv:2509.05643 [待验证]) 覆盖率引导方法扩展风险维度
 import os as _os
 import importlib.util as _iu
 

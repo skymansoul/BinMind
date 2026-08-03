@@ -6,9 +6,9 @@
 #           部分做条件重建；融合表征与各单模态表征之间施加跨模态对比正则；融合置信度
 #           依据可用模态数与冗余一致性校准，并衔接 multi_modal_confidence.py。
 # 参考论文（实现时对应关系见各节注释）:
-#   [1] Robult — arXiv:2509.03477  冗余/特异特征分解 + 门控加权融合
-#   [2] FedMAC — arXiv:2410.03070  跨模态聚合重建缺失模态 + 对比正则化
-#   [3] Incomplete Modality Misinfo Recognition — arXiv:2510.05839  融合置信度校准
+#   [1] Robult — arXiv:2509.03477 [待验证]  冗余/特异特征分解 + 门控加权融合
+#   [2] FedMAC — arXiv:2410.03070 [待验证]  跨模态聚合重建缺失模态 + 对比正则化
+#   [3] Incomplete Modality Misinfo Recognition — arXiv:2510.05839 [待验证]  融合置信度校准
 # 设计权衡: 纯 Python 实现，与模块内其余文件一致，不依赖 torch/numpy；
 #           投影权重以正弦确定性初始化，保证跨进程可复现；门控系数以启发式接口更新，
 #           完整反向传播可在 torch 中直接复用本文件的分解-重建-融合结构。

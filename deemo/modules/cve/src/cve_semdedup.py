@@ -7,12 +7,12 @@
 #        描述语义相似度 + 受影响包键值交集" 合并策略, 以及
 #        FieldConflictDetector 的 CVSS/版本区间/CPE/日期逐字段对齐,
 #        均源自该文对跨源重复与冲突的建模.
-#   [IntelEX, arXiv:2412.10872]
+#   [IntelEX, arXiv:2412.10872 [待验证]]
 #     -- LLM 驱动的攻击级威胁情报抽取.
 #        StructuredExtractor 采用其 "规则抽取为主 + LLM 兜底" 的分层
 #        思路, 将自然语言描述映射为受影响组件/版本区间/攻击向量/漏洞
 #        类型的统一模式.
-#   [SEvenLLM, arXiv:2405.03446]
+#   [SEvenLLM, arXiv:2405.03446 [待验证]]
 #     -- CTI 中 LLM 语义相关性判断能力评测与增强.
 #        本文的可插拔嵌入后端 (本地 TF-IDF/字符 n-gram 与可选 LLM API)
 #        参考其对语义相关性建模的层次; 无 API 配置时自动降级为本地后端.

@@ -2,7 +2,7 @@
 from modules.core.compat.jit_analyzer import *
 
 # JIT 字节码统计特征
-# ReX (arXiv:2508.01371) 神经字节码分析路径；
+# ReX (arXiv:2508.01371 [待验证]) 神经字节码分析路径；
 # 此处提供纯统计替代方案，零外部依赖。
 # NeuroScope DNN 编译器分析 (USENIX 2025)
 import struct as _pack

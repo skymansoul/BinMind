@@ -1,7 +1,7 @@
 # GRL-Sched 第一层: 任务依赖图建模 (TaskDependencyGraph)
 #
 # 论文对应: GraphEdge: Dynamic Graph Partition and Task Scheduling for GNNs
-#   Computing in Edge Network — arXiv:2504.15905
+#   Computing in Edge Network — arXiv:2504.15905 [待验证]
 #   GraphEdge 将 GNN 计算任务表示为 DAG，节点=算子，边=张量流动；
 #   本模块把同一抽象移植到通用分布式任务:
 #   节点=任务/流水线阶段，边=数据依赖/控制依赖，边权=预估通信代价，

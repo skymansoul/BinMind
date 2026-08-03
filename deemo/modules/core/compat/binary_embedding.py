@@ -1,7 +1,7 @@
 # 二进制函数嵌入 — 多策略嵌入生成器，支持指令序列/CFG/调用图三种模态
 # 参考: BLens (Benoit et al. 2024, arXiv:2409.07889) 的集成嵌入方法 —
 #       将多模态嵌入拼接并通过对比学习与函数名语义空间对齐
-# 参考: AGNOMIN (arXiv:2509.25514, 2025) 的特征增强层级图 (FEHG) —
+# 参考: AGNOMIN (arXiv:2509.25514 [待验证], 2025) 的特征增强层级图 (FEHG) —
 #       在 CFG + CallGraph 基础上引入 PCode 特征作为第三模态
 
 import hashlib as _hl

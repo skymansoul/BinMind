@@ -121,7 +121,7 @@ def __getattr__(name: str):
 # ===== GRL-Sched 拓展 (2026-08-03) =====
 # 追加注册 — 保持既有映射不变，仅扩展懒加载表与符号导出
 # GRL-Sched: 图强化学习任务调度 + 动态图划分
-# 论文: GraphEdge — arXiv:2504.15905
+# 论文: GraphEdge — arXiv:2504.15905 [待验证]
 __all__ += [
     "TaskDependencyGraph", "TaskNode", "DependencyEdge",
     "GraphPartitioner", "Partition",
@@ -143,6 +143,6 @@ _MODULE_MAP.update({
 
 # ===== 故障自愈与自适应容错拓展 (2025-07-16 → 2025-07-29) =====
 # 因果故障传播 + 增量重调度 + 关键路径投机 + 自适应检查点
-# 论文: DynaCausal (arXiv:2510.22613) / IDI (arXiv:2505.00930)
+# 论文: DynaCausal (arXiv:2510.22613 [待验证]) / IDI (arXiv:2505.00930)
 #       EFTR-HGNet (IEEE IoT-J 2025) / SPARe (arXiv:2603.00357)
 # 这些模块已在上方 __all__ 与 _MODULE_MAP 中注册，此处不重复追加

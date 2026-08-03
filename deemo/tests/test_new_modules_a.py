@@ -14,6 +14,8 @@ import pytest
 
 # ---- 合成 ELF 辅助函数 ----
 
+
+
 def _make_minimal_elf_64(
     e_type: int = 3,        # ET_DYN=3 (PIE), ET_EXEC=2 (no PIE)
     has_gnu_stack: bool = True,

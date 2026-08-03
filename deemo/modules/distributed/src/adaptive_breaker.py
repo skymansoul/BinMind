@@ -1,5 +1,5 @@
 # 自适应熔断器 — 动态阈值替代静态配置
-# Multi-Objective Adaptive Rate Limiting [arXiv:2511.03279]: DRL 动态平衡吞吐量和延迟
+# Multi-Objective Adaptive Rate Limiting [arXiv:2511.03279 [待验证]]: DRL 动态平衡吞吐量和延迟
 # 此处不引入 DRL 框架，改用更轻量的 EMA 反馈回路实现阈值自适应
 #
 # 传统熔断器 [Nygard 2007] 的 failure_threshold 需人工调参：

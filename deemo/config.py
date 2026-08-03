@@ -708,7 +708,7 @@ STATE_MEMENTO_MAX_PER_PATH = 10          # 单路径最大快照数
 STATE_MEMENTO_BUDGET_EVICT_TARGET = 0.8  # 逐出目标（预算的 80%）
 
 # --- 冷点引导探索器 (ColdSpotGuidedExplorer) ---
-# ref: PALM arXiv:2506.19287 (Wu et al., 2025); Sun et al. ICSE 2024
+# ref: Sun et al. ICSE 2024 — 基于约束编辑距离的冷点引导符号执行
 # 在符号执行框架内计算约束编辑距离——不依赖 LLM
 COLDSPOT_MAX_EDIT_DISTANCE = 15.0        # 超过此编辑距离的方案丢弃
 COLDSPOT_MIN_REACHABILITY = 0.1          # 最低可达性估计阈值
@@ -735,7 +735,7 @@ DRIFT_MIN_SAMPLES = 30                  # 漂移检测启动的最小样本数
 DRIFT_COOLDOWN_PERIOD = 50              # 重校准后的冷却样本数
 
 # --- CFG 熵指纹 (cfg_entropy_fingerprint) ---
-# ref: Spielman (2007); arXiv:2510.10321 (2025)
+# ref: Spielman (2007) "Spectral Graph Theory" — 图拉普拉斯正则化的数学基础
 # 将字节熵嵌入 CFG 结构，提取拉普拉斯谱特征
 CFG_ENTROPY_FINGERPRINT_K = 5           # 保留的特征值数量
 CFG_ENTROPY_POWER_ITER_THRESHOLD = 1000 # 超过此节点数使用幂迭代近似

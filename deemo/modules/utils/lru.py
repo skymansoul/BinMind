@@ -1,6 +1,6 @@
 # LRU / TTL / LFU 缓存实现
 # 二进制分析管线中缓存中间结果（反汇编、特征向量、GNN 嵌入）可消除重复计算。
-# Hybrid Fuzzing with LLM [arXiv:2511.03995] 中语义反馈模块使用嵌入相似性缓存
+# Hybrid Fuzzing with LLM [arXiv:2511.03995 [待验证]] 中语义反馈模块使用嵌入相似性缓存
 # 来判定行为新颖性 —— 此处提供通用的时间感知型淘汰策略。
 import threading
 import time

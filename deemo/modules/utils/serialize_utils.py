@@ -1,5 +1,5 @@
 # 序列化与压缩包装器: JSON (含 numpy 扩展)、MessagePack、pickle 安全加载、zlib/lzma 压缩
-# ReF Decompile [arXiv:2502.12221] 的 relabeling 策略需将函数控制流标注序列化
+# ReF Decompile [arXiv:2502.12221 [待验证]] 的 relabeling 策略需将函数控制流标注序列化
 # 为中间格式；SoK [arXiv:2606.17398] 指出的统一管线中，不同分析阶段间通过
 # 结构化格式交换数据 —— 此处提供若干格式的无缝转换与压缩包装。
 import json

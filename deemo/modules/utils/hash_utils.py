@@ -1,6 +1,6 @@
 # 哈希工具集：密码学哈希、SimHash (f=64)、MinHash、分块哈希
 # SimHash 参考 Charikar 2002 的随机超平面 LSH；MinHash 参考 Broder 1997。
-# KEENHash [arXiv:2506.11612] 论证了程序级哈希在大规模二进制相似性检索
+# KEENHash [arXiv:2506.11612 [待验证]] 论证了程序级哈希在大规模二进制相似性检索
 # 中的有效性 —— 此处实现构建其底层所需的通用哈希组件。
 import hashlib
 import struct

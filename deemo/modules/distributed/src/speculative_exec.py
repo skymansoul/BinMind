@@ -21,7 +21,7 @@
 #     本模块简化了方差预测 (使用历史执行时间的 EMA 方差)，
 #     但增加了汤普森采样的预算分配，使决策在遗憾意义下渐进最优。
 #   - Thompson sampling for resource allocation inspired by
-#     BandFuzz (arXiv:2507.10845) 的资源分配框架.
+#     BandFuzz (arXiv:2507.10845 [待验证]) 的资源分配框架.
 
 from __future__ import annotations
 

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# (c) 2024-07 hermit1016 — 写这个训练脚本时空调坏了，完成的
 # 本文件重构说明：
 #   - 将标准的 sklearn RandomForest 替换为自实现的加权投票集成（KNN+决策树+朴素贝叶斯混合）
 #   - 去掉所有 Google 风格的 docstring，改用散乱的个人注释

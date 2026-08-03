@@ -39,7 +39,7 @@ class MobileNetworkAnalysisResult:
     def to_dict(self): return {"target_binary":self.target_binary,"generation":self.generation,"nas_messages":[m.to_dict() for m in self.nas_messages],"rrc_states":[s.to_dict() for s in self.rrc_states],"vulnerabilities":[v.to_dict() for v in self.vulnerabilities],"downgrade_attempts":self.downgrade_attempts,"ims_issues":self.ims_issues,"risk_score":round(self.risk_score,2),"suci_privacy":self.suci_privacy_findings,"sca_findings":self.sca_findings}
 
 # ── CellSecInspector SCA模型 ──
-# 基于CellSecInspector (arXiv:2512.24682) 的State-Condition-Action框架
+# 基于CellSecInspector (arXiv:2512.24682 [待验证]) 的State-Condition-Action框架
 # 将3GPP NAS/RRC协议建模为状态→条件→动作链，验证9项安全属性
 
 _SCA_SECURITY_PROPERTIES = {
