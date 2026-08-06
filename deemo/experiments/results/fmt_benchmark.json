@@ -1,0 +1,8 @@
+{
+  "total": 6,
+  "tp_samples": 3,
+  "fp_samples": 3,
+  "fmt_detection_rate": 100.0,
+  "fp_filtered": 3,
+  "fp_filter_rate": 100.0
+}

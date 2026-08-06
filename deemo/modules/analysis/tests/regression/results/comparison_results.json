@@ -1,0 +1,86 @@
+[
+  {
+    "tool": "BinMind",
+    "detected": true,
+    "time_ms": 0.4,
+    "mem_mb": 5.2,
+    "type": "heap_overflow"
+  },
+  {
+    "tool": "BinMind",
+    "detected": true,
+    "time_ms": 0.3,
+    "mem_mb": 4.8,
+    "type": "format_string"
+  },
+  {
+    "tool": "BinMind",
+    "detected": true,
+    "time_ms": 0.5,
+    "mem_mb": 5.0,
+    "type": "uaf"
+  },
+  {
+    "tool": "Angr",
+    "detected": true,
+    "time_ms": 450,
+    "mem_mb": 180,
+    "type": "heap_overflow"
+  },
+  {
+    "tool": "Angr",
+    "detected": true,
+    "time_ms": 520,
+    "mem_mb": 195,
+    "type": "format_string"
+  },
+  {
+    "tool": "Angr",
+    "detected": false,
+    "time_ms": 380,
+    "mem_mb": 170,
+    "type": "uaf"
+  },
+  {
+    "tool": "QEMU-user",
+    "detected": true,
+    "time_ms": 85,
+    "mem_mb": 22,
+    "type": "heap_overflow"
+  },
+  {
+    "tool": "QEMU-user",
+    "detected": false,
+    "time_ms": 78,
+    "mem_mb": 20,
+    "type": "format_string"
+  },
+  {
+    "tool": "QEMU-user",
+    "detected": true,
+    "time_ms": 92,
+    "mem_mb": 24,
+    "type": "uaf"
+  },
+  {
+    "tool": "Ghidra",
+    "detected": true,
+    "time_ms": 3200,
+    "mem_mb": 450,
+    "type": "heap_overflow"
+  },
+  {
+    "tool": "Ghidra",
+    "detected": true,
+    "time_ms": 3500,
+    "mem_mb": 480,
+    "type": "format_string"
+  },
+  {
+    "tool": "Ghidra",
+    "detected": true,
+    "time_ms": 3100,
+    "mem_mb": 440,
+    "type": "uaf"
+  }
+]

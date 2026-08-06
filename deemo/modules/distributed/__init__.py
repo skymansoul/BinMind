@@ -176,3 +176,284 @@ _MODULE_MAP.update({
 
 # ===== 故障自愈拓展 — 因果传播 + 增量调度 + 投机 + 自适应检查点 =====
 # 各符号注册在上方 _MODULE_MAP 与 __all__ 中已完成
+
+# ===== 专利级拓展: 鲁棒GNN + 反事实谕示 + 时序超图 + 共形预测 (2026-08) =====
+# 随机平滑认证的 GNN 编码器 / Pearl do-calculus 调度恢复 / 时序超图卷积 / 共形预测滞后检测
+__all__ += [
+    "RobustGNNCertifier", "RobustSchedulerMixin",
+    "SchedulingStructuralCausalModel", "CounterfactualSchedulingOracle",
+    "CounterfactualReport",
+    "TemporalHypergraph", "TemporalHypergraphConv",
+    "hypergraph_augmented_features",
+    "ConformalStragglerPredictor", "OnlineQuantileEstimator",
+    "ConformalPrediction", "ConformalSpeculationGate",
+]
+_MODULE_MAP.update({
+    "RobustGNNCertifier": ".src.robust_gnn", "RobustSchedulerMixin": ".src.robust_gnn",
+    "SchedulingStructuralCausalModel": ".src.counterfactual_oracle",
+    "CounterfactualSchedulingOracle": ".src.counterfactual_oracle",
+    "CounterfactualReport": ".src.counterfactual_oracle",
+    "TemporalHypergraph": ".src.temporal_hypergraph",
+    "TemporalHypergraphConv": ".src.temporal_hypergraph",
+    "hypergraph_augmented_features": ".src.temporal_hypergraph",
+    "ConformalStragglerPredictor": ".src.conformal_straggler",
+    "OnlineQuantileEstimator": ".src.conformal_straggler",
+    "ConformalPrediction": ".src.conformal_straggler",
+    "ConformalSpeculationGate": ".src.conformal_straggler",
+})
+
+# ===== 专利级拓展: Lyapunov碳调度 + 死锁验证 + 在线预测 + 调度自监控 (2026-08) =====
+# 李雅普诺夫碳感知准入 / 资源分配图死锁验证 / 自适应RLS执行时间预测 / 非参数CUSUM健康监控
+__all__ += [
+    "LyapunovCarbonGate", "CarbonIntensityProvider",
+    "AdmissionDecision", "CarbonMetrics",
+    "carbon_aware_submit",
+    "DeadlockVerifier", "ResourceSpec", "DeadlockReport",
+    "AdaptiveRLS", "TaskTimePredictor",
+    "SchedulerHealthMonitor", "NonparametricCUSUM",
+    "DegradationLevel", "SchedulerSnapshot",
+    "snapshot_from_metrics",
+]
+_MODULE_MAP.update({
+    "LyapunovCarbonGate": ".src.lyapunov_carbon",
+    "CarbonIntensityProvider": ".src.lyapunov_carbon",
+    "AdmissionDecision": ".src.lyapunov_carbon",
+    "CarbonMetrics": ".src.lyapunov_carbon",
+    "carbon_aware_submit": ".src.lyapunov_carbon",
+    "DeadlockVerifier": ".src.deadlock_verifier",
+    "ResourceSpec": ".src.deadlock_verifier",
+    "DeadlockReport": ".src.deadlock_verifier",
+    "AdaptiveRLS": ".src.online_predictor",
+    "TaskTimePredictor": ".src.online_predictor",
+    "SchedulerHealthMonitor": ".src.scheduler_monitor",
+    "NonparametricCUSUM": ".src.scheduler_monitor",
+    "DegradationLevel": ".src.scheduler_monitor",
+    "SchedulerSnapshot": ".src.scheduler_monitor",
+    "snapshot_from_metrics": ".src.scheduler_monitor",
+})
+
+# ===== 专利级拓展: 最优传输分配 + 纳什公平调度 + 管线重物质化 + 差分隐私 (2026-08) =====
+# Sinkhorn最优传输任务分配 / 多租户纳什均衡公平调度 / 管线重物质化检查点 / ε-差分隐私度量
+__all__ += [
+    "sinkhorn_assign", "OTAssigner",
+    "NashFairScheduler", "TenantBid", "NashAllocation",
+    "PipelineRematOptimizer", "RematDecision", "RematPlan",
+    "DPCounter", "DPGauge", "DPHistogram",
+    "DPPrivacyBudget", "DPMetricsCollector",
+]
+_MODULE_MAP.update({
+    "sinkhorn_assign": ".src.ot_assigner", "OTAssigner": ".src.ot_assigner",
+    "NashFairScheduler": ".src.nash_fair_scheduler",
+    "TenantBid": ".src.nash_fair_scheduler",
+    "NashAllocation": ".src.nash_fair_scheduler",
+    "PipelineRematOptimizer": ".src.pipeline_remat",
+    "RematDecision": ".src.pipeline_remat", "RematPlan": ".src.pipeline_remat",
+    "DPCounter": ".src.dp_metrics", "DPGauge": ".src.dp_metrics",
+    "DPHistogram": ".src.dp_metrics", "DPPrivacyBudget": ".src.dp_metrics",
+    "DPMetricsCollector": ".src.dp_metrics",
+})
+
+# ===== 专利级拓展: 因果发现 + PID伸缩 + 自适应负载均衡 + 拜占庭窃取 (2026-08) =====
+# Granger+转移熵因果依赖发现 / PID控制论弹性伸缩 / 自适应Power-of-d负载均衡 / 见证人BFT工作窃取
+__all__ += [
+    "transfer_entropy", "CausalDependencyDiscoverer",
+    "PIDAutoscaler", "ziegler_nichols_tune",
+    "AdaptivePowerOfD",
+    "ByzantineResilientStealing", "StealTransaction", "NodeReputation",
+]
+_MODULE_MAP.update({
+    "transfer_entropy": ".src.causal_discovery",
+    "CausalDependencyDiscoverer": ".src.causal_discovery",
+    "PIDAutoscaler": ".src.pid_autoscaler",
+    "ziegler_nichols_tune": ".src.pid_autoscaler",
+    "AdaptivePowerOfD": ".src.adaptive_load_balancer",
+    "ByzantineResilientStealing": ".src.byzantine_stealing",
+    "StealTransaction": ".src.byzantine_stealing",
+    "NodeReputation": ".src.byzantine_stealing",
+})
+
+# ===== 专利级拓展: 草图度量 + 活性验证 + 对抗老虎机 + 联邦蒸馏 (2026-08) =====
+# Count-Min+HLL亚线性度量 / 运行时LTL活性验证 / EXP3-IX对抗老虎机 / 联邦策略蒸馏
+__all__ += [
+    "CountMinSketch", "HyperLogLog", "SketchMetrics",
+    "LivenessMonitor", "LivenessProperty", "LivenessVerdict",
+    "starvation_freedom_property", "progress_property",
+    "no_livelock_property",
+    "EXP3IX", "AdversarialBanditScheduler",
+    "PolicyTeacher", "FederatedDistillationAggregator",
+    "PolicyStudent", "federated_round",
+]
+_MODULE_MAP.update({
+    "CountMinSketch": ".src.sketch_metrics",
+    "HyperLogLog": ".src.sketch_metrics",
+    "SketchMetrics": ".src.sketch_metrics",
+    "LivenessMonitor": ".src.liveness_checker",
+    "LivenessProperty": ".src.liveness_checker",
+    "LivenessVerdict": ".src.liveness_checker",
+    "starvation_freedom_property": ".src.liveness_checker",
+    "progress_property": ".src.liveness_checker",
+    "no_livelock_property": ".src.liveness_checker",
+    "EXP3IX": ".src.adversarial_bandits",
+    "AdversarialBanditScheduler": ".src.adversarial_bandits",
+    "PolicyTeacher": ".src.federated_distill",
+    "FederatedDistillationAggregator": ".src.federated_distill",
+    "PolicyStudent": ".src.federated_distill",
+    "federated_round": ".src.federated_distill",
+})
+
+# ===== 专利级拓展: EVT尾部 + Hawkes到达 + OCO权重 + 谱划分 (2026-08) =====
+# GPD极值尾部预测 / Hawkes自激到达模型 / 在线凸优化权重自整定 / Fiedler向量谱划分
+__all__ += [
+    "fit_gpd_mle", "EVTTailPredictor",
+    "HawkesArrivalModel",
+    "OCOWeightOptimizer", "OCOSchedulingAdapter",
+    "SpectralPartitioner",
+]
+_MODULE_MAP.update({
+    "fit_gpd_mle": ".src.evt_tail", "EVTTailPredictor": ".src.evt_tail",
+    "HawkesArrivalModel": ".src.hawkes_arrival",
+    "OCOWeightOptimizer": ".src.oco_scheduler",
+    "OCOSchedulingAdapter": ".src.oco_scheduler",
+    "SpectralPartitioner": ".src.spectral_partition",
+})
+
+# ===== 专利级拓展: Wasserstein DRO + 分位数追踪 + MoE门控 + FTRL检查点 (2026-08) =====
+# Wasserstein分布鲁棒调度 / 在线单调分位数追踪 / 混合专家策略门控 / FTRL遗憾最优检查点
+__all__ += [
+    "wasserstein1", "wasserstein_radius", "WassersteinRobustScheduler",
+    "OnlineQuantileTracker",
+    "MoEGatingNetwork", "MixtureOfExpertsScheduler",
+    "FTRLCheckpointController",
+]
+_MODULE_MAP.update({
+    "wasserstein1": ".src.wasserstein_dro",
+    "wasserstein_radius": ".src.wasserstein_dro",
+    "WassersteinRobustScheduler": ".src.wasserstein_dro",
+    "OnlineQuantileTracker": ".src.quantile_tracker",
+    "MoEGatingNetwork": ".src.mixture_experts",
+    "MixtureOfExpertsScheduler": ".src.mixture_experts",
+    "FTRLCheckpointController": ".src.regret_checkpoint",
+})
+
+# ===== 专利级拓展: PAC-Bayes认证 + 切换代价优化 + 容量约束调度 (2026-08) =====
+# PAC-贝叶斯调度策略泛化认证 / L1稀疏切换代价在线优化 / 容量约束优先级隔离调度
+__all__ += [
+    "catoni_bound", "PACBayesCertifier",
+    "SwitchingCostOptimizer",
+    "CapacityConfig", "QueuedTask", "CapacityConstrainedScheduler",
+]
+_MODULE_MAP.update({
+    "catoni_bound": ".src.pac_bayes_cert",
+    "PACBayesCertifier": ".src.pac_bayes_cert",
+    "SwitchingCostOptimizer": ".src.switching_cost_opt",
+    "CapacityConfig": ".src.capacity_scheduler",
+    "QueuedTask": ".src.capacity_scheduler",
+    "CapacityConstrainedScheduler": ".src.capacity_scheduler",
+})
+
+# ===== 专利级拓展: 学习型优先级 + 贝叶斯熔断 + 流行病Gossip溯源 (2026-08) =====
+# CDF学习型优先队列 / BOCD贝叶斯变点熔断 / 谣言中心性Gossip溯源
+__all__ += [
+    "PiecewiseLinearCDF", "LearnedPriorityQueue",
+    "BOCDDetector", "BayesianCircuitBreaker",
+    "GossipTrace", "EpidemicSourceDetector",
+]
+_MODULE_MAP.update({
+    "PiecewiseLinearCDF": ".src.learned_priority",
+    "LearnedPriorityQueue": ".src.learned_priority",
+    "BOCDDetector": ".src.bayesian_breaker",
+    "BayesianCircuitBreaker": ".src.bayesian_breaker",
+    "GossipTrace": ".src.epidemic_gossip",
+    "EpidemicSourceDetector": ".src.epidemic_gossip",
+})
+
+# ===== 专利级拓展: 压缩共识 + 到达模拟器 (2026-08) =====
+# QSGD随机量化状态压缩共识 / 别名法离散事件到达模拟
+__all__ += [
+    "qsgd_compress", "qsgd_decompress", "compression_ratio",
+    "CompressedConsensus",
+    "AliasSampler", "DiscreteEventSimulator",
+]
+_MODULE_MAP.update({
+    "qsgd_compress": ".src.compressed_consensus",
+    "qsgd_decompress": ".src.compressed_consensus",
+    "compression_ratio": ".src.compressed_consensus",
+    "CompressedConsensus": ".src.compressed_consensus",
+    "AliasSampler": ".src.arrival_simulator",
+    "DiscreteEventSimulator": ".src.arrival_simulator",
+})
+
+# ===== 专利级拓展: Anytime部分结果 + 集成元调度 (2026-08) =====
+# 可中断渐进精度截止期限调度 / 加权多数投票多策略集成
+__all__ += [
+    "AnytimeTask", "AnytimeScheduler",
+    "WeightedMajorityEnsemble",
+]
+_MODULE_MAP.update({
+    "AnytimeTask": ".src.anytime_scheduler",
+    "AnytimeScheduler": ".src.anytime_scheduler",
+    "WeightedMajorityEnsemble": ".src.ensemble_meta",
+})
+
+# ===== 专利级拓展: 自动修复引擎 + 调用链追踪 (2026-08) =====
+# 闭环故障修复动作生成+风险评估 / 轻量分布式调用链追踪+依赖图推断
+__all__ += [
+    "ActionType", "RemediationAction", "RemediationEngine",
+    "Span", "CallChainTracer",
+]
+_MODULE_MAP.update({
+    "ActionType": ".src.remediation_engine",
+    "RemediationAction": ".src.remediation_engine",
+    "RemediationEngine": ".src.remediation_engine",
+    "Span": ".src.call_chain_tracer",
+    "CallChainTracer": ".src.call_chain_tracer",
+})
+# 推测复制 / 数据局部性 / 能力匹配 (2026 Q3 专利补齐)
+__all__ += [
+    "SpeculativeDuplicationManager",
+    "DataLocalityTracker", "DataLocalityScheduler",
+    "CapabilityVector", "TaskRequirement", "CapabilityAwareScheduler",
+]
+_MODULE_MAP.update({
+    "SpeculativeDuplicationManager": ".src.speculative_duplication",
+    "DataLocalityTracker": ".src.data_locality_placement",
+    "DataLocalityScheduler": ".src.data_locality_placement",
+    "CapabilityAwareScheduler": ".src.capability_matching",
+    "CapabilityVector": ".src.capability_matching",
+    "TaskRequirement": ".src.capability_matching",
+})
+
+# ===== 专利级拓展: 零拷贝状态传输 + 概率状态机 (2026-08) =====
+__all__ += [
+    "ZeroCopyStateBuffer", "ZeroCopyTaskState", "ZeroCopyTransfer",
+    "ProbabilisticGuard", "ProbabilisticStateMachine",
+]
+_MODULE_MAP.update({
+    "ZeroCopyStateBuffer": ".src.zero_copy_state",
+    "ZeroCopyTaskState": ".src.zero_copy_state",
+    "ZeroCopyTransfer": ".src.zero_copy_state",
+    "ProbabilisticGuard": ".src.probabilistic_sm",
+    "ProbabilisticStateMachine": ".src.probabilistic_sm",
+})
+
+# ===== 专利级拓展: 推测复制管理 + 取消传播 (2026-08) =====
+# 自适应副本数推测复制 / 频谱感知分布式取消传播
+__all__ += [
+    "SpeculativeDuplicationManager",
+    "CancelPropagationManager",
+]
+_MODULE_MAP.update({
+    "SpeculativeDuplicationManager": ".src.speculative_duplication",
+    "CancelPropagationManager": ".src.cancel_propagation",
+
+    "TDigest": ".src.quantile_tracker",
+    "FTPLOnlineCache": ".src.data_locality_placement",
+    "GaussianDPCounter": ".src.dp_metrics",
+    "MomentsAccountant": ".src.dp_metrics",
+    "Contract": ".src.anytime_scheduler",
+    "ContractScheduler": ".src.anytime_scheduler",
+    "DecayingElasticSketch": ".src.sketch_metrics",
+    "KingmanDelayBound": ".src.capacity_scheduler",
+    "ImportanceSamplingSimulator": ".src.arrival_simulator",
+    "CounterfactualOutcomeModel": ".src.remediation_engine",
+})

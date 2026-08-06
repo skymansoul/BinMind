@@ -1,6 +1,6 @@
 # 数据分区 — 一致性哈希 + 虚拟节点 + 动态再均衡
-# 引用 Streaming Batch Model [arXiv:2501.12407 [待验证]]: partition 是独立执行单元
-# 引用 SmartPQ [arXiv:2406.06900 [待验证]]: NUMA-aware 并发优先级队列，核心依赖数据局部性
+# 分区管理: partition 作为独立执行单元，支持并行处理和故障隔离
+# 数据局部性: 分区内任务共享缓存亲和性，减少跨NUMA节点数据移动
 # 引用 Falcon [BDAIA 2025]: worker 按 tier 分组，利用数据亲和性路由
 #
 # 三种分区策略：
@@ -107,7 +107,7 @@ class PartitionManager:
     """分区管理器 — 统一路由 + 再均衡协调。
 
     维护分区→节点的映射，节点增删时触发再均衡回调。
-    Streaming Batch Model [arXiv:2501.12407] 的 partition-level fault tolerance
+    partition 级别的故障隔离: 单个分区故障不影响其他分区
     依赖每个分区独立的 lineage，再均衡时仅重建受影响分区。
     """
 

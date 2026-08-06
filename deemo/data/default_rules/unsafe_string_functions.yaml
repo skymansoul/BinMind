@@ -1,0 +1,31 @@
+# Unsafe string functions — gets, strcpy, strcat, sprintf, scanf, etc.
+# The has_length_check condition reduces noise when a strlen guard is present upstream.
+
+id: unsafe-strcpy-no-bound-check
+name: 不安全字符串拷贝缺少边界检查
+severity: high
+description: |
+  检测到对 strcpy/strcat/sprintf/gets 等函数的使用未配合长度校验，
+  容易导致栈/堆缓冲区溢出。
+cwe: CWE-120
+tags:
+  - buffer-overflow
+  - unsafe-function
+conditions:
+  - field: dangerous_functions
+    operator: contains_any
+    value:
+      - strcpy
+      - strcat
+      - sprintf
+      - gets
+      - scanf
+  - field: has_length_check
+    operator: equals
+    value: false
+actions:
+  - type: report
+    parameters:
+      message: "发现未做长度校验的字符串函数，建议替换为 strncpy/snprintf/fgets"
+      suggestion: "使用 strncpy(dest, src, sizeof(dest)-1) 或 snprintf"
+      cwe: CWE-120

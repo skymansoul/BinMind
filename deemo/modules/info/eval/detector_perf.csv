@@ -1,0 +1,6 @@
+Detector,Findings,Time_ms,Method
+Heap Overflow,4,0.1,AC3-v1.0 (Allocation-Copy Consistency Check)
+UAF,3,0.0,UAF-CausalChain-v1.0
+Format String,3,0.0,FormatString-DataFlow-v1.0
+Stack Overflow,2,0.0,StackOverflow-CanaryInteraction-v1.0
+Integer Overflow,3,0.0,IntOverflow-Constraint-v2.0

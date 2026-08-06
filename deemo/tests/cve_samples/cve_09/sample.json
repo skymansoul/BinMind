@@ -1,0 +1,7 @@
+{
+  "cve_id": "CVE-2023-44487",
+  "vuln_type": "use_after_scope",
+  "description": "Dangling stack reference via deferred work",
+  "expected_count": 1,
+  "compile_cmd": "gcc -o sample sample.c -no-pie -fno-stack-protector"
+}

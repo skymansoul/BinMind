@@ -1,0 +1,12 @@
+[
+  {
+    "module_name": "string_unobfuscator",
+    "version_id": "00e6addcaba7",
+    "merkle_root": "00e6addcaba760afce1d12cceff924a8e76094890592bc0b62761f09226309aa",
+    "leaf_count": 3,
+    "timestamp": 1785833806.2287235,
+    "semver": "0.1.0",
+    "prev_version_id": "",
+    "bump": "none"
+  }
+]

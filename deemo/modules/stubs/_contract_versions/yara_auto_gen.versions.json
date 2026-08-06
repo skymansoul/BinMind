@@ -1,0 +1,12 @@
+[
+  {
+    "module_name": "yara_auto_gen",
+    "version_id": "0a3c732eba2f",
+    "merkle_root": "0a3c732eba2f06d13a5b3556bc13a32702d062adc62466445e7f999b1ba94232",
+    "leaf_count": 1,
+    "timestamp": 1785833806.2306392,
+    "semver": "0.1.0",
+    "prev_version_id": "",
+    "bump": "none"
+  }
+]

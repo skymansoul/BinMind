@@ -1,0 +1,7 @@
+{
+  "cve_id": "CVE-2023-3269",
+  "vuln_type": "uaf",
+  "description": "Linux kernel UAF in io_uring",
+  "expected_count": 1,
+  "compile_cmd": "gcc -o sample sample.c -no-pie -fno-stack-protector"
+}

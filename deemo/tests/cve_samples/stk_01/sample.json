@@ -1,0 +1,7 @@
+{
+  "cve_id": "CVE-2024-1111",
+  "vuln_type": "stack_overflow",
+  "description": "Stack overflow via oversized input",
+  "expected_count": 1,
+  "compile_cmd": "gcc -o sample sample.c -no-pie -fno-stack-protector"
+}

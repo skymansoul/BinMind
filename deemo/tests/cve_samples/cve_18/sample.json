@@ -1,0 +1,7 @@
+{
+  "cve_id": "CVE-2023-38545",
+  "vuln_type": "heap_overflow",
+  "description": "curl SOCKS5 heap overflow",
+  "expected_count": 1,
+  "compile_cmd": "gcc -o sample sample.c -no-pie -fno-stack-protector"
+}

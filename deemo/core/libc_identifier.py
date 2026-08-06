@@ -1,21 +1,22 @@
 """
-libc 版本识别 —— 从二进制中提取 libc 指纹并匹配版本。
+libc version identification: extracts libc fingerprints from binaries and
+matches against known version databases.
 
-通过提取二进制 .rodata 中的 GNU 版本字符串、__libc_start_main 特征字节序列
-和 .gnu.version_r 段中的符号版本需求，与已知 libc 签名数据库比对。
-支持离线（本地 fingerprint DB）和在线（libc.rip / niklasb/libc-database）模式。
+Extracts GNU version strings from .rodata, __libc_start_main byte signatures,
+and .gnu.version_r symbol version requirements. Supports offline (local
+fingerprint DB) and online (libc.rip / niklasb/libc-database) modes.
 
-当前实现采用多层回退策略:
-  1. 提取 GNU C Library 版本字符串 (如 "GNU C Library (Ubuntu GLIBC 2.31-0ubuntu9)")
-  2. 哈希关键函数的前 N 字节作为指纹 → 在预置数据库中匹配
-  3. 在线 API 查询（需网络）
+Multi-tier fallback:
+  1. Extract GNU C Library version string (e.g., "Ubuntu GLIBC 2.31-0ubuntu9")
+  2. Hash first N bytes of key functions as fingerprint -> match against preset DB
+  3. Online API query (requires network)
 
-创新点: 结合编译时字符串指纹和运行时 _IO_2_1_stdin_ 结构体偏移特征，
-比单一字符串匹配更健壮地处理 stripped 二进制和不完整符号表。
+Combines compile-time string fingerprints with runtime _IO_2_1_stdin_ struct
+offset features for robustness against stripped binaries and incomplete symtabs.
 
-参考:
-  - niklasb/libc-database (GitHub), "libc-database: Build a database of libc offsets"
-  - Marcelllo et al., 2021, DFRWS EU, "libc identification for forensic triage"
+References:
+  - niklasb/libc-database (GitHub)
+  - Marcelllo et al., 2021, DFRWS EU
 """
 
 from __future__ import annotations
@@ -91,17 +92,14 @@ def identify_libc(path: str) -> Dict[str, Any]:
     if not os.path.isfile(path):
         return result
 
-    # 1. 提取链接的共享库列表
     result['linked_libs'] = _extract_needed_libs(path)
 
-    # 2. 从二进制字符串中匹配 GNU 版本字符串
     version_str, confidence = _extract_version_string(path)
     if version_str:
         result['version'] = version_str
         result['confidence'] = confidence
         result['source'] = 'string'
 
-        # 匹配发行版
         for sig, info in _DISTRO_SIGNATURES.items():
             if sig.lower() in version_str.lower():
                 result['distro'] = info.get('distro', '')
@@ -109,11 +107,9 @@ def identify_libc(path: str) -> Dict[str, Any]:
                     result['version'] = info['version']
                 break
 
-    # 3. 若版本已知，尝试获取关键符号偏移
     if result['version']:
         result['symbols'] = _lookup_symbols(path, result['version'])
 
-    # 4. 系统 libc 回退
     if not result['symbols']:
         _log.debug("No libc symbols from fingerprint, trying system libc")
         result['symbols'] = _lookup_system_libc(path)
@@ -157,7 +153,7 @@ def _extract_version_string(path: str) -> Tuple[str, float]:
     """从二进制中搜索 GNU C Library 版本字符串。"""
     try:
         with open(path, 'rb') as f:
-            data = f.read(4194304)  # 前 4MB 足够覆盖 .rodata
+            data = f.read(4194304)
 
         matches = _GNU_LIBC_PATTERN.findall(data)
         if matches:
@@ -173,7 +169,6 @@ def _extract_version_string(path: str) -> Tuple[str, float]:
     except (OSError, UnicodeDecodeError) as e:
         _log.debug("Version string extraction failed: %s", e)
 
-    # 回退: 用 strings 工具搜索
     try:
         proc = subprocess.run(
             ['strings', path], capture_output=True, text=True, timeout=15,
@@ -196,7 +191,6 @@ def _lookup_symbols(path: str, version: str) -> Dict[str, str]:
     """
     symbols: Dict[str, str] = {}
 
-    # 本地数据库查找 (若部署了 libc-database)
     local_db = os.path.expanduser('~/.binmind/libc_db.json')
     if os.path.isfile(local_db):
         try:
@@ -209,7 +203,6 @@ def _lookup_symbols(path: str, version: str) -> Dict[str, str]:
         except (json.JSONDecodeError, OSError):
             pass
 
-    # 回退到系统 libc
     if not symbols:
         symbols = _lookup_system_libc(path)
 
@@ -217,11 +210,7 @@ def _lookup_symbols(path: str, version: str) -> Dict[str, str]:
 
 
 def _lookup_system_libc(path: str) -> Dict[str, str]:
-    """
-    从系统 libc 或二进制本身的导入表中获取关键符号的相对偏移。
-
-    优先用 r2 反汇编获取 PLT 地址，再减去 libc 基址估算偏移。
-    """
+    """Resolve key symbol offsets from system libc or the binary's import table."""
     symbols: Dict[str, str] = {}
 
     try:

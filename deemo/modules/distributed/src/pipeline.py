@@ -1,6 +1,6 @@
 # 多阶段执行管线 — fan-out → process → fan-in 的通用执行模型
-# Streaming Batch Model [arXiv:2501.12407 [待验证]]: 混合批流管线，分区 → 并行处理 → 汇聚
-# WOW [arXiv:2503.13072 [待验证]]: 工作流感知调度，联合优化数据移动 + 任务调度
+# 混合批流管线: 分区 → 并行处理 → 汇聚 (fan-out / fan-in 模式)
+# 工作流感知调度: 联合优化数据移动与任务调度
 #
 # 模式支持：
 #   - sequential: stage0 → stage1 → ... 串行
@@ -61,7 +61,7 @@ class PipelineResult:
 class Pipeline:
     """有向无环图 (DAG) 管线定义。
 
-    Streaming Batch Model [arXiv:2501.12407] 的核心思想：
+    流水线设计的核心思想: 
     一个 partition = 一个独立的执行单元，各个 partition 之间无依赖可完全并行；
     每个 partition 内部是 sequential stages。此处 generalize 到任意 DAG。
     """
@@ -105,7 +105,7 @@ class PipelineExecutor:
     """管线执行器 — 默认用 ThreadPoolExecutor 本地执行。
 
     替换为 CeleryExecutor / K8sExecutor 可将管线分布到不同 worker 上。
-    WOW [arXiv:2503.13072] 的调度器即不同类型的执行器可插拔。
+    调度器可插拔: 不同类型的执行器可互换注入。
     """
 
     def execute(self, stage: Stage, input_data: Any) -> Any:

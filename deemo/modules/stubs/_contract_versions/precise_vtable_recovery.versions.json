@@ -1,0 +1,12 @@
+[
+  {
+    "module_name": "precise_vtable_recovery",
+    "version_id": "2e1cfa82b035",
+    "merkle_root": "2e1cfa82b035c26cbbbdae632cea070514eb8b773f616aaeaf668e2f0be8f10d",
+    "leaf_count": 0,
+    "timestamp": 1785833806.2281764,
+    "semver": "0.1.0",
+    "prev_version_id": "",
+    "bump": "none"
+  }
+]

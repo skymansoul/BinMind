@@ -1,0 +1,5 @@
+23:22:16 | INFO    | core.pipeline | Binary: cve_2021_22555_netfilter_stack.elf | x86-64 64-bit | size=54678
+23:22:16 | WARNING | core.decompiler | radare2 not found at radare2
+23:22:16 | INFO    | core.pipeline | Found 0 functions
+23:22:16 | INFO    | core.pipeline | Analyzing 0 functions
+23:22:16 | INFO    | core.pipeline | Pipeline done in 0.0s | 0 functions | 0 vulns

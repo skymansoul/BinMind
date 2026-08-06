@@ -1,0 +1,209 @@
+{
+  "results": [
+    {
+      "name": "CVE-001",
+      "is_heap": true,
+      "ground_truth_tp": true,
+      "findings_before": 1,
+      "findings_after": 1,
+      "filtered_out": 0,
+      "verdict": "unsafe",
+      "fp_filter_stats": {
+        "total_alloc_write_pairs": 1,
+        "provably_safe_filtered": 0,
+        "provably_unsafe_confirmed": 1,
+        "uncertain_retained": 0,
+        "fp_reduction_pct": 0.0
+      }
+    },
+    {
+      "name": "CVE-006",
+      "is_heap": true,
+      "ground_truth_tp": true,
+      "findings_before": 1,
+      "findings_after": 1,
+      "filtered_out": 0,
+      "verdict": "uncertain",
+      "fp_filter_stats": {
+        "total_alloc_write_pairs": 1,
+        "provably_safe_filtered": 0,
+        "provably_unsafe_confirmed": 0,
+        "uncertain_retained": 1,
+        "fp_reduction_pct": 0.0
+      }
+    },
+    {
+      "name": "CVE-012",
+      "is_heap": true,
+      "ground_truth_tp": true,
+      "findings_before": 1,
+      "findings_after": 1,
+      "filtered_out": 0,
+      "verdict": "uncertain",
+      "fp_filter_stats": {
+        "total_alloc_write_pairs": 1,
+        "provably_safe_filtered": 0,
+        "provably_unsafe_confirmed": 0,
+        "uncertain_retained": 1,
+        "fp_reduction_pct": 0.0
+      }
+    },
+    {
+      "name": "CVE-013",
+      "is_heap": true,
+      "ground_truth_tp": true,
+      "findings_before": 1,
+      "findings_after": 1,
+      "filtered_out": 0,
+      "verdict": "unsafe",
+      "fp_filter_stats": {
+        "total_alloc_write_pairs": 1,
+        "provably_safe_filtered": 0,
+        "provably_unsafe_confirmed": 1,
+        "uncertain_retained": 0,
+        "fp_reduction_pct": 0.0
+      }
+    },
+    {
+      "name": "CVE-014",
+      "is_heap": true,
+      "ground_truth_tp": true,
+      "findings_before": 1,
+      "findings_after": 0,
+      "filtered_out": 1,
+      "verdict": "filtered",
+      "fp_filter_stats": {
+        "total_alloc_write_pairs": 1,
+        "provably_safe_filtered": 1,
+        "provably_unsafe_confirmed": 0,
+        "uncertain_retained": 0,
+        "fp_reduction_pct": 100.0
+      }
+    },
+    {
+      "name": "SAFE-001",
+      "is_heap": true,
+      "ground_truth_tp": false,
+      "findings_before": 1,
+      "findings_after": 0,
+      "filtered_out": 1,
+      "verdict": "filtered",
+      "fp_filter_stats": {
+        "total_alloc_write_pairs": 1,
+        "provably_safe_filtered": 1,
+        "provably_unsafe_confirmed": 0,
+        "uncertain_retained": 0,
+        "fp_reduction_pct": 100.0
+      }
+    },
+    {
+      "name": "SAFE-002",
+      "is_heap": true,
+      "ground_truth_tp": false,
+      "findings_before": 1,
+      "findings_after": 0,
+      "filtered_out": 1,
+      "verdict": "filtered",
+      "fp_filter_stats": {
+        "total_alloc_write_pairs": 1,
+        "provably_safe_filtered": 1,
+        "provably_unsafe_confirmed": 0,
+        "uncertain_retained": 0,
+        "fp_reduction_pct": 100.0
+      }
+    },
+    {
+      "name": "SAFE-003",
+      "is_heap": true,
+      "ground_truth_tp": false,
+      "findings_before": 1,
+      "findings_after": 0,
+      "filtered_out": 1,
+      "verdict": "filtered",
+      "fp_filter_stats": {
+        "total_alloc_write_pairs": 4,
+        "provably_safe_filtered": 4,
+        "provably_unsafe_confirmed": 0,
+        "uncertain_retained": 0,
+        "fp_reduction_pct": 100.0
+      }
+    },
+    {
+      "name": "CVE-002",
+      "is_heap": false,
+      "ground_truth_tp": null,
+      "findings_before": 1,
+      "findings_after": 1,
+      "filtered_out": 0,
+      "verdict": "?",
+      "fp_filter_stats": {
+        "total_alloc_write_pairs": 0,
+        "provably_safe_filtered": 0,
+        "provably_unsafe_confirmed": 0,
+        "uncertain_retained": 0,
+        "fp_reduction_pct": 0.0
+      }
+    },
+    {
+      "name": "CVE-003",
+      "is_heap": false,
+      "ground_truth_tp": null,
+      "findings_before": 1,
+      "findings_after": 1,
+      "filtered_out": 0,
+      "verdict": "?",
+      "fp_filter_stats": {
+        "total_alloc_write_pairs": 0,
+        "provably_safe_filtered": 0,
+        "provably_unsafe_confirmed": 0,
+        "uncertain_retained": 0,
+        "fp_reduction_pct": 0.0
+      }
+    },
+    {
+      "name": "CVE-004",
+      "is_heap": false,
+      "ground_truth_tp": null,
+      "findings_before": 1,
+      "findings_after": 1,
+      "filtered_out": 0,
+      "verdict": "?",
+      "fp_filter_stats": {
+        "total_alloc_write_pairs": 0,
+        "provably_safe_filtered": 0,
+        "provably_unsafe_confirmed": 0,
+        "uncertain_retained": 0,
+        "fp_reduction_pct": 0.0
+      }
+    },
+    {
+      "name": "CVE-005",
+      "is_heap": false,
+      "ground_truth_tp": null,
+      "findings_before": 1,
+      "findings_after": 1,
+      "filtered_out": 0,
+      "verdict": "?",
+      "fp_filter_stats": {
+        "total_alloc_write_pairs": 0,
+        "provably_safe_filtered": 0,
+        "provably_unsafe_confirmed": 0,
+        "uncertain_retained": 0,
+        "fp_reduction_pct": 0.0
+      }
+    }
+  ],
+  "summary": {
+    "total_heap_samples": 8,
+    "true_positives_before": 5,
+    "false_positives_before": 3,
+    "true_positives_after": 4,
+    "false_positives_after": 0,
+    "fp_correctly_filtered": 3,
+    "tp_wrongly_filtered": 1,
+    "fp_reduction_pct": 100.0,
+    "tp_retention_pct": 80.0,
+    "precision_before": 0.625,
+    "precision_after": 1.0
+  }
+}

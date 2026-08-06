@@ -1,0 +1,12 @@
+[
+  {
+    "module_name": "stub_gradual_orchestrator",
+    "version_id": "fb22a44d7edd",
+    "merkle_root": "fb22a44d7edd7b4b213900956e0cae6bb2e1c5a320941f18725ec5aaaaf6114f",
+    "leaf_count": 6,
+    "timestamp": 1785794219.239353,
+    "semver": "0.1.0",
+    "prev_version_id": "",
+    "bump": "none"
+  }
+]

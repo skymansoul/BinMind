@@ -1,0 +1,12 @@
+[
+  {
+    "module_name": "stub_contract_merkle",
+    "version_id": "72c8485c2085",
+    "merkle_root": "72c8485c2085d35b26116ad532ba706c0768ab6a3ae661587259c4f351372206",
+    "leaf_count": 6,
+    "timestamp": 1785794219.2385526,
+    "semver": "0.1.0",
+    "prev_version_id": "",
+    "bump": "none"
+  }
+]

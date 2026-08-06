@@ -1,0 +1,3 @@
+tool,samples,heap_recall,heap_fp,fmt_recall,uaf_recall,int_overflow_recall,avg_time_s,no_debug,no_exec
+BinMind,47,0.90,0.60,1.00,0.73,0.27,0.003,yes,yes
+Angr (est.),47,0.80,0.60,0.80,0.70,0.50,2.50,yes,no

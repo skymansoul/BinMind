@@ -1,0 +1,5 @@
+/* UAF error path */
+#include <stdio.h>
+#include <stdlib.h>
+void cleanup(char *p) { free(p); }
+int main() { char *buf=malloc(128); cleanup(buf); puts(buf); return 0; }

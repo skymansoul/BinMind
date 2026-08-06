@@ -1,0 +1,26 @@
+{
+  "BinMind": {
+    "avg_det": 1.2,
+    "avg_time": 1.8,
+    "coverage": 100,
+    "total_detections": 80
+  },
+  "Angr": {
+    "avg_det": 1.2,
+    "avg_time": 56.3,
+    "coverage": 64,
+    "total_detections": 79
+  },
+  "QEMU": {
+    "avg_det": 0.0,
+    "avg_time": 0.0,
+    "coverage": 0,
+    "total_detections": 0
+  },
+  "Ghidra": {
+    "avg_det": 2.3,
+    "avg_time": 61.7,
+    "coverage": 78,
+    "total_detections": 147
+  }
+}

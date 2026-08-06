@@ -1,0 +1,126 @@
+{
+  "total": 20,
+  "detected": 8,
+  "results": [
+    {
+      "sample": "CVE-2024-001_heap_overflow_O0.exe",
+      "type": "overflow",
+      "detected": true,
+      "elapsed_ms": 66.34570000460371
+    },
+    {
+      "sample": "CVE-2024-001_heap_overflow_O2.exe",
+      "type": "overflow",
+      "detected": true,
+      "elapsed_ms": 61.23659998411313
+    },
+    {
+      "sample": "CVE-2024-002_uaf_O0.exe",
+      "type": "unknown",
+      "detected": true,
+      "elapsed_ms": 61.1355000291951
+    },
+    {
+      "sample": "CVE-2024-002_uaf_O2.exe",
+      "type": "unknown",
+      "detected": true,
+      "elapsed_ms": 70.54169999901205
+    },
+    {
+      "sample": "CVE-2024-003_format_string_O0.exe",
+      "type": "string",
+      "detected": false,
+      "elapsed_ms": 61.69859995134175
+    },
+    {
+      "sample": "CVE-2024-003_format_string_O2.exe",
+      "type": "string",
+      "detected": false,
+      "elapsed_ms": 65.38619997445494
+    },
+    {
+      "sample": "CVE-2024-004_stack_overflow_O0.exe",
+      "type": "overflow",
+      "detected": true,
+      "elapsed_ms": 67.63489998411387
+    },
+    {
+      "sample": "CVE-2024-004_stack_overflow_O2.exe",
+      "type": "overflow",
+      "detected": true,
+      "elapsed_ms": 64.48240001918748
+    },
+    {
+      "sample": "CVE-2024-005_double_free_O0.exe",
+      "type": "free",
+      "detected": false,
+      "elapsed_ms": 64.7148999851197
+    },
+    {
+      "sample": "CVE-2024-005_double_free_O2.exe",
+      "type": "free",
+      "detected": false,
+      "elapsed_ms": 71.7902000178583
+    },
+    {
+      "sample": "CVE-2024-006_off_by_one_O0.exe",
+      "type": "by_one",
+      "detected": false,
+      "elapsed_ms": 64.89949999377131
+    },
+    {
+      "sample": "CVE-2024-006_off_by_one_O2.exe",
+      "type": "by_one",
+      "detected": false,
+      "elapsed_ms": 63.59299999894574
+    },
+    {
+      "sample": "CVE-2024-007_null_deref_O0.exe",
+      "type": "deref",
+      "detected": false,
+      "elapsed_ms": 57.31599999126047
+    },
+    {
+      "sample": "CVE-2024-007_null_deref_O2.exe",
+      "type": "deref",
+      "detected": false,
+      "elapsed_ms": 58.91779996454716
+    },
+    {
+      "sample": "CVE-2024-008_int_overflow_O0.exe",
+      "type": "overflow",
+      "detected": true,
+      "elapsed_ms": 61.404300038702786
+    },
+    {
+      "sample": "CVE-2024-008_int_overflow_O2.exe",
+      "type": "overflow",
+      "detected": true,
+      "elapsed_ms": 62.133100000210106
+    },
+    {
+      "sample": "CVE-2024-009_use_after_scope_O0.exe",
+      "type": "after_scope",
+      "detected": false,
+      "elapsed_ms": 60.41249999543652
+    },
+    {
+      "sample": "CVE-2024-009_use_after_scope_O2.exe",
+      "type": "after_scope",
+      "detected": false,
+      "elapsed_ms": 59.159900003578514
+    },
+    {
+      "sample": "CVE-2024-010_uninit_mem_O0.exe",
+      "type": "mem",
+      "detected": false,
+      "elapsed_ms": 59.910800016950816
+    },
+    {
+      "sample": "CVE-2024-010_uninit_mem_O2.exe",
+      "type": "mem",
+      "detected": false,
+      "elapsed_ms": 74.09479998750612
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+{
+  "cve": "FMT-11",
+  "vuln_type": "format_string",
+  "vuln_count": 1
+}

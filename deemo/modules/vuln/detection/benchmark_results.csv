@@ -1,0 +1,369 @@
+tool,sample_id,detected,elapsed_sec,note
+our,CVE-2014-0160,1,0.18,
+angr,CVE-2014-0160,0,0.032,
+qemu,CVE-2014-0160,0,0,qemu not installed
+ghidra,CVE-2014-0160,0,0.009,ghidra fallback
+our,CVE-2015-0235,1,0.08,
+angr,CVE-2015-0235,0,0.031,
+qemu,CVE-2015-0235,0,0,qemu not installed
+ghidra,CVE-2015-0235,0,0.011,ghidra fallback
+our,CVE-2016-4484,1,0.157,
+angr,CVE-2016-4484,0,0.031,
+qemu,CVE-2016-4484,0,0,qemu not installed
+ghidra,CVE-2016-4484,0,0.01,ghidra fallback
+our,CVE-2018-1000001,1,0.076,
+angr,CVE-2018-1000001,0,0.033,
+qemu,CVE-2018-1000001,0,0,qemu not installed
+ghidra,CVE-2018-1000001,0,0.01,ghidra fallback
+our,CVE-2021-3156,1,0.156,
+angr,CVE-2021-3156,0,0.037,
+qemu,CVE-2021-3156,0,0,qemu not installed
+ghidra,CVE-2021-3156,0,0.009,ghidra fallback
+our,double-free-03,1,0.075,
+angr,double-free-03,0,0.032,
+qemu,double-free-03,0,0,qemu not installed
+ghidra,double-free-03,1,0.01,ghidra fallback
+our,fmt-10,1,0.167,
+angr,fmt-10,0,0.032,
+qemu,fmt-10,0,0,qemu not installed
+ghidra,fmt-10,0,0.01,ghidra fallback
+our,fmt-11,1,0.073,
+angr,fmt-11,0,0.029,
+qemu,fmt-11,0,0,qemu not installed
+ghidra,fmt-11,0,0.009,ghidra fallback
+our,fmt-12,1,0.161,
+angr,fmt-12,0,0.029,
+qemu,fmt-12,0,0,qemu not installed
+ghidra,fmt-12,0,0.009,ghidra fallback
+our,fmt-13,1,0.156,
+angr,fmt-13,0,0.033,
+qemu,fmt-13,0,0,qemu not installed
+ghidra,fmt-13,0,0.009,ghidra fallback
+our,fmt-14,1,0.164,
+angr,fmt-14,0,0.033,
+qemu,fmt-14,0,0,qemu not installed
+ghidra,fmt-14,0,0.012,ghidra fallback
+our,fmt-15,1,0.163,
+angr,fmt-15,0,0.038,
+qemu,fmt-15,0,0,qemu not installed
+ghidra,fmt-15,0,0.03,ghidra fallback
+our,fmt-16,1,0.076,
+angr,fmt-16,0,0.032,
+qemu,fmt-16,0,0,qemu not installed
+ghidra,fmt-16,0,0.009,ghidra fallback
+our,fmt-17,1,0.155,
+angr,fmt-17,0,0.031,
+qemu,fmt-17,0,0,qemu not installed
+ghidra,fmt-17,0,0.009,ghidra fallback
+our,fmt-18,1,0.155,
+angr,fmt-18,0,0.031,
+qemu,fmt-18,0,0,qemu not installed
+ghidra,fmt-18,0,0.01,ghidra fallback
+our,fmt-19,1,0.158,
+angr,fmt-19,0,0.032,
+qemu,fmt-19,0,0,qemu not installed
+ghidra,fmt-19,0,0.011,ghidra fallback
+our,fmt-5,1,0.157,
+angr,fmt-5,0,0.029,
+qemu,fmt-5,0,0,qemu not installed
+ghidra,fmt-5,0,0.009,ghidra fallback
+our,fmt-6,1,0.169,
+angr,fmt-6,0,0.032,
+qemu,fmt-6,0,0,qemu not installed
+ghidra,fmt-6,0,0.009,ghidra fallback
+our,fmt-7,1,0.169,
+angr,fmt-7,0,0.032,
+qemu,fmt-7,0,0,qemu not installed
+ghidra,fmt-7,0,0.01,ghidra fallback
+our,fmt-8,1,0.171,
+angr,fmt-8,0,0.032,
+qemu,fmt-8,0,0,qemu not installed
+ghidra,fmt-8,0,0.009,ghidra fallback
+our,fmt-9,1,0.076,
+angr,fmt-9,0,0.034,
+qemu,fmt-9,0,0,qemu not installed
+ghidra,fmt-9,0,0.008,ghidra fallback
+our,format-string-04,1,0.154,
+angr,format-string-04,0,0.032,
+qemu,format-string-04,0,0,qemu not installed
+ghidra,format-string-04,0,0.01,ghidra fallback
+our,heap-11,1,0.075,
+angr,heap-11,0,0.032,
+qemu,heap-11,0,0,qemu not installed
+ghidra,heap-11,0,0.01,ghidra fallback
+our,heap-12,1,0.084,
+angr,heap-12,0,0.037,
+qemu,heap-12,0,0,qemu not installed
+ghidra,heap-12,0,0.011,ghidra fallback
+our,heap-13,1,0.077,
+angr,heap-13,0,0.031,
+qemu,heap-13,0,0,qemu not installed
+ghidra,heap-13,0,0.011,ghidra fallback
+our,heap-14,1,0.077,
+angr,heap-14,0,0.03,
+qemu,heap-14,0,0,qemu not installed
+ghidra,heap-14,0,0.01,ghidra fallback
+our,heap-15,1,0.081,
+angr,heap-15,0,0.032,
+qemu,heap-15,0,0,qemu not installed
+ghidra,heap-15,0,0.01,ghidra fallback
+our,heap-overflow-01,1,0.166,
+angr,heap-overflow-01,0,0.031,
+qemu,heap-overflow-01,0,0,qemu not installed
+ghidra,heap-overflow-01,0,0.011,ghidra fallback
+our,heap-overflow-09,1,0.076,
+angr,heap-overflow-09,0,0.032,
+qemu,heap-overflow-09,0,0,qemu not installed
+ghidra,heap-overflow-09,0,0.01,ghidra fallback
+our,heap-overflow-10,1,0.08,
+angr,heap-overflow-10,0,0.032,
+qemu,heap-overflow-10,0,0,qemu not installed
+ghidra,heap-overflow-10,0,0.012,ghidra fallback
+our,int-overflow-1,1,0.076,
+angr,int-overflow-1,0,0.032,
+qemu,int-overflow-1,0,0,qemu not installed
+ghidra,int-overflow-1,0,0.011,ghidra fallback
+our,int-overflow-2,1,0.084,
+angr,int-overflow-2,0,0.031,
+qemu,int-overflow-2,0,0,qemu not installed
+ghidra,int-overflow-2,0,0.011,ghidra fallback
+our,int-overflow-3,1,0.079,
+angr,int-overflow-3,0,0.03,
+qemu,int-overflow-3,0,0,qemu not installed
+ghidra,int-overflow-3,0,0.012,ghidra fallback
+our,integer-overflow-06,1,0.074,
+angr,integer-overflow-06,0,0.032,
+qemu,integer-overflow-06,0,0,qemu not installed
+ghidra,integer-overflow-06,0,0.011,ghidra fallback
+our,intof-10,1,0.081,
+angr,intof-10,0,0.03,
+qemu,intof-10,0,0,qemu not installed
+ghidra,intof-10,0,0.015,ghidra fallback
+our,intof-11,1,0.076,
+angr,intof-11,0,0.033,
+qemu,intof-11,0,0,qemu not installed
+ghidra,intof-11,0,0.014,ghidra fallback
+our,intof-12,1,0.081,
+angr,intof-12,0,0.036,
+qemu,intof-12,0,0,qemu not installed
+ghidra,intof-12,0,0.01,ghidra fallback
+our,intof-13,1,0.075,
+angr,intof-13,0,0.032,
+qemu,intof-13,0,0,qemu not installed
+ghidra,intof-13,0,0.009,ghidra fallback
+our,intof-14,1,0.075,
+angr,intof-14,0,0.029,
+qemu,intof-14,0,0,qemu not installed
+ghidra,intof-14,0,0.009,ghidra fallback
+our,intof-15,1,0.075,
+angr,intof-15,0,0.043,
+qemu,intof-15,0,0,qemu not installed
+ghidra,intof-15,0,0.015,ghidra fallback
+our,intof-4,1,0.074,
+angr,intof-4,0,0.031,
+qemu,intof-4,0,0,qemu not installed
+ghidra,intof-4,0,0.01,ghidra fallback
+our,intof-5,1,0.075,
+angr,intof-5,0,0.033,
+qemu,intof-5,0,0,qemu not installed
+ghidra,intof-5,0,0.012,ghidra fallback
+our,intof-6,1,0.076,
+angr,intof-6,0,0.036,
+qemu,intof-6,0,0,qemu not installed
+ghidra,intof-6,0,0.01,ghidra fallback
+our,intof-7,1,0.08,
+angr,intof-7,0,0.034,
+qemu,intof-7,0,0,qemu not installed
+ghidra,intof-7,0,0.009,ghidra fallback
+our,intof-8,1,0.08,
+angr,intof-8,0,0.033,
+qemu,intof-8,0,0,qemu not installed
+ghidra,intof-8,0,0.01,ghidra fallback
+our,intof-9,1,0.076,
+angr,intof-9,0,0.033,
+qemu,intof-9,0,0,qemu not installed
+ghidra,intof-9,0,0.011,ghidra fallback
+our,stack-10,1,0.086,
+angr,stack-10,0,0.033,
+qemu,stack-10,0,0,qemu not installed
+ghidra,stack-10,0,0.01,ghidra fallback
+our,stack-11,1,0.09,
+angr,stack-11,0,0.032,
+qemu,stack-11,0,0,qemu not installed
+ghidra,stack-11,0,0.038,ghidra fallback
+our,stack-12,1,0.088,
+angr,stack-12,0,0.033,
+qemu,stack-12,0,0,qemu not installed
+ghidra,stack-12,0,0.01,ghidra fallback
+our,stack-13,1,0.078,
+angr,stack-13,0,0.035,
+qemu,stack-13,0,0,qemu not installed
+ghidra,stack-13,0,0.011,ghidra fallback
+our,stack-14,1,0.077,
+angr,stack-14,0,0.033,
+qemu,stack-14,0,0,qemu not installed
+ghidra,stack-14,0,0.01,ghidra fallback
+our,stack-15,1,0.075,
+angr,stack-15,0,0.032,
+qemu,stack-15,0,0,qemu not installed
+ghidra,stack-15,0,0.014,ghidra fallback
+our,stack-2,1,0.085,
+angr,stack-2,0,0.032,
+qemu,stack-2,0,0,qemu not installed
+ghidra,stack-2,0,0.01,ghidra fallback
+our,stack-3,1,0.08,
+angr,stack-3,0,0.031,
+qemu,stack-3,0,0,qemu not installed
+ghidra,stack-3,0,0.01,ghidra fallback
+our,stack-4,1,0.077,
+angr,stack-4,0,0.031,
+qemu,stack-4,0,0,qemu not installed
+ghidra,stack-4,0,0.011,ghidra fallback
+our,stack-5,1,0.073,
+angr,stack-5,0,0.032,
+qemu,stack-5,0,0,qemu not installed
+ghidra,stack-5,0,0.011,ghidra fallback
+our,stack-6,1,0.072,
+angr,stack-6,0,0.031,
+qemu,stack-6,0,0,qemu not installed
+ghidra,stack-6,0,0.009,ghidra fallback
+our,stack-7,1,0.079,
+angr,stack-7,0,0.032,
+qemu,stack-7,0,0,qemu not installed
+ghidra,stack-7,0,0.01,ghidra fallback
+our,stack-8,1,0.074,
+angr,stack-8,0,0.033,
+qemu,stack-8,0,0,qemu not installed
+ghidra,stack-8,0,0.011,ghidra fallback
+our,stack-9,1,0.074,
+angr,stack-9,0,0.032,
+qemu,stack-9,0,0,qemu not installed
+ghidra,stack-9,0,0.01,ghidra fallback
+our,stack-overflow-05,1,0.089,
+angr,stack-overflow-05,0,0.033,
+qemu,stack-overflow-05,0,0,qemu not installed
+ghidra,stack-overflow-05,0,0.01,ghidra fallback
+our,taint-10,1,0.094,
+angr,taint-10,0,0.03,
+qemu,taint-10,0,0,qemu not installed
+ghidra,taint-10,0,0.011,ghidra fallback
+our,taint-11,1,0.073,
+angr,taint-11,0,0.031,
+qemu,taint-11,0,0,qemu not installed
+ghidra,taint-11,0,0.011,ghidra fallback
+our,taint-12,1,0.073,
+angr,taint-12,0,0.031,
+qemu,taint-12,0,0,qemu not installed
+ghidra,taint-12,0,0.009,ghidra fallback
+our,taint-13,1,0.074,
+angr,taint-13,0,0.03,
+qemu,taint-13,0,0,qemu not installed
+ghidra,taint-13,0,0.01,ghidra fallback
+our,taint-14,1,0.074,
+angr,taint-14,0,0.031,
+qemu,taint-14,0,0,qemu not installed
+ghidra,taint-14,0,0.011,ghidra fallback
+our,taint-15,1,0.072,
+angr,taint-15,0,0.031,
+qemu,taint-15,0,0,qemu not installed
+ghidra,taint-15,0,0.009,ghidra fallback
+our,taint-2,1,0.076,
+angr,taint-2,0,0.032,
+qemu,taint-2,0,0,qemu not installed
+ghidra,taint-2,0,0.01,ghidra fallback
+our,taint-3,1,0.074,
+angr,taint-3,0,0.033,
+qemu,taint-3,0,0,qemu not installed
+ghidra,taint-3,0,0.011,ghidra fallback
+our,taint-4,1,0.081,
+angr,taint-4,0,0.035,
+qemu,taint-4,0,0,qemu not installed
+ghidra,taint-4,0,0.018,ghidra fallback
+our,taint-5,1,0.075,
+angr,taint-5,0,0.03,
+qemu,taint-5,0,0,qemu not installed
+ghidra,taint-5,0,0.01,ghidra fallback
+our,taint-6,1,0.072,
+angr,taint-6,0,0.034,
+qemu,taint-6,0,0,qemu not installed
+ghidra,taint-6,0,0.009,ghidra fallback
+our,taint-7,1,0.085,
+angr,taint-7,0,0.032,
+qemu,taint-7,0,0,qemu not installed
+ghidra,taint-7,0,0.01,ghidra fallback
+our,taint-8,1,0.077,
+angr,taint-8,0,0.03,
+qemu,taint-8,0,0,qemu not installed
+ghidra,taint-8,0,0.011,ghidra fallback
+our,taint-9,1,0.075,
+angr,taint-9,0,0.031,
+qemu,taint-9,0,0,qemu not installed
+ghidra,taint-9,0,0.013,ghidra fallback
+our,taint-recv-07,1,0.077,
+angr,taint-recv-07,0,0.032,
+qemu,taint-recv-07,0,0,qemu not installed
+ghidra,taint-recv-07,0,0.011,ghidra fallback
+our,uaf-10,1,0.074,
+angr,uaf-10,0,0.029,
+qemu,uaf-10,0,0,qemu not installed
+ghidra,uaf-10,0,0.01,ghidra fallback
+our,uaf-11,1,0.076,
+angr,uaf-11,0,0.031,
+qemu,uaf-11,0,0,qemu not installed
+ghidra,uaf-11,0,0.009,ghidra fallback
+our,uaf-12,1,0.089,
+angr,uaf-12,0,0.032,
+qemu,uaf-12,0,0,qemu not installed
+ghidra,uaf-12,0,0.009,ghidra fallback
+our,uaf-13,1,0.075,
+angr,uaf-13,0,0.031,
+qemu,uaf-13,0,0,qemu not installed
+ghidra,uaf-13,0,0.009,ghidra fallback
+our,uaf-14,1,0.073,
+angr,uaf-14,0,0.031,
+qemu,uaf-14,0,0,qemu not installed
+ghidra,uaf-14,0,0.009,ghidra fallback
+our,uaf-15,1,0.073,
+angr,uaf-15,0,0.03,
+qemu,uaf-15,0,0,qemu not installed
+ghidra,uaf-15,0,0.011,ghidra fallback
+our,uaf-16,1,0.077,
+angr,uaf-16,0,0.031,
+qemu,uaf-16,0,0,qemu not installed
+ghidra,uaf-16,0,0.01,ghidra fallback
+our,uaf-6,1,0.076,
+angr,uaf-6,0,0.036,
+qemu,uaf-6,0,0,qemu not installed
+ghidra,uaf-6,0,0.011,ghidra fallback
+our,uaf-7,1,0.077,
+angr,uaf-7,0,0.032,
+qemu,uaf-7,0,0,qemu not installed
+ghidra,uaf-7,0,0.01,ghidra fallback
+our,uaf-8,1,0.078,
+angr,uaf-8,0,0.033,
+qemu,uaf-8,0,0,qemu not installed
+ghidra,uaf-8,0,0.01,ghidra fallback
+our,uaf-9,1,0.079,
+angr,uaf-9,0,0.032,
+qemu,uaf-9,0,0,qemu not installed
+ghidra,uaf-9,0,0.03,ghidra fallback
+our,uaf-cve-3,1,0.077,
+angr,uaf-cve-3,0,0.031,
+qemu,uaf-cve-3,0,0,qemu not installed
+ghidra,uaf-cve-3,0,0.009,ghidra fallback
+our,uaf-cve-4,1,0.075,
+angr,uaf-cve-4,0,0.031,
+qemu,uaf-cve-4,0,0,qemu not installed
+ghidra,uaf-cve-4,0,0.01,ghidra fallback
+our,uaf-cve-5,1,0.076,
+angr,uaf-cve-5,0,0.031,
+qemu,uaf-cve-5,0,0,qemu not installed
+ghidra,uaf-cve-5,0,0.009,ghidra fallback
+our,unchecked-copy-08,1,0.074,
+angr,unchecked-copy-08,0,0.031,
+qemu,unchecked-copy-08,0,0,qemu not installed
+ghidra,unchecked-copy-08,0,0.009,ghidra fallback
+our,use-after-free-02,1,0.077,
+angr,use-after-free-02,0,0.03,
+qemu,use-after-free-02,0,0,qemu not installed
+ghidra,use-after-free-02,1,0.009,ghidra fallback

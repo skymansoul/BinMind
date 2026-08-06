@@ -1,0 +1,10 @@
+{
+  "engines": ["internal", "angr", "ghidra", "qemu"],
+  "timeout_per_sample_s": 120,
+  "samples_dir": "tests/regression/samples",
+  "output_dir": "tests/regression/results",
+  "groups": {
+    "unpacked": {"compile_flags": "-g -O0 -no-pie -fno-stack-protector"},
+    "packed": {"compile_flags": "-g -O0 -no-pie -fno-stack-protector", "packer": "upx"}
+  }
+}

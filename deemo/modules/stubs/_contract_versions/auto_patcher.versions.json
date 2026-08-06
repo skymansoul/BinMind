@@ -1,0 +1,12 @@
+[
+  {
+    "module_name": "auto_patcher",
+    "version_id": "30d815c31c44",
+    "merkle_root": "30d815c31c4421441a7e318ec72025e780ba3fd5ad972aabe432c86200a57dd7",
+    "leaf_count": 1,
+    "timestamp": 1785833806.2206662,
+    "semver": "0.1.0",
+    "prev_version_id": "",
+    "bump": "none"
+  }
+]

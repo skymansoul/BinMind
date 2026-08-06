@@ -1,0 +1,12 @@
+[
+  {
+    "module_name": "type_inferrer",
+    "version_id": "39f19805869e",
+    "merkle_root": "39f19805869e4e571522dd270f11dd71ad91d36c8ab08c1b58d1c986adf50def",
+    "leaf_count": 2,
+    "timestamp": 1785833806.2300162,
+    "semver": "0.1.0",
+    "prev_version_id": "",
+    "bump": "none"
+  }
+]

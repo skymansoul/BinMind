@@ -1,0 +1,58 @@
+[
+  {
+    "cve": "CVE-2014-0160",
+    "type": "heap_overflow",
+    "detected": false,
+    "confidence": 0.0,
+    "verdict": "not_detected"
+  },
+  {
+    "cve": "CVE-2015-3864",
+    "type": "heap_overflow",
+    "detected": false,
+    "confidence": 0.0,
+    "verdict": "not_detected"
+  },
+  {
+    "cve": "CVE-2015-5677",
+    "type": "format_string",
+    "detected": true,
+    "confidence": 0.6,
+    "verdict": "potential"
+  },
+  {
+    "cve": "CVE-2012-0809",
+    "type": "format_string",
+    "detected": true,
+    "confidence": 0.6,
+    "verdict": "potential"
+  },
+  {
+    "cve": "CVE-2018-12020",
+    "type": "format_string",
+    "detected": true,
+    "confidence": 0.6,
+    "verdict": "potential"
+  },
+  {
+    "cve": "CVE-2019-2215",
+    "type": "uaf",
+    "detected": false,
+    "confidence": 0.35,
+    "verdict": "possible"
+  },
+  {
+    "cve": "CVE-2020-0022",
+    "type": "uaf",
+    "detected": false,
+    "confidence": 0.1,
+    "verdict": "not_detected"
+  },
+  {
+    "cve": "CVE-2021-34866",
+    "type": "uaf",
+    "detected": false,
+    "confidence": 0.35,
+    "verdict": "possible"
+  }
+]

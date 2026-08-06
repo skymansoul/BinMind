@@ -51,7 +51,6 @@ def run_symbolic(binary_path: str, target_func: str = None,
             try:
                 addr = proj.loader.find_symbol(target_func)
                 if addr is None:
-                    # search by name in functions
                     for f in proj.kb.functions.values():
                         if f.name == target_func:
                             addr = f.addr
@@ -104,7 +103,6 @@ def find_buffer_overflow(binary_path: str, func_name: str) -> Dict:
             if func.name == func_name:
                 for block in func.blocks:
                     for insn in block.capstone.insns:
-                        # look for memcpy, strcpy, gets, sprintf patterns
                         if insn.mnemonic == 'call':
                             target_addr = insn.operands[0].imm
                             callee = cfg.functions.get(target_addr)

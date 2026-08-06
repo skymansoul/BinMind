@@ -1,0 +1,12 @@
+[
+  {
+    "module_name": "knowledge_graph",
+    "version_id": "139950b60366",
+    "merkle_root": "139950b60366e5748713df4fde381288cf0b6de57e0f3fb48dc421277ad7db62",
+    "leaf_count": 2,
+    "timestamp": 1785833806.2261708,
+    "semver": "0.1.0",
+    "prev_version_id": "",
+    "bump": "none"
+  }
+]

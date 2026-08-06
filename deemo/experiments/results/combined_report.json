@@ -1,0 +1,29 @@
+{
+  "innovation_points": {
+    "heap_overflow": {
+      "fp_reduction": "100%",
+      "tp_retention": "80%",
+      "status": "SATURATED"
+    },
+    "uaf": {
+      "detection": "100%",
+      "fp_filter": "67%",
+      "status": "ACTIVE"
+    },
+    "format_string": {
+      "detection": "40-100%",
+      "fp_filter": "100%",
+      "status": "ACTIVE"
+    },
+    "integer_overflow": {
+      "detection": "67%",
+      "fp_filter": "100%",
+      "status": "BASELINE_NEEDS_DEEPENING"
+    }
+  },
+  "samples": {
+    "total_c_files": 34,
+    "compiled_binaries": 62,
+    "with_makefiles": 42
+  }
+}

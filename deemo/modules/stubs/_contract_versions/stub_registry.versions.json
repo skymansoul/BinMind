@@ -1,0 +1,12 @@
+[
+  {
+    "module_name": "stub_registry",
+    "version_id": "8cbc591c0678",
+    "merkle_root": "8cbc591c06786f96c1a9b17a9e0b9b04535967b0f87af13d4efcfd4fa6b9d837",
+    "leaf_count": 1,
+    "timestamp": 1785794219.2404704,
+    "semver": "0.1.0",
+    "prev_version_id": "",
+    "bump": "none"
+  }
+]

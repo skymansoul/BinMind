@@ -77,30 +77,48 @@ def _get_strings_text(strings: list) -> str:
     return " ".join(_s)
 
 
-def detect_format_string_leaks(imports: dict = None, strings: list = None) -> List[dict]:
+def detect_format_string_leaks(imports: dict = None, strings: list = None,
+                                use_arg_annotations: bool = True) -> List[dict]:
     """检测 printf 族调用中的非字面量格式串。
-    原理：导入表含格式化函数 + 字符串中无显式格式字面量 → 存在用户输入控
-    制格式字符串的风险面。
+    启用 use_arg_annotations 时使用 dangerous_arg_annotations 模块的参数
+    位置感知标注替代原有的固定权重表。格式串漏洞的三要素评估:
+    (a) 导入表含格式函数 (b) 字符串中无显式格式字面量 (c) 参数位置0是格式控制串
     """
     _findings = []
     _api_set = set()
     if imports:
         _api_set = _extract_api_set(imports)
-
     _str_text = ""
     if strings:
         _str_text = _get_strings_text(strings)
 
-    for _fn, _pos, _weight in _FORMAT_FUNC_PATTERNS:
-        _fn_lower = _fn.lower()
-        _found = _fn_lower in _api_set
+    if use_arg_annotations:
+        from .dangerous_arg_annotations import get_arg_annotations, ParamRole
+        _fmt_funcs = ["printf","fprintf","sprintf","snprintf","dprintf",
+                      "vprintf","vfprintf","vsprintf","vsnprintf","syslog"]
+        _weights = {"printf":7,"fprintf":7,"sprintf":7,"snprintf":5,"dprintf":7,
+                    "vprintf":7,"vfprintf":7,"vsprintf":7,"vsnprintf":5,"syslog":6}
+    else:
+        _fmt_funcs = [p[0].lower() for p in _FORMAT_FUNC_PATTERNS]
+        _weights = {p[0].lower(): p[2] for p in _FORMAT_FUNC_PATTERNS}
+
+    for _fn in _fmt_funcs:
+        _found = _fn in _api_set
         if not _found and strings:
-            _found = re.search(r'\b' + re.escape(_fn_lower) + r'\b', _str_text, re.IGNORECASE)
+            _found = re.search(r'\b' + re.escape(_fn) + r'\b', _str_text, re.IGNORECASE)
         if not _found:
             continue
 
         _risk = "LOW"
         _detail = f"Format function '{_fn}' detected"
+
+        # 参数位置感知增强: 检查 format 参数是否在位置0（用户最易控制的位置）
+        if use_arg_annotations:
+            _annotations = get_arg_annotations(_fn)
+            _fmt_params = [a for a in _annotations if a[1] == ParamRole.PARAM_FORMAT]
+            if _fmt_params and _fmt_params[0][0] == 0:
+                _risk = "MEDIUM"
+                _detail += " — format 参数在位置0（最易受用户输入控制）"
 
         _has_format_literal = bool(re.search(r'\"[^\"]*%[^\"]*\"', _str_text))
         _has_percent_n = bool(re.search(r'%n', _str_text))
@@ -116,6 +134,7 @@ def detect_format_string_leaks(imports: dict = None, strings: list = None) -> Li
         if _has_positional:
             _risk = "MEDIUM"
 
+        _weight = _weights.get(_fn, 4)
         _findings.append({
             "type": "format_string", "function": _fn,
             "risk": _risk, "weight": _weight,

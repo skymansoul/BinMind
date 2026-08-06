@@ -1,0 +1,12 @@
+[
+  {
+    "module_name": "api_diff",
+    "version_id": "98babcf2c1d3",
+    "merkle_root": "98babcf2c1d387ac83fdb75867fb16a96023746cfcda8420bc9becd69f64cad7",
+    "leaf_count": 2,
+    "timestamp": 1785833806.2197354,
+    "semver": "0.1.0",
+    "prev_version_id": "",
+    "bump": "none"
+  }
+]

@@ -1,23 +1,23 @@
 """
-漏洞利用反馈迭代环 —— 分析→生成→执行→反馈 闭环实现。
+Exploit feedback iteration loop: analyze -> generate -> execute -> feedback.
 
-当 exploit 执行失败时，收集执行日志并调用 LLM 进行根因分析和修正建议，
-然后重新生成 exploit 脚本并执行。最多迭代 MAX_ITERATIONS 次。
+When exploit execution fails, collects logs and invokes LLM for root cause
+analysis and correction suggestions, then regenerates and re-executes.
+Caps at MAX_ITERATIONS.
 
-迭代策略:
-  1. 收集失败信息（exit code, stdout, stderr, crash signal, registers）
-  2. 调用 LLM chain-of-thought 分析失败原因
-  3. LLM 输出修正后的 exploit 脚本
-  4. 重新执行 → 成功则记录，失败则继续迭代
-  5. 若连续 3 次相同错误则提前终止（防死循环）
+Iteration strategy:
+  1. Collect failure info (exit code, stdout, stderr, signal, registers)
+  2. LLM chain-of-thought failure analysis
+  3. LLM outputs corrected exploit script
+  4. Re-execute; record success or continue iterating
+  5. Early termination after 3 consecutive identical errors
 
-创新点: 链式推理驱动的自适应 exploit 修正。与传统自动化工具
-（如 pwnpasi 的固定模板）不同，LLM 根据实际执行反馈动态调整
-payload 结构、偏移值和绕过策略，模拟人工调试的"试错-修正"循环。
+LLM dynamically adjusts payload structure, offsets, and bypass strategies based
+on actual execution feedback, emulating a human trial-and-error debugging cycle.
 
-参考:
-  - Peng et al., 2025, ACL, "PwnGPT: Automatic Exploit Generation Based on LLMs"
-  - Zeng et al., 2026, NDSS, "ropbot: Reimaging Code Reuse Attack Synthesis"
+References:
+  - Peng et al., 2025, ACL, "PwnGPT"
+  - Zeng et al., 2026, NDSS, "ropbot"
 """
 
 from __future__ import annotations
@@ -97,10 +97,8 @@ def run_feedback_loop(
         _log.info("Feedback loop iteration %d/%d", iteration, max_iterations)
         result['iterations'] = iteration
 
-        # 写入临时脚本
         script_path = _write_temp_script(current_script, iteration)
 
-        # 执行
         from core.exploit_executor import execute_exploit, is_exploit_successful
         exec_result = execute_exploit(
             script_path,
@@ -119,7 +117,6 @@ def run_feedback_loop(
         }
         result['history'].append(round_record)
 
-        # 检查是否成功
         if is_exploit_successful(exec_result):
             result['success'] = True
             result['final_script'] = current_script
@@ -132,7 +129,6 @@ def run_feedback_loop(
             result['best_result'] = exec_result
             result['final_script'] = current_script
 
-        # 检测重复错误
         error_sig = _error_signature(exec_result)
         prev_errors.append(error_sig)
         if (_count_recent_same_error(prev_errors) >= MAX_REPEATED_ERRORS):
@@ -159,9 +155,6 @@ def run_feedback_loop(
             # LLM 未返回有效修正，提前终止
             result['root_cause'] = "LLM failed to produce a valid corrected script"
             break
-
-        # 清理临时文件
-        _cleanup_temp_script(script_path)
 
     if not result['success']:
         _log.warning("Feedback loop exhausted after %d iterations", iteration)
@@ -311,7 +304,6 @@ def _extract_script_from_llm_response(response: str) -> str:
     if code_match:
         return code_match.group(1).strip()
 
-    # 检查响应是否本身就是完整的 Python 脚本
     if response.strip().startswith(('#!/usr', 'from pwn', 'import pwn')):
         return response.strip()
 

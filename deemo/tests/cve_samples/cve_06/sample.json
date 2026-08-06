@@ -1,0 +1,7 @@
+{
+  "cve_id": "CVE-2020-7460",
+  "vuln_type": "uaf",
+  "description": "UAF via premature free with pending cb",
+  "expected_count": 1,
+  "compile_cmd": "gcc -o sample sample.c -no-pie -fno-stack-protector"
+}

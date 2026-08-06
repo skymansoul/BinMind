@@ -1,0 +1,12 @@
+[
+  {
+    "module_name": "circular_ref_handler",
+    "version_id": "b211cd0064d5",
+    "merkle_root": "b211cd0064d5d5a1162b7b28b49775fd01dc622895b21cc23c57c60ffbc07480",
+    "leaf_count": 3,
+    "timestamp": 1785833806.2218902,
+    "semver": "0.1.0",
+    "prev_version_id": "",
+    "bump": "none"
+  }
+]

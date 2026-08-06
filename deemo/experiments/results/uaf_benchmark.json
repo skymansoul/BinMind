@@ -1,0 +1,8 @@
+{
+  "total": 8,
+  "tp_samples": 5,
+  "fp_samples": 3,
+  "uaf_detection_rate": 100.0,
+  "fp_correctly_filtered": 1,
+  "fp_filter_rate": 33.3
+}

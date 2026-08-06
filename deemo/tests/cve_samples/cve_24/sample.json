@@ -1,0 +1,6 @@
+{
+  "cve_id": "CVE-2024-5555",
+  "vuln_type": "heap_overflow",
+  "description": "Heap overflow in PDF parser",
+  "expected_count": 1
+}

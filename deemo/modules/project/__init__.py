@@ -138,3 +138,234 @@ for _name, _mod in (
         _lazy[_name] = _mod
     if _name not in __all__:
         __all__.append(_name)
+
+# 跨模态补丁→CVE推断，2025-08-01追加，仅末尾
+# cross_modal_binary_cve_inference: 二进制patch签名×漏洞KG跨注意力对齐
+for _name, _mod in (
+        ('PatchSignature', ('cross_modal_binary_cve_inference', 'PatchSignature')),
+        ('CVEProjectionIndex', ('cross_modal_binary_cve_inference', 'CVEProjectionIndex')),
+        ('CrossModalAttention', ('cross_modal_binary_cve_inference', 'CrossModalAttention')),
+        ('CrossModalBinaryCVEInference', ('cross_modal_binary_cve_inference', 'CrossModalBinaryCVEInference')),
+        ('get_cross_modal_engine', ('cross_modal_binary_cve_inference', 'get_cross_modal_engine')),
+):
+    if _name not in _lazy:
+        _lazy[_name] = _mod
+    if _name not in __all__:
+        __all__.append(_name)
+
+# 多视角对抗验证+保形漏洞评分+因果利用链预测，2025-08-02~03追加，仅末尾
+for _name, _mod in (
+        ('AdversarialFindingValidator', ('adversarial_finding_validator', 'AdversarialFindingValidator')),
+        ('ValidatorResult', ('adversarial_finding_validator', 'ValidatorResult')),
+        ('ExploitPrimitive', ('causal_exploit_chain_predictor', 'ExploitPrimitive')),
+        ('ExploitStep', ('causal_exploit_chain_predictor', 'ExploitStep')),
+        ('ExploitChain', ('causal_exploit_chain_predictor', 'ExploitChain')),
+        ('ExploitChainPredictor', ('causal_exploit_chain_predictor', 'ExploitChainPredictor')),
+        ('create_exploit_chain_predictor', ('causal_exploit_chain_predictor', 'create_exploit_chain_predictor')),
+        ('ConformalScore', ('conformal_vuln_scorer', 'ConformalScore')),
+        ('ConformalVulnScorer', ('conformal_vuln_scorer', 'ConformalVulnScorer')),
+        ('get_conformal_scorer', ('conformal_vuln_scorer', 'get_conformal_scorer')),
+):
+    if _name not in _lazy:
+        _lazy[_name] = _mod
+    if _name not in __all__:
+        __all__.append(_name)
+
+# 行为利用检测+联邦情报+自主补丁+博弈调度，2025-08-02~03追加，仅末尾
+for _name, _mod in (
+        ('BehavioralExploitDetector', ('behavioral_exploit_detector', 'BehavioralExploitDetector')),
+        ('BehaviorProfile', ('behavioral_exploit_detector', 'BehaviorProfile')),
+        ('ExploitAlert', ('behavioral_exploit_detector', 'ExploitAlert')),
+        ('LDPReport', ('federated_vuln_intel', 'LDPReport')),
+        ('PrivacyBudget', ('federated_vuln_intel', 'PrivacyBudget')),
+        ('FederatedVulnIntelligence', ('federated_vuln_intel', 'FederatedVulnIntelligence')),
+        ('PatchTemplate', ('autonomous_patch_synth', 'PatchTemplate')),
+        ('PatchCandidate', ('autonomous_patch_synth', 'PatchCandidate')),
+        ('AutonomousPatchSynthesizer', ('autonomous_patch_synth', 'AutonomousPatchSynthesizer')),
+        ('Asset', ('stackelberg_remediation_game', 'Asset')),
+        ('AttackAction', ('stackelberg_remediation_game', 'AttackAction')),
+        ('DefenseStrategy', ('stackelberg_remediation_game', 'DefenseStrategy')),
+        ('StackelbergRemediationScheduler', ('stackelberg_remediation_game', 'StackelbergRemediationScheduler')),
+):
+    if _name not in _lazy:
+        _lazy[_name] = _mod
+    if _name not in __all__:
+        __all__.append(_name)
+
+# 自动威胁建模+贝叶斯SBOM风险+混合二进制指纹，2025-08-04追加，仅末尾
+for _name, _mod in (
+        ('TrustBoundary', ('auto_threat_modeler', 'TrustBoundary')),
+        ('DataFlow', ('auto_threat_modeler', 'DataFlow')),
+        ('ThreatCard', ('auto_threat_modeler', 'ThreatCard')),
+        ('AutoThreatModeler', ('auto_threat_modeler', 'AutoThreatModeler')),
+        ('BetaBelief', ('bayesian_sbom_risk', 'BetaBelief')),
+        ('BayesianDependencyGraph', ('bayesian_sbom_risk', 'BayesianDependencyGraph')),
+        ('BayesianSBOMRiskEngine', ('bayesian_sbom_risk', 'BayesianSBOMRiskEngine')),
+        ('BinaryFingerprint', ('hybrid_binary_fingerprint', 'BinaryFingerprint')),
+        ('HybridBinaryFingerprinter', ('hybrid_binary_fingerprint', 'HybridBinaryFingerprinter')),
+):
+    if _name not in _lazy:
+        _lazy[_name] = _mod
+    if _name not in __all__:
+        __all__.append(_name)
+
+# 崩溃语义去重+利用原语分类+种子Bandit调度，2025-08-05追加，仅末尾
+for _name, _mod in (
+        ('CrashRecord', ('crash_semantic_dedup', 'CrashRecord')),
+        ('CrashSignature', ('crash_semantic_dedup', 'CrashSignature')),
+        ('CrashSemanticDeduplicator', ('crash_semantic_dedup', 'CrashSemanticDeduplicator')),
+        ('ExploitPrimitiveAssessment', ('exploit_primitive_classifier', 'ExploitPrimitiveAssessment')),
+        ('ExploitPrimitiveClassifier', ('exploit_primitive_classifier', 'ExploitPrimitiveClassifier')),
+        ('SeedRecord', ('fuzzing_seed_bandit', 'SeedRecord')),
+        ('ThompsonSamplingBandit', ('fuzzing_seed_bandit', 'ThompsonSamplingBandit')),
+        ('FuzzingSeedBanditScheduler', ('fuzzing_seed_bandit', 'FuzzingSeedBanditScheduler')),
+):
+    if _name not in _lazy:
+        _lazy[_name] = _mod
+    if _name not in __all__:
+        __all__.append(_name)
+
+# ROP质量评分+竞态检测+补丁差分分析，2025-08-06追加，仅末尾
+for _name, _mod in (
+        ('Gadget', ('rop_gadget_quality_scorer', 'Gadget')),
+        ('ChainEdge', ('rop_gadget_quality_scorer', 'ChainEdge')),
+        ('ROPGadgetQualityScorer', ('rop_gadget_quality_scorer', 'ROPGadgetQualityScorer')),
+        ('RaceConditionFinding', ('race_condition_detector', 'RaceConditionFinding')),
+        ('TOCTOUPatternDetector', ('race_condition_detector', 'TOCTOUPatternDetector')),
+        ('PatchChange', ('differential_patch_analyzer', 'PatchChange')),
+        ('PatchAnalysis', ('differential_patch_analyzer', 'PatchAnalysis')),
+        ('DifferentialPatchAnalyzer', ('differential_patch_analyzer', 'DifferentialPatchAnalyzer')),
+):
+    if _name not in _lazy:
+        _lazy[_name] = _mod
+    if _name not in __all__:
+        __all__.append(_name)
+
+# 反fuzzing检测+堆布局规划+编译器优化审计，2025-08-07追加，仅末尾
+for _name, _mod in (
+        ('AntiFuzzGuard', ('anti_fuzzing_detector', 'AntiFuzzGuard')),
+        ('AntiFuzzingDetector', ('anti_fuzzing_detector', 'AntiFuzzingDetector')),
+        ('HeapOperation', ('heap_layout_planner', 'HeapOperation')),
+        ('HeapLayoutPlan', ('heap_layout_planner', 'HeapLayoutPlan')),
+        ('HeapLayoutPlanner', ('heap_layout_planner', 'HeapLayoutPlanner')),
+        ('OptVulnFinding', ('compiler_opt_vuln_auditor', 'OptVulnFinding')),
+        ('CompilerOptVulnAuditor', ('compiler_opt_vuln_auditor', 'CompilerOptVulnAuditor')),
+):
+    if _name not in _lazy:
+        _lazy[_name] = _mod
+    if _name not in __all__:
+        __all__.append(_name)
+
+# 类型推断+传播映射+战役模拟，2025-08-08追加，仅末尾
+for _name, _mod in (
+        ('InferredStruct', ('binary_type_inference', 'InferredStruct')),
+        ('VTableInfo', ('binary_type_inference', 'VTableInfo')),
+        ('BinaryTypeInference', ('binary_type_inference', 'BinaryTypeInference')),
+        ('ComponentNode', ('vuln_propagation_mapper', 'ComponentNode')),
+        ('PropagationPath', ('vuln_propagation_mapper', 'PropagationPath')),
+        ('VulnPropagationMapper', ('vuln_propagation_mapper', 'VulnPropagationMapper')),
+        ('ExploitStep', ('exploit_campaign_sim', 'ExploitStep')),
+        ('DefenseModel', ('exploit_campaign_sim', 'DefenseModel')),
+        ('SimulationResult', ('exploit_campaign_sim', 'SimulationResult')),
+        ('ExploitCampaignSimulator', ('exploit_campaign_sim', 'ExploitCampaignSimulator')),
+):
+    if _name not in _lazy:
+        _lazy[_name] = _mod
+    if _name not in __all__:
+        __all__.append(_name)
+
+# 格式串策略+污点追踪+可靠性评估，2025-08-09追加，仅末尾
+for _name, _mod in (
+        ('BinaryDefenses', ('fmtstr_exploit_strategist', 'BinaryDefenses')),
+        ('LeakInfo', ('fmtstr_exploit_strategist', 'LeakInfo')),
+        ('ExploitStrategy', ('fmtstr_exploit_strategist', 'ExploitStrategy')),
+        ('FmtStrExploitStrategist', ('fmtstr_exploit_strategist', 'FmtStrExploitStrategist')),
+        ('TaintFlow', ('binary_taint_tracer', 'TaintFlow')),
+        ('BinaryTaintTracer', ('binary_taint_tracer', 'BinaryTaintTracer')),
+        ('ExploitParameters', ('exploit_reliability_estimator', 'ExploitParameters')),
+        ('ReliabilityResult', ('exploit_reliability_estimator', 'ReliabilityResult')),
+        ('ExploitReliabilityEstimator', ('exploit_reliability_estimator', 'ExploitReliabilityEstimator')),
+):
+    if _name not in _lazy:
+        _lazy[_name] = _mod
+    if _name not in __all__:
+        __all__.append(_name)
+
+# Seccomp绕过+内核利用+内存写入规划，2025-08-10追加，仅末尾
+for _name, _mod in (
+        ('SeccompAnalysis', ('seccomp_bypass_finder', 'SeccompAnalysis')),
+        ('SeccompBypassFinder', ('seccomp_bypass_finder', 'SeccompBypassFinder')),
+        ('KernelConfig', ('kernel_exploit_mapper', 'KernelConfig')),
+        ('ExploitTechnique', ('kernel_exploit_mapper', 'ExploitTechnique')),
+        ('KernelExploitMapper', ('kernel_exploit_mapper', 'KernelExploitMapper')),
+        ('WriteConstraint', ('memory_write_planner', 'WriteConstraint')),
+        ('WriteStep', ('memory_write_planner', 'WriteStep')),
+        ('WritePlan', ('memory_write_planner', 'WritePlan')),
+        ('MemoryWritePlanner', ('memory_write_planner', 'MemoryWritePlanner')),
+):
+    if _name not in _lazy:
+        _lazy[_name] = _mod
+    if _name not in __all__:
+        __all__.append(_name)
+
+# ASLR熵分析+攻击面枚举+加固审计，2025-08-11追加，仅末尾
+for _name, _mod in (
+        ('RegionEntropy', ('aslr_entropy_analyzer', 'RegionEntropy')),
+        ('ASLRAnalysis', ('aslr_entropy_analyzer', 'ASLRAnalysis')),
+        ('ASLREntropyAnalyzer', ('aslr_entropy_analyzer', 'ASLREntropyAnalyzer')),
+        ('AttackSurface', ('attack_surface_enumerator', 'AttackSurface')),
+        ('SurfaceReport', ('attack_surface_enumerator', 'SurfaceReport')),
+        ('AttackSurfaceEnumerator', ('attack_surface_enumerator', 'AttackSurfaceEnumerator')),
+        ('HardeningCheck', ('binary_hardening_auditor', 'HardeningCheck')),
+        ('HardeningReport', ('binary_hardening_auditor', 'HardeningReport')),
+        ('BinaryHardeningAuditor', ('binary_hardening_auditor', 'BinaryHardeningAuditor')),
+):
+    if _name not in _lazy:
+        _lazy[_name] = _mod
+    if _name not in __all__:
+        __all__.append(_name)
+
+# ELF加载器滥用+权限边界+信号帧利用，2025-08-12追加，仅末尾
+for _name, _mod in (
+        ('LoaderAbuse', ('elf_loader_abuse_detector', 'LoaderAbuse')),
+        ('ELFLoaderAbuseDetector', ('elf_loader_abuse_detector', 'ELFLoaderAbuseDetector')),
+        ('PrivilegeContext', ('privilege_boundary_mapper', 'PrivilegeContext')),
+        ('PrivilegeEscalationPath', ('privilege_boundary_mapper', 'PrivilegeEscalationPath')),
+        ('PrivilegeBoundaryMapper', ('privilege_boundary_mapper', 'PrivilegeBoundaryMapper')),
+        ('SignalHandler', ('signal_frame_analyzer', 'SignalHandler')),
+        ('SigFrameAnalysis', ('signal_frame_analyzer', 'SigFrameAnalysis')),
+        ('SignalFrameAnalyzer', ('signal_frame_analyzer', 'SignalFrameAnalyzer')),
+):
+    if _name not in _lazy:
+        _lazy[_name] = _mod
+    if _name not in __all__:
+        __all__.append(_name)
+
+# 持久化检测+eBPF分析+侧信道评估，2025-08-13追加，仅末尾
+for _name, _mod in (
+        ('PersistencePath', ('persistence_detector', 'PersistencePath')),
+        ('PersistenceDetector', ('persistence_detector', 'PersistenceDetector')),
+        ('EBPPFinding', ('ebpf_security_analyzer', 'EBPPFinding')),
+        ('EBPFSecurityAnalyzer', ('ebpf_security_analyzer', 'EBPFSecurityAnalyzer')),
+        ('SideChannelFinding', ('side_channel_assessor', 'SideChannelFinding')),
+        ('SideChannelAssessor', ('side_channel_assessor', 'SideChannelAssessor')),
+):
+    if _name not in _lazy:
+        _lazy[_name] = _mod
+    if _name not in __all__:
+        __all__.append(_name)
+
+# JIT spray检测+Harness生成+崩溃最小化，2025-08-14追加，仅末尾
+for _name, _mod in (
+        ('JITSprayFinding', ('jit_spray_detector', 'JITSprayFinding')),
+        ('JITSprayDetector', ('jit_spray_detector', 'JITSprayDetector')),
+        ('FunctionParam', ('fuzz_harness_generator', 'FunctionParam')),
+        ('FuzzHarnessGenerator', ('fuzz_harness_generator', 'FuzzHarnessGenerator')),
+        ('CrashProperty', ('crash_input_minimizer', 'CrashProperty')),
+        ('MinimizeResult', ('crash_input_minimizer', 'MinimizeResult')),
+        ('CrashInputMinimizer', ('crash_input_minimizer', 'CrashInputMinimizer')),
+):
+    if _name not in _lazy:
+        _lazy[_name] = _mod
+    if _name not in __all__:
+        __all__.append(_name)

@@ -1,0 +1,8 @@
+{
+  "OurMethod": {
+    "n_samples": 5,
+    "detection_rate": 0.2,
+    "fp_count": 57,
+    "avg_time_ms": 104.09366001840681
+  }
+}

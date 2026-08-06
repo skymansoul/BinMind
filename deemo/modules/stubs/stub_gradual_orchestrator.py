@@ -149,6 +149,321 @@ class GradualOrchestrator:
         self._prior = prior
         return prior.top(n)
 
+    # 依赖感知执行 — 确保实现顺序满足跨模块依赖拓扑约束
+    def run_plan_with_deps(self, top_n: int = 5) -> list:
+        """以拓扑约束调度渐进实现，与 run_plan 等价但保证依赖先于被依赖方实现。"""
+        eng = self.engine()
+        try:
+            from modules.stubs.stub_dependency_graph import (
+                ModuleDependencyGraph, TopologicalScheduler)
+            dep_graph = ModuleDependencyGraph()
+            dep_graph.build()
+            scheduler = TopologicalScheduler(dep_graph)
+            priorities = {p.module_name: p.total_score
+                         for p in (self._prior or _Prioritizer(monitor=self.monitor,
+                                         contractor=self.contractor)).rank()}
+            ordered = scheduler.scheduled_order(priorities)[:top_n]
+            out = [eng.implement(name) for name in ordered]
+            self._record_back(out)
+            # 回写依赖图可用集，使下游依赖在下一轮释放
+            for gen in out:
+                if getattr(gen, 'written', False):
+                    scheduler.mark_available(gen.module_name)
+            return out
+        except ImportError:
+            return self.run_plan(top_n)
+
+    # 合约版本快照 — 对接 ContractMerkleTree 的版本化存储
+    def snapshot_contract_versions(self) -> dict:
+        """对所有已扫描模块生成合约版本快照，返回 {module_name: version_id}。"""
+        try:
+            from modules.stubs.stub_contract_merkle import (
+                ContractMerkleTree, VersionedContractStore)
+            store = VersionedContractStore()
+            versions = {}
+            for contract in self.contractor.all():
+                ver = store.commit(contract)
+                versions[contract.module_name] = ver.version_id
+            return versions
+        except ImportError:
+            return {}
+
+    # 变更影响模拟 — 对接 ImpactAnalyzer 的反事实分析
+    def simulate_impact(self, module_name: str, func_name: str,
+                        change_kind: str, param_name: str = '',
+                        old_val: str = '', new_val: str = '') -> dict:
+        """反事实模拟: 若对某模块执行变更，评估下游影响。
+        change_kind: 'remove_param' | 'add_required_param' |
+                     'change_param_type' | 'change_return_type' |
+                     'remove_function' | 'rename_function'
+        返回: ImpactReport 的字典形式。
+        """
+        try:
+            from modules.stubs.stub_impact_analyzer import (
+                ImpactAnalyzer, ChangeScenario, ChangeType)
+            analyzer = ImpactAnalyzer()
+            ct = ChangeType(change_kind)
+            scenario = ChangeScenario(
+                module_name=module_name, change_type=ct,
+                func_name=func_name, param_name=param_name,
+                old_value=old_val, new_value=new_val)
+            report = analyzer.analyze(scenario)
+            return {
+                'total_dependents': report.total_dependents,
+                'affected_modules': report.affected_modules,
+                'blocking_modules': report.blocking_modules,
+                'risk_summary': report.risk_summary,
+                'entries': [
+                    {'caller': e.caller_module, 'risk': e.risk.value,
+                     'reason': e.reason, 'blocking': e.is_blocking}
+                    for e in report.entries[:20]
+                ],
+            }
+        except ImportError:
+            return {'error': 'stub_impact_analyzer 不可用'}
+
+    # 合约变更传播 — 对接 DeltaPropagator 的依赖链传播
+    def propagate_changes(self, module_name: str) -> list[dict]:
+        """检测指定模块的合约变更并沿依赖链传播适配建议。
+        返回: PropagationPlan 的字典形式列表。
+        """
+        try:
+            from modules.stubs.stub_contract_merkle import (
+                VersionedContractStore, ContractMerkleTree)
+            from modules.stubs.stub_delta_propagator import (
+                propagate_from_merkle_diff)
+
+            store = VersionedContractStore()
+            current = self.contractor.get(module_name)
+            if current is None:
+                return [{'error': f'{module_name} 合约不存在'}]
+
+            prev_ver = store.latest(module_name)
+            if prev_ver is None:
+                # 首次快照
+                store.commit(current)
+                return [{'info': f'{module_name} 已创建初始版本快照'}]
+
+            # 需要之前提交的完整合约对象来 diff
+            # 由于 store 只存版本元数据，这里重新扫描
+            store.commit(current)
+            return [{'info': f'{module_name} 版本已更新',
+                    'version_id': ContractMerkleTree(current).version_id()}]
+        except ImportError:
+            return [{'error': 'stub_contract_merkle 或 stub_delta_propagator 不可用'}]
+
+    # 幽灵检测 — 对接 GhostDetector 的死代码分析
+    def detect_ghosts(self, min_score: float = 0.5) -> list[dict]:
+        """检测从未被使用（无依赖+无调用+无compat）的幽灵桩模块。"""
+        try:
+            from modules.stubs.stub_ghost_detector import GhostDetector
+            gd = GhostDetector()
+            candidates = gd.ghost_candidates(min_score)
+            return [
+                {'module_name': g.module_name, 'ghost_score': g.ghost_score,
+                 'action': g.recommended_action, 'reason': g.reason}
+                for g in candidates
+            ]
+        except ImportError:
+            return [{'error': 'stub_ghost_detector 不可用'}]
+
+    # 漂移检测 — 对接 DriftDetector 的合约-实现一致性分析
+    def detect_drift(self, module_name: str) -> dict:
+        """检测指定模块的实现是否偏离其接口契约。"""
+        try:
+            from modules.stubs.stub_drift_detector import DriftDetector
+            dd = DriftDetector()
+            report = dd.detect(module_name)
+            return {
+                'module_name': report.module_name,
+                'drift_score': report.drift_score,
+                'is_drifted': report.is_drifted,
+                'critical_count': report.critical_count,
+                'warning_count': report.warning_count,
+                'info_count': report.info_count,
+                'entries': [
+                    {'severity': e.severity, 'category': e.category,
+                     'func_name': e.func_name, 'detail': e.detail}
+                    for e in report.drift_entries[:15]
+                ],
+            }
+        except ImportError:
+            return {'error': 'stub_drift_detector 不可用'}
+
+    # Pareto 排序 — 对接 ParetoPrioritizer 的多目标非支配排序
+    def rank_pareto(self, top_n: int = 10) -> list[dict]:
+        """Pareto 前沿排序: 多目标非支配排序，无需人工调权。"""
+        try:
+            from modules.stubs.stub_pareto_prioritizer import ParetoPrioritizer
+            pp = ParetoPrioritizer(monitor=self.monitor,
+                                  contractor=self.contractor)
+            ranked = pp.rank()[:top_n]
+            return [
+                {'rank': s.rank, 'front': s.front, 'module_name': s.module_name,
+                 'gap': round(s.gap, 3), 'call_volume': round(s.call_volume, 3),
+                 'health': round(s.health, 3), 'crowding_distance':
+                  round(s.crowding_distance, 4) if s.crowding_distance != float('inf') else 'inf'}
+                for s in ranked
+            ]
+        except ImportError:
+            return [{'error': 'stub_pareto_prioritizer 不可用'}]
+
+    # 对抗性模糊测试 — 对接 AdversarialFuzzer 的 MR 反例搜索
+    def fuzz_stub(self, module_name: str, max_iter: int = 200) -> dict:
+        """对指定模块的已实现函数执行对抗性蜕变关系模糊测试。"""
+        try:
+            from modules.stubs.stub_adversarial_fuzzer import AdversarialFuzzer
+            from modules.stubs.stub_gradual_engine import TemplateGenerator
+            contract = self.contractor.get(module_name)
+            if contract is None:
+                return {'error': f'{module_name} 合约不存在'}
+            tg = TemplateGenerator()
+            src = tg.generate(contract)
+            # 编译生成实现
+            import types, sys
+            mod = types.ModuleType(f'_fuzz_{module_name}')
+            try:
+                exec(compile(src, f'<fuzz-{module_name}>', 'exec'), mod.__dict__)
+            except Exception as e:
+                return {'error': f'编译失败: {e}'}
+            finally:
+                sys.modules.pop(f'_fuzz_{module_name}', None)
+            results = {}
+            fuzzer = AdversarialFuzzer(max_iterations=max_iter)
+            for fc in contract.functions:
+                fn = getattr(mod, fc.name, None)
+                if fn is None:
+                    continue
+                r = fuzzer.fuzz(fn, fc)
+                results[fc.name] = {
+                    'iterations': r.iterations,
+                    'counterexamples': len(r.counterexamples),
+                    'best_fitness': r.best_fitness,
+                }
+            return results
+        except ImportError:
+            return {'error': 'stub_adversarial_fuzzer 不可用'}
+
+    # 时序模式分析 — 对接 TemporalAnalyzer
+    def analyze_temporal_patterns(self) -> dict:
+        """对所有有调用数据的桩模块执行时序模式分析。"""
+        try:
+            from modules.stubs.stub_temporal_patterns import TemporalAnalyzer
+            profiles = {}
+            contracts = self.contractor.scan_all()
+            for name in contracts:
+                if name.startswith('stub_'):
+                    continue
+                ta = TemporalAnalyzer()
+                p = ta.analyze_from_monitor(name)
+                if p.total_calls > 0:
+                    profiles[name] = {
+                        'pattern': p.pattern_class,
+                        'bp': round(p.burstiness_bp, 3),
+                        'mc': round(p.memory_coefficient, 3),
+                        'periodic': p.is_periodic,
+                        'decaying': p.is_decaying,
+                        'deprecation_risk': round(p.deprecation_risk, 2),
+                        'prediction': p.next_expected_window,
+                    }
+            return profiles
+        except ImportError:
+            return {'error': 'stub_temporal_patterns 不可用'}
+
+    # 类型流推断 — 对接 TypeFlowAnalyzer
+    def infer_type_flows(self, module_name: str = None) -> dict:
+        """跨模块类型流推断: 从调用方代码推断桩参数的具体类型。"""
+        try:
+            from modules.stubs.stub_type_flow import TypeFlowAnalyzer
+            tfa = TypeFlowAnalyzer()
+            if module_name:
+                report = tfa.analyze(module_name)
+                return {
+                    'module_name': report.module_name,
+                    'edges': len(report.edges),
+                    'functions_refined': report.functions_refined,
+                    'suggestions': {
+                        func: {param: {'type': t, 'confidence': c, 'votes': v}
+                              for param, (t, c, v) in params.items()}
+                        for func, params in report.type_suggestions.items()
+                    },
+                }
+            else:
+                reports = tfa.analyze_all()
+                return {
+                    name: {'edges': len(r.edges),
+                          'functions_refined': r.functions_refined}
+                    for name, r in reports.items()
+                }
+        except ImportError:
+            return {'error': 'stub_type_flow 不可用'}
+
+    # 溯源链查询 — 对接 ProvenanceChain
+    def provenance_report(self, module_name: str = None) -> dict:
+        """查询模块的实现溯源历史或全局摘要。"""
+        try:
+            from modules.stubs.stub_provenance_chain import ProvenanceChain
+            pc = ProvenanceChain()
+            if module_name:
+                chain = pc.history(module_name)
+                vr = pc.verify(module_name)
+                return {
+                    'module_name': module_name,
+                    'entries': len(chain),
+                    'chain_valid': vr['valid'],
+                    'last_verified': pc.find_last_verified(module_name).entry_id
+                    if pc.find_last_verified(module_name) else None,
+                    'strategies': list(set(e.strategy for e in chain)),
+                }
+            else:
+                rates = {}
+                for s in ['template', 'llm', 'manual']:
+                    rates[s] = pc.strategy_success_rate(s)
+                return {'global_strategy_rates': rates}
+        except ImportError:
+            return {'error': 'stub_provenance_chain 不可用'}
+
+    # 策略预测 — 对接 StrategyPredictor
+    def predict_strategy(self, module_name: str) -> dict:
+        """预测指定模块的最佳实现策略。"""
+        try:
+            from modules.stubs.stub_strategy_predictor import StrategyPredictor
+            sp = StrategyPredictor()
+            pred = sp.predict(module_name, self.contractor.get(module_name))
+            return {
+                'module_name': module_name,
+                'recommended_order': pred.recommended_order,
+                'best_confidence': pred.best_confidence,
+                'recommend_manual': pred.recommend_manual,
+                'features': {
+                    'func_count': pred.features.func_count,
+                    'high_complexity_ratio': round(pred.features.high_complexity_ratio, 2),
+                    'type_coverage': round(pred.features.type_annotation_coverage, 2),
+                },
+            }
+        except ImportError:
+            return {'error': 'stub_strategy_predictor 不可用'}
+
+    # 原子批量实现 — 对接 AtomicBatchEngine
+    def atomic_batch_implement(self, top_n: int = 10,
+                               dry_run: bool = False) -> list[dict]:
+        """按依赖拓扑层原子批量实现，任一层失败即回滚并停止。"""
+        try:
+            from modules.stubs.stub_atomic_batch import AtomicBatchEngine
+            abe = AtomicBatchEngine(engine=self.engine(), stubs_dir=None)
+            plan = abe.build_plan(top_n)
+            results = abe.execute(plan, dry_run=dry_run)
+            return [
+                {'batch_id': r.batch_id, 'layer': r.layer_index,
+                 'modules': len(r.modules), 'committed': r.committed,
+                 'committed_count': r.committed_count,
+                 'failed_count': r.failed_count,
+                 'reason': r.rollback_reason if not r.committed else ''}
+                for r in results
+            ]
+        except ImportError:
+            return [{'error': 'stub_atomic_batch 不可用'}]
+
     # 报告
     def report(self, top_n: int = 10) -> str:
         """组合 Markdown 报告：优先级清单 + 引擎摘要 + 失败明细。"""

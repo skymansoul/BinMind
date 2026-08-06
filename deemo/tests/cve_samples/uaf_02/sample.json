@@ -1,0 +1,7 @@
+{
+  "cve_id": "CVE-2022-23222",
+  "vuln_type": "uaf",
+  "description": "Linux BPF verifier UAF via map operations",
+  "expected_count": 1,
+  "compile_cmd": "gcc -o sample sample.c -no-pie -fno-stack-protector"
+}

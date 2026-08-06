@@ -10,12 +10,10 @@
 #   [Runge et al. 2019, Science Advances, doi:10.1126/sciadv.aau4996]
 #     PCMCI: 结合 PC1 条件选择与 MCI 瞬时条件独立性检验, 在高维时间序列中
 #     控制误报率. 本文将其简化适配到 CVE 特征空间 (特征维度 ~10, 时间点 ~100).
-#   [Quan & Pathirana 2025, NeurIPS Workshop, arXiv:2510.05165 [待验证]]
-#     域自适应 Granger 因果用于攻击归因. 本文参考其资源争用建模思想,
-#     在 CVE 特征空间中引入产品/厂商重叠度作为混杂控制变量.
-#   [GHP Temporal Dynamics Thesis, Leiden 2024-2025]
-#     GitHub PoC 活动作为 Granger 因果前兆信号. 本文的时滞窗口 (30/90/180/365 天)
-#     参考其发现的 Metasploit/KEV/ExploitDB 中位先行时间.
+#   [Assaad et al. 2022, ACM CSUR] 时序因果发现综述
+#     系统总结了 PCMCI, Granger, 传递熵等方法的适用条件.
+#     本文的时滞窗口 (30/90/180/365 天) 设计参考其推荐的
+#     安全领域事件时间尺度.
 #
 # 方法概述:
 #   阶段 1 — 时间窗口构造: 将 CVE 元数据按发布时间分箱, 对每个 CVE 构建

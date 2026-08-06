@@ -1,0 +1,229 @@
+{
+  "results": [
+    {
+      "sample": "CVE-2001-0017_format_string",
+      "uaf_findings": 0,
+      "int_overflow_findings": 0,
+      "heap_bounds_violations": 0
+    },
+    {
+      "sample": "CVE-2012-0809_format_string",
+      "uaf_findings": 0,
+      "int_overflow_findings": 0,
+      "heap_bounds_violations": 0
+    },
+    {
+      "sample": "CVE-2014-0160_heartbleed",
+      "uaf_findings": 0,
+      "int_overflow_findings": 0,
+      "heap_bounds_violations": 0
+    },
+    {
+      "sample": "CVE-2016-6301_heap_overflow",
+      "uaf_findings": 0,
+      "int_overflow_findings": 0,
+      "heap_bounds_violations": 0
+    },
+    {
+      "sample": "CVE-2017_stkovf",
+      "uaf_findings": 0,
+      "int_overflow_findings": 0,
+      "heap_bounds_violations": 0
+    },
+    {
+      "sample": "CVE-2018_heapovf",
+      "uaf_findings": 0,
+      "int_overflow_findings": 0,
+      "heap_bounds_violations": 0
+    },
+    {
+      "sample": "CVE-2019-0708_uaf",
+      "uaf_findings": 2,
+      "int_overflow_findings": 0,
+      "heap_bounds_violations": 0
+    },
+    {
+      "sample": "CVE-2020-7460_uaf",
+      "uaf_findings": 2,
+      "int_overflow_findings": 0,
+      "heap_bounds_violations": 0
+    },
+    {
+      "sample": "CVE-2020_doublefree",
+      "uaf_findings": 1,
+      "int_overflow_findings": 0,
+      "heap_bounds_violations": 0
+    },
+    {
+      "sample": "CVE-2021_fmtstr",
+      "uaf_findings": 0,
+      "int_overflow_findings": 0,
+      "heap_bounds_violations": 0
+    },
+    {
+      "sample": "CVE-2022-2588_double_free",
+      "uaf_findings": 0,
+      "int_overflow_findings": 0,
+      "heap_bounds_violations": 0
+    },
+    {
+      "sample": "CVE-2022_intovf",
+      "uaf_findings": 0,
+      "int_overflow_findings": 0,
+      "heap_bounds_violations": 0
+    },
+    {
+      "sample": "CVE-2023-0179_stack_overflow",
+      "uaf_findings": 0,
+      "int_overflow_findings": 0,
+      "heap_bounds_violations": 0
+    },
+    {
+      "sample": "CVE-2023-44487_use_after_scope",
+      "uaf_findings": 2,
+      "int_overflow_findings": 0,
+      "heap_bounds_violations": 0
+    },
+    {
+      "sample": "CVE-2023_uaf2",
+      "uaf_findings": 0,
+      "int_overflow_findings": 0,
+      "heap_bounds_violations": 0
+    },
+    {
+      "sample": "CVE-2024-21762_off_by_one",
+      "uaf_findings": 0,
+      "int_overflow_findings": 0,
+      "heap_bounds_violations": 0
+    },
+    {
+      "sample": "CVE-2024_nullptr",
+      "uaf_findings": 0,
+      "int_overflow_findings": 0,
+      "heap_bounds_violations": 0
+    },
+    {
+      "sample": "cve_2004_0077-linux-do_brk",
+      "uaf_findings": 0,
+      "int_overflow_findings": 0,
+      "heap_bounds_violations": 0
+    },
+    {
+      "sample": "cve_2011_1473-openssl-dtls",
+      "uaf_findings": 0,
+      "int_overflow_findings": 0,
+      "heap_bounds_violations": 0
+    },
+    {
+      "sample": "cve_2013_2094-perf",
+      "uaf_findings": 0,
+      "int_overflow_findings": 0,
+      "heap_bounds_violations": 0
+    },
+    {
+      "sample": "cve_2014_0160-heartbleed",
+      "uaf_findings": 0,
+      "int_overflow_findings": 0,
+      "heap_bounds_violations": 0
+    },
+    {
+      "sample": "cve_2014_6271-shellshock",
+      "uaf_findings": 0,
+      "int_overflow_findings": 0,
+      "heap_bounds_violations": 0
+    },
+    {
+      "sample": "cve_2015_0235_ghost_heap",
+      "uaf_findings": 0,
+      "int_overflow_findings": 0,
+      "heap_bounds_violations": 0
+    },
+    {
+      "sample": "cve_2016_10190-libevent",
+      "uaf_findings": 0,
+      "int_overflow_findings": 1,
+      "heap_bounds_violations": 0
+    },
+    {
+      "sample": "cve_2017_1000112-ipv6",
+      "uaf_findings": 0,
+      "int_overflow_findings": 0,
+      "heap_bounds_violations": 0
+    },
+    {
+      "sample": "cve_2017_11176_mq_notify_uaf",
+      "uaf_findings": 1,
+      "int_overflow_findings": 0,
+      "heap_bounds_violations": 0
+    },
+    {
+      "sample": "cve_2018_14634-tmpfs",
+      "uaf_findings": 0,
+      "int_overflow_findings": 1,
+      "heap_bounds_violations": 0
+    },
+    {
+      "sample": "cve_2019_11477-tcp-sack",
+      "uaf_findings": 0,
+      "int_overflow_findings": 1,
+      "heap_bounds_violations": 0
+    },
+    {
+      "sample": "cve_2019_13134_imagemagick_heap",
+      "uaf_findings": 0,
+      "int_overflow_findings": 0,
+      "heap_bounds_violations": 0
+    },
+    {
+      "sample": "cve_2020_10713-boothole",
+      "uaf_findings": 0,
+      "int_overflow_findings": 0,
+      "heap_bounds_violations": 0
+    },
+    {
+      "sample": "cve_2020_10757_kernel_heap",
+      "uaf_findings": 0,
+      "int_overflow_findings": 0,
+      "heap_bounds_violations": 0
+    },
+    {
+      "sample": "cve_2021_3156-baron",
+      "uaf_findings": 0,
+      "int_overflow_findings": 0,
+      "heap_bounds_violations": 0
+    },
+    {
+      "sample": "cve_2021_4034-polkit",
+      "uaf_findings": 0,
+      "int_overflow_findings": 0,
+      "heap_bounds_violations": 0
+    },
+    {
+      "sample": "cve_2022_0185-fscontext",
+      "uaf_findings": 0,
+      "int_overflow_findings": 0,
+      "heap_bounds_violations": 0
+    },
+    {
+      "sample": "cve_2023_44487-http2-rapid",
+      "uaf_findings": 0,
+      "int_overflow_findings": 0,
+      "heap_bounds_violations": 0
+    },
+    {
+      "sample": "cve_2023_45871_libwebp_heap",
+      "uaf_findings": 0,
+      "int_overflow_findings": 0,
+      "heap_bounds_violations": 0
+    }
+  ],
+  "summary": {
+    "total_samples": 36,
+    "uaf_total": 8,
+    "uaf_samples": 5,
+    "int_overflow_total": 3,
+    "int_overflow_samples": 3,
+    "heap_bounds_total": 0,
+    "heap_bounds_samples": 0
+  }
+}

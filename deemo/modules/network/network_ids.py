@@ -377,6 +377,53 @@ class RuleEngine:
     def rule_count(self) -> int:
         return len(self._rules)
 
+    # ── 对抗性规则硬化 ────────────────────────────────────
+    def harden_rules(self) -> Dict[int, Any]:
+        """对加载的规则执行对抗性硬化分析。
+
+        对每条规则: 提取约束→识别规避间隙→生成硬化建议。
+        返回 {sid → HardeningProposal} 字典, 仅含需硬化的规则。
+
+        副作用: 无。不自动修改规则, 硬化建议供人工审核。
+        """
+        try:
+            from .adversarial_ids_hardener import batch_harden_rules
+        except ImportError:
+            from src.adversarial_ids_hardener import batch_harden_rules
+        rule_texts = [r.raw for r in self._rules if r.raw]
+        return batch_harden_rules(rule_texts)
+
+    def get_hardening_summary(self) -> Dict[str, Any]:
+        """返回规则集的硬化状态摘要。
+
+        含: 总规则数/需硬化规则数/规避面总量/高危gap类型分布。
+        """
+        hardened = self.harden_rules()
+        if not hardened:
+            return {"total_rules": len(self._rules), "rules_needing_hardening": 0}
+
+        total_surface_before = sum(
+            p.evasion_surface_before for p in hardened.values())
+        total_surface_after = sum(
+            p.evasion_surface_after for p in hardened.values())
+
+        gap_types: Dict[str, int] = {}
+        for p in hardened.values():
+            for mod in p.proposed_modifications:
+                gtype = mod.split(' —— ')[1] if ' —— ' in mod else mod
+                gap_types[gtype] = gap_types.get(gtype, 0) + 1
+
+        return {
+            "total_rules": len(self._rules),
+            "rules_needing_hardening": len(hardened),
+            "evasion_surface_total_before": total_surface_before,
+            "evasion_surface_total_after": total_surface_after,
+            "surface_reduction_ratio": round(
+                1.0 - total_surface_after / max(total_surface_before, 1), 3),
+            "top_gap_types": sorted(gap_types.items(),
+                                    key=lambda x: -x[1])[:5],
+        }
+
 
 def _rule_matches_packet(rule: SuricataRule, payload: bytes, proto: str, dport: int) -> bool:
     # 端口过滤

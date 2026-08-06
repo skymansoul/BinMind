@@ -1,0 +1,12 @@
+[
+  {
+    "module_name": "firmware_analyzer",
+    "version_id": "06457136b667",
+    "merkle_root": "06457136b66746ba055dabe1af22b577fa95c24ede145697227855b783bfd5b8",
+    "leaf_count": 2,
+    "timestamp": 1785833806.2241182,
+    "semver": "0.1.0",
+    "prev_version_id": "",
+    "bump": "none"
+  }
+]

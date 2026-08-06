@@ -1,0 +1,5 @@
+23:22:01 | INFO    | core.pipeline | Binary: CVE-2008-5077_openssl_uaf.elf | x86-64 64-bit | size=54490
+23:22:01 | WARNING | core.decompiler | radare2 not found at radare2
+23:22:01 | INFO    | core.pipeline | Found 0 functions
+23:22:01 | INFO    | core.pipeline | Analyzing 0 functions
+23:22:01 | INFO    | core.pipeline | Pipeline done in 0.0s | 0 functions | 0 vulns

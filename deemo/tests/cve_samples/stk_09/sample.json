@@ -1,0 +1,6 @@
+{
+  "cve_id": "CVE-2017-1000253",
+  "vuln_type": "stack_overflow",
+  "description": "Linux PIE stack overflow",
+  "expected_count": 1
+}

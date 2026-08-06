@@ -1,0 +1,6 @@
+{
+  "cve_id": "CVE-2025-4444",
+  "vuln_type": "uaf",
+  "description": "UAF in crypto key handle",
+  "expected_count": 1
+}

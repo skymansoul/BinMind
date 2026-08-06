@@ -1,16 +1,10 @@
 """
-管线创新增强层 —— 将 DESG、熵调度、路径多样性探索接入现有管线。
+Optional enhancement layer for run_pipeline_enhanced(): DESG construction,
+entropy scheduling, and path diversity exploration.
 
-三个模块均为可选 (ImportError 时静默跳过)，通过 run_pipeline_enhanced()
-的扩展点注入，不修改 pipeline.py 的核心流程。
-
-激活条件:
-  desg_builder:     反编译后若有 CFG 块数据则自动构建 DESG
-  entropy_scheduler: 模糊测试阶段种子能量由熵调度器分配
-  path_diversity:   符号执行阶段活跃路径按多样性优先级排序
-
-集成方式: 作为 run_pipeline_enhanced() 的 (z)-(ab) 增强层追加，
-          与现有 30+ 增强层模式一致。
+Each module is silently skipped on ImportError. No modification to pipeline.py.
+Activation is automatic when the corresponding data (CFG blocks, seed queue,
+active paths) is available during the run.
 """
 
 from __future__ import annotations

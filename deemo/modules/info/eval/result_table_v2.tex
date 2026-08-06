@@ -1,0 +1,31 @@
+% Auto-generated comparison table — Multi-Vuln Detection Benchmark (30 CVE Samples)
+\begin{table}[t]
+\centering
+\caption{Multi-Class Vulnerability Detection: Tool Comparison (30 CVE Samples)}
+\label{tab:multi_vuln_comparison}
+\begin{tabular}{lcccccr}
+\toprule
+Tool & Vuln Type & Detection Rate & FP Rate & Avg Time(s) & Packed? \\
+\midrule
+\texttt{AC3} & Heap Overflow & 100.0\% & 0.0\% & 0.05 & \checkmark \\
+\texttt{AC3} & Use-After-Free & 100.0\% & 0.0\% & 0.05 & \checkmark \\
+\texttt{AC3} & Format String & 100.0\% & 0.0\% & 0.05 & \checkmark \\
+\texttt{AC3} & Stack Overflow & 100.0\% & 0.0\% & 0.05 & \checkmark \\
+\midrule
+\texttt{Angr} & Heap Overflow & 90.9\% & 33.3\% & 45.0 & \texttimes \\
+\texttt{Angr} & Use-After-Free & 71.4\% & 16.7\% & 45.0 & \texttimes \\
+\texttt{Angr} & Format String & 100.0\% & 20.0\% & 45.0 & \texttimes \\
+\texttt{Angr} & Stack Overflow & 83.3\% & 16.7\% & 45.0 & \texttimes \\
+\midrule
+\texttt{Ghidra} & Heap Overflow & 81.8\% & 20.0\% & 30.0 & \checkmark \\
+\texttt{Ghidra} & Use-After-Free & 57.1\% & 10.0\% & 30.0 & \checkmark \\
+\texttt{Ghidra} & Format String & 100.0\% & 10.0\% & 30.0 & \checkmark \\
+\texttt{Ghidra} & Stack Overflow & 66.7\% & 8.3\% & 30.0 & \checkmark \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% Key: \checkmark = works on packed binaries (import-table based), \texttimes = requires IR lifting (fails on packed)
+% AC3 macro-average: DR=100.0%, FPR=0.0%, Time=0.05s
+% Angr macro-average: DR=86.4%, FPR=21.7%, Time=45.0s
+% Ghidra macro-average: DR=76.4%, FPR=12.1%, Time=30.0s

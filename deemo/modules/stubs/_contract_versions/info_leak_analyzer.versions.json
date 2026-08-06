@@ -1,0 +1,12 @@
+[
+  {
+    "module_name": "info_leak_analyzer",
+    "version_id": "b6e0c4e4e359",
+    "merkle_root": "b6e0c4e4e359688579fccf37c231ed0f2569a94f616edd6b6fa7f611cbe9ace0",
+    "leaf_count": 1,
+    "timestamp": 1785833806.2253711,
+    "semver": "0.1.0",
+    "prev_version_id": "",
+    "bump": "none"
+  }
+]

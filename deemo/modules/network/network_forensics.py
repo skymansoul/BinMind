@@ -371,6 +371,16 @@ def analyze_pcap(packets: List[Any]) -> Dict[str, Any]:
                 "community_id": _f.community_id,
             })
 
+    # ── 法庭因果图分析 ────────────────────────────────────
+    _causal_report = None
+    if _beacon_alerts or _exfil_alerts or _mismatch_alerts:
+        try:
+            from .forensic_event_builder import analyze_forensic_causality
+        except ImportError:
+            from src.forensic_event_builder import analyze_forensic_causality
+        _causal_report = analyze_forensic_causality(
+            _beacon_alerts, _exfil_alerts, _mismatch_alerts)
+
     return {
         "total_packets": len(packets),
         "total_flows": len(_flows),
@@ -379,4 +389,17 @@ def analyze_pcap(packets: List[Any]) -> Dict[str, Any]:
         "exfil_alerts": _exfil_alerts,
         "mismatch_alerts": _mismatch_alerts,
         "flows": _flows,
+        # 法庭因果分析结果
+        "forensic_causality": {
+            "total_events": _causal_report.total_events if _causal_report else 0,
+            "total_edges": _causal_report.total_edges if _causal_report else 0,
+            "root_causes": (_causal_report.root_cause_ranking[:5]
+                           if _causal_report else []),
+            "evidence_chains": [
+                {"events": ch.events, "strength": ch.total_strength,
+                 "root_cause": ch.root_cause_event}
+                for ch in (_causal_report.evidence_chains[:5]
+                          if _causal_report else [])
+            ],
+        } if _causal_report else {},
     }

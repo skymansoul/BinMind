@@ -1,0 +1,12 @@
+[
+  {
+    "module_name": "stub_contract_refiner",
+    "version_id": "ec466e2b6a22",
+    "merkle_root": "ec466e2b6a225ffe651c8f0f5f2d414839cbd36c00d4cd9e955cf1dd3bfc8322",
+    "leaf_count": 1,
+    "timestamp": 1785794219.238752,
+    "semver": "0.1.0",
+    "prev_version_id": "",
+    "bump": "none"
+  }
+]

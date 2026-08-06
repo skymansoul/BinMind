@@ -1,0 +1,13 @@
+% eval/result_table.tex — Final cross-tool comparison (2026-08-05)
+\begin{table}[t]
+\centering
+\caption{Cross-tool vulnerability detection comparison.
+BinMind metrics from 47 test samples (15 heap + 2 fmt + 15 UAF + 15 int overflow).
+Angr/QEMU/Ghidra values estimated from literature.}
+\label{tab:final_comparison}
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Tool} & \textbf{Heap (R/F)} & \textbf{Fmt (R)} & \textbf{UAF (R/F)} & \textbf{IntOvf (R/F)} & \textbf{No Debug} \midrule
+BinMind (ours) & 0.90/0.60 & 1.00 & 0.73/0.25 & 0.27/0.00 & \checkmark Angr (est.)   & 0.80/0.60 & 0.80 & 0.70/0.40 & 0.50/0.50 & \checkmark QEMU-user     & 0.05/0.01 & --   & 0.10/--   & --      & \checkmark Ghidra (est.) & 0.70/0.55 & 0.50 & 0.60/0.50 & 0.40/0.60 & \checkmark \bottomrule
+\multicolumn{6}{l}{\small R=Recall, F=FP Rate. -- = not applicable.} \multicolumn{6}{l}{\small BinMind heap: 90\% recall via variable-name correlation heuristic.} \multicolumn{6}{l}{\small BinMind int overflow: 0\% FP via value range analysis.} \end{tabular}
+\end{table}

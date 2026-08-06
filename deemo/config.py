@@ -30,16 +30,7 @@ def mask_api_key(api_key: str, show_first: int = 4, show_last: int = 4) -> str:
 
 
 def mask_sensitive_data(text: str) -> str:
-    """
-    脱敏处理敏感信息，适用于日志输出
-    显示前 4 位和后 4 位，中间用 * 代替
-    
-    Args:
-        text: 原始文本
-        
-    Returns:
-        脱敏后的文本
-    """
+    """脱敏日志中的 API key / token / secret——前4后4保留，中间替换为*"""
     if not text or not isinstance(text, str):
         return text
     
@@ -399,12 +390,7 @@ def ensure_directories():
 
 
 def validate_sandbox_config() -> Dict[str, Any]:
-    """
-    验证沙箱配置
-    
-    Returns:
-        包含验证结果的字典
-    """
+    """校验 SANDBOX_MODE / docker / podman 可用性，返回 {valid, mode, issues}"""
     sandbox_mode = Config.SANDBOX_MODE
     valid_modes = ['none', 'docker', 'podman']
     
@@ -442,12 +428,7 @@ def validate_sandbox_config() -> Dict[str, Any]:
 
 
 def get_postgres_connection_string() -> Optional[str]:
-    """
-    获取 PostgreSQL 连接字符串
-    
-    Returns:
-        PostgreSQL 连接字符串，如果配置不完整则返回 None
-    """
+    """拼装 postgresql:// 连接串；DB_TYPE 非 postgres 或无密码时返回 None"""
     if Config.DB_TYPE != 'postgres':
         return None
     
@@ -476,12 +457,7 @@ def validate_crash_data(crash_data: dict) -> tuple:
 
 
 def get_crash_data_example() -> dict:
-    """
-    获取崩溃数据示例格式
-    
-    Returns:
-        示例崩溃数据字典
-    """
+    """返回一份标准格式的崩溃数据样本（registers + stack_trace + signal）"""
     return {
         "registers": {
             "rax": "0x0000000000000000",
@@ -517,16 +493,7 @@ def get_crash_data_example() -> dict:
 
 
 def call_ai_with_retry(client, **kwargs) -> Optional[str]:
-    """
-    统一的 AI API 调用函数，包含指数退避重试和降级支持
-    
-    Args:
-        client: OpenAI 兼容的客户端
-        **kwargs: 传递给 chat.completions.create 的参数
-        
-    Returns:
-        AI 响应文本，失败返回 None
-    """
+    """AI API 调用——指数退避重试（最多3次），全部失败后降级为启发式分析"""
     import time
     
     max_retries = 3
@@ -559,15 +526,7 @@ def call_ai_with_retry(client, **kwargs) -> Optional[str]:
 
 
 def test_api_connection(client) -> bool:
-    """
-    测试 AI API 连接是否正常
-    
-    Args:
-        client: OpenAI 兼容的客户端
-        
-    Returns:
-        True 如果连接正常，否则 False
-    """
+    """发送一条简短的 chat completion 请求确认 AI API 连通性"""
     try:
         model = get_current_ai_model()
         response = client.chat.completions.create(
@@ -798,3 +757,29 @@ CONCURRENCY_MIN_ACCESSORS_FOR_RACE = 2     # 至少 N 个访问者才触发竞�
 CONCURRENCY_RACE_SEVERITY_THRESHOLD = 'MEDIUM'  # CI 中断的最小严重度
 # 线程入口推断
 CONCURRENCY_INFER_THREADS_FROM_LOCKS = True  # 无显式线程创建时从锁使用推断并发性
+
+# --- 语义执行新颖度检测 (semantic_novelty_detector) ---
+# 运行时行为嵌入 + 特征哈希 + 滑动窗口余弦相似度
+SEND_EMBED_DIM = 128                     # 嵌入向量维度
+SEND_WINDOW_SIZE = 200                   # 滑动窗口保留的嵌入数
+SEND_DECAY_ALPHA = 0.995                 # 窗口内旧嵌入的指数衰减因子
+SEND_NOVELTY_THRESHOLD = 0.15            # 低于此值视为"真正新颖"
+SEND_MAX_ENERGY_MULTIPLIER = 5.0         # 高新颖度种子的最大能量倍率
+
+# --- Thompson 采样多模糊器编排 (thompson_orchestrator) ---
+# Bayesian bandit 在线学习 → 动态 CPU 分配
+THOMPSON_REBALANCE_INTERVAL = 300.0      # 重新分配周期（秒）
+THOMPSON_MIN_ALLOCATION_RATIO = 0.05     # 每个 arm 的最少 CPU 份额
+THOMPSON_PRIOR_SUCCESS = 1.0             # Beta 先验 α（均匀先验 → 1.0）
+THOMPSON_PRIOR_FAILURE = 1.0             # Beta 先验 β
+THOMPSON_STAGNATION_THRESHOLD = 3        # 停滞阈值——超过此轮数无产出则标记
+THOMPSON_DRIFT_DEGRADATION = 0.3         # 后验均值低于历史峰值 30% 触发重启
+
+# --- 约束感知 def-use 链引导变异 (defuse_mutation_guide) ---
+# 二进制级 def-use 重建 + 聚类 + 约束引导字节翻转
+DEFUSE_CLUSTER_MERGE_THRESHOLD = 0.5     # Jaccard 合并阈值
+DEFUSE_MAX_MUTANTS_PER_SEED = 5          # 每个种子最多生成的变异数
+DEFUSE_MAX_CLUSTER_NEIGHBOR_GAP = 3      # 聚类合并的最大字节间隔
+DEFUSE_MUTATION_HISTORY_SIZE = 100       # 变异效果历史记录长度
+DEFUSE_RECENT_SUCCESS_CAP = 3            # 聚类短期内成功的次数上限——超限后降权
+DEFUSE_SUGGEST_MAX_VALUES = 10           # 翻转建议的最大候选值数

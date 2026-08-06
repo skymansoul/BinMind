@@ -1,5 +1,5 @@
 # 自适应熔断器 — 动态阈值替代静态配置
-# Multi-Objective Adaptive Rate Limiting [arXiv:2511.03279 [待验证]]: DRL 动态平衡吞吐量和延迟
+# 自适应熔断器 — 基于失败率的分段线性限流策略
 # 此处不引入 DRL 框架，改用更轻量的 EMA 反馈回路实现阈值自适应
 #
 # 传统熔断器 [Nygard 2007] 的 failure_threshold 需人工调参：
@@ -59,7 +59,7 @@ class AdaptiveCircuitBreaker:
     - 持续高故障率 → 阈值下移（更激进触发熔断）
     - 冷却时间按几何增长：第 k 次熔断后冷却 = base * 2^(k-1)，有上限
 
-    参考：Multi-Objective Adaptive Rate Limiting [arXiv:2511.03279] 的自适应思想，
+    参考自适应限流策略: 
     用 EMA 替代 DQN/A3C 降低了实现复杂度，代价是缺乏全局最优性保证。
     """
 

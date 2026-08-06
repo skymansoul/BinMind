@@ -1,0 +1,31 @@
+# Cross-language unsafe deserialization detection.
+# Covers Python pickle/yaml.load, Java ObjectInputStream.readObject,
+# and .NET BinaryFormatter. String-matching based — expect some false negatives
+# since readObject is a method name, not an imported function symbol.
+
+id: unsafe-deserialization
+name: 不安全反序列化
+severity: critical
+description: |
+  检测 Python pickle/Java ObjectInputStream/.NET BinaryFormatter 等
+  不安全的反序列化 API。
+cwe: CWE-502
+tags:
+  - deserialization
+  - rce
+conditions:
+  - field: dangerous_functions
+    operator: contains_any
+    value:
+      - pickle.load
+      - pickle.loads
+      - yaml.load
+      - ObjectInputStream
+      - BinaryFormatter.Deserialize
+      - readObject
+actions:
+  - type: report
+    parameters:
+      message: "存在不安全反序列化 API，攻击者可构造恶意数据触发 RCE"
+      suggestion: "使用 json 替代 pickle；启用 yaml.safe_load；.NET 使用 DataContractSerializer"
+      cwe: CWE-502

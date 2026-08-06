@@ -1,0 +1,12 @@
+[
+  {
+    "module_name": "stub_prioritizer",
+    "version_id": "7200cd78abf4",
+    "merkle_root": "7200cd78abf473a774f1ffcab5e196bc98832909776ce3298ff60feb36742d32",
+    "leaf_count": 1,
+    "timestamp": 1785794219.2402756,
+    "semver": "0.1.0",
+    "prev_version_id": "",
+    "bump": "none"
+  }
+]

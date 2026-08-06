@@ -5,6 +5,8 @@
 # 实现: 线性意见动力学 x_{t+1}=(1-α)x_t + α·mean(neighbors) + noise,
 #       不采用完整的扩散 PDE / 拉普拉斯谱分解
 # 三个异常信号: 邻居不一致性 / 可靠性权重 / 动态冲突能量
+# 注: 上述arXiv引用ID未通过独立验证，方法本身基于线性意见动力学
+# 的扩散模拟是独立的实现，不依赖该论文的具体结果。
 
 from __future__ import annotations
 import math

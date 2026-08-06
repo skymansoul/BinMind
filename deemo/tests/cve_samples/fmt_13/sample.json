@@ -1,0 +1,6 @@
+{
+  "cve_id": "CVE-2025-3333",
+  "vuln_type": "format_string",
+  "description": "Format string in gRPC handler",
+  "expected_count": 1
+}

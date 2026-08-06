@@ -1,0 +1,7 @@
+{
+  "cve_id": "CVE-2023-1234",
+  "vuln_type": "format_string",
+  "description": "Format string in debug logging",
+  "expected_count": 1,
+  "compile_cmd": "gcc -o sample sample.c -no-pie -fno-stack-protector"
+}

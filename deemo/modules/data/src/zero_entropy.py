@@ -7,10 +7,10 @@
 #   Al Jarah, "Exploiting Zero-Entropy Data for Efficient Deduplication"
 #     (Master's Thesis, 2025): ZERO 预处理 —— 在 CDC 之前扫描并提取
 #     零熵区域 → RLE 编码 → 剩余数据走标准 CDC → 空间节省上限 29%。
-#   VectorCDC [Udayashankar et al., FAST '25, arXiv:2508.05797 [待验证]]:
-#     使用 SIMD 向量指令加速 hashless CDC，吞吐量 8-26x 提升。
-#     Python 中无法直接使用 SSE/AVX 指令，在逻辑层实现等效的
-#     零熵跳过 (zero-skip) 和 range scan 策略以减少无效 hash 计算。
+#   VectorCDC 方向 (SIMD 加速 hashless CDC):
+#     使用向量指令加速 CDC, 吞吐量显著提升.
+#     Python 中无法直接使用 SSE/AVX 指令, 在逻辑层实现等效的
+#     零熵跳过 (zero-skip) 和 range scan 策略以减少无效 hash 计算.
 #
 # 设计思路:
 #   1. detect_zero_runs: 扫描二进制数据，识别连续 >= min_run 字节的
@@ -152,7 +152,7 @@ def zero_skip_cdc(data: bytes, min_chunk: int = 1024, max_chunk: int = 16384,
     在 gear hash 循环中检测零熵区域的起始边界，
     进入后直接跳至区域末尾以节省 hash 计算。
     适合 VM image、core dump、firmware blob 等大段填充场景。
-    参考 VectorCDC (FAST '25) 的 range-scan 优化策略。
+    参考 SIMD-CDC 的 range-scan 优化策略思想.
     """
     if len(data) <= min_chunk:
         return [data]

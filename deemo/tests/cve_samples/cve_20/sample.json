@@ -1,0 +1,6 @@
+{
+  "cve_id": "CVE-2024-1111",
+  "vuln_type": "heap_overflow",
+  "description": "Heap overflow in XML parser",
+  "expected_count": 1
+}

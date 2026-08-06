@@ -1,0 +1,9 @@
+{
+  "tp_samples": 3,
+  "fp_samples": 2,
+  "total": 5,
+  "detection_rate": 66.7,
+  "fp_filter_rate": 100.0,
+  "method": "heuristic (pattern-based, needs deepening)",
+  "note": "Integer overflow detection is baseline only \u2014 marked for algorithm upgrade"
+}

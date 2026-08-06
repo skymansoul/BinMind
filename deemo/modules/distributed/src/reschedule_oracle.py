@@ -17,7 +17,7 @@
 # 论文对照:
 #   - EFTR-HGNet: 自动将受影响任务放入 rescheduling queue → 此处等价实现
 #   - MADRL-FJSP (RCIM 2024): 多目标 (稳定性 + makespan) → 此处用加权目标
-#   - DynaCausal (arXiv:2510.22613 [待验证]): 故障影响域识别 → 由 fault_propagation 提供
+#   - 故障影响域识别由 fault_propagation 模块提供
 
 from __future__ import annotations
 

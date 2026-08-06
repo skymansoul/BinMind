@@ -52,6 +52,40 @@ class StubHealthMonitor:
         rec.caller_modules[caller_module] = rec.caller_modules.get(caller_module, 0) + 1
         rec.last_seen = now
 
+    # 类型观测记录 — 为 stub_contract_refiner 提供运行时类型样本。
+    # 与 record_call 分离，因单次调用可能携带多个参数的类型信息，
+    # 且类型观测的存储和查询模式与调用计数不同。
+    def record_type_observation(self, stub_name: str, func_name: str,
+                                arg_types: list[str], return_type: str) -> None:
+        """记录一次函数调用的运行时类型观测。
+
+        arg_types: 位置参数的类型名列表，如 ['int', 'str']
+        return_type: 返回值类型名，如 'bool'
+        存储为追加式列表，供 ContractRefiner 批量消费。
+        """
+        key = f'{stub_name}::{func_name}'
+        if not hasattr(self, '_type_observations'):
+            self._type_observations: dict[str, list[dict]] = {}
+        self._type_observations.setdefault(key, []).append({
+            'ts': time.time(),
+            'arg_types': arg_types,
+            'return_type': return_type,
+        })
+
+    def flush_type_observations(self, stub_name: str = None) -> list[dict]:
+        """消费并清空类型观测记录。stub_name 为 None 时返回全部。"""
+        if not hasattr(self, '_type_observations'):
+            return []
+        if stub_name is not None:
+            prefix = f'{stub_name}::'
+            keys = [k for k in self._type_observations if k.startswith(prefix)]
+        else:
+            keys = list(self._type_observations.keys())
+        result = []
+        for k in keys:
+            result.extend(self._type_observations.pop(k, []))
+        return result
+
     def evaluate_deprecation(self) -> List[StubCallRecord]:
         """按天数阈值和最小调用数评估废弃候选。"""
         now = time.time()

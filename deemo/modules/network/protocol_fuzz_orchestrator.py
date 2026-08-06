@@ -111,12 +111,15 @@ class ProtocolFuzzOrchestrator:
     本类负责调度逻辑和结果聚合。
     """
 
-    def __init__(self):
+    def __init__(self, differential_voter=None):
+        # differential_voter: 可选ConsensusVoter实例，用于跨实现差分测试
         self._seeds: Dict[str, List[FuzzSeed]] = defaultdict(list)  # protocol → seeds
         self._scheduler = PowerScheduler()
         self._reports: List[FuzzReport] = []
         self._crash_signatures: Dict[str, List[str]] = defaultdict(list)
         self._session_id = uuid.uuid4().hex[:8]
+        self._differential_voter = differential_voter
+        self._diff_verdicts: List[Any] = []  # OracleVerdict列表
 
     def register_seed(self, protocol: str, data: bytes,
                       state: str = "default",
@@ -249,7 +252,7 @@ class ProtocolFuzzOrchestrator:
         return dict(correlations)
 
     def summary(self) -> Dict[str, Any]:
-        return {
+        base = {
             "session_id": self._session_id,
             "total_seeds": sum(len(s) for s in self._seeds.values()),
             "protocols_fuzzed": list(self._seeds.keys()),
@@ -264,6 +267,40 @@ class ProtocolFuzzOrchestrator:
                 key=lambda x: -x[1],
             )[:5],
         }
+        if self._diff_verdicts:
+            diverged = [v for v in self._diff_verdicts
+                       if hasattr(v, 'verdict') and
+                       getattr(v.verdict, 'name', '') == 'CONSENSUS_MINORITY_BUG']
+            base["differential"] = {
+                "total_verdicts": len(self._diff_verdicts),
+                "bugs_found": len(diverged),
+                "minority_impls": list(set(
+                    impl for v in diverged
+                    for impl in getattr(v, 'minority_impls', [])
+                )),
+            }
+        return base
+
+    # ── 差分跨实现测试 ─────────────────────────────────────
+    def run_differential_check(self,
+                                protocol: str,
+                                impl_responses: List[Any]
+                                ) -> Optional[Any]:
+        """对多实现响应执行差分预言机判定。
+
+        impl_responses: ImplResponse列表(N≥3)，来自同一输入发送至
+        不同协议实现的响应。若提供了differential_voter，
+        执行共识投票并将判定缓存至_diff_verdicts。
+
+        返回OracleVerdict或None(未配置voter时)。
+        """
+        if self._differential_voter is None:
+            return None
+        if len(impl_responses) < 3:
+            return None
+        verdict = self._differential_voter.vote(impl_responses)
+        self._diff_verdicts.append(verdict)
+        return verdict
 
 
 def orchestrate_fuzzing(protocol_seeds: Dict[str, List[bytes]]) -> Dict[str, Any]:

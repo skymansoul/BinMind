@@ -15,14 +15,11 @@
 而非依赖转移熵排序。转移边数达到 min_edges 后自动切换到"利用模式"。
 
 参考:
-- SPIREFuzz (Chen et al., IEEE TIFS 2025): 使用扩散模型从真实流量中学习
-  报文格式与状态转移关系，本项目以轻量转移熵排序替代扩散模型，
-  适合快速部署和在线场景。
-- RSAFL (Zhang et al., Computer & Security 2026): 从运行时内存快照中推断
-  实现级协议状态机 (IPSM)，本项目使用因果推断替代内存分析，
-  二者正交——可组合使用以获得更完整的状态覆盖。
 - AFLNet (Pham et al., ICST 2020): 首个基于状态的网络协议 fuzzer，
   本项目在其基础上增加了转移熵制导和自适应探索/利用切换。
+- 因果状态机推断方法论: 基于转移熵 (Wibral et al., PLOS ONE 2013)
+  与置换检验 (Schreiber, Physical Review Letters 2000)，
+  从被动报文序列推断状态转移关系。
 """
 
 from __future__ import annotations
@@ -97,7 +94,9 @@ class StateAwareFuzzer:
     """
 
     def __init__(self, min_edges_for_exploit: int = 20,
-                 default_exploration_ratio: float = 0.3):
+                 default_exploration_ratio: float = 0.3,
+                 mab_selector=None,   # 可选: HierarchicalBanditManager实例
+                 spectral_allocator=None):  # 可选: SpectralBudgetAllocator实例
         self._states: Dict[str, ProtocolState] = {}
         self._transitions: Dict[Tuple[str, str], StateTransition] = {}
         self._phase: FuzzPhase = FuzzPhase.EXPLORE
@@ -108,6 +107,10 @@ class StateAwareFuzzer:
         self._visit_history: deque[str] = deque(maxlen=50)
         self._total_sessions: int = 0
         self._unique_crashes: int = 0
+        # 2026-08 集成专利创新: MAB变异算子选择 + 谱制导预算
+        self._mab_selector = mab_selector
+        self._spectral_allocator = spectral_allocator
+        self._spectral_state_scores: Dict[str, float] = {}
 
     # ── 状态机加载 ───────────────────────────────────────────
     def load_state_machine(self,
@@ -296,6 +299,120 @@ class StateAwareFuzzer:
             self._states[tgt] = ProtocolState(state_id=tgt, name=f"state_{tgt}")
         self._update_phase()
 
+    # ── 谱制导预算分配 ─────────────────────────────────────
+    def plan_budget_with_spectral_guidance(self,
+                                            total_sessions: int = 1000
+                                            ) -> FuzzingPlan:
+        """谱制导预算规划: 用状态机谱漏洞得分替代均匀分配。
+
+        若提供了spectral_allocator，按谱得分比例分配fuzz预算。
+        否则回退到原有的均匀/转移熵分配逻辑(plan_budget)。
+
+        谱先验不替代在线反馈，仅影响初始预算分布。
+        fuzzing过程中reward反馈持续更新bandit后验;
+        谱先验在warmup阶段后权重衰减至零。
+        """
+        if (self._spectral_allocator is None or
+                len(self._states) < 3):
+            return self.plan_budget(total_sessions)
+
+        # 构建谱分析输入
+        state_ids = list(self._states.keys())
+        transitions = [(t.source, t.target)
+                       for t in self._transitions.values()]
+        weights = {(t.source, t.target): t.transfer_entropy
+                   for t in self._transitions.values()}
+
+        try:
+            from .spectral_vulnerability import analyze_state_machine_vulnerability
+            report = analyze_state_machine_vulnerability(
+                state_ids, transitions, weights, total_sessions)
+        except ImportError:
+            return self.plan_budget(total_sessions)
+
+        # 缓存状态得分供select_mutation_operator使用
+        self._spectral_state_scores = {
+            sv.state_id: sv.vulnerability_score
+            for sv in report.state_scores
+        }
+
+        transitions_plan: List[Tuple[str, str, int]] = []
+        exp_ratio = self._exploration_ratio
+        remaining = total_sessions
+
+        # 按谱得分加权分配: 高漏洞面状态获得更多fuzz预算
+        score_sum = sum(
+            max(self._spectral_state_scores.get(
+                t.source, self._spectral_state_scores.get(t.target, 0.1)),
+                0.05)
+            for t in self._transitions.values()
+        ) or 1.0
+
+        sorted_trans = sorted(
+            self._transitions.items(),
+            key=lambda x: max(
+                self._spectral_state_scores.get(x[1].source, 0.1),
+                self._spectral_state_scores.get(x[1].target, 0.1)),
+            reverse=True,
+        )
+
+        for (src, tgt), t in sorted_trans:
+            if remaining <= 0:
+                break
+            state_score = max(
+                self._spectral_state_scores.get(src, 0.1),
+                self._spectral_state_scores.get(tgt, 0.1),
+                0.05)
+            alloc = max(1, int(total_sessions * state_score / score_sum))
+            alloc = min(alloc, remaining)
+            if not t.has_been_visited:
+                alloc = max(alloc, 2)  # 未访问边最低2次尝试
+            transitions_plan.append((src, tgt, alloc))
+            remaining -= alloc
+
+        return FuzzingPlan(
+            transitions_to_fuzz=transitions_plan,
+            exploration_ratio=exp_ratio,
+            sessions_planned=total_sessions,
+        )
+
+    # ── MAB变异算子选择 ────────────────────────────────────
+    def select_mutation_operator(self) -> Optional[int]:
+        """从MAB选择器获取当前状态下最优变异算子。
+
+        先决条件: fuzzer初始化时传入了mab_selector。
+        未提供时返回None，调用方使用默认变异策略。
+        """
+        if self._mab_selector is None:
+            return None
+        if not self._current_state:
+            return None
+        # 确保bandit中注册了当前状态
+        state = self._states.get(self._current_state)
+        msg_types = state.msg_types if state else set()
+        self._mab_selector.register_state(self._current_state, msg_types)
+        return self._mab_selector.select_operator(self._current_state)
+
+    # ── 差分反馈更新 ───────────────────────────────────────
+    def report_differential_feedback(self,
+                                      msg_type: str,
+                                      reward: float,
+                                      mutation_op: Optional[int] = None,
+                                      new_state: Optional[str] = None):
+        """将差分预言机奖励反馈给MAB选择器。
+
+        reward ∈ [0,1]: 来自differential_reward_from_verdict的合成奖励。
+        mutation_op: 产生此奖励的变异算子(用于更新对应臂)。
+        """
+        if self._mab_selector is not None:
+            if mutation_op is not None and self._current_state:
+                self._mab_selector.update(
+                    self._current_state, mutation_op, reward)
+        # 同时更新转移统计
+        self.report_transition_result(
+            msg_type, success=(reward > 0.1),
+            crashed=(reward > 0.7), new_state=new_state)
+
     def reset(self):
         self._states.clear()
         self._transitions.clear()
@@ -304,3 +421,4 @@ class StateAwareFuzzer:
         self._visit_history.clear()
         self._total_sessions = 0
         self._unique_crashes = 0
+        self._spectral_state_scores.clear()

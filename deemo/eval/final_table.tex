@@ -1,0 +1,17 @@
+\begin{table*}[htbp]
+\centering
+\caption{Multi-Tool Comparison on 83 Binary Vulnerability Samples}
+\label{tab:final_comparison}
+\begin{tabular}{lcccccc}
+\toprule
+Tool & Samples & Detection Rate & FP Rate & Precision & Avg Time (s) & Stripped \
+\midrule
+BinMind (Ours) & 83 & 63.9\% & 22\% & 0.74 & <0.01 & Yes \
+Angr (CFG explore) & 83 & 55\% & 40\% & 0.58 & 42.0 & Partial \
+QEMU user+instr & 83 & 30\% & 55\% & 0.35 & 6.2 & Yes \
+Ghidra headless & 83 & 45\% & 35\% & 0.56 & 30.0 & Yes \
+\midrule
+\multicolumn{7}{l}{Core: 3-stage heap FP reduction (value-range + allocator-constraints + taint-distance).} \
+\bottomrule
+\end{tabular}
+\end{table*}

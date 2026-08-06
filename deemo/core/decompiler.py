@@ -168,8 +168,6 @@ Report vulnerabilities as JSON."""
             model=None,
             temperature=0.3,
         )
-        # logger.debug("raw LLM response for %s: %s", func_name, response[:500])
-        # try to extract JSON from response
         json_match = re.search(r'\{[\s\S]*\}', response)
         if json_match:
             parsed = json.loads(json_match.group(0))

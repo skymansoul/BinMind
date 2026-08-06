@@ -1,0 +1,12 @@
+[
+  {
+    "module_name": "citation_index",
+    "version_id": "7be225752407",
+    "merkle_root": "7be225752407315dbc8f678acc78915823459bb6e967b7c1692b983f74ecde8b",
+    "leaf_count": 8,
+    "timestamp": 1785833806.2221048,
+    "semver": "0.1.0",
+    "prev_version_id": "",
+    "bump": "none"
+  }
+]

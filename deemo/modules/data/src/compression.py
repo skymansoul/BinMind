@@ -155,7 +155,17 @@ def decompress(data: bytes, codec: str = "") -> bytes:
         if _HAS_ZSTD:
             dctx = zstd.ZstdDecompressor()
             return dctx.decompress(data)
-        return data
+        # zstd 不可用时, 回退到 gzip/zlib 自动检测 (编码时已降级)
+        codec = detect_codec(data)
+        if codec == "gzip":
+            try:
+                return zlib.decompress(data, wbits=31)
+            except zlib.error:
+                pass
+        try:
+            return zlib.decompress(data)
+        except zlib.error:
+            return data
 
     if codec == "lzma":
         if _HAS_LZMA:

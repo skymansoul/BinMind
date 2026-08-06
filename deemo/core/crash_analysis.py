@@ -119,10 +119,11 @@ def analyze_crash_for_exploit(crash: Dict) -> Dict:
 
 
 # =============================================================================
-# 新增多维原语指纹识别
-# 提供比 analyze_crash_for_exploit() 更细粒度的可利用性评估，
-# 包含寄存器可控性分析、堆操作序列提取、多维评分和策略推荐。
-# 参考: Lancet (USENIX Security 2025), HEXP (IEEE 2025), AutoPwn (2024)
+# Multi-dimensional primitive fingerprinting.
+# Finer-grained exploitability assessment than analyze_crash_for_exploit():
+# register controllability analysis, heap op sequence extraction, multi-axis
+# scoring, and strategy recommendation.
+# References: Lancet (USENIX Security 2025), HEXP (IEEE 2025), AutoPwn (2024)
 # =============================================================================
 
 def fingerprint_crash_detailed(
@@ -130,16 +131,16 @@ def fingerprint_crash_detailed(
     stack_bounds: tuple = None,
     heap_bounds: list = None,
 ) -> dict:
-    """多维崩溃原语指纹识别——可替代 analyze_crash_for_exploit 的更精细接口。
+    """Multi-dimensional crash primitive fingerprinting.
 
-    返回值包含:
-      - registers: 每个寄存器的可控性分析
-      - heap_ops: 提取的堆操作序列
-      - scores: rip_control / stack_control / heap_control / info_leak / overall
-      - recommended_primitives: 推荐的利用原语类型
-      - recommended_strategy: 推荐的利用策略文本
+    Finer-grained alternative to analyze_crash_for_exploit. Returns:
+      registers: per-register controllability analysis
+      heap_ops: extracted heap operation sequence
+      scores: rip_control / stack_control / heap_control / info_leak / overall
+      recommended_primitives: suggested exploit primitive types
+      recommended_strategy: suggested exploitation strategy
 
-    调用方无额外依赖——纯Python标准库实现。
+    Pure Python stdlib — no external dependencies.
     """
     try:
         from core.crash_primitive_fingerprint import fingerprint_crash

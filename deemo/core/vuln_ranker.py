@@ -1,24 +1,24 @@
 """
-函数级漏洞风险评估排序器。
+Function-level vulnerability risk ranking.
 
-对分析后的函数按多维度风险评分排序，输出"应优先人工审查的 Top-N 函数"。
-解决审查报告中 R2-7/P2-2 的缺口：AI 分析结果汇入报告但缺少针对性排序。
+Ranks analyzed functions by multi-dimensional risk scoring to produce a
+"Top-N functions for manual review" list. Addresses the gap where AI analysis
+results flow into reports but lack targeted prioritization.
 
-评分维度:
-  1. 危险函数密度 (0-30): 函数内调用的危险函数数量 × 严重度权重
-  2. 输入暴露面  (0-25): 参数来自 read/recv/fgets 等外部输入源
-  3. 保护缺口    (0-20): checksec 中缺失的防护措施（无 Canary+10, 无 NX+10）
-  4. LLM 置信度  (0-15): 若 LLM 分析标记了漏洞则加分
-  5. 调用图位置  (0-10): 在调用链中的关键性（被 main 直接调用 > 深层调用）
+Scoring dimensions:
+  1. Dangerous function density (0-30): count * severity weight of dangerous calls
+  2. Input exposure (0-25): parameters sourced from read/recv/fgets etc.
+  3. Protection gaps (0-20): missing mitigations (No Canary +10, No NX +10)
+  4. LLM confidence (0-15): bonus when LLM flagged vulnerabilities
+  5. Call graph position (0-10): criticality (directly called by main > deep call)
 
-总分 0-100，用于排序而非绝对判定——低分函数仍可能有漏洞，高分函数是
-人工审查的最佳起点。
+Total 0-100. Used for ranking, not absolute judgment — low-scoring functions
+may still be vulnerable; high-scoring ones are the best starting points.
 
-参考:
-  - Grieco et al., 2016, IEEE S&P, "Toward Large-Scale Vulnerability Discovery
-    using Machine Learning" — 多特征融合的漏洞排序方法
+References:
+  - Grieco et al., 2016, IEEE S&P, "Toward Large-Scale Vulnerability Discovery"
   - Lin et al., 2020, CCS, "Software Vulnerability Discovery via Learning
-    Multi-Dimensional Hierarchical Code Feature" — 特征归一化 + 加权融合
+    Multi-Dimensional Hierarchical Code Feature"
 """
 
 from __future__ import annotations

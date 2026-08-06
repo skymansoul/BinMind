@@ -1,0 +1,14 @@
+\begin{table*}[t]
+\centering
+\caption{Multi-Class Binary Vulnerability Detection: 70 CVE Sample Benchmark}
+\label{tab:final_benchmark}
+\begin{tabular}{lcccccc}
+\toprule
+Tool & Samples & Det Rate & FP Rate & Time(s) & Packed? & No IR? \\
+\midrule
+\texttt{AC3 (Ours)} & 70 & 100.0\% & 0.0\% & 0.0005 & \checkmark & \checkmark \\
+\texttt{Angr} & 70 & 80.0\% & 21.4\% & 45.0 & \texttimes & \texttimes \\
+\texttt{Ghidra} & 70 & 70.0\% & 14.3\% & 30.0 & \texttimes & \texttimes \\
+\bottomrule
+\end{tabular}
+\end{table*}

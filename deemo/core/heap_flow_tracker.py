@@ -1,0 +1,183 @@
+"""
+堆分配值流追踪 —— 追踪 malloc/calloc/realloc 的 size 参数来源。
+
+现有堆溢出检测的最大误报来源: 无法确定 size 参数在到达 malloc 前经过
+哪些约束操作。例如 int size = atoi(argv[1]); if(size>1024) size=1024;
+buf=malloc(size); 如果只看 malloc(size) 而不追踪 size 的来源和约束,
+就会误报 "用户输入控制分配大小"。
+
+本模块在反编译伪代码上做反向值流追踪:
+1. 定位 malloc(size_var) 调用点
+2. 反向追踪 size_var 的来源: 常量? 用户输入? 算术表达式?
+3. 正向检查 size_var 在 malloc 前是否经过约束 (if/ternary/min/max)
+4. 输出 TraceResult: {size_var, source_type, is_constrained, upper_bound}
+
+参考:
+  CAFD (arXiv:2509.22530) — 自定义分配函数的 value-flow 检测
+  本模块不做指针分析, 不做完整到达-定值, 仅追踪分配大小的 2 跳数据流
+"""
+
+import re
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import List, Optional, Tuple
+
+
+class SizeSource(Enum):
+    CONSTANT = "constant"        # malloc(1024)
+    USER_INPUT = "user_input"    # malloc(atoi(argv[1]))
+    ARITHMETIC = "arithmetic"    # malloc(len * 2 + 1)
+    UNKNOWN = "unknown"
+
+
+@dataclass
+class TraceResult:
+    alloc_func: str              # malloc / calloc / realloc
+    size_var: str                # size 参数的变量名或表达式
+    source_type: SizeSource
+    is_constrained: bool         # size 在到达 malloc 前是否经过边界检查
+    upper_bound: Optional[int]   # 若 constrained=True, 记录上界
+    constraint_desc: str = ""    # 约束描述, 如 "if(size > 1024) size=1024;"
+    line: str = ""               # 伪代码中对应的行
+
+
+class HeapFlowTracker:
+    """
+    堆分配值流追踪器。
+
+    Level 1 — 定位: 正则匹配 malloc/calloc/realloc 调用, 提取 size 参数
+    Level 2 — 溯源: 反向搜索 size_var 的定义, 判定来源类型
+    Level 3 — 约束检测: 正向搜索 size_var 是否被 if/sanitize 约束
+    """
+
+    _ALLOC_PAT = re.compile(
+        r'(\w[\w\d_]*)\s*=\s*(?:\([^)]*\*?\s*\))?\s*'
+        r'(malloc|calloc|realloc)\s*\(\s*([^)]+)\s*\)'
+    )
+    _USER_SOURCES = {'atoi', 'atol', 'strtol', 'strtoul', 'strtoll',
+                     'argv', 'getenv', 'scanf', 'fscanf', 'read',
+                     'fgets', 'recv', 'getline'}
+    _CONSTRAINT_PAT = re.compile(
+        r'if\s*\([^)]*\)\s*\n?\s*(\w+)\s*=\s*([^;]+)'
+    )
+
+    def trace(self, pseudocode: str) -> List[TraceResult]:
+        """
+        在伪代码中追踪所有堆分配调用的 size 来源。
+
+        返回 TraceResult 列表, 用于后续的分配器约束分析。
+        """
+        results: List[TraceResult] = []
+        lines = pseudocode.splitlines()
+
+        for i, line in enumerate(lines):
+            m = self._ALLOC_PAT.search(line)
+            if not m:
+                dm = re.search(r'(malloc|calloc|realloc)\s*\(\s*([^)]+)\)', line)
+                if dm:
+                    alloc_func = dm.group(1)
+                    size_expr = dm.group(2).strip().split(',')[0].strip()
+                else:
+                    continue
+            else:
+                alloc_func = m.group(2)
+                size_expr = m.group(3).strip().split(',')[0].strip()
+
+            source_type, upper_bound, constrained, constraint_desc = \
+                self._classify(size_expr, lines, i)
+
+            results.append(TraceResult(
+                alloc_func=alloc_func,
+                size_var=size_expr,
+                source_type=source_type,
+                is_constrained=constrained,
+                upper_bound=upper_bound,
+                constraint_desc=constraint_desc,
+                line=line.strip(),
+            ))
+
+        return results
+
+    def _classify(
+        self, size_expr: str, lines: List[str], call_idx: int,
+    ) -> Tuple[SizeSource, Optional[int], bool, str]:
+        """分类 size 表达式的来源和约束状态。"""
+        # 常量检测
+        if re.match(r'^\d+$', size_expr.strip()):
+            return SizeSource.CONSTANT, int(size_expr.strip()), True, 'constant literal'
+
+        # 用户输入检测
+        for src in self._USER_SOURCES:
+            if src in size_expr:
+                bound = self._find_constraint(size_expr, lines, call_idx)
+                if bound is not None:
+                    return SizeSource.USER_INPUT, bound, True, \
+                        f'constrained to ≤ {bound}'
+                return SizeSource.USER_INPUT, None, False, \
+                    f'user-controlled via {src}'
+
+        # 算术表达式
+        if re.search(r'[*+\-/<>]', size_expr):
+            bound = self._find_constraint(size_expr, lines, call_idx)
+            if bound is not None:
+                return SizeSource.ARITHMETIC, bound, True, \
+                    f'arithmetic, constrained to ≤ {bound}'
+            return SizeSource.ARITHMETIC, None, False, 'arithmetic expression'
+
+        return SizeSource.UNKNOWN, None, False, ''
+
+    def _find_constraint(
+        self, var_name: str, lines: List[str], call_idx: int,
+    ) -> Optional[int]:
+        """
+        在 malloc 调用之前搜索对 var_name 的约束操作。
+
+        检测模式: if(var > N) var = N; 或 var = min(var, N);
+        """
+        context = lines[max(0, call_idx - 15):call_idx]
+        context_str = '\n'.join(context)
+
+        # if(size > N) size = N;
+        m = re.search(
+            rf'if\s*\([^)]*{re.escape(var_name)}\s*[>]\s*(\d+)[^)]*\)\s*\n?\s*{re.escape(var_name)}\s*=\s*\1',
+            context_str,
+        )
+        if m:
+            return int(m.group(1))
+
+        # if(size > N) size = M (M <= N)
+        for m in re.finditer(
+            rf'if\s*\([^)]*{re.escape(var_name)}\s*[>]\s*(\d+)[^)]*\)',
+            context_str,
+        ):
+            n = int(m.group(1))
+            after = context_str[m.end():m.end() + 100]
+            assign_m = re.search(
+                rf'{re.escape(var_name)}\s*=\s*(\d+)', after,
+            )
+            if assign_m and int(assign_m.group(1)) <= n:
+                return int(assign_m.group(1))
+
+        # min(var, N) / MAX(var, N)
+        m = re.search(rf'min\s*\(\s*{re.escape(var_name)}\s*,\s*(\d+)\s*\)', context_str)
+        if m:
+            return int(m.group(1))
+        m = re.search(rf'MAX\s*\(\s*{re.escape(var_name)}\s*,\s*(\d+)\s*\)', context_str)
+        if m:
+            return int(m.group(1))
+
+        return None
+
+
+def trace_heap_allocations(pseudocode: str) -> List[dict]:
+    """便捷函数: 返回字典格式的追踪结果。"""
+    tracker = HeapFlowTracker()
+    return [
+        {'alloc': r.alloc_func, 'size_expr': r.size_var,
+         'source': r.source_type.value, 'constrained': r.is_constrained,
+         'upper_bound': r.upper_bound, 'constraint': r.constraint_desc}
+        for r in tracker.trace(pseudocode)
+    ]
+
+
+__all__ = ['SizeSource', 'TraceResult', 'HeapFlowTracker', 'trace_heap_allocations']

@@ -1,6 +1,6 @@
 # 负载均衡策略集 — 覆盖六大经典算法 + 一致性哈希环
 # 参考 Falcon 框架 [ACM BDAIA 2025] 的三层优先级 + 加权公平队列思路
-# 参考 Hiku [arXiv:2502.15534 [待验证]] 的 pull-based 调度对负载分布的改进
+# pull-based 调度对负载分布的改进: worker 空闲时主动拉取
 # 每种策略封装为独立类，暴露统一的 select 接口
 #
 # 设计约束：策略无状态，选择逻辑接收节点列表 + 可选请求上下文
@@ -124,7 +124,7 @@ class WeightedLeastConnectionsBalancer:
 # ===== 随机选择 =====
 
 class RandomBalancer:
-    """均匀随机选择。Hiku [arXiv:2502.15534]: pull-based + random 优于 hash-based 12.9%。"""
+    """均匀随机选择。pull-based + random 策略优于纯 hash-based。"""
     def select(self, nodes: List[SelectorNode]) -> Optional[SelectorNode]:
         alive = [n for n in nodes if n.healthy]
         if not alive:

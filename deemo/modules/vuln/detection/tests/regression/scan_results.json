@@ -1,0 +1,84 @@
+{
+  "CVE-2016-4484": {
+    "sample_id": "CVE-2016-4484",
+    "success": true,
+    "elapsed_sec": 0.032,
+    "findings": [],
+    "finding_count": 0
+  },
+  "CVE-2021-3156": {
+    "sample_id": "CVE-2021-3156",
+    "success": true,
+    "elapsed_sec": 0.016,
+    "findings": [],
+    "finding_count": 0
+  },
+  "double-free-03": {
+    "sample_id": "double-free-03",
+    "success": true,
+    "elapsed_sec": 0.016,
+    "findings": [
+      {
+        "type": "dangerous_symbol",
+        "function": "free",
+        "detail": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\vuln\\detection\\tests\\regression\\samples\\double-free-03\\vuln.exe:   "
+      }
+    ],
+    "finding_count": 1
+  },
+  "format-string-04": {
+    "sample_id": "format-string-04",
+    "success": true,
+    "elapsed_sec": 0.017,
+    "findings": [],
+    "finding_count": 0
+  },
+  "heap-overflow-01": {
+    "sample_id": "heap-overflow-01",
+    "success": true,
+    "elapsed_sec": 0.017,
+    "findings": [],
+    "finding_count": 0
+  },
+  "integer-overflow-06": {
+    "sample_id": "integer-overflow-06",
+    "success": true,
+    "elapsed_sec": 0.016,
+    "findings": [],
+    "finding_count": 0
+  },
+  "stack-overflow-05": {
+    "sample_id": "stack-overflow-05",
+    "success": true,
+    "elapsed_sec": 0.016,
+    "findings": [],
+    "finding_count": 0
+  },
+  "taint-recv-07": {
+    "sample_id": "taint-recv-07",
+    "success": true,
+    "elapsed_sec": 0.016,
+    "findings": [],
+    "finding_count": 0
+  },
+  "unchecked-copy-08": {
+    "sample_id": "unchecked-copy-08",
+    "success": true,
+    "elapsed_sec": 0.017,
+    "findings": [],
+    "finding_count": 0
+  },
+  "use-after-free-02": {
+    "sample_id": "use-after-free-02",
+    "success": true,
+    "elapsed_sec": 0.017,
+    "findings": [
+      {
+        "type": "dangerous_symbol",
+        "function": "free",
+        "detail": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\modules\\vuln\\detection\\tests\\regression\\samples\\use-after-free-02\\vuln.exe:"
+      }
+    ],
+    "finding_count": 1
+  }
+}

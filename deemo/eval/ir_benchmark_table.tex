@@ -1,0 +1,20 @@
+\begin{table}[t]
+\centering
+\caption{IR-Level benchmark results across four vulnerability detectors. The heap overflow
+4-stage pipeline achieves 100\% precision and 100\% FP reduction on a 10-scenario benchmark
+(5 true overflows + 5 false positive patterns). All timing measured on decompiled IR representations
+without execution.}
+\label{tab:ir_benchmark}
+\begin{tabular}{@{}l r r r r r r r@{}}
+\toprule
+\textbf{Detector} & \textbf{Tests} & \textbf{TP} & \textbf{FP} & \textbf{TN} & \textbf{FN}
+& \textbf{Acc.} & \textbf{Time} \midrule
+  double_free          & 6 & 2 & 0 & 3 & 1 & 83\% & 0.01ms \n  heap_overflow        & 10 & 3 & 0 & 5 & 2 & 80\% & 0.79ms \n  integer_overflow     & 6 & 0 & 0 & 3 & 3 & 50\% & 0.01ms \n  uaf                  & 6 & 1 & 0 & 3 & 2 & 67\% & 0.10ms \n\midrule
+\textbf{Total} & 28 & 6 & 0 & 14 & 8 & 71\% & --- \n\bottomrule
+\end{tabular}
+\vspace{4pt}
+\footnotesize
+IR = Intermediate Representation (decompiler output). All detectors run on decompiled IR directly
+without binary execution. Heap overflow FP reduction validated on 5 false positive scenarios
+eliminated by 4-stage pipeline.
+\end{table}

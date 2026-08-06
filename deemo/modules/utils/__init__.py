@@ -131,3 +131,37 @@ from modules.utils.segment_tree import (
     merge_intervals, intersect_intervals, subtract_intervals,
     interval_length, contains_point, gap_intervals,
 )
+
+# 跨尺度熵指纹 (CSEF) —— 多尺度熵 + 跨尺度耦合 + 自适应 Tsallis q
+from modules.utils.cross_scale_entropy import (
+    CrossScaleProfile,
+    compute_csef,
+    compute_csef_streaming,
+)
+from modules.utils.csef_scan import (
+    StreamingCSEF,
+    csef_region_scan,
+    csef_region_labels,
+)
+
+# 渐进式 SimHash 二叉检索树 (PSH-Trie)
+from modules.utils.simhash_trie import (
+    SimHashTrie,
+    SimHashIndex,
+    SimHashNode,
+)
+
+# 自适应多模式匹配引擎 (AMPSE) —— 频率感知 AC 自动机
+from modules.utils.adaptive_matcher import (
+    AdaptiveAhoCorasick,
+    ThreadSafeAdaptiveAC,
+)
+
+# 熵引导的内容定义分块 (EG-CDC)
+from modules.utils.entropy_cdc import (
+    EntropyGuidedCDC,
+    ChunkInfo,
+    eg_cdc_chunks,
+    eg_cdc_boundary_entropy_map,
+    eg_cdc_compare,
+)

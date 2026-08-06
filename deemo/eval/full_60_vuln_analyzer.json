@@ -1,0 +1,426 @@
+{
+  "total": 60,
+  "detected": 0,
+  "results": [
+    {
+      "sample": "CVE-2015-0235_ghost",
+      "category": "samples_heap",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.016
+    },
+    {
+      "sample": "CVE-2016-10190_ffmpeg",
+      "category": "samples_heap",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "CVE-2017-1000253_pie",
+      "category": "samples_heap",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "CVE-2018-1000001_glibc",
+      "category": "samples_heap",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "CVE-2019-11477_tcp_sack",
+      "category": "samples_heap",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "CVE-2020-10713_grub2",
+      "category": "samples_heap",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "CVE-2021-3156_sudo",
+      "category": "samples_heap",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "CVE-2021-4034_polkit",
+      "category": "samples_heap",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "CVE-2022-0185_linux_fs",
+      "category": "samples_heap",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "CVE-2022-23222_kernel_bpf",
+      "category": "samples_heap",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "CVE-2022-25636_netfilter",
+      "category": "samples_heap",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "CVE-2023-0179_kernel_bpf2",
+      "category": "samples_heap",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "CVE-2023-0464_openssl",
+      "category": "samples_heap",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "CVE-2024-21626_runc",
+      "category": "samples_heap",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "CVE-2024-6387_openssh",
+      "category": "samples_heap",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "fmt_direct",
+      "category": "samples_fmt",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "fmt_dprintf",
+      "category": "samples_fmt",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "fmt_fprintf",
+      "category": "samples_fmt",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "fmt_fprintf_file",
+      "category": "samples_fmt",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "fmt_indirect_title",
+      "category": "samples_fmt",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "fmt_recursive",
+      "category": "samples_fmt",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "fmt_snprintf_leak",
+      "category": "samples_fmt",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "fmt_snprintf_ret",
+      "category": "samples_fmt",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "fmt_sprintf_chain",
+      "category": "samples_fmt",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "fmt_syslog",
+      "category": "samples_fmt",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "fmt_syslog_indirect",
+      "category": "samples_fmt",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "fmt_vprintf",
+      "category": "samples_fmt",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "fmt_vsnprintf",
+      "category": "samples_fmt",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "fmt_wide_char",
+      "category": "samples_fmt",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "fmt_wrapper",
+      "category": "samples_fmt",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "int_overflow_add",
+      "category": "samples_int",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "int_overflow_array",
+      "category": "samples_int",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "int_overflow_cast",
+      "category": "samples_int",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "int_overflow_div",
+      "category": "samples_int",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "int_overflow_loop",
+      "category": "samples_int",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "int_overflow_mixed",
+      "category": "samples_int",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "int_overflow_mul",
+      "category": "samples_int",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "int_overflow_neg",
+      "category": "samples_int",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "int_overflow_offby",
+      "category": "samples_int",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "int_overflow_shift",
+      "category": "samples_int",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "int_overflow_sign",
+      "category": "samples_int",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "int_overflow_sub",
+      "category": "samples_int",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "int_overflow_trunc",
+      "category": "samples_int",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "int_overflow_widen",
+      "category": "samples_int",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "int_overflow_wrap",
+      "category": "samples_int",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "uaf_conditional_free",
+      "category": "samples_uaf",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "uaf_dangling_global",
+      "category": "samples_uaf",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "uaf_double_free",
+      "category": "samples_uaf",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "uaf_func_ptr",
+      "category": "samples_uaf",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "uaf_io_uring",
+      "category": "samples_uaf",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "uaf_list_remove",
+      "category": "samples_uaf",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "uaf_multi_path",
+      "category": "samples_uaf",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "uaf_realloc_null",
+      "category": "samples_uaf",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "uaf_realloc_race",
+      "category": "samples_uaf",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "uaf_signal_handler",
+      "category": "samples_uaf",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "uaf_simple_deref",
+      "category": "samples_uaf",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "uaf_stale_callback",
+      "category": "samples_uaf",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "uaf_thread_pool",
+      "category": "samples_uaf",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "uaf_vector_grow",
+      "category": "samples_uaf",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    },
+    {
+      "sample": "uaf_vtable_override",
+      "category": "samples_uaf",
+      "findings": 0,
+      "types": [],
+      "time_s": 0.0
+    }
+  ]
+}

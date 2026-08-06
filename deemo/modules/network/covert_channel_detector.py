@@ -281,6 +281,9 @@ class CovertChannelDetector:
         self._flow_ip_ids: Dict[str, List[int]] = defaultdict(list)
         self._flow_tcp_flags: Dict[str, List[int]] = defaultdict(list)
         self._dns_queries: List[Dict] = []
+        # 小波检测器 —— 延迟初始化, 首次调用evaluate_flow_wavelet时加载
+        self._wavelet_detector = None
+        self._wavelet_baseline_samples: List[List[float]] = []
 
     def feed_packet(self, flow_key: str, iat: float,
                     payload: bytes, ip_id: int = 0,
@@ -320,6 +323,61 @@ class CovertChannelDetector:
         alerts = self._dns_tunnel.detect(queries)
         self._alerts.extend(alerts)
         return alerts
+
+    # ── 小波包分解隐蔽时序信道检测 ──────────────────────────
+    def evaluate_flow_wavelet(self, flow_key: str,
+                               accumulate_baseline: bool = False
+                               ) -> Optional[CovertChannelAlert]:
+        """对流IAT序列做小波包分解检测。
+
+        与evaluate_flow的时域检测互补: 时域擅长检测JitterBug类
+        规则抖动, 小波域擅长检测多尺度频带能量异常(Model-Based/TRCTC)。
+
+        accumulate_baseline=True时, 将该流的IAT序列加入基线校准集
+        (用于正常流量场景, 建立1/f分布参考)。
+        返回None: 未检测到异常; 返回CovertChannelAlert: 检测到可疑活动。
+        """
+        iats = self._flow_iats.get(flow_key, [])
+        if len(iats) < 8:
+            return None
+
+        # 延迟加载小波检测器
+        if self._wavelet_detector is None:
+            try:
+                from .wavelet_detector import WaveletCovertDetector
+            except ImportError:
+                from src.wavelet_detector import WaveletCovertDetector
+            self._wavelet_detector = WaveletCovertDetector()
+
+        if accumulate_baseline:
+            self._wavelet_baseline_samples.append(list(iats))
+            if len(self._wavelet_baseline_samples) >= 5:
+                self._wavelet_detector.calibrate_baseline(
+                    self._wavelet_baseline_samples)
+
+        score = self._wavelet_detector.detect(iats)
+
+        # 仅高置信度(>0.7)时生成告警
+        if score.wavelet_score < 0.7:
+            return None
+
+        alert = CovertChannelAlert(
+            channel_type=f"timing_wavelet_{score.channel_type}",
+            description=(
+                f"小波包分解检测到{score.channel_type}类隐蔽时序信道"
+                f"(频带={score.dominant_frequency_band}, "
+                f"KL偏差={score.energy_deviation:.3f})"),
+            severity="high" if score.wavelet_score > 0.85 else "medium",
+            confidence=score.wavelet_score,
+            evidence={
+                "wavelet_score": score.wavelet_score,
+                "dominant_band": score.dominant_frequency_band,
+                "energy_deviation": score.energy_deviation,
+                "subband_details": score.subband_details,
+            },
+        )
+        self._alerts.append(alert)
+        return alert
 
     def summary(self) -> Dict[str, Any]:
         type_dist = Counter(a.channel_type for a in self._alerts)

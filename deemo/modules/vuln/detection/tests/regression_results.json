@@ -1,0 +1,106 @@
+[
+  {
+    "name": "heap_tp_simple",
+    "vuln_type": "heap_overflow",
+    "detected": true,
+    "expected": true,
+    "correct": true,
+    "elapsed_ms": 76.7
+  },
+  {
+    "name": "heap_fp_disjoint",
+    "vuln_type": "heap_overflow",
+    "detected": false,
+    "expected": false,
+    "correct": true,
+    "elapsed_ms": 0.0
+  },
+  {
+    "name": "heap_tp_two_allocs",
+    "vuln_type": "heap_overflow",
+    "detected": true,
+    "expected": true,
+    "correct": true,
+    "elapsed_ms": 0.0
+  },
+  {
+    "name": "heap_tp_heartbleed",
+    "vuln_type": "heap_overflow",
+    "detected": true,
+    "expected": true,
+    "correct": true,
+    "elapsed_ms": 0.0
+  },
+  {
+    "name": "uaf_tp_basic",
+    "vuln_type": "uaf",
+    "detected": true,
+    "expected": true,
+    "correct": true,
+    "elapsed_ms": 2.4
+  },
+  {
+    "name": "uaf_fp_reassign",
+    "vuln_type": "uaf",
+    "detected": false,
+    "expected": false,
+    "correct": true,
+    "elapsed_ms": 0.0
+  },
+  {
+    "name": "uaf_tp_double_free",
+    "vuln_type": "uaf",
+    "detected": true,
+    "expected": true,
+    "correct": true,
+    "elapsed_ms": 0.0
+  },
+  {
+    "name": "int_tp_add_wrap",
+    "vuln_type": "integer_overflow",
+    "detected": true,
+    "expected": true,
+    "correct": true,
+    "elapsed_ms": 1.0
+  },
+  {
+    "name": "int_tp_mul_wrap",
+    "vuln_type": "integer_overflow",
+    "detected": true,
+    "expected": true,
+    "correct": true,
+    "elapsed_ms": 0.0
+  },
+  {
+    "name": "int_fp_safe_add",
+    "vuln_type": "integer_overflow",
+    "detected": false,
+    "expected": false,
+    "correct": true,
+    "elapsed_ms": 0.0
+  },
+  {
+    "name": "fmt_tp_tainted",
+    "vuln_type": "format_string",
+    "detected": true,
+    "expected": true,
+    "correct": true,
+    "elapsed_ms": 1.0
+  },
+  {
+    "name": "fmt_fp_rodata",
+    "vuln_type": "format_string",
+    "detected": false,
+    "expected": false,
+    "correct": true,
+    "elapsed_ms": 0.0
+  },
+  {
+    "name": "fmt_fp_cleared",
+    "vuln_type": "format_string",
+    "detected": false,
+    "expected": false,
+    "correct": true,
+    "elapsed_ms": 0.0
+  }
+]

@@ -1,0 +1,6 @@
+{
+  "cve": "HEAP-OVERFLOW-04",
+  "vuln_type": "heap_overflow",
+  "vuln_count": 1,
+  "note": "heap overflow via unbounded copy"
+}

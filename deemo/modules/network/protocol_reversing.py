@@ -315,3 +315,55 @@ def create_protocol_reverser():
         "type_inferrer": TypeInferrer(),
         "dissector_gen": WiresharkDissector(),
     }
+
+
+# ── 共识序列对齐字段推断 ──────────────────────────────
+def infer_fields_by_consensus_alignment(messages: List[bytes],
+                                         max_pairs: int = 50
+                                         ) -> List[FieldInfo]:
+    """通过NW多序列共识对齐推断字段边界。
+
+    与BoundaryDetector的熵分析法互补: 熵法适合检测加密/压缩边界,
+    共识对齐适合检测常数字段与可变字段之间的结构化边界。
+    max_pairs控制配对对齐数量上限(消息数>10时建议限制)。
+
+    返回推断的FieldInfo列表, confidence来自共识保守度。
+    """
+    try:
+        from .consensus_alignment import ConsensusBuilder
+    except ImportError:
+        from src.consensus_alignment import ConsensusBuilder
+
+    builder = ConsensusBuilder()
+    profile = builder.build(messages, max_pairs)
+
+    fields: List[FieldInfo] = []
+    boundaries = [0] + profile.inferred_boundaries + [profile.aligned_length]
+
+    for i in range(len(boundaries) - 1):
+        start = boundaries[i]
+        end = boundaries[i + 1]
+        size = end - start
+        if size <= 0:
+            continue
+        # 计算该区间平均保守度作为置信度
+        seg_cons = (profile.position_conservation[start:end]
+                    if start < len(profile.position_conservation) else [])
+        avg_cons = sum(seg_cons) / len(seg_cons) if seg_cons else 0.5
+
+        # 字段假设: 高保守度→常数字段(magic/type), 低保守度→可变字段(data/length)
+        if avg_cons > 0.8:
+            hypothesis = "constant_field" if size <= 4 else "constant_block"
+        elif avg_cons < 0.3:
+            hypothesis = "variable_field"
+        else:
+            hypothesis = "mixed_field"
+
+        fields.append(FieldInfo(
+            name=f"field_{i}",
+            offset=start, size=size,
+            hypothesis=hypothesis,
+            confidence=round(avg_cons, 3),
+        ))
+
+    return fields

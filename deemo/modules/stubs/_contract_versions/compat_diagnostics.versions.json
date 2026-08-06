@@ -1,0 +1,12 @@
+[
+  {
+    "module_name": "compat_diagnostics",
+    "version_id": "c44a9004744d",
+    "merkle_root": "c44a9004744dd238f95241c8bbf89f0f4335dfbb6b1af42880bbf3776cc11d4d",
+    "leaf_count": 2,
+    "timestamp": 1785833806.222518,
+    "semver": "0.1.0",
+    "prev_version_id": "",
+    "bump": "none"
+  }
+]

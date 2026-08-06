@@ -1,17 +1,18 @@
 # GRL-Sched 第一层: 任务依赖图建模 (TaskDependencyGraph)
 #
-# 论文对应: GraphEdge: Dynamic Graph Partition and Task Scheduling for GNNs
-#   Computing in Edge Network — arXiv:2504.15905 [待验证]
-#   GraphEdge 将 GNN 计算任务表示为 DAG，节点=算子，边=张量流动；
-#   本模块把同一抽象移植到通用分布式任务:
-#   节点=任务/流水线阶段，边=数据依赖/控制依赖，边权=预估通信代价，
-#   节点属性 exec_time=预估执行时间。
+# 将通用分布式任务表示为有向无环图:
+#   节点 = 任务/流水线阶段
+#   边 = 数据依赖/控制依赖
+#   边权 = 预估通信代价 (跨机器传输)
+#   节点属性 exec_time = 预估执行时间
 #
 # 设计意图:
 #   - 从 Task 列表 (src/models.py) 或 Pipeline (src/pipeline.py) 无侵入抽取依赖
 #   - 提供拓扑序/层级/关键路径等图结构原语，供划分器与调度器共用
 #   - 提供固定维度节点特征矩阵，供 GNN 编码器 (grl_scheduler.GNNEncoder) 聚合
 #   - 全部纯标准库实现，无 numpy/torch 依赖
+#   - DAG 调度是组合优化中的经典问题 (P|prec|Cmax 的 NP-hardness 见
+#     Ullman 1975; 列表调度与 HEFT 见 Topcuoglu et al. 2002, IEEE TPDS)
 #
 # 边界条件:
 #   - 重复节点/自环/双向边会破坏 DAG 不变量，构造时显式防护

@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500">
+  <rect width="800" height="500" fill="white"/>
+  <text x="400" y="30" text-anchor="middle" font-size="18" font-weight="bold">Binary Vulnerability Detection: Tool Comparison</text>
+  <text x="400" y="55" text-anchor="middle" font-size="13" fill="#666">Detection Rate vs False Positive Rate (60 samples, 4 categories)</text>
+  <!-- Legend -->
+  <circle cx="580" cy="80" r="6" fill="#2196F3"/><text x="595" y="85" font-size="12">BinMind (ours)</text>
+  <circle cx="580" cy="100" r="6" fill="#FF9800"/><text x="595" y="105" font-size="12">Angr</text>
+  <circle cx="700" cy="80" r="6" fill="#4CAF50"/><text x="715" y="85" font-size="12">QEMU</text>
+  <circle cx="700" cy="100" r="6" fill="#9C27B0"/><text x="715" y="105" font-size="12">Ghidra</text>
+  <!-- Axes -->
+  <line x1="80" y1="400" x2="750" y2="400" stroke="black" stroke-width="2"/>
+  <line x1="80" y1="400" x2="80" y2="50" stroke="black" stroke-width="2"/>
+  <text x="400" y="430" text-anchor="middle" font-size="12">False Positive Rate (%)</text>
+  <text x="20" y="225" text-anchor="middle" font-size="12" transform="rotate(-90,20,225)">Detection Rate (%)</text>
+  <!-- Grid and labels -->
+  <line x1="80" y1="395" x2="80" y2="405" stroke="black"/><text x="80" y="420" text-anchor="middle" font-size="10">0</text><line x1="147" y1="395" x2="147" y2="405" stroke="black"/><text x="147" y="420" text-anchor="middle" font-size="10">10</text><line x1="214" y1="395" x2="214" y2="405" stroke="black"/><text x="214" y="420" text-anchor="middle" font-size="10">20</text><line x1="281" y1="395" x2="281" y2="405" stroke="black"/><text x="281" y="420" text-anchor="middle" font-size="10">30</text><line x1="348" y1="395" x2="348" y2="405" stroke="black"/><text x="348" y="420" text-anchor="middle" font-size="10">40</text><line x1="415" y1="395" x2="415" y2="405" stroke="black"/><text x="415" y="420" text-anchor="middle" font-size="10">50</text><line x1="482" y1="395" x2="482" y2="405" stroke="black"/><text x="482" y="420" text-anchor="middle" font-size="10">60</text><line x1="549" y1="395" x2="549" y2="405" stroke="black"/><text x="549" y="420" text-anchor="middle" font-size="10">70</text><line x1="616" y1="395" x2="616" y2="405" stroke="black"/><text x="616" y="420" text-anchor="middle" font-size="10">80</text><line x1="683" y1="395" x2="683" y2="405" stroke="black"/><text x="683" y="420" text-anchor="middle" font-size="10">90</text><line x1="750" y1="395" x2="750" y2="405" stroke="black"/><text x="750" y="420" text-anchor="middle" font-size="10">100</text>
+  <line x1="75" y1="400" x2="85" y2="400" stroke="black"/><text x="70" y="403" text-anchor="end" font-size="10">0</text><line x1="75" y1="365" x2="85" y2="365" stroke="black"/><text x="70" y="368" text-anchor="end" font-size="10">10</text><line x1="75" y1="330" x2="85" y2="330" stroke="black"/><text x="70" y="333" text-anchor="end" font-size="10">20</text><line x1="75" y1="295" x2="85" y2="295" stroke="black"/><text x="70" y="298" text-anchor="end" font-size="10">30</text><line x1="75" y1="260" x2="85" y2="260" stroke="black"/><text x="70" y="263" text-anchor="end" font-size="10">40</text><line x1="75" y1="225" x2="85" y2="225" stroke="black"/><text x="70" y="228" text-anchor="end" font-size="10">50</text><line x1="75" y1="190" x2="85" y2="190" stroke="black"/><text x="70" y="193" text-anchor="end" font-size="10">60</text><line x1="75" y1="155" x2="85" y2="155" stroke="black"/><text x="70" y="158" text-anchor="end" font-size="10">70</text><line x1="75" y1="120" x2="85" y2="120" stroke="black"/><text x="70" y="123" text-anchor="end" font-size="10">80</text><line x1="75" y1="85" x2="85" y2="85" stroke="black"/><text x="70" y="88" text-anchor="end" font-size="10">90</text><line x1="75" y1="50" x2="85" y2="50" stroke="black"/><text x="70" y="53" text-anchor="end" font-size="10">100</text>
+  <!-- Data points: Heap -->
+  <text x="400" y="75" text-anchor="middle" font-size="11" fill="#888">Heap Overflow (15 samples)</text>
+  <!-- BinMind: det=93%, fp=7% -->
+  <rect x="85" y="75" width="54" height="325" fill="#2196F3" opacity="0.7"/><text x="112" y="70" text-anchor="middle" font-size="9">93%</text>
+  <!-- Angr: det=36%, fp=71% -->
+  <rect x="148" y="274" width="54" height="126" fill="#FF9800" opacity="0.7"/><text x="175" y="269" text-anchor="middle" font-size="9">36%</text>
+  <!-- QEMU: det=21%, fp=14% -->
+  <rect x="211" y="326" width="54" height="74" fill="#4CAF50" opacity="0.7"/><text x="238" y="321" text-anchor="middle" font-size="9">21%</text>
+  <!-- Ghidra: det=29%, fp=57% -->
+  <rect x="274" y="298" width="54" height="102" fill="#9C27B0" opacity="0.7"/><text x="301" y="293" text-anchor="middle" font-size="9">29%</text>
+  <!-- FP rate markers at bottom -->
+  <text x="112" y="410" text-anchor="middle" font-size="8" fill="#d00">FP:7%</text>
+  <text x="175" y="410" text-anchor="middle" font-size="8" fill="#d00">FP:71%</text>
+  <text x="238" y="410" text-anchor="middle" font-size="8" fill="#d00">FP:14%</text>
+  <text x="301" y="410" text-anchor="middle" font-size="8" fill="#d00">FP:57%</text>
+  <!-- Footer -->
+  <text x="400" y="470" text-anchor="middle" font-size="10" fill="#999">Bar height = Detection Rate | FP Rate below each bar | Higher detection + lower FP = better</text>
+  <text x="400" y="490" text-anchor="middle" font-size="9" fill="#bbb">Generated by BinMind eval/plot_comparison.py | Data: eval/benchmark_summary.json</text>
+</svg>

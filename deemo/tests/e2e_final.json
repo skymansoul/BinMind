@@ -1,0 +1,18 @@
+{
+  "scanned": 115,
+  "elapsed": 0.04,
+  "findings": {
+    "uaf": 13,
+    "int_overflow": 6,
+    "heap_bounds": 0
+  },
+  "types": {
+    "heap": 64,
+    "uaf": 66,
+    "intovf": 6,
+    "fmt": 46,
+    "stack": 27,
+    "cmd": 15
+  },
+  "status": "PASS"
+}

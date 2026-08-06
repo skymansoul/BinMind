@@ -1,0 +1,39 @@
+% BinMind 对比实验 LaTeX 表格模板
+% 将 Python 实验输出的 JSON 数据填入后即可用于论文
+
+\begin{table}[t]
+\centering
+\caption{Comparison of vulnerability detection tools on 10 CVE samples.
+         Detection rate (DR), false positive rate (FPR), and average time
+         per sample are reported. Results are split by obfuscation status.}
+\label{tab:comparison}
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Tool} & \textbf{Samples} & \textbf{DR} & \textbf{FPR} & \textbf{Avg Time (s)} & \textbf{Peak Mem (MB)} & \textbf{Obfuscated?} \\
+\midrule
+
+% --- 未加壳组 (Non-obfuscated) ---
+\multirow{4}{*}{Unpacked}
+    & BinMind  & 10 & 0.XX & 0.XX & XX.X & XXX & No \\
+    & Angr     & 10 & 0.XX & 0.XX & XX.X & XXX & No \\
+    & QEMU     & 10 & 0.XX & 0.XX & XX.X & XXX & No \\
+    & Ghidra   & 10 & 0.XX & 0.XX & XX.X & XXX & No \\
+\midrule
+
+% --- 加壳组 (UPX-packed) ---
+\multirow{4}{*}{UPX-packed}
+    & BinMind  & 10 & 0.XX & 0.XX & XX.X & XXX & Yes \\
+    & Angr     & 10 & 0.XX & 0.XX & XX.X & XXX & Yes \\
+    & QEMU     & 10 & 0.XX & 0.XX & XX.X & XXX & Yes \\
+    & Ghidra   & 10 & 0.XX & 0.XX & XX.X & XXX & Yes \\
+\bottomrule
+\end{tabular}
+
+\vspace{4pt}
+\small
+DR = Detection Rate (true positives / total expected vulnerabilities).
+FPR = False Positive Rate (false positives / (false positives + true positives)).
+BinMind combines symbolic execution (angr), static decompiled-code analysis,
+and assembly-level fallback detection. BinMind's assembly fallback enables
+partial detection on UPX-packed binaries where decompilation fails.
+\end{table}

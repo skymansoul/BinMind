@@ -3,7 +3,7 @@
 汤普森采样弹性伸缩器 — Beta 分布驱动的自动扩缩决策。
 
 理论依据:
-  BandFuzz (arXiv:2507.10845): 协同模糊测试资源分配。
+  汤普森采样用于协同资源分配。
   Cupid: 数据驱动互补模糊器组合选择。
 
 模块位置: distributed/src/thompson_autoscaler.py

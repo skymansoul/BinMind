@@ -1,0 +1,12 @@
+[
+  {
+    "module_name": "kernel_vuln_analyzer",
+    "version_id": "9a2af0e4bde5",
+    "merkle_root": "9a2af0e4bde5e07cdf672bcdef124c6f6bace5f92fb28ee32229605505e05ef0",
+    "leaf_count": 2,
+    "timestamp": 1785833806.2259715,
+    "semver": "0.1.0",
+    "prev_version_id": "",
+    "bump": "none"
+  }
+]

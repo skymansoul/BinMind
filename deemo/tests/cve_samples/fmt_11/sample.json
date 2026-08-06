@@ -1,0 +1,6 @@
+{
+  "cve_id": "CVE-2025-1111",
+  "vuln_type": "format_string",
+  "description": "Format string in WebSocket frame",
+  "expected_count": 1
+}

@@ -1,0 +1,34 @@
+% Auto-generated comparison table -- fill data from comparison_results.json
+\begin{table}[t]
+\centering
+\caption{Cross-Tool Comparison on CVE-Mimic Benchmark (10 samples)}
+\label{tab:comparison}
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Tool} & \textbf{Samples} & \textbf{Detected} & \textbf{Precision} & \textbf{Recall} & \textbf{F1} & \textbf{Avg Time (s)} \\
+\midrule
+% --- UNPACKED (no obfuscation) ---
+\multicolumn{7}{c}{\textit{Panel A: Unpacked Binaries (gcc -O0)}} \\
+\midrule
+BinMind (ours)   & 10 & \val{BMD} & \val{BMP} & \val{BMR} & \val{BMF} & \val{BMT} \\
+Angr (explore)   & 10 & \val{AND} & \val{ANP} & \val{ANR} & \val{ANF} & \val{ANT} \\
+QEMU user        & 10 & \val{QED} & \val{QEP} & \val{QER} & \val{QEF} & \val{QET} \\
+Ghidra headless  & 10 & \val{GHD} & \val{GHP} & \val{GHR} & \val{GHF} & \val{GHT} \\
+\midrule
+% --- PACKED (UPX) ---
+\multicolumn{7}{c}{\textit{Panel B: UPX-Packed Binaries}} \\
+\midrule
+BinMind (ours)   & 10 & \val{BMDp} & \val{BMPp} & \val{BMRp} & \val{BMFp} & \val{BMTp} \\
+Angr (explore)   & 10 & \val{ANDp} & \val{ANPp} & \val{ANRp} & \val{ANFp} & \val{ANTp} \\
+QEMU user        & 10 & \val{QEDp} & \val{QEPp} & \val{QERp} & \val{QEFp} & \val{QETp} \\
+Ghidra headless  & 10 & \val{GHDp} & \val{GHPp} & \val{GHRp} & \val{GHFp} & \val{GHTp} \\
+\midrule
+% --- PER-VULNERABILITY-TYPE BREAKDOWN ---
+\multicolumn{7}{c}{\textit{Panel C: By Vulnerability Type (BinMind, Unpacked)}} \\
+\midrule
+Stack Overflow   & 4 & \val{SOD} & \val{SOP} & \val{SOR} & \val{SOF} & \val{SOT} \\
+Format String    & 2 & \val{FSD} & \val{FSP} & \val{FSR} & \val{FSF} & \val{FST} \\
+Heap/UAF         & 4 & \val{HUD} & \val{HUP} & \val{HUR} & \val{HUF} & \val{HUT} \\
+\bottomrule
+\end{tabular}
+\end{table}

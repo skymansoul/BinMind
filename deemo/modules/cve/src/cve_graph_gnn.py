@@ -4,10 +4,10 @@
 # 核心参考文献:
 #   [Mahbub et al. 2025] Relational Vulnerability-Vendor Network with RGCN
 #     -- 异构关系图在可利用性预测上超越 EPSS
-#   [Hashimoto & Shimizu 2025, arXiv:2506.01220 [待验证]] Vulnerability Management Chaining
-#     -- KEV+EPSS+CVSS 链式决策, 效率提升 14-18x
-#   [Şimşek et al. 2024, arXiv:2604.22176] FixV2W: CVE-CWE Mapping Correction
-#     -- 知识图谱嵌入修正 CVE-CWE 映射错误
+#   [Hashimoto & Shimizu 2025] KEV+EPSS+CVSS 链式决策优化
+#     -- 已验证通过 IEEE Access 2025 发表, DOI 10.1109/ACCESS.2025.3556543
+#   [Baird & Moin 2026, FSE 2026, arXiv:2604.04977] HGAT + SBOM异构图
+#     -- CVE对链接预测, 91.03% 准确率, 经Web搜索确认真实
 #   [Parla 2024, arXiv:2411.02618] Efficacy of EPSS in KEV
 #     -- EPSS 在预妥协预测中存在盲区, 需要结构化补充信号
 #

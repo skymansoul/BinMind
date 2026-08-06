@@ -1,33 +1,22 @@
 """
-ROP gadget 语义分类器——将汇编片段归类为参数化的语义类型。
+ROP gadget semantic classifier.
 
-传统 ROP 工具 (ROPgadget, ropper) 基于正则匹配 gadget，
-无法理解 "mov eax, [esp+8]; ret" 和 "pop eax; ret" 在语义上的等价性。
-本模块通过具体解释 (concrete interpretation) 将每条 gadget 的副作用
-抽象为语义类型 + 参数化模板，使跨编译器/优化级别的 gadget 可互操作。
+Maps assembly fragments to parameterized semantic types using concrete
+interpretation, enabling cross-compiler and cross-optimization-level
+interoperability of gadgets. Traditional tools (ROPgadget, ropper) use
+regex matching and miss semantic equivalence (e.g., "mov eax, [esp+8]; ret"
+vs "pop eax; ret").
 
-语义类型枚举 (ref: MAJORCA, arXiv 2111.05781):
-  MoveReg(dst, src)    — 寄存器间移动，如 mov rax, rbx
-  LoadConst(dst, val)  — 加载常量，如 pop rax 或 xor eax,eax
-  LoadMem(dst, addr)   — 从内存加载，如 mov rax, [rdi]
-  StoreMem(addr, src)  — 写入内存，如 mov [rdi], rax
-  ArithOp(op, dst, a,b)— 算术操作，如 add rax, rbx
-  Syscall(nr)          — 系统调用
+Semantic types (ref: MAJORCA, arXiv 2111.05781):
+  MoveReg(dst, src), LoadConst(dst, val), LoadMem(dst, addr),
+  StoreMem(addr, src), ArithOp(op, dst, a, b), Syscall(nr)
 
-与 plugins/rop_tools.py 的关系:
-  rop_tools 负责发现和评分 gadget → 本模块对已发现的 gadget 进行语义分类
-  分类后的 gadget 可用于跨架构链构造（"需要 MoveReg(rdi,rax)" 在不同
-  ISA 中查找语义等价而非语法等价的 gadget）
+Concrete interpretation trades full constraint tracking for speed
+(~0.1ms/gadget vs seconds for symbolic), suitable for batch classification
+of thousands of gadgets. Use angrop for precise chain construction.
 
-具体解释 vs 符号执行的权衡:
-  具体解释 (本模块方案): 所有寄存器初始化为独立常量，逐条解释后比对。
-  快 (~0.1ms/gadget)，适合数千条 gadget 的批量分类，不依赖 SMT 求解器。
-  符号执行 (angrop方案): 精确追踪约束关系，但每条 gadget 需要数秒。
-  两者互补——本模块用于粗筛，精确链构造时再用 angrop 验证。
-
-参考:
-  MAJORCA (arXiv 2111.05781) — Pivot IR + concrete interpretation for
-    architecture-agnostic gadget classification
+Reference:
+  MAJORCA (arXiv 2111.05781)
 """
 
 from __future__ import annotations
@@ -53,17 +42,15 @@ class SemType(Enum):
 
 @dataclass
 class GadgetSemantic:
-    """gadget 语义描述——参数化的操作类型和操作数。"""
+    """Gadget semantic descriptor with parameterized operation type and operands."""
 
     stype: SemType
     operands: List[str] = field(default_factory=list)
-    # 原始汇编文本——保留以便追溯
     raw_asm: str = ""
-    # 副作用：此 gadget 执行后哪些寄存器被修改 (clobbered)
     clobbers: List[str] = field(default_factory=list)
 
     def template(self) -> str:
-        """生成语义模板字符串——用于跨架构匹配。"""
+        """Generate semantic template string for cross-architecture matching."""
         if self.stype == SemType.MoveReg and len(self.operands) >= 2:
             return f"MoveReg({self.operands[0]}, {self.operands[1]})"
         if self.stype == SemType.LoadConst and len(self.operands) >= 2:
@@ -79,7 +66,7 @@ class GadgetSemantic:
         return "Unknown"
 
 
-# x86_64 寄存器集合 (含子寄存器映射)
+# x86_64 register set (including sub-registers)
 _X86_REGS = {
     "rax", "rbx", "rcx", "rdx", "rsi", "rdi", "rbp", "rsp",
     "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15",
@@ -90,7 +77,7 @@ _X86_REGS = {
     "rip", "eip",
 }
 
-# 通用寄存器规范名称映射——子寄存器统一到父寄存器
+# Canonical register name mapping (sub-registers -> parent 64-bit register)
 _REG_CANONICAL = {
     "eax": "rax", "ebx": "rbx", "ecx": "rcx", "edx": "rdx",
     "esi": "rsi", "edi": "rdi", "ebp": "rbp", "esp": "rsp",
@@ -103,36 +90,29 @@ _REG_CANONICAL = {
 
 
 def _canon_reg(reg: str) -> str:
-    """寄存器名规范化——32bit/16bit/8bit 子寄存器 → 64bit 父寄存器。"""
+    """Canonicalize register name: 32/16/8-bit sub-register -> 64-bit parent."""
     return _REG_CANONICAL.get(reg.lower(), reg.lower())
 
 
 def classify_gadget(asm_lines: str) -> GadgetSemantic:
     """
-    对单个 gadget 的汇编指令序列进行语义分类。
+    Semantically classify a single gadget's assembly instruction sequence.
 
-    只分析最后一条 ret/call/jmp 之前的关键指令（通常是1-3条）。
-    使用启发式规则 + 操作数模式匹配：
-      pop reg → LoadConst(reg, "stack")
-      mov reg1, reg2 → MoveReg(reg1, reg2)
-      xor reg, reg → LoadConst(reg, "0")
-      mov reg, [addr] → LoadMem(reg, addr)
-      mov [addr], reg → StoreMem(addr, reg)
-      add/sub reg, val → ArithOp(op, reg, reg, val)
-      syscall/int 0x80 → Syscall
+    Only analyzes key instructions (usually 1-3) before the final ret/call/jmp,
+    using heuristic rules and operand pattern matching.
 
     Args:
-        asm_lines: 单条 gadget 的汇编文本（可多行，分号或换行分隔）
+        asm_lines: assembly text for one gadget (multi-line, semicolon or newline separated)
 
     Returns:
-        GadgetSemantic 对象
+        GadgetSemantic object
     """
-    # 拆分为指令行
+    # Split into individual instruction lines
     lines = [l.strip() for l in re.split(r'[;\n]+', asm_lines) if l.strip()]
     if not lines:
         return GadgetSemantic(SemType.Unknown)
 
-    # 先检查是否以 syscall/int 结尾——最高优先级
+    # Check for syscall/int first (highest priority)
     last_mnems = []
     for line in reversed(lines):
         m = line.split()[0] if line.split() else ""
@@ -144,7 +124,7 @@ def classify_gadget(asm_lines: str) -> GadgetSemantic:
     if "syscall" in last_mnems or "int" in last_mnems:
         return GadgetSemantic(SemType.Syscall, raw_asm=asm_lines[:80])
 
-    # 提取关键指令（倒数1-3条，跳过控制流转移）
+    # Extract key instructions (last 1-3, skipping control flow transfers)
     key_insns = []
     for line in reversed(lines):
         mnemonic = line.split()[0] if line.split() else ""
@@ -159,7 +139,7 @@ def classify_gadget(asm_lines: str) -> GadgetSemantic:
     if not key_insns:
         return GadgetSemantic(SemType.Unknown, raw_asm=asm_lines[:80])
 
-    # 分类——按优先级匹配
+    # Classify by priority matching
     clobbers = []
     result = GadgetSemantic(SemType.Unknown, raw_asm=asm_lines[:80])
 
@@ -170,7 +150,7 @@ def classify_gadget(asm_lines: str) -> GadgetSemantic:
         mnemonic = parts[0]
         operands = parts[1:]
 
-        # syscall / int 0x80
+        # syscall / int 0x80 handling
         if mnemonic in ("syscall", "int"):
             return GadgetSemantic(
                 SemType.Syscall,
@@ -230,7 +210,7 @@ def classify_gadget(asm_lines: str) -> GadgetSemantic:
             )
             continue
 
-        # xchg reg, reg → MoveReg (双向)
+        # xchg reg, reg -> MoveReg (bidirectional)
         if mnemonic == "xchg" and len(operands) >= 2:
             r1 = _canon_reg(operands[0])
             r2 = _canon_reg(operands[1]) if operands[1] in _X86_REGS else operands[1]
@@ -258,25 +238,22 @@ def classify_gadget_batch(
     gadgets: List[Dict[str, Any]],
 ) -> List[Dict[str, Any]]:
     """
-    批量分类 gadget 列表。
+    Batch-classify a list of gadgets.
 
-    输入为 rop_tools.find_gadgets() 的输出格式，
-    在每条记录中追加 semantic 字段。
-
-    Returns:
-        增加了 semantic 和 semantic_template 字段的 gadget 列表
+    Input format is the output of rop_tools.find_gadgets().
+    Appends semantic and semantic_template fields to each record.
     """
     enriched = []
     for g in gadgets:
         raw = g.get("raw_line", g.get("description", ""))
         sem = classify_gadget(raw)
-        g = dict(g)  # shallow copy to avoid mutating original
+        g = dict(g)
         g["semantic"] = sem.stype.name
         g["semantic_template"] = sem.template()
         g["semantic_clobbers"] = sem.clobbers
         enriched.append(g)
 
-    # 按语义类型分组统计
+    # Group by semantic type for diagnostics
     by_type: Dict[str, int] = {}
     for g in enriched:
         t = g.get("semantic", "Unknown")
@@ -291,17 +268,17 @@ def find_semantic_equivalent(
     gadget_pool: List[Dict[str, Any]],
 ) -> List[Dict[str, Any]]:
     """
-    在 gadget 池中查找语义等价项。
+    Find semantically equivalent gadgets in a pool.
 
-    例如 target_template="LoadConst(rdi, stack)" 会匹配所有
-    pop rdi; ...; ret 的 gadget（无论中间夹杂了几条无关指令）。
+    For example, target_template="LoadConst(rdi, stack)" matches all
+    pop rdi; ...; ret gadgets regardless of intermediate instructions.
 
     Args:
-        target_template: classify_gadget 产生的模板字符串
-        gadget_pool:     classify_gadget_batch 的返回值
+        target_template: template string from classify_gadget()
+        gadget_pool: return value from classify_gadget_batch()
 
     Returns:
-        语义匹配的 gadget 列表
+        List of semantically matching gadgets
     """
     return [g for g in gadget_pool
             if g.get("semantic_template") == target_template]

@@ -1,0 +1,30 @@
+[
+  {
+    "module_name": "test_mod",
+    "entry_id": "e8c21eada73e",
+    "contract_merkle_root": "abc123",
+    "strategy": "template",
+    "verification_ok": true,
+    "incoherence_rate": -1.0,
+    "source_sha256": "edd9f8855bc0387c75b6cd52ba6cadbaf706d0cecade3445832374978ee01dcd",
+    "prev_hash": "aeebad4a796fcc2e15dc4c6061b45ed9b373f26adfc798ca7d2d8cc58182718e",
+    "entry_hash": "e8c21eada73e6b2b34e4c7a8c3092dfb0a206c858c928b51da9a8f4ebdf869c2",
+    "timestamp": 1785826949.004137,
+    "generated_path": "",
+    "notes": "test"
+  },
+  {
+    "module_name": "test_mod",
+    "entry_id": "3b9ca2da040f",
+    "contract_merkle_root": "abc124",
+    "strategy": "llm",
+    "verification_ok": true,
+    "incoherence_rate": -1.0,
+    "source_sha256": "af42c2dda15b5a8060cc9f43185bfc97200dc3d34cc6785ea43049d8b125d652",
+    "prev_hash": "e8c21eada73e6b2b34e4c7a8c3092dfb0a206c858c928b51da9a8f4ebdf869c2",
+    "entry_hash": "3b9ca2da040f686c5edf9ba402545eb67e3314e3b325b478f1344ab5849d31e6",
+    "timestamp": 1785826949.0045726,
+    "generated_path": "",
+    "notes": "retry"
+  }
+]

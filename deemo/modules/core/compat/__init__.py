@@ -21,3 +21,22 @@
 # --- 2025-08 跨层/归一化拓展 ---
 #   compiler_artifact_normalizer — 编译器产物归一化, 展开折叠 + 惯用法替换 + 寄存器类映射
 #   cross_layer_taint_router     — 跨层污点路由, 网络协议字段 ↔ CPU 寄存器字节槽映射
+# --- 2026-07/08 检测深度升级 ---
+#   abstract_heap_model     — 堆分配器轻量抽象解释 (HeapMD 2022 ASPLOS 改进)
+#   taint_enhanced_heap     — 污点约束的堆溢出误报过滤 (TACE 2024 FSE 启发的静态应用)
+#   format_string_detector  — 格式符解析 + 污点联合检测 %n/位置参数/FORTIFY绕过
+#   stack_overflow_analyzer — IR 级栈帧分析 + canary 感知 + 污点过滤
+#   path_taint_integrator   — 路径敏感的 IR 级归一化特征提取 (跨编译器泛化)
+#   vuln_synthesis          — 多检测器结果融合去重 + 统一 CWE 报告
+#   scan_pipeline           — 检测管线编排器, 端到端串联所有模块
+# --- 2026-08 深度升级: UAF/格式串/栈溢出 强度对齐 ---
+#   uaf_escape_analysis     — UAF 指针逃逸分析: 全局>堆>栈 可利用性分级
+#   format_parser           — printf 格式符状态机解析器 (替代子串匹配)
+#   format_confidence       — 格式串连续置信度评分 + FORTIFY 绕过检测
+#   stack_severity          — 栈溢出 canary 感知严重度分级
+#   fp_filter               — 三阶段堆溢出误报过滤 (值区间+约束+距离)
+#   int_overflow_detector   — 整数溢出检测: mul/imul→malloc 链路追踪
+# --- 2026-08 堆溢出误报专项压制 (核心创新) ---
+#   value_range             — 稀疏值区间传播, 证明 alloc_size >= write_size 则过滤
+#   alloc_constraints       — glibc/ptmalloc 分配器对齐/最小块约束建模
+#   fp_filter               — 三阶段误报过滤: 值区间 + 约束模型 + 污点距离裁剪

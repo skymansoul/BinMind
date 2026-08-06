@@ -20,7 +20,7 @@ from typing import List, Tuple, Optional
 from .compression import compress, decompress
 
 
-_PATCH_MAGIC = b'BMDIFF1'          # BinMind Delta Format v1
+_PATCH_MAGIC = b'BMDIFF1\x00'      # BinMind Delta Format v1 (8s packed, null-padded)
 _PATCH_HDR_FMT = '<8sIIII'         # magic, ctrl_len, diff_len, extra_len, new_size
 _PATCH_HDR_SZ = struct.calcsize(_PATCH_HDR_FMT)
 _CTRL_ENTRY_FMT = '<IIq'           # add_len, copy_len, copy_offset

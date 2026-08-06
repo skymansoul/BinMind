@@ -1,0 +1,13 @@
+{
+  "tp_samples": 7,
+  "fp_samples": 3,
+  "total": 10,
+  "uaf_detection_rate": 100.0,
+  "fp_correctly_filtered": 2,
+  "fp_filter_rate": 66.7,
+  "filter_reasons": {
+    "nullified": 1,
+    "reused": 1,
+    "guarded": 1
+  }
+}

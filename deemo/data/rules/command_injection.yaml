@@ -1,0 +1,39 @@
+# 命令注入检测规则
+# 关注 system/popen/exec* 系列函数的参数中直接拼接用户输入的代码模式
+# 静态检测命令注入的核心难点在于追踪数据流——规则侧重标记"需要审查的实例"
+
+rules:
+  - id: CI-001
+    pattern: "system\\s*\\(\\s*[^\"']"
+    description: "system() 参数非字符串字面量——参数可能来自用户输入"
+    severity: Critical
+    cwe: CWE-78
+    func_pattern: "system"
+
+  - id: CI-002
+    pattern: "popen\\s*\\(\\s*[^\"']"
+    description: "popen() 参数非字符串字面量——参数可能来自用户输入"
+    severity: Critical
+    cwe: CWE-78
+    func_pattern: "popen"
+
+  - id: CI-003
+    pattern: "(snprintf|sprintf)\\s*\\(\\s*\\w+\\s*,\\s*\\d+\\s*,\\s*\"[^\"]*%s[^\"]*\"\\s*,\\s*\\w+"
+    description: "sprintf/snprintf 格式化用户输入到命令缓冲区——后续传递给system()则命令注入"
+    severity: High
+    cwe: CWE-78
+    func_pattern: "sprintf"
+
+  - id: CI-004
+    pattern: "exec[lv]p?[e]?\\s*\\(\\s*[^\"']"
+    description: "exec() 系列函数的路径参数非字面量——可能来自用户输入"
+    severity: Critical
+    cwe: CWE-78
+    func_pattern: "exec"
+
+  - id: CI-005
+    pattern: "ShellExecute|CreateProcess\\s*\\([^)]*\\w+\\s*,"
+    description: "Windows API 创建进程——若命令行参数来自用户输入则可注入"
+    severity: High
+    cwe: CWE-78
+    func_pattern: "ShellExecute"

@@ -38,8 +38,50 @@ except ImportError:
     ProvenanceEdge = None
     FusionRecord = None
 
+try:
+    from .causal_modality_router import (
+        CausalModalityRouter, causal_weighted_fusion,
+    )
+except ImportError:
+    CausalModalityRouter = None
+    causal_weighted_fusion = None
+
+try:
+    from .orthogonal_decomposition_fusion import (
+        OrthogonalDecompositionFusion, orthogonal_decompose_fuse,
+    )
+except ImportError:
+    OrthogonalDecompositionFusion = None
+    orthogonal_decompose_fuse = None
+
+try:
+    from .adversarial_modality_dropout import (
+        EntropyGradientCurriculum, egac_train_step_wrapper, fast_renyi_entropy,
+    )
+except ImportError:
+    EntropyGradientCurriculum = None
+    egac_train_step_wrapper = None
+    fast_renyi_entropy = None
+
+try:
+    from .conformal_multimodal_ensemble import (
+        MultimodalConformalPredictor, multimodal_conformal_predict,
+        MultimodalConformalResult, ModalConformalResult,
+    )
+except ImportError:
+    MultimodalConformalPredictor = None
+    multimodal_conformal_predict = None
+    MultimodalConformalResult = None
+    ModalConformalResult = None
+
 __all__ = ["ConfigLoader", "load_config", "get_config",
            "setup_logging", "retry_with_backoff", "TTLCache",
            "TriModalFusionEngine", "ModalityConflictArbiter",
            "EntropyWeightedAttention", "entropy_gated_fusion",
-           "FusionProvenanceTracker", "ProvenanceEdge", "FusionRecord"]
+           "FusionProvenanceTracker", "ProvenanceEdge", "FusionRecord",
+           "CausalModalityRouter", "causal_weighted_fusion",
+           "OrthogonalDecompositionFusion", "orthogonal_decompose_fuse",
+           "EntropyGradientCurriculum", "egac_train_step_wrapper",
+           "fast_renyi_entropy",
+           "MultimodalConformalPredictor", "multimodal_conformal_predict",
+           "MultimodalConformalResult", "ModalConformalResult"]

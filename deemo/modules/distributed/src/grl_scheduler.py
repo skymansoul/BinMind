@@ -1,12 +1,10 @@
 # GRL-Sched 第三层: 调度器 (GNN 编码 + 强化学习调度 + 启发式降级)
 #
-# 论文对应: GraphEdge: Dynamic Graph Partition and Task Scheduling for GNNs
-#   Computing in Edge Network — arXiv:2504.15905 [待验证]
-#   GraphEdge 以 GNN 编码任务图、以 RL 求解最优调度，奖励 = 任务完成时间。
-#   本模块提供等价能力但零强依赖:
-#     - GNNEncoder      自实现 k 层消息传递/注意力聚合 (无 torch)
-#     - LinearQPolicy   线性函数近似 Q 学习，奖励 = -makespan
-#     - 降级路径        无 RL 训练时退化为 HEFT 贪心 / 模拟退火
+# 零外部依赖的图神经网络任务调度:
+#   - GNNEncoder:     k 层消息传递/注意力聚合 (纯 Python, 无 torch)
+#   - LinearQPolicy:  线性函数近似 Q 学习 (蒙特卡洛策略改进)
+#   - 降级路径:       无 RL 训练时退化为 HEFT 贪心 / 模拟退火
+#   HEFT 参考: Topcuoglu, Hariri & Wu (2002), IEEE TPDS 13(2)
 #
 # 与既有调度器衔接:
 #   - DependencyAwareScheduler 实现 src.priority.PriorityTaskQueue 的同款
@@ -346,7 +344,7 @@ class LinearQPolicy:
 class GRLScheduler:
     """GRL-Sched 调度器 — 建图 + 动态划分 + GNN/RL 调度的一体化入口。
 
-    论文对应: GraphEdge (arXiv:2504.15905) 动态图划分 + GNN 编码 + RL 调度。
+    GNN 编码+RL调度: 图神经网络的任务图表示学习 + 强化学习调度优化。
     本类对外提供:
       - build_graph / partition_dag / repartition_dag: 依赖图与在线重划分
       - schedule: 返回 order + 机器分配 + makespan (mode: auto/rl/sa/greedy)

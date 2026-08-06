@@ -1,0 +1,7 @@
+{
+  "tp": 5,
+  "fp": 5,
+  "total": 10,
+  "detection": 40.0,
+  "fp_filter": 100.0
+}

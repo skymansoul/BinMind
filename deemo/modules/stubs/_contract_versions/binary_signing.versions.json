@@ -1,0 +1,12 @@
+[
+  {
+    "module_name": "binary_signing",
+    "version_id": "782da43b542c",
+    "merkle_root": "782da43b542c9c019634b67262ec1dd9a4084255128e10db85a08e976452f9b4",
+    "leaf_count": 1,
+    "timestamp": 1785833806.2214785,
+    "semver": "0.1.0",
+    "prev_version_id": "",
+    "bump": "none"
+  }
+]

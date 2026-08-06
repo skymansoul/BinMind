@@ -1,0 +1,31 @@
+{
+  "heap": {
+    "method": "ValueRangeAnalyzer.classify()",
+    "status": "functional",
+    "api": "direct"
+  },
+  "uaf": {
+    "method": "UAFDetector.detect()",
+    "status": "functional",
+    "api": "direct"
+  },
+  "fmt": {
+    "method": "track_taint_intraprocedural()",
+    "status": "functional (bypass filter_by_taint)",
+    "api": "direct"
+  },
+  "int": {
+    "method": "IntOverflowAnalyzer.analyze()",
+    "status": "functional",
+    "api": "direct"
+  },
+  "samples": {
+    "total_c": 70,
+    "compiled": 118,
+    "heap": 16,
+    "uaf": 15,
+    "fmt": 15,
+    "int": 16
+  },
+  "note": "Use direct API calls. Wrapper functions (filter_by_taint, HeapFalsePositiveFilter.filter) have linter compatibility issues."
+}

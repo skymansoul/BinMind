@@ -1,0 +1,7 @@
+{
+  "cve_id": "CVE-2012-0809",
+  "vuln_type": "format_string",
+  "description": "Format string in sudo debug log",
+  "expected_count": 1,
+  "compile_cmd": "gcc -o sample sample.c -no-pie -fno-stack-protector"
+}

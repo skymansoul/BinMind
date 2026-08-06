@@ -1,0 +1,12 @@
+[
+  {
+    "module_name": "jit_analyzer",
+    "version_id": "a98e4edcd642",
+    "merkle_root": "a98e4edcd642880323e8422dfd9cbf88f4ab230330a614c40b9f258202344a15",
+    "leaf_count": 2,
+    "timestamp": 1785833806.2257688,
+    "semver": "0.1.0",
+    "prev_version_id": "",
+    "bump": "none"
+  }
+]

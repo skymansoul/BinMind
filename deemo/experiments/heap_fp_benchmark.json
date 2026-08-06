@@ -1,0 +1,92 @@
+{
+  "benchmarks": [
+    {
+      "id": "HO-01",
+      "desc": "malloc(64) write offset 100",
+      "expected": true,
+      "detected": true,
+      "candidates": 1,
+      "stats": {
+        "stage_context": 1,
+        "stage_size_prop": 0,
+        "stage_detect": 1,
+        "stage_filter": 0
+      }
+    },
+    {
+      "id": "HO-02",
+      "desc": "calloc(16) write offset 20",
+      "expected": true,
+      "detected": true,
+      "candidates": 1,
+      "stats": {
+        "stage_context": 1,
+        "stage_size_prop": 0,
+        "stage_detect": 1,
+        "stage_filter": 0
+      }
+    },
+    {
+      "id": "HO-03",
+      "desc": "free+realloc(32) write offset 40",
+      "expected": true,
+      "detected": true,
+      "candidates": 1,
+      "stats": {
+        "stage_context": 1,
+        "stage_size_prop": 0,
+        "stage_detect": 1,
+        "stage_filter": 0
+      }
+    },
+    {
+      "id": "FP-01",
+      "desc": "malloc(64) write aligned offset 56",
+      "expected": false,
+      "detected": false,
+      "candidates": 0,
+      "stats": {
+        "stage_context": 1,
+        "stage_size_prop": 0,
+        "stage_detect": 0,
+        "stage_filter": 0
+      }
+    },
+    {
+      "id": "FP-02",
+      "desc": "realloc(256) write offset 200 (legal)",
+      "expected": false,
+      "detected": false,
+      "candidates": 0,
+      "stats": {
+        "stage_context": 1,
+        "stage_size_prop": 0,
+        "stage_detect": 1,
+        "stage_filter": 1
+      }
+    },
+    {
+      "id": "FP-03",
+      "desc": "struct multi-field access pattern",
+      "expected": false,
+      "detected": false,
+      "candidates": 0,
+      "stats": {
+        "stage_context": 1,
+        "stage_size_prop": 0,
+        "stage_detect": 1,
+        "stage_filter": 1
+      }
+    }
+  ],
+  "summary": {
+    "tp": 3,
+    "fp": 0,
+    "tn": 3,
+    "fn": 0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "fp_reduction": "3/3 (100%)"
+  }
+}

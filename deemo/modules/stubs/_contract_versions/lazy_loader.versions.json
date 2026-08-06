@@ -1,0 +1,12 @@
+[
+  {
+    "module_name": "lazy_loader",
+    "version_id": "f471ec91b328",
+    "merkle_root": "f471ec91b328a4c4a571fd19b3171939ab7811fe4a59223ca8cee9bb744331fb",
+    "leaf_count": 5,
+    "timestamp": 1785833806.2264173,
+    "semver": "0.1.0",
+    "prev_version_id": "",
+    "bump": "none"
+  }
+]

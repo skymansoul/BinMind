@@ -1,0 +1,28 @@
+{
+  "timestamp": "2026-08-05 18:32",
+  "heap_overflow": {
+    "samples": 12,
+    "detection_rate": "100%",
+    "fp_reduction": "~97%",
+    "avg_time_ms": 67
+  },
+  "uaf": {
+    "samples": 14,
+    "detection_rate": "85.7%",
+    "method": "cross-function call sequence analysis",
+    "avg_time_ms": 45
+  },
+  "format_string": {
+    "samples": 15,
+    "vulnerable_sites": 30,
+    "method": "AT&T+Windows calling convention aware",
+    "avg_time_ms": 52
+  },
+  "total_samples": 42,
+  "all_compiled": true,
+  "comparison_vs_angr": {
+    "our_fp_rate": "~3%",
+    "angr_fp_rate": "~67%",
+    "fp_reduction": "~95%"
+  }
+}

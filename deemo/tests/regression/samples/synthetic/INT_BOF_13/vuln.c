@@ -1,0 +1,1 @@
+/* INT_BOF_13: integer overflow in size calc */#include <stdio.h>#include <stdlib.h>#include <string.h>int main(int c,char**v){size_t n=c>1?atoi(v[1]):0;char*b=malloc(n*4);memcpy(b,v[2]?:"",n*4);free(b);return 0;}

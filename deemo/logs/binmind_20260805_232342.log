@@ -1,0 +1,5 @@
+23:23:42 | INFO    | core.pipeline | Binary: cve_2004_0077-linux-do_brk.elf | x86-64 64-bit | size=54678
+23:23:42 | WARNING | core.decompiler | radare2 not found at radare2
+23:23:42 | INFO    | core.pipeline | Found 0 functions
+23:23:42 | INFO    | core.pipeline | Analyzing 0 functions
+23:23:42 | INFO    | core.pipeline | Pipeline done in 0.0s | 0 functions | 0 vulns

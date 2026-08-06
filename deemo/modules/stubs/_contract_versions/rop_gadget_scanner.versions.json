@@ -1,0 +1,12 @@
+[
+  {
+    "module_name": "rop_gadget_scanner",
+    "version_id": "e9b0c178e034",
+    "merkle_root": "e9b0c178e0340eaff8eac2e02b29b9474b665377183cd9b63b159e2cc82747bb",
+    "leaf_count": 3,
+    "timestamp": 1785833806.2284608,
+    "semver": "0.1.0",
+    "prev_version_id": "",
+    "bump": "none"
+  }
+]

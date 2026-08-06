@@ -1,0 +1,12 @@
+[
+  {
+    "module_name": "llm_security_bridge",
+    "version_id": "ed3db67db358",
+    "merkle_root": "ed3db67db3580b1f4ccb6f76583f47b90155831212591d3b0803cb20faa3647f",
+    "leaf_count": 2,
+    "timestamp": 1785833806.2266173,
+    "semver": "0.1.0",
+    "prev_version_id": "",
+    "bump": "none"
+  }
+]

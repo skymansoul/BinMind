@@ -1,0 +1,6 @@
+sample,tool,opt,detected,vuln_count,fp_count,time_ms,mem_kb,success
+CVE-2000-0573_wuftpd_fmt,OurMethod,O0,False,0,12,117.96530004357919,0,True
+CVE-2001-0013_bind_fmt,OurMethod,O0,False,0,12,112.73290001554415,0,True
+CVE-2002-0639_openssh_io,OurMethod,O0,True,1,9,62.154000042937696,0,True
+CVE-2002-1343_openssl_fmt,OurMethod,O0,False,0,12,114.76470000343397,0,True
+CVE-2003-0358_sylpheed_fmt,OurMethod,O0,False,0,12,112.85139998653904,0,True

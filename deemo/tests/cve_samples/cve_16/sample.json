@@ -1,0 +1,7 @@
+{
+  "cve_id": "CVE-2021-3156",
+  "vuln_type": "heap_overflow",
+  "description": "Sudo Baron Samedit: heap overflow in sudoedit",
+  "expected_count": 1,
+  "compile_cmd": "gcc -o sample sample.c -no-pie -fno-stack-protector"
+}

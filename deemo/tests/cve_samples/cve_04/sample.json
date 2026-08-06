@@ -1,0 +1,7 @@
+{
+  "cve_id": "CVE-2016-6301",
+  "vuln_type": "heap_overflow",
+  "description": "Heap overflow from unchecked alloc",
+  "expected_count": 1,
+  "compile_cmd": "gcc -o sample sample.c -no-pie -fno-stack-protector"
+}

@@ -1,0 +1,12 @@
+[
+  {
+    "module_name": "taint_tracker",
+    "version_id": "427ca02e5d01",
+    "merkle_root": "427ca02e5d01d0cc0791d349dbe6ae172fb76fccb14b8501e40b9aa528ef43f7",
+    "leaf_count": 3,
+    "timestamp": 1785833806.2292426,
+    "semver": "0.1.0",
+    "prev_version_id": "",
+    "bump": "none"
+  }
+]

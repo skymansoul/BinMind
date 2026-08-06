@@ -1,0 +1,6 @@
+{
+  "cve_id": "CVE-2011-1234",
+  "vuln_type": "stack_overflow",
+  "description": "nginx stack overflow in log parsing",
+  "expected_count": 1
+}

@@ -1,0 +1,17 @@
+{
+  "source_files": 234,
+  "compiled_binaries": 142,
+  "core_modules": 151,
+  "pipeline": {
+    "source_scans": 144,
+    "binary_scans": 142,
+    "source_findings": {
+      "total": 27,
+      "uaf": 13,
+      "int_overflow": 14,
+      "heap_bounds": 0
+    },
+    "binary_findings": 0
+  },
+  "status": "OPERATIONAL"
+}

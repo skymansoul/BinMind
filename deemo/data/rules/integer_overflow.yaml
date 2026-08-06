@@ -1,0 +1,39 @@
+# 整数溢出/下溢检测规则
+# 关注乘法/加法/类型转换中可触发整数溢出的模式
+# 这些模式通常自身不直接导致崩溃，但可能引发后续的缓冲区过小分配
+
+rules:
+  - id: IO-001
+    pattern: "(unsigned short|uint16_t|unsigned char|uint8_t)\\s+\\w+\\s*=\\s*[^;]*\\+\\s*1"
+    description: "小宽度无符号整数加1操作——若变量接近类型上限则值回绕到0"
+    severity: Medium
+    cwe: CWE-190
+    func_pattern: "unsigned short"
+
+  - id: IO-002
+    pattern: "malloc\\s*\\(\\s*\\w+\\s*\\+\\s*1\\s*\\)"
+    description: "malloc(size+1)——若size可能为类型最大值则size+1回绕，分配0字节"
+    severity: High
+    cwe: CWE-190
+    func_pattern: "malloc"
+
+  - id: IO-003
+    pattern: "malloc\\s*\\(\\s*\\w+\\s*\\*\\s*\\w+\\s*\\)"
+    description: "malloc(count * size)——若count和size来自用户输入则乘积可能溢出"
+    severity: High
+    cwe: CWE-190
+    func_pattern: "malloc"
+
+  - id: IO-004
+    pattern: "(int|unsigned int)\\s+\\w+\\s*=\\s*\\w+\\s*\\*\\s*\\w+"
+    description: "乘法结果赋给等宽整数——未检查溢出即用于后续内存分配"
+    severity: Medium
+    cwe: CWE-190
+    func_pattern: "int"
+
+  - id: IO-005
+    pattern: "\\w+\\s*\\+=\\s*\\w+\\s*;[\\s\\S]{0,50}malloc\\s*\\(\\s*\\w+\\s*\\)"
+    description: "累加后的值用于malloc参数——累加过程中可能发生整数溢出"
+    severity: Low
+    cwe: CWE-190
+    func_pattern: "+="

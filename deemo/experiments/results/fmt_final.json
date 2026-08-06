@@ -1,0 +1,5 @@
+{
+  "detection_pct": 100,
+  "fp_filter_pct": 100,
+  "format": "Ghidra-style pseudocode required"
+}

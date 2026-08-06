@@ -1,0 +1,6 @@
+{
+  "cve_id": "CVE-2018-11235",
+  "vuln_type": "stack_overflow",
+  "description": "Git submodule stack overflow",
+  "expected_count": 1
+}

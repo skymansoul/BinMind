@@ -278,6 +278,46 @@ class TrafficReplayer:
                         })
         return diffs
 
+    # ── 自适应协议感知重放 ──────────────────────────────────
+    def replay_adaptive(self, target: str,
+                         protocol: str = "TCP",
+                         pacing_ms: float = 10.0) -> Any:
+        """自适应协议感知重放 —— 状态追踪+语义分歧检测。
+
+        与replay_with_diff的差异: 本方法追踪协议状态转移,
+        检测语义级分歧(状态跳变/非预期响应), 而非仅字节diff。
+
+        返回AdaptiveReplayReport含分歧记录和漏洞评分。
+        """
+        try:
+            from .adaptive_replay_engine import create_replay_engine
+        except ImportError:
+            from src.adaptive_replay_engine import create_replay_engine
+
+        engine = create_replay_engine(protocol, pacing_ms)
+        payloads = []
+        for session in (self.sessions or []):
+            for pkt in (session.packets or []):
+                if pkt and pkt.payload:
+                    payloads.append(pkt.payload)
+
+        if not payloads:
+            return None
+
+        # 注入发包函数: 复用现有TCP/UDP发送逻辑
+        def _send(payload: bytes):
+            try:
+                if protocol in ("TCP", "HTTP", "TLS"):
+                    return self._send_tcp_packet(target, self.sessions[0].dst_port if self.sessions else 80, payload)
+                elif protocol == "DNS":
+                    return self._send_udp_packet(target, 53, payload)
+            except Exception:
+                return None
+            return None
+
+        engine.set_send_function(_send)
+        return engine.replay_sequence(payloads, inter_packet_sleep=True)
+
     def replay_all_sessions(self, target):
         if target is None:
             return ReplayResult(self.pcap_file, "", 0, 0, 0, False, None, [])

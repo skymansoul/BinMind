@@ -1,0 +1,12 @@
+[
+  {
+    "module_name": "uaf_detector",
+    "version_id": "4b0e73187e01",
+    "merkle_root": "4b0e73187e01eda6445d3895ecc7136913520b699ede4c7c67a7c96f46410490",
+    "leaf_count": 2,
+    "timestamp": 1785833806.23023,
+    "semver": "0.1.0",
+    "prev_version_id": "",
+    "bump": "none"
+  }
+]

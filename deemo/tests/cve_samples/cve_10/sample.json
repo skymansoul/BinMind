@@ -1,0 +1,7 @@
+{
+  "cve_id": "CVE-2024-21762",
+  "vuln_type": "off_by_one",
+  "description": "Off-by-one write in boundary check",
+  "expected_count": 1,
+  "compile_cmd": "gcc -o sample sample.c -no-pie -fno-stack-protector"
+}

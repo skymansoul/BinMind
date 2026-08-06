@@ -1,0 +1,12 @@
+[
+  {
+    "module_name": "import_guard",
+    "version_id": "c41747fe36a7",
+    "merkle_root": "c41747fe36a7c479a9934badd8f87a2e8dfd736e0b5f6c4c47d24253ae89780e",
+    "leaf_count": 2,
+    "timestamp": 1785833806.2251735,
+    "semver": "0.1.0",
+    "prev_version_id": "",
+    "bump": "none"
+  }
+]

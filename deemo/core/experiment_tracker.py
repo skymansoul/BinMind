@@ -1,18 +1,18 @@
 """
-实验追踪器 —— 记录、查询和评估分析实验的全生命周期。
+Experiment tracker: records, queries, and evaluates the full lifecycle of
+analysis experiments.
 
-每次 pipeline 运行作为一个"实验"，记录:
-  - 输入参数（样本、配置、时间戳）
-  - 产出物（报告路径、exploit 脚本、崩溃分析结果）
-  - 质量指标（发现漏洞数、误报数、LLM贡献度）
-  - 四维评估数据（见 _compute_metrics）
+Each pipeline run is an "experiment" tracking input parameters (sample, config,
+timestamp), artifacts (report paths, exploit scripts, crash analysis), quality
+metrics (vuln count, false positives, LLM contribution), and four-dimensional
+evaluation data (see _compute_metrics).
 
-数据持久化到 SQLite（复用 core/vuln_db.py 的 analysis_runs 表），
-扩展了实验元数据表。提供汇总统计和评估报告生成。
+Persists to SQLite (reuses core/vuln_db.py analysis_runs), with extended
+experiment metadata. Provides summary statistics and evaluation report generation.
 
-参考:
+References:
   - Klees et al., 2018, CCS, "Evaluating Fuzz Testing"
-  - Böhme et al., 2021, IEEE S&P, "On the Reliability of Fuzzing Benchmarks"
+  - Bohme et al., 2021, IEEE S&P, "On the Reliability of Fuzzing Benchmarks"
 """
 
 from __future__ import annotations
@@ -91,7 +91,7 @@ class ExperimentTracker:
         self._init_db()
 
     def _init_db(self) -> None:
-        """初始化实验数据库表。"""
+        """Ensure experiment database tables exist."""
         os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
         conn = sqlite3.connect(self.db_path)
         conn.executescript(_EXPERIMENTS_SCHEMA)
@@ -212,7 +212,6 @@ class ExperimentTracker:
             status:      最终状态 ('completed' | 'failed' | 'aborted')
             elapsed_sec: 实验耗时（秒）
         """
-        # 计算四维指标
         metrics = self._compute_metrics(exp_id)
 
         conn = self._connect()

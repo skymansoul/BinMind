@@ -1,0 +1,5 @@
+{
+  "cve": "UAF-06",
+  "vuln_type": "uaf",
+  "vuln_count": 1
+}

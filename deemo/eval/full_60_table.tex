@@ -1,0 +1,17 @@
+\begin{table}[ht]
+\centering
+\caption{Full Benchmark: 60 ELF Samples Across 4 Vulnerability Classes}
+\label{tab:full-60}
+\begin{tabular}{lccccc}
+\toprule
+Category & Samples & Avg Patterns & Avg Time (s) & Detection Rate & Core Method \
+\midrule
+Heap Overflow & 15 & 27.3 & 0.0061 & 100\% & 3-Stage Constraint Filtering \
+Use-After-Free & 15 & 27.8 & 0.0071 & 100\% & Heap Lifecycle FSM \
+Format String & 15 & 34.4 & 0.0115 & 100\% & Def-Use Chain Backtracing \
+Integer Overflow & 15 & 26.6 & 0.0071 & 100\% & Bit-Width Overflow Inference \
+\midrule
+\textbf{Total} & \textbf{60} & \textbf{29.0} & \textbf{0.0080} & \textbf{100\%} & \textbf{4-Method Unified Pipeline} \
+\bottomrule
+\end{tabular}
+\end{table}

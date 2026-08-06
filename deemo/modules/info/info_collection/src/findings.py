@@ -212,6 +212,30 @@ def extract_findings(binary_info: dict, strings: list = None, imports: dict = No
             location="strings",
         ))
 
+    # UAF/double-free 检测 — 基于 malloc/free/realloc 导入模式
+    _c_funcs_lower = {f.lower(): f for f in _c_funcs}
+    _has_malloc = any(f in _c_funcs_lower for f in ["malloc","calloc"])
+    _has_free = "free" in _c_funcs_lower
+    _has_realloc = "realloc" in _c_funcs_lower
+    if _has_malloc and _has_free:
+        _conf = 0.40 if _has_realloc else 0.35
+        _findings.append(Finding(
+            type="use_after_free",
+            description=f"malloc+free pair detected — potential UAF risk"
+                        f"{' (realloc increases dangling pointer risk)' if _has_realloc else ''}",
+            severity=Severity.HIGH,
+            confidence=_conf,
+            location="imports",
+        ))
+    elif _has_free and not _has_malloc:
+        _findings.append(Finding(
+            type="double_free",
+            description="free without malloc — potential double-free risk",
+            severity=Severity.MEDIUM,
+            confidence=0.25,
+            location="imports",
+        ))
+
     return _findings
 
 

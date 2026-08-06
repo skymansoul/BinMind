@@ -15,7 +15,6 @@
   Bazel action cache (content-addressable, 输入哈希 ≡ 缓存键)
 
 修改记录:
-  2025-07-16 10:45 - 追加缓存统计 (hit/miss/size)
   2025-07-20 08:37 - 缓存值追加时间戳字段，便于旧条目清理
 """
 

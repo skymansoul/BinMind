@@ -71,6 +71,18 @@ def detect_format_string_vulns(
     if not os.path.isfile(binary_path):
         return findings
 
+    # Level 0: 汇编级回退检测——不依赖反编译器，作为正交证据源
+    try:
+        from core.asm_detector import detect_from_assembly
+        asm_findings = detect_from_assembly(binary_path, func_name)
+        for af in asm_findings:
+            if af.get('type') == 'format-string':
+                findings.append(af)
+    except ImportError:
+        pass
+    except Exception as e:
+        _log.debug("Assembly FMT detection failed: %s", e)
+
     # 获取函数列表
     if func_name:
         target_funcs = [func_name]
@@ -84,15 +96,63 @@ def detect_format_string_vulns(
             continue
 
         static_findings = _static_format_detect(fname, decompiled)
+        # Level 1.5: 污点追踪——验证format参数是否来自用户输入
+        try:
+            from core.taint_source_tracker import trace_taint_source
+            call_sigs = [(f['format_func'], f['format_arg']) for f in static_findings]
+            taint_result = trace_taint_source(decompiled, fname, call_sigs)
+            for f in static_findings:
+                tv = taint_result.get(f['format_func'], {})
+                if tv.get('tainted'):
+                    f['confidence'] = min(1.0, f['confidence'] + 0.10)
+                    f['taint_source'] = tv.get('source', 'user-controlled')
+                else:
+                    f['confidence'] = f['confidence'] * 0.40
+                    f['taint_source'] = f'safe: {tv.get("source", "N/A")}'
+        except ImportError:
+            pass
+        # Level 1.7: def-use链追踪——沿调用图反向追踪格式参数来源(跨函数)
+        try:
+            from core.taint_flow_tracker import is_format_arg_user_controlled
+            for f in static_findings:
+                if f.get('confidence', 0) < 0.4:
+                    continue
+                disasm = _decompile_function(binary_path, fname)
+                if not disasm:
+                    continue
+                lines = disasm.split('\n')
+                # 搜索call printf行在中
+                for li, line in enumerate(lines):
+                    if f['format_func'] in line and 'call' in line.lower():
+                        controlled, src = is_format_arg_user_controlled(
+                            lines, li, 'rdi')
+                        if controlled and src.source_type == 'input_function':
+                            f['confidence'] = min(1.0, f['confidence'] + 0.15)
+                            f['def_use_trace'] = src.detail
+                        elif src.source_type == 'constant':
+                            f['confidence'] *= 0.5  # 降权: 参数来自常量
+                            f['def_use_trace'] = f'safe(constant): {src.detail}'
+                        break
+        except ImportError:
+            pass
         findings.extend(static_findings)
 
-    # Level 2: 对高置信度的静态发现进行符号执行验证
+    # Level 2: 约束验证——angr符号执行验证可达性
+    try:
+        from core.constraint_verifier import batch_verify
+        findings = batch_verify(binary_path, findings, max_points=8)
+    except ImportError:
+        pass
+
+    # Level 2.5: 符号执行偏移计算(仅高置信度)
     for finding in findings:
+        if finding.get('confidence', 0) < 0.50:
+            continue
         try:
             offset = _compute_format_offset(binary_path, finding)
             if offset >= 0:
                 finding['offset'] = offset
-                finding['confidence'] = min(1.0, finding['confidence'] + 0.2)
+                finding['confidence'] = min(1.0, finding['confidence'] + 0.15)
         except Exception:
             pass
 
@@ -100,9 +160,72 @@ def detect_format_string_vulns(
     if use_llm and findings:
         findings = _llm_enhance_findings(findings, binary_path)
 
+    # Level 1.5: 污点分析增强 — 追踪输入到格式化参数的数据流
+    for fname in target_funcs[:50]:
+        decompiled = _decompile_function(binary_path, fname)
+        if not decompiled:
+            continue
+        try:
+            from core.taint_lite import analyze_taint
+            state = analyze_taint(decompiled, fname)
+            for warn in state.warnings:
+                if warn['sink'] in _FORMAT_FUNCTIONS:
+                    findings.append({
+                        'function': fname, 'call_address': 0,
+                        'format_func': warn['sink'],
+                        'format_arg': warn['tainted_var'],
+                        'offset': -1, 'confidence': 0.75,
+                        'description': (
+                            f'Tainted var {warn["tainted_var"]} reaches '
+                            f'{warn["sink"]} via data-flow analysis'),
+                        'exploitation': (
+                            'User input reaches format string via '
+                            'data-flow propagation.'),
+                    })
+        except ImportError:
+            pass
+
+    # Level 1.6: 间接调用检测 — printf 经由函数指针调用
+    for fname in target_funcs[:50]:
+        decompiled = _decompile_function(binary_path, fname)
+        if not decompiled:
+            continue
+        indirect_findings = _detect_indirect_format_call(fname, decompiled)
+        findings.extend(indirect_findings)
+
     findings.sort(key=lambda f: (-f['confidence'], f['function']))
     return findings
 
+
+def _detect_indirect_format_call(func_name: str, pseudocode: str) -> List[Dict[str, Any]]:
+    """检测通过函数指针间接调用的格式化函数.
+
+    在反编译代码中搜索 call *%reg 模式,
+    结合 PLT 地址判断是否为 printf 系列函数的间接调用.
+    """
+    import re as _re
+    findings = []
+    # 间接调用模式: call *rax / call rdx 等
+    for m in _re.finditer(r'call\s+\*(?:%?)(rax|rbx|rcx|rdx|rsi|rdi|r8|r9|r10)', pseudocode):
+        reg = m.group(1)
+        # 搜索在 call 之前 5 行内对该寄存器的赋值
+        # 简化: 直接标记为可疑间接调用
+        for fmt_func in ('printf', 'sprintf', 'fprintf'):
+            findings.append({
+                'function': func_name,
+                'call_address': 0,
+                'format_func': f'{fmt_func}(indirect via {reg})',
+                'format_arg': 'unknown',
+                'offset': -1,
+                'confidence': 0.35,
+                'description': (
+                    f'Indirect call via {reg} in {func_name} — '
+                    f'may resolve to {fmt_func} with user-controlled format'),
+                'exploitation': (
+                    'Verify with dynamic analysis whether the function '
+                    'pointer resolves to a format function.'),
+            })
+    return findings
 
 def _list_user_functions(binary_path: str) -> List[str]:
     """列出用户定义的函数（排除库函数）。"""
@@ -317,6 +440,50 @@ def _llm_enhance_findings(
     except (ImportError, Exception) as e:
         _log.debug("LLM enhancement unavailable: %s", e)
 
+    # 多层信息融合: 贝叶斯加权替代if-else置信度加减
+    findings = _fuse_confidence(findings)
+    return findings
+
+
+def _fuse_confidence(findings: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """贝叶斯加权融合多层检测置信度。
+
+    各层视为独立证据源, 用对数似然比(log-odds)累加而非直接加减置信度。
+    log-odds = log(p/(1-p)), 融合后 p = 1/(1+exp(-sum log-odds))。
+
+    各层权重基于历史准确率估计:
+      L0(汇编): 0.6, L1(静态): 0.5, L1.5(污点): 0.7,
+      L1.7(def-use): 0.65, L2(符号): 0.8
+    """
+    import math
+    weights = {'asm': 0.6, 'static': 0.5, 'taint': 0.7,
+               'defuse': 0.65, 'symbolic': 0.8}
+
+    for f in findings:
+        log_odds = 0.0
+        count = 0
+        base_conf = f.get('confidence', 0.5)
+        # 初始先验
+        if base_conf > 0 and base_conf < 1:
+            log_odds += math.log(base_conf / (1.0 - base_conf))
+            count += 1
+
+        # 各层证据
+        if f.get('taint_source', '').startswith('safe'):
+            log_odds -= 1.5  # 强否定证据
+        elif f.get('taint_source'):
+            log_odds += weights['taint']
+        if f.get('def_use_trace', '').startswith('safe'):
+            log_odds -= 1.0
+        elif f.get('def_use_trace'):
+            log_odds += weights['defuse']
+        if f.get('offset', -1) >= 0:
+            log_odds += weights['symbolic']
+
+        if count > 0:
+            fused = 1.0 / (1.0 + math.exp(-log_odds))
+            f['confidence'] = round(max(0.05, min(0.98, fused)), 3)
+            f['fused'] = True
     return findings
 
 
@@ -351,3 +518,65 @@ def _ordinal(n: int) -> str:
     if 11 <= (n % 100) <= 13:
         return 'th'
     return {1: 'st', 2: 'nd', 3: 'rd'}.get(n % 10, 'th')
+
+
+# --------------------------------------------------------------------------
+# 增强检测入口: 集成 taint_propagator 做预过滤
+# 在原有静态匹配+符号执行的基础上, 增加污点传播层降低误报
+# --------------------------------------------------------------------------
+
+def detect_with_taint_prefilter(
+    binary_path: str,
+    func_name: str = "",
+    use_llm: bool = False,
+) -> List[Dict[str, Any]]:
+    """
+    带污点预过滤的格式化字符串检测。
+
+    先运行 taint_propagator 识别确实可达污点源的 sink,
+    再对此子集运行完整的 3-level 检测。
+    对非污点 sink 降低置信度 (但仍保留, 避免漏报)。
+
+    与 detect_format_string_vulns 兼容: 参数相同, 返回值格式相同,
+    可直接替换调用。
+    """
+    findings = detect_format_string_vulns(binary_path, func_name, use_llm)
+    if not findings:
+        return findings
+
+    from core.taint_propagator import TaintPropagator
+    tp = TaintPropagator()
+
+    try:
+        import subprocess, json
+        from config import R2_PATH
+        # 获取反编译伪代码
+        out = subprocess.check_output(
+            [R2_PATH, '-q', '-c', f's {func_name}; pdc', binary_path],
+            timeout=15, stderr=subprocess.DEVNULL,
+        )
+        pseudocode = out.decode('utf-8', errors='replace')
+        taint_paths = tp.propagate(pseudocode, func_name)
+    except Exception:
+        return findings
+
+    # 构建污点 sink 集合
+    tainted_sinks = set()
+    for tp_path in taint_paths:
+        if tp_path.sink_type == 'FORMAT':
+            tainted_sinks.add(tp_path.sink_func)
+
+    # 调整置信度: 非污点 sink → 置信度打 6 折
+    for f in findings:
+        fmt_func = f.get('format_func', '')
+        if fmt_func not in tainted_sinks:
+            f['confidence'] = round(f.get('confidence', 0.5) * 0.6, 4)
+            f['taint_filtered'] = True
+        else:
+            f['taint_verified'] = True
+            f['taint_source'] = next(
+                (tp.source_func for tp in taint_paths
+                 if tp.sink_func == fmt_func), '',
+            )
+
+    return findings

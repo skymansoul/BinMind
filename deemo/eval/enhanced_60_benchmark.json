@@ -1,0 +1,744 @@
+{
+  "total": 60,
+  "results": [
+    {
+      "sample": "CVE-2015-0235_ghost",
+      "category": "samples_heap",
+      "findings": 11,
+      "types": [
+        "free",
+        "memcpy",
+        "calloc",
+        "malloc"
+      ],
+      "time_s": 0.0111
+    },
+    {
+      "sample": "CVE-2016-10190_ffmpeg",
+      "category": "samples_heap",
+      "findings": 11,
+      "types": [
+        "free",
+        "memcpy",
+        "calloc",
+        "malloc"
+      ],
+      "time_s": 0.0091
+    },
+    {
+      "sample": "CVE-2017-1000253_pie",
+      "category": "samples_heap",
+      "findings": 13,
+      "types": [
+        "memcpy",
+        "calloc",
+        "malloc",
+        "strcpy",
+        "free"
+      ],
+      "time_s": 0.0089
+    },
+    {
+      "sample": "CVE-2018-1000001_glibc",
+      "category": "samples_heap",
+      "findings": 13,
+      "types": [
+        "memcpy",
+        "calloc",
+        "malloc",
+        "strcpy",
+        "free"
+      ],
+      "time_s": 0.0105
+    },
+    {
+      "sample": "CVE-2019-11477_tcp_sack",
+      "category": "samples_heap",
+      "findings": 10,
+      "types": [
+        "free",
+        "memcpy",
+        "calloc",
+        "malloc"
+      ],
+      "time_s": 0.0089
+    },
+    {
+      "sample": "CVE-2020-10713_grub2",
+      "category": "samples_heap",
+      "findings": 11,
+      "types": [
+        "free",
+        "memcpy",
+        "calloc",
+        "malloc"
+      ],
+      "time_s": 0.0089
+    },
+    {
+      "sample": "CVE-2021-3156_sudo",
+      "category": "samples_heap",
+      "findings": 10,
+      "types": [
+        "free",
+        "memcpy",
+        "calloc",
+        "malloc"
+      ],
+      "time_s": 0.0087
+    },
+    {
+      "sample": "CVE-2021-4034_polkit",
+      "category": "samples_heap",
+      "findings": 11,
+      "types": [
+        "free",
+        "memcpy",
+        "calloc",
+        "malloc"
+      ],
+      "time_s": 0.0091
+    },
+    {
+      "sample": "CVE-2022-0185_linux_fs",
+      "category": "samples_heap",
+      "findings": 10,
+      "types": [
+        "free",
+        "memcpy",
+        "calloc",
+        "malloc"
+      ],
+      "time_s": 0.0095
+    },
+    {
+      "sample": "CVE-2022-23222_kernel_bpf",
+      "category": "samples_heap",
+      "findings": 10,
+      "types": [
+        "free",
+        "memcpy",
+        "calloc",
+        "malloc"
+      ],
+      "time_s": 0.0086
+    },
+    {
+      "sample": "CVE-2022-25636_netfilter",
+      "category": "samples_heap",
+      "findings": 11,
+      "types": [
+        "free",
+        "memcpy",
+        "calloc",
+        "malloc"
+      ],
+      "time_s": 0.0088
+    },
+    {
+      "sample": "CVE-2023-0179_kernel_bpf2",
+      "category": "samples_heap",
+      "findings": 10,
+      "types": [
+        "free",
+        "memcpy",
+        "calloc",
+        "malloc"
+      ],
+      "time_s": 0.0089
+    },
+    {
+      "sample": "CVE-2023-0464_openssl",
+      "category": "samples_heap",
+      "findings": 11,
+      "types": [
+        "free",
+        "memcpy",
+        "calloc",
+        "malloc"
+      ],
+      "time_s": 0.0107
+    },
+    {
+      "sample": "CVE-2024-21626_runc",
+      "category": "samples_heap",
+      "findings": 11,
+      "types": [
+        "free",
+        "memcpy",
+        "calloc",
+        "malloc"
+      ],
+      "time_s": 0.0128
+    },
+    {
+      "sample": "CVE-2024-6387_openssh",
+      "category": "samples_heap",
+      "findings": 13,
+      "types": [
+        "memcpy",
+        "calloc",
+        "malloc",
+        "strcpy",
+        "free"
+      ],
+      "time_s": 0.0088
+    },
+    {
+      "sample": "fmt_direct",
+      "category": "samples_fmt",
+      "findings": 9,
+      "types": [
+        "printf",
+        "memcpy",
+        "calloc",
+        "malloc",
+        "free"
+      ],
+      "time_s": 0.0163
+    },
+    {
+      "sample": "fmt_dprintf",
+      "category": "samples_fmt",
+      "findings": 8,
+      "types": [
+        "free",
+        "memcpy",
+        "calloc",
+        "malloc"
+      ],
+      "time_s": 0.0157
+    },
+    {
+      "sample": "fmt_fprintf",
+      "category": "samples_fmt",
+      "findings": 8,
+      "types": [
+        "free",
+        "memcpy",
+        "calloc",
+        "malloc"
+      ],
+      "time_s": 0.0145
+    },
+    {
+      "sample": "fmt_fprintf_file",
+      "category": "samples_fmt",
+      "findings": 8,
+      "types": [
+        "free",
+        "memcpy",
+        "calloc",
+        "malloc"
+      ],
+      "time_s": 0.0148
+    },
+    {
+      "sample": "fmt_indirect_title",
+      "category": "samples_fmt",
+      "findings": 9,
+      "types": [
+        "printf",
+        "memcpy",
+        "calloc",
+        "malloc",
+        "free"
+      ],
+      "time_s": 0.0161
+    },
+    {
+      "sample": "fmt_recursive",
+      "category": "samples_fmt",
+      "findings": 9,
+      "types": [
+        "printf",
+        "memcpy",
+        "calloc",
+        "malloc",
+        "free"
+      ],
+      "time_s": 0.014
+    },
+    {
+      "sample": "fmt_snprintf_leak",
+      "category": "samples_fmt",
+      "findings": 8,
+      "types": [
+        "free",
+        "memcpy",
+        "calloc",
+        "malloc"
+      ],
+      "time_s": 0.0162
+    },
+    {
+      "sample": "fmt_snprintf_ret",
+      "category": "samples_fmt",
+      "findings": 9,
+      "types": [
+        "printf",
+        "memcpy",
+        "calloc",
+        "malloc",
+        "free"
+      ],
+      "time_s": 0.0147
+    },
+    {
+      "sample": "fmt_sprintf_chain",
+      "category": "samples_fmt",
+      "findings": 9,
+      "types": [
+        "memcpy",
+        "sprintf",
+        "calloc",
+        "malloc",
+        "free"
+      ],
+      "time_s": 0.0144
+    },
+    {
+      "sample": "fmt_syslog",
+      "category": "samples_fmt",
+      "findings": 9,
+      "types": [
+        "printf",
+        "memcpy",
+        "calloc",
+        "malloc",
+        "free"
+      ],
+      "time_s": 0.0149
+    },
+    {
+      "sample": "fmt_syslog_indirect",
+      "category": "samples_fmt",
+      "findings": 9,
+      "types": [
+        "printf",
+        "memcpy",
+        "calloc",
+        "malloc",
+        "free"
+      ],
+      "time_s": 0.0141
+    },
+    {
+      "sample": "fmt_vprintf",
+      "category": "samples_fmt",
+      "findings": 8,
+      "types": [
+        "free",
+        "memcpy",
+        "calloc",
+        "malloc"
+      ],
+      "time_s": 0.0144
+    },
+    {
+      "sample": "fmt_vsnprintf",
+      "category": "samples_fmt",
+      "findings": 9,
+      "types": [
+        "printf",
+        "memcpy",
+        "calloc",
+        "malloc",
+        "free"
+      ],
+      "time_s": 0.0148
+    },
+    {
+      "sample": "fmt_wide_char",
+      "category": "samples_fmt",
+      "findings": 9,
+      "types": [
+        "printf",
+        "memcpy",
+        "calloc",
+        "malloc",
+        "free"
+      ],
+      "time_s": 0.0156
+    },
+    {
+      "sample": "fmt_wrapper",
+      "category": "samples_fmt",
+      "findings": 9,
+      "types": [
+        "printf",
+        "memcpy",
+        "calloc",
+        "malloc",
+        "free"
+      ],
+      "time_s": 0.027
+    },
+    {
+      "sample": "int_overflow_add",
+      "category": "samples_int",
+      "findings": 11,
+      "types": [
+        "free",
+        "memcpy",
+        "calloc",
+        "malloc"
+      ],
+      "time_s": 0.0093
+    },
+    {
+      "sample": "int_overflow_array",
+      "category": "samples_int",
+      "findings": 10,
+      "types": [
+        "free",
+        "memcpy",
+        "calloc",
+        "malloc"
+      ],
+      "time_s": 0.009
+    },
+    {
+      "sample": "int_overflow_cast",
+      "category": "samples_int",
+      "findings": 13,
+      "types": [
+        "memcpy",
+        "calloc",
+        "malloc",
+        "memset",
+        "free"
+      ],
+      "time_s": 0.0092
+    },
+    {
+      "sample": "int_overflow_div",
+      "category": "samples_int",
+      "findings": 10,
+      "types": [
+        "free",
+        "memcpy",
+        "calloc",
+        "malloc"
+      ],
+      "time_s": 0.0089
+    },
+    {
+      "sample": "int_overflow_loop",
+      "category": "samples_int",
+      "findings": 10,
+      "types": [
+        "free",
+        "memcpy",
+        "calloc",
+        "malloc"
+      ],
+      "time_s": 0.009
+    },
+    {
+      "sample": "int_overflow_mixed",
+      "category": "samples_int",
+      "findings": 10,
+      "types": [
+        "free",
+        "memcpy",
+        "calloc",
+        "malloc"
+      ],
+      "time_s": 0.0092
+    },
+    {
+      "sample": "int_overflow_mul",
+      "category": "samples_int",
+      "findings": 10,
+      "types": [
+        "free",
+        "memcpy",
+        "calloc",
+        "malloc"
+      ],
+      "time_s": 0.0088
+    },
+    {
+      "sample": "int_overflow_neg",
+      "category": "samples_int",
+      "findings": 10,
+      "types": [
+        "free",
+        "memcpy",
+        "calloc",
+        "malloc"
+      ],
+      "time_s": 0.0118
+    },
+    {
+      "sample": "int_overflow_offby",
+      "category": "samples_int",
+      "findings": 13,
+      "types": [
+        "memcpy",
+        "calloc",
+        "malloc",
+        "strcpy",
+        "free"
+      ],
+      "time_s": 0.0088
+    },
+    {
+      "sample": "int_overflow_shift",
+      "category": "samples_int",
+      "findings": 10,
+      "types": [
+        "free",
+        "memcpy",
+        "calloc",
+        "malloc"
+      ],
+      "time_s": 0.0092
+    },
+    {
+      "sample": "int_overflow_sign",
+      "category": "samples_int",
+      "findings": 10,
+      "types": [
+        "free",
+        "memcpy",
+        "calloc",
+        "malloc"
+      ],
+      "time_s": 0.0096
+    },
+    {
+      "sample": "int_overflow_sub",
+      "category": "samples_int",
+      "findings": 10,
+      "types": [
+        "free",
+        "memcpy",
+        "calloc",
+        "malloc"
+      ],
+      "time_s": 0.0086
+    },
+    {
+      "sample": "int_overflow_trunc",
+      "category": "samples_int",
+      "findings": 10,
+      "types": [
+        "free",
+        "memcpy",
+        "calloc",
+        "malloc"
+      ],
+      "time_s": 0.0093
+    },
+    {
+      "sample": "int_overflow_widen",
+      "category": "samples_int",
+      "findings": 10,
+      "types": [
+        "free",
+        "memcpy",
+        "calloc",
+        "malloc"
+      ],
+      "time_s": 0.009
+    },
+    {
+      "sample": "int_overflow_wrap",
+      "category": "samples_int",
+      "findings": 10,
+      "types": [
+        "free",
+        "memcpy",
+        "calloc",
+        "malloc"
+      ],
+      "time_s": 0.0094
+    },
+    {
+      "sample": "uaf_conditional_free",
+      "category": "samples_uaf",
+      "findings": 10,
+      "types": [
+        "free",
+        "memcpy",
+        "calloc",
+        "malloc"
+      ],
+      "time_s": 0.0103
+    },
+    {
+      "sample": "uaf_dangling_global",
+      "category": "samples_uaf",
+      "findings": 10,
+      "types": [
+        "free",
+        "memcpy",
+        "calloc",
+        "malloc"
+      ],
+      "time_s": 0.0089
+    },
+    {
+      "sample": "uaf_double_free",
+      "category": "samples_uaf",
+      "findings": 10,
+      "types": [
+        "free",
+        "memcpy",
+        "calloc",
+        "malloc"
+      ],
+      "time_s": 0.0091
+    },
+    {
+      "sample": "uaf_func_ptr",
+      "category": "samples_uaf",
+      "findings": 10,
+      "types": [
+        "free",
+        "memcpy",
+        "calloc",
+        "malloc"
+      ],
+      "time_s": 0.009
+    },
+    {
+      "sample": "uaf_io_uring",
+      "category": "samples_uaf",
+      "findings": 10,
+      "types": [
+        "free",
+        "memcpy",
+        "calloc",
+        "malloc"
+      ],
+      "time_s": 0.009
+    },
+    {
+      "sample": "uaf_list_remove",
+      "category": "samples_uaf",
+      "findings": 10,
+      "types": [
+        "free",
+        "memcpy",
+        "calloc",
+        "malloc"
+      ],
+      "time_s": 0.012
+    },
+    {
+      "sample": "uaf_multi_path",
+      "category": "samples_uaf",
+      "findings": 10,
+      "types": [
+        "free",
+        "memcpy",
+        "calloc",
+        "malloc"
+      ],
+      "time_s": 0.0088
+    },
+    {
+      "sample": "uaf_realloc_null",
+      "category": "samples_uaf",
+      "findings": 12,
+      "types": [
+        "realloc",
+        "memcpy",
+        "calloc",
+        "malloc",
+        "free"
+      ],
+      "time_s": 0.0091
+    },
+    {
+      "sample": "uaf_realloc_race",
+      "category": "samples_uaf",
+      "findings": 13,
+      "types": [
+        "realloc",
+        "memcpy",
+        "calloc",
+        "malloc",
+        "free"
+      ],
+      "time_s": 0.009
+    },
+    {
+      "sample": "uaf_signal_handler",
+      "category": "samples_uaf",
+      "findings": 10,
+      "types": [
+        "free",
+        "memcpy",
+        "calloc",
+        "malloc"
+      ],
+      "time_s": 0.0092
+    },
+    {
+      "sample": "uaf_simple_deref",
+      "category": "samples_uaf",
+      "findings": 11,
+      "types": [
+        "printf",
+        "memcpy",
+        "calloc",
+        "malloc",
+        "free"
+      ],
+      "time_s": 0.019
+    },
+    {
+      "sample": "uaf_stale_callback",
+      "category": "samples_uaf",
+      "findings": 10,
+      "types": [
+        "free",
+        "memcpy",
+        "calloc",
+        "malloc"
+      ],
+      "time_s": 0.01
+    },
+    {
+      "sample": "uaf_thread_pool",
+      "category": "samples_uaf",
+      "findings": 10,
+      "types": [
+        "free",
+        "memcpy",
+        "calloc",
+        "malloc"
+      ],
+      "time_s": 0.009
+    },
+    {
+      "sample": "uaf_vector_grow",
+      "category": "samples_uaf",
+      "findings": 13,
+      "types": [
+        "realloc",
+        "memcpy",
+        "calloc",
+        "malloc",
+        "free"
+      ],
+      "time_s": 0.009
+    },
+    {
+      "sample": "uaf_vtable_override",
+      "category": "samples_uaf",
+      "findings": 10,
+      "types": [
+        "free",
+        "memcpy",
+        "calloc",
+        "malloc"
+      ],
+      "time_s": 0.0097
+    }
+  ]
+}

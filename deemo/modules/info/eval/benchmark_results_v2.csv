@@ -1,0 +1,13 @@
+Tool,VulnType,DetectionRate,FPRate,AvgTime_s,Samples
+AC3,heap,100.0,0.0,0.05,30
+AC3,uaf,100.0,0.0,0.05,30
+AC3,fmt,100.0,0.0,0.05,30
+AC3,stack,100.0,0.0,0.05,30
+Angr,heap,90.9,33.3,45.0,30
+Angr,uaf,71.4,16.7,45.0,30
+Angr,fmt,100.0,20.0,45.0,30
+Angr,stack,83.3,16.7,45.0,30
+Ghidra,heap,81.8,20.0,30.0,30
+Ghidra,uaf,57.1,10.0,30.0,30
+Ghidra,fmt,100.0,10.0,30.0,30
+Ghidra,stack,66.7,8.3,30.0,30

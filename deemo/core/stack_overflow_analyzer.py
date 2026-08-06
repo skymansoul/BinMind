@@ -84,6 +84,23 @@ def analyze_stack_overflow(
         static_result = _static_overflow_analysis(binary_path, func_name, binfo)
         result.update(static_result)
 
+    # 第三层: 汇编级回退检测——反编译无关的正交证据
+    if not result['overflowable']:
+        try:
+            from core.asm_detector import detect_from_assembly
+            asm_findings = detect_from_assembly(binary_path, func_name)
+            for af in asm_findings:
+                if af.get('type') == 'stack-overflow':
+                    result['overflowable'] = True
+                    result['padding'] = af.get('buffer_size_estimate', 0)
+                    result['insights'].append(
+                        f"Assembly-level: {af.get('description', '')}"
+                    )
+        except ImportError:
+            pass
+        except Exception as e:
+            _log.debug("Assembly SO detection failed: %s", e)
+
     # canary 检测
     result['has_canary'] = _detect_canary_in_function(binary_path, func_name)
 
@@ -195,10 +212,11 @@ def _static_overflow_analysis(
     binfo: Optional[Dict[str, Any]],
 ) -> Dict[str, Any]:
     """
-    angr 无法使用时的静态回退分析。
+    静态回退分析(增强版)——反向污点追踪 + 缓冲区大小估算。
 
-    通过反编译代码模式识别本地缓冲区大小并估算 padding。
-    精度低于符号执行，但无需 angr 依赖。
+    与旧版区别: 不再仅靠函数名正则匹配判断危险调用。
+    对每个危险调用做反向def-use链追踪, 验证参数是否来自用户输入源。
+    若参数来自安全源(常量字符串/snprintf格式化), 不标记为危险。
     """
     result: Dict[str, Any] = {'overflowable': False, 'padding': 0, 'insights': []}
 
@@ -210,24 +228,49 @@ def _static_overflow_analysis(
         if not pseudocode:
             return result
 
-        # 检测危险函数调用模式
-        for call in _DIRTY_CALLS:
-            if call in pseudocode:
+        # 污点追踪 —— 验证危险调用的参数是否来自用户输入
+        try:
+            from core.taint_source_tracker import trace_taint_source, is_arg_tainted
+            call_sigs = []
+            import re as _re
+            for call in _DIRTY_CALLS:
+                for m in _re.finditer(rf'({call})\s*\(\s*([^,)]+)', pseudocode):
+                    call_sigs.append((call, m.group(2).strip()))
+
+            taint_result = trace_taint_source(pseudocode, func_name, call_sigs)
+            tainted_calls = {k for k, v in taint_result.items()
+                           if v.get('tainted')}
+            if tainted_calls:
                 result['overflowable'] = True
                 result['insights'].append(
-                    f"Static analysis: dangerous call to {call} detected in decompiled code"
+                    f"Taint tracking: {len(tainted_calls)} dangerous call(s) "
+                    f"with user-controlled buffer"
                 )
+                result['insights'].append(
+                    f"Tainted calls: {', '.join(sorted(tainted_calls)[:3])}"
+                )
+            else:
+                result['overflowable'] = False  # 即使有危险函数, 参数未受污染
+                result['insights'].append(
+                    "Taint tracking: dangerous calls found but args not user-controlled"
+                )
+        except ImportError:
+            # 回退: 简单关键字匹配
+            for call in _DIRTY_CALLS:
+                if call in pseudocode:
+                    result['overflowable'] = True
+                    result['insights'].append(
+                        f"Static pattern: dangerous call to {call} detected (taint tracker unavailable)"
+                    )
 
-        # 估算常见缓冲区大小
+        # 估算缓冲区大小(同上)
         if result['overflowable']:
             import re
-            # 搜索 char buf[SIZE] 或类似的本地数组声明
             buf_matches = re.findall(
                 r'char\s+\w+\s*\[(\d+)\]', pseudocode
             )
             if buf_matches:
                 max_buf = max(int(m) for m in buf_matches)
-                # 典型 padding = 缓冲区大小 + 保存的 rbp (8) + 对齐 (若 32-bit 则调整)
                 bits = binfo.get('bits', 64) if binfo else 64
                 saved_rbp = 8 if bits == 64 else 4
                 result['padding'] = max_buf + saved_rbp
@@ -235,8 +278,7 @@ def _static_overflow_analysis(
                     f"Estimated padding: {max_buf}B buffer + {saved_rbp}B saved rbp = {result['padding']}"
                 )
             else:
-                # 无缓冲区声明则使用默认估算
-                result['padding'] = 72  # 常见 CTF 题目的默认值
+                result['padding'] = 72
                 result['insights'].append(
                     "No local buffer declaration found, using default padding=72"
                 )
@@ -330,5 +372,57 @@ def _build_exploit_params(
     if binfo:
         params['arch'] = binfo.get('arch', 'x86-64')
         params['bits'] = binfo.get('bits', 64)
+
+
+def analyze_with_pattern_fallback(
+    binary_path: str,
+    func_name: str,
+    binfo: Optional[Dict[str, Any]] = None,
+    libc_info: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """
+    angr 优先, 失败时用 pattern_fallback 做汇编级模式匹配。
+
+    返回格式与 analyze_stack_overflow 完全兼容。
+    """
+    result = analyze_stack_overflow(binary_path, func_name, binfo, libc_info)
+
+    # angr 成功 → 直接返回
+    if result.get('overflowable') and not result.get('error'):
+        result['method'] = 'angr'
+        return result
+
+    # angr 失败/超时/无结果 → 回退到 pattern_fallback
+    import subprocess, json
+    from config import R2_PATH
+    from core.pattern_fallback import match_patterns
+
+    try:
+        out = subprocess.check_output(
+            [R2_PATH, '-q', '-c', f's {func_name}; pdbj', binary_path],
+            timeout=15, stderr=subprocess.DEVNULL,
+        )
+        disasm = json.loads(out)
+        text = '\n'.join(op.get('disasm', '') for op in disasm.get('ops', []))
+    except Exception:
+        result['method'] = 'angr_failed'
+        return result
+
+    matches = match_patterns(text)
+    so_matches = [m for m in matches if m.vuln_type == 'stack_overflow']
+
+    if so_matches:
+        best = so_matches[0]
+        result['overflowable'] = True
+        result['padding'] = 0  # 模式匹配无法计算精确 padding
+        result['has_canary'] = False
+        result['strategy'] = 'pattern_fallback'
+        result['method'] = 'pattern_fallback'
+        result['pattern_confidence'] = best.confidence
+        result['pattern_desc'] = best.pattern_desc
+    else:
+        result['method'] = 'pattern_fallback_no_match'
+
+    return result
 
     return params

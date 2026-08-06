@@ -1,0 +1,6 @@
+{
+  "cve_id": "CVE-2024-6666",
+  "vuln_type": "format_string",
+  "description": "Format string in DHCP client",
+  "expected_count": 1
+}

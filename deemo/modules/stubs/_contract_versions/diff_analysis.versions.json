@@ -1,0 +1,12 @@
+[
+  {
+    "module_name": "diff_analysis",
+    "version_id": "819f885564c2",
+    "merkle_root": "819f885564c24264c61347834747567a4e2bd5f6877f624e9ef2e35e52889774",
+    "leaf_count": 1,
+    "timestamp": 1785833806.223517,
+    "semver": "0.1.0",
+    "prev_version_id": "",
+    "bump": "none"
+  }
+]

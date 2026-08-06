@@ -1,0 +1,12 @@
+[
+  {
+    "module_name": "attack_mapper",
+    "version_id": "cb79eec690b8",
+    "merkle_root": "cb79eec690b8908a5e43173ce4feeab5eb0177f699494c2fca923a2e6c863d4e",
+    "leaf_count": 1,
+    "timestamp": 1785833806.2200058,
+    "semver": "0.1.0",
+    "prev_version_id": "",
+    "bump": "none"
+  }
+]

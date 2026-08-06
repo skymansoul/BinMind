@@ -1,12 +1,7 @@
 # GRL-Sched 第二层: 动态图划分 (GraphPartitioner)
 #
-# 论文对应: GraphEdge: Dynamic Graph Partition and Task Scheduling for GNNs
-#   Computing in Edge Network — arXiv:2504.15905 [待验证]
-#   GraphEdge 对 GNN 计算图做多级划分，使子图落到不同边缘设备并行执行，
-#   拓扑变化 (算子增删/边重连) 时在线重划分，控制迁移成本。
-#   本模块移植同一目标: 最小化割边 (通信代价) 同时维持负载均衡。
-#
-# 算法管线 (对应 METIS/Chaco 的多级划分框架):
+# 目标: 最小化割边 (通信代价) 同时维持负载均衡。
+# 基于多级划分框架 (Karypis & Kumar, SIAM J. Sci. Comput. 1998):
 #   1. 初始划分 _layer_initial — 按层级 round-robin，层内并行、层间通信
 #   2. 细化 _kernighan_lin — Kernighan-Lin 局部交换降低割边，带平衡约束
 #   3. 在线重划分 repartition — 仅对受影响邻域重排，复用未变化节点的归属

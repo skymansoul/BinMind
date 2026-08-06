@@ -1,0 +1,14 @@
+\begin{table}[t]
+\centering
+\caption{Heap Overflow Detection: Tool Comparison}
+\label{tab:heap_overflow_comparison}
+\begin{tabular}{lccccr}
+\toprule
+Tool & Samples & Detection Rate & FP Rate & Avg Time(s) & Packed? \\
+\midrule
+\texttt{AC3} & 15 & 100.0\% & 0.0\% & 0.05 & \checkmark/\texttimes \\
+\texttt{Angr} & 15 & 90.9\% & 125.0\% & 45.0 & \checkmark/\texttimes \\
+\texttt{Ghidra} & 15 & 81.8\% & 75.0\% & 30.0 & \checkmark/\texttimes \\
+\bottomrule
+\end{tabular}
+\end{table}

@@ -1,0 +1,24 @@
+% Heap Overflow Detection: False Positive Reduction Comparison
+% Data from heap_eval.py output (tests/heap_eval_results.json)
+
+\begin{table}[t]
+\centering
+\caption{Heap overflow detection: allocation-aware bounds checking (AABC)
+         vs. regex-based heuristic. 15 CVE samples across real-world
+         heap overflow vulnerabilities.}
+\label{tab:heap_comparison}
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Method} & \textbf{Samples} & \textbf{TP} & \textbf{FP} & \textbf{Detection Rate} & \textbf{FPR} \\
+\midrule
+Regex heuristic (baseline)       & 30 & XX & XX & 1.00 & X.XX \\
+AABC (this work)                 & 30 & XX & XX & X.XX & X.XX \\
+Angr (CFG + call inspection)     & 30 & XX & XX & X.XX & X.XX \\
+Ghidra (headless script)         & 30 & XX & XX & X.XX & X.XX \\
+\midrule
+\multicolumn{6}{l}{\small TP = True Positives (correctly identified heap overflows).} \\
+\multicolumn{6}{l}{\small FP = False Positives (non-heap-overflow samples flagged as vulnerable).} \\
+\multicolumn{6}{l}{\small FPR = FP / (FP + TP). AABC achieves XX\% relative FP reduction vs. regex.} \\
+\bottomrule
+\end{tabular}
+\end{table}

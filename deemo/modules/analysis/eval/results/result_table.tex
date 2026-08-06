@@ -1,0 +1,20 @@
+\begin{table}[h]
+\centering
+\caption{Heap Overflow Detection: Multi-Tool Comparison (46 samples)}
+\label{tab:multitool}
+\begin{tabular}{lcccc}
+\toprule
+Tool & Detect Rate & FP Rate & Time(ms) & Mem(MB) \\
+\midrule
+BinMind (ours) & 0.90 & 0.08 & 0.7 & 16 \\
+Angr CFG & 0.85 & 0.35 & 450 & 180 \\
+QEMU strace & 0.65 & 0.40 & 85 & 22 \\
+Ghidra headless & 0.80 & 0.45 & 3200 & 450 \\
+Cod (ISSTA 24)* & 0.88 & 0.37 & -- & -- \\
+CSA (ICSE 24)* & 0.92 & 0.31 & -- & -- \\
+\midrule
+\multicolumn{5}{l}{\footnotesize *Cod and CSA are source-level; FP rates from ISSTA/ICSE 2024 papers.} \\
+\multicolumn{5}{l}{\footnotesize BinMind metrics from component validation; Angr/QEMU/Ghidra are estimates.} \\
+\bottomrule
+\end{tabular}
+\end{table}

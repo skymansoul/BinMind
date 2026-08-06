@@ -1,0 +1,7 @@
+{
+  "cve_id": "CVE-2022-0847",
+  "vuln_type": "uaf",
+  "description": "Dirty Pipe: UAF via pipe buffer manipulation",
+  "expected_count": 1,
+  "compile_cmd": "gcc -o sample sample.c -no-pie -fno-stack-protector"
+}

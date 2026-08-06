@@ -1,14 +1,15 @@
 """
-样本管理器 —— 二进制样本的注册、分类、批量 checksec 与元数据维护。
+Sample manager: binary sample registration, classification, batch checksec,
+and metadata maintenance.
 
-提供样本库的 CRUD 操作，支持批量扫描目录、导出清单（CSV/Markdown）
-和按漏洞类型/架构/难度筛选。样本元数据持久化到 JSON 文件。
+CRUD operations for the sample library, batch directory scanning, CSV/Markdown
+export, and filtering by vuln type / arch / difficulty. Metadata persisted as JSON.
 
-与 experiment_tracker.py 联动：样本注册后可作为实验输入，实验记录
-通过 sample_id 关联到样本条目。
+Integrates with experiment_tracker.py: registered samples serve as experiment
+inputs, linked via sample_id.
 
-参考:
-  - NIST SAMATE (Software Assurance Metrics And Tool Evaluation), "Test Case Suites"
+References:
+  - NIST SAMATE, "Test Case Suites"
   - CGC (DARPA Cyber Grand Challenge), "Challenge Binary Corpus"
 """
 
@@ -85,7 +86,6 @@ class SampleManager:
         if not os.path.isfile(abs_path):
             raise FileNotFoundError(f'not a file: {abs_path}')
 
-        # 计算 ID
         try:
             h = hashlib.sha256()
             with open(abs_path, 'rb') as f:
@@ -93,7 +93,6 @@ class SampleManager:
                     h.update(chunk)
             sample_id = h.hexdigest()[:16]
         except OSError:
-            # 无法读取时用路径哈希
             sample_id = hashlib.sha256(abs_path.encode()).hexdigest()[:16]
 
         # 自动采集 checksec

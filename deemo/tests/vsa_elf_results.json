@@ -1,0 +1,78 @@
+{
+  "total": 65,
+  "elapsed": 0.0,
+  "with_objects": 0,
+  "with_violations": 0,
+  "details": [
+    {
+      "sample": "CVE-2001-0017_format_string.elf",
+      "vsa_violations": 0,
+      "heap_objects": 0,
+      "mem_writes": 0,
+      "elapsed": 0.00018262863159179688
+    },
+    {
+      "sample": "CVE-2010-4221_libc_fmtstr.elf",
+      "vsa_violations": 0,
+      "heap_objects": 0,
+      "mem_writes": 0,
+      "elapsed": 6.222724914550781e-05
+    },
+    {
+      "sample": "CVE-2012-0809_format_string.elf",
+      "vsa_violations": 0,
+      "heap_objects": 0,
+      "mem_writes": 0,
+      "elapsed": 7.128715515136719e-05
+    },
+    {
+      "sample": "CVE-2012-3569_vmware_fmtstr.elf",
+      "vsa_violations": 0,
+      "heap_objects": 0,
+      "mem_writes": 0,
+      "elapsed": 7.05718994140625e-05
+    },
+    {
+      "sample": "CVE-2013-4312_mq_notify_alias_uaf.elf",
+      "vsa_violations": 0,
+      "heap_objects": 0,
+      "mem_writes": 0,
+      "elapsed": 4.744529724121094e-05
+    },
+    {
+      "sample": "CVE-2014-0160_heartbleed.elf",
+      "vsa_violations": 0,
+      "heap_objects": 0,
+      "mem_writes": 0,
+      "elapsed": 5.9604644775390625e-05
+    },
+    {
+      "sample": "CVE-2015-8612_blueman_fmtstr.elf",
+      "vsa_violations": 0,
+      "heap_objects": 0,
+      "mem_writes": 0,
+      "elapsed": 6.365776062011719e-05
+    },
+    {
+      "sample": "CVE-2016-6187_kernel_alias_uaf.elf",
+      "vsa_violations": 0,
+      "heap_objects": 0,
+      "mem_writes": 0,
+      "elapsed": 4.363059997558594e-05
+    },
+    {
+      "sample": "CVE-2016-6301_heap_overflow.elf",
+      "vsa_violations": 0,
+      "heap_objects": 0,
+      "mem_writes": 0,
+      "elapsed": 5.030632019042969e-05
+    },
+    {
+      "sample": "CVE-2017-1000371_linux_fmtstr.elf",
+      "vsa_violations": 0,
+      "heap_objects": 0,
+      "mem_writes": 0,
+      "elapsed": 5.078315734863281e-05
+    }
+  ]
+}

@@ -81,10 +81,8 @@ def identify_tainted_offsets(
             bv_name = f"taint_byte_{i}"
             sym_byte = state.solver.BVS(bv_name, 8)
             symbolic_vars[i] = sym_byte
-            # 将符号字节存入 stdin 缓冲区
             state.memory.store(state.posix.stdin.addr + i, sym_byte)
 
-        # 定位输入在内存中的基地址——后续用于反向查找
         stdin_base = state.posix.stdin.addr
 
         simgr = proj.factory.simulation_manager(state)

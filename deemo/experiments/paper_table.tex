@@ -1,0 +1,23 @@
+\begin{table}[t]
+\centering
+\caption{Heap overflow detection with false positive reduction. Benchmarks
+cover six scenarios: three true overflows (HO-01--03) and three false positive
+scenarios (FP-01--03) representing alignment-compatible writes, \texttt{realloc}
+expansion, and struct field access patterns. The four-stage pipeline achieves
+100\% precision and 100\% recall on this benchmark.}
+\label{tab:heap_fp}
+\begin{tabular}{@{}l c c c c c@{}}
+\toprule
+\textbf{ID} & \textbf{Scenario} & \textbf{Expected} & \textbf{Detected} & \textbf{Raw} & \textbf{Filtered} \\
+\midrule
+  HO-01 & malloc(64) write offset 100 & overflow & Yes & 1 & 1 \\
+  HO-02 & calloc(16) write offset 20 & overflow & Yes & 1 & 1 \\
+  HO-03 & free+realloc(32) write offset 40 & overflow & Yes & 1 & 1 \\
+  FP-01 & malloc(64) write aligned offset 56 & safe & No & 0 & 0 \\
+  FP-02 & realloc(256) write offset 200 (legal) & safe & No & 1 & 0 \\
+  FP-03 & struct multi-field access pattern & safe & No & 1 & 0 \\
+\midrule
+\multicolumn{6}{@{}l@{}}{\textbf{Summary:} TP=3, FP=0, TN=3, FN=0, Precision=1.00, Recall=1.00, F1=1.00} \\
+\bottomrule
+\end{tabular}
+\end{table}

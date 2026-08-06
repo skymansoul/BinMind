@@ -1,0 +1,6 @@
+{
+  "cve_id": "CVE-2016-1234",
+  "vuln_type": "stack_overflow",
+  "description": "glibc realpath stack overflow",
+  "expected_count": 1
+}

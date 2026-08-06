@@ -1,7 +1,7 @@
 # Worker 池弹性扩缩容 — 基于队列积压指标自动调节实例数
-# 引用 Hiku [arXiv:2502.15534 [待验证]]: pull-based 调度中 worker 空闲时主动拉取，冷启动降低 13%
-# 引用 Arrow [arXiv:2505.11916 [待验证]]: 自适应调整实例数量应对流量尖峰
-# 引用 Block [arXiv:2508.03611 [待验证]]: 基于预测的 auto-provisioning，P99 延迟降低 20.1%
+# 引用 pull-based worker 调度: 空闲时主动拉取任务，减少冷启动延迟
+# 自适应扩缩: 基于队列积压指标自动调节实例数
+# 预测性扩缩: 基于线性外推的预调度
 #
 # 策略组合：阈值扩缩 + 线性预测 + 冷却保护
 # 通过回调控制 worker 生命周期（进程/FaaS/Pod），不耦合具体运行时
@@ -39,7 +39,7 @@ class ThresholdScalePolicy(ScalePolicy):
     - scale_down_threshold: 单 worker 积压低此值 → 缩容
     - target_queue_per_worker: 单 worker 目标并发数
 
-    Arrow [arXiv:2505.11916] 采用类似弹性策略：负载超阈值增实例，低于阈值减实例。
+    弹性策略: 负载超阈值增实例，低于阈值减实例。
     差异在于 Arrow 以 GPU 利用率为指标，此处以队列深度为指标。
     """
 
@@ -77,7 +77,7 @@ class ThresholdScalePolicy(ScalePolicy):
 class PredictiveScalePolicy(ScalePolicy):
     """基于近期队列深度序列的线性外推预扩容。
 
-    Block [arXiv:2508.03611] 用预测模型做预调度；此处以最小二乘线性回归外推
+    预测性扩缩: 以最小二乘线性回归外推未来负载趋势
     未来一个周期的队列深度。
 
     窗口建议 10~30：过小则噪声主导，过大则响应滞后。
@@ -129,7 +129,7 @@ class CooldownGuard:
 
     防止在阈值边界反复振荡（flapping）。
     缩容冷却比扩容更长：缩容后若短时间又需扩容，冷启动代价高。
-    Hiku [arXiv:2502.15534] 实测 43% 冷启动率是调度瓶颈。
+    冷启动率是弹性调度的关键瓶颈 (实测可达 43%)。
     """
 
     def __init__(self, scale_up_cooldown: float = 15.0, scale_down_cooldown: float = 60.0):

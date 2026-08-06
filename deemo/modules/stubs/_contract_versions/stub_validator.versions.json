@@ -1,0 +1,12 @@
+[
+  {
+    "module_name": "stub_validator",
+    "version_id": "6ce2ea5afcf0",
+    "merkle_root": "6ce2ea5afcf0a000b8341cdc908364288fdec78805277553b26b789bad526e74",
+    "leaf_count": 2,
+    "timestamp": 1785794219.2409048,
+    "semver": "0.1.0",
+    "prev_version_id": "",
+    "bump": "none"
+  }
+]

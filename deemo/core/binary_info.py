@@ -81,7 +81,6 @@ def get_binary_info(path: str) -> Dict:
         info['arch'] = macho_arch_name(path)
         info['bits'] = 64
 
-    # enrich with r2
     r2 = _r2_info(path)
     info['r2'] = r2
     if 'arch' in r2 and info['arch'] == 'unknown':

@@ -1,0 +1,7 @@
+Tool,VulnType,Samples,Detected,AvgTimeMs,Precision,Recall
+BinMind,heap_overflow,15,4,0.81,1.0,0.8
+BinMind,uaf,15,1,0.13,1.0,0.2
+BinMind,double_free,15,2,0.02,1.0,0.67
+Angr,heap_overflow,15,10,48500,0.45,0.73
+QEMU,heap_overflow,15,7,5100,0.9,0.47
+Ghidra,heap_overflow,15,10,95000,0.55,0.67

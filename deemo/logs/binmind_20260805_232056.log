@@ -1,0 +1,5 @@
+23:20:57 | INFO    | core.pipeline | Binary: cve_2021_4034-polkit.elf | x86-64 64-bit | size=55230
+23:20:57 | WARNING | core.decompiler | radare2 not found at radare2
+23:20:57 | INFO    | core.pipeline | Found 0 functions
+23:20:57 | INFO    | core.pipeline | Analyzing 0 functions
+23:20:57 | INFO    | core.pipeline | Pipeline done in 0.0s | 0 functions | 0 vulns

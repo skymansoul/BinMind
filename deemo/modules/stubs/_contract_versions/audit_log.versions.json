@@ -1,0 +1,12 @@
+[
+  {
+    "module_name": "audit_log",
+    "version_id": "aa301f40aba5",
+    "merkle_root": "aa301f40aba57783e86b328fdf6753aebf9a4bd181a7fb94f00f9c4a3df3bf42",
+    "leaf_count": 7,
+    "timestamp": 1785833806.2204595,
+    "semver": "0.1.0",
+    "prev_version_id": "",
+    "bump": "none"
+  }
+]

@@ -1,6 +1,6 @@
 """背压控制器 — 下游过载时的流量整形"""
 # Rajomon [USENIX NSDI '25]: 去中心化市场式过载控制，令牌+定价减少尾延迟 78%
-# Streaming Batch Model [arXiv:2501.12407 [待验证]]: 分区驱动 + 背压微批处理
+# 背压控制 — 分区队列深度驱动的反压信号传播
 #
 # 五种背压策略：
 #   - drop_head:  丢弃队列头部（旧任务），适合实时场景
@@ -97,7 +97,7 @@ class _DropHeadPolicy(_BackpressurePolicy):
 class _DropTailPolicy(_BackpressurePolicy):
     """丢弃最新任务 — 适合批处理/离线场景。
     已排队的旧任务已完成等待，丢弃不公平；新来的等下次。
-    参考 Streaming Batch Model [arXiv:2501.12407] 的分区满时反压新数据。
+    分区满时反压新数据: 上游等待直到下游释放槽位。
     """
 
     def __init__(self, threshold: float = 0.85):

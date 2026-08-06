@@ -16,7 +16,7 @@
 #   这等价于 "Prediction with Expert Advice" 框架下的无悔学习。
 #
 # 与前沿工作的关系:
-#   - ML-Driven Adaptive CKPT (arXiv:2503.12228 [待验证]): 使用 MLP 预测 P(fault_t)
+#   - 对比方案: 使用在线学习的自适应检查点 (无外部依赖)
 #     来调整 λ_t。本模块的不同在于: (a) 不需要训练数据，(b) EWA 有理论遗憾界，
 #     (c) 计算量极小 (O(K) per decision)。
 #   - MoC-System (ASPLOS '25): 部分检查点 (PEC) 仅保存专家子集。
@@ -252,7 +252,7 @@ class JointBudgetController:
       - 投机多 → 恢复时可从投机副本直接取结果 → 检查点可更稀疏
     本控制器以简单的比例-积分反馈调节此平衡。
 
-    设计依据: SPARe (arXiv:2603.00357) 论证了冗余与检查点联合优化的必要性，
+    设计依据: 冗余与检查点联合优化的 trade-off 分析: 
     但 SPARe 面向 GPU 集群的静态优化，本处改为在线反馈调节。
     """
 

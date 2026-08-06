@@ -1,0 +1,6 @@
+{
+  "cve_id": "CVE-2019-11477",
+  "vuln_type": "stack_overflow",
+  "description": "Linux TCP SACK panic",
+  "expected_count": 1
+}

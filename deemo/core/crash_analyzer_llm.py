@@ -1,22 +1,21 @@
 """
-LLM 深度崩溃分析 —— 将模糊测试/符号执行的崩溃结果交由 LLM 进行语义级根因分析。
+LLM-powered deep crash analysis: semantic root cause analysis of fuzzing/symbolic
+execution crash results.
 
-与 core/crash_analysis.py 的关键词匹配互补：
-  - crash_analysis.py: 快速分类（SIGSEGV → stack/heap → exploitable 判定）
-  - crash_analyzer_llm.py: 深度解释（关联反编译代码+寄存器状态+调用栈→根因链）
+Complements crash_analysis.py keyword matching:
+  crash_analysis.py: fast classification (SIGSEGV -> stack/heap -> exploitable)
+  crash_analyzer_llm.py: deep reasoning (decompiled code + registers + stack trace)
 
-输入模式支持:
-  1. 纯崩溃文本（ASAN output / GDB backtrace / coredump summary）
-  2. 结构化崩溃数据（寄存器+栈回溯+崩溃指令）
-  3. 崩溃上下文增强（附加崩溃点所在函数的反编译代码）
+Input modes: raw crash text (ASAN/GDB/coredump), structured crash data
+(registers + backtrace + fault instruction), or context-enhanced (with
+decompiled code of the crashing function).
 
-输出为结构化的根因分析报告，包含漏洞类型、触发链、利用方向和置信度。
-管线集成: 在 crash_analysis 之后调用，结果增强 crash_analysis 的输出。
+Output: structured root cause report with vulnerability type, trigger chain,
+exploit direction, and confidence. Called after crash_analysis to augment results.
 
-参考:
-  - Xu et al., 2024, USENIX Security, "VulnRepair: Automated Vulnerability Repair"
-  - Pearce et al., 2022, IEEE S&P, "Asleep at the Keyboard? Assessing the Security
-    of GitHub Copilot's Code Contributions"
+References:
+  - Xu et al., 2024, USENIX Security, "VulnRepair"
+  - Pearce et al., 2022, IEEE S&P, "Asleep at the Keyboard?"
 """
 
 from __future__ import annotations
@@ -81,7 +80,6 @@ def analyze_crash_with_llm(
         'source': 'heuristic',
     }
 
-    # 若 LLM 不可用，返回关键词分析
     try:
         from config import OPENAI_API_KEY
         if not OPENAI_API_KEY:
@@ -89,7 +87,6 @@ def analyze_crash_with_llm(
     except ImportError:
         return _fallback_heuristic_analysis(crash_data)
 
-    # 构建 LLM prompt
     crash_text = _build_crash_context(crash_data, binary_path, decompiled_context, binfo)
 
     try:
@@ -102,19 +99,16 @@ def analyze_crash_with_llm(
             max_tokens=1024,
         )
 
-        # 解析 JSON
         llm_result = _parse_llm_crash_response(response)
         if llm_result:
             result.update(llm_result)
             result['source'] = 'llm'
 
-            # 同步 exploitable 标志
             if result['exploitability'] in ('confirmed', 'likely'):
                 result['exploitable'] = True
             elif result['exploitability'] == 'none':
                 result['exploitable'] = False
 
-            # 更新严重程度
             result['severity'] = _infer_severity_from_llm(result)
 
     except Exception as e:
@@ -131,10 +125,9 @@ def _build_crash_context(
     decompiled_context: Optional[str],
     binfo: Optional[Dict[str, Any]],
 ) -> str:
-    """构建发送给 LLM 的崩溃上下文。"""
+    """Assemble crash context from binary info, registers, stack trace, and decompiled code."""
     parts = []
 
-    # 二进制上下文
     if binfo:
         parts.append(
             f"Binary: {binfo.get('filename', '?')} "
@@ -143,34 +136,28 @@ def _build_crash_context(
     elif binary_path:
         parts.append(f"Binary: {binary_path}")
 
-    # 崩溃信号
     if crash_data.get('crash_type'):
         parts.append(f"Crash type: {crash_data['crash_type']}")
     if crash_data.get('severity'):
         parts.append(f"Severity: {crash_data['severity']}")
 
-    # 寄存器
     registers = crash_data.get('registers', {})
     if registers:
         reg_lines = [f"  {k}: {v}" for k, v in list(registers.items())[:12]]
         parts.append('Registers:\n' + '\n'.join(reg_lines))
 
-    # 栈回溯
     stack_trace = crash_data.get('stack_trace', [])
     if isinstance(stack_trace, list) and stack_trace:
         parts.append('Stack trace:\n' + '\n'.join(f'  {s}' for s in stack_trace[:10]))
 
-    # 崩溃指令
     if crash_data.get('fault_instruction'):
         parts.append(f"Faulting instruction: {crash_data['fault_instruction']}")
 
-    # 反编译上下文
     if decompiled_context:
         parts.append(
             f"Decompiled code at crash point:\n```c\n{decompiled_context[:3000]}\n```"
         )
     elif binary_path and crash_data.get('addresses'):
-        # 尝试自动获取反编译代码
         try:
             from core.decompiler import decompile_function
             for addr in crash_data['addresses'][:3]:
@@ -187,7 +174,6 @@ def _build_crash_context(
         except Exception:
             pass
 
-    # 原始输出（截断）
     raw = crash_data.get('raw', '')
     if raw:
         parts.append(f"Raw crash output:\n```\n{raw[:2000]}\n```")
@@ -196,17 +182,15 @@ def _build_crash_context(
 
 
 def _parse_llm_crash_response(response: str) -> Optional[Dict[str, Any]]:
-    """从 LLM 响应中解析 JSON。"""
+    """Parse JSON from LLM response, trying direct parse, code block, and fallback patterns."""
     if not response:
         return None
 
-    # 直接 JSON
     try:
         return json.loads(response)
     except json.JSONDecodeError:
         pass
 
-    # JSON 在代码块中
     json_match = re.search(r'```(?:json)?\s*\n?(\{[\s\S]*?\})\n?```', response)
     if json_match:
         try:
@@ -214,7 +198,6 @@ def _parse_llm_crash_response(response: str) -> Optional[Dict[str, Any]]:
         except json.JSONDecodeError:
             pass
 
-    # 响应中的第一个 JSON 对象
     json_match = re.search(r'\{[\s\S]*?"crash_type"[\s\S]*?\}', response)
     if json_match:
         try:
@@ -226,7 +209,7 @@ def _parse_llm_crash_response(response: str) -> Optional[Dict[str, Any]]:
 
 
 def _infer_severity_from_llm(result: Dict[str, Any]) -> str:
-    """从 LLM 分析结果推断严重程度。"""
+    """Map LLM exploitability verdict and crash type to severity level."""
     exploitability = result.get('exploitability', 'unknown')
     crash_type = result.get('crash_type', 'other')
 
@@ -241,7 +224,6 @@ def _infer_severity_from_llm(result: Dict[str, Any]) -> str:
     if exploitability in severity_map:
         return severity_map[exploitability]
 
-    # 基于漏洞类型的回退
     type_severity = {
         'stack-overflow': 'High',
         'heap-overflow': 'Critical',
@@ -256,7 +238,7 @@ def _infer_severity_from_llm(result: Dict[str, Any]) -> str:
 
 
 def _fallback_heuristic_analysis(crash_data: Dict[str, Any]) -> Dict[str, Any]:
-    """LLM 不可用时的启发式回退分析。"""
+    """Heuristic fallback when LLM is unavailable."""
     from core.crash_analysis import analyze_crash_for_exploit
 
     heuristic = analyze_crash_for_exploit(crash_data)
@@ -302,15 +284,15 @@ def batch_analyze_crashes(
     parallel: bool = False,
 ) -> List[Dict[str, Any]]:
     """
-    批量分析多个崩溃，按严重程度排序。
+    Batch analyze multiple crashes, ordered by severity (most critical first).
 
     Args:
-        crashes:     崩溃数据列表
-        binary_path: 崩溃来源二进制
-        parallel:    是否并行分析（需要 concurrent.futures）
+        crashes: list of crash data dicts
+        binary_path: source binary
+        parallel: use ThreadPoolExecutor when True and crash count > 1
 
     Returns:
-        分析结果列表，危害最大的 crash 排在前面
+        Analysis results sorted by severity
     """
     results = []
 
@@ -334,7 +316,6 @@ def batch_analyze_crashes(
             except Exception as e:
                 _log.warning("Crash analysis failed: %s", e)
 
-    # 按严重程度排序
     sev_order = {'Critical': 0, 'High': 1, 'Medium': 2, 'Low': 3}
     results.sort(key=lambda r: sev_order.get(r.get('severity', 'Low'), 99))
 

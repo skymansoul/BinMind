@@ -1,29 +1,29 @@
 """
-多模态崩溃分析增强 —— 融合反编译代码 + 汇编 + 执行轨迹进行 LLM 联合推理。
+Multi-modal crash analysis: fused decompiled code + assembly + execution trace
+for joint LLM reasoning.
 
-将三条独立信息通道拼接为一个多模态 prompt，提交给 LLM 进行跨模态因果推理:
-  Channel A — 反编译伪代码（程序语义层面）
-  Channel B — 崩溃点附近汇编（指令级精准度）
-  Channel C — 执行轨迹（动态上下文，如哪些分支被采用）
+Concatenates three channels into a multi-modal prompt for cross-modal causal
+inference:
+  Channel A: decompiled pseudocode (program semantics)
+  Channel B: assembly near crash point (instruction-level precision)
+  Channel C: execution trace (dynamic context, branch decisions)
 
-单模态 LLM 分析的盲区示例:
-  - 仅有反编译代码 → 无法发现编译器优化引入的 UB（如 signed overflow 被优化掉）
-  - 仅有汇编 → 难以快速理解高层语义（如"这个函数是 parser 还是 crypto"）
-  - 仅有轨迹 → 缺乏代码层面的因果解释
+Single-modal blind spots:
+  Decompiled only: misses compiler-optimization UB (e.g., signed overflow elided)
+  Assembly only: hard to infer high-level semantics
+  Trace only: lacks code-level causal explanation
 
-三通道融合后 LLM 可交叉验证: "轨迹显示 branch A 被采用 → 汇编显示该处为 jne →
-反编译代码中该条件来自 size 字段的边界检查 → 结论: size 校验被绕过"。
+Three-channel cross-validation: "trace shows branch A taken -> asm shows jne ->
+decompiled shows the condition guards size field -> conclusion: size check bypassed."
 
-设计权衡:
-  不在此模块内实现模态对齐（如汇编→反编译的指令映射），因为反编译器
-  （r2/Ghidra）本身已提供了对应关系。三通道通过 LLM 的注意力机制隐式对齐，
-  而非显式的特征融合——降低复杂度，损失的对齐精度由 LLM 的语义理解能力补偿。
+Design trade-off: no explicit modal alignment here (decompilers already provide
+instruction-to-pseudocode mapping). Channels are implicitly aligned via LLM
+attention rather than explicit feature fusion — lower complexity, with alignment
+precision compensated by LLM semantic understanding.
 
-参考:
-  - Artuso et al., 2024, NDSS BAR, "In-Memory Fuzzing with Multi-Modal LLMs" —
-    将内存快照作为额外的模态提升 crash 分析的根因定位精度 34%
-  - Xu et al., 2025, arXiv:2503.xxxxx, "Toward Multi-Modal Vulnerability Detection" —
-    汇编+源码双通道比纯源码通道的误报率低 22%
+References:
+  - Artuso et al., 2024, NDSS BAR, "In-Memory Fuzzing with Multi-Modal LLMs"
+  - Xu et al., 2025, arXiv, "Toward Multi-Modal Vulnerability Detection"
 """
 
 from __future__ import annotations
@@ -86,7 +86,6 @@ def analyze_crash_multimodal(
         "source": "multi-modal-heuristic",
     }
 
-    # 检查 LLM 可用性
     try:
         from config import OPENAI_API_KEY
         if not OPENAI_API_KEY:
@@ -193,7 +192,6 @@ def _extract_asm_context(
     if not fault_addr or "0x" not in str(fault_addr):
         return ""
 
-    # 提取十六进制地址
     import re
     m = re.search(r'(0x[0-9a-fA-F]+)', str(fault_addr))
     if not m:

@@ -1,0 +1,12 @@
+[
+  {
+    "module_name": "vm_unvirtualizer",
+    "version_id": "748080c5008a",
+    "merkle_root": "748080c5008a6cab18c762a339edc6977c805e353c41ddc3442b3a06cc7b5963",
+    "leaf_count": 2,
+    "timestamp": 1785833806.2304385,
+    "semver": "0.1.0",
+    "prev_version_id": "",
+    "bump": "none"
+  }
+]

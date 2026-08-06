@@ -1,0 +1,12 @@
+[
+  {
+    "module_name": "stub_contract",
+    "version_id": "f7842493c5a2",
+    "merkle_root": "f7842493c5a2d0fcd80fa0e40c8ecb3dc76967c7d39daaad828c980b75565cc5",
+    "leaf_count": 9,
+    "timestamp": 1785794219.2383327,
+    "semver": "0.1.0",
+    "prev_version_id": "",
+    "bump": "none"
+  }
+]

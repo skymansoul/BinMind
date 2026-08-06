@@ -1,0 +1,77 @@
+{
+  "metadata": {
+    "test_date": "2026-08-05",
+    "total_samples": 75,
+    "categories": {
+      "heap_overflow": 15,
+      "use_after_free": 15,
+      "format_string": 15,
+      "stack_overflow": 15,
+      "integer_overflow": 15
+    },
+    "notes": "Simulated data based on expected performance characteristics. Replace with actual experiment_runner.py output."
+  },
+  "tools": {
+    "BinMind": {
+      "method": "Static+ValueFlow+AllocatorConstraints",
+      "detection_rate": 0.87,
+      "false_positive_rate": 0.18,
+      "avg_time_ms": 280,
+      "peak_memory_mb": 45,
+      "packed_supported": false,
+      "per_category": {
+        "heap_overflow": {"tp": 14, "fp": 2, "fn": 1},
+        "use_after_free": {"tp": 12, "fp": 3, "fn": 3},
+        "format_string": {"tp": 13, "fp": 2, "fn": 2},
+        "stack_overflow": {"tp": 14, "fp": 3, "fn": 1},
+        "integer_overflow": {"tp": 12, "fp": 3, "fn": 3}
+      }
+    },
+    "Angr": {
+      "method": "SymbolicExecution+CFG",
+      "detection_rate": 0.80,
+      "false_positive_rate": 0.55,
+      "avg_time_ms": 4500,
+      "peak_memory_mb": 320,
+      "packed_supported": false,
+      "per_category": {
+        "heap_overflow": {"tp": 13, "fp": 10, "fn": 2},
+        "use_after_free": {"tp": 8, "fp": 8, "fn": 7},
+        "format_string": {"tp": 12, "fp": 6, "fn": 3},
+        "stack_overflow": {"tp": 14, "fp": 8, "fn": 1},
+        "integer_overflow": {"tp": 11, "fp": 9, "fn": 4}
+      }
+    },
+    "Ghidra": {
+      "method": "StaticDecompile+PatternMatch",
+      "detection_rate": 0.65,
+      "false_positive_rate": 0.45,
+      "avg_time_ms": 8500,
+      "peak_memory_mb": 850,
+      "packed_supported": false,
+      "per_category": {
+        "heap_overflow": {"tp": 10, "fp": 8, "fn": 5},
+        "use_after_free": {"tp": 6, "fp": 6, "fn": 9},
+        "format_string": {"tp": 11, "fp": 5, "fn": 4},
+        "stack_overflow": {"tp": 12, "fp": 7, "fn": 3},
+        "integer_overflow": {"tp": 8, "fp": 7, "fn": 7}
+      }
+    },
+    "QEMU_user": {
+      "method": "DynamicTrace+Instrumentation",
+      "detection_rate": 0.92,
+      "false_positive_rate": 0.05,
+      "avg_time_ms": 1200,
+      "peak_memory_mb": 60,
+      "packed_supported": true,
+      "notes": "Ground truth reference. Requires triggering input for each sample.",
+      "per_category": {
+        "heap_overflow": {"tp": 14, "fp": 1, "fn": 1},
+        "use_after_free": {"tp": 13, "fp": 0, "fn": 2},
+        "format_string": {"tp": 14, "fp": 1, "fn": 1},
+        "stack_overflow": {"tp": 15, "fp": 1, "fn": 0},
+        "integer_overflow": {"tp": 13, "fp": 1, "fn": 2}
+      }
+    }
+  }
+}

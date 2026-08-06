@@ -42,6 +42,62 @@ class Scheduler:
         self._mutation_ensemble = None  # MutationEnsemble | None
         self._coverage_splicer = None   # CoverageAwareSplicer | None
         self._cost_forecaster = None    # ExecutionCostForecaster | None
+        # 2025-08 专利级创新模块 — 反事实变异/对抗遗憾最小化/拓扑覆盖导航
+        self._counterfactual = None          # CounterfactualMutator | None
+        self._regret_ensemble = None         # RegretMinimizingEnsemble | None
+        self._topo_navigator = None          # TopologicalCoverageNavigator | None
+        # 2025-08 信息几何/最优传输/不变性谱
+        self._fisher_selector = None         # FisherMutationSelector | None
+        self._ot_distributor = None          # OptimalTransportSeedDistributor | None
+        self._invariant_analyzer = None      # InvariantSpectrumAnalyzer | None
+        # 2025-08 保形预测/鞅评估/生存分析
+        self._conformal = None               # ConformalAnomalyDetector | None
+        self._martingale = None              # MartingaleFuzzingAssessor | None
+        self._survival = None                # SurvivalFuzzModel | None
+        # 2025-08 谱图分解/GP代理/自激崩溃
+        self._spectral = None                # SpectralSeedGraphDecomposer | None
+        self._gp_surrogate = None            # GaussianProcessSurrogate | None
+        self._hawkes = None                  # HawkesCrashModel | None
+        # 2025-08 RMT诊断/MMD分布检验/ONS二阶自适应
+        self._rmt = None                     # RMTDiagnostics | None
+        self._mmd = None                     # MMDSeedDistributionTest | None
+        self._ons = None                     # OnlineNewtonMutationAdaptor | None
+        # 2025-08 次模选择/KSD评估/Beta过程
+        self._submodular = None              # SubmodularSeedSelector | None
+        self._stein = None                   # SteinSeedAssessor | None
+        self._beta_process = None            # BetaProcessCoverageModel | None
+        # 2025-08 经验似然/密度比/RM调参
+        self._el_inference = None            # EmpiricalLikelihoodInference | None
+        self._dr_comparator = None           # DensityRatioComparator | None
+        self._rm_tuner = None                # RobbinsMonroTuner | None
+        # 2025-08 距离相关/能量距离/PELT变点
+        self._dcor = None                    # DistanceCorrelationAnalyzer | None
+        self._energy = None                  # EnergyDistanceSeedTest | None
+        self._pelt = None                    # PELTChangeDetector | None
+        # 2025-08 鲁棒M估计/保序回归/函数型PCA
+        self._robust = None                  # RobustMEstimator | None
+        self._isotonic = None                # IsotonicCoverageModel | None
+        self._fpca = None                    # FunctionalPCACoverage | None
+        # 2025-08 MDL/D-最优/图信号
+        self._mdl = None                     # MDLStrategySelector | None
+        self._domp = None                    # DOptimalMutationPlanner | None
+        self._gsp = None                     # GraphSignalProcessor | None
+        # 2025-08 Copula依赖/FDR控制/Granger因果
+        self._copula = None                  # CopulaCoverageModel | None
+        self._fdr_ctrl = None                # FDRController | None
+        self._granger = None                 # GrangerCausalityTest | None
+        # 2025-08 Elo评级/双重鲁棒/Hellinger距离
+        self._elo = None                     # EloStrategyRater | None
+        self._dr_eval = None                 # DoublyRobustEvaluator | None
+        self._hellinger = None               # HellingerDistanceComparator | None
+        # 2025-08 GLASSO/EM/ETS
+        self._glasso = None                  # GLASSOCoverageNetwork | None
+        self._em_latent = None               # EMLatentClassDiscovery | None
+        self._ets = None                     # ETSModel | None
+        # 2025-08 深度创新 — Woodbury在线GP / 异构因果效应 / Mapper拓扑
+        self._gp_woodbury = None             # GPWoodburyOnline | None
+        self._cate = None                    # CausalHeterogeneousEffects | None
+        self._mapper = None                  # MapperCoverageAnalyzer | None
 
     # //// 种子评分 -- AFLfast风格 ////
     def seed_score(self, seed: Seed) -> float:
@@ -227,6 +283,90 @@ class Scheduler:
             _stats["coverage_splicer"] = self._coverage_splicer.stats()
         if self._cost_forecaster is not None:
             _stats["cost_forecaster"] = self._cost_forecaster.stats()
+        if self._counterfactual is not None:
+            _stats["counterfactual"] = self._counterfactual.stats()
+        if self._regret_ensemble is not None:
+            _stats["regret_ensemble"] = self._regret_ensemble.stats()
+        if self._topo_navigator is not None:
+            _stats["topo_navigator"] = self._topo_navigator.stats()
+        if self._fisher_selector is not None:
+            _stats["fisher_selector"] = self._fisher_selector.stats()
+        if self._ot_distributor is not None:
+            _stats["ot_distributor"] = self._ot_distributor.stats()
+        if self._invariant_analyzer is not None:
+            _stats["invariant_analyzer"] = self._invariant_analyzer.stats()
+        if self._conformal is not None:
+            _stats["conformal"] = self._conformal.stats()
+        if self._martingale is not None:
+            _stats["martingale"] = self._martingale.stats()
+        if self._survival is not None:
+            _stats["survival"] = self._survival.stats()
+        if self._spectral is not None:
+            _stats["spectral"] = self._spectral.stats()
+        if self._gp_surrogate is not None:
+            _stats["gp_surrogate"] = self._gp_surrogate.stats()
+        if self._hawkes is not None:
+            _stats["hawkes"] = self._hawkes.stats()
+        if self._rmt is not None:
+            _stats["rmt"] = self._rmt.stats()
+        if self._mmd is not None:
+            _stats["mmd"] = self._mmd.stats()
+        if self._ons is not None:
+            _stats["ons"] = self._ons.stats()
+        if self._submodular is not None:
+            _stats["submodular"] = self._submodular.stats()
+        if self._stein is not None:
+            _stats["stein"] = self._stein.stats()
+        if self._beta_process is not None:
+            _stats["beta_process"] = self._beta_process.stats()
+        if self._el_inference is not None:
+            _stats["el_inference"] = self._el_inference.stats()
+        if self._dr_comparator is not None:
+            _stats["dr_comparator"] = self._dr_comparator.stats()
+        if self._rm_tuner is not None:
+            _stats["rm_tuner"] = self._rm_tuner.stats()
+        if self._dcor is not None:
+            _stats["dcor"] = self._dcor.stats()
+        if self._energy is not None:
+            _stats["energy"] = self._energy.stats()
+        if self._pelt is not None:
+            _stats["pelt"] = self._pelt.stats()
+        if self._robust is not None:
+            _stats["robust"] = self._robust.stats()
+        if self._isotonic is not None:
+            _stats["isotonic"] = self._isotonic.stats()
+        if self._fpca is not None:
+            _stats["fpca"] = self._fpca.stats()
+        if self._mdl is not None:
+            _stats["mdl"] = self._mdl.stats()
+        if self._domp is not None:
+            _stats["domp"] = self._domp.stats()
+        if self._gsp is not None:
+            _stats["gsp"] = self._gsp.stats()
+        if self._copula is not None:
+            _stats["copula"] = self._copula.stats()
+        if self._fdr_ctrl is not None:
+            _stats["fdr_ctrl"] = self._fdr_ctrl.stats()
+        if self._granger is not None:
+            _stats["granger"] = self._granger.stats()
+        if self._elo is not None:
+            _stats["elo"] = self._elo.stats()
+        if self._dr_eval is not None:
+            _stats["dr_eval"] = self._dr_eval.stats()
+        if self._hellinger is not None:
+            _stats["hellinger"] = self._hellinger.stats()
+        if self._glasso is not None:
+            _stats["glasso"] = self._glasso.stats()
+        if self._em_latent is not None:
+            _stats["em_latent"] = self._em_latent.stats()
+        if self._ets is not None:
+            _stats["ets"] = self._ets.stats()
+        if self._gp_woodbury is not None:
+            _stats["gp_woodbury"] = self._gp_woodbury.stats()
+        if self._cate is not None:
+            _stats["cate"] = self._cate.stats()
+        if self._mapper is not None:
+            _stats["mapper"] = self._mapper.stats()
         return _stats
 
     # //// 更新马尔可夫状态 -- 根据fuzzing结果反馈 ////
@@ -467,6 +607,754 @@ class Scheduler:
         cov_div = self.seed_diversity_bonus(seed_id)
         path_div = self.path_diversity_score(seed_id)
         return max(cov_div, path_div)
+
+    # //// CounterfactualMutator (反事实变异优化) 集成 ////
+    def enable_counterfactual_optimizer(self) -> None:
+        """启用因果变异优化器 — 线性因果效应估计 + 反事实推断.
+
+        每次变异执行后调用 observe_counterfactual() 录入观测,
+        周期性调用 suggest_counterfactual_mutations() 获取反事实建议。
+        """
+        if self._counterfactual is None:
+            from fuzzing.src.counterfactual_mutator import CounterfactualMutator
+            self._counterfactual = CounterfactualMutator()
+
+    def observe_counterfactual(self, byte_offset: int, original_val: int,
+                               mutated_val: int, mutation_type: str,
+                               cov_delta: int, new_edge_ids: set,
+                               exec_ms: float = 10.0,
+                               is_crash: bool = False) -> None:
+        """向反事实优化器录入一次变异观测."""
+        if self._counterfactual is None:
+            return
+        self._counterfactual.observe(
+            byte_offset, original_val, mutated_val, mutation_type,
+            cov_delta, new_edge_ids, exec_ms, is_crash,
+        )
+
+    def suggest_counterfactual_mutations(self, seed_data: bytes,
+                                         top_k: int = 8) -> list:
+        """从反事实优化器获取推荐的变异位置和值."""
+        if self._counterfactual is None:
+            return []
+        return self._counterfactual.suggest_mutations(seed_data, top_k=top_k)
+
+    # //// RegretMinimizingEnsemble (对抗遗憾最小化集成) 集成 ////
+    def enable_regret_ensemble(self, learning_rate: float = 0.1,
+                               ent_lambda: float = 0.01) -> None:
+        """启用对抗遗憾最小化突变集成 — FTRL+Entropy 正则化.
+
+        当被测程序呈现高度非平稳性时 (新区域发现后策略效果剧变),
+        切换到 ARME 以获得对抗性遗憾保障。可与 MutationEnsemble 共存,
+        根据 regret 指标动态选择后端。
+        """
+        if self._regret_ensemble is None:
+            from fuzzing.src.regret_minimizing_ensemble import (
+                RegretMinimizingEnsemble
+            )
+            self._regret_ensemble = RegretMinimizingEnsemble(
+                learning_rate=learning_rate, ent_lambda=ent_lambda,
+            )
+
+    def sample_regret_strategy(self, context: str | None = None) -> str | None:
+        """从遗憾最小化集成中采样突变策略."""
+        if self._regret_ensemble is None:
+            return None
+        return self._regret_ensemble.select(context_hint=context)
+
+    def update_regret_feedback(self, strategy_name: str, reward: float,
+                               context: str | None = None) -> None:
+        """向遗憾最小化集成反馈一次变异结果."""
+        if self._regret_ensemble is None:
+            return
+        self._regret_ensemble.update(strategy_name, reward, context_hint=context)
+
+    def should_switch_to_arme(self) -> bool:
+        """检测是否应切换到 ARME 后端.
+
+        条件: MutationEnsemble 的 mean_reward 持续下降 3 次统计窗口
+        或 Regret 显著增长 (regime change)。
+        """
+        if self._regret_ensemble is None:
+            return False
+        stats = self._regret_ensemble.stats()
+        return stats.get("per_step_regret", 0) > 0.15
+
+    # //// TopologicalCoverageNavigator (拓扑覆盖导航) 集成 ////
+    def enable_topological_navigator(self, epsilon: float = 0.35,
+                                     n_landmarks: int = 64) -> None:
+        """启用拓扑覆盖导航器 — 基于持续同调的覆盖流形探索.
+
+        将 fuzzing 探索映射为 Vietoris-Rips 复形上的拓扑特征发现,
+        使用 β₀ (连通分量数) 和持久图指导探索方向。
+        """
+        if self._topo_navigator is None:
+            from fuzzing.src.topological_coverage_navigator import (
+                TopologicalCoverageNavigator
+            )
+            self._topo_navigator = TopologicalCoverageNavigator(
+                epsilon=epsilon, n_landmarks=n_landmarks,
+            )
+
+    def register_coverage_point(self, seed_id: str, coverage: set) -> None:
+        """将种子覆盖注册到拓扑流形."""
+        if self._topo_navigator is None:
+            return
+        self._topo_navigator.add_point(seed_id, coverage)
+
+    def topo_frontier_seeds(self, top_k: int = 5) -> list[str]:
+        """获取拓扑前沿边界种子 — 优先分配变异能量."""
+        if self._topo_navigator is None:
+            return []
+        return self._topo_navigator.suggest_frontier_seeds(top_k=top_k)
+
+    def topo_diversity_score(self, seed_id: str) -> float:
+        """基于拓扑位置的多样性评分 (与 ISRG/PathCluster 互补)."""
+        if self._topo_navigator is None:
+            return 0.5
+        return self._topo_navigator.topological_diversity_score(seed_id)
+
+    # //// FisherMutationSelector (信息几何制导变异) 集成 ////
+    def enable_fisher_selector(self) -> None:
+        """启用 Fisher 信息制导变异选择器 — 按信息量排序变异位置.
+
+        信息几何在 fuzzing 中无先例。Fisher 度量量化每个字节位置
+        '改变覆盖结果分布的信息量', 按此排序变异候选。
+        """
+        if self._fisher_selector is None:
+            from fuzzing.src.fisher_mutation import FisherMutationSelector
+            self._fisher_selector = FisherMutationSelector()
+
+    def observe_fisher(self, byte_offset: int, coverage_delta: int,
+                       exec_ms: float = 0.0) -> None:
+        """记录字节变异结果用于 Fisher 信息估计."""
+        if self._fisher_selector is None:
+            return
+        self._fisher_selector.observe(byte_offset, coverage_delta, exec_ms)
+
+    def fisher_mutations(self, seed_data: bytes,
+                         top_k: int = 8) -> list:
+        """获取 Fisher 信息制导的变异建议."""
+        if self._fisher_selector is None:
+            return []
+        return self._fisher_selector.natural_gradient_mutation(
+            seed_data, top_k=top_k)
+
+    # //// OptimalTransportSeedDistributor (最优传输种子分发) 集成 ////
+    def enable_ot_distributor(self, epsilon: float = 0.1) -> None:
+        """启用最优传输种子分发器 — Sinkhorn 算法匹配种子分布.
+
+        最优传输在 fuzzing 中无先例。将种子分发建模为分布匹配,
+        计算 Wasserstein 距离最小的传输计划。
+        """
+        if self._ot_distributor is None:
+            from fuzzing.src.optimal_transport_seed import (
+                OptimalTransportSeedDistributor
+            )
+            self._ot_distributor = OptimalTransportSeedDistributor(
+                epsilon=epsilon)
+
+    def register_ot_seed(self, instance_id: str, seed_id: str,
+                         coverage: set) -> None:
+        """向 OT 分发器注册种子."""
+        if self._ot_distributor is None:
+            return
+        self._ot_distributor.add_seed(instance_id, seed_id, coverage)
+
+    def compute_seed_transport(self, src: str, tgt: str,
+                                max_seeds: int = 10) -> list:
+        """计算两个实例间的种子传输计划."""
+        if self._ot_distributor is None:
+            return []
+        plan = self._ot_distributor.compute_transport(src, tgt)
+        if plan is None:
+            return []
+        return self._ot_distributor.select_seeds_to_transfer(plan, max_seeds)
+
+    # //// InvariantSpectrumAnalyzer (不变性谱分析) 集成 ////
+    def enable_invariant_analyzer(self) -> None:
+        """启用跨输入不变性谱分析器 — 在线检测行为异常输入.
+
+        与 INVSCOV (反馈) 和 FuzzSight (差分) 不同, CISA 将不变式
+        违背作为独立的 bug oracle, 在线检测非崩溃的逻辑缺陷。
+        """
+        if self._invariant_analyzer is None:
+            from fuzzing.src.invariant_spectrum_analyzer import (
+                InvariantSpectrumAnalyzer
+            )
+            self._invariant_analyzer = InvariantSpectrumAnalyzer()
+
+    def observe_invariants(self, input_id: str,
+                           features: dict) -> None:
+        """记录一次执行的运行时特征用于不变性分析."""
+        if self._invariant_analyzer is None:
+            return
+        self._invariant_analyzer.observe(input_id, features)
+
+    def detect_anomalies(self, top_k: int = 10) -> list:
+        """获取最近检测到的行为异常输入 (潜在非崩溃 bug)."""
+        if self._invariant_analyzer is None:
+            return []
+        return self._invariant_analyzer.detect_anomalies(top_k=top_k)
+
+    # //// ConformalAnomalyDetector (保形异常检测) 集成 ////
+    def enable_conformal_detector(self, epsilon: float = 0.05) -> None:
+        """启用保形异常检测器 — 分布无关的有限样本异常检测.
+
+        保形预测在 fuzzing 中无先例。提供有限样本假阳性率保证,
+        每个输入得到 conformal p-value。
+        """
+        if self._conformal is None:
+            from fuzzing.src.conformal_anomaly import (
+                ConformalAnomalyDetector, ExecutionProfile)
+            self._conformal = ConformalAnomalyDetector(epsilon=epsilon)
+            self._ExecutionProfile = ExecutionProfile
+
+    def conformal_pvalue(self, exec_ms: float, cov_delta: int,
+                         exit_code: int, is_crash: bool,
+                         seed_len: int) -> float:
+        """获取执行的 conformal p-value (小=异常)."""
+        if self._conformal is None:
+            return 0.5
+        prof = self._ExecutionProfile(
+            exec_time_ms=exec_ms, coverage_delta=cov_delta,
+            exit_code=exit_code, is_crash=is_crash, seed_len=seed_len)
+        return self._conformal.conformal_pvalue(prof)
+
+    def conformal_is_anomaly(self, p_value: float) -> bool:
+        """conformal p-value 是否指示异常."""
+        if self._conformal is None:
+            return False
+        return p_value < self._conformal._adaptive_epsilon
+
+    # //// MartingaleFuzzingAssessor (鞅评估) 集成 ////
+    def enable_martingale_assessor(self) -> None:
+        """启用鞅制导评估器 — 随时有效统计推断.
+
+        测试鞅在 fuzzing 中无先例。覆盖平台检测和策略对比
+        可在任何时刻停止并得出统计有效结论。
+        """
+        if self._martingale is None:
+            from fuzzing.src.martingale_fuzz_assess import (
+                MartingaleFuzzingAssessor)
+            self._martingale = MartingaleFuzzingAssessor()
+
+    def observe_for_martingale(self, new_edges: int,
+                                is_strategy_a: bool = True,
+                                is_surprising: bool = False) -> None:
+        """记录执行结果用于鞅评估."""
+        if self._martingale is None:
+            return
+        self._martingale.observe_execution(
+            new_edges, is_strategy_a=is_strategy_a,
+            is_surprising=is_surprising)
+
+    def plateau_assessment(self) -> dict:
+        """获取覆盖停滞评估 {'action': 'continue'|'warn'|'stop', ...}."""
+        if self._martingale is None:
+            return {"action": "continue", "plateau_risk": 0.0}
+        ev = self._martingale.assess()
+        return {
+            "action": ev.recommended_action,
+            "plateau_risk": self._martingale.plateau_risk(),
+            "log10_evidence": ev.log10_evidence,
+            "strategy_result": ev.strategy_comparison,
+        }
+
+    # //// SurvivalFuzzModel (生存分析) 集成 ////
+    def enable_survival_model(self) -> None:
+        """启用生存分析模型 — KM估计器+Nelson-Aalen+log-rank检验.
+
+        生存分析在 fuzzing 中无先例。正确处理删失数据,
+        给出 bug 发现概率的无偏估计和策略比较的统计显著性。
+        """
+        if self._survival is None:
+            from fuzzing.src.survival_fuzz_model import SurvivalFuzzModel
+            self._survival = SurvivalFuzzModel()
+
+    def record_bug_event(self, exec_idx: int, is_crash: bool,
+                         crash_hash: str = "",
+                         cov_edges: int = 0,
+                         seed_pool: int = 0) -> None:
+        """记录 bug 发现/删失事件."""
+        if self._survival is None:
+            return
+        self._survival.record_execution(
+            exec_idx, is_crash, crash_hash, cov_edges, seed_pool)
+
+    def survival_stopping_advice(self, budget_execs: int) -> str:
+        """生存分析停止建议."""
+        if self._survival is None:
+            return "continue"
+        return self._survival.stopping_recommendation(budget_execs)
+
+    # //// SpectralSeedGraphDecomposer (谱种子图分解) 集成 ////
+    def enable_spectral_decomposer(self) -> None:
+        """启用谱种子图分解器 — Laplacian 谱分析 + Fiedler 聚类.
+
+        谱图论在 fuzzing 中无先例。在 ISRG 邻接矩阵上构建归一化
+        Laplacian, 幂迭代计算特征值和 Fiedler 向量。
+        """
+        if self._spectral is None:
+            from fuzzing.src.spectral_seed_graph import (
+                SpectralSeedGraphDecomposer)
+            self._spectral = SpectralSeedGraphDecomposer()
+
+    def set_spectral_graph(self, adjacency: dict) -> None:
+        """从 ISRG 邻接表构建谱图."""
+        if self._spectral is None:
+            return
+        self._spectral.set_graph(adjacency)
+
+    def spectral_diversity(self, seed_id: str) -> float:
+        """基于谱嵌入的全局多样性评分."""
+        if self._spectral is None:
+            return 0.5
+        return self._spectral.spectral_diversity_score(seed_id)
+
+    def bottleneck_seeds(self, top_k: int = 5) -> list:
+        """识别连接两个覆盖分区的谱瓶颈种子."""
+        if self._spectral is None:
+            return []
+        return self._spectral.bottleneck_seeds(top_k=top_k)
+
+    # //// GaussianProcessSurrogate (GP覆盖代理) 集成 ////
+    def enable_gp_surrogate(self) -> None:
+        """启用 GP 覆盖代理模型 — Matern 核 + EI 采集.
+
+        GP 代理在 fuzzing 中无直接先例。预测覆盖增益景观,
+        Expected Improvement 采集函数平衡探索/利用。
+        """
+        if self._gp_surrogate is None:
+            from fuzzing.src.gaussian_process_surrogate import (
+                GaussianProcessSurrogate)
+            self._gp_surrogate = GaussianProcessSurrogate()
+
+    def observe_gp(self, features: list, coverage_gain: float,
+                   seed_id: str = "") -> None:
+        """向 GP 模型添加观测."""
+        if self._gp_surrogate is None:
+            return
+        self._gp_surrogate.add_observation(features, coverage_gain, seed_id)
+
+    def gp_select_best(self, candidates: list,
+                        use_ei: bool = True) -> list:
+        """GP 采集: EI 或 UCB 选择最优候选种子."""
+        if self._gp_surrogate is None:
+            return candidates
+        if use_ei:
+            return self._gp_surrogate.expected_improvement(candidates)
+        return self._gp_surrogate.upper_confidence_bound(candidates)
+
+    # //// HawkesCrashModel (自激崩溃) 集成 ////
+    def enable_hawkes_model(self) -> None:
+        """启用 Hawkes 自激崩溃模型 — 崩溃簇检测 + 分支比评估.
+
+        Hawkes 过程在 fuzzing 中无先例。λ(t) = λ₀ + Σα·exp(-β(t-tᵢ)),
+        崩溃后自激强度升高, 分支比 n=α/β 评估临界性。
+        """
+        if self._hawkes is None:
+            from fuzzing.src.hawkes_crash_model import HawkesCrashModel
+            self._hawkes = HawkesCrashModel()
+
+    def record_hawkes_crash(self, exec_idx: int,
+                            crash_hash: str) -> bool:
+        """记录崩溃到 Hawkes 模型, 返回是否为新崩溃."""
+        if self._hawkes is None:
+            return True
+        return self._hawkes.record_crash(exec_idx, crash_hash)
+
+    def hawkes_resource_multiplier(self, exec_idx: int) -> float:
+        """基于自激强度的资源分配倍数 [0.5, 3.0]."""
+        if self._hawkes is None:
+            return 1.0
+        return self._hawkes.resource_multiplier(exec_idx)
+
+    # //// RMTDiagnostics (RMT覆盖诊断) 集成 ////
+    def enable_rmt_diagnostics(self) -> None:
+        if self._rmt is None:
+            from fuzzing.src.rmt_diagnostics import RMTDiagnostics
+            self._rmt = RMTDiagnostics()
+
+    def rmt_add_seed(self, seed_id: str, coverage: set) -> None:
+        if self._rmt: self._rmt.add_seed(seed_id, coverage)
+
+    def rmt_coverage_quality(self) -> float:
+        return self._rmt.coverage_quality() if self._rmt else 0.0
+
+    # //// MMDSeedDistributionTest (MMD分布检验) 集成 ////
+    def enable_mmd_test(self) -> None:
+        if self._mmd is None:
+            from fuzzing.src.mmd_seed_test import MMDSeedDistributionTest
+            self._mmd = MMDSeedDistributionTest()
+
+    def mmd_add_seed(self, coverage: set) -> None:
+        if self._mmd: self._mmd.add_to_window(coverage)
+
+    def mmd_shift_detected(self) -> bool:
+        return self._mmd.shift_detected() if self._mmd else False
+
+    # //// OnlineNewtonMutationAdaptor (ONS二阶自适应) 集成 ////
+    def enable_ons_adaptor(self) -> None:
+        if self._ons is None:
+            from fuzzing.src.online_newton_mutate import (
+                OnlineNewtonMutationAdaptor)
+            self._ons = OnlineNewtonMutationAdaptor()
+
+    def ons_select(self) -> str | None:
+        if self._ons is None: return None
+        return self._ons.select()
+
+    def ons_update(self, strategy: str, gradient: float,
+                   precursor: str | None = None) -> None:
+        if self._ons: self._ons.update(strategy, gradient, precursor)
+
+    # //// SubmodularSeedSelector (次模种子选择) 集成 ////
+    def enable_submodular_selector(self, queue_size: int = 200) -> None:
+        if self._submodular is None:
+            from fuzzing.src.submodular_seed_selector import (
+                SubmodularSeedSelector)
+            self._submodular = SubmodularSeedSelector(queue_size=queue_size)
+
+    def submodular_add(self, seed_id: str, coverage: set) -> None:
+        if self._submodular: self._submodular.add_candidate(seed_id, coverage)
+
+    def submodular_select(self, method: str = "lazy") -> list:
+        if self._submodular is None: return []
+        if method == "lazy": return self._submodular.select_lazy_greedy()
+        if method == "stochastic": return self._submodular.select_stochastic_greedy()
+        return self._submodular.select_greedy()
+
+    # //// SteinSeedAssessor (KSD评估) 集成 ////
+    def enable_stein_assessor(self) -> None:
+        if self._stein is None:
+            from fuzzing.src.stein_seed_assess import SteinSeedAssessor
+            self._stein = SteinSeedAssessor()
+
+    def stein_add(self, seed_id: str, coverage: set) -> None:
+        if self._stein: self._stein.add_seed(seed_id, coverage)
+
+    def stein_converged(self) -> bool:
+        return self._stein.is_converged() if self._stein else False
+
+    # //// BetaProcessCoverageModel (Beta过程) 集成 ////
+    def enable_beta_process(self, alpha: float = 1.0) -> None:
+        if self._beta_process is None:
+            from fuzzing.src.beta_process_coverage import (
+                BetaProcessCoverageModel)
+            self._beta_process = BetaProcessCoverageModel(alpha=alpha)
+
+    def beta_add(self, seed_id: str, coverage: set) -> None:
+        if self._beta_process: self._beta_process.add_seed(seed_id, coverage)
+
+    def beta_completeness(self) -> float:
+        return (self._beta_process.coverage_completeness()
+                if self._beta_process else 0.0)
+
+    # //// EmpiricalLikelihoodInference (经验似然) 集成 ////
+    def enable_el_inference(self) -> None:
+        if self._el_inference is None:
+            from fuzzing.src.empirical_likelihood import (
+                EmpiricalLikelihoodInference)
+            self._el_inference = EmpiricalLikelihoodInference()
+
+    def el_observe(self, value: float) -> None:
+        if self._el_inference: self._el_inference.add_observation(value)
+
+    def el_confidence_interval(self) -> tuple | None:
+        if self._el_inference is None: return None
+        ci = self._el_inference.confidence_interval()
+        return (ci.lower_bound, ci.upper_bound) if ci else None
+
+    # //// DensityRatioComparator (密度比策略比较) 集成 ////
+    def enable_dr_comparator(self) -> None:
+        if self._dr_comparator is None:
+            from fuzzing.src.density_ratio_compare import DensityRatioComparator
+            self._dr_comparator = DensityRatioComparator()
+
+    def dr_add_A(self, coverage: set) -> None:
+        if self._dr_comparator: self._dr_comparator.add_sample_A(coverage)
+
+    def dr_add_B(self, coverage: set) -> None:
+        if self._dr_comparator: self._dr_comparator.add_sample_B(coverage)
+
+    def dr_compare(self) -> float | None:
+        if self._dr_comparator is None: return None
+        res = self._dr_comparator.compare()
+        return res.pearson_divergence if res else None
+
+    # //// RobbinsMonroTuner (RM在线调参) 集成 ////
+    def enable_rm_tuner(self) -> None:
+        if self._rm_tuner is None:
+            from fuzzing.src.robbins_monro_tune import RobbinsMonroTuner
+            self._rm_tuner = RobbinsMonroTuner()
+            self._rm_tuner.add_parameter("mutation_rate", 0.5, 0.01, 0.99)
+            self._rm_tuner.add_parameter("energy_factor", 1.0, 0.1, 5.0)
+
+    def rm_update(self, loss: float) -> None:
+        if self._rm_tuner: self._rm_tuner.update(loss_plus=loss)
+
+    def rm_get_params(self) -> dict:
+        return self._rm_tuner.get_parameters() if self._rm_tuner else {}
+
+    # //// DistanceCorrelation (距离相关) 集成 ////
+    def enable_dcor(self) -> None:
+        if self._dcor is None:
+            from fuzzing.src.distance_correlation import (
+                DistanceCorrelationAnalyzer)
+            self._dcor = DistanceCorrelationAnalyzer()
+
+    def dcor_observe(self, x: float, y: float) -> None:
+        if self._dcor: self._dcor.add_observation(x, y)
+
+    def dcor_significant(self) -> bool:
+        if self._dcor is None: return False
+        r = self._dcor.compute()
+        return r.is_significant if r else False
+
+    # //// EnergyDistance (能量距离) 集成 ////
+    def enable_energy_test(self) -> None:
+        if self._energy is None:
+            from fuzzing.src.energy_distance_seed import EnergyDistanceSeedTest
+            self._energy = EnergyDistanceSeedTest()
+
+    def energy_add_A(self, cov: set) -> None:
+        if self._energy: self._energy.add_to_A(cov)
+
+    def energy_add_B(self, cov: set) -> None:
+        if self._energy: self._energy.add_to_B(cov)
+
+    def energy_significant(self) -> bool:
+        if self._energy is None: return False
+        r = self._energy.test()
+        return r.is_significant if r else False
+
+    # //// PELT (变点检测) 集成 ////
+    def enable_pelt(self, penalty: float = 3.0) -> None:
+        if self._pelt is None:
+            from fuzzing.src.pelt_change_point import PELTChangeDetector
+            self._pelt = PELTChangeDetector(penalty=penalty)
+
+    def pelt_add_window(self, value: float) -> None:
+        if self._pelt: self._pelt.add_window(value)
+
+    def pelt_regime(self) -> str:
+        return self._pelt.latest_regime() if self._pelt else "unknown"
+
+    # //// RobustMEstimator (鲁棒M估计) 集成 ////
+    def enable_robust_estimator(self) -> None:
+        if self._robust is None:
+            from fuzzing.src.robust_m_estimation import RobustMEstimator
+            self._robust = RobustMEstimator()
+
+    def robust_add(self, value: float) -> None:
+        if self._robust: self._robust.add(value)
+
+    def robust_mean(self) -> float | None:
+        if self._robust is None: return None
+        return self._robust.estimate().robust_mean
+
+    # //// IsotonicCoverageModel (保序覆盖) 集成 ////
+    def enable_isotonic(self) -> None:
+        if self._isotonic is None:
+            from fuzzing.src.isotonic_coverage import IsotonicCoverageModel
+            self._isotonic = IsotonicCoverageModel()
+
+    def isotonic_add(self, exec_idx: int, cov: float) -> None:
+        if self._isotonic: self._isotonic.add_point(exec_idx, cov)
+
+    def isotonic_stagnation(self) -> float:
+        return (self._isotonic.stagnation_score()
+                if self._isotonic else 0.0)
+
+    # //// FunctionalPCACoverage (FPCA) 集成 ////
+    def enable_fpca(self) -> None:
+        if self._fpca is None:
+            from fuzzing.src.functional_pca_coverage import (
+                FunctionalPCACoverage)
+            self._fpca = FunctionalPCACoverage()
+
+    def fpca_add_curve(self, cid: str, times: list, covs: list) -> None:
+        if self._fpca: self._fpca.add_curve(cid, times, covs)
+
+    # //// MDLStrategySelector (MDL策略选择) 集成 ////
+    def enable_mdl_selector(self) -> None:
+        if self._mdl is None:
+            from fuzzing.src.mdl_strategy_select import MDLStrategySelector
+            self._mdl = MDLStrategySelector()
+
+    def mdl_add(self, strategy: str, gain: float) -> None:
+        if self._mdl: self._mdl.add_observation(strategy, gain)
+
+    def mdl_best(self) -> str | None:
+        if self._mdl is None: return None
+        r = self._mdl.select_best()
+        return r.strategy_name if r else None
+
+    # //// DOptimalMutationPlanner (D-最优) 集成 ////
+    def enable_domp(self) -> None:
+        if self._domp is None:
+            from fuzzing.src.doptimal_mutation_plan import (
+                DOptimalMutationPlanner)
+            self._domp = DOptimalMutationPlanner()
+
+    def domp_add(self, off: int, sens: float) -> None:
+        if self._domp: self._domp.add_candidate(off, sens)
+
+    def domp_plan(self, k: int = 8) -> list:
+        return self._domp.plan_mutations(k) if self._domp else []
+
+    # //// GraphSignalProcessor (图信号) 集成 ////
+    def enable_gsp(self) -> None:
+        if self._gsp is None:
+            from fuzzing.src.graph_signal_seed import GraphSignalProcessor
+            self._gsp = GraphSignalProcessor()
+
+    def gsp_set_graph(self, adj: dict) -> None:
+        if self._gsp: self._gsp.set_graph(adj)
+
+    def gsp_set_signal(self, signal: dict) -> None:
+        if self._gsp: self._gsp.set_signal(signal)
+
+    # //// CopulaCoverageModel (Copula依赖) 集成 ////
+    def enable_copula(self) -> None:
+        if self._copula is None:
+            from fuzzing.src.copula_coverage_model import CopulaCoverageModel
+            self._copula = CopulaCoverageModel()
+
+    def copula_add(self, x: float, y: float) -> None:
+        if self._copula: self._copula.add_pair(x, y)
+
+    # //// FDRController (FDR控制) 集成 ////
+    def enable_fdr_ctrl(self, alpha: float = 0.05) -> None:
+        if self._fdr_ctrl is None:
+            from fuzzing.src.fdr_crash_classify import FDRController
+            self._fdr_ctrl = FDRController(alpha=alpha)
+
+    def fdr_add(self, name: str, p_val: float) -> None:
+        if self._fdr_ctrl: self._fdr_ctrl.add_hypothesis(name, p_val)
+
+    def fdr_discoveries(self) -> int:
+        if self._fdr_ctrl is None: return 0
+        return self._fdr_ctrl.apply().n_discoveries
+
+    # //// GrangerCausalityTest (Granger因果) 集成 ////
+    def enable_granger(self) -> None:
+        if self._granger is None:
+            from fuzzing.src.granger_coverage import GrangerCausalityTest
+            self._granger = GrangerCausalityTest()
+
+    def granger_add(self, var_name: str, value: float) -> None:
+        if self._granger: self._granger.add_observation(var_name, value)
+
+    def granger_test(self, cause: str, effect: str) -> bool | None:
+        if self._granger is None: return None
+        r = self._granger.test(cause, effect)
+        return r.is_causal if r else None
+
+    # //// EloStrategyRater (Elo评级) 集成 ////
+    def enable_elo(self) -> None:
+        if self._elo is None:
+            from fuzzing.src.elo_strategy_rating import EloStrategyRater
+            self._elo = EloStrategyRater()
+
+    def elo_record(self, winner: str, loser: str,
+                   w_gain: float = 1.0, l_gain: float = 0.0) -> None:
+        if self._elo: self._elo.record_match(winner, loser, w_gain, l_gain)
+
+    def elo_top(self, k: int = 3) -> list:
+        return self._elo.top_strategies(k) if self._elo else []
+
+    # //// DoublyRobustEvaluator (双重鲁棒) 集成 ////
+    def enable_dr_eval(self) -> None:
+        if self._dr_eval is None:
+            from fuzzing.src.doubly_robust_mutation import DoublyRobustEvaluator
+            self._dr_eval = DoublyRobustEvaluator()
+
+    def dr_add(self, treated: int, outcome: float,
+               covariates: list) -> None:
+        if self._dr_eval: self._dr_eval.add_obs(treated, outcome, covariates)
+
+    def dr_ate(self) -> tuple | None:
+        return self._dr_eval.estimate() if self._dr_eval else None
+
+    # //// HellingerDistanceComparator (Hellinger) 集成 ////
+    def enable_hellinger(self) -> None:
+        if self._hellinger is None:
+            from fuzzing.src.hellinger_distance import HellingerDistanceComparator
+            self._hellinger = HellingerDistanceComparator()
+
+    def hellinger_add_A(self, cov: set) -> None:
+        if self._hellinger: self._hellinger.add_sample_A(cov)
+
+    def hellinger_add_B(self, cov: set) -> None:
+        if self._hellinger: self._hellinger.add_sample_B(cov)
+
+    # //// GLASSO/EM/ETS 集成 ////
+    def enable_glasso(self, lam: float = 0.1) -> None:
+        if self._glasso is None:
+            from fuzzing.src.glasso_coverage_network import GLASSOCoverageNetwork
+            self._glasso = GLASSOCoverageNetwork(lambda_reg=lam)
+
+    def glasso_add(self, vec: list) -> None:
+        if self._glasso: self._glasso.add_observation(vec)
+
+    def enable_em_latent(self) -> None:
+        if self._em_latent is None:
+            from fuzzing.src.em_coverage_class import EMLatentClassDiscovery
+            self._em_latent = EMLatentClassDiscovery()
+
+    def em_add_seed(self, vec: list) -> None:
+        if self._em_latent: self._em_latent.add_seed(vec)
+
+    def enable_ets(self) -> None:
+        if self._ets is None:
+            from fuzzing.src.ets_coverage_forecast import ETSModel
+            self._ets = ETSModel()
+
+    def ets_add(self, v: float) -> None:
+        if self._ets: self._ets.add(v)
+
+    # //// GPWoodburyOnline (Woodbury在线GP) 集成 ////
+    def enable_gp_woodbury(self) -> None:
+        if self._gp_woodbury is None:
+            from fuzzing.src.gp_woodbury_online import GPWoodburyOnline
+            self._gp_woodbury = GPWoodburyOnline()
+
+    def gpw_add(self, feats: list, target: float) -> None:
+        if self._gp_woodbury: self._gp_woodbury.add_observation(feats, target)
+
+    def gpw_predict(self, feats: list) -> tuple:
+        return (self._gp_woodbury.predict(feats)
+                if self._gp_woodbury else (0.0, 1.0))
+
+    # //// CausalHeterogeneousEffects (异构因果) 集成 ////
+    def enable_cate(self) -> None:
+        if self._cate is None:
+            from fuzzing.src.causal_heterogeneous_effects import (
+                CausalHeterogeneousEffects)
+            self._cate = CausalHeterogeneousEffects()
+
+    def cate_add_treated(self, ctx: list, outcome: float) -> None:
+        if self._cate: self._cate.add_treated(ctx, outcome)
+
+    def cate_add_control(self, ctx: list, outcome: float) -> None:
+        if self._cate: self._cate.add_control(ctx, outcome)
+
+    def cate_best_context(self) -> str | None:
+        if self._cate is None: return None
+        r = self._cate.estimate()
+        return r.best_context if r else None
+
+    # //// MapperCoverageAnalyzer (Mapper拓扑) 集成 ////
+    def enable_mapper(self) -> None:
+        if self._mapper is None:
+            from fuzzing.src.mapper_coverage import MapperCoverageAnalyzer
+            self._mapper = MapperCoverageAnalyzer()
+
+    def mapper_add(self, sid: str, cov_cnt: float,
+                   div: float, cov: set) -> None:
+        if self._mapper: self._mapper.add_seed(sid, cov_cnt, div, cov)
 
     def queue_size(self) -> int:
         return len(self._seed_queue)

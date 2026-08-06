@@ -334,8 +334,9 @@ def _re_search_block(content: str) -> _Opt[str]:
 # NotImplementedError 视为"未实现"而非"失败"，记入 not_implemented 列表。
 class ContractVerifier:
 
-    def __init__(self, run_io_checks: bool = True):
+    def __init__(self, run_io_checks: bool = True, run_metamorphic: bool = False):
         self.run_io_checks = run_io_checks
+        self.run_metamorphic = run_metamorphic
 
     def verify(self, source: str, contract: _StubContract) -> VerificationResult:
         result = VerificationResult(module_name=contract.module_name)
@@ -387,12 +388,33 @@ class ContractVerifier:
                 elif outcome:
                     result.io_violations.append(f'{fc.name}: {outcome}')
 
+        # 蜕变关系 Oracle 检查（可选，语义级验证）
+        mr_anomalies = []
+        if self.run_metamorphic:
+            try:
+                from modules.stubs.stub_metamorphic_verifier import MetamorphicVerifier as _MRV
+                _mrv = _MRV()
+                for fc in contract.functions:
+                    fn = getattr(mod, fc.name, None)
+                    if fn is None:
+                        continue
+                    mr_outcome = _mrv.verify(fn, fc)
+                    if mr_outcome.get('status') == 'anomalies_found':
+                        for a in mr_outcome.get('anomalies', []):
+                            mr_anomalies.append(f'{fc.name}: MR_{a["category"]} '
+                                               f'fail_rate={a["fail_rate"]} '
+                                               f'conf={a["confidence"]}')
+            except ImportError:
+                pass
+
         result.ok = (not result.import_error and not result.signature_violations
-                     and not result.io_violations)
+                     and not result.io_violations and not mr_anomalies)
         if not result.ok:
             result.feedback = '契约验证失败，回退或降级'
         elif result.not_implemented:
             result.feedback = '验证通过，部分函数仍为未实现骨架'
+        elif mr_anomalies:
+            result.feedback = f'语义级MR异常: {"; ".join(mr_anomalies[:3])}'
         else:
             result.feedback = '契约验证通过'
         return result
@@ -513,6 +535,14 @@ class GradualEngine:
         src = self.template_gen.generate(contract)
         result = self._attempt_generate(contract, 'template', src)
         if result is not None and result.ok:
+            # 若同时有 LLM 产物，运行双策略非相干性校验
+            if self.llm_gen.enabled:
+                llm_src = self.llm_gen.generate(contract)
+                if llm_src:
+                    inc_result = self._run_incoherence_check(
+                        contract, src, llm_src)
+                    if inc_result:
+                        gen.incoherence = inc_result
             return self._finalize(gen, src, 'template', result)
 
         # 尝试2: 远端模型（神经层，可选）
@@ -569,6 +599,26 @@ class GradualEngine:
 
     def _record_failure(self, module_name: str, reason: str, details: list) -> None:
         self._failures[module_name] = {'reason': reason, 'details': details}
+
+    def _run_incoherence_check(self, contract: _StubContract,
+                               src_template: str, src_llm: str) -> _Opt[dict]:
+        """双策略非相干性校验 — 无 oracle 的一致性信号。
+        两条独立策略均编译通过时，比较相同输入下的输出。
+        不一致 → 至少一侧有误（可证明的下界）。
+        """
+        try:
+            from modules.stubs.stub_incoherence_check import (
+                IncoherenceChecker, DualImplementation)
+            dual = DualImplementation(
+                module_name=contract.module_name,
+                strategy_a='template', source_a=src_template,
+                strategy_b='llm', source_b=src_llm,
+            )
+            checker = IncoherenceChecker()
+            result = checker.check(contract, dual)
+            return result.get('__summary__')
+        except ImportError:
+            return None
 
     def failure_report(self) -> list:
         """失败记录快照 — 供人工 review 与策略改进。"""

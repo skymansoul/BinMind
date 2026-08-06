@@ -55,6 +55,50 @@ _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
     "SpliceCandidate": ("fuzzing.src.coverage_splicer", "SpliceCandidate"),
     "ExecutionCostForecaster": ("fuzzing.src.exec_cost_forecaster", "ExecutionCostForecaster"),
     "CostEstimate": ("fuzzing.src.exec_cost_forecaster", "CostEstimate"),
+    # 2025-08 专利级创新 — 反事实变异/对抗遗憾/拓扑导航
+    "CounterfactualMutator": ("fuzzing.src.counterfactual_mutator", "CounterfactualMutator"),
+    "CounterfactualEstimate": ("fuzzing.src.counterfactual_types", "CounterfactualEstimate"),
+    "RegretMinimizingEnsemble": ("fuzzing.src.regret_minimizing_ensemble", "RegretMinimizingEnsemble"),
+    "TopologicalCoverageNavigator": ("fuzzing.src.topological_coverage_navigator", "TopologicalCoverageNavigator"),
+    "TopologicalFeature": ("fuzzing.src.topological_coverage_navigator", "TopologicalFeature"),
+    # 2025-08 信息几何/最优传输/不变性谱
+    "FisherMutationSelector": ("fuzzing.src.fisher_mutation", "FisherMutationSelector"),
+    "OptimalTransportSeedDistributor": ("fuzzing.src.optimal_transport_seed", "OptimalTransportSeedDistributor"),
+    "InvariantSpectrumAnalyzer": ("fuzzing.src.invariant_spectrum_analyzer", "InvariantSpectrumAnalyzer"),
+    # 2025-08 保形预测/鞅评估/生存分析
+    "ConformalAnomalyDetector": ("fuzzing.src.conformal_anomaly", "ConformalAnomalyDetector"),
+    "MartingaleFuzzingAssessor": ("fuzzing.src.martingale_fuzz_assess", "MartingaleFuzzingAssessor"),
+    "SurvivalFuzzModel": ("fuzzing.src.survival_fuzz_model", "SurvivalFuzzModel"),
+    # 跨战役元学习 / 对抗覆盖突破 / 平台期因果分析 (2026 Q3 专利补齐)
+    "CrossCampaignMetaLearner": ("fuzzing.fuzz_meta_learner", "CrossCampaignMetaLearner"),
+    "CampaignFingerprint": ("fuzzing.fuzz_meta_learner", "CampaignFingerprint"),
+    "AdversarialCoverageBreaker": ("fuzzing.fuzz_adversarial_breaker", "AdversarialCoverageBreaker"),
+    "CoverageFrontierTracker": ("fuzzing.fuzz_adversarial_breaker", "CoverageFrontierTracker"),
+    "PlateauCausalAnalyzer": ("fuzzing.fuzz_plateau_analyzer", "PlateauCausalAnalyzer"),
+    # 2025-08 谱图分解/GP代理/Hawkes自激
+    "SpectralSeedGraphDecomposer": ("fuzzing.src.spectral_seed_graph", "SpectralSeedGraphDecomposer"),
+    "GaussianProcessSurrogate": ("fuzzing.src.gaussian_process_surrogate", "GaussianProcessSurrogate"),
+    "HawkesCrashModel": ("fuzzing.src.hawkes_crash_model", "HawkesCrashModel"),
+    # 2025-08 RMT诊断/MMD检验/ONS二阶
+    "RMTDiagnostics": ("fuzzing.src.rmt_diagnostics", "RMTDiagnostics"),
+    "MMDSeedDistributionTest": ("fuzzing.src.mmd_seed_test", "MMDSeedDistributionTest"),
+    "OnlineNewtonMutationAdaptor": ("fuzzing.src.online_newton_mutate", "OnlineNewtonMutationAdaptor"),
+    # 2025-08 次模选择/KSD评估/Beta过程
+    "SubmodularSeedSelector": ("fuzzing.src.submodular_seed_selector", "SubmodularSeedSelector"),
+    "SteinSeedAssessor": ("fuzzing.src.stein_seed_assess", "SteinSeedAssessor"),
+    "BetaProcessCoverageModel": ("fuzzing.src.beta_process_coverage", "BetaProcessCoverageModel"),
+    # 2025-08 经验似然/密度比/RM调参
+    "EmpiricalLikelihoodInference": ("fuzzing.src.empirical_likelihood", "EmpiricalLikelihoodInference"),
+    "DensityRatioComparator": ("fuzzing.src.density_ratio_compare", "DensityRatioComparator"),
+    "RobbinsMonroTuner": ("fuzzing.src.robbins_monro_tune", "RobbinsMonroTuner"),
+    # 2025-08 距离相关/能量距离/PELT变点
+    "DistanceCorrelationAnalyzer": ("fuzzing.src.distance_correlation", "DistanceCorrelationAnalyzer"),
+    "EnergyDistanceSeedTest": ("fuzzing.src.energy_distance_seed", "EnergyDistanceSeedTest"),
+    "PELTChangeDetector": ("fuzzing.src.pelt_change_point", "PELTChangeDetector"),
+    # 2025-08 鲁棒M估计/保序回归/函数型PCA
+    "RobustMEstimator": ("fuzzing.src.robust_m_estimation", "RobustMEstimator"),
+    "IsotonicCoverageModel": ("fuzzing.src.isotonic_coverage", "IsotonicCoverageModel"),
+    "FunctionalPCACoverage": ("fuzzing.src.functional_pca_coverage", "FunctionalPCACoverage"),
 }
 
 _IMPORT_CACHE: dict[str, object] = {}

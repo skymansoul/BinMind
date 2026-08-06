@@ -1,28 +1,15 @@
-# 崩溃原语多维指纹识别 — 替代简单的二值 exploitable 判定。
-
 """
-崩溃原语指纹识别 —— 从crash dump中提取多维度的可利用性信号，
-替代简单的二值"是否可利用"判定。
+Crash primitive fingerprinting for multi-dimensional exploitability assessment.
 
-设计动机:
-  现有 crash_analysis.py 的 analyze_crash_for_exploit() 将可利用性
-  简化为二值判定（type==SIGSEGV→exploitable=True），丢失大量信息。
-  实际场景中，同样是SIGSEGV:
-    - RIP=0x41414141 → 直接的rip控制 → 高可利用性
-    - RIP=0x00000000 → NULL deref → 通常不可利用
-    - RIP=合法代码地址但RSP指向攻击者控制区域 → 需要stack pivot → 中等
+Instead of a binary "exploitable/not" verdict, this module scores a crash
+along several axes: register control, stack/head layout clues, heap operation
+patterns, and crash reachability. The composite score feeds exploit strategy
+recommendations.
 
-  本模块提供多维评分: 寄存器可控性 + 内存布局线索 + 堆操作模式 +
-  崩溃可达性，综合判定可利用性和推荐利用策略。
-
-参考:
-  - Lancet (USENIX Security 2025): 崩溃病理形式化框架，用所有权语义
-    区分漏洞类型和利用原语。本模块借鉴其"原语指纹"概念，用寄存器
-    状态替代所有权追踪——更轻量但覆盖范围不如其全面。
-  - HEXP (IEEE 2025): 堆布局约束自动利用生成。本模块借鉴其堆操作
-    序列提取思路，但只做指纹识别不做利用生成。
-  - AutoPwn (IEEE TIFS 2024): 从历史利用中总结利用模式。本模块的
-    原语→策略映射借鉴了此思路，但模式库以规则形式硬编码。
+References:
+  - Lancet (USENIX Security 2025): crash pathology formalization with ownership semantics
+  - HEXP (IEEE 2025): automatic heap layout constraint exploit generation
+  - AutoPwn (IEEE TIFS 2024): exploit pattern mining from historical exploits
 """
 
 import re
@@ -32,11 +19,11 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 
 class RegisterControl(Enum):
-    CONTROLLED = auto()       # 攻击者可直接控制寄存器值
-    PARTIALLY = auto()        # 攻击者可部分影响（如通过偏移）
-    UNCONTROLLED = auto()     # 寄存器值不可控
-    ZERO = auto()             # 寄存器为NULL/0
-    UNKNOWN = auto()          # 信息不足
+    CONTROLLED = auto()       # attacker can directly control register value
+    PARTIALLY = auto()        # attacker can partially influence (via offset)
+    UNCONTROLLED = auto()     # register value not controllable
+    ZERO = auto()             # register is NULL/0
+    UNKNOWN = auto()          # insufficient information
 
 
 class PrimitiveType(Enum):
@@ -67,7 +54,7 @@ class RegisterAnalysis:
 
 @dataclass
 class HeapOperationSequence:
-    """从crash上下文提取的堆操作序列——有助于识别UAF/double-free。"""
+    """Heap operation sequence extracted from crash context, useful for UAF/double-free detection."""
     operations: List[str] = field(default_factory=list)  # ["alloc(0x40)", "free", "use", ...]
     freed_chunks: List[int] = field(default_factory=list)  # 已释放的内存地址
     alloc_sizes: List[int] = field(default_factory=list)   # 分配大小序列
@@ -77,7 +64,7 @@ class HeapOperationSequence:
 
 @dataclass
 class CrashFingerprint:
-    """完整的崩溃指纹——多维可利用性信号。"""
+    """Complete crash fingerprint with multi-dimensional exploitability signals."""
     crash_type: str
     registers: Dict[str, RegisterAnalysis] = field(default_factory=dict)
     heap_ops: Optional[HeapOperationSequence] = None
@@ -95,15 +82,13 @@ class CrashFingerprint:
     recommended_strategy: str = ""
 
 
-# ---- 已知模式库 ----
-
-# 从历史利用中总结的寄存器值模式→利用策略映射
-# 参考: AutoPwn (2024) 的 artifact 总结思路
+# Known register-value patterns mapped to exploit strategy hints.
+# Derived from AutoPwn (2024) artifact analysis.
 _VALUE_PATTERNS = {
-    r'^0x41{4,}': ('user_controlled', 'pattern填充 — RIP可能可控'),
-    r'^0x0+$': ('null_deref', 'NULL解引用 — 通常不可利用，除非mmap_min_addr=0'),
-    r'^0x7f[0-9a-f]{10,}': ('libc_range', '地址落在libc范围 — 信息泄露可能'),
-    r'^0x7e[0-9a-f]{10,}': ('stack_probable', '疑似栈地址'),
+    r'^0x41{4,}': ('user_controlled', 'pattern fill, RIP likely controllable'),
+    r'^0x0+$': ('null_deref', 'NULL deref, usually not exploitable unless mmap_min_addr=0'),
+    r'^0x7f[0-9a-f]{10,}': ('libc_range', 'address in libc range, potential info leak'),
+    r'^0x7e[0-9a-f]{10,}': ('stack_probable', 'likely stack address'),
 }
 
 
@@ -115,7 +100,7 @@ def _analyze_register(
     stack_bounds: Optional[Tuple[int, int]] = None,
     heap_bounds: Optional[List[Tuple[int, int]]] = None,
 ) -> RegisterAnalysis:
-    """分析单个寄存器的可控性和内存区域归属。"""
+    """Analyze register controllability and memory region membership."""
     analysis = RegisterAnalysis(name=reg_name, value=reg_value)
 
     hex_val = f"0x{reg_value:x}"
@@ -132,7 +117,7 @@ def _analyze_register(
                 analysis.points_to_stack = True
             break
 
-    # 检查地址归属
+    # Check address region membership
     if stack_bounds and stack_bounds[0] <= reg_value <= stack_bounds[1]:
         analysis.points_to_stack = True
     if heap_bounds:
@@ -145,34 +130,34 @@ def _analyze_register(
 
 
 def _extract_heap_ops_from_text(crash_text: str) -> Optional[HeapOperationSequence]:
-    """从ASAN或glibc崩溃日志中提取堆操作序列。
+    """Extract heap operation sequences from ASAN or glibc crash logs.
 
-    ASAN格式: "allocated by thread T0 here:" 后跟分配栈
-    glibc格式: "free(): invalid pointer" / "double free or corruption"
+    ASAN format: "allocated by thread T0 here:" followed by allocation stack.
+    glibc format: "free(): invalid pointer" / "double free or corruption"
     """
     seq = HeapOperationSequence()
 
-    # ASAN堆操作模式
+    # ASAN heap operation patterns
     alloc_pattern = re.findall(
         r'(allocated by thread|freed by thread|previously allocated)',
         crash_text, re.IGNORECASE
     )
 
-    # 提取分配大小
+    # Extract allocation sizes
     sizes = re.findall(
         r'(?:alloc|malloc|calloc|realloc)[\w\s]*?(?:size|of)\s*(\d+)',
         crash_text, re.IGNORECASE
     )
     seq.alloc_sizes = [int(s) for s in sizes[:10]]
 
-    # 释放的chunk地址
+    # Freed chunk addresses
     freed = re.findall(
         r'(?:freed|freeing|attempt to free).*?(0x[0-9a-fA-F]{6,16})',
         crash_text, re.IGNORECASE
     )
     seq.freed_chunks = [int(a, 16) for a in freed[:5]]
 
-    # 构建操作序列
+    # Build operation sequence
     if 'allocated' in crash_text.lower() and 'freed' in crash_text.lower():
         seq.operations.append("alloc_free_interleave")
     if 'double free' in crash_text.lower():
@@ -195,7 +180,7 @@ def _compute_exploitability_scores(
     crash_type: str,
     fault_addr: int,
 ) -> Dict[str, float]:
-    """多维可利用性评分——0.0到1.0。"""
+    """Compute multi-axis exploitability scores (0.0 to 1.0)."""
 
     scores = {
         'rip_control': 0.0,
@@ -204,7 +189,7 @@ def _compute_exploitability_scores(
         'info_leak': 0.0,
     }
 
-    # RIP控制评分: 基于rip/r15(ARM:pc)的可控性
+    # RIP control scoring based on rip/r15(ARM:pc) controllability
     rip_regs = ['rip', 'pc', 'eip', 'r15']
     for r in rip_regs:
         if r in reg_analysis:
@@ -217,7 +202,7 @@ def _compute_exploitability_scores(
                 scores['rip_control'] = 0.05
             break
 
-    # 栈控制评分: 基于rsp的可控性或其指向区域
+    # Stack control scoring based on rsp controllability
     sp_regs = ['rsp', 'sp', 'esp']
     for r in sp_regs:
         if r in reg_analysis:
@@ -228,7 +213,7 @@ def _compute_exploitability_scores(
                 scores['stack_control'] = 0.40
             break
 
-    # 堆控制评分: 基于堆操作序列
+    # Heap control scoring based on heap operation sequence
     if heap_ops:
         if 'use_after_free' in heap_ops.operations:
             scores['heap_control'] = 0.85
@@ -237,7 +222,8 @@ def _compute_exploitability_scores(
         elif 'alloc_free_interleave' in heap_ops.operations:
             scores['heap_control'] = 0.55
 
-    # 信息泄露评分: 基于是否有寄存器指向已知库地址
+    # Info leak scoring
+    # Check if any register points to a known library address range
     for ra in reg_analysis.values():
         if ra.contains_pattern and 'libc_range' in str(ra.control):
             scores['info_leak'] = max(scores['info_leak'], 0.60)
@@ -257,39 +243,39 @@ def _compute_exploitability_scores(
 def _recommend_strategy(
     scores: Dict[str, float], crash_type: str
 ) -> Tuple[List[PrimitiveType], str]:
-    """基于评分推荐利用原语和策略。"""
+    """Recommend exploit primitives and strategies based on scores."""
     primitives = []
     strategies = []
 
     if scores['rip_control'] > 0.8:
         primitives.append(PrimitiveType.RIP_CONTROL)
-        strategies.append("direct RIP hijack — 需要GOT/PLT或one_gadget目标")
+        strategies.append("direct RIP hijack, target GOT/PLT or one_gadget")
     elif scores['rip_control'] > 0.3:
         primitives.append(PrimitiveType.PARTIAL_RIP)
 
     if scores['stack_control'] > 0.7:
         primitives.append(PrimitiveType.STACK_PIVOT)
-        strategies.append("stack pivot to controlled region — 需gadget: xchg rsp, rax")
+        strategies.append("stack pivot to controlled region, need gadget: xchg rsp, rax")
 
     if scores['heap_control'] > 0.7:
         if 'use_after_free' in crash_type.lower():
             primitives.append(PrimitiveType.UAF)
-            strategies.append("UAF exploitation — tcache poisoning或overlapping allocation")
+            strategies.append("UAF exploitation via tcache poisoning or overlapping allocation")
         elif 'double' in crash_type.lower():
             primitives.append(PrimitiveType.DOUBLE_FREE)
-            strategies.append("double-free — fastbin dup或tcache key bypass (glibc 2.32+)")
+            strategies.append("double-free via fastbin dup or tcache key bypass (glibc 2.32+)")
         else:
             primitives.append(PrimitiveType.HEAP_CORRUPTION)
-            strategies.append("heap corruption — 需分析allocator状态以确定具体原语")
+            strategies.append("heap corruption, analyze allocator state for concrete primitive")
 
     if scores['info_leak'] > 0.4:
         primitives.append(PrimitiveType.INFO_LEAK)
 
     if not primitives:
         primitives.append(PrimitiveType.UNKNOWN)
-        strategies.append("信息不足，建议进行确定性重放以收集更多crash上下文")
+        strategies.append("insufficient data, deterministic replay recommended for more context")
 
-    return primitives, "; ".join(strategies) if strategies else "需进一步分析"
+    return primitives, "; ".join(strategies) if strategies else "further analysis needed"
 
 
 # ---- 主接口 ----
@@ -299,15 +285,15 @@ def fingerprint_crash(
     stack_bounds: Optional[Tuple[int, int]] = None,
     heap_bounds: Optional[List[Tuple[int, int]]] = None,
 ) -> CrashFingerprint:
-    """对crash dump进行多维原语指纹识别。
+    """Multi-axis crash primitive fingerprinting.
 
     Args:
-        crash_data: 来自 parse_crash() 的结构化crash数据
+        crash_data: structured crash data from parse_crash()
         stack_bounds: (stack_low, stack_high)
         heap_bounds: [(heap_start, heap_end), ...]
 
     Returns:
-        包含多维评分和推荐策略的 CrashFingerprint
+        CrashFingerprint with scores and recommended strategy
     """
     raw_text = crash_data.get('raw', '')
     crash_type = crash_data.get('crash_type', 'unknown')
@@ -315,7 +301,7 @@ def fingerprint_crash(
 
     fingerprint = CrashFingerprint(crash_type=crash_type)
 
-    # 1. 寄存器分析——从crash数据中提取
+    # 1. Register analysis from crash data
     registers_raw = crash_data.get('registers', {})
     for reg_name, reg_val_str in registers_raw.items():
         try:
@@ -326,18 +312,18 @@ def fingerprint_crash(
             reg_name, reg_val, stack_bounds, heap_bounds,
         )
 
-    # 2. 堆操作序列提取
+    # 2. Heap operation sequence extraction
     fingerprint.heap_ops = _extract_heap_ops_from_text(raw_text)
 
-    # 3. 故障指令和地址
+    # 3. Faulting instruction and address
     fingerprint.faulting_instruction = crash_data.get('fault_instruction', '')
     if addresses:
         fingerprint.faulting_address = int(addresses[0], 16) if addresses[0].startswith('0x') else 0
 
-    # 4. 栈回溯
+    # 4. Stack trace
     fingerprint.stack_trace = crash_data.get('stack_trace', [])
 
-    # 5. 多维评分
+    # 5. Multi-axis scoring
     fault_addr = fingerprint.faulting_address
     scores = _compute_exploitability_scores(
         fingerprint.registers, fingerprint.heap_ops, crash_type, fault_addr,
@@ -348,9 +334,52 @@ def fingerprint_crash(
     fingerprint.info_leak_score = scores['info_leak']
     fingerprint.overall_exploitability = scores['overall']
 
-    # 6. 推荐策略
+    # 6. Strategy recommendation
     primitives, strategy = _recommend_strategy(scores, crash_type)
     fingerprint.recommended_primitives = primitives
     fingerprint.recommended_strategy = strategy
 
+    # 7. Heap layout inference for heap-corruption crashes
+    if crash_type in ('heap_corruption', 'uaf', 'double_free'):
+        heap_ctx = infer_heap_layout(regs, crash_type)
+        fingerprint.metadata['heap_context'] = heap_ctx
+
     return fingerprint
+
+
+def infer_heap_layout(regs: Dict[str, str],
+                       crash_type: str) -> Dict[str, Any]:
+    """Infer heap chunk layout from crash register state.
+
+    Determines whether the fault address lies in a known heap region, whether
+    corrupted bytes overlap heap metadata (fd/bk pointers), and estimates chunk size.
+    """
+    ctx: Dict[str, Any] = {}
+    rip = regs.get('rip', '')
+    rsp = regs.get('rsp', '')
+    rax = regs.get('rax', '')
+
+    # Infer chunk size from crash address offset.
+    # If crash address is 0x?8 aligned and next 8 bytes match a pattern,
+    # the fd/bk pointers may have been overwritten.
+    for reg_name, val in regs.items():
+        if not val or len(val) < 4:
+            continue
+        try:
+            addr = int(val, 16)
+        except ValueError:
+            continue
+        # glibc chunk header: prev_size(8B) + size(8B, LSB=flags)
+        # addr % 16 == 8 suggests writing the chunk's fd pointer
+        if addr % 16 == 8 and crash_type == 'heap_corruption':
+            ctx['likely_overwritten'] = 'fd_pointer'
+            ctx['estimated_chunk_offset'] = 16  # skip prev_size + size header
+        elif addr % 16 == 0 and crash_type == 'heap_corruption':
+            ctx['likely_overwritten'] = 'prev_size_or_size_field'
+
+    # Infer free-list state: if crash happens inside free(), chunk may already be in a bin
+    if crash_type in ('uaf', 'double_free'):
+        ctx['in_free_list'] = True
+        ctx['note'] = 'crash during free, chunk may already be in free-list'
+
+    return ctx

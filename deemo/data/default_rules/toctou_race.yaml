@@ -1,0 +1,25 @@
+# TOCTOU (Time-of-Check-Time-of-Use) file race detection.
+# Matches access() permission checks followed by open() within 200 characters.
+# The window between the two syscalls is exploitable via symlink swapping.
+# Commonly used in privilege escalation chains.
+
+id: toctou-race
+name: TOCTOU 文件竞态
+severity: medium
+description: |
+  检测到 access()/stat() 后立即 open()/fopen()，存在 TOCTOU 窗口。
+cwe: CWE-367
+tags:
+  - race-condition
+  - toctou
+conditions:
+  - field: function_calls
+    operator: regex_match
+    value: "access\\([^)]+\\)[\\s\\S]{0,200}?(fopen|open|stat)"
+    regex: true
+actions:
+  - type: report
+    parameters:
+      message: "检测到可能的 TOCTOU 文件竞态"
+      suggestion: "使用 O_CREAT|O_EXCL 或 openat() 等原子操作"
+      cwe: CWE-367

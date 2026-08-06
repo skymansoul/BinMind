@@ -202,6 +202,27 @@ class ImplementationPrioritizer:
             backlog = backlog[:n]
         return backlog
 
+    def dependency_aware_backlog(self, n: _Opt[int] = None) -> list[str]:
+        """拓扑约束下的实现积压清单 — 在可行性集中按优先级排序。
+
+        依赖关系从跨模块 import/call AST 分析中提取。
+        无依赖图可用时降级为普通 backlog 的模块名列表。
+        """
+        try:
+            from modules.stubs.stub_dependency_graph import (
+                ModuleDependencyGraph, TopologicalScheduler)
+            dep_graph = ModuleDependencyGraph()
+            dep_graph.build()
+            scheduler = TopologicalScheduler(dep_graph)
+            priorities = {p.module_name: p.total_score for p in self.rank()}
+            ordered = scheduler.scheduled_order(priorities)
+            if n is not None:
+                ordered = ordered[:n]
+            return ordered
+        except ImportError:
+            backlog = self.implementation_backlog(n)
+            return [p.module_name for p in backlog]
+
     # 报告输出
     def generate_priority_report(self, top_n: int = 20) -> str:
         """输出 Markdown 排序清单报告。"""

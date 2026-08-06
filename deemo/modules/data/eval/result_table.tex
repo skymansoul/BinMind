@@ -1,0 +1,38 @@
+% Heap Overflow Detection — Cross-Tool Benchmark Results
+% Auto-generated table template. Fill with benchmark_results.csv data.
+
+\begin{table}[htbp]
+\centering
+\caption{Heap Overflow Detection: Cross-Tool Comparison with 3-Stage FP Filtering}
+\label{tab:heap-compare}
+\begin{tabular}{lccccccc}
+\toprule
+Tool & Samples & TP & FP & FN & Precision & Recall & Avg Time (ms) \\
+\midrule
+\multicolumn{8}{c}{\textbf{Unpacked Samples (n=10)}} \\
+\midrule
+Our Method (3-stage filter) & 10 & -- & -- & -- & -- & -- & -- \\
+Our Method (raw, no filter)  & 10 & -- & -- & -- & -- & -- & -- \\
+Angr (CFGFast + explore)     & 10 & -- & -- & -- & -- & -- & -- \\
+Ghidra (headless API)        & 10 & -- & -- & -- & -- & -- & -- \\
+QEMU (user mode + strace)    & 10 & -- & -- & -- & -- & -- & -- \\
+\midrule
+\multicolumn{8}{c}{\textbf{FP Reduction Breakdown (Stage-by-Stage)}} \\
+\midrule
+Raw findings (Stage 0)       & -- & -- & -- & -- & -- & -- & -- \\
+After Stage 1 (constant)     & -- & -- & -- & -- & -- & -- & -- \\
+After Stage 2 (bounds check) & -- & -- & -- & -- & -- & -- & -- \\
+After Stage 3 (alloc-corr.)  & -- & -- & -- & -- & -- & -- & -- \\
+\bottomrule
+\end{tabular}
+
+\vspace{6pt}
+\footnotesize{
+Our method combines backward value-flow slice tracing, interval-based constraint
+simplification, and allocation-site correlation in a three-stage cascade.
+Angr uses CFGFast with exploration engine. Ghidra uses headless API with
+function-level decompilation. QEMU uses user-mode emulation with strace.
+All tests on Intel i7, 32GB RAM, Ubuntu 22.04. Samples from CVE-2014-0160
+through CVE-2023-2513, covering heap overflow, UAF, and double-free.
+}
+\end{table}

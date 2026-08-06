@@ -1,0 +1,5 @@
+/* uaf_sample ¡ª heap overflow test sample */
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+int main(int argc, char **argv) { char *buf = malloc(64); if(argc>1) { memcpy(buf, argv[1], strlen(argv[1])); } free(buf); return 0; }

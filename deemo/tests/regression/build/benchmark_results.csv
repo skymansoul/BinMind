@@ -1,0 +1,9 @@
+sample,findings,types,time_s
+heap_demo,3,format_string;heap_overflow;uaf,0.05
+uaf_01,3,format_string;heap_overflow;uaf,0.052
+uaf_02,3,format_string;heap_overflow;uaf,0.026
+fmt_01,3,format_string;heap_overflow;uaf,0.052
+fmt_02,3,format_string;heap_overflow;uaf,0.051
+stack,3,format_string;heap_overflow;uaf,0.018
+intof,3,format_string;heap_overflow;uaf,0.018
+uaf_04,3,format_string;heap_overflow;uaf,0.063

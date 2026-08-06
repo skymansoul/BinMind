@@ -1,14 +1,12 @@
 """
-二进制保护机制检测 —— ELF/PE 安全加固属性提取。
+Binary hardening detection for ELF, PE, and Mach-O formats.
 
-识别 NX/DEP、PIE/ASLR、Stack Canary、RELRO、FORTIFY_SOURCE 和
-运行时 ASLR 状态。输出标准化字典供管线各阶段消费。
+Pure-Python parsing of ELF Program Headers and Dynamic Section avoids the
+overhead of external scripts. Gracefully degrades for stripped binaries by
+inferring NX/Canary from .note.ABI-tag and import tables when PT_GNU_STACK
+is absent.
 
-创新点: 不依赖外部 checksec.sh 脚本，纯 Python 解析 ELF Program Headers
-和 Dynamic Section，避免子进程开销。针对 stripped 二进制做了健壮降级：
-PT_GNU_STACK 缺失时从 .note.ABI-tag 和导入表推断 NX/Canary 状态。
-
-参考:
+References:
   - Di Federico et al., 2017, USENIX Security, "How the ELF Ruined Christmas"
   - Kell et al., 2019, PLDI, "The Missing Link: Explaining ELF Static Linking"
 """
@@ -22,7 +20,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 _log = logging.getLogger(__name__)
 
-# ELF 常量
+# ELF constants
 ELFMAG = b'\x7fELF'
 ELFCLASS32 = 1
 ELFCLASS64 = 2
@@ -45,19 +43,19 @@ PF_X = 1
 PF_W = 2
 PF_R = 4
 
-# 已知的 canary 符号
+# Known canary symbol names
 CANARY_SYMBOLS = {'__stack_chk_fail', '__stack_chk_guard', '__stack_smash_handler'}
 
 
 def _read_struct(f, offset: int, fmt: str) -> Tuple:
-    """从 ELF 文件偏移处读取结构化数据，文件指针位置不受影响。"""
+    """Read structured data from ELF at the given offset without moving the file pointer."""
     f.seek(offset)
     size = struct.calcsize(fmt)
     return struct.unpack(fmt, f.read(size))
 
 
 def _detect_elf_class(f) -> int:
-    """读取 EI_CLASS 字节。"""
+    """Read the EI_CLASS byte to determine 32- vs 64-bit."""
     f.seek(0)
     magic = f.read(5)
     if magic[:4] != ELFMAG:
@@ -67,10 +65,10 @@ def _detect_elf_class(f) -> int:
 
 def _parse_elf_headers(path: str) -> Optional[Dict[str, Any]]:
     """
-    解析 ELF 文件头和 Program Headers。
+    Parse ELF file header and Program Headers.
 
-    返回包含 phdrs、dynamic 段偏移、字符串表的字典，
-    解析失败返回 None。
+    Returns a dict with phdrs, dynamic section offsets, and string table info,
+    or None on parse failure.
     """
     try:
         with open(path, 'rb') as f:
@@ -137,9 +135,9 @@ def _parse_dynamic_section(
     dyn_entry_size: int,
 ) -> Dict[int, int]:
     """
-    解析 .dynamic 段，提取所有 tag-value 对。
+    Parse the .dynamic section, extracting all tag-value pairs.
 
-    对 PT_DYNAMIC 段按条目迭代，在 DT_NULL 处终止。
+    Iterates entries from PT_DYNAMIC, stopping at DT_NULL.
     """
     dynamic: Dict[int, int] = {}
     for phdr in phdrs:
@@ -164,12 +162,12 @@ def _parse_dynamic_section(
 
 def _detect_canary_from_imports(path: str) -> bool:
     """
-    通过扫描 ELF 导入符号表检测 canary。
+    Detect canary by scanning ELF import symbol table.
 
-    不使用 pyelftools 时的后备方案：直接搜索符号名字符串。
+    Fallback when pyelftools is not available: searches for symbol name strings directly.
     """
     try:
-        # 尝试用 r2 快速检测
+        # Quick detection via r2
         import subprocess
         proc = subprocess.run(
             ['radare2', '-q', '-e', 'io.color=false', '-c', 'is~__stack_chk', path],
@@ -179,7 +177,7 @@ def _detect_canary_from_imports(path: str) -> bool:
     except Exception:
         pass
 
-    # 纯 Python 回退：搜索 .dynstr 段中的 canary 符号
+    # Pure-Python fallback: search for canary symbols in .dynstr
     try:
         with open(path, 'rb') as f:
             content = f.read()
@@ -193,21 +191,21 @@ def _detect_canary_from_imports(path: str) -> bool:
 
 def detect_checksec(path: str) -> Dict[str, Any]:
     """
-    检测二进制文件的保护机制。
+    Detect binary hardening / protection mechanisms.
 
     Args:
-        path: ELF 或 PE 文件的路径
+        path: path to ELF or PE file
 
     Returns:
-        标准化保护机制字典:
+        Standardized hardening dictionary:
         {
-            'nx': bool,          # NX/DEP 启用
-            'pie': bool,         # PIE/ASLR 编译时支持
-            'canary': bool,      # Stack Canary 启用
+            'nx': bool,          # NX/DEP enabled
+            'pie': bool,         # PIE/ASLR at compile time
+            'canary': bool,      # Stack canary enabled
             'relro': str,        # 'full' | 'partial' | 'none'
-            'fortify': bool,     # FORTIFY_SOURCE 启用
-            'aslr': bool,        # 运行时 ASLR (PIE 是前提)
-            'rwx_segments': bool, # 存在可写可执行段
+            'fortify': bool,     # FORTIFY_SOURCE enabled
+            'aslr': bool,        # Runtime ASLR (requires PIE)
+            'rwx_segments': bool, # Writable+executable segments present
             'format': str,        # 'ELF' | 'PE' | 'Mach-O' | 'unknown'
         }
     """
@@ -225,7 +223,7 @@ def detect_checksec(path: str) -> Dict[str, Any]:
     if not os.path.isfile(path):
         return result
 
-    # 格式检测
+    # Format detection
     try:
         with open(path, 'rb') as f:
             magic = f.read(4)
@@ -247,7 +245,7 @@ def detect_checksec(path: str) -> Dict[str, Any]:
 
 
 def _detect_elf_checksec(path: str, result: Dict[str, Any]) -> None:
-    """检测 ELF 文件的保护机制。"""
+    """Detect ELF binary hardening mechanisms."""
     headers = _parse_elf_headers(path)
     if headers is None:
         return
@@ -255,13 +253,13 @@ def _detect_elf_checksec(path: str, result: Dict[str, Any]) -> None:
     phdrs = headers['phdrs']
     is_64bit = headers['is_64bit']
 
-    # --- NX (基于 PT_GNU_STACK 的 PF_X 标志) ---
+    # --- NX (based on PF_X flag in PT_GNU_STACK) ---
     for phdr in phdrs:
         if phdr['type'] == PT_GNU_STACK:
             result['nx'] = not bool(phdr['flags'] & PF_X)
             break
 
-    # --- PIE (基于 ELF 类型: ET_DYN vs ET_EXEC) ---
+    # --- PIE (based on ELF type: ET_DYN vs ET_EXEC) ---
     try:
         with open(path, 'rb') as f:
             if is_64bit:
@@ -276,7 +274,7 @@ def _detect_elf_checksec(path: str, result: Dict[str, Any]) -> None:
     # --- Canary ---
     result['canary'] = _detect_canary_from_imports(path)
 
-    # --- RELRO (基于 PT_GNU_RELRO 和 DT_FLAGS/DT_FLAGS_1) ---
+    # --- RELRO (based on PT_GNU_RELRO and DT_FLAGS/DT_FLAGS_1) ---
     dynamic = _parse_dynamic_section(
         path, phdrs,
         headers['dyn_entry_fmt'],
@@ -287,7 +285,7 @@ def _detect_elf_checksec(path: str, result: Dict[str, Any]) -> None:
 
     if has_relro_segment:
         result['relro'] = 'partial'
-        # BIND_NOW 信号 Full RELRO
+        # BIND_NOW signals Full RELRO
         if dynamic.get(DF_1_NOW, 0) & 1:
             result['relro'] = 'full'
         elif dynamic.get(DT_FLAGS, 0) & DF_BIND_NOW:
@@ -296,7 +294,7 @@ def _detect_elf_checksec(path: str, result: Dict[str, Any]) -> None:
     # --- FORTIFY_SOURCE (基于导入的 __*_chk 函数) ---
     try:
         with open(path, 'rb') as f:
-            raw = f.read(1048576)  # 前 1MB
+            raw = f.read(1048576)  # first 1MB
         fortify_markers = [b'__memcpy_chk', b'__sprintf_chk', b'__strcpy_chk',
                            b'__fprintf_chk', b'__snprintf_chk']
         result['fortify'] = any(m in raw for m in fortify_markers)
@@ -314,7 +312,7 @@ def _detect_elf_checksec(path: str, result: Dict[str, Any]) -> None:
 
 
 def _detect_pe_checksec(path: str, result: Dict[str, Any]) -> None:
-    """检测 PE 文件的保护机制。"""
+    """Detect PE binary hardening mechanisms."""
     try:
         import pefile
         pe = pefile.PE(path)
@@ -339,7 +337,7 @@ def _detect_pe_checksec(path: str, result: Dict[str, Any]) -> None:
 
 
 def _detect_macho_checksec(path: str, result: Dict[str, Any]) -> None:
-    """检测 Mach-O 文件的保护机制（精简版）。"""
+    """Detect Mach-O binary hardening mechanisms (simplified)."""
     try:
         import macholib.MachO
         macho = macholib.MachO.MachO(path)
@@ -361,13 +359,13 @@ def _detect_macho_checksec(path: str, result: Dict[str, Any]) -> None:
 
 def checksec_summary(checksec: Dict[str, Any]) -> str:
     """
-    生成保护机制的文本摘要，用于报告和 LLM prompt 上下文。
+    Generate a text summary of hardening status for reports and LLM prompts.
 
     Args:
-        checksec: detect_checksec() 的返回值
+        checksec: return value from detect_checksec()
 
     Returns:
-        单行摘要，例如 "NX✓ PIE✗ Canary✓ Full RELRO FORTIFY✗"
+        Single-line summary, e.g. "NX✓ PIE✗ Canary✓ Full RELRO FORTIFY✗"
     """
     parts = [
         f"NX{'✓' if checksec.get('nx') else '✗'}",

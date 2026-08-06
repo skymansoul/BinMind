@@ -108,15 +108,20 @@ def get_binary_info(path):
     if not os.path.exists(path):
         return {"error": "file not found"}
 
-    from ..info_collect import (
+    from .binary_profiling import (
         _SUSPICIOUS_ENTROPY_RATIO,
-        analyze_pe_sections,
-        analyze_import_table_anomalies,
-        extract_network_iocs,
+        compute_section_entropy_profile,
+        compute_ngram_fingerprint,
+        scan_crypto_constants,
         detect_shellcode_patterns,
         detect_api_hashing,
         detect_xor_obfuscated_strings,
-        analyze_elf_segments,
+        analyze_import_table_anomalies,
+        extract_network_iocs,
+        extract_named_objects,
+    )
+    from .pe_elf_analysis import (
+        analyze_pe_sections,
         parse_pe_rich_header,
         check_pe_signature,
         detect_pe_overlay,
@@ -124,10 +129,7 @@ def get_binary_info(path):
         analyze_pe_exports,
         parse_pe_debug_directory,
         analyze_pe_relocations,
-        extract_named_objects,
-        compute_section_entropy_profile,
-        compute_ngram_fingerprint,
-        scan_crypto_constants,
+        analyze_elf_segments,
     )
 
     fmt = detect_binary_format(path)

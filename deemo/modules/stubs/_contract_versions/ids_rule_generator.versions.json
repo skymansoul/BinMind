@@ -1,0 +1,12 @@
+[
+  {
+    "module_name": "ids_rule_generator",
+    "version_id": "43f3a3d75441",
+    "merkle_root": "43f3a3d75441126a2cb2696c2b675fa8d4d763718108ce238bc6cf73f27ff2d0",
+    "leaf_count": 1,
+    "timestamp": 1785833806.2249691,
+    "semver": "0.1.0",
+    "prev_version_id": "",
+    "bump": "none"
+  }
+]

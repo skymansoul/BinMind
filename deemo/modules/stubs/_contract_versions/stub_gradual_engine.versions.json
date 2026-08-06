@@ -1,0 +1,12 @@
+[
+  {
+    "module_name": "stub_gradual_engine",
+    "version_id": "43b65f7566d2",
+    "merkle_root": "43b65f7566d29063090cf5c3463e341b4487a274eafa225ce92aa4753346c6b7",
+    "leaf_count": 3,
+    "timestamp": 1785794219.2391417,
+    "semver": "0.1.0",
+    "prev_version_id": "",
+    "bump": "none"
+  }
+]
